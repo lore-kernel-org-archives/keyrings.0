@@ -2,113 +2,120 @@ Return-Path: <SRS0=Z2Zk=ID=vger.kernel.org=keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-3.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
-	autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CA214C433E6
-	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 19:47:53 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 804EBC433E0
+	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 21:00:54 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8800A650A9
-	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 19:47:53 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 5620965085
+	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 21:00:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229805AbhCETrS (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 5 Mar 2021 14:47:18 -0500
-Received: from vmicros1.altlinux.org ([194.107.17.57]:51486 "EHLO
-        vmicros1.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229719AbhCETqm (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 5 Mar 2021 14:46:42 -0500
-Received: from imap.altlinux.org (imap.altlinux.org [194.107.17.38])
-        by vmicros1.altlinux.org (Postfix) with ESMTP id 5F25A72C8B8;
-        Fri,  5 Mar 2021 22:46:40 +0300 (MSK)
-Received: from altlinux.org (sole.flsd.net [185.75.180.6])
-        by imap.altlinux.org (Postfix) with ESMTPSA id 490AE4A4737;
-        Fri,  5 Mar 2021 22:46:40 +0300 (MSK)
-Date:   Fri, 5 Mar 2021 22:46:40 +0300
-From:   Vitaly Chikunov <vt@altlinux.org>
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
+        id S229791AbhCEVAV (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 5 Mar 2021 16:00:21 -0500
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:49368 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S229563AbhCEVAL (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 5 Mar 2021 16:00:11 -0500
+Received: from pps.filterd (m0098399.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 125Kd2fm088864;
+        Fri, 5 Mar 2021 16:00:04 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
+ : date : message-id : in-reply-to : references : mime-version :
+ content-transfer-encoding; s=pp1;
+ bh=niAyQwmdKx6f0YB7Kpf/eHYKGfKhTDz1oiuvJUn7NaY=;
+ b=shGO8Qqnq291otYEF7U72qTrPIH9a+L/ThsgIBp5tFMmgt5Nj7s+lZN9u0WYLYTlCMBl
+ Z1o4Hl0Db8Av4XIv+C5jNnQn0CcxFyCGAj/otUwIu795H9zt5dpw6Gtf+OcSYSN1M1oj
+ X0e71dHw/Wbfd/czQKZ5tdviQ7xd4uKJAwC+6j8hX6Oa3NwrluYLrdW+l1LTpJC0HHGH
+ FvQ9076bVmPyLfe1n8PCTyr6NZ144jyNS4g3+UUGiz9iLFd6EwkdJy5eq3dAFVzH4sNP
+ NcfNh4m/BMRpokzovP5Mca9RQaZvvsFE/M6QFgaxpCHsHlhbEFLcho+l79AN/1Mjgxqg vQ== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 373tntt4mp-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 05 Mar 2021 16:00:04 -0500
+Received: from m0098399.ppops.net (m0098399.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 125Kd9mv089427;
+        Fri, 5 Mar 2021 16:00:03 -0500
+Received: from ppma02wdc.us.ibm.com (aa.5b.37a9.ip4.static.sl-reverse.com [169.55.91.170])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 373tntt4ky-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 05 Mar 2021 16:00:03 -0500
+Received: from pps.filterd (ppma02wdc.us.ibm.com [127.0.0.1])
+        by ppma02wdc.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 125KrJAQ001883;
+        Fri, 5 Mar 2021 21:00:02 GMT
+Received: from b03cxnp07028.gho.boulder.ibm.com (b03cxnp07028.gho.boulder.ibm.com [9.17.130.15])
+        by ppma02wdc.us.ibm.com with ESMTP id 3711dxjqd5-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 05 Mar 2021 21:00:02 +0000
+Received: from b03ledav005.gho.boulder.ibm.com (b03ledav005.gho.boulder.ibm.com [9.17.130.236])
+        by b03cxnp07028.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 125L01Bq17695006
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Fri, 5 Mar 2021 21:00:01 GMT
+Received: from b03ledav005.gho.boulder.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id EF8F9BE056;
+        Fri,  5 Mar 2021 21:00:00 +0000 (GMT)
+Received: from b03ledav005.gho.boulder.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 2C478BE054;
+        Fri,  5 Mar 2021 21:00:00 +0000 (GMT)
+Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
+        by b03ledav005.gho.boulder.ibm.com (Postfix) with ESMTP;
+        Fri,  5 Mar 2021 21:00:00 +0000 (GMT)
+From:   Stefan Berger <stefanb@linux.vnet.ibm.com>
+To:     keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
         davem@davemloft.net, herbert@gondor.apana.org.au,
-        dhowells@redhat.com, zohar@linux.ibm.com,
-        linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
+        dhowells@redhat.com, zohar@linux.ibm.com, jarkko@kernel.org
+Cc:     linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
         linux-integrity@vger.kernel.org,
         Stefan Berger <stefanb@linux.ibm.com>
-Subject: Re: [PATCH v10 1/9] crypto: Add support for ECDSA signature
- verification
-Message-ID: <20210305194640.nnerhdadoczqyta3@altlinux.org>
-References: <20210305005203.3547587-1-stefanb@linux.vnet.ibm.com>
- <20210305005203.3547587-2-stefanb@linux.vnet.ibm.com>
- <YEJk44FXEl0+mEPr@kernel.org>
+Subject: [PATCH v11 01/10] oid_registry: Add OIDs for ECDSA with sha224/256/384/512
+Date:   Fri,  5 Mar 2021 15:59:47 -0500
+Message-Id: <20210305205956.3594375-2-stefanb@linux.vnet.ibm.com>
+X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20210305205956.3594375-1-stefanb@linux.vnet.ibm.com>
+References: <20210305205956.3594375-1-stefanb@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <YEJk44FXEl0+mEPr@kernel.org>
+X-TM-AS-GCONF: 00
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.761
+ definitions=2021-03-05_14:2021-03-03,2021-03-05 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 clxscore=1011
+ priorityscore=1501 malwarescore=0 spamscore=0 bulkscore=0 impostorscore=0
+ mlxscore=0 suspectscore=0 mlxlogscore=934 phishscore=0 adultscore=0
+ lowpriorityscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2009150000 definitions=main-2103050103
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Jarkko,
+From: Stefan Berger <stefanb@linux.ibm.com>
 
-On Fri, Mar 05, 2021 at 07:05:39PM +0200, Jarkko Sakkinen wrote:
-> > +// SPDX-License-Identifier: GPL-2.0+
-> > +/*
-> > + * Copyright (c) 2021 IBM Corporation
-> > + *
-> > + * Redistribution and use in source and binary forms, with or without
-> > + * modification, are permitted provided that the following conditions are
-> > + * met:
-> > + *  * Redistributions of source code must retain the above copyright
-> > + *   notice, this list of conditions and the following disclaimer.
-> > + *  * Redistributions in binary form must reproduce the above copyright
-> > + *    notice, this list of conditions and the following disclaimer in the
-> > + *    documentation and/or other materials provided with the distribution.
-> > + *
-> > + * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-> > + * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-> > + * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-> > + * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-> > + * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-> > + * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-> > + * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-> > + * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-> > + * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-> > + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-> > + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-> > + */
-> 
-> This license platter is redundant, given SPDX.
+Add OIDs for ECDSA with sha224/256/384/512.
 
-I think SPDX identifier supplements license plate and is machine readable
-identifier, but it does not replace or making adding of license plate
-redundant.
+Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+---
+ include/linux/oid_registry.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-- Quoting https://spdx.dev/ids/
-
-  "When a license defines a recommended notice to attach to files under
-  that license (sometimes called a “standard header”), the SPDX project
-  recommends that the standard header be included in the files, in
-  addition to an SPDX ID.
-
-  Additionally, when a file already contains a standard header or other
-  license notice, the SPDX project recommends that those existing
-  notices should not be removed. The SPDX ID is recommended to be used
-  to supplement, not replace, existing notices in files."
-
-- GPL license text have section on "How to Apply These Terms to Your New
-  Programs" which says to add license boilerplate text and it does not
-  say SPDX identifier is enough.
-
-- Also, page https://www.kernel.org/doc/html/latest/process/license-rules.html
-  does not forbid adding license plate text. (Even though it misguidedly
-  says "alternative to boilerplate text" is the use of SPDX.)
-
-- License text is a readable text and not just identifier.
-  I think SPDX tag could be not legally binding in all jurisdictions.
-
-By there reasons I believe you cannot request removing license platter
-from the source and this should be author's decision.
-
-Thanks,
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index 4462ed2c18cd..b504e2f36b25 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -19,8 +19,12 @@
+ enum OID {
+ 	OID_id_dsa_with_sha1,		/* 1.2.840.10030.4.3 */
+ 	OID_id_dsa,			/* 1.2.840.10040.4.1 */
+-	OID_id_ecdsa_with_sha1,		/* 1.2.840.10045.4.1 */
+ 	OID_id_ecPublicKey,		/* 1.2.840.10045.2.1 */
++	OID_id_ecdsa_with_sha1,		/* 1.2.840.10045.4.1 */
++	OID_id_ecdsa_with_sha224,	/* 1.2.840.10045.4.3.1 */
++	OID_id_ecdsa_with_sha256,	/* 1.2.840.10045.4.3.2 */
++	OID_id_ecdsa_with_sha384,	/* 1.2.840.10045.4.3.3 */
++	OID_id_ecdsa_with_sha512,	/* 1.2.840.10045.4.3.4 */
+ 
+ 	/* PKCS#1 {iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs-1(1)} */
+ 	OID_rsaEncryption,		/* 1.2.840.113549.1.1.1 */
+-- 
+2.29.2
 
