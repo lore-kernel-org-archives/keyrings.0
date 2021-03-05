@@ -2,145 +2,76 @@ Return-Path: <SRS0=Z2Zk=ID=vger.kernel.org=keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.8 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BCF99C433E0
-	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 21:01:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2F111C433E6
+	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 21:51:20 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 87D67650A4
-	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 21:01:25 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E9108650AA
+	for <keyrings@archiver.kernel.org>; Fri,  5 Mar 2021 21:51:19 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230148AbhCEVAy (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 5 Mar 2021 16:00:54 -0500
-Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:64146 "EHLO
-        mx0b-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S229651AbhCEVAV (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 5 Mar 2021 16:00:21 -0500
-Received: from pps.filterd (m0098417.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 125KXLkM182717;
-        Fri, 5 Mar 2021 16:00:12 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=fiZsSRFRiO57Q/ctX3IRQ7U1I0yk/Kl43WdugbbhNts=;
- b=s4JUuqhZ52rROvXmYWHv35ke54KHCQagPEaosLZyBeNRZJ+lKYSnSFbkIerKvIqny1XA
- NT+cApoYyFQmYdneIjTmgiNchk4l4tl9jJdTRzY8oJxa/c034fLTKxq8Cod93nBg4U+p
- QeGpWG2WsalzQRn6KgZyyZwHG69aStvj09gj6WPeOq0eK/EUYLc8uQ9g3KwLYeaziJiu
- GsJZ8tiHADLHj2WoRSk/FMpCO/wqgyoTzucMkjmoksifSWSziPTHqM8ah1sdfeO2vpoF
- s3owc/gNEzZF5+XwqEtu/aGPxckANunHqvJrAD7Wa1uky+RNLZW4wGEzBysTUHBFh/yG hA== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 373usj0h0c-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 05 Mar 2021 16:00:12 -0500
-Received: from m0098417.ppops.net (m0098417.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 125KYCOa184670;
-        Fri, 5 Mar 2021 16:00:11 -0500
-Received: from ppma02dal.us.ibm.com (a.bd.3ea9.ip4.static.sl-reverse.com [169.62.189.10])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 373usj0gyg-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 05 Mar 2021 16:00:11 -0500
-Received: from pps.filterd (ppma02dal.us.ibm.com [127.0.0.1])
-        by ppma02dal.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 125KqhX2014298;
-        Fri, 5 Mar 2021 21:00:10 GMT
-Received: from b03cxnp07028.gho.boulder.ibm.com (b03cxnp07028.gho.boulder.ibm.com [9.17.130.15])
-        by ppma02dal.us.ibm.com with ESMTP id 3710srkqs1-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 05 Mar 2021 21:00:10 +0000
-Received: from b03ledav005.gho.boulder.ibm.com (b03ledav005.gho.boulder.ibm.com [9.17.130.236])
-        by b03cxnp07028.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 125L08Y828443120
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 5 Mar 2021 21:00:08 GMT
-Received: from b03ledav005.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 72345BE061;
-        Fri,  5 Mar 2021 21:00:08 +0000 (GMT)
-Received: from b03ledav005.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id AA2D5BE05D;
-        Fri,  5 Mar 2021 21:00:07 +0000 (GMT)
-Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
-        by b03ledav005.gho.boulder.ibm.com (Postfix) with ESMTP;
-        Fri,  5 Mar 2021 21:00:07 +0000 (GMT)
-From:   Stefan Berger <stefanb@linux.vnet.ibm.com>
-To:     keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, herbert@gondor.apana.org.au,
-        dhowells@redhat.com, zohar@linux.ibm.com, jarkko@kernel.org
-Cc:     linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
-        linux-integrity@vger.kernel.org,
-        Saulo Alessandre <saulo.alessandre@tse.jus.br>,
-        Stefan Berger <stefanb@linux.ibm.com>
-Subject: [PATCH v11 09/10] x509: Add OID for NIST P384 and extend parser for it
-Date:   Fri,  5 Mar 2021 15:59:55 -0500
-Message-Id: <20210305205956.3594375-10-stefanb@linux.vnet.ibm.com>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20210305205956.3594375-1-stefanb@linux.vnet.ibm.com>
-References: <20210305205956.3594375-1-stefanb@linux.vnet.ibm.com>
+        id S229779AbhCEVur (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 5 Mar 2021 16:50:47 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:49810 "EHLO
+        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S229729AbhCEVul (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 5 Mar 2021 16:50:41 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1614981040;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         in-reply-to:in-reply-to:references:references;
+        bh=gTv8VYcMT5gsPp7Ebk9ro0Z4xDvHuCrUQDCBU9X5YWQ=;
+        b=bhK9GfQJyDC36Op+M7/5emT8dvPZZy+G41QwNYXmTFDrPnfB6d93sXQtSppOq5qGKK2yyb
+        dKaIzE8NbPmXhZUwF/YYPYnUBJX61G1ebibXIuK5kYhZ78JqTG4yf6h9zlEpvWZMiaU2gL
+        Gj7PBhotuMbwAMgVbrOrur6iQrwVKhg=
+Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
+ [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
+ us-mta-374-g3SalbxcO4qvSFUkCqJ8dQ-1; Fri, 05 Mar 2021 16:50:39 -0500
+X-MC-Unique: g3SalbxcO4qvSFUkCqJ8dQ-1
+Received: from smtp.corp.redhat.com (int-mx01.intmail.prod.int.phx2.redhat.com [10.5.11.11])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id B62C226863;
+        Fri,  5 Mar 2021 21:50:37 +0000 (UTC)
+Received: from warthog.procyon.org.uk (ovpn-112-46.rdu2.redhat.com [10.10.112.46])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 3D2B119CA8;
+        Fri,  5 Mar 2021 21:50:33 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+In-Reply-To: <20210304175030.184131-1-eric.snowberg@oracle.com>
+References: <20210304175030.184131-1-eric.snowberg@oracle.com>
+To:     Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     dhowells@redhat.com, rdunlap@infradead.org, jarkko@kernel.org,
+        nathan@kernel.org, dwmw2@infradead.org, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] certs: Fix wrong kconfig option used for x509_revocation_list
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.761
- definitions=2021-03-05_14:2021-03-03,2021-03-05 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 suspectscore=0 adultscore=0
- mlxscore=0 clxscore=1015 spamscore=0 impostorscore=0 malwarescore=0
- lowpriorityscore=0 phishscore=0 priorityscore=1501 mlxlogscore=999
- bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2009150000 definitions=main-2103050103
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <147603.1614981032.1@warthog.procyon.org.uk>
+Date:   Fri, 05 Mar 2021 21:50:32 +0000
+Message-ID: <147604.1614981032@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.11
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Saulo Alessandre <saulo.alessandre@tse.jus.br>
+Eric Snowberg <eric.snowberg@oracle.com> wrote:
 
-Prepare the x509 parser to accept NIST P384 certificates and add the
-OID for ansip384r1, which is the identifier for NIST P384.
+> @@ -11,7 +11,7 @@ hostprogs-always-$(CONFIG_ASN1)				+= asn1_compiler
+>  hostprogs-always-$(CONFIG_MODULE_SIG_FORMAT)		+= sign-file
+>  hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)	+= extract-cert
+>  hostprogs-always-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE)	+= insert-sys-cert
+> - hostprogs-always-$(CONFIG_SYSTEM_BLACKLIST_KEYRING)	+= extract-cert
+> +hostprogs-always-$(CONFIG_SYSTEM_REVOCATION_LIST)	+= extract-cert
 
-Summary of changes:
+Hmmm...  We have extract-cert listed twice.  Does that matter, I wonder?
 
-* crypto/asymmetric_keys/x509_cert_parser.c
-  - prepare x509 parser to load NIST P384
-
-* include/linux/oid_registry.h
-  - add OID_ansip384r1
-
-Signed-off-by: Saulo Alessandre <saulo.alessandre@tse.jus.br>
-Tested-by: Stefan Berger <stefanb@linux.ibm.com>
-
----
-
-v10->v11:
- - renamed OID_id_secp384r1 to OID_id_ansip384r1 (spec name)
----
- crypto/asymmetric_keys/x509_cert_parser.c | 3 +++
- include/linux/oid_registry.h              | 1 +
- 2 files changed, 4 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index f5d547c6dfb5..6d003096b5bc 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -510,6 +510,9 @@ int x509_extract_key_data(void *context, size_t hdrlen,
- 		case OID_id_prime256v1:
- 			ctx->cert->pub->pkey_algo = "ecdsa-nist-p256";
- 			break;
-+		case OID_id_ansip384r1:
-+			ctx->cert->pub->pkey_algo = "ecdsa-nist-p384";
-+			break;
- 		default:
- 			return -ENOPKG;
- 		}
-diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
-index 3583908cf1ca..cc64d9419746 100644
---- a/include/linux/oid_registry.h
-+++ b/include/linux/oid_registry.h
-@@ -64,6 +64,7 @@ enum OID {
- 
- 	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
- 	OID_sha1,			/* 1.3.14.3.2.26 */
-+	OID_id_ansip384r1,		/* 1.3.132.0.34 */
- 	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
- 	OID_sha384,			/* 2.16.840.1.101.3.4.2.2 */
- 	OID_sha512,			/* 2.16.840.1.101.3.4.2.3 */
--- 
-2.29.2
+David
 
