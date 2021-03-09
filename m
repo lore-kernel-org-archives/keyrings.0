@@ -5,56 +5,56 @@ X-Spam-Level:
 X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 42D5AC433E6
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 80FD9C43381
 	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 09:12:27 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 14F8965126
+	by mail.kernel.org (Postfix) with ESMTP id 40F1C65134
 	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 09:12:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229904AbhCIJLx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Mar 2021 04:11:53 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46022 "EHLO
+        id S230052AbhCIJL4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Mar 2021 04:11:56 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46074 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229813AbhCIJLV (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 04:11:21 -0500
-Received: from mail-pj1-x102c.google.com (mail-pj1-x102c.google.com [IPv6:2607:f8b0:4864:20::102c])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 70620C06174A;
-        Tue,  9 Mar 2021 01:11:21 -0800 (PST)
-Received: by mail-pj1-x102c.google.com with SMTP id kx1so556394pjb.3;
-        Tue, 09 Mar 2021 01:11:21 -0800 (PST)
+        with ESMTP id S230045AbhCIJLc (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 04:11:32 -0500
+Received: from mail-pg1-x530.google.com (mail-pg1-x530.google.com [IPv6:2607:f8b0:4864:20::530])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 846D0C06174A;
+        Tue,  9 Mar 2021 01:11:32 -0800 (PST)
+Received: by mail-pg1-x530.google.com with SMTP id p21so8346235pgl.12;
+        Tue, 09 Mar 2021 01:11:32 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=gmail.com; s=20161025;
         h=from:to:cc:subject:date:message-id:in-reply-to:references;
-        bh=7xtegNsLq1BrppoFpeV19FwALB/ET7XzOcPVqqrlNjU=;
-        b=edDsIgGGJzTETG5MBhlGenarTsbp6v55Ik8a6T3Utl3BDh5aF9FFvIVTodD1WUcNUc
-         v0rtGy5FhpIiuIjcHTL4CR9Pb9HkEpTHAKRY3j7l/Tytrpga3W7qOqqgoKjaTcyMxcHF
-         8q34HXMg9nkLEWllH15TURJvWG2/N8kHvoCkr7HboMb9NDcOhiUFHz5cKl9/Uhm8CWwz
-         cmP52D+iccP0+BJAHwiYSWAGIdq4LboV3zRbqQA0wMblG7nkoOKFMLnSke415uCFAShy
-         Z/2jXfbchETOYp4MB7gwqZ1aWzXl3YSfU4InKQe2kn/g/viCYYoT1kcOOs2fksPhZ90L
-         fQ/w==
+        bh=wB1I6Nqq7AfdRuGhioLL2RWvT/EvSUrtBmeOoGNpC4c=;
+        b=e6FOS+NacLfH/xWKXxkeAAl8YYsBU2mL4UMX6ikAkgoSs8yPJVmUIHx4/QxTYE7fw0
+         w1ZHyv2GTZ/sZH0ktGLEAcY9a6ElhPgegk3vcOiSJ59PQbnGcuBEFKe6ix5bDKH60vTd
+         ohs2TH4haNKwYDw8GY3L6JlMx2FWPsr52kbeGiLqCmYqEL/tp+s3Bpyh9FblH9Ba6dKs
+         lEcuLqrhCNP20MShXa2M3UJkt387aYsqSMbnTFOQv8I4leMji6uZ/F5vPbZ8P7XG0qf5
+         nDMdjI6r3ElkvoHfOay4uOTrV+d41TqT/cdppn1HaCzE5kO+KET84M7lFqb0X0/pCkdh
+         e9yA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
         h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
          :references;
-        bh=7xtegNsLq1BrppoFpeV19FwALB/ET7XzOcPVqqrlNjU=;
-        b=UuT9MWw8QBGfP+2ateosbEaMIaB9JqGLTPiUJgwE7I49UYRApvAeYyZtwcz5+JPO5u
-         EkxoQeNfuI4SNQJrqvGFJ/BqrrLNRaPZovGC3kKyQeZyoy/cW5hvbd6jC9J6UY4TNvWm
-         QgJVEgnB+ZNfRM4ST88d7idiDnGJo6lAETUzVQA5MnfcGUcFlGnPP+MslF+ijD/QS4Yx
-         l5/iK5xYuRnT1ORFvJr2MyL+/kRruEPp4Ue1t8a0Xe7kr8oV8+KKzHaryJVpynZc6Vju
-         n1GD329MgiV9B0CbyYO9blVIBrDNyqLbiRn+yAea9fDeDVDYhvG7Eai+ReN6PhfnNgSo
-         Vpxg==
-X-Gm-Message-State: AOAM530ABkdaTbkaur1RlW76hR7wtOVmkVSpv3M27wVhF1l8MdvuRe7m
-        FTjGCib2VYddzIeDnY4dLPs=
-X-Google-Smtp-Source: ABdhPJz5Zk98uMK/QSb8hOiSSb/CJitpngt7KOMr9B6PX7v7JGnKKl/S2Hqi/4nyxmbVn0UWPLXMfA==
-X-Received: by 2002:a17:90a:6282:: with SMTP id d2mr3530298pjj.168.1615281081061;
-        Tue, 09 Mar 2021 01:11:21 -0800 (PST)
+        bh=wB1I6Nqq7AfdRuGhioLL2RWvT/EvSUrtBmeOoGNpC4c=;
+        b=aqn6uIwCULQHA4eeUsSf0Yzbh95pNyTABmcMFNW9y1TDsZA4lo4nABTTcpDL7242ar
+         i9q32839fBhhElCQ+YYFxwQdKMDk1aDJ0Jg5PXWh6l85xwruqC4g8ep9HCO6tYJqWNDg
+         o/c3942p+bh0EYXWSYFPE1DWAls9kS6Ej+Bz3ZnhMLWdwX8KCrjRST+hCXEqPYzJNMSV
+         XGcsiuqV/WtSVFBYS0dcY2FNf9PwO1Yp/mHSMfAP+MJ6IyBVpkUwjLKrR4m54xrtFmzH
+         bbzd3PFqi41gJeYq2gxloSuJn/thK7buf3ZXmYfzdogp07vL9rSfIeLm+Pdq+sWdu+jE
+         ca+Q==
+X-Gm-Message-State: AOAM530MFH+ZI9WPCasY6G7wkwgiznCgQmCxav0iVhfoMurWXjDaxgnh
+        j6Yt5JJHsdtML1diiAUc/Bw=
+X-Google-Smtp-Source: ABdhPJy79MblW78n0Euz3R9cSKXRk+Qbo1KkS1pr1AsyVwJFY6AjUqYDYZLO4jOyJPm0b9F9vDFHYw==
+X-Received: by 2002:a63:c0a:: with SMTP id b10mr24874934pgl.251.1615281092137;
+        Tue, 09 Mar 2021 01:11:32 -0800 (PST)
 Received: from linux-l9pv.suse ([124.11.22.254])
-        by smtp.gmail.com with ESMTPSA id js16sm2094860pjb.21.2021.03.09.01.11.19
+        by smtp.gmail.com with ESMTPSA id js16sm2094860pjb.21.2021.03.09.01.11.30
         (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
-        Tue, 09 Mar 2021 01:11:20 -0800 (PST)
+        Tue, 09 Mar 2021 01:11:31 -0800 (PST)
 From:   "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 X-Google-Original-From: "Lee, Chun-Yi" <jlee@suse.com>
 To:     David Howells <dhowells@redhat.com>
@@ -65,9 +65,9 @@ Cc:     Herbert Xu <herbert@gondor.apana.org.au>,
         Malte Gell <malte.gell@gmx.de>, keyrings@vger.kernel.org,
         linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH 1/4] X.509: Add CodeSigning extended key usage parsing
-Date:   Tue,  9 Mar 2021 17:10:41 +0800
-Message-Id: <20210309091044.2298-2-jlee@suse.com>
+Subject: [PATCH 4/4] Documentation/admin-guide/module-signing.rst: add openssl command option example for CodeSign EKU
+Date:   Tue,  9 Mar 2021 17:10:44 +0800
+Message-Id: <20210309091044.2298-5-jlee@suse.com>
 X-Mailer: git-send-email 2.12.3
 In-Reply-To: <20210309091044.2298-1-jlee@suse.com>
 References: <20210309091044.2298-1-jlee@suse.com>
@@ -75,91 +75,31 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch adds the logic for parsing the CodeSign extended key usage
-extension in X.509. The parsing result will be set to the eku flag
-which is carried by public key. It can be used in the PKCS#7
-verification.
+Add an openssl command option example for generating CodeSign extended
+key usage in X.509 when CONFIG_CHECK_CODESIGN_EKU is enabled.
 
 Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
 ---
- crypto/asymmetric_keys/x509_cert_parser.c | 24 ++++++++++++++++++++++++
- include/crypto/public_key.h               |  1 +
- include/linux/oid_registry.h              |  5 +++++
- 3 files changed, 30 insertions(+)
+ Documentation/admin-guide/module-signing.rst | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 52c9b455fc7d..65721313b265 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -497,6 +497,8 @@ int x509_process_extension(void *context, size_t hdrlen,
- 	struct x509_parse_context *ctx = context;
- 	struct asymmetric_key_id *kid;
- 	const unsigned char *v = value;
-+	int i = 0;
-+	enum OID oid;
+diff --git a/Documentation/admin-guide/module-signing.rst b/Documentation/admin-guide/module-signing.rst
+index 7d7c7c8a545c..ca3b8f19466c 100644
+--- a/Documentation/admin-guide/module-signing.rst
++++ b/Documentation/admin-guide/module-signing.rst
+@@ -170,6 +170,12 @@ generate the public/private key files::
+ 	   -config x509.genkey -outform PEM -out kernel_key.pem \
+ 	   -keyout kernel_key.pem
  
- 	pr_debug("Extension: %u\n", ctx->last_oid);
- 
-@@ -526,6 +528,28 @@ int x509_process_extension(void *context, size_t hdrlen,
- 		return 0;
- 	}
- 
-+	if (ctx->last_oid == OID_extKeyUsage) {
-+		if (v[0] != ((ASN1_UNIV << 6) | ASN1_CONS_BIT | ASN1_SEQ) ||
-+		    v[1] != vlen - 2)
-+			return -EBADMSG;
-+		i += 2;
++When ``CONFIG_CHECK_CODESIGN_EKU`` option is enabled, the following openssl
++command option should be added where for generating CodeSign extended key usage
++in X.509::
 +
-+		while (i < vlen) {
-+			/* A 10 bytes EKU OID Octet blob =
-+			 * ASN1_OID + size byte + 8 bytes OID */
-+			if (v[i] != ASN1_OID || v[i + 1] != 8 || (i + 10) > vlen)
-+				return -EBADMSG;
++        -addext "extendedKeyUsage=codeSigning"
 +
-+			oid = look_up_OID(v + i + 2, v[i + 1]);
-+			if (oid == OID_codeSigning) {
-+				ctx->cert->pub->eku |= EKU_codeSigning;
-+			}
-+			i += 10;
-+		}
-+		pr_debug("extKeyUsage: %d\n", ctx->cert->pub->eku);
-+		return 0;
-+	}
-+
- 	return 0;
- }
- 
-diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index 47accec68cb0..1ccaebe2a28b 100644
---- a/include/crypto/public_key.h
-+++ b/include/crypto/public_key.h
-@@ -28,6 +28,7 @@ struct public_key {
- 	bool key_is_private;
- 	const char *id_type;
- 	const char *pkey_algo;
-+	unsigned int eku : 9;      /* Extended Key Usage (9-bit) */
- };
- 
- extern void public_key_free(struct public_key *key);
-diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
-index 4462ed2c18cd..e20e8eb53b21 100644
---- a/include/linux/oid_registry.h
-+++ b/include/linux/oid_registry.h
-@@ -113,9 +113,14 @@ enum OID {
- 	OID_SM2_with_SM3,		/* 1.2.156.10197.1.501 */
- 	OID_sm3WithRSAEncryption,	/* 1.2.156.10197.1.504 */
- 
-+	/* Extended key purpose OIDs [RFC 5280] */
-+	OID_codeSigning,		/* 1.3.6.1.5.5.7.3.3 */
-+
- 	OID__NR
- };
- 
-+#define EKU_codeSigning	(1 << 2)
-+
- extern enum OID look_up_OID(const void *data, size_t datasize);
- extern int sprint_oid(const void *, size_t, char *, size_t);
- extern int sprint_OID(enum OID, char *, size_t);
+ The full pathname for the resulting kernel_key.pem file can then be specified
+ in the ``CONFIG_MODULE_SIG_KEY`` option, and the certificate and key therein will
+ be used instead of an autogenerated keypair.
 -- 
 2.16.4
 
