@@ -7,253 +7,128 @@ X-Spam-Status: No, score=-16.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C37CBC4332D
-	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 13:21:59 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 51814C4321A
+	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 13:22:00 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 9C703650DC
-	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 13:21:59 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2D8F864EBB
+	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 13:22:00 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231359AbhCINVa (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Mar 2021 08:21:30 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:41298 "EHLO
+        id S231397AbhCINVd (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Mar 2021 08:21:33 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:52168 "EHLO
         us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S231304AbhCINVF (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 08:21:05 -0500
+        by vger.kernel.org with ESMTP id S231358AbhCINVV (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 08:21:21 -0500
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1615296065;
+        s=mimecast20190719; t=1615296080;
         h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
          to:to:cc:cc:mime-version:mime-version:content-type:content-type:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=GOx9vcuQlJdenHGKhCAwQ2lNLGlZPZhdSztRH2hfQ4o=;
-        b=UFBMGdbHeTPdR8rsx/g/nnDW++4Mntj8s1LlpjtHOUaDUA9FE7fkBJgbHCOuF5PRfxkNEV
-        AV8G6nRWFYApKyq0CC6lSIR8Jwd1/uHUpOaxEVOBga1obnX1tI8gVQfXadCFplU/0povhJ
-        Kl3W3wnCXwJhuQONEMQ2HJ6FigDicqU=
+        bh=CEm+z0J80FwRzKm4ZgJ4wMa9yHtW6K/S9JzBKuRxp+8=;
+        b=Nx4k/3QVnhnS5Z8gyKOSedpLbvUtaX7FoTluxQP7s/DclQVdoiavVgfm0/kIGLyWOyrrC2
+        yM0aXvY3AFZN9tigAOyTvTmuPawdA8e6xfbMaVvPu1TsJWyScd40byWJpSfxppN5lpUKWl
+        aua9KsdZRkH0YSLDlqWnXTb0gfzY2cw=
 Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
  [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-568-MphrHMeDNr2OheUVK2yaow-1; Tue, 09 Mar 2021 08:21:02 -0500
-X-MC-Unique: MphrHMeDNr2OheUVK2yaow-1
-Received: from smtp.corp.redhat.com (int-mx06.intmail.prod.int.phx2.redhat.com [10.5.11.16])
+ us-mta-135-hbYGuUPQOrCAwoBqYriWnA-1; Tue, 09 Mar 2021 08:21:18 -0500
+X-MC-Unique: hbYGuUPQOrCAwoBqYriWnA-1
+Received: from smtp.corp.redhat.com (int-mx07.intmail.prod.int.phx2.redhat.com [10.5.11.22])
         (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 5C1E71084D68;
-        Tue,  9 Mar 2021 13:21:01 +0000 (UTC)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id C8959801503;
+        Tue,  9 Mar 2021 13:21:16 +0000 (UTC)
 Received: from warthog.procyon.org.uk (ovpn-118-152.rdu2.redhat.com [10.10.118.152])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 461385C233;
-        Tue,  9 Mar 2021 13:20:59 +0000 (UTC)
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 3CEAA10016F9;
+        Tue,  9 Mar 2021 13:21:15 +0000 (UTC)
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
         Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
         Kingdom.
         Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH v3 2/4] certs: Move load_system_certificate_list to a common
- function
+Subject: [PATCH v3 4/4] integrity: Load mokx variables into the blacklist
+ keyring
 From:   David Howells <dhowells@redhat.com>
 To:     Eric Snowberg <eric.snowberg@oracle.com>
-Cc:     Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        keyrings@vger.kernel.org, dhowells@redhat.com,
-        Jarkko Sakkinen <jarkko@kernel.org>,
+Cc:     James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+        dhowells@redhat.com, Jarkko Sakkinen <jarkko@kernel.org>,
         =?utf-8?q?Micka=C3=ABl_Sala=C3=BCn?= <mic@digikod.net>,
         keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date:   Tue, 09 Mar 2021 13:20:58 +0000
-Message-ID: <161529605850.163428.7786675680201528556.stgit@warthog.procyon.org.uk>
+Date:   Tue, 09 Mar 2021 13:21:14 +0000
+Message-ID: <161529607422.163428.13530426573612578854.stgit@warthog.procyon.org.uk>
 In-Reply-To: <161529604216.163428.4905283330048991183.stgit@warthog.procyon.org.uk>
 References: <161529604216.163428.4905283330048991183.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.23
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Scanned-By: MIMEDefang 2.79 on 10.5.11.16
+X-Scanned-By: MIMEDefang 2.84 on 10.5.11.22
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
 From: Eric Snowberg <eric.snowberg@oracle.com>
 
-Move functionality within load_system_certificate_list to a common
-function, so it can be reused in the future.
+During boot the Secure Boot Forbidden Signature Database, dbx,
+is loaded into the blacklist keyring.  Systems booted with shim
+have an equivalent Forbidden Signature Database called mokx.
+Currently mokx is only used by shim and grub, the contents are
+ignored by the kernel.
 
-DH Changes:
- - Added inclusion of common.h to common.c (Eric [1]).
+Add the ability to load mokx into the blacklist keyring during boot.
 
 Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
-Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Suggested-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 cc: keyrings@vger.kernel.org
-Link: https://lore.kernel.org/r/20200930201508.35113-2-eric.snowberg@oracle.com/
-Link: https://lore.kernel.org/r/20210122181054.32635-3-eric.snowberg@oracle.com/ # v5
-Link: https://lore.kernel.org/r/EDA280F9-F72D-4181-93C7-CDBE95976FF7@oracle.com/ [1]
-Link: https://lore.kernel.org/r/161428672825.677100.7545516389752262918.stgit@warthog.procyon.org.uk/
-Link: https://lore.kernel.org/r/161433311696.902181.3599366124784670368.stgit@warthog.procyon.org.uk/ # v2
+Link: https://lore.kernel.org/r/20210122181054.32635-5-eric.snowberg@oracle.com/ # v5
+Link: https://lore.kernel.org/r/c33c8e3839a41e9654f41cc92c7231104931b1d7.camel@HansenPartnership.com/
+Link: https://lore.kernel.org/r/161428674320.677100.12637282414018170743.stgit@warthog.procyon.org.uk/
+Link: https://lore.kernel.org/r/161433313205.902181.2502803393898221637.stgit@warthog.procyon.org.uk/ # v2
 ---
 
- certs/Makefile         |    2 +-
- certs/common.c         |   57 ++++++++++++++++++++++++++++++++++++++++++++++++
- certs/common.h         |    9 ++++++++
- certs/system_keyring.c |   49 +++--------------------------------------
- 4 files changed, 70 insertions(+), 47 deletions(-)
- create mode 100644 certs/common.c
- create mode 100644 certs/common.h
+ security/integrity/platform_certs/load_uefi.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/certs/Makefile b/certs/Makefile
-index f4c25b67aad9..f4b90bad8690 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -3,7 +3,7 @@
- # Makefile for the linux kernel signature checking certificates.
- #
+diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
+index ee4b4c666854..f290f78c3f30 100644
+--- a/security/integrity/platform_certs/load_uefi.c
++++ b/security/integrity/platform_certs/load_uefi.c
+@@ -132,8 +132,9 @@ static int __init load_moklist_certs(void)
+ static int __init load_uefi_certs(void)
+ {
+ 	efi_guid_t secure_var = EFI_IMAGE_SECURITY_DATABASE_GUID;
+-	void *db = NULL, *dbx = NULL;
+-	unsigned long dbsize = 0, dbxsize = 0;
++	efi_guid_t mok_var = EFI_SHIM_LOCK_GUID;
++	void *db = NULL, *dbx = NULL, *mokx = NULL;
++	unsigned long dbsize = 0, dbxsize = 0, mokxsize = 0;
+ 	efi_status_t status;
+ 	int rc = 0;
  
--obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o
-+obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o common.o
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o
- ifneq ($(CONFIG_SYSTEM_BLACKLIST_HASH_LIST),"")
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_hashes.o
-diff --git a/certs/common.c b/certs/common.c
-new file mode 100644
-index 000000000000..16a220887a53
---- /dev/null
-+++ b/certs/common.c
-@@ -0,0 +1,57 @@
-+// SPDX-License-Identifier: GPL-2.0-or-later
-+
-+#include <linux/kernel.h>
-+#include <linux/key.h>
-+#include "common.h"
-+
-+int load_certificate_list(const u8 cert_list[],
-+			  const unsigned long list_size,
-+			  const struct key *keyring)
-+{
-+	key_ref_t key;
-+	const u8 *p, *end;
-+	size_t plen;
-+
-+	p = cert_list;
-+	end = p + list_size;
-+	while (p < end) {
-+		/* Each cert begins with an ASN.1 SEQUENCE tag and must be more
-+		 * than 256 bytes in size.
-+		 */
-+		if (end - p < 4)
-+			goto dodgy_cert;
-+		if (p[0] != 0x30 &&
-+		    p[1] != 0x82)
-+			goto dodgy_cert;
-+		plen = (p[2] << 8) | p[3];
-+		plen += 4;
-+		if (plen > end - p)
-+			goto dodgy_cert;
-+
-+		key = key_create_or_update(make_key_ref(keyring, 1),
-+					   "asymmetric",
-+					   NULL,
-+					   p,
-+					   plen,
-+					   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+					   KEY_USR_VIEW | KEY_USR_READ),
-+					   KEY_ALLOC_NOT_IN_QUOTA |
-+					   KEY_ALLOC_BUILT_IN |
-+					   KEY_ALLOC_BYPASS_RESTRICTION);
-+		if (IS_ERR(key)) {
-+			pr_err("Problem loading in-kernel X.509 certificate (%ld)\n",
-+			       PTR_ERR(key));
-+		} else {
-+			pr_notice("Loaded X.509 cert '%s'\n",
-+				  key_ref_to_ptr(key)->description);
-+			key_ref_put(key);
-+		}
-+		p += plen;
+@@ -175,6 +176,21 @@ static int __init load_uefi_certs(void)
+ 		kfree(dbx);
+ 	}
+ 
++	mokx = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &status);
++	if (!mokx) {
++		if (status == EFI_NOT_FOUND)
++			pr_debug("mokx variable wasn't found\n");
++		else
++			pr_info("Couldn't get mokx list\n");
++	} else {
++		rc = parse_efi_signature_list("UEFI:MokListXRT",
++					      mokx, mokxsize,
++					      get_handler_for_dbx);
++		if (rc)
++			pr_err("Couldn't parse mokx signatures %d\n", rc);
++		kfree(mokx);
 +	}
 +
-+	return 0;
-+
-+dodgy_cert:
-+	pr_err("Problem parsing in-kernel X.509 certificate list\n");
-+	return 0;
-+}
-diff --git a/certs/common.h b/certs/common.h
-new file mode 100644
-index 000000000000..abdb5795936b
---- /dev/null
-+++ b/certs/common.h
-@@ -0,0 +1,9 @@
-+/* SPDX-License-Identifier: GPL-2.0-or-later */
-+
-+#ifndef _CERT_COMMON_H
-+#define _CERT_COMMON_H
-+
-+int load_certificate_list(const u8 cert_list[], const unsigned long list_size,
-+			  const struct key *keyring);
-+
-+#endif
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index ed98754d5795..0c9a4795e847 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -16,6 +16,7 @@
- #include <keys/asymmetric-type.h>
- #include <keys/system_keyring.h>
- #include <crypto/pkcs7.h>
-+#include "common.h"
- 
- static struct key *builtin_trusted_keys;
- #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
-@@ -137,54 +138,10 @@ device_initcall(system_trusted_keyring_init);
-  */
- static __init int load_system_certificate_list(void)
- {
--	key_ref_t key;
--	const u8 *p, *end;
--	size_t plen;
--
- 	pr_notice("Loading compiled-in X.509 certificates\n");
- 
--	p = system_certificate_list;
--	end = p + system_certificate_list_size;
--	while (p < end) {
--		/* Each cert begins with an ASN.1 SEQUENCE tag and must be more
--		 * than 256 bytes in size.
--		 */
--		if (end - p < 4)
--			goto dodgy_cert;
--		if (p[0] != 0x30 &&
--		    p[1] != 0x82)
--			goto dodgy_cert;
--		plen = (p[2] << 8) | p[3];
--		plen += 4;
--		if (plen > end - p)
--			goto dodgy_cert;
--
--		key = key_create_or_update(make_key_ref(builtin_trusted_keys, 1),
--					   "asymmetric",
--					   NULL,
--					   p,
--					   plen,
--					   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
--					   KEY_USR_VIEW | KEY_USR_READ),
--					   KEY_ALLOC_NOT_IN_QUOTA |
--					   KEY_ALLOC_BUILT_IN |
--					   KEY_ALLOC_BYPASS_RESTRICTION);
--		if (IS_ERR(key)) {
--			pr_err("Problem loading in-kernel X.509 certificate (%ld)\n",
--			       PTR_ERR(key));
--		} else {
--			pr_notice("Loaded X.509 cert '%s'\n",
--				  key_ref_to_ptr(key)->description);
--			key_ref_put(key);
--		}
--		p += plen;
--	}
--
--	return 0;
--
--dodgy_cert:
--	pr_err("Problem parsing in-kernel X.509 certificate list\n");
--	return 0;
-+	return load_certificate_list(system_certificate_list, system_certificate_list_size,
-+				     builtin_trusted_keys);
- }
- late_initcall(load_system_certificate_list);
+ 	/* Load the MokListRT certs */
+ 	rc = load_moklist_certs();
  
 
 
