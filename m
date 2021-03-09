@@ -2,99 +2,90 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-11.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E2C54C4332D
-	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 09:12:27 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 116B1C433DB
+	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 11:47:20 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id AAC796527B
-	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 09:12:27 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id B1DD86525B
+	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 11:47:19 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229900AbhCIJLz (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Mar 2021 04:11:55 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46066 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230035AbhCIJLa (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 04:11:30 -0500
-Received: from mail-pf1-x431.google.com (mail-pf1-x431.google.com [IPv6:2607:f8b0:4864:20::431])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4B0B3C06174A;
-        Tue,  9 Mar 2021 01:11:30 -0800 (PST)
-Received: by mail-pf1-x431.google.com with SMTP id t85so3768681pfc.13;
-        Tue, 09 Mar 2021 01:11:30 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20161025;
-        h=from:to:cc:subject:date:message-id:in-reply-to:references;
-        bh=QytjAJtOx4I9dfHfggs5vaGHYdTZvLqDyfwbAQPftuk=;
-        b=nSIvOGb6tSCjl8BQSt7eWgl//EkVoKhdJMfrQGwR0QS5gAAbCkuuyhV1Mwe/g+BY/8
-         Iy8pUA604rKGXX8TKh6nEm/+pStveBGKpMCxdqpHd/fJQVCRrjG7ODylW1bGm7pHnMfX
-         ysZZWqZ1qNtW+zs8Icm/ndLnizaH6hBXCSX84U2UiNG6unaF8tZ4hFC+SO5Vv2EoITEX
-         M6uMZcR6TKSahCjE/K/t8jbuDO81eWrzv9dfbRCBkp6Q1gi2dWv4f/sQfmbQgEH7Z+s7
-         VWwDoB8RYR27rqoV/NIvmDrxEi5IWxNVbWpCrwM2UyrIPhech3r/zP4Deaiin5TzBaE9
-         rmxQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
-         :references;
-        bh=QytjAJtOx4I9dfHfggs5vaGHYdTZvLqDyfwbAQPftuk=;
-        b=s+pIj7jPYnj8XVC2tj/3h1k7TaCzDvjbjxYjDMAJL3kfS1sH2+3H4xL0i5bOAWmB3x
-         1j1FkEh1tvJ1Ce4sNyHjBVH1/7KrH0PmpyEXgMnrZum68hS/Muo+ZPeZ7bNPpobeYrdj
-         Mbf0xtpRcgLQZT6i6FsNHvx6IEmTx8ed83XH2nMprAoBrYtijOkFBn1Eog4mm4NJ/opR
-         igNTbzUFvdARA+Sz2EUZvVqmVHFwhh1lkD4axj1XDD9o/d5a4LsMZTcSNNS/WpeWxkiu
-         YCqiqT7k8T+ft0hEPbH23vipuGfA7i4YLDckGE3A0LwXhcBtph/P4S0XiKGIIa6HDjGk
-         CDig==
-X-Gm-Message-State: AOAM531O9b3CkVKE9gECK8SNJXEo9W3D1FVtIQUku5rerKKBfEoHOfmA
-        BRyVEatfV7yS4JWkYulPVEw=
-X-Google-Smtp-Source: ABdhPJy3C0f3UgsS7MmGuwLZomizZ0NzjpPvyjFQcXLxJQHl/Tgb5Ixaf18ACIDmJOL6N4qCbvrIsA==
-X-Received: by 2002:a63:5b0e:: with SMTP id p14mr23981985pgb.110.1615281089934;
-        Tue, 09 Mar 2021 01:11:29 -0800 (PST)
-Received: from linux-l9pv.suse ([124.11.22.254])
-        by smtp.gmail.com with ESMTPSA id js16sm2094860pjb.21.2021.03.09.01.11.27
-        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
-        Tue, 09 Mar 2021 01:11:29 -0800 (PST)
-From:   "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-X-Google-Original-From: "Lee, Chun-Yi" <jlee@suse.com>
-To:     David Howells <dhowells@redhat.com>
-Cc:     Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S . Miller" <davem@davemloft.net>,
-        Ben Boeckel <me@benboeckel.net>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Malte Gell <malte.gell@gmx.de>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH 3/4] modsign: Add codeSigning EKU when generating X.509 key generation config
-Date:   Tue,  9 Mar 2021 17:10:43 +0800
-Message-Id: <20210309091044.2298-4-jlee@suse.com>
-X-Mailer: git-send-email 2.12.3
-In-Reply-To: <20210309091044.2298-1-jlee@suse.com>
-References: <20210309091044.2298-1-jlee@suse.com>
+        id S230183AbhCILqs (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Mar 2021 06:46:48 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:41215 "EHLO
+        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S229553AbhCILq1 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 06:46:27 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1615290386;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=HdTaXsQxd+FqPWUSVRaEgIQyzhznpJI3o8r6KsqiM/0=;
+        b=S29DMdVC2SEY0OjuaJRDZHbjrTyJKHDMJ3RUvkSL9iRbx7a1SpcqvPcrD2k/WHFNjvpSpT
+        kw1rcsvYiWp8J/GrTR4BkFzFRSbZwfr2xcJEh8MY7iO/IdGWk2KhvRoVoqgIUWcR+9xhZj
+        jPnRpvi8XFyQ07LV5jAuTXkYh4joh98=
+Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
+ [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
+ us-mta-498-vOXecCFHNH2A5oCCpZfuxA-1; Tue, 09 Mar 2021 06:46:24 -0500
+X-MC-Unique: vOXecCFHNH2A5oCCpZfuxA-1
+Received: from smtp.corp.redhat.com (int-mx07.intmail.prod.int.phx2.redhat.com [10.5.11.22])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 6981319067E1;
+        Tue,  9 Mar 2021 11:46:23 +0000 (UTC)
+Received: from warthog.procyon.org.uk (ovpn-118-152.rdu2.redhat.com [10.10.118.152])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 17B6A100239A;
+        Tue,  9 Mar 2021 11:46:21 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+In-Reply-To: <77085577-01EB-48F5-868B-E7A1813363A1@oracle.com>
+References: <77085577-01EB-48F5-868B-E7A1813363A1@oracle.com> <20210304175030.184131-1-eric.snowberg@oracle.com> <147604.1614981032@warthog.procyon.org.uk>
+To:     Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     dhowells@redhat.com, Randy Dunlap <rdunlap@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>, nathan@kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] certs: Fix wrong kconfig option used for x509_revocation_list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date:   Tue, 09 Mar 2021 11:46:21 +0000
+Message-ID: <157933.1615290381@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 2.84 on 10.5.11.22
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Add codeSigning EKU to the X.509 key generation config for the build time
-autogenerated kernel key.
+Eric Snowberg <eric.snowberg@oracle.com> wrote:
 
-Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
----
- certs/Makefile | 1 +
- 1 file changed, 1 insertion(+)
+> >> @@ -11,7 +11,7 @@ hostprogs-always-$(CONFIG_ASN1)				+=3D asn1_compiler
+> >> hostprogs-always-$(CONFIG_MODULE_SIG_FORMAT)		+=3D sign-file
+> >> hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)	+=3D extract-cert
+> >> hostprogs-always-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE)	+=3D insert-sys-ce=
+rt
+> >> - hostprogs-always-$(CONFIG_SYSTEM_BLACKLIST_KEYRING)	+=3D extract-cert
+> >> +hostprogs-always-$(CONFIG_SYSTEM_REVOCATION_LIST)	+=3D extract-cert
+> >=20
+> > Hmmm...  We have extract-cert listed twice.  Does that matter, I wonder?
+>=20
+> Isn=E2=80=99t this necessary, since one could build with either=20
+> CONFIG_SYSTEM_REVOCATION_LIST or CONFIG_SYSTEM_TRUSTED_KEYRING, without=20
+> the other being defined?
 
-diff --git a/certs/Makefile b/certs/Makefile
-index f4c25b67aad9..1ef4d6ca43b7 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -88,6 +88,7 @@ $(obj)/x509.genkey:
- 	@echo >>$@ "keyUsage=digitalSignature"
- 	@echo >>$@ "subjectKeyIdentifier=hash"
- 	@echo >>$@ "authorityKeyIdentifier=keyid"
-+	@echo >>$@ "extendedKeyUsage=codeSigning"
- endif # CONFIG_MODULE_SIG_KEY
- 
- $(eval $(call config_filename,MODULE_SIG_KEY))
--- 
-2.16.4
+Well, it could be handled with its own Kconfig, say CONFIG_BUILD_EXTRACT_CE=
+RT,
+but that would seem like overkill.  I think make should handle a dependency
+being listed multiple times for a target, but it might make sense to list t=
+hem
+next to each other.
+
+David
 
