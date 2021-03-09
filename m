@@ -2,240 +2,92 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+X-Spam-Status: No, score=-6.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7C6F0C4360C
-	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 13:22:00 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 46434C433E6
+	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 17:13:34 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5B6EF650F5
-	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 13:22:00 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 162536523D
+	for <keyrings@archiver.kernel.org>; Tue,  9 Mar 2021 17:13:34 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231304AbhCINVc (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Mar 2021 08:21:32 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:22528 "EHLO
+        id S231519AbhCIRNB (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Mar 2021 12:13:01 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:40303 "EHLO
         us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S231352AbhCINVP (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 08:21:15 -0500
+        by vger.kernel.org with ESMTP id S231613AbhCIRMy (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Mar 2021 12:12:54 -0500
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1615296074;
+        s=mimecast20190719; t=1615309973;
         h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
          to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=lijj9yQxXzlna1BJrD/I5Jd4FTt3CjaWcl0YVZNv5YA=;
-        b=Ul6L3K0eUYZ/JlU9N2CBlhpu5TAGB0HeIZW6RJZIZIZT+JwskJp6xs7EVuDigBtadfpHEJ
-        F01p34/E0I47e2namEzJ5NpnzaRaAI7iqpiEiwNR2F8W/ccaJWcscnSkGow2wHEBk+6np8
-        x0Le6YHl4xPH/5GrNPOF+QJH0NQreV0=
+        bh=QDiWkJUtFaM48IgTP2YitIoq9fuTHCd8wn8lOzbyjb4=;
+        b=aLAbWZSg7SqHBz8HQjqrwrGEsYlXFcUb7oF1+qidAjuG05qUuJRu+o3M2Nkv9DUr/OeDFi
+        wBqiJsGRh25d+gbba4SlKAtWxm0DdJ5oC+PJm0vyFJNV1QCc6Mhr4yoBRwQxwXl8+qm0TW
+        QmLlNF7UAsJ+zLMtcZP1B6UAuLiPNJg=
 Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
  [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-258-sMVSQPeEMbO7hu4At9YlwQ-1; Tue, 09 Mar 2021 08:21:10 -0500
-X-MC-Unique: sMVSQPeEMbO7hu4At9YlwQ-1
+ us-mta-517-rOiZa9gJOXOA9wVIVbv71w-1; Tue, 09 Mar 2021 12:12:49 -0500
+X-MC-Unique: rOiZa9gJOXOA9wVIVbv71w-1
 Received: from smtp.corp.redhat.com (int-mx05.intmail.prod.int.phx2.redhat.com [10.5.11.15])
         (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 06D81801817;
-        Tue,  9 Mar 2021 13:21:09 +0000 (UTC)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 8C77784BA40;
+        Tue,  9 Mar 2021 17:12:46 +0000 (UTC)
 Received: from warthog.procyon.org.uk (ovpn-118-152.rdu2.redhat.com [10.10.118.152])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 58CE95D6D7;
-        Tue,  9 Mar 2021 13:21:07 +0000 (UTC)
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 4E13F5D6D7;
+        Tue,  9 Mar 2021 17:12:42 +0000 (UTC)
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
         Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
         Kingdom.
         Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH v3 3/4] certs: Add ability to preload revocation certs
 From:   David Howells <dhowells@redhat.com>
-To:     Eric Snowberg <eric.snowberg@oracle.com>
-Cc:     Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>, keyrings@vger.kernel.org,
-        dhowells@redhat.com, Jarkko Sakkinen <jarkko@kernel.org>,
-        =?utf-8?q?Micka=C3=ABl_Sala=C3=BCn?= <mic@digikod.net>,
-        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date:   Tue, 09 Mar 2021 13:21:06 +0000
-Message-ID: <161529606657.163428.3340689182456495390.stgit@warthog.procyon.org.uk>
-In-Reply-To: <161529604216.163428.4905283330048991183.stgit@warthog.procyon.org.uk>
-References: <161529604216.163428.4905283330048991183.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.23
+In-Reply-To: <CACRpkdb4RkQvDBgTMW_+7yYBsHNRyJZiT5bn04uQJgk7tKGDOA@mail.gmail.com>
+References: <CACRpkdb4RkQvDBgTMW_+7yYBsHNRyJZiT5bn04uQJgk7tKGDOA@mail.gmail.com> <20210303135500.24673-1-alex.bennee@linaro.org> <20210303135500.24673-2-alex.bennee@linaro.org> <CAK8P3a0W5X8Mvq0tDrz7d67SfQA=PqthpnGDhn8w1Xhwa030-A@mail.gmail.com> <20210305075131.GA15940@goby> <CAK8P3a0qtByN4Fnutr1yetdVZkPJn87yK+w+_DAUXOMif-13aA@mail.gmail.com>
+To:     Linus Walleij <linus.walleij@linaro.org>
+Cc:     dhowells@redhat.com, Arnd Bergmann <arnd@linaro.org>,
+        keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko@kernel.org>,
+        Joakim Bech <joakim.bech@linaro.org>,
+        =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxim Uvarov <maxim.uvarov@linaro.org>,
+        Ilias Apalodimas <ilias.apalodimas@linaro.org>,
+        ruchika.gupta@linaro.org,
+        "Winkler, Tomas" <tomas.winkler@intel.com>, yang.huang@intel.com,
+        bing.zhu@intel.com, Matti.Moell@opensynergy.com,
+        hmo@opensynergy.com, linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-nvme@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Hector Martin <marcan@marcan.st>
+Subject: Re: [RFC PATCH 1/5] rpmb: add Replay Protected Memory Block (RPMB) subsystem
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <178478.1615309961.1@warthog.procyon.org.uk>
+Date:   Tue, 09 Mar 2021 17:12:41 +0000
+Message-ID: <178479.1615309961@warthog.procyon.org.uk>
 X-Scanned-By: MIMEDefang 2.79 on 10.5.11.15
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Eric Snowberg <eric.snowberg@oracle.com>
+Linus Walleij <linus.walleij@linaro.org> wrote:
 
-Add a new Kconfig option called SYSTEM_REVOCATION_KEYS. If set,
-this option should be the filename of a PEM-formated file containing
-X.509 certificates to be included in the default blacklist keyring.
+> As it seems neither Microsoft nor Apple is paying it much attention
+> (+/- new facts) it will be up to the community to define use cases
+> for RPMB. I don't know what would make most sense, but the
+> kernel keyring seems to make a bit of sense as it is a well maintained
+> keyring project.
 
-DH Changes:
- - Make the new Kconfig option depend on SYSTEM_REVOCATION_LIST.
- - Fix SYSTEM_REVOCATION_KEYS=n, but CONFIG_SYSTEM_REVOCATION_LIST=y[1][2].
- - Use CONFIG_SYSTEM_REVOCATION_LIST for extract-cert[3].
- - Use CONFIG_SYSTEM_REVOCATION_LIST for revocation_certificates.o[3].
+I'm afraid I don't know a whole lot about the RPMB.  I've just been and read
+https://lwn.net/Articles/682276/ about it.
 
-Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
-Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Randy Dunlap <rdunlap@infradead.org>
-cc: keyrings@vger.kernel.org
-Link: https://lore.kernel.org/r/20200930201508.35113-3-eric.snowberg@oracle.com/
-Link: https://lore.kernel.org/r/20210122181054.32635-4-eric.snowberg@oracle.com/ # v5
-Link: https://lore.kernel.org/r/161428673564.677100.4112098280028451629.stgit@warthog.procyon.org.uk/
-Link: https://lore.kernel.org/r/161433312452.902181.4146169951896577982.stgit@warthog.procyon.org.uk/ # v2
-Link: https://lore.kernel.org/r/e1c15c74-82ce-3a69-44de-a33af9b320ea@infradead.org/ [1]
-Link: https://lore.kernel.org/r/20210303034418.106762-1-eric.snowberg@oracle.com/ [2]
-Link: https://lore.kernel.org/keyrings/20210304175030.184131-1-eric.snowberg@oracle.com/ [3]
----
+What is it you envision the keyring API doing with regard to this?  Being used
+to represent the key needed to access the RPMB or being used to represent an
+RPMB entry (does it have entries?)?
 
- certs/Kconfig                   |    8 ++++++++
- certs/Makefile                  |   19 +++++++++++++++++--
- certs/blacklist.c               |   21 +++++++++++++++++++++
- certs/revocation_certificates.S |   21 +++++++++++++++++++++
- scripts/Makefile                |    1 +
- 5 files changed, 68 insertions(+), 2 deletions(-)
- create mode 100644 certs/revocation_certificates.S
-
-diff --git a/certs/Kconfig b/certs/Kconfig
-index 76e469b56a77..ab88d2a7f3c7 100644
---- a/certs/Kconfig
-+++ b/certs/Kconfig
-@@ -92,4 +92,12 @@ config SYSTEM_REVOCATION_LIST
- 	  blacklist keyring and implements a hook whereby a PKCS#7 message can
- 	  be checked to see if it matches such a certificate.
- 
-+config SYSTEM_REVOCATION_KEYS
-+	string "X.509 certificates to be preloaded into the system blacklist keyring"
-+	depends on SYSTEM_REVOCATION_LIST
-+	help
-+	  If set, this option should be the filename of a PEM-formatted file
-+	  containing X.509 certificates to be included in the default blacklist
-+	  keyring.
-+
- endmenu
-diff --git a/certs/Makefile b/certs/Makefile
-index f4b90bad8690..b6db52ebf0be 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -4,7 +4,8 @@
- #
- 
- obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o common.o
--obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o
-+obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o common.o
-+obj-$(CONFIG_SYSTEM_REVOCATION_LIST) += revocation_certificates.o
- ifneq ($(CONFIG_SYSTEM_BLACKLIST_HASH_LIST),"")
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_hashes.o
- else
-@@ -29,7 +30,7 @@ $(obj)/x509_certificate_list: scripts/extract-cert $(SYSTEM_TRUSTED_KEYS_SRCPREF
- 	$(call if_changed,extract_certs,$(SYSTEM_TRUSTED_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_TRUSTED_KEYS))
- endif # CONFIG_SYSTEM_TRUSTED_KEYRING
- 
--clean-files := x509_certificate_list .x509.list
-+clean-files := x509_certificate_list .x509.list x509_revocation_list
- 
- ifeq ($(CONFIG_MODULE_SIG),y)
- ###############################################################################
-@@ -104,3 +105,17 @@ targets += signing_key.x509
- $(obj)/signing_key.x509: scripts/extract-cert $(X509_DEP) FORCE
- 	$(call if_changed,extract_certs,$(MODULE_SIG_KEY_SRCPREFIX)$(CONFIG_MODULE_SIG_KEY))
- endif # CONFIG_MODULE_SIG
-+
-+ifeq ($(CONFIG_SYSTEM_REVOCATION_LIST),y)
-+
-+$(eval $(call config_filename,SYSTEM_REVOCATION_KEYS))
-+
-+$(obj)/revocation_certificates.o: $(obj)/x509_revocation_list
-+
-+quiet_cmd_extract_certs  = EXTRACT_CERTS   $(patsubst "%",%,$(2))
-+      cmd_extract_certs  = scripts/extract-cert $(2) $@
-+
-+targets += x509_revocation_list
-+$(obj)/x509_revocation_list: scripts/extract-cert $(SYSTEM_REVOCATION_KEYS_SRCPREFIX)$(SYSTEM_REVOCATION_KEYS_FILENAME) FORCE
-+	$(call if_changed,extract_certs,$(SYSTEM_REVOCATION_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_REVOCATION_KEYS))
-+endif
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index 2b8644123d5f..c9a435b15af4 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -17,9 +17,15 @@
- #include <linux/uidgid.h>
- #include <keys/system_keyring.h>
- #include "blacklist.h"
-+#include "common.h"
- 
- static struct key *blacklist_keyring;
- 
-+#ifdef CONFIG_SYSTEM_REVOCATION_LIST
-+extern __initconst const u8 revocation_certificate_list[];
-+extern __initconst const unsigned long revocation_certificate_list_size;
-+#endif
-+
- /*
-  * The description must be a type prefix, a colon and then an even number of
-  * hex digits.  The hash is kept in the description.
-@@ -220,3 +226,18 @@ static int __init blacklist_init(void)
-  * Must be initialised before we try and load the keys into the keyring.
-  */
- device_initcall(blacklist_init);
-+
-+#ifdef CONFIG_SYSTEM_REVOCATION_LIST
-+/*
-+ * Load the compiled-in list of revocation X.509 certificates.
-+ */
-+static __init int load_revocation_certificate_list(void)
-+{
-+	if (revocation_certificate_list_size)
-+		pr_notice("Loading compiled-in revocation X.509 certificates\n");
-+
-+	return load_certificate_list(revocation_certificate_list, revocation_certificate_list_size,
-+				     blacklist_keyring);
-+}
-+late_initcall(load_revocation_certificate_list);
-+#endif
-diff --git a/certs/revocation_certificates.S b/certs/revocation_certificates.S
-new file mode 100644
-index 000000000000..f21aae8a8f0e
---- /dev/null
-+++ b/certs/revocation_certificates.S
-@@ -0,0 +1,21 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+#include <linux/export.h>
-+#include <linux/init.h>
-+
-+	__INITRODATA
-+
-+	.align 8
-+	.globl revocation_certificate_list
-+revocation_certificate_list:
-+__revocation_list_start:
-+	.incbin "certs/x509_revocation_list"
-+__revocation_list_end:
-+
-+	.align 8
-+	.globl revocation_certificate_list_size
-+revocation_certificate_list_size:
-+#ifdef CONFIG_64BIT
-+	.quad __revocation_list_end - __revocation_list_start
-+#else
-+	.long __revocation_list_end - __revocation_list_start
-+#endif
-diff --git a/scripts/Makefile b/scripts/Makefile
-index b5418ec587fb..bd0718f7c493 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -11,6 +11,7 @@ hostprogs-always-$(CONFIG_ASN1)				+= asn1_compiler
- hostprogs-always-$(CONFIG_MODULE_SIG_FORMAT)		+= sign-file
- hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)	+= extract-cert
- hostprogs-always-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE)	+= insert-sys-cert
-+hostprogs-always-$(CONFIG_SYSTEM_REVOCATION_LIST)	+= extract-cert
- 
- HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
- HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
-
+David
 
