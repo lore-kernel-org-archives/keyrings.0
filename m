@@ -4,64 +4,64 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DD255C433DB
-	for <keyrings@archiver.kernel.org>; Tue, 30 Mar 2021 13:18:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2456CC433E3
+	for <keyrings@archiver.kernel.org>; Tue, 30 Mar 2021 13:18:05 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id B5405619C2
+	by mail.kernel.org (Postfix) with ESMTP id F0934619CA
 	for <keyrings@archiver.kernel.org>; Tue, 30 Mar 2021 13:18:04 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231894AbhC3NRc (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 30 Mar 2021 09:17:32 -0400
-Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:42716 "EHLO
+        id S232090AbhC3NRd (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 30 Mar 2021 09:17:33 -0400
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:20034 "EHLO
         mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S232147AbhC3NRD (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 30 Mar 2021 09:17:03 -0400
-Received: from pps.filterd (m0187473.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 12UD5cBN063901;
-        Tue, 30 Mar 2021 09:16:59 -0400
+        by vger.kernel.org with ESMTP id S232006AbhC3NRG (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 30 Mar 2021 09:17:06 -0400
+Received: from pps.filterd (m0098410.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 12UD3tut052668;
+        Tue, 30 Mar 2021 09:17:04 -0400
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
  : date : message-id : in-reply-to : references : mime-version :
  content-transfer-encoding; s=pp1;
- bh=ZQkd2Ct+Icr0gv9shTuyQc3B/gEceCSmgfsacoNIPEg=;
- b=eg6/N2ttOYu697NKHgAEGv73sY9MmHPt8Ip3P5IVr4fUEy8zSBLEsqcm8WtyQljUEbCj
- EagM/QzMBPPtcT/XCKFaNfYqHD7eYF5JP7e0uQKqT2HId6nbxIDZKoylWJicKEknPjlR
- 0cZ9DBGNTqLynwpYSkjfG/tus+T8tkpsu5dLlAhN9OvY/64VmGRkc6Q/B5syZMTwWVUO
- R4PoRe/mZXGGzeyAAN8Cl74C+cq1dFXeyNF9cDZNof9IES3sqmY8L/DCElwl8ujzoaye
- b636GIOI/NFuDlnorbXC+oQ9opqiXi8KclZOw84SBCCghDnjCO74zKW84/C+ivLauiWw 4Q== 
+ bh=hCx2pyFl8NZJWI/gvhH5lakNnGcU4/hycynVYfk31Q4=;
+ b=oSiTruNtqX9xZHCxAiFQccE9wk/xgjvs3Ab7BhR62c/Z8Blm4+lxzuIh7HjgDmmgduio
+ gtupak6gqWj3rC6aE76S31Oue6Zk1NJuEl9KNxKDsqbAkrNu9nJjm8x9UDo3HicaQKhM
+ bVBk6AcUZQ9iqvPbVygAHfhIA+BTHJVFb4FSeHDLiHaBofOXIOsvjZy7ZQwilU9ed2w9
+ ufIgT4BhM+Y/HABbe0eVhAjgkNhcM4SmISSh79EatGuIJ0B0f05CycMP3iDurzTAYdMO
+ MCmK+fomLC5IZaN6om52iLDXiAqTePYhKKGHTbE8iJ2zBC+fmdMhPhJkmJE97N69a3ts CA== 
 Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 37jhsss0f9-1
+        by mx0a-001b2d01.pphosted.com with ESMTP id 37juyp12v4-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 30 Mar 2021 09:16:58 -0400
-Received: from m0187473.ppops.net (m0187473.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 12UD5nkW064549;
-        Tue, 30 Mar 2021 09:16:58 -0400
-Received: from ppma03ams.nl.ibm.com (62.31.33a9.ip4.static.sl-reverse.com [169.51.49.98])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 37jhsss0dy-1
+        Tue, 30 Mar 2021 09:17:04 -0400
+Received: from m0098410.ppops.net (m0098410.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 12UD4eMU059484;
+        Tue, 30 Mar 2021 09:17:03 -0400
+Received: from ppma06fra.de.ibm.com (48.49.7a9f.ip4.static.sl-reverse.com [159.122.73.72])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 37juyp12tp-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 30 Mar 2021 09:16:58 -0400
-Received: from pps.filterd (ppma03ams.nl.ibm.com [127.0.0.1])
-        by ppma03ams.nl.ibm.com (8.16.0.43/8.16.0.43) with SMTP id 12UDCgZx027242;
-        Tue, 30 Mar 2021 13:16:56 GMT
-Received: from b06cxnps3075.portsmouth.uk.ibm.com (d06relay10.portsmouth.uk.ibm.com [9.149.109.195])
-        by ppma03ams.nl.ibm.com with ESMTP id 37hvb8ar9f-1
+        Tue, 30 Mar 2021 09:17:03 -0400
+Received: from pps.filterd (ppma06fra.de.ibm.com [127.0.0.1])
+        by ppma06fra.de.ibm.com (8.16.0.43/8.16.0.43) with SMTP id 12UDH17e005187;
+        Tue, 30 Mar 2021 13:17:01 GMT
+Received: from b06avi18878370.portsmouth.uk.ibm.com (b06avi18878370.portsmouth.uk.ibm.com [9.149.26.194])
+        by ppma06fra.de.ibm.com with ESMTP id 37huyh9f6u-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 30 Mar 2021 13:16:55 +0000
+        Tue, 30 Mar 2021 13:17:01 +0000
 Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
-        by b06cxnps3075.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 12UDGrXH42533284
+        by b06avi18878370.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 12UDGdsr31457748
         (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Tue, 30 Mar 2021 13:16:53 GMT
+        Tue, 30 Mar 2021 13:16:39 GMT
 Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 16E3F4C040;
-        Tue, 30 Mar 2021 13:16:53 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id 4E6854C052;
+        Tue, 30 Mar 2021 13:16:58 +0000 (GMT)
 Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id B51F34C044;
-        Tue, 30 Mar 2021 13:16:50 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id 0DD104C040;
+        Tue, 30 Mar 2021 13:16:56 +0000 (GMT)
 Received: from li-4b5937cc-25c4-11b2-a85c-cea3a66903e4.ibm.com.com (unknown [9.211.103.158])
         by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
-        Tue, 30 Mar 2021 13:16:50 +0000 (GMT)
+        Tue, 30 Mar 2021 13:16:55 +0000 (GMT)
 From:   Nayna Jain <nayna@linux.ibm.com>
 To:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
 Cc:     linux-security-module@vger.kernel.org,
@@ -72,57 +72,187 @@ Cc:     linux-security-module@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         David Woodhouse <dwmw2@infradead.org>,
         Nayna Jain <nayna@linux.ibm.com>
-Subject: [PATCH v3 1/3] keys: cleanup build time module signing keys
-Date:   Tue, 30 Mar 2021 09:16:34 -0400
-Message-Id: <20210330131636.21711-2-nayna@linux.ibm.com>
+Subject: [PATCH v3 3/3] ima: enable loading of build time generated key on .ima keyring
+Date:   Tue, 30 Mar 2021 09:16:36 -0400
+Message-Id: <20210330131636.21711-4-nayna@linux.ibm.com>
 X-Mailer: git-send-email 2.27.0
 In-Reply-To: <20210330131636.21711-1-nayna@linux.ibm.com>
 References: <20210330131636.21711-1-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: GxdNIn23z6Q5Qju96rqU2xb8QCLJxsjQ
-X-Proofpoint-ORIG-GUID: DV7vImdVqXsffT1PYROL9no5OKHhBo3n
+X-Proofpoint-ORIG-GUID: 3Yq-VkukkJGo81HZefSDwP3rSGOkSiCw
+X-Proofpoint-GUID: _lk4JPAzk7TUA1I2to7b3HOYVlOQIztJ
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.761
- definitions=2021-03-30_04:2021-03-30,2021-03-30 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 malwarescore=0 spamscore=0
- phishscore=0 impostorscore=0 bulkscore=0 suspectscore=0 clxscore=1015
- priorityscore=1501 mlxscore=0 mlxlogscore=999 adultscore=0
- lowpriorityscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ definitions=2021-03-30_03:2021-03-30,2021-03-30 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 adultscore=0 mlxscore=0
+ phishscore=0 spamscore=0 clxscore=1015 priorityscore=1501 impostorscore=0
+ bulkscore=0 mlxlogscore=999 lowpriorityscore=0 suspectscore=0
+ malwarescore=0 classifier=spam adjust=0 reason=mlx scancount=1
  engine=8.12.0-2103250000 definitions=main-2103300094
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-The "mrproper" target is still looking for build time generated keys in
-the kernel root directory instead of certs directory. Fix the path and
-remove the names of the files which are no longer generated.
+The kernel currently only loads the kernel module signing key onto the
+builtin trusted keyring. Load the module signing key onto the IMA keyring
+as well.
 
-Fixes: cfc411e7fff3 ("Move certificate handling to its own directory")
 Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
-Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
- Makefile | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ certs/system_certificates.S   | 13 +++++++++-
+ certs/system_keyring.c        | 47 +++++++++++++++++++++++++++--------
+ include/keys/system_keyring.h |  7 ++++++
+ security/integrity/digsig.c   |  2 ++
+ 4 files changed, 58 insertions(+), 11 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index d4784d181123..b7c2ed2a8684 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1523,9 +1523,9 @@ MRPROPER_FILES += include/config include/generated          \
- 		  debian snap tar-install \
- 		  .config .config.old .version \
- 		  Module.symvers \
--		  signing_key.pem signing_key.priv signing_key.x509	\
--		  x509.genkey extra_certificates signing_key.x509.keyid	\
--		  signing_key.x509.signer vmlinux-gdb.py \
-+		  certs/signing_key.pem certs/signing_key.x509 \
-+		  certs/x509.genkey \
-+		  vmlinux-gdb.py \
- 		  *.spec
+diff --git a/certs/system_certificates.S b/certs/system_certificates.S
+index 8f29058adf93..dcad27ea8527 100644
+--- a/certs/system_certificates.S
++++ b/certs/system_certificates.S
+@@ -8,9 +8,11 @@
+ 	.globl system_certificate_list
+ system_certificate_list:
+ __cert_list_start:
+-#ifdef CONFIG_MODULE_SIG
++__module_cert_start:
++#if defined(CONFIG_MODULE_SIG) || defined(CONFIG_IMA_APPRAISE_MODSIG)
+ 	.incbin "certs/signing_key.x509"
+ #endif
++__module_cert_end:
+ 	.incbin "certs/x509_certificate_list"
+ __cert_list_end:
  
- # Directories & files removed with 'make distclean'
+@@ -35,3 +37,12 @@ system_certificate_list_size:
+ #else
+ 	.long __cert_list_end - __cert_list_start
+ #endif
++
++	.align 8
++	.globl module_cert_size
++module_cert_size:
++#ifdef CONFIG_64BIT
++	.quad __module_cert_end - __module_cert_start
++#else
++	.long __module_cert_end - __module_cert_start
++#endif
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 4b693da488f1..bb122bf4cc17 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -27,6 +27,7 @@ static struct key *platform_trusted_keys;
+ 
+ extern __initconst const u8 system_certificate_list[];
+ extern __initconst const unsigned long system_certificate_list_size;
++extern __initconst const unsigned long module_cert_size;
+ 
+ /**
+  * restrict_link_to_builtin_trusted - Restrict keyring addition by built in CA
+@@ -132,19 +133,11 @@ static __init int system_trusted_keyring_init(void)
+  */
+ device_initcall(system_trusted_keyring_init);
+ 
+-/*
+- * Load the compiled-in list of X.509 certificates.
+- */
+-static __init int load_system_certificate_list(void)
++static __init int load_cert(const u8 *p, const u8 *end, struct key *keyring)
+ {
+ 	key_ref_t key;
+-	const u8 *p, *end;
+ 	size_t plen;
+ 
+-	pr_notice("Loading compiled-in X.509 certificates\n");
+-
+-	p = system_certificate_list;
+-	end = p + system_certificate_list_size;
+ 	while (p < end) {
+ 		/* Each cert begins with an ASN.1 SEQUENCE tag and must be more
+ 		 * than 256 bytes in size.
+@@ -159,7 +152,7 @@ static __init int load_system_certificate_list(void)
+ 		if (plen > end - p)
+ 			goto dodgy_cert;
+ 
+-		key = key_create_or_update(make_key_ref(builtin_trusted_keys, 1),
++		key = key_create_or_update(make_key_ref(keyring, 1),
+ 					   "asymmetric",
+ 					   NULL,
+ 					   p,
+@@ -186,6 +179,40 @@ static __init int load_system_certificate_list(void)
+ 	pr_err("Problem parsing in-kernel X.509 certificate list\n");
+ 	return 0;
+ }
++
++__init int load_module_cert(struct key *keyring)
++{
++	const u8 *p, *end;
++
++	if (!IS_ENABLED(CONFIG_IMA_APPRAISE_MODSIG))
++		return 0;
++
++	pr_notice("Loading compiled-in module X.509 certificates\n");
++
++	p = system_certificate_list;
++	end = p + module_cert_size;
++
++	return load_cert(p, end, keyring);
++}
++
++/*
++ * Load the compiled-in list of X.509 certificates.
++ */
++static __init int load_system_certificate_list(void)
++{
++	const u8 *p, *end;
++
++	pr_notice("Loading compiled-in X.509 certificates\n");
++
++#ifdef CONFIG_MODULE_SIG
++	p = system_certificate_list;
++#else
++	p = system_certificate_list + module_cert_size;
++#endif
++
++	end = p + system_certificate_list_size;
++	return load_cert(p, end, builtin_trusted_keys);
++}
+ late_initcall(load_system_certificate_list);
+ 
+ #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index fb8b07daa9d1..f954276c616a 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -16,9 +16,16 @@ extern int restrict_link_by_builtin_trusted(struct key *keyring,
+ 					    const struct key_type *type,
+ 					    const union key_payload *payload,
+ 					    struct key *restriction_key);
++extern __init int load_module_cert(struct key *keyring);
+ 
+ #else
+ #define restrict_link_by_builtin_trusted restrict_link_reject
++
++static inline __init int load_module_cert(struct key *keyring)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 250fb0836156..3b06a01bd0fd 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -111,6 +111,8 @@ static int __init __integrity_init_keyring(const unsigned int id,
+ 	} else {
+ 		if (id == INTEGRITY_KEYRING_PLATFORM)
+ 			set_platform_trusted_keys(keyring[id]);
++		if (id == INTEGRITY_KEYRING_IMA)
++			load_module_cert(keyring[id]);
+ 	}
+ 
+ 	return err;
 -- 
 2.29.2
 
