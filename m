@@ -2,101 +2,120 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-3.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,URIBL_BLOCKED autolearn=no
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI
+	autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9C5CCC4361B
-	for <keyrings@archiver.kernel.org>; Thu,  1 Apr 2021 17:42:08 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 8FD4EC4363E
+	for <keyrings@archiver.kernel.org>; Thu,  1 Apr 2021 17:42:12 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 89B50610A0
-	for <keyrings@archiver.kernel.org>; Thu,  1 Apr 2021 17:42:08 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 670AC613A5
+	for <keyrings@archiver.kernel.org>; Thu,  1 Apr 2021 17:42:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S235039AbhDARmC convert rfc822-to-8bit (ORCPT
-        <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 1 Apr 2021 13:42:02 -0400
-Received: from lithops.sigma-star.at ([195.201.40.130]:40430 "EHLO
-        lithops.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S234180AbhDARgr (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 1 Apr 2021 13:36:47 -0400
-Received: from localhost (localhost [127.0.0.1])
-        by lithops.sigma-star.at (Postfix) with ESMTP id 81C17606BA2C;
-        Thu,  1 Apr 2021 15:59:27 +0200 (CEST)
-Received: from lithops.sigma-star.at ([127.0.0.1])
-        by localhost (lithops.sigma-star.at [127.0.0.1]) (amavisd-new, port 10032)
-        with ESMTP id zwE_aygEcMAG; Thu,  1 Apr 2021 15:59:27 +0200 (CEST)
-Received: from localhost (localhost [127.0.0.1])
-        by lithops.sigma-star.at (Postfix) with ESMTP id 1458D60A3592;
-        Thu,  1 Apr 2021 15:59:27 +0200 (CEST)
-Received: from lithops.sigma-star.at ([127.0.0.1])
-        by localhost (lithops.sigma-star.at [127.0.0.1]) (amavisd-new, port 10026)
-        with ESMTP id ETgRfEjK7WK1; Thu,  1 Apr 2021 15:59:26 +0200 (CEST)
-Received: from lithops.sigma-star.at (lithops.sigma-star.at [195.201.40.130])
-        by lithops.sigma-star.at (Postfix) with ESMTP id D76FC6071A7C;
-        Thu,  1 Apr 2021 15:59:26 +0200 (CEST)
-Date:   Thu, 1 Apr 2021 15:59:26 +0200 (CEST)
-From:   Richard Weinberger <richard@nod.at>
-To:     Sumit Garg <sumit.garg@linaro.org>
+        id S235043AbhDARmE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 1 Apr 2021 13:42:04 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57162 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S234337AbhDARg5 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 1 Apr 2021 13:36:57 -0400
+Received: from mail-lj1-x234.google.com (mail-lj1-x234.google.com [IPv6:2a00:1450:4864:20::234])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E01CAC05BD16
+        for <keyrings@vger.kernel.org>; Thu,  1 Apr 2021 05:55:16 -0700 (PDT)
+Received: by mail-lj1-x234.google.com with SMTP id z8so2099871ljm.12
+        for <keyrings@vger.kernel.org>; Thu, 01 Apr 2021 05:55:16 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=linaro.org; s=google;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc;
+        bh=VIk1VyBFqF5fVZFBu0yexXHYaS9Jn30Rld7o2bVbBwk=;
+        b=Apd+UzHEAEi98S6OdfucHkNROZU7jCgX5/KNygYU3cVOLmi2PHXIN8LRL/INjJMZT2
+         +T7sbpkA1dHoI5hc7fww5ba5aE2TjM8dwGwwufSllGQiwylrGI0cS488JL/xNibDw5Cu
+         2+eknYxHVIfteXbHDfVGnwtETKC61+6Ys9Q59Y5+NreZIXf3O8ek1f6nwiPeAZ31FLYx
+         JP07cdx8Lht2U45g70INCV2MprWQgxaOUq4Y3uGF3LwH7J/nRfQOjuLD03XeTBhbnZ3w
+         3kGM/AEkbnuu9X/oEc2B9w4enaBqVfgrhZYb3ySlCRAGSvA6qD8rW+w9ga1FZsJLnIXC
+         z8Dg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc;
+        bh=VIk1VyBFqF5fVZFBu0yexXHYaS9Jn30Rld7o2bVbBwk=;
+        b=EzYC8NxFKaM4NMpP5PAO94668LYAz0DgD1JBFweX5qo+cpYZ5rGDH+7fd26mvlMFyY
+         hcyttAbM1xYE1GAbNYmRodeZJZc96T1vlaYyQTeoubU6FjyFpWxJFR/e2y2M0cN5TIp0
+         EjQwDdcLmXfzku4tjs4xc3mN4J4ws40CzzhbxKTT5oFthCEa3S1xkesqaQIyWVvQXwpR
+         3Bn+OZM/kg0Dd2mlPLGBN/tyzWVm8NjmSS/MOYH6uTuqzDdUOzXIuFxeDh4c9PGSXh8T
+         9YXUTbCUcDr6vmRd7WosDPu99Z2JD3KNsgSH2IC1Lja2xyWkwZauUWhalFSTEV8gVQyn
+         I52Q==
+X-Gm-Message-State: AOAM531VTHQqKSX+WszYI4vy/2uu/MWfCZDRqWjNq/FeW+pLAdfg72S+
+        WV5LTFZRHjHWZDXeZGY25LyFUeVy2p0jg3Nx0Y3IBw==
+X-Google-Smtp-Source: ABdhPJzxwz2LDe0yIeonE1iDSI5e5lDG4mIYMjWxL+WfT+GgrPcNFOKL6OGonaimUeBpqxqGZ9SE9Ng/p3VJVcrOnEs=
+X-Received: by 2002:a2e:8e33:: with SMTP id r19mr5136316ljk.40.1617281715310;
+ Thu, 01 Apr 2021 05:55:15 -0700 (PDT)
+MIME-Version: 1.0
+References: <cover.56fff82362af6228372ea82e6bd7e586e23f0966.1615914058.git-series.a.fatoum@pengutronix.de>
+ <CAFLxGvzWLje+_HFeb+hKNch4U1f5uypVUOuP=QrEPn_JNM+scg@mail.gmail.com>
+ <ca2a7c17-3ed0-e52f-2e2f-c0f8bbe10323@pengutronix.de> <CAFLxGvwNomKOo3mQLMxYGDA8T8zN=Szpo2q5jrp4D1CaMHydWA@mail.gmail.com>
+In-Reply-To: <CAFLxGvwNomKOo3mQLMxYGDA8T8zN=Szpo2q5jrp4D1CaMHydWA@mail.gmail.com>
+From:   Sumit Garg <sumit.garg@linaro.org>
+Date:   Thu, 1 Apr 2021 18:25:03 +0530
+Message-ID: <CAFA6WYO29o73nSg4ikU9cyaOr0kpaXFJpcGLGmFLgjKQWchcEg@mail.gmail.com>
+Subject: Re: [PATCH v1 0/3] KEYS: trusted: Introduce support for NXP
+ CAAM-based trusted keys
+To:     Richard Weinberger <richard.weinberger@gmail.com>
 Cc:     Ahmad Fatoum <a.fatoum@pengutronix.de>,
         Jarkko Sakkinen <jarkko@kernel.org>,
-        horia geanta <horia.geanta@nxp.com>,
+        =?UTF-8?Q?Horia_Geant=C4=83?= <horia.geanta@nxp.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
-        aymen sghaier <aymen.sghaier@nxp.com>,
+        Aymen Sghaier <aymen.sghaier@nxp.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
-        davem <davem@davemloft.net>,
-        James Bottomley <jejb@linux.ibm.com>,
-        kernel <kernel@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Bottomley <jejb@linux.ibm.com>, kernel@pengutronix.de,
         David Howells <dhowells@redhat.com>,
         James Morris <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
         Steffen Trumtrar <s.trumtrar@pengutronix.de>,
         Udit Agarwal <udit.agarwal@nxp.com>,
         Jan Luebbe <j.luebbe@pengutronix.de>,
-        david <david@sigma-star.at>,
-        Franck Lenormand <franck.lenormand@nxp.com>,
-        linux-integrity <linux-integrity@vger.kernel.org>,
-        "open list, ASYMMETRIC KEYS" <keyrings@vger.kernel.org>,
+        David Gstir <david@sigma-star.at>,
+        Franck LENORMAND <franck.lenormand@nxp.com>,
+        linux-integrity@vger.kernel.org,
+        "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>,
         Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         LSM <linux-security-module@vger.kernel.org>
-Message-ID: <1846277009.140163.1617285566823.JavaMail.zimbra@nod.at>
-In-Reply-To: <CAFA6WYODfsMTiCEyFA2aRGm+UQE0OTe-ui7mMSK-cqUR_YJFTA@mail.gmail.com>
-References: <cover.56fff82362af6228372ea82e6bd7e586e23f0966.1615914058.git-series.a.fatoum@pengutronix.de> <CAFLxGvzWLje+_HFeb+hKNch4U1f5uypVUOuP=QrEPn_JNM+scg@mail.gmail.com> <ca2a7c17-3ed0-e52f-2e2f-c0f8bbe10323@pengutronix.de> <CAFLxGvwNomKOo3mQLMxYGDA8T8zN=Szpo2q5jrp4D1CaMHydWA@mail.gmail.com> <CAFA6WYO29o73nSg4ikU9cyaOr0kpaXFJpcGLGmFLgjKQWchcEg@mail.gmail.com> <1666035815.140054.1617283065549.JavaMail.zimbra@nod.at> <ea261e53-8f5d-ac52-f3b9-7f2db4532244@pengutronix.de> <CAFA6WYODfsMTiCEyFA2aRGm+UQE0OTe-ui7mMSK-cqUR_YJFTA@mail.gmail.com>
-Subject: Re: [PATCH v1 0/3] KEYS: trusted: Introduce support for NXP
- CAAM-based trusted keys
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [195.201.40.130]
-X-Mailer: Zimbra 8.8.12_GA_3807 (ZimbraWebClient - FF78 (Linux)/8.8.12_GA_3809)
-Thread-Topic: KEYS: trusted: Introduce support for NXP CAAM-based trusted keys
-Thread-Index: jPSCsanR7JeNVp3vlsHfcUPQzmg/6A==
+Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Sumit,
+Hi Richard,
 
------ Ursprüngliche Mail -----
-> Von: "Sumit Garg" <sumit.garg@linaro.org>
-> In this case why would one prefer to use CAAM when you have standards
-> compliant TPM-Chip which additionally offers sealing to specific PCR
-> (integrity measurement) values.
+On Wed, 31 Mar 2021 at 03:34, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
+>
+> Ahmad,
+>
+> On Wed, Mar 17, 2021 at 3:08 PM Ahmad Fatoum <a.fatoum@pengutronix.de> wrote:
+> >     keyctl add trusted $KEYNAME "load $(cat ~/kmk.blob)" @s
+>
+> Is there a reason why we can't pass the desired backend name in the
+> trusted key parameters?
+> e.g.
+> keyctl add trusted $KEYNAME "backendtype caam load $(cat ~/kmk.blob)" @s
+>
 
-I don't think we can dictate what good/sane solutions are and which are not.
-Both CAAM and TPM have pros and cons, I don't see why supporting both is a bad idea.
+IIUC, this would require support for multiple trusted keys backends at
+runtime but currently the trusted keys subsystem only supports a
+single backend which is selected via kernel module parameter during
+boot.
 
->> > IMHO allowing only one backend at the same time is a little over simplified.
->>
->> It is, but I'd rather leave this until it's actually needed.
->> What can be done now is adopting a format for the exported keys that would
->> make this extension seamless in future.
->>
-> 
-> +1
+So the trusted keys framework needs to evolve to support multiple
+trust sources at runtime but I would like to understand the use-cases
+first. IMO, selecting the best trust source available on a platform
+for trusted keys should be a one time operation, so why do we need to
+have other backends available at runtime as well?
 
-As long we don't make multiple backends at runtime impossible I'm
-fine and will happily add support for it when needed. :-)
+-Sumit
 
-Thanks,
-//richard
+> --
+> Thanks,
+> //richard
