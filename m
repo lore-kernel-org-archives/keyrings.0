@@ -2,65 +2,66 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D1054C433B4
-	for <keyrings@archiver.kernel.org>; Fri,  9 Apr 2021 14:35:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9DDD0C433ED
+	for <keyrings@archiver.kernel.org>; Fri,  9 Apr 2021 14:35:31 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id AC9C461185
-	for <keyrings@archiver.kernel.org>; Fri,  9 Apr 2021 14:35:29 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 7ED54611CA
+	for <keyrings@archiver.kernel.org>; Fri,  9 Apr 2021 14:35:31 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233535AbhDIOfl (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 9 Apr 2021 10:35:41 -0400
-Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:5002 "EHLO
-        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-        by vger.kernel.org with ESMTP id S232990AbhDIOfl (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 9 Apr 2021 10:35:41 -0400
-Received: from pps.filterd (m0098416.ppops.net [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 139EXaI0085427;
-        Fri, 9 Apr 2021 10:35:20 -0400
+        id S233468AbhDIOfn (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 9 Apr 2021 10:35:43 -0400
+Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:3916 "EHLO
+        mx0b-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S233813AbhDIOfm (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 9 Apr 2021 10:35:42 -0400
+Received: from pps.filterd (m0098417.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 139EWvLD130831;
+        Fri, 9 Apr 2021 10:35:25 -0400
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : mime-version : content-transfer-encoding; s=pp1;
- bh=oj488HEf7RPPYjulmvJ2vG21D298AQH7SaGsElt1NvY=;
- b=IeQQcV5xXmmpHOOLkbdVAdJpbTdFJD/+bORZdab2P3jdYJWEtLjaQKUwr30jKCNJfMPw
- R6Px7emagEopHDvrg+6PKKCs7uQJJ/GC3S27gF5IGhGU1loCiEfJmOcPVwSEeq5uemlU
- a94V5PJJVf3YZC+LOx8iFh+MTt21NUscW7iC4mD9W7TQAzv2SaO2yLifghJPPMjVS+Od
- jx6EcA+bFGYGMPHrABcOcsrp+A+2lYZWkdT07aDINEq73FGABB2VR91wsSp4D8+ZhHmM
- +rukwZoha+LNmyw9+wenIq57FflCXugmDlnjrTYKoYLvCq6Lc+I1MzUpt92WwsqiiJg9 Pg== 
+ : date : message-id : in-reply-to : references : mime-version :
+ content-transfer-encoding; s=pp1;
+ bh=WESK2G7jlHHHaYOae2oJwIHrXW65k3PvtnqXRGrZnKY=;
+ b=aBBpuX5W1kShCvQ7Zjyj4aAxewqL8BBg4l2iOq9ioQSLLAu4OCUAQLYyqtZTPxuENriz
+ M5gtBBj5kY62pyjylzrlDB4FyxSYPaM/XTZBIBvBDLw+8WEK3fakRnMmR54V8N9l54Hm
+ hvdT7gNi6WU9covkZPBjNwB4+6XsmW3RG6PG6cuYUgOiNG7Zvqs5YDN48GYISG0rtQIX
+ rKs7Jyv7sIVVkQ+qzUBLya4wyQU1GfXuDsZ1n1aiirraSdvtqw+S3cy0YP4Hy0ohJrLv
+ G+dsowSwIFPlIQV4AzmCUYMBT4FULGu5c2yitaOtxN7XJNZAdtwGCY7u/Lq3LDcJkcZ/ uw== 
 Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 37trdq8t3u-1
+        by mx0a-001b2d01.pphosted.com with ESMTP id 37s5xuft20-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 09 Apr 2021 10:35:20 -0400
-Received: from m0098416.ppops.net (m0098416.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 139EZGO4094867;
-        Fri, 9 Apr 2021 10:35:19 -0400
+        Fri, 09 Apr 2021 10:35:25 -0400
+Received: from m0098417.ppops.net (m0098417.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 139EYn6I140621;
+        Fri, 9 Apr 2021 10:35:24 -0400
 Received: from ppma06ams.nl.ibm.com (66.31.33a9.ip4.static.sl-reverse.com [169.51.49.102])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 37trdq8t1m-1
+        by mx0a-001b2d01.pphosted.com with ESMTP id 37s5xuft15-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 09 Apr 2021 10:35:19 -0400
+        Fri, 09 Apr 2021 10:35:24 -0400
 Received: from pps.filterd (ppma06ams.nl.ibm.com [127.0.0.1])
-        by ppma06ams.nl.ibm.com (8.16.0.43/8.16.0.43) with SMTP id 139EXj0j022369;
-        Fri, 9 Apr 2021 14:35:17 GMT
-Received: from b06cxnps4074.portsmouth.uk.ibm.com (d06relay11.portsmouth.uk.ibm.com [9.149.109.196])
-        by ppma06ams.nl.ibm.com with ESMTP id 37rvbwahfu-1
+        by ppma06ams.nl.ibm.com (8.16.0.43/8.16.0.43) with SMTP id 139EXV99021420;
+        Fri, 9 Apr 2021 14:35:22 GMT
+Received: from b06cxnps3074.portsmouth.uk.ibm.com (d06relay09.portsmouth.uk.ibm.com [9.149.109.194])
+        by ppma06ams.nl.ibm.com with ESMTP id 37rvbwahfw-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 09 Apr 2021 14:35:17 +0000
+        Fri, 09 Apr 2021 14:35:22 +0000
 Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
-        by b06cxnps4074.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 139EZEmo45154730
+        by b06cxnps3074.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 139EZJYS41812266
         (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 9 Apr 2021 14:35:14 GMT
+        Fri, 9 Apr 2021 14:35:20 GMT
 Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 8EDD94C046;
-        Fri,  9 Apr 2021 14:35:14 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id CD1CC4C04E;
+        Fri,  9 Apr 2021 14:35:19 +0000 (GMT)
 Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 4E17C4C059;
-        Fri,  9 Apr 2021 14:35:12 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id A3ECA4C044;
+        Fri,  9 Apr 2021 14:35:17 +0000 (GMT)
 Received: from li-4b5937cc-25c4-11b2-a85c-cea3a66903e4.ibm.com.com (unknown [9.211.63.3])
         by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
-        Fri,  9 Apr 2021 14:35:12 +0000 (GMT)
+        Fri,  9 Apr 2021 14:35:17 +0000 (GMT)
 From:   Nayna Jain <nayna@linux.ibm.com>
 To:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
 Cc:     linux-security-module@vger.kernel.org,
@@ -71,83 +72,103 @@ Cc:     linux-security-module@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         David Woodhouse <dwmw2@infradead.org>,
         Nayna Jain <nayna@linux.ibm.com>
-Subject: [PATCH v4 0/3] ima: kernel build support for loading the kernel module signing key
-Date:   Fri,  9 Apr 2021 10:35:04 -0400
-Message-Id: <20210409143507.191443-1-nayna@linux.ibm.com>
+Subject: [PATCH v4 2/3] ima: enable signing of modules with build time generated key
+Date:   Fri,  9 Apr 2021 10:35:06 -0400
+Message-Id: <20210409143507.191443-3-nayna@linux.ibm.com>
 X-Mailer: git-send-email 2.27.0
+In-Reply-To: <20210409143507.191443-1-nayna@linux.ibm.com>
+References: <20210409143507.191443-1-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-TM-AS-GCONF: 00
-X-Proofpoint-ORIG-GUID: m9hJgK75bCvlDCQEcTTShVGaAQQdyQX1
-X-Proofpoint-GUID: q488RcEmc2np1Skacn4GiR-D3S_ezGPJ
+X-Proofpoint-GUID: gzucSY3CX3ehCghTqPCbJ5bAOmh-BGy7
+X-Proofpoint-ORIG-GUID: PcTa-JpQydClvy39DRdOWx_FHne1EkQK
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.391,18.0.761
  definitions=2021-04-09_06:2021-04-09,2021-04-09 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 adultscore=0 malwarescore=0
- bulkscore=0 phishscore=0 lowpriorityscore=0 impostorscore=0 spamscore=0
- mlxscore=0 suspectscore=0 priorityscore=1501 clxscore=1015 mlxlogscore=999
- classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2104060000
- definitions=main-2104090110
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 suspectscore=0 phishscore=0
+ malwarescore=0 mlxscore=0 spamscore=0 impostorscore=0 mlxlogscore=999
+ bulkscore=0 clxscore=1015 lowpriorityscore=0 priorityscore=1501
+ adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2104060000 definitions=main-2104090110
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Kernel modules are currently only signed when CONFIG_MODULE_SIG is enabled.
-The kernel module signing key is a self-signed CA only loaded onto the
-.builtin_trusted_key keyring.  On secure boot enabled systems with an arch
-specific IMA policy enabled, but without MODULE_SIG enabled, kernel modules
-are not signed, nor is the kernel module signing public key loaded onto the
-IMA keyring.
+The kernel build process currently only signs kernel modules when
+MODULE_SIG is enabled. Also, sign the kernel modules at build time when
+IMA_APPRAISE_MODSIG is enabled.
 
-In order to load the the kernel module signing key onto the IMA trusted
-keyring ('.ima'), the certificate needs to be signed by a CA key either on
-the builtin or secondary keyrings. The original version of this patch set
-created and loaded a kernel-CA key onto the builtin keyring. The kernel-CA
-key signed the kernel module signing key, allowing it to be loaded onto the
-IMA trusted keyring.
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+Acked-by: Stefan Berger <stefanb@linux.ibm.com>
+---
+ certs/Kconfig  | 2 +-
+ certs/Makefile | 8 ++++++++
+ init/Kconfig   | 6 +++---
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-However, missing from this version was support for the kernel-CA to sign the
-hardware token certificate. Adding that support would add additional
-complexity.
-
-Since the kernel module signing key is embedded into the Linux kernel at
-build time, instead of creating and loading a kernel-CA onto the builtin
-trusted keyring, this version makes an exception and allows the 
-self-signed kernel module signing key to be loaded directly onto the 
-trusted IMA keyring.
-
-v4:
-* Updated Jarkko's Reviewed-by and Stefan's Ack-by. 
-* Fixed a bug where size was miscalculated for the case when only
-IMA_APPRAISE_MODSIG is enabled. Thanks Mimi for noticing it.
-
-v3:
-
-* Fix the "Fixes" tag as suggested by Stefan for Patch 1/3.
-* Revert back the CA signed module signing key to only self-signed.
-* Allow self signed key as exception only for build time generated
-module signing key onto .ima keyring.
-
-v2:
-
-* Include feedback from Stefan - corrected the Fixes commit id in Patch 1
-and cleaned Patch 5/5.
-* Fix the issue reported by kernel test bot.
-* Include Jarkko's feedback on patch description.
-
-Nayna Jain (3):
-  keys: cleanup build time module signing keys
-  ima: enable signing of modules with build time generated key
-  ima: enable loading of build time generated key on .ima keyring
-
- Makefile                      |  6 ++---
- certs/Kconfig                 |  2 +-
- certs/Makefile                |  8 ++++++
- certs/system_certificates.S   | 13 ++++++++-
- certs/system_keyring.c        | 50 ++++++++++++++++++++++++++++-------
- include/keys/system_keyring.h |  7 +++++
- init/Kconfig                  |  6 ++---
- security/integrity/digsig.c   |  2 ++
- 8 files changed, 76 insertions(+), 18 deletions(-)
-
+diff --git a/certs/Kconfig b/certs/Kconfig
+index c94e93d8bccf..48675ad319db 100644
+--- a/certs/Kconfig
++++ b/certs/Kconfig
+@@ -4,7 +4,7 @@ menu "Certificates for signature checking"
+ config MODULE_SIG_KEY
+ 	string "File name or PKCS#11 URI of module signing key"
+ 	default "certs/signing_key.pem"
+-	depends on MODULE_SIG
++	depends on MODULE_SIG || IMA_APPRAISE_MODSIG
+ 	help
+          Provide the file name of a private key/certificate in PEM format,
+          or a PKCS#11 URI according to RFC7512. The file should contain, or
+diff --git a/certs/Makefile b/certs/Makefile
+index f4c25b67aad9..e3185c57fbd8 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -32,6 +32,14 @@ endif # CONFIG_SYSTEM_TRUSTED_KEYRING
+ clean-files := x509_certificate_list .x509.list
+ 
+ ifeq ($(CONFIG_MODULE_SIG),y)
++	SIGN_KEY = y
++endif
++
++ifeq ($(CONFIG_IMA_APPRAISE_MODSIG),y)
++	SIGN_KEY = y
++endif
++
++ifdef SIGN_KEY
+ ###############################################################################
+ #
+ # If module signing is requested, say by allyesconfig, but a key has not been
+diff --git a/init/Kconfig b/init/Kconfig
+index 5f5c776ef192..85e48a578f90 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -2164,7 +2164,7 @@ config MODULE_SIG_FORCE
+ config MODULE_SIG_ALL
+ 	bool "Automatically sign all modules"
+ 	default y
+-	depends on MODULE_SIG
++	depends on MODULE_SIG || IMA_APPRAISE_MODSIG
+ 	help
+ 	  Sign all modules during make modules_install. Without this option,
+ 	  modules must be signed manually, using the scripts/sign-file tool.
+@@ -2174,7 +2174,7 @@ comment "Do not forget to sign required modules with scripts/sign-file"
+ 
+ choice
+ 	prompt "Which hash algorithm should modules be signed with?"
+-	depends on MODULE_SIG
++	depends on MODULE_SIG || IMA_APPRAISE_MODSIG
+ 	help
+ 	  This determines which sort of hashing algorithm will be used during
+ 	  signature generation.  This algorithm _must_ be built into the kernel
+@@ -2206,7 +2206,7 @@ endchoice
+ 
+ config MODULE_SIG_HASH
+ 	string
+-	depends on MODULE_SIG
++	depends on MODULE_SIG || IMA_APPRAISE_MODSIG
+ 	default "sha1" if MODULE_SIG_SHA1
+ 	default "sha224" if MODULE_SIG_SHA224
+ 	default "sha256" if MODULE_SIG_SHA256
 -- 
 2.29.2
+
