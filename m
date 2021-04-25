@@ -2,122 +2,376 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
+X-Spam-Status: No, score=-17.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 72AA1C433ED
-	for <keyrings@archiver.kernel.org>; Fri, 23 Apr 2021 15:13:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 68690C433B4
+	for <keyrings@archiver.kernel.org>; Sun, 25 Apr 2021 06:35:15 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 380A0611C1
-	for <keyrings@archiver.kernel.org>; Fri, 23 Apr 2021 15:13:04 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 3DE446147F
+	for <keyrings@archiver.kernel.org>; Sun, 25 Apr 2021 06:35:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S243055AbhDWPNi (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 23 Apr 2021 11:13:38 -0400
-Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:25242 "EHLO
-        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S242829AbhDWPNg (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 23 Apr 2021 11:13:36 -0400
-Received: from pps.filterd (m0098404.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 13NF6YlN112666;
-        Fri, 23 Apr 2021 11:12:59 -0400
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=13VxI2u/uzl1rsCou/jlybKaB3Fcj4Hk8iNuw0hp8ss=;
- b=IqbLz44PCWm0AyMztqPxEluVvpxBmhrFtUelOPlmfZF7y1SZ1EeBpf4pSZw9OwNFdxSl
- GxlufLNOq6Yxj0FIltZpaN4B7PmlGYzm1SHu5LB/uwz6Bw6acbEJ+5Uzdglov3cBdgQ/
- X6/zxL3kHk1OgOMYrQogpWv72G9OdGUlhXHit8LWDDs9/QKVwVHJoytKCQpXS6igXY5q
- 3f+gsM7e1QTaolOH4UNY3LK7tzgqTftB40E+OzFuHCXL8XYxxC9RVEHnBMH9bNm+/Nud
- g82+hAShCF7+hfCJ/B23s4V9KacAOrJKz0SpyTzP55tDfWbeUHL3MnNyrSeO+mAIVqhz cg== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 383ykja3aa-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 23 Apr 2021 11:12:58 -0400
-Received: from m0098404.ppops.net (m0098404.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 13NF8oYU121591;
-        Fri, 23 Apr 2021 11:12:58 -0400
-Received: from ppma03wdc.us.ibm.com (ba.79.3fa9.ip4.static.sl-reverse.com [169.63.121.186])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 383ykja37w-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 23 Apr 2021 11:12:58 -0400
-Received: from pps.filterd (ppma03wdc.us.ibm.com [127.0.0.1])
-        by ppma03wdc.us.ibm.com (8.16.0.43/8.16.0.43) with SMTP id 13NFCf0u028347;
-        Fri, 23 Apr 2021 15:12:54 GMT
-Received: from b03cxnp08027.gho.boulder.ibm.com (b03cxnp08027.gho.boulder.ibm.com [9.17.130.19])
-        by ppma03wdc.us.ibm.com with ESMTP id 37yqa9srhy-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 23 Apr 2021 15:12:54 +0000
-Received: from b03ledav003.gho.boulder.ibm.com (b03ledav003.gho.boulder.ibm.com [9.17.130.234])
-        by b03cxnp08027.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 13NFCqMn60686736
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 23 Apr 2021 15:12:52 GMT
-Received: from b03ledav003.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id CAE2D6A047;
-        Fri, 23 Apr 2021 15:12:52 +0000 (GMT)
-Received: from b03ledav003.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 1C6236A04F;
-        Fri, 23 Apr 2021 15:12:52 +0000 (GMT)
-Received: from localhost.localdomain (unknown [9.47.158.152])
-        by b03ledav003.gho.boulder.ibm.com (Postfix) with ESMTP;
-        Fri, 23 Apr 2021 15:12:52 +0000 (GMT)
-From:   Stefan Berger <stefanb@linux.ibm.com>
-To:     jeyu@kernel.org, keyrings@vger.kernel.org, dhowells@redhat.com,
-        zohar@linux.ibm.com, jarkko@kernel.org
-Cc:     nayna@linux.ibm.com, linux-integrity@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Berger <stefanb@linux.ibm.com>
-Subject: [PATCH v4 1/2] certs: Trigger creation of RSA module signing key if it's not an RSA key
-Date:   Fri, 23 Apr 2021 11:12:46 -0400
-Message-Id: <20210423151247.1517808-2-stefanb@linux.ibm.com>
-X-Mailer: git-send-email 2.30.2
-In-Reply-To: <20210423151247.1517808-1-stefanb@linux.ibm.com>
-References: <20210423151247.1517808-1-stefanb@linux.ibm.com>
+        id S229566AbhDYGfx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 25 Apr 2021 02:35:53 -0400
+Received: from condef-03.nifty.com ([202.248.20.68]:64544 "EHLO
+        condef-03.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S229480AbhDYGfx (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 25 Apr 2021 02:35:53 -0400
+X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Apr 2021 02:35:52 EDT
+Received: from conuserg-11.nifty.com ([10.126.8.74])by condef-03.nifty.com with ESMTP id 13P6QTTk032562;
+        Sun, 25 Apr 2021 15:26:30 +0900
+Received: from localhost.localdomain (133-32-232-101.west.xps.vectant.ne.jp [133.32.232.101]) (authenticated)
+        by conuserg-11.nifty.com with ESMTP id 13P6OBfL031298;
+        Sun, 25 Apr 2021 15:24:13 +0900
+DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-11.nifty.com 13P6OBfL031298
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
+        s=dec2015msa; t=1619331854;
+        bh=pHJt3NARoAElt9Jf/+b1t0lrVzcVf5LdrItofT0Do8M=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=FyxJCmD24XlBXV7s8x5LiC2xJk90iS0IX2rGcmaSick2GxqBSG6OVn4gd532IqGJX
+         9zRaolsSXCIR17YFvODgSHk5WlVUusQr2saC2oqrLQrmmJELQNiC5Nc9myZWSnWdc5
+         rW2yCbt6Y4UIUT65UJRqjmPv1BhaydcwEM9rrGwvXpMGUIM3/UIiIwFOqydorVYcq1
+         VXNtDz4s+ya4c2xAWGqYEleACURyS3EamQgnSo+eM6hUHEy8umOdwj8lepLRKGc/2A
+         FnhnKdJuPreLJLRkFc65zwHkOqDoqlQ5hLbu0hvanGIG7ypqgZY7uegqKtXNNcVRQr
+         LlfhV7VJeuUkg==
+X-Nifty-SrcIP: [133.32.232.101]
+From:   Masahiro Yamada <masahiroy@kernel.org>
+To:     linux-kbuild@vger.kernel.org
+Cc:     Masahiro Yamada <masahiroy@kernel.org>,
+        Alexandru Ciobotaru <alcioa@amazon.com>,
+        Alexandru Vasile <lexnv@amazon.com>,
+        Alexei Starovoitov <ast@kernel.org>,
+        Andra Paraschiv <andraprs@amazon.com>,
+        Andrii Nakryiko <andrii@kernel.org>,
+        Christian Brauner <christian@brauner.io>,
+        Daniel Borkmann <daniel@iogearbox.net>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Frank Rowand <frowand.list@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jirislaby@kernel.org>,
+        John Fastabend <john.fastabend@gmail.com>,
+        KP Singh <kpsingh@kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Krzysztof Kozlowski <krzk@kernel.org>,
+        Martin KaFai Lau <kafai@fb.com>,
+        Michal Marek <michal.lkml@markovi.net>,
+        Rob Herring <robh+dt@kernel.org>,
+        Song Liu <songliubraving@fb.com>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Yonghong Song <yhs@fb.com>, bpf@vger.kernel.org,
+        devicetree@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-hardening@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 4/5] .gitignore: prefix local generated files with a slash
+Date:   Sun, 25 Apr 2021 15:24:06 +0900
+Message-Id: <20210425062407.1183801-4-masahiroy@kernel.org>
+X-Mailer: git-send-email 2.27.0
+In-Reply-To: <20210425062407.1183801-1-masahiroy@kernel.org>
+References: <20210425062407.1183801-1-masahiroy@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: rvnVN2uC0d2n0SShuIwPB-gf0FKOCoi6
-X-Proofpoint-ORIG-GUID: Iav6le4oz4f1jlcOag-FCNy8Q48IjMC-
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.391,18.0.761
- definitions=2021-04-23_07:2021-04-23,2021-04-23 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0
- lowpriorityscore=0 bulkscore=0 malwarescore=0 clxscore=1015
- impostorscore=0 phishscore=0 suspectscore=0 mlxscore=0 adultscore=0
- mlxlogscore=999 priorityscore=1501 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=8.12.0-2104060000 definitions=main-2104230098
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Address a kbuild issue where a developer created an ECDSA key for signing
-kernel modules and then builds an older version of the kernel, when bi-
-secting the kernel for example, that does not support ECDSA keys.
+The pattern prefixed with '/' matches a file in the same directory,
+but not a one in sub-directories.
 
-Trigger the creation of an RSA module signing key if it is not an RSA key.
-
-Fixes: cfc411e7fff3 ("Move certificate handling to its own directory")
-Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
 ---
- certs/Makefile | 5 +++++
- 1 file changed, 5 insertions(+)
 
-diff --git a/certs/Makefile b/certs/Makefile
-index e3185c57fbd8..f64bc89ccbf1 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -59,6 +59,11 @@ silent_redirect_openssl = 2>/dev/null
- # external private key, because 'make randconfig' might enable such a
- # boolean option and we unfortunately can't make it depend on !RANDCONFIG.
- ifeq ($(CONFIG_MODULE_SIG_KEY),"certs/signing_key.pem")
-+
-+X509TEXT=$(shell openssl x509 -in $(CONFIG_MODULE_SIG_KEY) -text)
-+
-+$(if $(findstring rsaEncryption,$(X509TEXT)),,$(shell rm -f $(CONFIG_MODULE_SIG_KEY)))
-+
- $(obj)/signing_key.pem: $(obj)/x509.genkey
- 	@$(kecho) "###"
- 	@$(kecho) "### Now generating an X.509 key pair to be used for signing modules."
+ Documentation/devicetree/bindings/.gitignore |  4 ++--
+ arch/.gitignore                              |  4 ++--
+ certs/.gitignore                             |  2 +-
+ drivers/memory/.gitignore                    |  2 +-
+ drivers/tty/vt/.gitignore                    |  6 +++---
+ kernel/.gitignore                            |  2 +-
+ lib/.gitignore                               | 10 +++++-----
+ samples/auxdisplay/.gitignore                |  2 +-
+ samples/binderfs/.gitignore                  |  3 ++-
+ samples/connector/.gitignore                 |  2 +-
+ samples/hidraw/.gitignore                    |  2 +-
+ samples/mei/.gitignore                       |  2 +-
+ samples/nitro_enclaves/.gitignore            |  2 +-
+ samples/pidfd/.gitignore                     |  2 +-
+ samples/seccomp/.gitignore                   |  8 ++++----
+ samples/timers/.gitignore                    |  2 +-
+ samples/vfs/.gitignore                       |  4 ++--
+ samples/watch_queue/.gitignore               |  3 ++-
+ samples/watchdog/.gitignore                  |  2 +-
+ scripts/.gitignore                           | 18 +++++++++---------
+ scripts/basic/.gitignore                     |  2 +-
+ scripts/dtc/.gitignore                       |  4 ++--
+ scripts/gcc-plugins/.gitignore               |  2 +-
+ scripts/genksyms/.gitignore                  |  2 +-
+ scripts/mod/.gitignore                       |  8 ++++----
+ usr/.gitignore                               |  4 ++--
+ 26 files changed, 53 insertions(+), 51 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/.gitignore b/Documentation/devicetree/bindings/.gitignore
+index 3a05b99bfa26..a77719968a7e 100644
+--- a/Documentation/devicetree/bindings/.gitignore
++++ b/Documentation/devicetree/bindings/.gitignore
+@@ -1,4 +1,4 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ *.example.dts
+-processed-schema*.yaml
+-processed-schema*.json
++/processed-schema*.yaml
++/processed-schema*.json
+diff --git a/arch/.gitignore b/arch/.gitignore
+index 4191da401dbb..756c19c34f99 100644
+--- a/arch/.gitignore
++++ b/arch/.gitignore
+@@ -1,3 +1,3 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-i386
+-x86_64
++/i386/
++/x86_64/
+diff --git a/certs/.gitignore b/certs/.gitignore
+index 2a2483990686..5759643f638b 100644
+--- a/certs/.gitignore
++++ b/certs/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-x509_certificate_list
++/x509_certificate_list
+diff --git a/drivers/memory/.gitignore b/drivers/memory/.gitignore
+index caedc4c7d2db..5e84bee05ef8 100644
+--- a/drivers/memory/.gitignore
++++ b/drivers/memory/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-ti-emif-asm-offsets.h
++/ti-emif-asm-offsets.h
+diff --git a/drivers/tty/vt/.gitignore b/drivers/tty/vt/.gitignore
+index 3ecf42234d89..0221709b177d 100644
+--- a/drivers/tty/vt/.gitignore
++++ b/drivers/tty/vt/.gitignore
+@@ -1,4 +1,4 @@
+ # SPDX-License-Identifier: GPL-2.0
+-conmakehash
+-consolemap_deftbl.c
+-defkeymap.c
++/conmakehash
++/consolemap_deftbl.c
++/defkeymap.c
+diff --git a/kernel/.gitignore b/kernel/.gitignore
+index 4abc4e033ed8..4dc1ffe9770b 100644
+--- a/kernel/.gitignore
++++ b/kernel/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-kheaders.md5
++/kheaders.md5
+diff --git a/lib/.gitignore b/lib/.gitignore
+index 327cb2c7f2c9..5e7fa54c4536 100644
+--- a/lib/.gitignore
++++ b/lib/.gitignore
+@@ -1,6 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-gen_crc32table
+-gen_crc64table
+-crc32table.h
+-crc64table.h
+-oid_registry_data.c
++/crc32table.h
++/crc64table.h
++/gen_crc32table
++/gen_crc64table
++/oid_registry_data.c
+diff --git a/samples/auxdisplay/.gitignore b/samples/auxdisplay/.gitignore
+index 2ed744c0e741..d023816849bd 100644
+--- a/samples/auxdisplay/.gitignore
++++ b/samples/auxdisplay/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-cfag12864b-example
++/cfag12864b-example
+diff --git a/samples/binderfs/.gitignore b/samples/binderfs/.gitignore
+index eb60241e8087..8fa415a3640b 100644
+--- a/samples/binderfs/.gitignore
++++ b/samples/binderfs/.gitignore
+@@ -1 +1,2 @@
+-binderfs_example
++# SPDX-License-Identifier: GPL-2.0
++/binderfs_example
+diff --git a/samples/connector/.gitignore b/samples/connector/.gitignore
+index d86f2ff9c947..0e26039f39b5 100644
+--- a/samples/connector/.gitignore
++++ b/samples/connector/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-ucon
++/ucon
+diff --git a/samples/hidraw/.gitignore b/samples/hidraw/.gitignore
+index d7a6074ebcf9..5233ab63262e 100644
+--- a/samples/hidraw/.gitignore
++++ b/samples/hidraw/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-hid-example
++/hid-example
+diff --git a/samples/mei/.gitignore b/samples/mei/.gitignore
+index db5e802f041e..fe894bcb6a62 100644
+--- a/samples/mei/.gitignore
++++ b/samples/mei/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-mei-amt-version
++/mei-amt-version
+diff --git a/samples/nitro_enclaves/.gitignore b/samples/nitro_enclaves/.gitignore
+index 827934129c90..6a718eec71f4 100644
+--- a/samples/nitro_enclaves/.gitignore
++++ b/samples/nitro_enclaves/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0
+-ne_ioctl_sample
++/ne_ioctl_sample
+diff --git a/samples/pidfd/.gitignore b/samples/pidfd/.gitignore
+index eea857fca736..d4cfa3176b1b 100644
+--- a/samples/pidfd/.gitignore
++++ b/samples/pidfd/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-pidfd-metadata
++/pidfd-metadata
+diff --git a/samples/seccomp/.gitignore b/samples/seccomp/.gitignore
+index 4a5a5b7db30b..a6df0da77c5d 100644
+--- a/samples/seccomp/.gitignore
++++ b/samples/seccomp/.gitignore
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-bpf-direct
+-bpf-fancy
+-dropper
+-user-trap
++/bpf-direct
++/bpf-fancy
++/dropper
++/user-trap
+diff --git a/samples/timers/.gitignore b/samples/timers/.gitignore
+index 40510c33cf08..cd9ff7b95383 100644
+--- a/samples/timers/.gitignore
++++ b/samples/timers/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-hpet_example
++/hpet_example
+diff --git a/samples/vfs/.gitignore b/samples/vfs/.gitignore
+index 8fdabf7e5373..79212d91285b 100644
+--- a/samples/vfs/.gitignore
++++ b/samples/vfs/.gitignore
+@@ -1,3 +1,3 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-test-fsmount
+-test-statx
++/test-fsmount
++/test-statx
+diff --git a/samples/watch_queue/.gitignore b/samples/watch_queue/.gitignore
+index 2aa3c7e56a1a..823b351d3db9 100644
+--- a/samples/watch_queue/.gitignore
++++ b/samples/watch_queue/.gitignore
+@@ -1 +1,2 @@
+-watch_test
++# SPDX-License-Identifier: GPL-2.0-only
++/watch_test
+diff --git a/samples/watchdog/.gitignore b/samples/watchdog/.gitignore
+index 74153b831244..a70a0150ed9f 100644
+--- a/samples/watchdog/.gitignore
++++ b/samples/watchdog/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-watchdog-simple
++/watchdog-simple
+diff --git a/scripts/.gitignore b/scripts/.gitignore
+index a6c11316c969..e83c620ef52c 100644
+--- a/scripts/.gitignore
++++ b/scripts/.gitignore
+@@ -1,11 +1,11 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-bin2c
+-kallsyms
+-unifdef
+-recordmcount
+-sorttable
+-asn1_compiler
+-extract-cert
+-sign-file
+-insert-sys-cert
++/asn1_compiler
++/bin2c
++/extract-cert
++/insert-sys-cert
++/kallsyms
+ /module.lds
++/recordmcount
++/sign-file
++/sorttable
++/unifdef
+diff --git a/scripts/basic/.gitignore b/scripts/basic/.gitignore
+index 98ae1f509592..961c91c8a884 100644
+--- a/scripts/basic/.gitignore
++++ b/scripts/basic/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-fixdep
++/fixdep
+diff --git a/scripts/dtc/.gitignore b/scripts/dtc/.gitignore
+index 8a8b62bf3d3c..e0b5c1d2464a 100644
+--- a/scripts/dtc/.gitignore
++++ b/scripts/dtc/.gitignore
+@@ -1,3 +1,3 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-dtc
+-fdtoverlay
++/dtc
++/fdtoverlay
+diff --git a/scripts/gcc-plugins/.gitignore b/scripts/gcc-plugins/.gitignore
+index b04e0f0f033e..5cc385b9eb97 100644
+--- a/scripts/gcc-plugins/.gitignore
++++ b/scripts/gcc-plugins/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-randomize_layout_seed.h
++/randomize_layout_seed.h
+diff --git a/scripts/genksyms/.gitignore b/scripts/genksyms/.gitignore
+index 999af710f83d..0b275abf9405 100644
+--- a/scripts/genksyms/.gitignore
++++ b/scripts/genksyms/.gitignore
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-genksyms
++/genksyms
+diff --git a/scripts/mod/.gitignore b/scripts/mod/.gitignore
+index 07e4a39f90a6..ed2e13b708ce 100644
+--- a/scripts/mod/.gitignore
++++ b/scripts/mod/.gitignore
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-elfconfig.h
+-mk_elfconfig
+-modpost
+-devicetable-offsets.h
++/elfconfig.h
++/mk_elfconfig
++/modpost
++/devicetable-offsets.h
+diff --git a/usr/.gitignore b/usr/.gitignore
+index 935442ed1eb2..8996e7a88902 100644
+--- a/usr/.gitignore
++++ b/usr/.gitignore
+@@ -1,4 +1,4 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-gen_init_cpio
+-initramfs_data.cpio
++/gen_init_cpio
++/initramfs_data.cpio
+ /initramfs_inc_data
 -- 
-2.29.2
+2.27.0
 
