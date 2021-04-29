@@ -2,102 +2,119 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS autolearn=unavailable
+X-Spam-Status: No, score=-6.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,UNPARSEABLE_RELAY autolearn=no
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D03F9C433B4
-	for <keyrings@archiver.kernel.org>; Tue, 27 Apr 2021 23:47:52 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DEBB1C433B4
+	for <keyrings@archiver.kernel.org>; Thu, 29 Apr 2021 06:45:25 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A54EE613FC
-	for <keyrings@archiver.kernel.org>; Tue, 27 Apr 2021 23:47:52 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id A5F0B61446
+	for <keyrings@archiver.kernel.org>; Thu, 29 Apr 2021 06:45:25 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S239352AbhD0Xsf (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 27 Apr 2021 19:48:35 -0400
-Received: from mail.kernel.org ([198.145.29.99]:59906 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S236015AbhD0Xsf (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Tue, 27 Apr 2021 19:48:35 -0400
-Received: by mail.kernel.org (Postfix) with ESMTPSA id 3E28061076;
-        Tue, 27 Apr 2021 23:47:51 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1619567271;
-        bh=TFwGmF0S+aDOzPhe7rg8N7GWEOOJzXVXXwUBK1ZpOOE=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=VGeLEos/LYRcIBjuqKtAGyIam3joh+EZmmQcM3sGI4fAyKvqLz/JWmgKsgfFq9f1l
-         r6T1j0+u6Zduo3SQqzKbmiw0QXxRJoAvl+qYq73J88OP9KF1FdxXPwCVnhVQ2OhAAM
-         0WtO4VBbIaxWG8csflefoovclu1FZHgcmI12WBEAkYxK0AUeWEOusclhEw8z6cTA2X
-         A6YvItjkUTDysbqAPP7EGla3lQVc4LcIRfU57YnWcKVMvgiogD+nkx0MpMlSHptU1W
-         AiYHDDGvttdlGeOCe02+Dr64Pqcg7YrgMMtVffrVFef1EwzlwCCG67WRgkMXTR1wEY
-         S/TU7qIf1XJDw==
-Date:   Wed, 28 Apr 2021 02:47:49 +0300
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     Stefan Berger <stefanb@linux.ibm.com>
-Cc:     jeyu@kernel.org, keyrings@vger.kernel.org, dhowells@redhat.com,
-        zohar@linux.ibm.com, nayna@linux.ibm.com,
-        linux-integrity@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] Add support for ECDSA-signed kernel modules
-Message-ID: <YIiipT1nDSfzX3P6@kernel.org>
-References: <20210423151247.1517808-1-stefanb@linux.ibm.com>
+        id S230309AbhD2GqK (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 29 Apr 2021 02:46:10 -0400
+Received: from aserp2120.oracle.com ([141.146.126.78]:34534 "EHLO
+        aserp2120.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S238950AbhD2GqJ (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 29 Apr 2021 02:46:09 -0400
+Received: from pps.filterd (aserp2120.oracle.com [127.0.0.1])
+        by aserp2120.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 13T6UENP077017;
+        Thu, 29 Apr 2021 06:45:21 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=oracle.com; h=date : from : to : cc
+ : subject : message-id : mime-version : content-type; s=corp-2020-01-29;
+ bh=MYrHmjtF9T1eVTcrooB6Uv3/JzEpCF95vYix1bR3a/Y=;
+ b=b5D8y7bBD4iBLwkMTWtIKJV9N5J95mBJNrqK20Z+7nlmWVLiPfFrp5m//DpHNv7JxUJJ
+ anSyO6/V2nSXdnStddQ+csPDGkYHD8I10my6nGSWJd0m7h0qPzrzn/zVzFyisR5wVAFo
+ aOiSiT+BhKx3pGf2bmokT/THxYtGtY0ikqnoQgtAnpBKbLzADXFlE3XT5sK3wAW22Yr6
+ JkgRk5L7er3CWdzYjMVoovM1mBi+umTfuBFsmASerle1ms4zsiM75fgYZnEqOvTmmmpQ
+ U4tTZdfK2esR16cO+9DtoW365my9YFbnLfO7jUounXF8mJjTBBtnOdj/eWWoKovnKifs HQ== 
+Received: from userp3030.oracle.com (userp3030.oracle.com [156.151.31.80])
+        by aserp2120.oracle.com with ESMTP id 385ahbu6c0-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Thu, 29 Apr 2021 06:45:21 +0000
+Received: from pps.filterd (userp3030.oracle.com [127.0.0.1])
+        by userp3030.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 13T6Urxe074703;
+        Thu, 29 Apr 2021 06:45:20 GMT
+Received: from pps.reinject (localhost [127.0.0.1])
+        by userp3030.oracle.com with ESMTP id 3848f0mp25-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Thu, 29 Apr 2021 06:45:20 +0000
+Received: from userp3030.oracle.com (userp3030.oracle.com [127.0.0.1])
+        by pps.reinject (8.16.0.36/8.16.0.36) with SMTP id 13T6eqTT103974;
+        Thu, 29 Apr 2021 06:45:20 GMT
+Received: from userv0121.oracle.com (userv0121.oracle.com [156.151.31.72])
+        by userp3030.oracle.com with ESMTP id 3848f0mp1j-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Thu, 29 Apr 2021 06:45:20 +0000
+Received: from abhmp0012.oracle.com (abhmp0012.oracle.com [141.146.116.18])
+        by userv0121.oracle.com (8.14.4/8.13.8) with ESMTP id 13T6jGSw027916;
+        Thu, 29 Apr 2021 06:45:19 GMT
+Received: from mwanda (/102.36.221.92)
+        by default (Oracle Beehive Gateway v4.0)
+        with ESMTP ; Wed, 28 Apr 2021 23:45:16 -0700
+Date:   Thu, 29 Apr 2021 09:45:10 +0300
+From:   Dan Carpenter <dan.carpenter@oracle.com>
+To:     James.Bottomley@hansenpartnership.com
+Cc:     keyrings@vger.kernel.org
+Subject: [bug report] security: keys: trusted: use ASN.1 TPM2 key format for
+ the blobs
+Message-ID: <YIpV9pcyM9/rWqEt@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20210423151247.1517808-1-stefanb@linux.ibm.com>
+X-Proofpoint-GUID: M5MJ--YlzJokHdJW3ovtWGzTiFGqc9TT
+X-Proofpoint-ORIG-GUID: M5MJ--YlzJokHdJW3ovtWGzTiFGqc9TT
+X-Proofpoint-Virus-Version: vendor=nai engine=6200 definitions=9968 signatures=668683
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 mlxscore=0 bulkscore=0 mlxlogscore=636
+ priorityscore=1501 clxscore=1011 adultscore=0 suspectscore=0 spamscore=0
+ phishscore=0 malwarescore=0 lowpriorityscore=0 impostorscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2104060000
+ definitions=main-2104290050
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Fri, Apr 23, 2021 at 11:12:45AM -0400, Stefan Berger wrote:
-> This series adds support for ECDSA-signed kernel modules. It also
-> attempts to address a kbuild issue where a developer created an ECDSA
-> key for signing kernel modules and then builds an older version of the
-> kernel, when bisecting the kernel for example, that does not support
-> ECDSA keys.
-> 
-> The first patch addresses the kbuild issue of needing to delete that
-> ECDSA key if it is in certs/signing_key.pem and trigger the creation
-> of an RSA key. However, for this to work this patch would have to be
-> backported to previous versions of the kernel but would also only work
-> for the developer if he/she used a stable version of the kernel to which
-> this patch was applied. So whether this patch actually achieves the
-> wanted effect is not always guaranteed.
-> 
-> The 2nd patch adds the support for the ECSDA-signed kernel modules.
-> 
-> This patch depends on the ECDSA support series currently queued here:
-> https://git.kernel.org/pub/scm/linux/kernel/git/herbert/cryptodev-2.6.git/log/?h=ecc
-> 
->   Stefan
-> 
-> v4:
->   - extending 'depends on' with MODULES to (IMA_APPRAISE_MODSIG && MODULES)
->   
-> v3:
->   - added missing OIDs for ECDSA signed hashes to pkcs7_sig_note_pkey_algo
->   - added recommendation to use string hash to Kconfig help text
-> 
-> v2:
->   - Adjustment to ECDSA key detector string in 2/2
->   - Rephrased cover letter and patch descriptions with Mimi
-> 
-> 
-> Stefan Berger (2):
->   certs: Trigger creation of RSA module signing key if it's not an RSA
->     key
->   certs: Add support for using elliptic curve keys for signing modules
-> 
->  certs/Kconfig                         | 26 ++++++++++++++++++++++++++
->  certs/Makefile                        | 14 ++++++++++++++
->  crypto/asymmetric_keys/pkcs7_parser.c |  8 ++++++++
->  3 files changed, 48 insertions(+)
-> 
-> -- 
-> 2.29.2
-> 
-> 
+Hello James Bottomley,
 
-I just went through v3. My tags apply also to this version.
+The patch f2219745250f: "security: keys: trusted: use ASN.1 TPM2 key
+format for the blobs" from Jan 27, 2021, leads to the following
+static checker warning:
 
-/Jarkko
+security/keys/trusted-keys/trusted_tpm2.c:344 tpm2_seal_trusted() warn: inconsistent returns '&chip->ops_sem'.
+  Locked on  : 339
+  Unlocked on: 258,344
+security/keys/trusted-keys/trusted_tpm2.c:344 tpm2_seal_trusted() warn: inconsistent returns '&chip->tpm_mutex'.
+  Locked on  : 339
+  Unlocked on: 258,344
+
+security/keys/trusted-keys/trusted_tpm2.c
+   324  
+   325          blob_len = tpm2_key_encode(payload, options,
+   326                                     &buf.data[TPM_HEADER_SIZE + 4],
+   327                                     blob_len);
+   328  
+   329  out:
+   330          tpm_buf_destroy(&buf);
+   331  
+   332          if (rc > 0) {
+   333                  if (tpm2_rc_value(rc) == TPM2_RC_HASH)
+   334                          rc = -EINVAL;
+   335                  else
+   336                          rc = -EPERM;
+   337          }
+   338          if (blob_len < 0)
+   339                  return blob_len;
+                        ^^^^^^^^^^^^^^^^
+Need to call tpm_put_ops() or something before returning.
+
+   340  
+   341          payload->blob_len = blob_len;
+   342  
+   343          tpm_put_ops(chip);
+   344          return rc;
+   345  }
+
+regards,
+dan carpenter
