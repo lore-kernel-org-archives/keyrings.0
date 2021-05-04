@@ -2,50 +2,68 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-8.7 required=3.0 tests=BAYES_00,FROM_LOCAL_HEX,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,MENTIONS_GIT_HOSTING,
-	SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-18.3 required=3.0 tests=BAYES_00,DKIMWL_WL_MED,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	MAILING_LIST_MULTI,MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS,
+	USER_IN_DEF_DKIM_WL autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3FCB9C433ED
-	for <keyrings@archiver.kernel.org>; Tue,  4 May 2021 11:33:19 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 58814C433B4
+	for <keyrings@archiver.kernel.org>; Tue,  4 May 2021 11:38:34 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 0AEB4613BE
-	for <keyrings@archiver.kernel.org>; Tue,  4 May 2021 11:33:19 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 26747611AE
+	for <keyrings@archiver.kernel.org>; Tue,  4 May 2021 11:38:34 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230169AbhEDLeN (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 4 May 2021 07:34:13 -0400
-Received: from mail-il1-f200.google.com ([209.85.166.200]:42790 "EHLO
-        mail-il1-f200.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230151AbhEDLeM (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 4 May 2021 07:34:12 -0400
-Received: by mail-il1-f200.google.com with SMTP id d3-20020a9287430000b0290181f7671fa1so6748728ilm.9
-        for <keyrings@vger.kernel.org>; Tue, 04 May 2021 04:33:17 -0700 (PDT)
+        id S230153AbhEDLj2 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 4 May 2021 07:39:28 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48332 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S230046AbhEDLj1 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 4 May 2021 07:39:27 -0400
+Received: from mail-ot1-x335.google.com (mail-ot1-x335.google.com [IPv6:2607:f8b0:4864:20::335])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C3E63C061574
+        for <keyrings@vger.kernel.org>; Tue,  4 May 2021 04:38:32 -0700 (PDT)
+Received: by mail-ot1-x335.google.com with SMTP id f75-20020a9d03d10000b0290280def9ab76so7870581otf.12
+        for <keyrings@vger.kernel.org>; Tue, 04 May 2021 04:38:32 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=20161025;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc;
+        bh=3IBg+3xHlp7KCtTOCeDpvgve7su0wYZJK0fbkVffQa8=;
+        b=eEc4NUvhm8+zBVJUmsjvROxGHf3CKqo/L2gXvEP2CfCNR4dG/Ln/eS/+hjudLwIBKo
+         Kbm42dusWsA98DpvTuKuuRBoWtuGnUeM/R3wjZKHWtsak59HeOkulo0v3phcelEabiR5
+         OZLjzqO0agaGKCWYfIpmXrojGJNDEVoxODjgyj4VZUHG94odklMmJJ/BkcOmNfRlgeBu
+         voQCaNlgUqwaVLf/91HIzJoknHAPmMe0F/gwc6UnlqMoyH+2kxA3xKhikjbyqCyZk3c9
+         QoctFr4ZUCgoEpq8/DLdiT7sGQ1oSr+0UjdLFPNpFkXCefsWDQW4GvKBzgtC8IT7h52O
+         dIDQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
-        h=x-gm-message-state:mime-version:date:message-id:subject:from:to;
-        bh=KkldCC8vnwDUsxXBBKnjsIMoaTF/A86bqTEGiJBZfMQ=;
-        b=Sd8qVZkq2TVXOTB/B78taI4OItqNxCdSL/67PqyWA+w0MHjIdZbcEGTNBP3JsJ4LF+
-         z8aaTnLxi/MdBYGaVN4amr1RcQnWJAV49mATUOSDnVUtwtyn6rJ+706RMW2+QqdyEs3k
-         kUNE355F5/sdmqh3h0rDpIKyKVg8UM1sqKHSsU1Qqi+TxgRT9y+MWWFmGLwgNXI9tN3Y
-         94PbXB2sdWf9lI0rF2+MIka8QiLpih+qqc0stAh+LZQ2F1QPwPo7ORt+HqkR8QjdgOKp
-         xF+0m6lU+w9wrIoCyCrn2eZFSgL45SsNBOMlfYM62lTEAXl6yR4RM5HDrPp4WqEjWU3o
-         0I7w==
-X-Gm-Message-State: AOAM531uHOkftQqiZG3xvQhaXuZVGnnx/FC0P+/Wvzwqs8a/6l3fe3eL
-        IZbUPsu2ug1ngSLuhsPc90BNUyddkfC4UYPB5EEw5xQo70Ju
-X-Google-Smtp-Source: ABdhPJx7mNrSDGEeKSQGY+okCJevU/2/0ktjrtdQ5tKKPW1LHT6TscRZcasLF83f+P8Cw1heSbvy+kRH1foI/yIjj3VOvxzTM2bD
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc;
+        bh=3IBg+3xHlp7KCtTOCeDpvgve7su0wYZJK0fbkVffQa8=;
+        b=XxitRUPpJylkprzK59ZYjt8d2xKNqm7/v+RYtGYkwgM+qm30C3HsmRv85oeFbvGzhp
+         ZB1oxMacj9pF1iP7otcV3KkLMUDKOe5wAF3tM0dZBc4hVf1eJ+J4dmnHNk/rI/2jXNEA
+         +s+Ouke7/9MClRc7bN+2glmWnp1qLwPgPX4aFYUHPQeXcEi5rpO4Z9RAG51a2DwiXOGM
+         EUcqzyaDCD4evsmWFuXnFQzeQ8c8OgqOxXPF/HgRtLFASCqJpvCo8KlPzWjlqDGU3ipc
+         1NC2ieJwc8r4KNqIekw2QUL5JGJp62KPMjBcrAaAEeZeJpq2mqjlZ2HDc9E059Widz/6
+         1xyw==
+X-Gm-Message-State: AOAM532RDkpxLD00M3F38w+q3132UfUkhS0CdUKyOoYXMyG+RQRaq2zL
+        I7Bpz7ydvCtgsW/8KzpQF/IU5SWtFzBkWCdm4Fl2vg==
+X-Google-Smtp-Source: ABdhPJyB5cemuiOsogZzl3QtTmE/v6UC8qz33AhNswXYM+GgF5hjXJszIcBSWPbUq7EfabC1SXjizsym69NIaWFiC3E=
+X-Received: by 2002:a9d:1ea9:: with SMTP id n38mr19501532otn.233.1620128311976;
+ Tue, 04 May 2021 04:38:31 -0700 (PDT)
 MIME-Version: 1.0
-X-Received: by 2002:a92:ce4e:: with SMTP id a14mr20104182ilr.211.1620127997107;
- Tue, 04 May 2021 04:33:17 -0700 (PDT)
-Date:   Tue, 04 May 2021 04:33:17 -0700
-X-Google-Appengine-App-Id: s~syzkaller
-X-Google-Appengine-App-Id-Alias: syzkaller
-Message-ID: <000000000000c224d005c17f7142@google.com>
-Subject: [syzbot] KCSAN: data-race in assoc_array_apply_edit / search_nested_keyrings
-From:   syzbot <syzbot+e4eb6db47eb0f80308c6@syzkaller.appspotmail.com>
-To:     dhowells@redhat.com, jarkko@kernel.org, jmorris@namei.org,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+References: <000000000000c224d005c17f7142@google.com>
+In-Reply-To: <000000000000c224d005c17f7142@google.com>
+From:   Marco Elver <elver@google.com>
+Date:   Tue, 4 May 2021 13:38:20 +0200
+Message-ID: <CANpmjNOJ3Yhu77mU-8WvYFSnFgCYhctkCcTZhwpO5jrMzPejtA@mail.gmail.com>
+Subject: Re: [syzbot] KCSAN: data-race in assoc_array_apply_edit / search_nested_keyrings
+To:     syzbot <syzbot+e4eb6db47eb0f80308c6@syzkaller.appspotmail.com>
+Cc:     David Howells <dhowells@redhat.com>, jarkko@kernel.org,
+        jmorris@namei.org, keyrings@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
         linux-security-module@vger.kernel.org, serge@hallyn.com,
-        syzkaller-bugs@googlegroups.com
+        syzkaller-bugs <syzkaller-bugs@googlegroups.com>
 Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
@@ -53,56 +71,50 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 Hello,
 
-syzbot found the following issue on:
+On Tue, 4 May 2021 at 13:33, syzbot
+<syzbot+e4eb6db47eb0f80308c6@syzkaller.appspotmail.com> wrote:
+> HEAD commit:    5e321ded Merge tag 'for-5.13/parisc' of git://git.kernel.o..
+> git tree:       upstream
+> console output: https://syzkaller.appspot.com/x/log.txt?x=111cafb9d00000
+> kernel config:  https://syzkaller.appspot.com/x/.config?x=a4da2ebcb6e8f526
+> dashboard link: https://syzkaller.appspot.com/bug?extid=e4eb6db47eb0f80308c6
+> compiler:       Debian clang version 11.0.1-2
+>
+> Unfortunately, I don't have any reproducer for this issue yet.
+>
+> IMPORTANT: if you fix the issue, please add the following tag to the commit:
+> Reported-by: syzbot+e4eb6db47eb0f80308c6@syzkaller.appspotmail.com
+>
+> ==================================================================
+> BUG: KCSAN: data-race in assoc_array_apply_edit / search_nested_keyrings
+>
+> write to 0xffff8881065ffc10 of 8 bytes by task 30966 on cpu 1:
+>  assoc_array_apply_edit+0x3e/0x660 lib/assoc_array.c:1357
+>  __key_link+0x8a/0xc0 security/keys/keyring.c:1372
+>  __key_instantiate_and_link+0x15b/0x290 security/keys/key.c:459
+>  key_create_or_update+0x750/0x990 security/keys/key.c:941
+>  __do_sys_add_key security/keys/keyctl.c:134 [inline]
+>  __se_sys_add_key+0x26f/0x300 security/keys/keyctl.c:74
+>  __x64_sys_add_key+0x63/0x70 security/keys/keyctl.c:74
+>  do_syscall_64+0x4a/0x90 arch/x86/entry/common.c:47
+>  entry_SYSCALL_64_after_hwframe+0x44/0xae
+>
+> read to 0xffff8881065ffc10 of 8 bytes by task 30971 on cpu 0:
+>  search_nested_keyrings+0x34f/0x920 security/keys/keyring.c:751
+>  keyring_search_rcu+0xf4/0x180 security/keys/keyring.c:922
+>  search_cred_keyrings_rcu+0x135/0x240 security/keys/process_keys.c:480
+>  search_process_keyrings_rcu security/keys/process_keys.c:544 [inline]
+>  lookup_user_key+0xab6/0xd40 security/keys/process_keys.c:762
+>  __do_sys_add_key security/keys/keyctl.c:126 [inline]
+>  __se_sys_add_key+0x23a/0x300 security/keys/keyctl.c:74
+>  __x64_sys_add_key+0x63/0x70 security/keys/keyctl.c:74
+>  do_syscall_64+0x4a/0x90 arch/x86/entry/common.c:47
+>  entry_SYSCALL_64_after_hwframe+0x44/0xae
 
-HEAD commit:    5e321ded Merge tag 'for-5.13/parisc' of git://git.kernel.o..
-git tree:       upstream
-console output: https://syzkaller.appspot.com/x/log.txt?x=111cafb9d00000
-kernel config:  https://syzkaller.appspot.com/x/.config?x=a4da2ebcb6e8f526
-dashboard link: https://syzkaller.appspot.com/bug?extid=e4eb6db47eb0f80308c6
-compiler:       Debian clang version 11.0.1-2
+I found this interesting because the code around
+security/keys/keyring.c:751 is diligent in marking concurrency
+accesses with READ_ONCE(). So on the off-chance there is unexpected
+concurrency here, I thought it'd be worth double-checking as I wasn't
+able to conclude if this is just missing a READ_ONCE().
 
-Unfortunately, I don't have any reproducer for this issue yet.
-
-IMPORTANT: if you fix the issue, please add the following tag to the commit:
-Reported-by: syzbot+e4eb6db47eb0f80308c6@syzkaller.appspotmail.com
-
-==================================================================
-BUG: KCSAN: data-race in assoc_array_apply_edit / search_nested_keyrings
-
-write to 0xffff8881065ffc10 of 8 bytes by task 30966 on cpu 1:
- assoc_array_apply_edit+0x3e/0x660 lib/assoc_array.c:1357
- __key_link+0x8a/0xc0 security/keys/keyring.c:1372
- __key_instantiate_and_link+0x15b/0x290 security/keys/key.c:459
- key_create_or_update+0x750/0x990 security/keys/key.c:941
- __do_sys_add_key security/keys/keyctl.c:134 [inline]
- __se_sys_add_key+0x26f/0x300 security/keys/keyctl.c:74
- __x64_sys_add_key+0x63/0x70 security/keys/keyctl.c:74
- do_syscall_64+0x4a/0x90 arch/x86/entry/common.c:47
- entry_SYSCALL_64_after_hwframe+0x44/0xae
-
-read to 0xffff8881065ffc10 of 8 bytes by task 30971 on cpu 0:
- search_nested_keyrings+0x34f/0x920 security/keys/keyring.c:751
- keyring_search_rcu+0xf4/0x180 security/keys/keyring.c:922
- search_cred_keyrings_rcu+0x135/0x240 security/keys/process_keys.c:480
- search_process_keyrings_rcu security/keys/process_keys.c:544 [inline]
- lookup_user_key+0xab6/0xd40 security/keys/process_keys.c:762
- __do_sys_add_key security/keys/keyctl.c:126 [inline]
- __se_sys_add_key+0x23a/0x300 security/keys/keyctl.c:74
- __x64_sys_add_key+0x63/0x70 security/keys/keyctl.c:74
- do_syscall_64+0x4a/0x90 arch/x86/entry/common.c:47
- entry_SYSCALL_64_after_hwframe+0x44/0xae
-
-Reported by Kernel Concurrency Sanitizer on:
-CPU: 0 PID: 30971 Comm: syz-executor.1 Not tainted 5.12.0-syzkaller #0
-Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS Google 01/01/2011
-==================================================================
-
-
----
-This report is generated by a bot. It may contain errors.
-See https://goo.gl/tpsmEJ for more information about syzbot.
-syzbot engineers can be reached at syzkaller@googlegroups.com.
-
-syzbot will keep track of this issue. See:
-https://goo.gl/tpsmEJ#status for how to communicate with syzbot.
+Thank you!
