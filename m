@@ -2,215 +2,72 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.4 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,UNPARSEABLE_RELAY,USER_AGENT_GIT
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 599AFC43460
-	for <keyrings@archiver.kernel.org>; Wed,  5 May 2021 18:18:58 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DE0E9C433ED
+	for <keyrings@archiver.kernel.org>; Sat,  8 May 2021 09:51:31 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 21D04613AA
-	for <keyrings@archiver.kernel.org>; Wed,  5 May 2021 18:18:58 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id B731461424
+	for <keyrings@archiver.kernel.org>; Sat,  8 May 2021 09:51:31 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234590AbhEESTx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 5 May 2021 14:19:53 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33190 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S234547AbhEESTw (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 5 May 2021 14:19:52 -0400
-Received: from mail-ot1-x32d.google.com (mail-ot1-x32d.google.com [IPv6:2607:f8b0:4864:20::32d])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AC07FC061763
-        for <keyrings@vger.kernel.org>; Wed,  5 May 2021 11:18:54 -0700 (PDT)
-Received: by mail-ot1-x32d.google.com with SMTP id 92-20020a9d02e50000b029028fcc3d2c9eso2587246otl.0
-        for <keyrings@vger.kernel.org>; Wed, 05 May 2021 11:18:54 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=chromium.org; s=google;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc;
-        bh=+IwZXLRXE7YG5YvYLQLnS3XtjuwltWw/8OV4sZc7FtQ=;
-        b=cYMtDHKCglXEKCG8XFCDw0mo6ut3vuH0OSwu3mg8bbcS7aam9fkng1amjKuyWy10gd
-         pkqctId/qGP2+eknKgPx5r2246N18DmMuTnicvkkmVtsBT1oL6PveOm2wAvFLXjhYPlA
-         gSMZ4vYuD/VbxHvkEziYMpUWpKR8r79Q+Xdgc=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc;
-        bh=+IwZXLRXE7YG5YvYLQLnS3XtjuwltWw/8OV4sZc7FtQ=;
-        b=bHHwi6uPZBXXT0PO4SerQ+kBXaP9ITVKWU5T2n/MjA/rwlb2KdDL+dmOEUDCsiMyIt
-         Ww8hpV9WCATNHPTXX7fXlITfOxaLmeeUBxDm+uglSB33X/tK05kz/ltlR5pe8TATjSnp
-         LF0xHCLks89KHeBuMr1r6PVrPVUU/IUZ8ZTk1IEj08YTbZyHd2UTcUPdCM8POBys8b+P
-         qVWyYlL68E2eAgJkIJcbm18Q6UsoUABJjpk35qy10MZLYuiIZ+eYx9GPEQM9ayK7pSkE
-         X0gRjX+8MNw0kznENCHjKdhFzxX//mSHVR1Ck1BK3LjcBABSNMddsfUoAtZxHPx2BgQE
-         k2WQ==
-X-Gm-Message-State: AOAM532Ys5ODUIqF75RDfccoANhi8KuMw2UnQkD6Dkw6POZyQlQNXKO6
-        69cCWJyq66OXgWHZrMhCujQq6gMHPAHlJw==
-X-Google-Smtp-Source: ABdhPJwal5WZk9uAShn05MRYwqeKMxKOmMiLywY2TaVbQ+jk9aQfMPg7A4MqVcetd99Rc3tW5+QuwA==
-X-Received: by 2002:a9d:28d:: with SMTP id 13mr25277051otl.278.1620238733904;
-        Wed, 05 May 2021 11:18:53 -0700 (PDT)
-Received: from mail-ot1-f49.google.com (mail-ot1-f49.google.com. [209.85.210.49])
-        by smtp.gmail.com with ESMTPSA id w66sm24368ooa.37.2021.05.05.11.18.52
-        for <keyrings@vger.kernel.org>
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Wed, 05 May 2021 11:18:53 -0700 (PDT)
-Received: by mail-ot1-f49.google.com with SMTP id n32-20020a9d1ea30000b02902a53d6ad4bdso2544390otn.3
-        for <keyrings@vger.kernel.org>; Wed, 05 May 2021 11:18:52 -0700 (PDT)
-X-Received: by 2002:a9d:425:: with SMTP id 34mr25334436otc.25.1620238732448;
- Wed, 05 May 2021 11:18:52 -0700 (PDT)
-MIME-Version: 1.0
-References: <20210220013255.1083202-1-matthewgarrett@google.com> <20210220013255.1083202-7-matthewgarrett@google.com>
-In-Reply-To: <20210220013255.1083202-7-matthewgarrett@google.com>
-From:   Evan Green <evgreen@chromium.org>
-Date:   Wed, 5 May 2021 11:18:16 -0700
-X-Gmail-Original-Message-ID: <CAE=gft76T7tgvd51e1Wzo6LN9afCLLkjGtN7xDbb6yq=CzbjHA@mail.gmail.com>
-Message-ID: <CAE=gft76T7tgvd51e1Wzo6LN9afCLLkjGtN7xDbb6yq=CzbjHA@mail.gmail.com>
-Subject: Re: [PATCH 6/9] pm: hibernate: Optionally store and verify a hash of
- the image
-To:     Matthew Garrett <matthewgarrett@google.com>
-Cc:     LKML <linux-kernel@vger.kernel.org>,
-        linux-integrity@vger.kernel.org, linux-pm@vger.kernel.org,
-        keyrings@vger.kernel.org, zohar@linux.ibm.com,
-        "James E.J. Bottomley" <jejb@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Jonathan Corbet <corbet@lwn.net>, rjw@rjwysocki.net,
-        Matthew Garrett <mjg59@google.com>
-Content-Type: text/plain; charset="UTF-8"
+        id S230414AbhEHJwb (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 8 May 2021 05:52:31 -0400
+Received: from out30-130.freemail.mail.aliyun.com ([115.124.30.130]:33359 "EHLO
+        out30-130.freemail.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S229583AbhEHJw2 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 8 May 2021 05:52:28 -0400
+X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R101e4;CH=green;DM=||false|;DS=||;FP=0|-1|-1|-1|0|-1|-1|-1;HT=alimailimapcm10staff010182156082;MF=yang.lee@linux.alibaba.com;NM=1;PH=DS;RN=11;SR=0;TI=SMTPD_---0UY8pXIE_1620467482;
+Received: from j63c13417.sqa.eu95.tbsite.net(mailfrom:yang.lee@linux.alibaba.com fp:SMTPD_---0UY8pXIE_1620467482)
+          by smtp.aliyun-inc.com(127.0.0.1);
+          Sat, 08 May 2021 17:51:24 +0800
+From:   Yang Li <yang.lee@linux.alibaba.com>
+To:     dhowells@redhat.com
+Cc:     jarkko@kernel.org, jmorris@namei.org, serge@hallyn.com,
+        nathan@kernel.org, ndesaulniers@google.com,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clang-built-linux@googlegroups.com,
+        Yang Li <yang.lee@linux.alibaba.com>
+Subject: [PATCH] Keys: Remove redundant initialization of cred
+Date:   Sat,  8 May 2021 17:51:21 +0800
+Message-Id: <1620467481-110575-1-git-send-email-yang.lee@linux.alibaba.com>
+X-Mailer: git-send-email 1.8.3.1
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Fri, Feb 19, 2021 at 5:36 PM Matthew Garrett
-<matthewgarrett@google.com> wrote:
->
-> Calculate and store a cryptographically secure hash of the hibernation
-> image if SF_VERIFY_IMAGE is set in the hibernation flags. This allows
-> detection of a corrupt image, but has the disadvantage that it requires
-> the blocks be read in in linear order.
->
-> Signed-off-by: Matthew Garrett <mjg59@google.com>
-> ---
->  kernel/power/power.h |   1 +
->  kernel/power/swap.c  | 131 +++++++++++++++++++++++++++++++++++--------
->  2 files changed, 110 insertions(+), 22 deletions(-)
->
-> diff --git a/kernel/power/power.h b/kernel/power/power.h
-> index 778bf431ec02..b8e00b9dcee8 100644
-> --- a/kernel/power/power.h
-> +++ b/kernel/power/power.h
-> @@ -168,6 +168,7 @@ extern int swsusp_swap_in_use(void);
->  #define SF_PLATFORM_MODE       1
->  #define SF_NOCOMPRESS_MODE     2
->  #define SF_CRC32_MODE          4
-> +#define SF_VERIFY_IMAGE         8
->
->  /* kernel/power/hibernate.c */
->  extern int swsusp_check(void);
-> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-> index 72e33054a2e1..a13241a20567 100644
-> --- a/kernel/power/swap.c
-> +++ b/kernel/power/swap.c
-> @@ -31,6 +31,8 @@
->  #include <linux/kthread.h>
->  #include <linux/crc32.h>
->  #include <linux/ktime.h>
-> +#include <crypto/hash.h>
-> +#include <crypto/sha2.h>
->
->  #include "power.h"
->
-> @@ -95,17 +97,20 @@ struct swap_map_page_list {
->  struct swap_map_handle {
->         struct swap_map_page *cur;
->         struct swap_map_page_list *maps;
-> +       struct shash_desc *desc;
->         sector_t cur_swap;
->         sector_t first_sector;
->         unsigned int k;
->         unsigned long reqd_free_pages;
->         u32 crc32;
-> +       u8 digest[SHA256_DIGEST_SIZE];
->  };
->
->  struct swsusp_header {
->         char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int) -
-> -                     sizeof(u32)];
-> +                     sizeof(u32) - SHA256_DIGEST_SIZE];
->         u32     crc32;
-> +       u8      digest[SHA256_DIGEST_SIZE];
->         sector_t image;
->         unsigned int flags;     /* Flags to pass to the "boot" kernel */
->         char    orig_sig[10];
-> @@ -305,6 +310,9 @@ static blk_status_t hib_wait_io(struct hib_bio_batch *hb)
->          * We are relying on the behavior of blk_plug that a thread with
->          * a plug will flush the plug list before sleeping.
->          */
-> +       if (!hb)
-> +               return 0;
-> +
->         wait_event(hb->wait, atomic_read(&hb->count) == 0);
->         return blk_status_to_errno(hb->error);
->  }
-> @@ -327,6 +335,8 @@ static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
->                 swsusp_header->flags = flags;
->                 if (flags & SF_CRC32_MODE)
->                         swsusp_header->crc32 = handle->crc32;
-> +               memcpy(swsusp_header->digest, handle->digest,
-> +                      SHA256_DIGEST_SIZE);
->                 error = hib_submit_io(REQ_OP_WRITE, REQ_SYNC,
->                                       swsusp_resume_block, swsusp_header, NULL);
->         } else {
-> @@ -417,6 +427,7 @@ static void release_swap_writer(struct swap_map_handle *handle)
->  static int get_swap_writer(struct swap_map_handle *handle)
->  {
->         int ret;
-> +       struct crypto_shash *tfm;
->
->         ret = swsusp_swap_check();
->         if (ret) {
-> @@ -437,7 +448,28 @@ static int get_swap_writer(struct swap_map_handle *handle)
->         handle->k = 0;
->         handle->reqd_free_pages = reqd_free_pages();
->         handle->first_sector = handle->cur_swap;
-> +
-> +       tfm = crypto_alloc_shash("sha256", 0, 0);
-> +       if (IS_ERR(tfm)) {
-> +               ret = -EINVAL;
-> +               goto err_rel;
-> +       }
-> +       handle->desc = kmalloc(sizeof(struct shash_desc) +
-> +                              crypto_shash_descsize(tfm), GFP_KERNEL);
-> +       if (!handle->desc) {
-> +               ret = -ENOMEM;
-> +               goto err_rel;
-> +       }
-> +
-> +       handle->desc->tfm = tfm;
-> +
-> +       ret = crypto_shash_init(handle->desc);
-> +       if (ret != 0)
-> +               goto err_free;
-> +
->         return 0;
-> +err_free:
-> +       kfree(handle->desc);
->  err_rel:
->         release_swap_writer(handle);
->  err_close:
-> @@ -446,7 +478,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
->  }
->
->  static int swap_write_page(struct swap_map_handle *handle, void *buf,
-> -               struct hib_bio_batch *hb)
-> +                          struct hib_bio_batch *hb, bool hash)
->  {
->         int error = 0;
->         sector_t offset;
-> @@ -454,6 +486,7 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
->         if (!handle->cur)
->                 return -EINVAL;
->         offset = alloc_swapdev_block(root_swap);
-> +       crypto_shash_update(handle->desc, buf, PAGE_SIZE);
+Pointer cred is being initialized however this value is never
+read as cred is assigned an updated value from the returned
+call to get_current_cred(). Remove the redundant initialization.
 
-Was this supposed to be conditionalized behind the new parameter, ie:
-if (hash) crypto_shash_update()? If so, the same comment would apply
-to the read as well.
+Cleans up clang warning:
+
+security/keys/request_key.c:119:21: warning: Value stored to 'cred'
+during its initialization is never read
+[clang-analyzer-deadcode.DeadStores]
+
+Reported-by: Abaci Robot <abaci@linux.alibaba.com>
+Fixes: 'commit bb952bb98a7e ("CRED: Separate per-task-group keyrings from signal_struct")'
+Signed-off-by: Yang Li <yang.lee@linux.alibaba.com>
+---
+ security/keys/request_key.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 2da4404..873c31f 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -116,7 +116,7 @@ static int call_sbin_request_key(struct key *authkey, void *aux)
+ {
+ 	static char const request_key[] = "/sbin/request-key";
+ 	struct request_key_auth *rka = get_request_key_auth(authkey);
+-	const struct cred *cred = current_cred();
++	const struct cred *cred;
+ 	key_serial_t prkey, sskey;
+ 	struct key *key = rka->target_key, *keyring, *session, *user_session;
+ 	char *argv[9], *envp[3], uid_str[12], gid_str[12];
+-- 
+1.8.3.1
+
