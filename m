@@ -2,68 +2,67 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-4.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=no
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-9.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 07D13C433B4
-	for <keyrings@archiver.kernel.org>; Sun,  9 May 2021 15:16:02 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 19F89C433B4
+	for <keyrings@archiver.kernel.org>; Sun,  9 May 2021 16:19:20 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D178E61059
-	for <keyrings@archiver.kernel.org>; Sun,  9 May 2021 15:16:01 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id DB595613C2
+	for <keyrings@archiver.kernel.org>; Sun,  9 May 2021 16:19:19 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229619AbhEIPRE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sun, 9 May 2021 11:17:04 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40388 "EHLO
+        id S229815AbhEIQUW (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 9 May 2021 12:20:22 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54026 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229618AbhEIPRE (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sun, 9 May 2021 11:17:04 -0400
-Received: from mail-ed1-x52c.google.com (mail-ed1-x52c.google.com [IPv6:2a00:1450:4864:20::52c])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 980E2C061573;
-        Sun,  9 May 2021 08:16:00 -0700 (PDT)
-Received: by mail-ed1-x52c.google.com with SMTP id r11so955745edt.13;
-        Sun, 09 May 2021 08:16:00 -0700 (PDT)
+        with ESMTP id S229675AbhEIQUW (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 9 May 2021 12:20:22 -0400
+Received: from mail-ed1-x531.google.com (mail-ed1-x531.google.com [IPv6:2a00:1450:4864:20::531])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A1983C061573;
+        Sun,  9 May 2021 09:19:18 -0700 (PDT)
+Received: by mail-ed1-x531.google.com with SMTP id g14so15918462edy.6;
+        Sun, 09 May 2021 09:19:18 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=gmail.com; s=20161025;
         h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-disposition:content-transfer-encoding:in-reply-to;
-        bh=aJpJIcXCzWu61l0m/xqY2AIdzna871+EaXDpRitckHw=;
-        b=bLROLJF/frefzkRd6UVNwteq71PqNc5gANb/FrHPkC4sDVGligolJjrEbiLMyq0qXc
-         Ji0/utSKQbTW21/c4+ACg+NnauDABsy/5Xeyns1Q6ArwSXWkR2CEfc5EOZWGzJIVacew
-         8VtfIpwN8AFHHPdjYjCrxMBl0fGXnaYLvT9Epc8tdsjAewuLOeM61iRKcUGLGC06d5Qa
-         Sg4W54Upwn7pL4mKyvlYRMn3fbC5JXfW4W8COwK+egp09lOhfh0aV/Z3snnChaiCeMql
-         2KU1Th38MQ8eCXy9yt2yCf2uLKflcxCFSlH7Jp5eKcKqg376qy0YfxCrEASmbUAnX5oY
-         iTiA==
+         :content-disposition:in-reply-to;
+        bh=DO5zOhliRnBqxM33iMyfdyDpj+YfVYcGobHK6sCAbck=;
+        b=jH1aCNgdimaE/ftmf59J0k25Wp+5ldYJcgVWEASelAo4kw2rsrf4LNEetjvxUnwEmj
+         DVdjp/gX3REnGP3TT64893sYCurxVwkHm5FAinZv2wc8tiOuZFKfPuZFzzDpBfNxIYzH
+         XDkATEg1EFLw/Bi1rnUEPy52P3VLAI+njai1I8G/S7J+VRBLyzCQfFcgfN2/6xI1RO2m
+         4ofe5ScEMdYUrVAd24uoIFXgLKTZgkkypFtG60QPNR6JlTfqCx4n69VKH6pmgy5sSh5V
+         teFIlXsnwyHd+urzFEQ1/1g0GdN2Ao8QnczzShGWjt6ZPBMPfANSphXoa7WJIXVsuPj9
+         07lg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
         h=x-gm-message-state:sender:date:from:to:cc:subject:message-id
-         :references:mime-version:content-disposition
-         :content-transfer-encoding:in-reply-to;
-        bh=aJpJIcXCzWu61l0m/xqY2AIdzna871+EaXDpRitckHw=;
-        b=lSLVTbjM5FaMB+oH4L2h8sIWrA/NRi77JyiX+jOuCXxDdhGA1cNQj+UVX38TkzKOIe
-         xORDoh56Qj2MD3tNLjREQlm7vGLx43G/3oRhl4E3PYfRD3lU7UpE1ZGF8LNsCJMZiffl
-         0HejY1JqI7XPjOJOF4l0nxz+UKjMJxVcDYZ3P7iuqX/qkg1lK9CoNJM22fCGz0VtVHYA
-         EVLWyOII5H+ptA66Mb/4eBGkuCrqCuOiHJ99F3uDja7ILS5OWd2sdALaQlqRZMXkjToz
-         mhArItVpM0PhCVutz/I3mKhKt3PGZUoHhgi7efeBWd98nyP2dVYjB9YNtaTrqgI4JOsG
-         6QRQ==
-X-Gm-Message-State: AOAM5336xnaqgCMxqmM41RNMyC2wlYg3VyLTh+WL7DfhJakBmXbcORnh
-        gIiwydH4YJ2EAXSmcJlZgHs=
-X-Google-Smtp-Source: ABdhPJxzZJ8Ylek5+AJ7tZJFhfzskNDNJxeExgadKQI39Og3zK2xJyDlajxJ3vhv6E8hyPootjzkAQ==
-X-Received: by 2002:aa7:cd50:: with SMTP id v16mr25666355edw.175.1620573359244;
-        Sun, 09 May 2021 08:15:59 -0700 (PDT)
+         :references:mime-version:content-disposition:in-reply-to;
+        bh=DO5zOhliRnBqxM33iMyfdyDpj+YfVYcGobHK6sCAbck=;
+        b=OTtfFuAWKU6MHPNNST8/yYd77Egy3oJqnE+rCNsG1Maah3t6bwbtHZTyBsrAhaEDEb
+         jdPaaae4d3umIXoqbITP3V4U4WxjUdi4i26TV9LnYKs9LcHlM6QfEKcv7LiIvifq+Pcv
+         Ftm0WuO/eekRo1RjFX2DiRIJBOdxp7oOPCc+woQkSTh306bAkxDeZGUP5RueIwW8Ph5m
+         BBwnaIPq8Sr9NGQaVwaTJzE5FOgQU9OVvIjGRELZprLsY4AhpDt90juFbeKnFPPYyrZC
+         9qYDXkP6n2WIn/v6MBP5Jb+MmGdFyFl8jWH3P1wChRMXDXSLc+JioXbiSPHLErJvReqn
+         7QSw==
+X-Gm-Message-State: AOAM5332xWDkWXOSR0Y5r4lj6cjzXyB8Twl3hi7ghIuURoJ6bpuQoGti
+        OhFrog2+DaHKT/T1m0cU3Iw=
+X-Google-Smtp-Source: ABdhPJzIMRzJ5t0YFk3VzbCAOTLHIvvzaKZF4miCRQhE+HrtaEEJ+wBMh8+JcJWcFD10u6K+F+AX0g==
+X-Received: by 2002:a05:6402:16db:: with SMTP id r27mr23673341edx.375.1620577156694;
+        Sun, 09 May 2021 09:19:16 -0700 (PDT)
 Received: from gmail.com (0526E777.dsl.pool.telekom.hu. [5.38.231.119])
-        by smtp.gmail.com with ESMTPSA id c8sm8813412edy.63.2021.05.09.08.15.58
+        by smtp.gmail.com with ESMTPSA id j1sm7082457ejv.40.2021.05.09.09.19.15
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sun, 09 May 2021 08:15:58 -0700 (PDT)
+        Sun, 09 May 2021 09:19:16 -0700 (PDT)
 Sender: Ingo Molnar <mingo.kernel.org@gmail.com>
-Date:   Sun, 9 May 2021 17:15:56 +0200
+Date:   Sun, 9 May 2021 18:19:14 +0200
 From:   Ingo Molnar <mingo@kernel.org>
 To:     David Howells <dhowells@redhat.com>
 Cc:     Valdis =?utf-8?Q?Kl=C4=93tnieks?= <valdis.kletnieks@vt.edu>,
         David Woodhouse <dwmw2@infradead.org>,
         keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: 'make O=' indigestion with module signing
-Message-ID: <20210509151556.GA842014@gmail.com>
+Message-ID: <20210509161914.GB839293@gmail.com>
 References: <134696.1615510534@turing-police>
  <109018.1615463088@turing-police>
  <91190.1615444370@turing-police>
@@ -71,11 +70,11 @@ References: <134696.1615510534@turing-police>
  <1486567.1615464259@warthog.procyon.org.uk>
  <2026575.1615539696@warthog.procyon.org.uk>
  <20210509151112.GA839293@gmail.com>
+ <20210509151556.GA842014@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20210509151112.GA839293@gmail.com>
+In-Reply-To: <20210509151556.GA842014@gmail.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
@@ -83,50 +82,57 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 * Ingo Molnar <mingo@kernel.org> wrote:
 
+> Correction - there appears to be something else going on, but the
+> error messages are similar:
 > 
-> * David Howells <dhowells@redhat.com> wrote:
+>   At main.c:291:
+>   - SSL error:02001002:system library:fopen:No such file or directory: ../crypto/bio/bss_file.c:69
+>   - SSL error:2006D080:BIO routines:BIO_new_file:no such file: ../crypto/bio/bss_file.c:76
+>   sign-file: debian/linux-image/lib/modules/5.12.0-custom/kernel/arch/x86/crypto/aegis128-aesni.ko: No such file or directory
+>   At main.c:291:
 > 
-> > Valdis Klētnieks <valdis.kletnieks@vt.edu> wrote:
-> > 
-> > > So the root cause was: 'make mrproper doesn't clean certs/' out enough,
-> > > and this chunk of certs/Makefile
-> > > ...
-> > > I admit not being sure how (or if) this should be fixed
-> > 
-> > It's tricky because CONFIG_MODULE_SIG_KEY may not point to a file, let alone a
-> > file that was autogenerated - it can be given a PKCS#11 URI, for instance.  I
-> > had to put in the autogeneration based on a magic config string value to stop
-> > randconfig blowing up - but it only does the autogeneration if you don't put
-> > in your own file there before building.
-> > 
-> > Possibly I can add something like:
-> > 
-> > 	clean-files := signing_key.pem x509.genkey
-> > 
-> > inside the
-> > 
-> > 	ifeq ($(CONFIG_MODULE_SIG_KEY),"certs/signing_key.pem")
-> > 	...
-> > 	endif
-> > 
-> > section.
-> 
-> Note that this bug is now upstream in Linus's tree and has broken
-> the deb-pkg distro kernel build method.
-> 
-> Would be nice to make 'make mrproper' work again.
+> The error messages look pretty obscure to me. :-/
 
-Correction - there appears to be something else going on, but the
-error messages are similar:
+I didn't find any stray build files left in the tree, so 'make mrproper'
+is innocent I believe.
 
-  At main.c:291:
-  - SSL error:02001002:system library:fopen:No such file or directory: ../crypto/bio/bss_file.c:69
-  - SSL error:2006D080:BIO routines:BIO_new_file:no such file: ../crypto/bio/bss_file.c:76
-  sign-file: debian/linux-image/lib/modules/5.12.0-custom/kernel/arch/x86/crypto/aegis128-aesni.ko: No such file or directory
-  At main.c:291:
+I ended up with the config tweak below to get the kernel package to build,
+which is not an ideal solution. :-/
 
-The error messages look pretty obscure to me. :-/
+Let me know if you'd like me to send you the .config and/or any diagnostic
+messages or other details.
 
 Thanks,
 
 	Ingo
+
+diff --git a/.config.kepler.ubuntu b/.config.kepler.ubuntu
+index 01347a220e54..846a956fcdbd 100644
+--- a/.config.kepler.ubuntu
++++ b/.config.kepler.ubuntu
+@@ -880,9 +880,8 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_MODULE_FORCE_UNLOAD is not set
+ # CONFIG_MODVERSIONS is not set
+ CONFIG_MODULE_SRCVERSION_ALL=y
+-CONFIG_MODULE_SIG=y
+-# CONFIG_MODULE_SIG_FORCE is not set
+-CONFIG_MODULE_SIG_ALL=y
++# CONFIG_MODULE_SIG is not set
++# CONFIG_MODULE_SIG_ALL is not set
+ # CONFIG_MODULE_SIG_SHA1 is not set
+ # CONFIG_MODULE_SIG_SHA224 is not set
+ # CONFIG_MODULE_SIG_SHA256 is not set
+@@ -10177,11 +10176,7 @@ CONFIG_SECURITY_APPARMOR_HASH_DEFAULT=y
+ # CONFIG_SECURITY_LOADPIN is not set
+ CONFIG_SECURITY_YAMA=y
+ CONFIG_SECURITY_SAFESETID=y
+-CONFIG_SECURITY_LOCKDOWN_LSM=y
+-CONFIG_SECURITY_LOCKDOWN_LSM_EARLY=y
+-CONFIG_LOCK_DOWN_KERNEL_FORCE_NONE=y
+-# CONFIG_LOCK_DOWN_KERNEL_FORCE_INTEGRITY is not set
+-# CONFIG_LOCK_DOWN_KERNEL_FORCE_CONFIDENTIALITY is not set
++# CONFIG_SECURITY_LOCKDOWN_LSM is not set
+ # CONFIG_SECURITY_LANDLOCK is not set
+ CONFIG_INTEGRITY=y
+ CONFIG_INTEGRITY_SIGNATURE=y
+
