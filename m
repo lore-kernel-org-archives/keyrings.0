@@ -2,189 +2,130 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-8.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_SANE_2 autolearn=unavailable autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-9.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 286F9C43470
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 46F4BC43603
 	for <keyrings@archiver.kernel.org>; Mon, 10 May 2021 12:52:23 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id EA6A0611C1
-	for <keyrings@archiver.kernel.org>; Mon, 10 May 2021 12:52:22 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2C011613B6
+	for <keyrings@archiver.kernel.org>; Mon, 10 May 2021 12:52:23 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S240218AbhEJMxH (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 10 May 2021 08:53:07 -0400
-Received: from mail.kernel.org ([198.145.29.99]:44172 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S243600AbhEJL4e (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Mon, 10 May 2021 07:56:34 -0400
-Received: by mail.kernel.org (Postfix) with ESMTPSA id 383C061260;
-        Mon, 10 May 2021 11:55:22 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1620647729;
-        bh=dyIPtb49LgFnCoKazyq+bQhPSj3PCobNssG21KHdoK4=;
-        h=Date:From:To:Cc:Subject:In-Reply-To:References:From;
-        b=S4cpkndG9UuTYGkhKfO3hJLbYIHDWve5Su3QQFRXInDkMRoAu9bVjsNPKBQQExFiA
-         MH/LvEqboPFe5Mg323DsrqgW7WJPZfjJ5OWh3KcGd7Kzb/Ed/OuhsjfzebDsCLf+jo
-         Z2y3h21hX1f0r0znndE/gsvI3+7MfvcFNE3R9vJ3F6eSaoK3rYc9HAxpysQKCzq2nw
-         XliTZNXkMCNQpYy6ormSrp00pDOW21OImF+xXBpjWC/JIXAZfq/wrXo3rh38peS5/g
-         BQeri8Wl+fs0ihvm/Fcaw0vxpMvqk7Fkm7kctYIMuGKithMKv3Kd8J2NMAGsk2M1IJ
-         Z8/9XzwZufeKA==
-Date:   Mon, 10 May 2021 13:55:18 +0200
-From:   Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
-To:     David Woodhouse <dwmw2@infradead.org>
-Cc:     Linux Doc Mailing List <linux-doc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        alsa-devel@alsa-project.org, coresight@lists.linaro.org,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
-        intel-wired-lan@lists.osuosl.org, keyrings@vger.kernel.org,
-        kvm@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fpga@vger.kernel.org, linux-hwmon@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-rdma@vger.kernel.org, linux-riscv@lists.infradead.org,
-        linux-sgx@vger.kernel.org, linux-usb@vger.kernel.org,
-        mjpeg-users@lists.sourceforge.net, netdev@vger.kernel.org,
-        rcu@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 00/53] Get rid of UTF-8 chars that can be mapped as
- ASCII
-Message-ID: <20210510135518.305cc03d@coco.lan>
-In-Reply-To: <2ae366fdff4bd5910a2270823e8da70521c859af.camel@infradead.org>
-References: <cover.1620641727.git.mchehab+huawei@kernel.org>
-        <2ae366fdff4bd5910a2270823e8da70521c859af.camel@infradead.org>
-X-Mailer: Claws Mail 3.17.8 (GTK+ 2.24.33; x86_64-redhat-linux-gnu)
+        id S241707AbhEJMxR (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 10 May 2021 08:53:17 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40450 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1349555AbhEJMto (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 10 May 2021 08:49:44 -0400
+Received: from mail-ej1-x629.google.com (mail-ej1-x629.google.com [IPv6:2a00:1450:4864:20::629])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9EAE0C0611EE;
+        Mon, 10 May 2021 05:41:48 -0700 (PDT)
+Received: by mail-ej1-x629.google.com with SMTP id t4so24356168ejo.0;
+        Mon, 10 May 2021 05:41:48 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-disposition:in-reply-to;
+        bh=rPnjj7CcDT7Ek5LVYSpFT50vZUaAaBcOH5bltoGapPU=;
+        b=CiZDfhVL3JV3m6t6D4g5Uqhp1EPHsM9BxmpkK61WAUKNTXpyhV9F9eumP93Cf3JxTq
+         0RdnVauyd0ECPpIgfQ6R0HryOpHX22rh5Mz1yaBizVnzg/EuHEzSa+4cCAedClMwVNLK
+         ZxdAGzYSiv3BLLi+RRmP0atYiFayG2FxCm3rNuUQufGwWZ5WeIUg6jRmS14cnmj8mIX0
+         ostU1vsRE3jo+VSNS1+AIIPrg/l6j/bVgIh+e3C4fc1dkpkhGdaM+OXuymzsaVeWuKXh
+         12LdBtxHEP42Yz55Nxr2SMIzqRBcbbsDymJ5tv34AslUvz5Y1+nHAYs6w5aojhk3WaA8
+         MPvw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:sender:date:from:to:cc:subject:message-id
+         :references:mime-version:content-disposition:in-reply-to;
+        bh=rPnjj7CcDT7Ek5LVYSpFT50vZUaAaBcOH5bltoGapPU=;
+        b=Swp9ybG+NZr/QCaBHtIlJREZ1D2yolD1lliWaO8cV4EZ+MSWsxIbHb0FDUneLT9k0/
+         TxZqEq09TVypn4ajAhJ8JyUE7WEt9XHm4dxPrj6KlH4+TH2/TkqvPdFkETmIccqbKlTa
+         yLsWwLTkxa7pI1friTeuGJyFK9yEb6d+rtYnVdRX4Nwrpi3iSLAVp41rBISmK5rFvwcd
+         CVcWzNoqCiFA4Vd1roxok1pqv2w+hrZGqUP71B+9f4/bV2GWgwwYXpJoSm60VoQXrfJS
+         wRpPynumNQA4GS4oYxftaY6K1+FIuK/pvJSgDw1GnGMIVPk7sPvU1SFPhftrqQ2l5Cx4
+         0I9A==
+X-Gm-Message-State: AOAM532SGhwKhO0je6HbtAd1t7gNZAbAU3375IjAS5sYg1UUMVpU0WS8
+        1j/F35OTYCKrKSKEAm6Ppes=
+X-Google-Smtp-Source: ABdhPJzK0+r8dgR2IDmFPLK8afHqKCX3W+D5qXcQhruMZDZJjTKcyr3IJKISP1z+pSvNqk5nZLbbOw==
+X-Received: by 2002:a17:906:2bd0:: with SMTP id n16mr25552395ejg.110.1620650507431;
+        Mon, 10 May 2021 05:41:47 -0700 (PDT)
+Received: from gmail.com (0526E777.dsl.pool.telekom.hu. [5.38.231.119])
+        by smtp.gmail.com with ESMTPSA id h11sm11208696eds.15.2021.05.10.05.41.46
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 10 May 2021 05:41:46 -0700 (PDT)
+Sender: Ingo Molnar <mingo.kernel.org@gmail.com>
+Date:   Mon, 10 May 2021 14:41:45 +0200
+From:   Ingo Molnar <mingo@kernel.org>
+To:     David Howells <dhowells@redhat.com>
+Cc:     Valdis =?utf-8?Q?Kl=C4=93tnieks?= <valdis.kletnieks@vt.edu>,
+        David Woodhouse <dwmw2@infradead.org>,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 'make O=' indigestion with module signing
+Message-ID: <YJkqCZmTMRLUh+vf@gmail.com>
+References: <134696.1615510534@turing-police>
+ <109018.1615463088@turing-police>
+ <91190.1615444370@turing-police>
+ <972381.1615459754@warthog.procyon.org.uk>
+ <1486567.1615464259@warthog.procyon.org.uk>
+ <2026575.1615539696@warthog.procyon.org.uk>
+ <20210509151112.GA839293@gmail.com>
+ <20210509151556.GA842014@gmail.com>
+ <20210509161914.GB839293@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20210509161914.GB839293@gmail.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi David,
 
-Em Mon, 10 May 2021 11:54:02 +0100
-David Woodhouse <dwmw2@infradead.org> escreveu:
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-> On Mon, 2021-05-10 at 12:26 +0200, Mauro Carvalho Chehab wrote:
-> > There are several UTF-8 characters at the Kernel's documentation.
-> >=20
-> > Several of them were due to the process of converting files from
-> > DocBook, LaTeX, HTML and Markdown. They were probably introduced
-> > by the conversion tools used on that time.
-> >=20
-> > Other UTF-8 characters were added along the time, but they're easily
-> > replaceable by ASCII chars.
-> >=20
-> > As Linux developers are all around the globe, and not everybody has UTF=
--8
-> > as their default charset, better to use UTF-8 only on cases where it is=
- really
-> > needed. =20
->=20
-> No, that is absolutely the wrong approach.
->=20
-> If someone has a local setup which makes bogus assumptions about text
-> encodings, that is their own mistake.
->=20
-> We don't do them any favours by trying to *hide* it in the common case
-> so that they don't notice it for longer.
->=20
-> There really isn't much excuse for such brokenness, this far into the
-> 21st century.
->=20
-> Even *before* UTF-8 came along in the final decade of the last
-> millennium, it was important to know which character set a given piece
-> of text was encoded in.
->=20
-> In fact it was even *more* important back then, we couldn't just assume
-> UTF-8 everywhere like we can in modern times.
->=20
-> Git can already do things like CRLF conversion on checking files out to
-> match local conventions; if you want to teach it to do character set
-> conversions too then I suppose that might be useful to a few developers
-> who've fallen through a time warp and still need it. But nobody's ever
-> bothered before because it just isn't necessary these days.
->=20
-> Please *don't* attempt to address this anachronistic and esoteric
-> "requirement" by dragging the kernel source back in time by three
-> decades.
+> 
+> * Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > Correction - there appears to be something else going on, but the
+> > error messages are similar:
+> > 
+> >   At main.c:291:
+> >   - SSL error:02001002:system library:fopen:No such file or directory: ../crypto/bio/bss_file.c:69
+> >   - SSL error:2006D080:BIO routines:BIO_new_file:no such file: ../crypto/bio/bss_file.c:76
+> >   sign-file: debian/linux-image/lib/modules/5.12.0-custom/kernel/arch/x86/crypto/aegis128-aesni.ko: No such file or directory
+> >   At main.c:291:
+> > 
+> > The error messages look pretty obscure to me. :-/
+> 
+> I didn't find any stray build files left in the tree, so 'make mrproper'
+> is innocent I believe.
+> 
+> I ended up with the config tweak below to get the kernel package to build,
+> which is not an ideal solution. :-/
+> 
+> Let me know if you'd like me to send you the .config and/or any diagnostic
+> messages or other details.
 
-No. The idea is not to go back three decades ago.=20
+Update: I now have a config that builds & boots fine, and I've done a 
+.config bisection to figure out which config option combination breaks the 
+build, which turned out to be the new MODULE_COMPRESS options:
 
-The goal is just to avoid use UTF-8 where it is not needed. See, the vast
-majority of UTF-8 chars are kept:
+--- .config.good.002	2021-05-10 14:34:48.932206255 +0200
++++ .config.bad.002	2021-05-10 14:40:48.587450742 +0200
+@@ -899,8 +899,8 @@ CONFIG_MODULE_SIG_ALL=y
+ # CONFIG_MODULE_SIG_SHA384 is not set
+ CONFIG_MODULE_SIG_SHA512=y
+ CONFIG_MODULE_SIG_HASH="sha512"
+-CONFIG_MODULE_COMPRESS_NONE=y
+-# CONFIG_MODULE_COMPRESS_GZIP is not set
++# CONFIG_MODULE_COMPRESS_NONE is not set
++CONFIG_MODULE_COMPRESS_GZIP=y
+ # CONFIG_MODULE_COMPRESS_XZ is not set
+ # CONFIG_MODULE_COMPRESS_ZSTD is not set
+ # CONFIG_MODULE_ALLOW_MISSING_NAMESPACE_IMPORTS is not set
 
-	- Non-ASCII Latin and Greek chars;
-	- Box drawings;
-	- arrows;
-	- most symbols.
-
-There, it makes perfect sense to keep using UTF-8.
-
-We should keep using UTF-8 on Kernel. This is something that it shouldn't
-be changed.
-
----
-
-This patch series is doing conversion only when using ASCII makes
-more sense than using UTF-8.=20
-
-See, a number of converted documents ended with weird characters
-like ZERO WIDTH NO-BREAK SPACE (U+FEFF) character. This specific
-character doesn't do any good.
-
-Others use NO-BREAK SPACE (U+A0) instead of 0x20. Harmless, until
-someone tries to use grep[1].
-
-[1] try to run:
-
-    $ git grep "CPU 0 has been" Documentation/RCU/
-
-    it will return nothing with current upstream.
-
-    But it will work fine after the series is applied:
-
-    $ git grep "CPU 0 has been" Documentation/RCU/
-      Documentation/RCU/Design/Data-Structures/Data-Structures.rst:| #. CPU=
- 0 has been in dyntick-idle mode for quite some time. When it   |
-      Documentation/RCU/Design/Data-Structures/Data-Structures.rst:|    not=
-ices that CPU 0 has been in dyntick idle mode, which qualifies  |
-
-The main point on this series is to replace just the occurrences
-where ASCII represents the symbol equally well, e. g. it is limited
-for those chars:
-
-	- U+2010 ('=E2=80=90'): HYPHEN
-	- U+00ad ('=C2=AD'): SOFT HYPHEN
-	- U+2013 ('=E2=80=93'): EN DASH
-	- U+2014 ('=E2=80=94'): EM DASH
-
-	- U+2018 ('=E2=80=98'): LEFT SINGLE QUOTATION MARK
-	- U+2019 ('=E2=80=99'): RIGHT SINGLE QUOTATION MARK
-	- U+00b4 ('=C2=B4'): ACUTE ACCENT
-
-	- U+201c ('=E2=80=9C'): LEFT DOUBLE QUOTATION MARK
-	- U+201d ('=E2=80=9D'): RIGHT DOUBLE QUOTATION MARK
-
-	- U+00d7 ('=C3=97'): MULTIPLICATION SIGN
-	- U+2212 ('=E2=88=92'): MINUS SIGN
-
-	- U+2217 ('=E2=88=97'): ASTERISK OPERATOR
-	  (this one used as a pointer reference like "*foo" on C code
-	   example inside a document converted from LaTeX)
-
-	- U+00bb ('=C2=BB'): RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
-	  (this one also used wrongly on an ABI file, meaning '>')
-
-	- U+00a0 ('=C2=A0'): NO-BREAK SPACE
-	- U+feff ('=EF=BB=BF'): ZERO WIDTH NO-BREAK SPACE
-
-Using the above symbols will just trick tools like grep for no good
-reason.
+Setting it to gzip triggered this build bug.
 
 Thanks,
-Mauro
+
+	Ingo
