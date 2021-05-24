@@ -2,108 +2,67 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-3.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,UNPARSEABLE_RELAY,USER_AGENT_GIT
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 03727C47083
-	for <keyrings@archiver.kernel.org>; Mon, 24 May 2021 09:02:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 92F60C04FF3
+	for <keyrings@archiver.kernel.org>; Mon, 24 May 2021 10:19:32 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D5FF661354
-	for <keyrings@archiver.kernel.org>; Mon, 24 May 2021 09:02:16 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 72873610C8
+	for <keyrings@archiver.kernel.org>; Mon, 24 May 2021 10:19:32 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232318AbhEXJDn (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 24 May 2021 05:03:43 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42856 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232449AbhEXJDn (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 24 May 2021 05:03:43 -0400
-Received: from mail-pl1-x634.google.com (mail-pl1-x634.google.com [IPv6:2607:f8b0:4864:20::634])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 693BAC061756
-        for <keyrings@vger.kernel.org>; Mon, 24 May 2021 02:02:14 -0700 (PDT)
-Received: by mail-pl1-x634.google.com with SMTP id b7so10139996plg.0
-        for <keyrings@vger.kernel.org>; Mon, 24 May 2021 02:02:14 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=bytedance-com.20150623.gappssmtp.com; s=20150623;
-        h=from:content-transfer-encoding:mime-version:subject:message-id:date
-         :cc:to;
-        bh=iPvQM7Ju1ffWKIo+8yldAlBUkBMS+sJNZu1vYtZK95Y=;
-        b=yIcCS+Cbcf4SQbB2ozxN/mlL7P4irXdIn7392izp1/M0hZPWyJmx5Mnf6JwadtddWU
-         TCkMwGtLO+7KYH+JpjZjYgfdzdM8nRuV9dOaCvCOD4nO/LZjHdJ2SecQs69SNLfi65Y8
-         bqJdj5C9wc1QwY/z+pVa3ItifpQ/iGqZ0y5ISArHIo6ecofDch0FIOAdoV2ETbmFhCXL
-         7oqzcPtKdvDmjgYT4h/DHcjVNb4Rf1ViFcLzu52Jzm4/YXxT6r0sifDo2gEBf2pMjV2R
-         O6mWqBwOZn3K/laIlYa3NqHNuXXF1xkkW3TdrA53cAsbE+6SaWovnRNyfniUnk2Q65oB
-         dUxQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:from:content-transfer-encoding:mime-version
-         :subject:message-id:date:cc:to;
-        bh=iPvQM7Ju1ffWKIo+8yldAlBUkBMS+sJNZu1vYtZK95Y=;
-        b=Ub47LmBhrutduZbROBnFFMQlIMEJoNGb1vDr2S42RwAEkKcXLl2kqrjwqBLi1lXL6F
-         Fa/sV8zjoDWwW917FvoQsSvLqm6p400S4yzAnkfgDJxZ77bwx7Zj29MXhAuIyFB6Ip/6
-         AKcGxaIVUdPS5SFghqPWA87LCTuiuZiKowSm+Dr0f3RCfg+8uBCtVsXf01haWgG8/2ku
-         +n2g1/LklSJKkGrwA8/ExYeDyTFE9k19qjgm9m4l+VJ/rUKyyq85ljyjdv9HxX8IltkO
-         QK+5p6yIv9YxZRXniVS78mTgJ8ja+ilMEirjsY/LyP47lb1XDYza9568PpVUFPdGem/3
-         g6KA==
-X-Gm-Message-State: AOAM53365mHwmRTVPcQqho5UEJ/4ZYpD8+4OOedwJiymJHzSfjQI9LIg
-        i5qEpvsRx8qvQmBWAWpAbAOR1g==
-X-Google-Smtp-Source: ABdhPJxW3Ih0kl/t8C0f7Wph1i/gPeyb71D336JNHAC/M7n6qXeQx4sBV+IJSEb5+uqi9NQU7eRRDw==
-X-Received: by 2002:a17:903:1cd:b029:f0:c1c2:9e75 with SMTP id e13-20020a17090301cdb02900f0c1c29e75mr24517969plh.54.1621846933651;
-        Mon, 24 May 2021 02:02:13 -0700 (PDT)
-Received: from smtpclient.apple ([139.177.225.224])
-        by smtp.gmail.com with ESMTPSA id a65sm9098526pfb.177.2021.05.24.02.02.10
-        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
-        Mon, 24 May 2021 02:02:13 -0700 (PDT)
-From:   Chunxin Zang <zangchunxin@bytedance.com>
-Content-Type: text/plain;
-        charset=us-ascii
-Content-Transfer-Encoding: quoted-printable
-Mime-Version: 1.0 (Mac OS X Mail 14.0 \(3654.80.0.2.43\))
-Subject: =?utf-8?Q?Documentation/admin-guide/module-signing=2Erst=3A_Does_?=
- =?utf-8?Q?the_function_of_adding_a_key_to_=E2=80=98Builtin=5Ftrusted=5Fke?=
- =?utf-8?Q?y=E2=80=99_work=3F?=
-Message-Id: <49DB247F-F485-45D5-87F9-4FCB85CB7767@bytedance.com>
-Date:   Mon, 24 May 2021 17:02:07 +0800
-Cc:     keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-To:     dhowells@redhat.com, dwmw2@infradead.org, corbet@lwn.net
-X-Mailer: Apple Mail (2.3654.80.0.2.43)
+        id S232546AbhEXKU6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 24 May 2021 06:20:58 -0400
+Received: from out30-54.freemail.mail.aliyun.com ([115.124.30.54]:36631 "EHLO
+        out30-54.freemail.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S232511AbhEXKU4 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 24 May 2021 06:20:56 -0400
+X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R111e4;CH=green;DM=||false|;DS=||;FP=0|-1|-1|-1|0|-1|-1|-1;HT=e01e04423;MF=yang.lee@linux.alibaba.com;NM=1;PH=DS;RN=5;SR=0;TI=SMTPD_---0UZvJBtZ_1621851566;
+Received: from j63c13417.sqa.eu95.tbsite.net(mailfrom:yang.lee@linux.alibaba.com fp:SMTPD_---0UZvJBtZ_1621851566)
+          by smtp.aliyun-inc.com(127.0.0.1);
+          Mon, 24 May 2021 18:19:27 +0800
+From:   Yang Li <yang.lee@linux.alibaba.com>
+To:     dhowells@redhat.com
+Cc:     dwmw2@infradead.org, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yang Li <yang.lee@linux.alibaba.com>
+Subject: [PATCH] certs: Fix kernel-doc
+Date:   Mon, 24 May 2021 18:19:23 +0800
+Message-Id: <1621851563-30425-1-git-send-email-yang.lee@linux.alibaba.com>
+X-Mailer: git-send-email 1.8.3.1
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Recently, I am learning how to use module signature.
-But I got 'Permission denied' when I trying to add a=20
-public key to the 'builtin_trusted_keys' keyring.
+Fix function name in system_keyring.c kernel-doc comment
+to remove a warning.
 
-root@:~# cat /proc/keys
-3471e123 I------     1 perm 1f030000     0     0 asymmetri Build time =
-autogenerated kernel key: xxxx: X509.rsa xxxx []
-37e8db03 I------     1 perm 1f0b0000     0     0 keyring   =
-.builtin_trusted_keys: 1
-root@:~# keyctl padd asymmetric "" 0x37e8db03  < =
-./signing_key_test_sign.x509
-add_key: Permission denied
+certs/system_keyring.c:41: warning: expecting prototype for
+restrict_link_to_builtin_trusted(). Prototype was for
+restrict_link_by_builtin_trusted() instead.
 
-The reason is the 'builtin_trusted_keys'  keyring's perm was set=20
-'1f0b0000' by below operate when kernel starting.=20
+Reported-by: Abaci Robot <abaci@linux.alibaba.com>
+Fixes: 'commit d3bfe84129f6 ("certs: Add a secondary system keyring that
+can be added to dynamically")'
+Signed-off-by: Yang Li <yang.lee@linux.alibaba.com>
+---
+ certs/system_keyring.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-builtin_trusted_keys =3D
-                keyring_alloc(".builtin_trusted_keys",
-                              KUIDT_INIT(0), KGIDT_INIT(0), =
-current_cred(),
-                              ((KEY_POS_ALL & ~KEY_POS_SETATTR) |=20
-                              KEY_USR_VIEW | KEY_USR_READ | =
-KEY_USR_SEARCH),
-                              KEY_ALLOC_NOT_IN_QUOTA,
-                              NULL, NULL);
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 692365d..06c0c3d 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -31,7 +31,7 @@
+ extern __initconst const unsigned long module_cert_size;
+ 
+ /**
+- * restrict_link_to_builtin_trusted - Restrict keyring addition by built in CA
++ * restrict_link_by_builtin_trusted - Restrict keyring addition by built in CA
+  *
+  * Restrict the addition of keys into a keyring based on the key-to-be-added
+  * being vouched for by a key in the built in system keyring.
+-- 
+1.8.3.1
 
-And,  'add_key' interface pass the KEY_NEED_WRITE
-perm to lookup_user_key.=20
-So -EACCES returned in key_task_permission check.
-
-Is there something wrong in  module-signing.rst ?
-Or I missed some information about it.
-
-Best wishes
-Chunxin=
