@@ -2,73 +2,108 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_2
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 35AE3C4708F
-	for <keyrings@archiver.kernel.org>; Mon, 31 May 2021 15:01:19 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AE9A9C4708F
+	for <keyrings@archiver.kernel.org>; Mon, 31 May 2021 16:16:07 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 1D51A60FE8
-	for <keyrings@archiver.kernel.org>; Mon, 31 May 2021 15:01:19 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8DFE96139A
+	for <keyrings@archiver.kernel.org>; Mon, 31 May 2021 16:16:07 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233429AbhEaPC4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 31 May 2021 11:02:56 -0400
-Received: from mail.kernel.org ([198.145.29.99]:51032 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S234105AbhEaPAh (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Mon, 31 May 2021 11:00:37 -0400
-Received: by mail.kernel.org (Postfix) with ESMTPSA id B5435611CA;
-        Mon, 31 May 2021 14:12:32 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=linuxfoundation.org;
-        s=korg; t=1622470353;
-        bh=zR1cGoacMDr4c4wQGlzEADEdZgsbJayK7zDMvko60do=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=F4Ad5rgiC+29iWRBlKk3EKI8RDfSMHIp9ibrfxObiNDDBk59hfuvVvgbRM8g+IiAV
-         s4RKbnUY8YFMcDgF4qVhtmn6jodIMpq18WE7cR5T1JIImISYg9on3ZQmmUfDueV0Vh
-         I36nxQ02oJ9lOBa5p67Rq7tjeY03/ZBsvzfr0YKo=
-Date:   Mon, 31 May 2021 16:09:30 +0200
-From:   Greg KH <gregkh@linuxfoundation.org>
-To:     Hongbo Li <herbert.tencent@gmail.com>
-Cc:     keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        herbert@gondor.apana.org.au, ebiggers@kernel.org,
-        dhowells@redhat.com, jarkko@kernel.org,
-        tianjia.zhang@linux.alibaba.com, herberthbli@tencent.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] crypto: sm2 - fix a memory leak in sm2
-Message-ID: <YLTuGkG7kFk9/f2u@kroah.com>
-References: <1622467801-30957-1-git-send-email-herbert.tencent@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1622467801-30957-1-git-send-email-herbert.tencent@gmail.com>
+        id S233142AbhEaQRm (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 31 May 2021 12:17:42 -0400
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:22128 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S234423AbhEaQOi (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 31 May 2021 12:14:38 -0400
+Received: from pps.filterd (m0098404.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 14VG39Ix176367;
+        Mon, 31 May 2021 12:12:55 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
+ from : to : cc : date : in-reply-to : references : content-type :
+ mime-version : content-transfer-encoding; s=pp1;
+ bh=2I00Li2bPAoimjrwNBkE47RCTeR4TNTbIlgHwq4dQMQ=;
+ b=ePBNJOVI2MhyrnfX2UMx3Uuuv+qZW6iP0p32oLd3xzUxcNNxcnP5rkTW96mwvHcXPoWU
+ Poj4hSFU78ypfyBzxnK7MgdL7Vk445s19E+Or8jfLpaNGqBnZXlEUviZapS0/+A1TFD/
+ 2xOC/5fGKKGM+2/7kAtbn8/JuKFalcl6stR8LbfDnuHdY4iFu+ZaETP9TgdC6h7zANit
+ qWbz0jBuGR7mHx+49GTEq630oQ8Acuu/P1O6ifQDhHFRyGr+UpU7I1NqSVXPaH6TYT2a
+ vSyBICn2gRWnW+k1h2FWysHIlgFCt1v7kSbz4AOjs8HM9EBz4/aNuXEjKPzJngtuixWr rg== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 38w2ers0rr-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 31 May 2021 12:12:55 -0400
+Received: from m0098404.ppops.net (m0098404.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 14VG3Zsv181685;
+        Mon, 31 May 2021 12:12:54 -0400
+Received: from ppma03ams.nl.ibm.com (62.31.33a9.ip4.static.sl-reverse.com [169.51.49.98])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 38w2ers0qk-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 31 May 2021 12:12:54 -0400
+Received: from pps.filterd (ppma03ams.nl.ibm.com [127.0.0.1])
+        by ppma03ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 14VGBuwF024973;
+        Mon, 31 May 2021 16:12:51 GMT
+Received: from b06cxnps3075.portsmouth.uk.ibm.com (d06relay10.portsmouth.uk.ibm.com [9.149.109.195])
+        by ppma03ams.nl.ibm.com with ESMTP id 38ud8894s4-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 31 May 2021 16:12:51 +0000
+Received: from b06wcsmtp001.portsmouth.uk.ibm.com (b06wcsmtp001.portsmouth.uk.ibm.com [9.149.105.160])
+        by b06cxnps3075.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 14VGCmnH28180800
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Mon, 31 May 2021 16:12:48 GMT
+Received: from b06wcsmtp001.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 5944AA4064;
+        Mon, 31 May 2021 16:12:48 +0000 (GMT)
+Received: from b06wcsmtp001.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 9D587A405F;
+        Mon, 31 May 2021 16:12:46 +0000 (GMT)
+Received: from li-f45666cc-3089-11b2-a85c-c57d1a57929f.ibm.com (unknown [9.160.84.117])
+        by b06wcsmtp001.portsmouth.uk.ibm.com (Postfix) with ESMTP;
+        Mon, 31 May 2021 16:12:46 +0000 (GMT)
+Message-ID: <e5baf1bbc6aa454c2a708d85d73fdc2f3470bf16.camel@linux.ibm.com>
+Subject: Re: [PATCH v4 2/2] certs: Add support for using elliptic curve keys
+ for signing modules
+From:   Mimi Zohar <zohar@linux.ibm.com>
+To:     Stefan Berger <stefanb@linux.ibm.com>, jeyu@kernel.org,
+        keyrings@vger.kernel.org, dhowells@redhat.com, jarkko@kernel.org
+Cc:     nayna@linux.ibm.com, linux-integrity@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date:   Mon, 31 May 2021 12:12:35 -0400
+In-Reply-To: <20210423151247.1517808-3-stefanb@linux.ibm.com>
+References: <20210423151247.1517808-1-stefanb@linux.ibm.com>
+         <20210423151247.1517808-3-stefanb@linux.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.28.5 (3.28.5-14.el8) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: 0pi9Cw8l3rZcCOJaNPzg2fuGX6YwFQZk
+X-Proofpoint-GUID: dt0a-cCF-gfTM2cxMStyqLjtWLubRTMy
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.391,18.0.761
+ definitions=2021-05-31_10:2021-05-31,2021-05-31 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 phishscore=0 mlxscore=0
+ malwarescore=0 bulkscore=0 mlxlogscore=999 impostorscore=0 spamscore=0
+ clxscore=1015 adultscore=0 suspectscore=0 priorityscore=1501
+ lowpriorityscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2104190000 definitions=main-2105310119
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, May 31, 2021 at 09:30:01PM +0800, Hongbo Li wrote:
-> From: Hongbo Li <herberthbli@tencent.com>
+On Fri, 2021-04-23 at 11:12 -0400, Stefan Berger wrote:
+> Add support for using elliptic curve keys for signing modules. It uses
+> a NIST P384 (secp384r1) key if the user chooses an elliptic curve key
+> and will have ECDSA support built into the kernel.
 > 
-> SM2 module alloc ec->Q in sm2_set_pub_key(), when doing alg test in
-> test_akcipher_one(), it will set public key for every test vector,
-> and don't free ec->Q. This will cause a memory leak.
+> Note: A developer choosing an ECDSA key for signing modules should still
+> delete the signing key (rm certs/signing_key.*) when building an older
+> version of a kernel that only supports RSA keys. Unless kbuild automati-
+> cally detects and generates a new kernel module key, ECDSA-signed kernel
+> modules will fail signature verification.
 > 
-> This patch alloc ec->Q in sm2_ec_ctx_init().
-> 
-> Fixes: ea7ecb66440b ("crypto: sm2 - introduce OSCCA SM2 asymmetric cipher algorithm")
-> Signed-off-by: Hongbo Li <herberthbli@tencent.com>
-> Reviewed-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-> ---
->  crypto/sm2.c | 24 ++++++++++--------------
->  1 file changed, 10 insertions(+), 14 deletions(-)
-> 
+> Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
 
-<formletter>
+Tested-by: Mimi Zohar <zohar@linux.ibm.com>
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read:
-    https://www.kernel.org/doc/html/latest/process/stable-kernel-rules.html
-for how to do this properly.
-
-</formletter>
