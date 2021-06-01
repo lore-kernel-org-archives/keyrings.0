@@ -2,124 +2,114 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 1494FC47097
-	for <keyrings@archiver.kernel.org>; Tue,  1 Jun 2021 10:53:26 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7F981C47080
+	for <keyrings@archiver.kernel.org>; Tue,  1 Jun 2021 13:04:52 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 099C7613D1
-	for <keyrings@archiver.kernel.org>; Tue,  1 Jun 2021 10:53:26 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 54097613CB
+	for <keyrings@archiver.kernel.org>; Tue,  1 Jun 2021 13:04:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233713AbhFAKzF (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 1 Jun 2021 06:55:05 -0400
-Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:58370 "EHLO
-        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-        by vger.kernel.org with ESMTP id S230282AbhFAKzD (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 1 Jun 2021 06:55:03 -0400
-Received: from pps.filterd (m0098419.ppops.net [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 151AY1Qi134439;
-        Tue, 1 Jun 2021 06:53:18 -0400
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=6bdOwxmqLs8tqvRTEVNLYQUYNmHgFhy//nAudow78jg=;
- b=XDxfjjwoCE7adzCrdUCk6zHf9dXlwHQthLaR58VUKT53cIbC0IM9dEDYSVt6na99owOE
- 4GxUO8Lqu/TK4mK8rj4Zigw4lKXSpDm/fhuYi8l2bIN6oxYW+Sfnhhfudcc44hTlEgC1
- //mG+VyhshyOSyvxanJILe5SgbBXqYJ+QMYbpkB1/XzyUnW9k1YL3VsRXN3kmLjR+2Dp
- SU3ArFC3rHQcxUoQAPHelEMYi9oghDrjEPFhC2XJ6oNq2SX7MB4DxiTtmMu32IBBkuRm
- wr4Ne/MKGgwntgI7rWlUvKllIYTlBmuuXtXjoAh3yN595TdwEN8a0/YnPA7i/leSY0DH Dg== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 38whgm3ef4-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 01 Jun 2021 06:53:18 -0400
-Received: from m0098419.ppops.net (m0098419.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 151AY9UB135719;
-        Tue, 1 Jun 2021 06:53:17 -0400
-Received: from ppma05wdc.us.ibm.com (1b.90.2fa9.ip4.static.sl-reverse.com [169.47.144.27])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 38whgm3eey-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 01 Jun 2021 06:53:17 -0400
-Received: from pps.filterd (ppma05wdc.us.ibm.com [127.0.0.1])
-        by ppma05wdc.us.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 151AbHpi002661;
-        Tue, 1 Jun 2021 10:53:17 GMT
-Received: from b01cxnp22034.gho.pok.ibm.com (b01cxnp22034.gho.pok.ibm.com [9.57.198.24])
-        by ppma05wdc.us.ibm.com with ESMTP id 38ud88xane-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 01 Jun 2021 10:53:17 +0000
-Received: from b01ledav002.gho.pok.ibm.com (b01ledav002.gho.pok.ibm.com [9.57.199.107])
-        by b01cxnp22034.gho.pok.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 151ArG8t17432978
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Tue, 1 Jun 2021 10:53:16 GMT
-Received: from b01ledav002.gho.pok.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 9D54C124054;
-        Tue,  1 Jun 2021 10:53:16 +0000 (GMT)
-Received: from b01ledav002.gho.pok.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 84536124058;
-        Tue,  1 Jun 2021 10:53:16 +0000 (GMT)
-Received: from localhost.localdomain (unknown [9.47.158.152])
-        by b01ledav002.gho.pok.ibm.com (Postfix) with ESMTP;
-        Tue,  1 Jun 2021 10:53:16 +0000 (GMT)
-From:   Stefan Berger <stefanb@linux.ibm.com>
-To:     jeyu@kernel.org, keyrings@vger.kernel.org, dhowells@redhat.com,
-        dwmw2@infradead.org, zohar@linux.ibm.com, jarkko@kernel.org
-Cc:     nayna@linux.ibm.com, linux-integrity@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Berger <stefanb@linux.ibm.com>
-Subject: [PATCH v5 1/2] certs: Trigger creation of RSA module signing key if it's not an RSA key
-Date:   Tue,  1 Jun 2021 06:52:44 -0400
-Message-Id: <20210601105245.213767-2-stefanb@linux.ibm.com>
-X-Mailer: git-send-email 2.31.1
-In-Reply-To: <20210601105245.213767-1-stefanb@linux.ibm.com>
-References: <20210601105245.213767-1-stefanb@linux.ibm.com>
+        id S233657AbhFANGc (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 1 Jun 2021 09:06:32 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34814 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S233584AbhFANGc (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 1 Jun 2021 09:06:32 -0400
+Received: from mail-lf1-x12d.google.com (mail-lf1-x12d.google.com [IPv6:2a00:1450:4864:20::12d])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D2C3DC061574;
+        Tue,  1 Jun 2021 06:04:49 -0700 (PDT)
+Received: by mail-lf1-x12d.google.com with SMTP id f30so21738246lfj.1;
+        Tue, 01 Jun 2021 06:04:49 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc:content-transfer-encoding;
+        bh=Rw1TyoUa9aiS8Shi7TrzrzdMWGto2RvksIaQCYZQl6I=;
+        b=NXHuJ3kayobjefeyL1gcrhxn0neUoipH6MHholr7LjQiFr2gmjWwp7ZWCvAO26K9sa
+         BEbwTHF1YAtMFQ+Hd0U0cRrmF/f9/4Q1s5yr8Ybmrkoroaav2rR5K54bUfG5VrWAJk3J
+         Db8DIH0ynKc9cEMbkrvLVSUxhr9qWY+DHM/6agm/NqN9rfox4ca4h579bvxfvZue1sym
+         ewBGcga6XdL14Qb3P+6uam3A6db8VYwXoNvpotaol6sLEgQKgrOZxT+d6TCCSBt83vYq
+         0591BivZEwWSmc0Z9nMR0Jsju40sRSwkAIVgmHLssXbgeh2VM5wBTsaSDoAhVZFNCZp1
+         B41w==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc:content-transfer-encoding;
+        bh=Rw1TyoUa9aiS8Shi7TrzrzdMWGto2RvksIaQCYZQl6I=;
+        b=JUiPVbSdid5w5rGHYIooU+t56UvsKMsgmdcT0h0AUHOeBUHWWnxM01UocoKBVxLal2
+         guM5PHiQnQxoEQD/Q1ly6Yb8ZObbF8EZOHbXzB7vRzsOfTPoZDEdR12rQfaM8X0T6OmX
+         XycFOhqarJOrLUs4/YA+MtiWRcjttBnqLAHi9Gvn7iHchAhEYGWVlp9P9h81exAjjPTF
+         bGlMiIj8OH2cmecAIYyyo1X9CjFfha3LlKrs9YCapL5lJfiasGVeOh0tgeFKzsANdnCP
+         NOK5nF+6/skAzFRTtazgiEkzY6WZw7lhC/eRr7KZjErgQ8PZYWK6M6uPEyPHsslmC2x8
+         cWXA==
+X-Gm-Message-State: AOAM5337s9pP1sVGvL0YcEVUs9nTzt9u8hfPQ8onOlk+Gr53IkWZR3zz
+        wU6BowhE/JpQbSM3J4YhwuvvSj6tV1WCEn9Huvg=
+X-Google-Smtp-Source: ABdhPJzpLx6PUKa9dC0heVhe0p+I2YyziTvvru6/hu8N41tp08cfrvJImTuMZUJvvwgU4bAgBYUphuxvX8RwXbAwHg8=
+X-Received: by 2002:a05:6512:21ae:: with SMTP id c14mr18583454lft.483.1622552688197;
+ Tue, 01 Jun 2021 06:04:48 -0700 (PDT)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: vrrqEh-5TpUQaLWVb-QHrb4VIsKDhYpr
-X-Proofpoint-ORIG-GUID: nzA2NzxTjVXI0es8G73kV7rU33k1wxdK
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.391,18.0.761
- definitions=2021-06-01_05:2021-05-31,2021-06-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 phishscore=0 mlxlogscore=999
- impostorscore=0 mlxscore=0 adultscore=0 clxscore=1015 priorityscore=1501
- spamscore=0 lowpriorityscore=0 malwarescore=0 bulkscore=0 suspectscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2104190000
- definitions=main-2106010071
+References: <1622467801-30957-1-git-send-email-herbert.tencent@gmail.com> <91999e12-a7de-ad4b-72c4-2376ac682c92@linux.alibaba.com>
+In-Reply-To: <91999e12-a7de-ad4b-72c4-2376ac682c92@linux.alibaba.com>
+From:   hongbo li <herbert.tencent@gmail.com>
+Date:   Tue, 1 Jun 2021 21:04:35 +0800
+Message-ID: <CABpmuw+NHufb5rV3POpuwBOyfe7few=oDG2CpOPCk0=zhXya6Q@mail.gmail.com>
+Subject: Re: [PATCH] crypto: sm2 - fix a memory leak in sm2
+To:     Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Cc:     "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>,
+        linux-crypto@vger.kernel.org,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Eric Biggers <ebiggers@kernel.org>,
+        David Howells <dhowells@redhat.com>, jarkko@kernel.org,
+        =?UTF-8?B?aGVyYmVydGhibGko5p2O5byY5Y2aKQ==?= 
+        <herberthbli@tencent.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Address a kbuild issue where a developer created an ECDSA key for signing
-kernel modules and then builds an older version of the kernel, when bi-
-secting the kernel for example, that does not support ECDSA keys.
+Hi Tianjia,
 
-Trigger the creation of an RSA module signing key if it is not an RSA key.
+Tianjia Zhang <tianjia.zhang@linux.alibaba.com> =E4=BA=8E2021=E5=B9=B46=E6=
+=9C=881=E6=97=A5=E5=91=A8=E4=BA=8C =E4=B8=8A=E5=8D=8810:54=E5=86=99=E9=81=
+=93=EF=BC=9A
+>
+> Hi Hongbo,
+>
+> On 5/31/21 9:30 PM, Hongbo Li wrote:
+> > From: Hongbo Li <herberthbli@tencent.com>
+> >
+> > SM2 module alloc ec->Q in sm2_set_pub_key(), when doing alg test in
+> > test_akcipher_one(), it will set public key for every test vector,
+> > and don't free ec->Q. This will cause a memory leak.
+> >
+> > This patch alloc ec->Q in sm2_ec_ctx_init().
+> >
+> > Fixes: ea7ecb66440b ("crypto: sm2 - introduce OSCCA SM2 asymmetric ciph=
+er algorithm")
+> > Signed-off-by: Hongbo Li <herberthbli@tencent.com>
+> > Reviewed-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+> > ---
+> >   crypto/sm2.c | 24 ++++++++++--------------
+> >   1 file changed, 10 insertions(+), 14 deletions(-)
+> >
+>
+> Just add Cc: to SOB, like this:
+>
+>    Fixes: ea7ecb66440b (...)
+>    Signed-off-by: Hongbo Li <herberthbli@tencent.com>
+>    Cc: stable@vger.kernel.org # v5.10+
+>    Reviewed-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+>
+> Thanks,
+> Tianjia
 
-Fixes: cfc411e7fff3 ("Move certificate handling to its own directory")
-Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
-Tested-by: Mimi Zohar <zohar@linux.ibm.com>
----
- certs/Makefile | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/certs/Makefile b/certs/Makefile
-index 359239a0ee9e..e6f97c64aa99 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -62,6 +62,11 @@ silent_redirect_openssl = 2>/dev/null
- # external private key, because 'make randconfig' might enable such a
- # boolean option and we unfortunately can't make it depend on !RANDCONFIG.
- ifeq ($(CONFIG_MODULE_SIG_KEY),"certs/signing_key.pem")
-+
-+X509TEXT=$(shell openssl x509 -in $(CONFIG_MODULE_SIG_KEY) -text)
-+
-+$(if $(findstring rsaEncryption,$(X509TEXT)),,$(shell rm -f $(CONFIG_MODULE_SIG_KEY)))
-+
- $(obj)/signing_key.pem: $(obj)/x509.genkey
- 	@$(kecho) "###"
- 	@$(kecho) "### Now generating an X.509 key pair to be used for signing modules."
--- 
-2.29.2
-
+Thank you, I will resend the patch.
+Hongbo
