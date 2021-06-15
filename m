@@ -2,123 +2,126 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 85C3EC49EBE
-	for <keyrings@archiver.kernel.org>; Mon, 14 Jun 2021 20:24:23 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id BF570C48BE5
+	for <keyrings@archiver.kernel.org>; Tue, 15 Jun 2021 13:05:10 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 74234613B9
-	for <keyrings@archiver.kernel.org>; Mon, 14 Jun 2021 20:24:23 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 903A961468
+	for <keyrings@archiver.kernel.org>; Tue, 15 Jun 2021 13:05:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S235278AbhFNU0Z (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 14 Jun 2021 16:26:25 -0400
-Received: from lilium.sigma-star.at ([109.75.188.150]:59394 "EHLO
-        lilium.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235071AbhFNU0W (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 14 Jun 2021 16:26:22 -0400
-Received: from localhost (localhost [127.0.0.1])
-        by lilium.sigma-star.at (Postfix) with ESMTP id CD8851817A0D5;
-        Mon, 14 Jun 2021 22:16:36 +0200 (CEST)
-Received: from lilium.sigma-star.at ([127.0.0.1])
-        by localhost (lilium.sigma-star.at [127.0.0.1]) (amavisd-new, port 10032)
-        with ESMTP id LQOMc3Q2a1Ft; Mon, 14 Jun 2021 22:16:35 +0200 (CEST)
-Received: from lilium.sigma-star.at ([127.0.0.1])
-        by localhost (lilium.sigma-star.at [127.0.0.1]) (amavisd-new, port 10026)
-        with ESMTP id 3Byo3RcpDR1u; Mon, 14 Jun 2021 22:16:34 +0200 (CEST)
-From:   Richard Weinberger <richard@nod.at>
-To:     keyrings@vger.kernel.org
-Cc:     Richard Weinberger <richard@nod.at>,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        David Gstir <david@sigma-star.at>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fabio Estevam <festevam@gmail.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        James Bottomley <jejb@linux.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        linux-arm-kernel@lists.infradead.org, linux-crypto@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        NXP Linux Team <linux-imx@nxp.com>,
-        Pengutronix Kernel Team <kernel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Shawn Guo <shawnguo@kernel.org>
-Subject: [PATCH 0/3] DCP as trusted keys backend
-Date:   Mon, 14 Jun 2021 22:16:17 +0200
-Message-Id: <20210614201620.30451-1-richard@nod.at>
-X-Mailer: git-send-email 2.26.2
+        id S230060AbhFONHN (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 15 Jun 2021 09:07:13 -0400
+Received: from mail.kernel.org ([198.145.29.99]:55034 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S229977AbhFONHL (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Tue, 15 Jun 2021 09:07:11 -0400
+Received: by mail.kernel.org (Postfix) with ESMTPSA id AC38B61001;
+        Tue, 15 Jun 2021 13:05:06 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1623762307;
+        bh=aGEKMIS0PUOJ/1fjleH9M9mgh0PdhlRGN7kd+G3Hjn0=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=rt6yV4rsIBq+vFZL/WT3d87b3ZpHqar7FYyuZyzWmzguq4QfJNHOs2SproeQ1wkyp
+         ZRlKQrJKpH0BIgx/+A45LTmp2KU8BFiz73xjtzL3PUDdQ0C5GmBN8Z9Y2PV4SfwzzN
+         HF4U1V7AoIVsUEEYGkh1xXzo8pjy842YZTws+xyVNLZDCmYRfz/KLcm6RczPB6m7WF
+         6Ft5DzhvjopxvbTpw4oUorTWHeEqRM4efJ4BDLqv50cul+C27tI93CPFiNCHiZY+wv
+         SNzT4EAHQoTuzoWg7E9MfUMzJP1uRYslNjakaC8N+gYZjS0cfjDUTYVdV07ox1PQgG
+         qWyqVCjdSUhYw==
+Date:   Tue, 15 Jun 2021 16:05:04 +0300
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Stefan Berger <stefanb@linux.ibm.com>
+Cc:     jeyu@kernel.org, keyrings@vger.kernel.org, dhowells@redhat.com,
+        dwmw2@infradead.org, zohar@linux.ibm.com, nayna@linux.ibm.com,
+        linux-integrity@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] Add support for ECDSA-signed kernel modules
+Message-ID: <20210615130504.ngizto6nv33qqirf@kernel.org>
+References: <20210610125623.1553792-1-stefanb@linux.ibm.com>
+ <20210614191948.io4waff5aisah36q@kernel.org>
+ <95fac042-d348-91d9-f6d0-6a1ec21cebe4@linux.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <95fac042-d348-91d9-f6d0-6a1ec21cebe4@linux.ibm.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-DCP is an IP core found on NXP SoCs such as i.mx6ull.
-While its bigger brother, CAAM, can directly wrap and unwrap blobs
-in hardware[0], DCP offers only the bare minimum and the blob
-mechanism needs aid from software.
+On Mon, Jun 14, 2021 at 03:20:43PM -0400, Stefan Berger wrote:
+> 
+> On 6/14/21 3:19 PM, Jarkko Sakkinen wrote:
+> > On Thu, Jun 10, 2021 at 08:56:19AM -0400, Stefan Berger wrote:
+> > > This series adds support for ECDSA-signed kernel modules. It also
+> > > attempts to address a kbuild issue where a developer created an ECDSA
+> > > key for signing kernel modules and then builds an older version of the
+> > > kernel, when bisecting the kernel for example, that does not support
+> > > ECDSA keys.
+> > > 
+> > > The first patch addresses the kbuild issue of needing to delete that
+> > > ECDSA key if it is in certs/signing_key.pem and trigger the creation
+> > > of an RSA key. However, for this to work this patch would have to be
+> > > backported to previous versions of the kernel but would also only work
+> > > for the developer if he/she used a stable version of the kernel to which
+> > > this patch was applied. So whether this patch actually achieves the
+> > > wanted effect is not always guaranteed.
+> > > 
+> > > The 2nd patch adds the support for the ECSDA-signed kernel modules.
+> > > 
+> > > This patch depends on the ECDSA support series currently queued here:
+> > > https://git.kernel.org/pub/scm/linux/kernel/git/herbert/cryptodev-2.6.git/log/?h=ecc
+> > > 
+> > >    Stefan
+> > > 
+> > > v6:
+> > >    - Patch 2/4 is fixing V4's 1/2 and 4/4 is fixing V4's 2/2. Both fixup
+> > >      patches to be squashed.
+> > > 
+> > > v5:
+> > >    - do not touch the key files if openssl is not installed; likely
+> > >      addresses an issue pointed out by kernel test robot
+> > > 
+> > > v4:
+> > >    - extending 'depends on' with MODULES to (IMA_APPRAISE_MODSIG && MODULES)
+> > > v3: - added missing OIDs for ECDSA signed hashes to pkcs7_sig_note_pkey_algo
+> > >    - added recommendation to use string hash to Kconfig help text
+> > > 
+> > > v2:
+> > >    - Adjustment to ECDSA key detector string in 2/2
+> > >    - Rephrased cover letter and patch descriptions with Mimi
+> > > 
+> > > 
+> > > Stefan Berger (4):
+> > >    certs: Trigger creation of RSA module signing key if it's not an RSA
+> > >      key
+> > >    certs: Check whether openssl tool is available
+> > >    certs: Add support for using elliptic curve keys for signing modules
+> > >    certs: Adjustment due to 'Check whether openssl tool is available'
+> > > 
+> > >   certs/Kconfig                         | 26 ++++++++++++++++++++++++++
+> > >   certs/Makefile                        | 21 +++++++++++++++++++++
+> > >   crypto/asymmetric_keys/pkcs7_parser.c |  8 ++++++++
+> > >   3 files changed, 55 insertions(+)
+> > > 
+> > > -- 
+> > > 2.29.2
+> > > 
+> > > 
+> > Since you know the commit ID's in
+> > 
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
+> > 
+> > you could just use fixes-tags and send exactly two patch series. Works
+> > better with various tools (e.g. https://pypi.org/project/b4/)
+> > 
+> > /Jarkko
+> 
+> 
+> So you are not taking v6's 2/4 and 4/4 ?
 
-This series adds support for a new trusted keys backend that makes use
-of DCP's feature to use hardware keys which can never be read out.
+I applied the fixes and squashed them to appriopriate commits.
 
-[0] https://lore.kernel.org/lkml/cover.56fff82362af6228372ea82e6bd7e586e2=
-3f0966.1615914058.git-series.a.fatoum@pengutronix.de/
-
----
-Cc: Ahmad Fatoum <a.fatoum@pengutronix.de>
-Cc: David Gstir <david@sigma-star.at>
-Cc: David Howells <dhowells@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Fabio Estevam <festevam@gmail.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: James Bottomley <jejb@linux.ibm.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: keyrings@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-crypto@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-integrity@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: NXP Linux Team <linux-imx@nxp.com>
-Cc: Pengutronix Kernel Team <kernel@pengutronix.de>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Shawn Guo <shawnguo@kernel.org>
-
-David Gstir (1):
-  doc: trusted-encrypted: add DCP as new trust source
-
-Richard Weinberger (2):
-  crypto: mxs-dcp: Add support for hardware provided keys
-  KEYS: trusted: Introduce support for NXP DCP-based trusted keys
-
- .../admin-guide/kernel-parameters.txt         |   1 +
- .../security/keys/trusted-encrypted.rst       |  84 ++++-
- MAINTAINERS                                   |   9 +
- drivers/crypto/mxs-dcp.c                      | 110 +++++-
- include/keys/trusted_dcp.h                    |  13 +
- include/linux/mxs-dcp.h                       |  19 +
- security/keys/trusted-keys/Makefile           |   1 +
- security/keys/trusted-keys/trusted_core.c     |   6 +-
- security/keys/trusted-keys/trusted_dcp.c      | 325 ++++++++++++++++++
- 9 files changed, 554 insertions(+), 14 deletions(-)
- create mode 100644 include/keys/trusted_dcp.h
- create mode 100644 include/linux/mxs-dcp.h
- create mode 100644 security/keys/trusted-keys/trusted_dcp.c
-
---=20
-2.26.2
-
+/Jarkko
