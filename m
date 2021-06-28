@@ -5,49 +5,46 @@ X-Spam-Level:
 X-Spam-Status: No, score=-19.4 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 14B07C2B9F4
-	for <keyrings@archiver.kernel.org>; Mon, 28 Jun 2021 14:33:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id EFE6EC49EAB
+	for <keyrings@archiver.kernel.org>; Mon, 28 Jun 2021 14:33:41 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id F238B61CE6
-	for <keyrings@archiver.kernel.org>; Mon, 28 Jun 2021 14:33:39 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id DD16761CE9
+	for <keyrings@archiver.kernel.org>; Mon, 28 Jun 2021 14:33:41 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234813AbhF1OgD (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 28 Jun 2021 10:36:03 -0400
-Received: from mail.kernel.org ([198.145.29.99]:37130 "EHLO mail.kernel.org"
+        id S234698AbhF1OgE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 28 Jun 2021 10:36:04 -0400
+Received: from mail.kernel.org ([198.145.29.99]:37162 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S234611AbhF1Odj (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Mon, 28 Jun 2021 10:33:39 -0400
-Received: by mail.kernel.org (Postfix) with ESMTPSA id 61B2061C91;
-        Mon, 28 Jun 2021 14:27:50 +0000 (UTC)
+        id S234631AbhF1Odm (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Mon, 28 Jun 2021 10:33:42 -0400
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 85B2861CE0;
+        Mon, 28 Jun 2021 14:27:52 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1624890471;
-        bh=MofWOokSsDYOdPg8LC7QYMKT2us9PHcRk8KMM5L2OAs=;
+        s=k20201202; t=1624890473;
+        bh=E/Pl6uYmGs31k+2sPZqoBcF8IfWm8rVBrvX/Sz9IVk4=;
         h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=FQaWhpQo200UUL7zOt0rOeiipUOFvyQwBVysXcYhUQG99GBpCyn8xH3jYrkYihOuY
-         S1hPiKYoOVHrrSplK5r1k3LF85ClF7CF6H6jJRQk5jbgNGVjiKTj6UIZduqKJD7ekC
-         aElck61khck54j8I4nxdPylspJ7eMqKPXJGJO0oaU/FF9XOM8k8FzwTeVZA10rSkST
-         A1u1a/01stifL6DN/3867FmJilsLCoAuS3YJWm21smt8n8YQHLZX7pu+EseoDLvf63
-         4jjO62l4E41yxunRp22HyovvE5HZusSs4ZvJMfG6kxEC/HRZwY7W3Vp75C4fYXGXWA
-         pXFM1bbgl30lg==
+        b=sSaB12GfZQZiS0tCatB9kN5lRulvo6YdcLEEoqqd112flWDwgHwOQxFjJaPTMPTtt
+         ZHyceTVnbgddsqjAJi3I9G3wqKVODt61Chv2q2KCa9JcT1MDMW8jMCnesNePrbXVTg
+         01hYC+BBZKCLDzE8zS4jIHMRD3f7GV/8rby6TillDlpHL5k39cHMJW8u7xaecvteGt
+         7TYhAfe7W8PXqVmWyi9XEMxW71qxxxip5uPtZ8bcX0c7ZZC8MWz6iI2nvpO7DYW5w1
+         TPwfgkSHBSwRw2LmmSXl4ImU/R+jB8r8FOJoI+oYLrECTajv/r4VJdi2WvvcEQ+aeu
+         s+XZ0fADTFEgw==
 From:   Sasha Levin <sashal@kernel.org>
 To:     linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc:     Eric Snowberg <eric.snowberg@oracle.com>,
-        David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
-        Arnd Bergmann <arnd@kernel.org>, keyrings@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, keyrings@vger.kernel.org,
         Sasha Levin <sashal@kernel.org>
-Subject: [PATCH 5.10 097/101] certs: Add EFI_CERT_X509_GUID support for dbx entries
-Date:   Mon, 28 Jun 2021 10:26:03 -0400
-Message-Id: <20210628142607.32218-98-sashal@kernel.org>
+Subject: [PATCH 5.10 099/101] certs: Add ability to preload revocation certs
+Date:   Mon, 28 Jun 2021 10:26:05 -0400
+Message-Id: <20210628142607.32218-100-sashal@kernel.org>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <20210628142607.32218-1-sashal@kernel.org>
 References: <20210628142607.32218-1-sashal@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 X-KernelTest-Patch: http://kernel.org/pub/linux/kernel/v5.x/stable-review/patch-5.10.47-rc1.gz
 X-KernelTest-Tree: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git
 X-KernelTest-Branch: linux-5.10.y
@@ -63,218 +60,177 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 From: Eric Snowberg <eric.snowberg@oracle.com>
 
-[ Upstream commit 56c5812623f95313f6a46fbf0beee7fa17c68bbf ]
+[ Upstream commit d1f044103dad70c1cec0a8f3abdf00834fec8b98 ]
 
-This fixes CVE-2020-26541.
+Add a new Kconfig option called SYSTEM_REVOCATION_KEYS. If set,
+this option should be the filename of a PEM-formated file containing
+X.509 certificates to be included in the default blacklist keyring.
 
-The Secure Boot Forbidden Signature Database, dbx, contains a list of now
-revoked signatures and keys previously approved to boot with UEFI Secure
-Boot enabled.  The dbx is capable of containing any number of
-EFI_CERT_X509_SHA256_GUID, EFI_CERT_SHA256_GUID, and EFI_CERT_X509_GUID
-entries.
-
-Currently when EFI_CERT_X509_GUID are contained in the dbx, the entries are
-skipped.
-
-Add support for EFI_CERT_X509_GUID dbx entries. When a EFI_CERT_X509_GUID
-is found, it is added as an asymmetrical key to the .blacklist keyring.
-Anytime the .platform keyring is used, the keys in the .blacklist keyring
-are referenced, if a matching key is found, the key will be rejected.
-
-[DH: Made the following changes:
- - Added to have a config option to enable the facility.  This allows a
-   Kconfig solution to make sure that pkcs7_validate_trust() is
-   enabled.[1][2]
- - Moved the functions out from the middle of the blacklist functions.
- - Added kerneldoc comments.]
+DH Changes:
+ - Make the new Kconfig option depend on SYSTEM_REVOCATION_LIST.
+ - Fix SYSTEM_REVOCATION_KEYS=n, but CONFIG_SYSTEM_REVOCATION_LIST=y[1][2].
+ - Use CONFIG_SYSTEM_REVOCATION_LIST for extract-cert[3].
+ - Use CONFIG_SYSTEM_REVOCATION_LIST for revocation_certificates.o[3].
 
 Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
+Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 cc: Randy Dunlap <rdunlap@infradead.org>
-cc: Mickaël Salaün <mic@digikod.net>
-cc: Arnd Bergmann <arnd@kernel.org>
 cc: keyrings@vger.kernel.org
-Link: https://lore.kernel.org/r/20200901165143.10295-1-eric.snowberg@oracle.com/ # rfc
-Link: https://lore.kernel.org/r/20200909172736.73003-1-eric.snowberg@oracle.com/ # v2
-Link: https://lore.kernel.org/r/20200911182230.62266-1-eric.snowberg@oracle.com/ # v3
-Link: https://lore.kernel.org/r/20200916004927.64276-1-eric.snowberg@oracle.com/ # v4
-Link: https://lore.kernel.org/r/20210122181054.32635-2-eric.snowberg@oracle.com/ # v5
-Link: https://lore.kernel.org/r/161428672051.677100.11064981943343605138.stgit@warthog.procyon.org.uk/
-Link: https://lore.kernel.org/r/161433310942.902181.4901864302675874242.stgit@warthog.procyon.org.uk/ # v2
-Link: https://lore.kernel.org/r/161529605075.163428.14625520893961300757.stgit@warthog.procyon.org.uk/ # v3
-Link: https://lore.kernel.org/r/bc2c24e3-ed68-2521-0bf4-a1f6be4a895d@infradead.org/ [1]
-Link: https://lore.kernel.org/r/20210225125638.1841436-1-arnd@kernel.org/ [2]
+Link: https://lore.kernel.org/r/e1c15c74-82ce-3a69-44de-a33af9b320ea@infradead.org/ [1]
+Link: https://lore.kernel.org/r/20210303034418.106762-1-eric.snowberg@oracle.com/ [2]
+Link: https://lore.kernel.org/r/20210304175030.184131-1-eric.snowberg@oracle.com/ [3]
+Link: https://lore.kernel.org/r/20200930201508.35113-3-eric.snowberg@oracle.com/
+Link: https://lore.kernel.org/r/20210122181054.32635-4-eric.snowberg@oracle.com/ # v5
+Link: https://lore.kernel.org/r/161428673564.677100.4112098280028451629.stgit@warthog.procyon.org.uk/
+Link: https://lore.kernel.org/r/161433312452.902181.4146169951896577982.stgit@warthog.procyon.org.uk/ # v2
+Link: https://lore.kernel.org/r/161529606657.163428.3340689182456495390.stgit@warthog.procyon.org.uk/ # v3
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- certs/Kconfig                                 |  9 ++++
- certs/blacklist.c                             | 43 +++++++++++++++++++
- certs/blacklist.h                             |  2 +
- certs/system_keyring.c                        |  6 +++
- include/keys/system_keyring.h                 | 15 +++++++
- .../platform_certs/keyring_handler.c          | 11 +++++
- 6 files changed, 86 insertions(+)
+ certs/Kconfig                   |  8 ++++++++
+ certs/Makefile                  | 19 +++++++++++++++++--
+ certs/blacklist.c               | 21 +++++++++++++++++++++
+ certs/revocation_certificates.S | 21 +++++++++++++++++++++
+ scripts/Makefile                |  1 +
+ 5 files changed, 68 insertions(+), 2 deletions(-)
+ create mode 100644 certs/revocation_certificates.S
 
 diff --git a/certs/Kconfig b/certs/Kconfig
-index c94e93d8bccf..76e469b56a77 100644
+index 76e469b56a77..ab88d2a7f3c7 100644
 --- a/certs/Kconfig
 +++ b/certs/Kconfig
-@@ -83,4 +83,13 @@ config SYSTEM_BLACKLIST_HASH_LIST
- 	  wrapper to incorporate the list into the kernel.  Each <hash> should
- 	  be a string of hex digits.
+@@ -92,4 +92,12 @@ config SYSTEM_REVOCATION_LIST
+ 	  blacklist keyring and implements a hook whereby a PKCS#7 message can
+ 	  be checked to see if it matches such a certificate.
  
-+config SYSTEM_REVOCATION_LIST
-+	bool "Provide system-wide ring of revocation certificates"
-+	depends on SYSTEM_BLACKLIST_KEYRING
-+	depends on PKCS7_MESSAGE_PARSER=y
++config SYSTEM_REVOCATION_KEYS
++	string "X.509 certificates to be preloaded into the system blacklist keyring"
++	depends on SYSTEM_REVOCATION_LIST
 +	help
-+	  If set, this allows revocation certificates to be stored in the
-+	  blacklist keyring and implements a hook whereby a PKCS#7 message can
-+	  be checked to see if it matches such a certificate.
++	  If set, this option should be the filename of a PEM-formatted file
++	  containing X.509 certificates to be included in the default blacklist
++	  keyring.
 +
  endmenu
+diff --git a/certs/Makefile b/certs/Makefile
+index f4b90bad8690..b6db52ebf0be 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -4,7 +4,8 @@
+ #
+ 
+ obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o common.o
+-obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o
++obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o common.o
++obj-$(CONFIG_SYSTEM_REVOCATION_LIST) += revocation_certificates.o
+ ifneq ($(CONFIG_SYSTEM_BLACKLIST_HASH_LIST),"")
+ obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_hashes.o
+ else
+@@ -29,7 +30,7 @@ $(obj)/x509_certificate_list: scripts/extract-cert $(SYSTEM_TRUSTED_KEYS_SRCPREF
+ 	$(call if_changed,extract_certs,$(SYSTEM_TRUSTED_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_TRUSTED_KEYS))
+ endif # CONFIG_SYSTEM_TRUSTED_KEYRING
+ 
+-clean-files := x509_certificate_list .x509.list
++clean-files := x509_certificate_list .x509.list x509_revocation_list
+ 
+ ifeq ($(CONFIG_MODULE_SIG),y)
+ ###############################################################################
+@@ -104,3 +105,17 @@ targets += signing_key.x509
+ $(obj)/signing_key.x509: scripts/extract-cert $(X509_DEP) FORCE
+ 	$(call if_changed,extract_certs,$(MODULE_SIG_KEY_SRCPREFIX)$(CONFIG_MODULE_SIG_KEY))
+ endif # CONFIG_MODULE_SIG
++
++ifeq ($(CONFIG_SYSTEM_REVOCATION_LIST),y)
++
++$(eval $(call config_filename,SYSTEM_REVOCATION_KEYS))
++
++$(obj)/revocation_certificates.o: $(obj)/x509_revocation_list
++
++quiet_cmd_extract_certs  = EXTRACT_CERTS   $(patsubst "%",%,$(2))
++      cmd_extract_certs  = scripts/extract-cert $(2) $@
++
++targets += x509_revocation_list
++$(obj)/x509_revocation_list: scripts/extract-cert $(SYSTEM_REVOCATION_KEYS_SRCPREFIX)$(SYSTEM_REVOCATION_KEYS_FILENAME) FORCE
++	$(call if_changed,extract_certs,$(SYSTEM_REVOCATION_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_REVOCATION_KEYS))
++endif
 diff --git a/certs/blacklist.c b/certs/blacklist.c
-index f1c434b04b5e..59b2f106b294 100644
+index 59b2f106b294..c973de883cf0 100644
 --- a/certs/blacklist.c
 +++ b/certs/blacklist.c
-@@ -144,6 +144,49 @@ int is_binary_blacklisted(const u8 *hash, size_t hash_len)
- }
- EXPORT_SYMBOL_GPL(is_binary_blacklisted);
+@@ -16,9 +16,15 @@
+ #include <linux/seq_file.h>
+ #include <keys/system_keyring.h>
+ #include "blacklist.h"
++#include "common.h"
+ 
+ static struct key *blacklist_keyring;
  
 +#ifdef CONFIG_SYSTEM_REVOCATION_LIST
-+/**
-+ * add_key_to_revocation_list - Add a revocation certificate to the blacklist
-+ * @data: The data blob containing the certificate
-+ * @size: The size of data blob
-+ */
-+int add_key_to_revocation_list(const char *data, size_t size)
-+{
-+	key_ref_t key;
-+
-+	key = key_create_or_update(make_key_ref(blacklist_keyring, true),
-+				   "asymmetric",
-+				   NULL,
-+				   data,
-+				   size,
-+				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW),
-+				   KEY_ALLOC_NOT_IN_QUOTA | KEY_ALLOC_BUILT_IN);
-+
-+	if (IS_ERR(key)) {
-+		pr_err("Problem with revocation key (%ld)\n", PTR_ERR(key));
-+		return PTR_ERR(key);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * is_key_on_revocation_list - Determine if the key for a PKCS#7 message is revoked
-+ * @pkcs7: The PKCS#7 message to check
-+ */
-+int is_key_on_revocation_list(struct pkcs7_message *pkcs7)
-+{
-+	int ret;
-+
-+	ret = pkcs7_validate_trust(pkcs7, blacklist_keyring);
-+
-+	if (ret == 0)
-+		return -EKEYREJECTED;
-+
-+	return -ENOKEY;
-+}
++extern __initconst const u8 revocation_certificate_list[];
++extern __initconst const unsigned long revocation_certificate_list_size;
 +#endif
 +
  /*
-  * Initialise the blacklist
+  * The description must be a type prefix, a colon and then an even number of
+  * hex digits.  The hash is kept in the description.
+@@ -220,3 +226,18 @@ static int __init blacklist_init(void)
+  * Must be initialised before we try and load the keys into the keyring.
   */
-diff --git a/certs/blacklist.h b/certs/blacklist.h
-index 1efd6fa0dc60..51b320cf8574 100644
---- a/certs/blacklist.h
-+++ b/certs/blacklist.h
-@@ -1,3 +1,5 @@
- #include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <crypto/pkcs7.h>
- 
- extern const char __initconst *const blacklist_hashes[];
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index 798291177186..cc165b359ea3 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -241,6 +241,12 @@ int verify_pkcs7_message_sig(const void *data, size_t len,
- 			pr_devel("PKCS#7 platform keyring is not available\n");
- 			goto error;
- 		}
+ device_initcall(blacklist_init);
 +
-+		ret = is_key_on_revocation_list(pkcs7);
-+		if (ret != -ENOKEY) {
-+			pr_devel("PKCS#7 platform key is on revocation list\n");
-+			goto error;
-+		}
- 	}
- 	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
- 	if (ret < 0) {
-diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-index fb8b07daa9d1..875e002a4180 100644
---- a/include/keys/system_keyring.h
-+++ b/include/keys/system_keyring.h
-@@ -31,6 +31,7 @@ extern int restrict_link_by_builtin_and_secondary_trusted(
- #define restrict_link_by_builtin_and_secondary_trusted restrict_link_by_builtin_trusted
- #endif
- 
-+extern struct pkcs7_message *pkcs7;
- #ifdef CONFIG_SYSTEM_BLACKLIST_KEYRING
- extern int mark_hash_blacklisted(const char *hash);
- extern int is_hash_blacklisted(const u8 *hash, size_t hash_len,
-@@ -49,6 +50,20 @@ static inline int is_binary_blacklisted(const u8 *hash, size_t hash_len)
- }
- #endif
- 
 +#ifdef CONFIG_SYSTEM_REVOCATION_LIST
-+extern int add_key_to_revocation_list(const char *data, size_t size);
-+extern int is_key_on_revocation_list(struct pkcs7_message *pkcs7);
-+#else
-+static inline int add_key_to_revocation_list(const char *data, size_t size)
-+{
-+	return 0;
-+}
-+static inline int is_key_on_revocation_list(struct pkcs7_message *pkcs7)
-+{
-+	return -ENOKEY;
-+}
-+#endif
-+
- #ifdef CONFIG_IMA_BLACKLIST_KEYRING
- extern struct key *ima_blacklist_keyring;
- 
-diff --git a/security/integrity/platform_certs/keyring_handler.c b/security/integrity/platform_certs/keyring_handler.c
-index c5ba695c10e3..5604bd57c990 100644
---- a/security/integrity/platform_certs/keyring_handler.c
-+++ b/security/integrity/platform_certs/keyring_handler.c
-@@ -55,6 +55,15 @@ static __init void uefi_blacklist_binary(const char *source,
- 	uefi_blacklist_hash(source, data, len, "bin:", 4);
- }
- 
 +/*
-+ * Add an X509 cert to the revocation list.
++ * Load the compiled-in list of revocation X.509 certificates.
 + */
-+static __init void uefi_revocation_list_x509(const char *source,
-+					     const void *data, size_t len)
++static __init int load_revocation_certificate_list(void)
 +{
-+	add_key_to_revocation_list(data, len);
-+}
++	if (revocation_certificate_list_size)
++		pr_notice("Loading compiled-in revocation X.509 certificates\n");
 +
- /*
-  * Return the appropriate handler for particular signature list types found in
-  * the UEFI db and MokListRT tables.
-@@ -76,5 +85,7 @@ __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *sig_type)
- 		return uefi_blacklist_x509_tbs;
- 	if (efi_guidcmp(*sig_type, efi_cert_sha256_guid) == 0)
- 		return uefi_blacklist_binary;
-+	if (efi_guidcmp(*sig_type, efi_cert_x509_guid) == 0)
-+		return uefi_revocation_list_x509;
- 	return 0;
- }
++	return load_certificate_list(revocation_certificate_list, revocation_certificate_list_size,
++				     blacklist_keyring);
++}
++late_initcall(load_revocation_certificate_list);
++#endif
+diff --git a/certs/revocation_certificates.S b/certs/revocation_certificates.S
+new file mode 100644
+index 000000000000..f21aae8a8f0e
+--- /dev/null
++++ b/certs/revocation_certificates.S
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#include <linux/export.h>
++#include <linux/init.h>
++
++	__INITRODATA
++
++	.align 8
++	.globl revocation_certificate_list
++revocation_certificate_list:
++__revocation_list_start:
++	.incbin "certs/x509_revocation_list"
++__revocation_list_end:
++
++	.align 8
++	.globl revocation_certificate_list_size
++revocation_certificate_list_size:
++#ifdef CONFIG_64BIT
++	.quad __revocation_list_end - __revocation_list_start
++#else
++	.long __revocation_list_end - __revocation_list_start
++#endif
+diff --git a/scripts/Makefile b/scripts/Makefile
+index c36106bce80e..9adb6d247818 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -14,6 +14,7 @@ hostprogs-always-$(CONFIG_ASN1)				+= asn1_compiler
+ hostprogs-always-$(CONFIG_MODULE_SIG_FORMAT)		+= sign-file
+ hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)	+= extract-cert
+ hostprogs-always-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE)	+= insert-sys-cert
++hostprogs-always-$(CONFIG_SYSTEM_REVOCATION_LIST)	+= extract-cert
+ 
+ HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
+ HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
 -- 
 2.30.2
 
