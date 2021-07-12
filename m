@@ -4,73 +4,303 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,UNPARSEABLE_RELAY,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7E276C11F66
-	for <keyrings@archiver.kernel.org>; Mon, 12 Jul 2021 08:15:57 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 430BCC07E99
+	for <keyrings@archiver.kernel.org>; Mon, 12 Jul 2021 17:12:23 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 6B9F4613F9
-	for <keyrings@archiver.kernel.org>; Mon, 12 Jul 2021 08:15:57 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 24B5A61222
+	for <keyrings@archiver.kernel.org>; Mon, 12 Jul 2021 17:12:23 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1345561AbhGLISd (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 12 Jul 2021 04:18:33 -0400
-Received: from out30-130.freemail.mail.aliyun.com ([115.124.30.130]:50900 "EHLO
-        out30-130.freemail.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1356737AbhGLIQo (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 12 Jul 2021 04:16:44 -0400
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R231e4;CH=green;DM=||false|;DS=||;FP=0|-1|-1|-1|0|-1|-1|-1;HT=e01e04420;MF=tianjia.zhang@linux.alibaba.com;NM=1;PH=DS;RN=15;SR=0;TI=SMTPD_---0UfVJpuB_1626077632;
-Received: from localhost(mailfrom:tianjia.zhang@linux.alibaba.com fp:SMTPD_---0UfVJpuB_1626077632)
-          by smtp.aliyun-inc.com(127.0.0.1);
-          Mon, 12 Jul 2021 16:13:53 +0800
-From:   Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+        id S234994AbhGLRPL (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 12 Jul 2021 13:15:11 -0400
+Received: from smtp-1908.mail.infomaniak.ch ([185.125.25.8]:47177 "EHLO
+        smtp-1908.mail.infomaniak.ch" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S230255AbhGLRPK (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 12 Jul 2021 13:15:10 -0400
+X-Greylist: delayed 521 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jul 2021 13:15:10 EDT
+Received: from smtp-2-0000.mail.infomaniak.ch (unknown [10.5.36.107])
+        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4GNqq23KRvzMpnT0;
+        Mon, 12 Jul 2021 19:03:42 +0200 (CEST)
+Received: from localhost (unknown [23.97.221.149])
+        by smtp-2-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4GNqq218RMzlh8TM;
+        Mon, 12 Jul 2021 19:03:42 +0200 (CEST)
+From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
 To:     David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>
+Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
+        "David S . Miller" <davem@davemloft.net>,
+        Eric Snowberg <eric.snowberg@oracle.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Biggers <ebiggers@google.com>,
-        Eric Biggers <ebiggers@kernel.org>,
+        James Morris <jmorris@namei.org>,
+        =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@linux.microsoft.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
-        Vitaly Chikunov <vt@altlinux.org>,
-        "Gilad Ben-Yossef" <gilad@benyossef.com>,
-        Pascal van Leeuwen <pvanleeuwen@rambus.com>,
+        "Serge E . Hallyn" <serge@hallyn.com>,
+        Tyler Hicks <tyhicks@linux.microsoft.com>,
         keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jia Zhang <zhang.jia@linux.alibaba.com>,
-        "YiLin . Li" <YiLin.Li@linux.alibaba.com>
-Cc:     Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Subject: [PATCH] X.509: Support parsing certificate using SM2 algorithm
-Date:   Mon, 12 Jul 2021 16:13:52 +0800
-Message-Id: <20210712081352.23692-1-tianjia.zhang@linux.alibaba.com>
-X-Mailer: git-send-email 2.19.1.3.ge56e4f7
+        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH v8 5/5] certs: Allow root user to append signed hashes to the blacklist keyring
+Date:   Mon, 12 Jul 2021 19:03:13 +0200
+Message-Id: <20210712170313.884724-6-mic@digikod.net>
+X-Mailer: git-send-email 2.32.0
+In-Reply-To: <20210712170313.884724-1-mic@digikod.net>
+References: <20210712170313.884724-1-mic@digikod.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-The SM2-with-SM3 certificate generated by latest openssl no longer
-reuses the OID_id_ecPublicKey, but directly uses OID_sm2. This patch
-supports this type of x509 certificate parsing.
+From: Mickaël Salaün <mic@linux.microsoft.com>
 
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Add a kernel option SYSTEM_BLACKLIST_AUTH_UPDATE to enable the root user
+to dynamically add new keys to the blacklist keyring.  This enables to
+invalidate new certificates, either from being loaded in a keyring, or
+from being trusted in a PKCS#7 certificate chain.  This also enables to
+add new file hashes to be denied by the integrity infrastructure.
+
+Being able to untrust a certificate which could have normaly been
+trusted is a sensitive operation.  This is why adding new hashes to the
+blacklist keyring is only allowed when these hashes are signed and
+vouched by the builtin trusted keyring.  A blacklist hash is stored as a
+key description.  The PKCS#7 signature of this description must be
+provided as the key payload.
+
+Marking a certificate as untrusted should be enforced while the system
+is running.  It is then forbiden to remove such blacklist keys.
+
+Update blacklist keyring, blacklist key and revoked certificate access rights:
+* allows the root user to search for a specific blacklisted hash, which
+  make sense because the descriptions are already viewable;
+* forbids key update (blacklist and asymmetric ones);
+* restricts kernel rights on the blacklist keyring to align with the
+  root user rights.
+
+See help in tools/certs/print-cert-tbs-hash.sh .
+
+Cc: David Howells <dhowells@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Eric Snowberg <eric.snowberg@oracle.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+Link: https://lore.kernel.org/r/20210712170313.884724-6-mic@digikod.net
 ---
- crypto/asymmetric_keys/x509_cert_parser.c | 3 +++
- 1 file changed, 3 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 6d003096b5bc..6a945a6ce787 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -496,6 +496,9 @@ int x509_extract_key_data(void *context, size_t hdrlen,
- 	case OID_gost2012PKey512:
- 		ctx->cert->pub->pkey_algo = "ecrdsa";
- 		break;
-+	case OID_sm2:
-+		ctx->cert->pub->pkey_algo = "sm2";
-+		break;
- 	case OID_id_ecPublicKey:
- 		if (parse_OID(ctx->params, ctx->params_size, &oid) != 0)
- 			return -EBADMSG;
+Changes since v6:
+* Rebase on keys-cve-2020-26541-v3: commit ebd9c2ae369a ("integrity:
+  Load mokx variables into the blacklist keyring").
+
+Changes since v5:
+* Rebase on keys-next, fix Kconfig conflict, and update the asymmetric
+  key rights added to the blacklist keyring by the new
+  add_key_to_revocation_list(): align with blacklist key rights by
+  removing KEY_POS_WRITE as a safeguard, and add
+  KEY_ALLOC_BYPASS_RESTRICTION to not be subject to
+  restrict_link_for_blacklist() that only allows blacklist key types to
+  be added to the keyring.
+* Change the return code for restrict_link_for_blacklist() from -EPERM
+  to -EOPNOTSUPP to align with asymmetric key keyrings.
+
+Changes since v3:
+* Update commit message for print-cert-tbs-hash.sh .
+
+Changes since v2:
+* Add comment for blacklist_key_instantiate().
+---
+ certs/Kconfig     | 10 +++++
+ certs/blacklist.c | 96 ++++++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 85 insertions(+), 21 deletions(-)
+
+diff --git a/certs/Kconfig b/certs/Kconfig
+index 0fbe184ceca5..e0e524b7eff9 100644
+--- a/certs/Kconfig
++++ b/certs/Kconfig
+@@ -103,4 +103,14 @@ config SYSTEM_REVOCATION_KEYS
+ 	  containing X.509 certificates to be included in the default blacklist
+ 	  keyring.
+ 
++config SYSTEM_BLACKLIST_AUTH_UPDATE
++	bool "Allow root to add signed blacklist keys"
++	depends on SYSTEM_BLACKLIST_KEYRING
++	depends on SYSTEM_DATA_VERIFICATION
++	help
++	  If set, provide the ability to load new blacklist keys at run time if
++	  they are signed and vouched by a certificate from the builtin trusted
++	  keyring.  The PKCS#7 signature of the description is set in the key
++	  payload.  Blacklist keys cannot be removed.
++
+ endmenu
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index b254c87ceb3a..486ce0dd8e9c 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -15,6 +15,7 @@
+ #include <linux/err.h>
+ #include <linux/seq_file.h>
+ #include <linux/uidgid.h>
++#include <linux/verification.h>
+ #include <keys/system_keyring.h>
+ #include "blacklist.h"
+ #include "common.h"
+@@ -26,6 +27,9 @@
+  */
+ #define MAX_HASH_LEN	128
+ 
++#define BLACKLIST_KEY_PERM (KEY_POS_SEARCH | KEY_POS_VIEW | \
++			    KEY_USR_SEARCH | KEY_USR_VIEW)
++
+ static const char tbs_prefix[] = "tbs";
+ static const char bin_prefix[] = "bin";
+ 
+@@ -80,19 +84,51 @@ static int blacklist_vet_description(const char *desc)
+ 	return 0;
+ }
+ 
+-/*
+- * The hash to be blacklisted is expected to be in the description.  There will
+- * be no payload.
+- */
+-static int blacklist_preparse(struct key_preparsed_payload *prep)
++static int blacklist_key_instantiate(struct key *key,
++		struct key_preparsed_payload *prep)
+ {
+-	if (prep->datalen > 0)
+-		return -EINVAL;
+-	return 0;
++#ifdef CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE
++	int err;
++#endif
++
++	/* Sets safe default permissions for keys loaded by user space. */
++	key->perm = BLACKLIST_KEY_PERM;
++
++	/*
++	 * Skips the authentication step for builtin hashes, they are not
++	 * signed but still trusted.
++	 */
++	if (key->flags & (1 << KEY_FLAG_BUILTIN))
++		goto out;
++
++#ifdef CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE
++	/*
++	 * Verifies the description's PKCS#7 signature against the builtin
++	 * trusted keyring.
++	 */
++	err = verify_pkcs7_signature(key->description,
++			strlen(key->description), prep->data, prep->datalen,
++			NULL, VERIFYING_UNSPECIFIED_SIGNATURE, NULL, NULL);
++	if (err)
++		return err;
++#else
++	/*
++	 * It should not be possible to come here because the keyring doesn't
++	 * have KEY_USR_WRITE and the only other way to call this function is
++	 * for builtin hashes.
++	 */
++	WARN_ON_ONCE(1);
++	return -EPERM;
++#endif
++
++out:
++	return generic_key_instantiate(key, prep);
+ }
+ 
+-static void blacklist_free_preparse(struct key_preparsed_payload *prep)
++static int blacklist_key_update(struct key *key,
++		struct key_preparsed_payload *prep)
+ {
++	return -EPERM;
+ }
+ 
+ static void blacklist_describe(const struct key *key, struct seq_file *m)
+@@ -103,9 +139,8 @@ static void blacklist_describe(const struct key *key, struct seq_file *m)
+ static struct key_type key_type_blacklist = {
+ 	.name			= "blacklist",
+ 	.vet_description	= blacklist_vet_description,
+-	.preparse		= blacklist_preparse,
+-	.free_preparse		= blacklist_free_preparse,
+-	.instantiate		= generic_key_instantiate,
++	.instantiate		= blacklist_key_instantiate,
++	.update			= blacklist_key_update,
+ 	.describe		= blacklist_describe,
+ };
+ 
+@@ -154,8 +189,7 @@ static int mark_raw_hash_blacklisted(const char *hash)
+ 				   hash,
+ 				   NULL,
+ 				   0,
+-				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+-				    KEY_USR_VIEW),
++				   BLACKLIST_KEY_PERM,
+ 				   KEY_ALLOC_NOT_IN_QUOTA |
+ 				   KEY_ALLOC_BUILT_IN);
+ 	if (IS_ERR(key)) {
+@@ -232,8 +266,10 @@ int add_key_to_revocation_list(const char *data, size_t size)
+ 				   NULL,
+ 				   data,
+ 				   size,
+-				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW),
+-				   KEY_ALLOC_NOT_IN_QUOTA | KEY_ALLOC_BUILT_IN);
++				   KEY_POS_VIEW | KEY_POS_READ | KEY_POS_SEARCH
++				   | KEY_USR_VIEW,
++				   KEY_ALLOC_NOT_IN_QUOTA | KEY_ALLOC_BUILT_IN
++				   | KEY_ALLOC_BYPASS_RESTRICTION);
+ 
+ 	if (IS_ERR(key)) {
+ 		pr_err("Problem with revocation key (%ld)\n", PTR_ERR(key));
+@@ -260,25 +296,43 @@ int is_key_on_revocation_list(struct pkcs7_message *pkcs7)
+ }
+ #endif
+ 
++static int restrict_link_for_blacklist(struct key *dest_keyring,
++		const struct key_type *type, const union key_payload *payload,
++		struct key *restrict_key)
++{
++	if (type == &key_type_blacklist)
++		return 0;
++	return -EOPNOTSUPP;
++}
++
+ /*
+  * Initialise the blacklist
+  */
+ static int __init blacklist_init(void)
+ {
+ 	const char *const *bl;
++	struct key_restriction *restriction;
+ 
+ 	if (register_key_type(&key_type_blacklist) < 0)
+ 		panic("Can't allocate system blacklist key type\n");
+ 
++	restriction = kzalloc(sizeof(*restriction), GFP_KERNEL);
++	if (!restriction)
++		panic("Can't allocate blacklist keyring restriction\n");
++	restriction->check = restrict_link_for_blacklist;
++
+ 	blacklist_keyring =
+ 		keyring_alloc(".blacklist",
+ 			      GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
+-			      (KEY_POS_ALL & ~KEY_POS_SETATTR) |
+-			      KEY_USR_VIEW | KEY_USR_READ |
+-			      KEY_USR_SEARCH,
+-			      KEY_ALLOC_NOT_IN_QUOTA |
++			      KEY_POS_VIEW | KEY_POS_READ | KEY_POS_SEARCH |
++			      KEY_POS_WRITE |
++			      KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH
++#ifdef CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE
++			      | KEY_USR_WRITE
++#endif
++			      , KEY_ALLOC_NOT_IN_QUOTA |
+ 			      KEY_ALLOC_SET_KEEP,
+-			      NULL, NULL);
++			      restriction, NULL);
+ 	if (IS_ERR(blacklist_keyring))
+ 		panic("Can't allocate system blacklist keyring\n");
+ 
 -- 
-2.19.1.3.ge56e4f7
+2.32.0
 
