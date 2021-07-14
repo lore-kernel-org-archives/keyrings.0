@@ -2,205 +2,213 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.3 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,NICE_REPLY_A,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 415B7C07E9C
-	for <keyrings@archiver.kernel.org>; Mon, 12 Jul 2021 17:13:30 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 19ACFC11F67
+	for <keyrings@archiver.kernel.org>; Wed, 14 Jul 2021 06:37:08 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 2109E6124C
-	for <keyrings@archiver.kernel.org>; Mon, 12 Jul 2021 17:13:30 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id F3A8A61360
+	for <keyrings@archiver.kernel.org>; Wed, 14 Jul 2021 06:37:07 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233545AbhGLRQS (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 12 Jul 2021 13:16:18 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38290 "EHLO
+        id S238068AbhGNGj6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 14 Jul 2021 02:39:58 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37354 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S234224AbhGLRQR (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 12 Jul 2021 13:16:17 -0400
-Received: from smtp-42a9.mail.infomaniak.ch (smtp-42a9.mail.infomaniak.ch [IPv6:2001:1600:3:17::42a9])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5BCD4C0613E8
-        for <keyrings@vger.kernel.org>; Mon, 12 Jul 2021 10:13:29 -0700 (PDT)
-Received: from smtp-2-0001.mail.infomaniak.ch (unknown [10.5.36.108])
-        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4GNqpx3B5bzMpp7K;
-        Mon, 12 Jul 2021 19:03:37 +0200 (CEST)
-Received: from localhost (unknown [23.97.221.149])
-        by smtp-2-0001.mail.infomaniak.ch (Postfix) with ESMTPA id 4GNqpx13Z7zlh8n6;
-        Mon, 12 Jul 2021 19:03:37 +0200 (CEST)
-From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
-To:     David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
-        "David S . Miller" <davem@davemloft.net>,
-        Eric Snowberg <eric.snowberg@oracle.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        James Morris <jmorris@namei.org>,
-        =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@linux.microsoft.com>,
+        with ESMTP id S237958AbhGNGj6 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 14 Jul 2021 02:39:58 -0400
+Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 142E8C061574
+        for <keyrings@vger.kernel.org>; Tue, 13 Jul 2021 23:37:07 -0700 (PDT)
+Received: from gallifrey.ext.pengutronix.de ([2001:67c:670:201:5054:ff:fe8d:eefb] helo=[IPv6:::1])
+        by metis.ext.pengutronix.de with esmtp (Exim 4.92)
+        (envelope-from <a.fatoum@pengutronix.de>)
+        id 1m3YVv-0002gz-F1; Wed, 14 Jul 2021 08:36:59 +0200
+Subject: Re: [PATCH v2 0/6] KEYS: trusted: Introduce support for NXP
+ CAAM-based trusted keys
+From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
+To:     Jarkko Sakkinen <jarkko@kernel.org>,
+        =?UTF-8?Q?Horia_Geant=c4=83?= <horia.geanta@nxp.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
-        "Serge E . Hallyn" <serge@hallyn.com>,
-        Tyler Hicks <tyhicks@linux.microsoft.com>,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v8 1/5] tools/certs: Add print-cert-tbs-hash.sh
-Date:   Mon, 12 Jul 2021 19:03:09 +0200
-Message-Id: <20210712170313.884724-2-mic@digikod.net>
-X-Mailer: git-send-email 2.32.0
-In-Reply-To: <20210712170313.884724-1-mic@digikod.net>
-References: <20210712170313.884724-1-mic@digikod.net>
+        Aymen Sghaier <aymen.sghaier@nxp.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Bottomley <jejb@linux.ibm.com>
+Cc:     Jan Luebbe <j.luebbe@pengutronix.de>,
+        Udit Agarwal <udit.agarwal@nxp.com>,
+        Sumit Garg <sumit.garg@linaro.org>,
+        David Gstir <david@sigma-star.at>,
+        Eric Biggers <ebiggers@kernel.org>,
+        Franck LENORMAND <franck.lenormand@nxp.com>,
+        Richard Weinberger <richard@nod.at>,
+        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, kernel@pengutronix.de,
+        linux-integrity@vger.kernel.org,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+References: <cover.1dfbb73645d917b3c76d01290804a3410bd9932e.1624364386.git-series.a.fatoum@pengutronix.de>
+Message-ID: <6e6e0207-f137-e305-f9d7-3b8cd1ebe330@pengutronix.de>
+Date:   Wed, 14 Jul 2021 08:36:47 +0200
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
+ Thunderbird/78.11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <cover.1dfbb73645d917b3c76d01290804a3410bd9932e.1624364386.git-series.a.fatoum@pengutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
 Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:201:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: a.fatoum@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Mickaël Salaün <mic@linux.microsoft.com>
+Dear Trusted Keys and CAAM maintainers/reviewers,
 
-Add a new helper print-cert-tbs-hash.sh to generate a TBSCertificate
-hash from a given certificate.  This is useful to generate a blacklist
-key description used to forbid loading a specific certificate in a
-keyring, or to invalidate a certificate provided by a PKCS#7 file.
+On 22.06.21 14:37, Ahmad Fatoum wrote:
+> The first three patches are new and are applicable regardless of this
+> series, but the rest won't apply cleanly without them. I chose to
+> include them this time, but I can split them up for v3 if that's
+> preferred.
+> 
+> v1 -> v2:
+>  - Added new commit to make trusted key Kconfig option independent
+>    of TPM and added new Kconfig file and symbols for trusted keys
+>  - Add new commit for importing existing key material (Jan)
+>  - Allow users to force use of kernel RNG (Jarkko)
+>  - Enforce maximum keymod size (Horia)
+>  - Use append_seq_(in|out)_ptr_intlen instead of append_seq_(in|out)_ptr
+>    (Horia)
+>  - Make blobifier handle private to CAAM glue code file (Horia)
+>  - Extend trusted keys documentation for CAAM
+>  - Rebased on v5.12-rc7 and updated cover letter:
+> 
+> The Cryptographic Acceleration and Assurance Module (CAAM) is an IP core
+> built into many newer i.MX and QorIQ SoCs by NXP.
+> 
+> Its blob mechanism can AES encrypt/decrypt user data using a unique
+> never-disclosed device-specific key.
+> 
+> There has been multiple discussions on how to represent this within the kernel:
+> 
+> The Cryptographic Acceleration and Assurance Module (CAAM) is an IP core
+> built into many newer i.MX and QorIQ SoCs by NXP.
+> 
+> Its blob mechanism can AES encrypt/decrypt user data using a unique
+> never-disclosed device-specific key. There has been multiple
+> discussions on how to represent this within the kernel:
+> 
+>  - [RFC] crypto: caam - add red blobifier
+>    Steffen implemented[1] a PoC sysfs driver to start a discussion on how to
+>    best integrate the blob mechanism.
+>    Mimi suggested that it could be used to implement trusted keys.
+>    Trusted keys back then were a TPM-only feature.
+> 
+>  - security/keys/secure_key: Adds the secure key support based on CAAM.
+>    Udit added[2] a new "secure" key type with the CAAM as backend. The key
+>    material stays within the kernel only.
+>    Mimi and James agreed that this needs a generic interface, not specific
+>    to CAAM. Mimi suggested trusted keys. Jan noted that this could serve as
+>    basis for TEE-backed keys.
+> 
+>  - [RFC] drivers: crypto: caam: key: Add caam_tk key type
+>    Franck added[3] a new "caam_tk" key type based on Udit's work. This time
+>    it uses CAAM "black blobs" instead of "red blobs", so key material stays
+>    within the CAAM and isn't exposed to kernel in plaintext.
+>    James voiced the opinion that there should be just one user-facing generic
+>    wrap/unwrap key type with multiple possible handlers.
+>    David suggested trusted keys.
+> 
+>  - Introduce TEE based Trusted Keys support
+>    Sumit reworked[4] trusted keys to support multiple possible backends with
+>    one chosen at boot time and added a new TEE backend along with TPM.
+>    This now sits in Jarkko's master branch to be sent out for v5.13
+> 
+> This patch series builds on top of Sumit's rework to have the CAAM as yet another
+> trusted key backend.
+> 
+> The CAAM bits are based on Steffen's initial patch from 2015. His work had been
+> used in the field for some years now, so I preferred not to deviate too much from it.
+> 
+> This series has been tested with dmcrypt[5] on an i.MX6DL.
+> 
+> Looking forward to your feedback.
 
-This kind of hash formatting is required to populate the file pointed
-out by CONFIG_SYSTEM_BLACKLIST_HASH_LIST, but only the kernel code was
-available to understand how to effectively create such hash.
+Gentle Ping.
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Eric Snowberg <eric.snowberg@oracle.com>
-Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
-Link: https://lore.kernel.org/r/20210712170313.884724-2-mic@digikod.net
----
+> Cheers,
+> Ahmad
+> 
+>  [1]: https://lore.kernel.org/linux-crypto/1447082306-19946-2-git-send-email-s.trumtrar@pengutronix.de/
+>  [2]: https://lore.kernel.org/linux-integrity/20180723111432.26830-1-udit.agarwal@nxp.com/
+>  [3]: https://lore.kernel.org/lkml/1551456599-10603-2-git-send-email-franck.lenormand@nxp.com/
+>  [4]: https://lore.kernel.org/lkml/1604419306-26105-1-git-send-email-sumit.garg@linaro.org/
+>  [5]: https://lore.kernel.org/linux-integrity/20210122084321.24012-2-a.fatoum@pengutronix.de/
+> 
+> ---
+> To: Jarkko Sakkinen <jarkko@kernel.org>
+> To: "Horia Geantă" <horia.geanta@nxp.com>
+> To: Mimi Zohar <zohar@linux.ibm.com>
+> To: Aymen Sghaier <aymen.sghaier@nxp.com>
+> To: Herbert Xu <herbert@gondor.apana.org.au>
+> To: "David S. Miller" <davem@davemloft.net>
+> To: James Bottomley <jejb@linux.ibm.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+> Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+> Cc: Udit Agarwal <udit.agarwal@nxp.com>
+> Cc: Jan Luebbe <j.luebbe@pengutronix.de>
+> Cc: David Gstir <david@sigma-star.at>
+> Cc: Eric Biggers <ebiggers@kernel.org>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: Franck LENORMAND <franck.lenormand@nxp.com>
+> Cc: Sumit Garg <sumit.garg@linaro.org>
+> Cc: linux-integrity@vger.kernel.org
+> Cc: keyrings@vger.kernel.org
+> Cc: linux-crypto@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-security-module@vger.kernel.org
+> 
+> Ahmad Fatoum (6):
+>   KEYS: trusted: allow use of TEE as backend without TCG_TPM support
+>   KEYS: trusted: Allow import from existing key material for development
+>   KEYS: trusted: allow users to use kernel RNG for key material
+>   KEYS: trusted: allow trust sources to use kernel RNG for key material
+>   crypto: caam - add in-kernel interface for blob generator
+>   KEYS: trusted: Introduce support for NXP CAAM-based trusted keys
+> 
+>  Documentation/admin-guide/kernel-parameters.txt   |   8 +-
+>  Documentation/security/keys/trusted-encrypted.rst |  74 ++++-
+>  drivers/crypto/caam/Kconfig                       |   3 +-
+>  drivers/crypto/caam/Makefile                      |   1 +-
+>  drivers/crypto/caam/blob_gen.c                    | 230 +++++++++++++++-
+>  include/keys/trusted-type.h                       |   2 +-
+>  include/keys/trusted_caam.h                       |  11 +-
+>  include/soc/fsl/caam-blob.h                       |  56 ++++-
+>  security/keys/Kconfig                             |  14 +-
+>  security/keys/trusted-keys/Kconfig                |  49 +++-
+>  security/keys/trusted-keys/Makefile               |  10 +-
+>  security/keys/trusted-keys/trusted_caam.c         |  74 +++++-
+>  security/keys/trusted-keys/trusted_core.c         |  48 ++-
+>  13 files changed, 554 insertions(+), 26 deletions(-)
+>  create mode 100644 drivers/crypto/caam/blob_gen.c
+>  create mode 100644 include/keys/trusted_caam.h
+>  create mode 100644 include/soc/fsl/caam-blob.h
+>  create mode 100644 security/keys/trusted-keys/Kconfig
+>  create mode 100644 security/keys/trusted-keys/trusted_caam.c
+> 
+> base-commit: 13311e74253fe64329390df80bed3f07314ddd61
+> 
 
-Changes since v5:
-* Add Reviewed-by Jarkko.
 
-Changes since v3:
-* Explain in the commit message that this kind of formating is not new
-  but it wasn't documented.
-
-Changes since v1:
-* Fix typo.
-* Use "if" block instead of "||" .
----
- MAINTAINERS                        |  1 +
- tools/certs/print-cert-tbs-hash.sh | 91 ++++++++++++++++++++++++++++++
- 2 files changed, 92 insertions(+)
- create mode 100755 tools/certs/print-cert-tbs-hash.sh
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a61f4f3b78a9..0b3be78d27ef 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4301,6 +4301,7 @@ F:	Documentation/admin-guide/module-signing.rst
- F:	certs/
- F:	scripts/extract-cert.c
- F:	scripts/sign-file.c
-+F:	tools/certs/
- 
- CFAG12864B LCD DRIVER
- M:	Miguel Ojeda <ojeda@kernel.org>
-diff --git a/tools/certs/print-cert-tbs-hash.sh b/tools/certs/print-cert-tbs-hash.sh
-new file mode 100755
-index 000000000000..c93df5387ec9
---- /dev/null
-+++ b/tools/certs/print-cert-tbs-hash.sh
-@@ -0,0 +1,91 @@
-+#!/bin/bash
-+# SPDX-License-Identifier: GPL-2.0
-+#
-+# Copyright © 2020, Microsoft Corporation. All rights reserved.
-+#
-+# Author: Mickaël Salaün <mic@linux.microsoft.com>
-+#
-+# Compute and print the To Be Signed (TBS) hash of a certificate.  This is used
-+# as description of keys in the blacklist keyring to identify certificates.
-+# This output should be redirected, without newline, in a file (hash0.txt) and
-+# signed to create a PKCS#7 file (hash0.p7s).  Both of these files can then be
-+# loaded in the kernel with.
-+#
-+# Exemple on a workstation:
-+# ./print-cert-tbs-hash.sh certificate-to-invalidate.pem > hash0.txt
-+# openssl smime -sign -in hash0.txt -inkey builtin-private-key.pem \
-+#               -signer builtin-certificate.pem -certfile certificate-chain.pem \
-+#               -noattr -binary -outform DER -out hash0.p7s
-+#
-+# Exemple on a managed system:
-+# keyctl padd blacklist "$(< hash0.txt)" %:.blacklist < hash0.p7s
-+
-+set -u -e -o pipefail
-+
-+CERT="${1:-}"
-+BASENAME="$(basename -- "${BASH_SOURCE[0]}")"
-+
-+if [ $# -ne 1 ] || [ ! -f "${CERT}" ]; then
-+	echo "usage: ${BASENAME} <certificate>" >&2
-+	exit 1
-+fi
-+
-+# Checks that it is indeed a certificate (PEM or DER encoded) and exclude the
-+# optional PEM text header.
-+if ! PEM="$(openssl x509 -inform DER -in "${CERT}" 2>/dev/null || openssl x509 -in "${CERT}")"; then
-+	echo "ERROR: Failed to parse certificate" >&2
-+	exit 1
-+fi
-+
-+# TBSCertificate starts at the second entry.
-+# Cf. https://tools.ietf.org/html/rfc3280#section-4.1
-+#
-+# Exemple of first lines printed by openssl asn1parse:
-+#    0:d=0  hl=4 l= 763 cons: SEQUENCE
-+#    4:d=1  hl=4 l= 483 cons: SEQUENCE
-+#    8:d=2  hl=2 l=   3 cons: cont [ 0 ]
-+#   10:d=3  hl=2 l=   1 prim: INTEGER           :02
-+#   13:d=2  hl=2 l=  20 prim: INTEGER           :3CEB2CB8818D968AC00EEFE195F0DF9665328B7B
-+#   35:d=2  hl=2 l=  13 cons: SEQUENCE
-+#   37:d=3  hl=2 l=   9 prim: OBJECT            :sha256WithRSAEncryption
-+RANGE_AND_DIGEST_RE='
-+2s/^\s*\([0-9]\+\):d=\s*[0-9]\+\s\+hl=\s*[0-9]\+\s\+l=\s*\([0-9]\+\)\s\+cons:\s*SEQUENCE\s*$/\1 \2/p;
-+7s/^\s*[0-9]\+:d=\s*[0-9]\+\s\+hl=\s*[0-9]\+\s\+l=\s*[0-9]\+\s\+prim:\s*OBJECT\s*:\(.*\)$/\1/p;
-+'
-+
-+RANGE_AND_DIGEST=($(echo "${PEM}" | \
-+	openssl asn1parse -in - | \
-+	sed -n -e "${RANGE_AND_DIGEST_RE}"))
-+
-+if [ "${#RANGE_AND_DIGEST[@]}" != 3 ]; then
-+	echo "ERROR: Failed to parse TBSCertificate." >&2
-+	exit 1
-+fi
-+
-+OFFSET="${RANGE_AND_DIGEST[0]}"
-+END="$(( OFFSET + RANGE_AND_DIGEST[1] ))"
-+DIGEST="${RANGE_AND_DIGEST[2]}"
-+
-+# The signature hash algorithm is used by Linux to blacklist certificates.
-+# Cf. crypto/asymmetric_keys/x509_cert_parser.c:x509_note_pkey_algo()
-+DIGEST_MATCH=""
-+while read -r DIGEST_ITEM; do
-+	if [ -z "${DIGEST_ITEM}" ]; then
-+		break
-+	fi
-+	if echo "${DIGEST}" | grep -qiF "${DIGEST_ITEM}"; then
-+		DIGEST_MATCH="${DIGEST_ITEM}"
-+		break
-+	fi
-+done < <(openssl list -digest-commands | tr ' ' '\n' | sort -ur)
-+
-+if [ -z "${DIGEST_MATCH}" ]; then
-+	echo "ERROR: Unknown digest algorithm: ${DIGEST}" >&2
-+	exit 1
-+fi
-+
-+echo "${PEM}" | \
-+	openssl x509 -in - -outform DER | \
-+	dd "bs=1" "skip=${OFFSET}" "count=${END}" "status=none" | \
-+	openssl dgst "-${DIGEST_MATCH}" - | \
-+	awk '{printf "tbs:" $2}'
 -- 
-2.32.0
-
+Pengutronix e.K.                           |                             |
+Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
+31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
