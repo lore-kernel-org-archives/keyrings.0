@@ -2,228 +2,114 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.4 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 39408C6377A
-	for <keyrings@archiver.kernel.org>; Wed, 21 Jul 2021 16:51:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id ABC88C636CE
+	for <keyrings@archiver.kernel.org>; Wed, 21 Jul 2021 17:02:49 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 1E58161222
-	for <keyrings@archiver.kernel.org>; Wed, 21 Jul 2021 16:51:34 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 9C88761245
+	for <keyrings@archiver.kernel.org>; Wed, 21 Jul 2021 17:02:49 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234688AbhGUQKw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 21 Jul 2021 12:10:52 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60748 "EHLO
+        id S234532AbhGUQWM (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 21 Jul 2021 12:22:12 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35638 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235182AbhGUQI5 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 21 Jul 2021 12:08:57 -0400
+        with ESMTP id S236375AbhGUQWL (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 21 Jul 2021 12:22:11 -0400
 Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 014CFC061575
-        for <keyrings@vger.kernel.org>; Wed, 21 Jul 2021 09:49:34 -0700 (PDT)
-Received: from dude.hi.pengutronix.de ([2001:67c:670:100:1d::7])
-        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
-        (Exim 4.92)
-        (envelope-from <afa@pengutronix.de>)
-        id 1m6FP7-0004wi-46; Wed, 21 Jul 2021 18:49:05 +0200
-Received: from afa by dude.hi.pengutronix.de with local (Exim 4.92)
-        (envelope-from <afa@pengutronix.de>)
-        id 1m6FP4-0003EP-3g; Wed, 21 Jul 2021 18:49:02 +0200
-From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
-To:     James Bottomley <jejb@linux.ibm.com>,
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A5DC1C061757
+        for <keyrings@vger.kernel.org>; Wed, 21 Jul 2021 10:02:47 -0700 (PDT)
+Received: from gallifrey.ext.pengutronix.de ([2001:67c:670:201:5054:ff:fe8d:eefb] helo=[IPv6:::1])
+        by metis.ext.pengutronix.de with esmtp (Exim 4.92)
+        (envelope-from <a.fatoum@pengutronix.de>)
+        id 1m6FcI-0006k1-92; Wed, 21 Jul 2021 19:02:42 +0200
+Subject: Re: [PATCH v2 6/6] KEYS: trusted: Introduce support for NXP
+ CAAM-based trusted keys
+To:     Richard Weinberger <richard.weinberger@gmail.com>
+Cc:     Richard Weinberger <richard@nod.at>,
+        Jonathan Corbet <corbet@lwn.net>,
+        David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>,
+        James Bottomley <jejb@linux.ibm.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
-        David Howells <dhowells@redhat.com>
-Cc:     kernel@pengutronix.de, Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        James Morris <jmorris@namei.org>,
+        kernel <kernel@pengutronix.de>, James Morris <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>,
-        Aymen Sghaier <aymen.sghaier@nxp.com>,
+        horia geanta <horia.geanta@nxp.com>,
+        aymen sghaier <aymen.sghaier@nxp.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Udit Agarwal <udit.agarwal@nxp.com>,
-        Jan Luebbe <j.luebbe@pengutronix.de>,
+        davem <davem@davemloft.net>, Udit Agarwal <udit.agarwal@nxp.com>,
         Eric Biggers <ebiggers@kernel.org>,
-        David Gstir <david@sigma-star.at>,
-        Richard Weinberger <richard@nod.at>,
-        Franck LENORMAND <franck.lenormand@nxp.com>,
-        Sumit Garg <sumit.garg@linaro.org>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH 1/4] KEYS: trusted: allow users to use kernel RNG for key material
-Date:   Wed, 21 Jul 2021 18:48:52 +0200
-Message-Id: <3b93fda0155af1a8776e9cc9984ecdb39ce827e4.1626885907.git-series.a.fatoum@pengutronix.de>
-X-Mailer: git-send-email 2.30.2
-In-Reply-To: <cover.9fc9298fd9d63553491871d043a18affc2dbc8a8.1626885907.git-series.a.fatoum@pengutronix.de>
-References: <cover.9fc9298fd9d63553491871d043a18affc2dbc8a8.1626885907.git-series.a.fatoum@pengutronix.de>
+        Jan Luebbe <j.luebbe@pengutronix.de>,
+        david <david@sigma-star.at>,
+        Franck Lenormand <franck.lenormand@nxp.com>,
+        Sumit Garg <sumit.garg@linaro.org>,
+        "open list, ASYMMETRIC KEYS" <keyrings@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Linux Doc Mailing List <linux-doc@vger.kernel.org>,
+        linux-integrity <linux-integrity@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>
+References: <cover.1dfbb73645d917b3c76d01290804a3410bd9932e.1624364386.git-series.a.fatoum@pengutronix.de>
+ <39e6d65ca5d2a0a35fb71d6c1f85add8ee489a19.1624364386.git-series.a.fatoum@pengutronix.de>
+ <1850833581.13438.1625172175436.JavaMail.zimbra@nod.at>
+ <2f608e5a-5a12-6db1-b9bd-a2cd9e3e3671@pengutronix.de>
+ <783613027.15909.1625223222889.JavaMail.zimbra@nod.at>
+ <ac8ef66f-4d57-ead0-d1b3-e97220463241@pengutronix.de>
+ <CAFLxGvxr94apP2jaT0tB6JRDtv_ivrguXK2Ykd3zer_4xtJ+2w@mail.gmail.com>
+From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
+Message-ID: <879d4cda-2ac1-d81b-7f4d-c08261e0aa0c@pengutronix.de>
+Date:   Wed, 21 Jul 2021 19:02:38 +0200
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
+ Thunderbird/78.11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: afa@pengutronix.de
+In-Reply-To: <CAFLxGvxr94apP2jaT0tB6JRDtv_ivrguXK2Ykd3zer_4xtJ+2w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:201:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: a.fatoum@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
 X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-The two existing trusted key sources don't make use of the kernel RNG,
-but instead let the hardware doing the sealing/unsealing also
-generate the random key material. However, Users may want to place
-less trust into the quality of the trust source's random number
-generator and instead use the kernel entropy pool, which can be
-seeded from multiple entropy sources.
+Hi,
 
-Make this possible by adding a new trusted.kernel_rng parameter,
-that will force use of the kernel RNG. In its absence, it's up
-to the trust source to decide, which random numbers to use,
-maintaining the existing behavior.
+On 20.07.21 21:19, Richard Weinberger wrote:
+> On Fri, Jul 2, 2021 at 2:37 PM Ahmad Fatoum <a.fatoum@pengutronix.de> wrote:
+>>> Both is possible. If the string starts with "0x" it needs to be decoded to a
+>>> 128 bit key. Otherwise it has to be a up to 16 byte string.
+>>
+>> Fine by me. Looking forward to your patches. :-)
+> 
+> I'm not sure how to proceed.  Should I base my changes on this series
+> or do you plan to send an updated
+> version soon?
+> Maybe it makes also sense to base my DCP patch set on yours.
+> 
+> Trusted Keys maintainers, what do you prefer?
 
-Suggested-by: Jarkko Sakkinen <jarkko@kernel.org>
-Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
----
-To: James Bottomley <jejb@linux.ibm.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-To: Mimi Zohar <zohar@linux.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Horia Geantă" <horia.geanta@nxp.com>
-Cc: Aymen Sghaier <aymen.sghaier@nxp.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Udit Agarwal <udit.agarwal@nxp.com>
-Cc: Jan Luebbe <j.luebbe@pengutronix.de>
-Cc: Eric Biggers <ebiggers@kernel.org>
-Cc: David Gstir <david@sigma-star.at>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Franck LENORMAND <franck.lenormand@nxp.com>
-Cc: Sumit Garg <sumit.garg@linaro.org>
-Cc: keyrings@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org
-Cc: linux-integrity@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
----
- Documentation/admin-guide/kernel-parameters.txt   |  7 ++++++-
- Documentation/security/keys/trusted-encrypted.rst | 20 +++++++++-------
- security/keys/trusted-keys/trusted_core.c         | 17 +++++++++++++-
- 3 files changed, 35 insertions(+), 9 deletions(-)
+I sent out v3 despite the name (of course forgot that git-send-email -vX is silently
+dropped when sending patch files directly..):
 
-diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
-index bdb22006f713..0267ead88902 100644
---- a/Documentation/admin-guide/kernel-parameters.txt
-+++ b/Documentation/admin-guide/kernel-parameters.txt
-@@ -5734,6 +5734,13 @@
- 			first trust source as a backend which is initialized
- 			successfully during iteration.
- 
-+	trusted.kernel_rng =	[KEYS]
-+			Format: <bool>
-+			When set to true (1), the kernel random number pool
-+			is used to generate key material for trusted keys.
-+			The default is to leave the RNG's choice to each
-+			individual trust source.
-+
- 	tsc=		Disable clocksource stability checks for TSC.
- 			Format: <string>
- 			[x86] reliable: mark tsc clocksource as reliable, this
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index 80d5a5af62a1..1d4b4b8f12f0 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -87,22 +87,26 @@ Key Generation
- Trusted Keys
- ------------
- 
--New keys are created from random numbers generated in the trust source. They
--are encrypted/decrypted using a child key in the storage key hierarchy.
--Encryption and decryption of the child key must be protected by a strong
--access control policy within the trust source.
-+New keys are created from random numbers. They are encrypted/decrypted using
-+a child key in the storage key hierarchy. Encryption and decryption of the
-+child key must be protected by a strong access control policy within the
-+trust source. The random number generator in use differs according to the
-+selected trust source:
- 
--  *  TPM (hardware device) based RNG
-+  *  TPM: hardware device based RNG
- 
--     Strength of random numbers may vary from one device manufacturer to
--     another.
-+     Keys are generated within the TPM. Strength of random numbers may vary
-+     from one device manufacturer to another.
- 
--  *  TEE (OP-TEE based on Arm TrustZone) based RNG
-+  *  TEE: OP-TEE based on Arm TrustZone based RNG
- 
-      RNG is customizable as per platform needs. It can either be direct output
-      from platform specific hardware RNG or a software based Fortuna CSPRNG
-      which can be seeded via multiple entropy sources.
- 
-+Optionally, users may specify ``trusted.kernel_rng=1`` on the kernel
-+command-line to override the used RNG with the kernel's random number pool.
-+
- Encrypted Keys
- --------------
- 
-diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
-index 8cab69e5d0da..569af9af8df0 100644
---- a/security/keys/trusted-keys/trusted_core.c
-+++ b/security/keys/trusted-keys/trusted_core.c
-@@ -16,12 +16,17 @@
- #include <linux/key-type.h>
- #include <linux/module.h>
- #include <linux/parser.h>
-+#include <linux/random.h>
- #include <linux/rcupdate.h>
- #include <linux/slab.h>
- #include <linux/static_call.h>
- #include <linux/string.h>
- #include <linux/uaccess.h>
- 
-+static bool trusted_kernel_rng;
-+module_param_named(kernel_rng, trusted_kernel_rng, bool, 0);
-+MODULE_PARM_DESC(kernel_rng, "Generate key material from kernel RNG");
-+
- static char *trusted_key_source;
- module_param_named(source, trusted_key_source, charp, 0);
- MODULE_PARM_DESC(source, "Select trusted keys source (tpm or tee)");
-@@ -312,8 +317,14 @@ struct key_type key_type_trusted = {
- };
- EXPORT_SYMBOL_GPL(key_type_trusted);
- 
-+static int kernel_get_random(unsigned char *key, size_t key_len)
-+{
-+	return get_random_bytes_wait(key, key_len) ?: key_len;
-+}
-+
- static int __init init_trusted(void)
- {
-+	int (*get_random)(unsigned char *key, size_t key_len);
- 	int i, ret = 0;
- 
- 	for (i = 0; i < ARRAY_SIZE(trusted_key_sources); i++) {
-@@ -322,6 +333,10 @@ static int __init init_trusted(void)
- 			    strlen(trusted_key_sources[i].name)))
- 			continue;
- 
-+		get_random = trusted_key_sources[i].ops->get_random;
-+		if (trusted_kernel_rng)
-+			get_random = kernel_get_random;
-+
- 		static_call_update(trusted_key_init,
- 				   trusted_key_sources[i].ops->init);
- 		static_call_update(trusted_key_seal,
-@@ -329,7 +344,7 @@ static int __init init_trusted(void)
- 		static_call_update(trusted_key_unseal,
- 				   trusted_key_sources[i].ops->unseal);
- 		static_call_update(trusted_key_get_random,
--				   trusted_key_sources[i].ops->get_random);
-+				   get_random);
- 		static_call_update(trusted_key_exit,
- 				   trusted_key_sources[i].ops->exit);
- 		migratable = trusted_key_sources[i].ops->migratable;
+https://lore.kernel.org/linux-integrity/cover.9fc9298fd9d63553491871d043a18affc2dbc8a8.1626885907.git-series.a.fatoum@pengutronix.de/T/#t
+
+I'd advise you base your changes on the first two patches there as well as the Kconfig fix/enhancement
+I sent out separately:
+https://lore.kernel.org/linux-integrity/20210721160258.7024-1-a.fatoum@pengutronix.de/T/#u
+
+Those are relevant for you as well and I assume they should be good to be merged even if the
+CAAM series turns out to need some more love.
+
+Cheers,
+Ahmad
+
+
 -- 
-git-series 0.9.1
+Pengutronix e.K.                           |                             |
+Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
+31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
