@@ -2,34 +2,34 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-11.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E4423C63793
-	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:33 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 24856C63793
+	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:36 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D318C61221
-	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:33 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id F388B610F7
+	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:35 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231349AbhGVIhy (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 22 Jul 2021 04:37:54 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58814 "EHLO
+        id S231322AbhGVIh6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 22 Jul 2021 04:37:58 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58844 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231318AbhGVIhx (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 22 Jul 2021 04:37:53 -0400
+        with ESMTP id S231368AbhGVIh4 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 22 Jul 2021 04:37:56 -0400
 Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 23152C061575
-        for <keyrings@vger.kernel.org>; Thu, 22 Jul 2021 02:18:29 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D9347C061799
+        for <keyrings@vger.kernel.org>; Thu, 22 Jul 2021 02:18:31 -0700 (PDT)
 Received: from dude.hi.pengutronix.de ([2001:67c:670:100:1d::7])
         by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
         (Exim 4.92)
         (envelope-from <afa@pengutronix.de>)
-        id 1m6UqE-0001NN-VX; Thu, 22 Jul 2021 11:18:06 +0200
+        id 1m6UqE-0001NK-VX; Thu, 22 Jul 2021 11:18:06 +0200
 Received: from afa by dude.hi.pengutronix.de with local (Exim 4.92)
         (envelope-from <afa@pengutronix.de>)
-        id 1m6UqC-0001Cw-GC; Thu, 22 Jul 2021 11:18:04 +0200
+        id 1m6UqC-0001Ch-DB; Thu, 22 Jul 2021 11:18:04 +0200
 From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
 To:     David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>,
@@ -38,17 +38,14 @@ To:     David Howells <dhowells@redhat.com>,
         Alasdair Kergon <agk@redhat.com>,
         Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com,
         Song Liu <song@kernel.org>, Richard Weinberger <richard@nod.at>
-Cc:     kernel@pengutronix.de, Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+Cc:     kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-integrity@vger.kernel.org,
         keyrings@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linux-security-module@vger.kernel.org,
-        linux-integrity@vger.kernel.org
-Subject: [RFC PATCH v1 3/4] ubifs: auth: remove never hit key type error check
-Date:   Thu, 22 Jul 2021 11:18:01 +0200
-Message-Id: <a7d493c678d5836577b0dc703e5f0adaa457a7f0.1626945419.git-series.a.fatoum@pengutronix.de>
+        linux-security-module@vger.kernel.org
+Subject: [RFC PATCH v1 0/4] keys: introduce key_extract_material helper
+Date:   Thu, 22 Jul 2021 11:17:58 +0200
+Message-Id: <cover.b2fdd70b830d12853b12a12e32ceb0c8162c1346.1626945419.git-series.a.fatoum@pengutronix.de>
 X-Mailer: git-send-email 2.30.2
-In-Reply-To: <cover.b2fdd70b830d12853b12a12e32ceb0c8162c1346.1626945419.git-series.a.fatoum@pengutronix.de>
-References: <cover.b2fdd70b830d12853b12a12e32ceb0c8162c1346.1626945419.git-series.a.fatoum@pengutronix.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
@@ -59,14 +56,25 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-key_request accepts a key type as its first argument. If it returns a
-valid pointer, it should always have this same requested key type.
+While keys of differing type have a common struct key definition, there is
+no common scheme to the payload and key material extraction differs.
 
-Indeed other request_key users surveyed such as dm-crypt, ecryptfs
-and fscrypt v1 also don't check the key type. Therefore drop the
-apparently unneeded check.
+For kernel functionality that supports different key types,
+this means duplicated code for key material extraction and because key type
+is discriminated by a pointer to a global, users need to replicate
+reachability checks as well, so builtin code doesn't depend on a key
+type symbol offered by a module.
 
-Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
+Make this easier by adding a common helper with initial support for
+user, logon, encrypted and trusted keys.
+
+This series contains two example of its use: dm-crypt uses it to reduce
+boilerplate and ubifs authentication uses it to gain support for trusted
+and encrypted keys alongside the already supported logon keys.
+
+Looking forward to your feedback,
+Ahmad
+
 ---
 To: David Howells <dhowells@redhat.com>
 To: Jarkko Sakkinen <jarkko@kernel.org>
@@ -79,30 +87,24 @@ To: Song Liu <song@kernel.org>
 To: Richard Weinberger <richard@nod.at>
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-raid@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org
 Cc: keyrings@vger.kernel.org
 Cc: linux-mtd@lists.infradead.org
 Cc: linux-security-module@vger.kernel.org
-Cc: linux-integrity@vger.kernel.org
----
- fs/ubifs/auth.c | 6 ------
- 1 file changed, 6 deletions(-)
 
-diff --git a/fs/ubifs/auth.c b/fs/ubifs/auth.c
-index e564d5ff8781..6a0b8d858d81 100644
---- a/fs/ubifs/auth.c
-+++ b/fs/ubifs/auth.c
-@@ -286,12 +286,6 @@ int ubifs_init_authentication(struct ubifs_info *c)
- 
- 	down_read(&keyring_key->sem);
- 
--	if (keyring_key->type != &key_type_logon) {
--		ubifs_err(c, "key type must be logon");
--		err = -ENOKEY;
--		goto out;
--	}
--
- 	ukp = user_key_payload_locked(keyring_key);
- 	if (!ukp) {
- 		/* key was revoked before we acquired its semaphore */
+Ahmad Fatoum (4):
+  keys: introduce key_extract_material helper
+  dm: crypt: use new key_extract_material helper
+  ubifs: auth: remove never hit key type error check
+  ubifs: auth: consult encrypted and trusted keys if no logon key was found
+
+ Documentation/filesystems/ubifs.rst |  2 +-
+ drivers/md/dm-crypt.c               | 65 ++++--------------------------
+ fs/ubifs/auth.c                     | 25 +++++-------
+ include/linux/key.h                 | 45 +++++++++++++++++++++-
+ security/keys/key.c                 | 40 ++++++++++++++++++-
+ 5 files changed, 107 insertions(+), 70 deletions(-)
+
+base-commit: 2734d6c1b1a089fb593ef6a23d4b70903526fe0c
 -- 
 git-series 0.9.1
