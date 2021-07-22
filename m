@@ -5,31 +5,31 @@ X-Spam-Level:
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EDA78C63797
-	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:36 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AAFE1C6379B
+	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:37 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D74886101B
-	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:36 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 958B9610F7
+	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:18:37 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231389AbhGVIh7 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 22 Jul 2021 04:37:59 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58846 "EHLO
+        id S231367AbhGVIiB (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 22 Jul 2021 04:38:01 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58852 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231370AbhGVIh4 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 22 Jul 2021 04:37:56 -0400
+        with ESMTP id S231376AbhGVIh5 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 22 Jul 2021 04:37:57 -0400
 Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E11D0C06179A
-        for <keyrings@vger.kernel.org>; Thu, 22 Jul 2021 02:18:31 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 36B4EC061575
+        for <keyrings@vger.kernel.org>; Thu, 22 Jul 2021 02:18:33 -0700 (PDT)
 Received: from dude.hi.pengutronix.de ([2001:67c:670:100:1d::7])
         by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
         (Exim 4.92)
         (envelope-from <afa@pengutronix.de>)
-        id 1m6UqF-0001NO-DL; Thu, 22 Jul 2021 11:18:07 +0200
+        id 1m6UqE-0001NL-VW; Thu, 22 Jul 2021 11:18:06 +0200
 Received: from afa by dude.hi.pengutronix.de with local (Exim 4.92)
         (envelope-from <afa@pengutronix.de>)
-        id 1m6UqC-0001D1-HE; Thu, 22 Jul 2021 11:18:04 +0200
+        id 1m6UqC-0001Cm-EB; Thu, 22 Jul 2021 11:18:04 +0200
 From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
 To:     David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>,
@@ -37,18 +37,15 @@ To:     David Howells <dhowells@redhat.com>,
         "Serge E. Hallyn" <serge@hallyn.com>,
         Alasdair Kergon <agk@redhat.com>,
         Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com,
-        Song Liu <song@kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Corbet <corbet@lwn.net>
+        Song Liu <song@kernel.org>, Richard Weinberger <richard@nod.at>
 Cc:     kernel@pengutronix.de, Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-raid@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        keyrings@vger.kernel.org, linux-mtd@lists.infradead.org,
         linux-security-module@vger.kernel.org,
         linux-integrity@vger.kernel.org
-Subject: [RFC PATCH v1 4/4] ubifs: auth: consult encrypted and trusted keys if no logon key was found
-Date:   Thu, 22 Jul 2021 11:18:02 +0200
-Message-Id: <f5891611f329583baef32089c8b322850d81166a.1626945419.git-series.a.fatoum@pengutronix.de>
+Subject: [RFC PATCH v1 1/4] keys: introduce key_extract_material helper
+Date:   Thu, 22 Jul 2021 11:17:59 +0200
+Message-Id: <d3ae98bb8d00c2be4529694630132bdcabf383c0.1626945419.git-series.a.fatoum@pengutronix.de>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <cover.b2fdd70b830d12853b12a12e32ceb0c8162c1346.1626945419.git-series.a.fatoum@pengutronix.de>
 References: <cover.b2fdd70b830d12853b12a12e32ceb0c8162c1346.1626945419.git-series.a.fatoum@pengutronix.de>
@@ -62,19 +59,28 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Currently, UBIFS auth_key can only be a logon key: This is a user key
-that's provided to the kernel in plaintext and that then remains within
-the kernel. Linux also supports trusted and encrypted keys, which have
-stronger guarantees: They are only exposed to userspace in encrypted
-form and, in the case of trusted keys, can be directly rooted to a trust
-source like a TPM chip.
+While keys of differing type have a common struct key definition, there is
+no common scheme to the payload and key material extraction differs.
 
-Add support for auth_key to be either a logon, encrypted or trusted key.
-At mount time, the keyring will be searched for a key with the supplied
-name in that order.
+For kernel functionality that supports different key types,
+this means duplicated code for key material extraction and because key type
+is discriminated by a pointer to a global, users need to replicate
+reachability checks as well, so builtin code doesn't depend on a key
+type symbol offered by a module.
+
+Make this easier by adding a common helper with initial support for
+user, logon, encrypted and trusted keys. The code is taken from
+dm-crypt, which is migrated to use the helper in a later commit.
+
+The implementation must be partially in a header to support configurations
+where the key type symbol is defined in a module, but key support in general
+is built-in.
 
 Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
 ---
+I am not sure whether the chosen header and source file are the best
+places for this. This could be made header-only too if that's preferred.
+
 To: David Howells <dhowells@redhat.com>
 To: Jarkko Sakkinen <jarkko@kernel.org>
 To: James Morris <jmorris@namei.org>
@@ -84,92 +90,144 @@ To: Mike Snitzer <snitzer@redhat.com>
 To: dm-devel@redhat.com
 To: Song Liu <song@kernel.org>
 To: Richard Weinberger <richard@nod.at>
-To: Jonathan Corbet <corbet@lwn.net>
 Cc: linux-kernel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
 Cc: linux-raid@vger.kernel.org
 Cc: keyrings@vger.kernel.org
 Cc: linux-mtd@lists.infradead.org
 Cc: linux-security-module@vger.kernel.org
 Cc: linux-integrity@vger.kernel.org
 ---
- Documentation/filesystems/ubifs.rst |  2 +-
- fs/ubifs/auth.c                     | 19 ++++++++++++-------
- 2 files changed, 13 insertions(+), 8 deletions(-)
+ include/linux/key.h | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ security/keys/key.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+)
 
-diff --git a/Documentation/filesystems/ubifs.rst b/Documentation/filesystems/ubifs.rst
-index e6ee99762534..12d08458b3d7 100644
---- a/Documentation/filesystems/ubifs.rst
-+++ b/Documentation/filesystems/ubifs.rst
-@@ -101,7 +101,7 @@ compr=zlib              override default compressor and set it to "zlib"
- auth_key=		specify the key used for authenticating the filesystem.
- 			Passing this option makes authentication mandatory.
- 			The passed key must be present in the kernel keyring
--			and must be of type 'logon'
-+			and must be of type 'logon', 'encrypted' or 'trusted'.
- auth_hash_name=		The hash algorithm used for authentication. Used for
- 			both hashing and for creating HMACs. Typical values
- 			include "sha256" or "sha512"
-diff --git a/fs/ubifs/auth.c b/fs/ubifs/auth.c
-index 6a0b8d858d81..af8e9eb58a60 100644
---- a/fs/ubifs/auth.c
-+++ b/fs/ubifs/auth.c
-@@ -14,6 +14,8 @@
- #include <crypto/hash.h>
- #include <crypto/algapi.h>
- #include <keys/user-type.h>
-+#include <keys/trusted-type.h>
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 7febc4881363..916612f5b313 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -20,6 +20,8 @@
+ #include <linux/assoc_array.h>
+ #include <linux/refcount.h>
+ #include <linux/time64.h>
++#include <linux/err.h>
++#include <linux/kconfig.h>
+ 
+ #ifdef __KERNEL__
+ #include <linux/uidgid.h>
+@@ -487,6 +489,48 @@ extern void key_fsuid_changed(struct cred *new_cred);
+ extern void key_fsgid_changed(struct cred *new_cred);
+ extern void key_init(void);
+ 
++/*
++ * internal use, so key core code need not link against
++ * all supported key types
++ * */
++enum __key_type {
++	KEY_TYPE_UNKNOWN, KEY_TYPE_USER, KEY_TYPE_ENCRYPTED, KEY_TYPE_TRUSTED
++};
++
++const void *__key_extract_material(const struct key *key, enum __key_type type,
++				   unsigned int *len);
++
++/**
++ * key_extract_material - Extract decrypted data out of a key
++ * @key: a logon, user, encrypted or trusted key
++ * @len: pointer to variable to store key size into
++ *
++ * Extract decrypted data out of supported key types
++ *
++ * Returns a pointer to the key material if successfull or an error
++ * pointer if key type is not compiled in, the buffer is too
++ * small or the key was revoked.
++ */
++static inline const void *key_extract_material(const struct key *key,
++					       unsigned int *len)
++{
++	extern struct key_type key_type_user;
++	extern struct key_type key_type_logon;
++	extern struct key_type key_type_encrypted;
++	extern struct key_type key_type_trusted;
++	enum __key_type type = KEY_TYPE_UNKNOWN;
++	const struct key_type *t = key->type;
++
++	if (t == &key_type_logon || t == &key_type_user)
++		type = KEY_TYPE_USER;
++	else if (IS_REACHABLE(CONFIG_ENCRYPTED_KEYS) && t == &key_type_encrypted)
++		type = KEY_TYPE_ENCRYPTED;
++	else if (IS_REACHABLE(CONFIG_TRUSTED_KEYS) && t == &key_type_trusted)
++		type = KEY_TYPE_TRUSTED;
++
++	return __key_extract_material(key, type, len);
++}
++
+ #else /* CONFIG_KEYS */
+ 
+ #define key_validate(k)			0
+@@ -504,6 +548,7 @@ extern void key_init(void);
+ #define key_init()			do { } while(0)
+ #define key_free_user_ns(ns)		do { } while(0)
+ #define key_remove_domain(d)		do { } while(0)
++#define key_extract_material(k, l)	ERR_PTR(-EINVAL)
+ 
+ #endif /* CONFIG_KEYS */
+ #endif /* __KERNEL__ */
+diff --git a/security/keys/key.c b/security/keys/key.c
+index c45afdd1dfbb..69cd1cb8c413 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -15,6 +15,9 @@
+ #include <linux/random.h>
+ #include <linux/ima.h>
+ #include <linux/err.h>
++#include <keys/user-type.h>
 +#include <keys/encrypted-type.h>
- #include <keys/asymmetric-type.h>
++#include <keys/trusted-type.h>
+ #include "internal.h"
  
- #include "ubifs.h"
-@@ -256,9 +258,10 @@ out_destroy:
- int ubifs_init_authentication(struct ubifs_info *c)
- {
- 	struct key *keyring_key;
--	const struct user_key_payload *ukp;
- 	int err;
-+	unsigned int len;
- 	char hmac_name[CRYPTO_MAX_ALG_NAME];
-+	const void *key_material;
+ struct kmem_cache *key_jar;
+@@ -1140,6 +1143,43 @@ int generic_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
+ }
+ EXPORT_SYMBOL(generic_key_instantiate);
  
- 	if (!c->auth_hash_name) {
- 		ubifs_err(c, "authentication hash name needed with authentication");
-@@ -277,6 +280,10 @@ int ubifs_init_authentication(struct ubifs_info *c)
- 		 c->auth_hash_name);
- 
- 	keyring_key = request_key(&key_type_logon, c->auth_key_name, NULL);
-+	if (IS_ERR(keyring_key) && IS_REACHABLE(CONFIG_ENCRYPTED_KEYS))
-+		keyring_key = request_key(&key_type_encrypted, c->auth_key_name, NULL);
-+	if (IS_ERR(keyring_key) && IS_REACHABLE(CONFIG_TRUSTED_KEYS))
-+		keyring_key = request_key(&key_type_trusted, c->auth_key_name, NULL);
- 
- 	if (IS_ERR(keyring_key)) {
- 		ubifs_err(c, "Failed to request key: %ld",
-@@ -286,12 +293,10 @@ int ubifs_init_authentication(struct ubifs_info *c)
- 
- 	down_read(&keyring_key->sem);
- 
--	ukp = user_key_payload_locked(keyring_key);
--	if (!ukp) {
--		/* key was revoked before we acquired its semaphore */
--		err = -EKEYREVOKED;
-+	key_material = key_extract_material(keyring_key, &len);
-+	err = PTR_ERR_OR_ZERO(key_material);
-+	if (err < 0)
- 		goto out;
--	}
- 
- 	c->hash_tfm = crypto_alloc_shash(c->auth_hash_name, 0, 0);
- 	if (IS_ERR(c->hash_tfm)) {
-@@ -324,7 +329,7 @@ int ubifs_init_authentication(struct ubifs_info *c)
- 		goto out_free_hmac;
- 	}
- 
--	err = crypto_shash_setkey(c->hmac_tfm, ukp->data, ukp->datalen);
-+	err = crypto_shash_setkey(c->hmac_tfm, key_material, len);
- 	if (err)
- 		goto out_free_hmac;
- 
++const void *__key_extract_material(const struct key *key,
++				   enum __key_type type, unsigned int *len)
++{
++	const struct encrypted_key_payload *ekp;
++	const struct trusted_key_payload *tkp;
++	const struct user_key_payload *ukp;
++
++	switch (type) {
++	case KEY_TYPE_USER:
++		ukp = user_key_payload_locked(key);
++		if (!ukp)
++			break;
++
++		*len = ukp->datalen;
++		return ukp->data;
++	case KEY_TYPE_ENCRYPTED:
++		ekp = key->payload.data[0];
++		if (!ekp)
++			break;
++
++		*len = ekp->decrypted_datalen;
++		return ekp->decrypted_data;
++	case KEY_TYPE_TRUSTED:
++		tkp = key->payload.data[0];
++		if (!tkp)
++			break;
++
++		*len = tkp->key_len;
++		return tkp->key;
++	default:
++		return ERR_PTR(-EINVAL);
++	}
++
++	return ERR_PTR(-EKEYREVOKED);
++}
++EXPORT_SYMBOL(__key_extract_material);
++
+ /**
+  * register_key_type - Register a type of key.
+  * @ktype: The new key type.
 -- 
 git-series 0.9.1
