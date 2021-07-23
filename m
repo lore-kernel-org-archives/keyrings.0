@@ -2,196 +2,138 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-18.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
+	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
+	USER_AGENT_GIT autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6A1DBC63793
-	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:19:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E6831C4338F
+	for <keyrings@archiver.kernel.org>; Fri, 23 Jul 2021 17:21:27 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 55D426101B
-	for <keyrings@archiver.kernel.org>; Thu, 22 Jul 2021 09:19:13 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id C8DD760E8F
+	for <keyrings@archiver.kernel.org>; Fri, 23 Jul 2021 17:21:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231508AbhGVIiV (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 22 Jul 2021 04:38:21 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58898 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231438AbhGVIiF (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 22 Jul 2021 04:38:05 -0400
-Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B8FC3C0613C1
-        for <keyrings@vger.kernel.org>; Thu, 22 Jul 2021 02:18:40 -0700 (PDT)
-Received: from dude.hi.pengutronix.de ([2001:67c:670:100:1d::7])
-        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
-        (Exim 4.92)
-        (envelope-from <afa@pengutronix.de>)
-        id 1m6UqE-0001NM-VX; Thu, 22 Jul 2021 11:18:06 +0200
-Received: from afa by dude.hi.pengutronix.de with local (Exim 4.92)
-        (envelope-from <afa@pengutronix.de>)
-        id 1m6UqC-0001Cr-FA; Thu, 22 Jul 2021 11:18:04 +0200
-From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
-To:     David Howells <dhowells@redhat.com>,
+        id S231375AbhGWQkx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 23 Jul 2021 12:40:53 -0400
+Received: from smtp-relay-canonical-1.canonical.com ([185.125.188.121]:51134
+        "EHLO smtp-relay-canonical-1.canonical.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S231166AbhGWQkx (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 23 Jul 2021 12:40:53 -0400
+Received: from localhost (1.general.cking.uk.vpn [10.172.193.212])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange ECDHE (P-256) server-signature RSA-PSS (2048 bits) server-digest SHA256)
+        (No client certificate requested)
+        by smtp-relay-canonical-1.canonical.com (Postfix) with ESMTPSA id AC9073F325;
+        Fri, 23 Jul 2021 17:21:21 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=canonical.com;
+        s=20210705; t=1627060884;
+        bh=7FQD/B711wUP78UGWXd/xXfRyIQyD6tfXLIddfxdlcc=;
+        h=From:To:Cc:Subject:Date:Message-Id:MIME-Version:Content-Type;
+        b=MIpg2zVyane9SunkaQ6m9KeX6+ptvvm8nBjPPToZ+jE+O8Udpx2/Hbt3KIM9AsnKT
+         15av06BGurLcNcGDj6vbShhx7AEj2S5U1YUJVBo9G4n5qkVO+o03wYR+ClVinO47rd
+         YMzTHOBW3XCPNf1b6cwBNLfQTObnplThPTRn+cf7LMBC9zC8dIWVJNMT5cCleyilum
+         +jYVy0XJ0ILlsAQMEspBu4tpIAeQsH2wBw3i+HsmtuGkTjr3kJUlkfl4wsxcDgIDcY
+         /D1H9HfoBkcbFQEKQWuVU5VAosMEY1/JylzJ5x8vS2kVVbFDoK7MVAjg+GNLXzAPKS
+         yPzFytvYsyq/g==
+From:   Colin King <colin.king@canonical.com>
+To:     James Bottomley <jejb@linux.ibm.com>,
         Jarkko Sakkinen <jarkko@kernel.org>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>,
         James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Alasdair Kergon <agk@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com,
-        Song Liu <song@kernel.org>, Richard Weinberger <richard@nod.at>
-Cc:     kernel@pengutronix.de, Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        keyrings@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linux-security-module@vger.kernel.org,
-        linux-integrity@vger.kernel.org
-Subject: [RFC PATCH v1 2/4] dm: crypt: use new key_extract_material helper
-Date:   Thu, 22 Jul 2021 11:18:00 +0200
-Message-Id: <7ac4a9ae0a3c2dfdf41611f3fe78fe63a6e57b94.1626945419.git-series.a.fatoum@pengutronix.de>
-X-Mailer: git-send-email 2.30.2
-In-Reply-To: <cover.b2fdd70b830d12853b12a12e32ceb0c8162c1346.1626945419.git-series.a.fatoum@pengutronix.de>
-References: <cover.b2fdd70b830d12853b12a12e32ceb0c8162c1346.1626945419.git-series.a.fatoum@pengutronix.de>
+        "Serge E . Hallyn" <serge@hallyn.com>,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Cc:     kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] security: keys: trusted: Fix memory leaks on allocated blob
+Date:   Fri, 23 Jul 2021 18:21:21 +0100
+Message-Id: <20210723172121.156687-1-colin.king@canonical.com>
+X-Mailer: git-send-email 2.31.1
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: afa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-There is a common function now to extract key material out of a few
-different key types, which includes all types currently supported by
-dm-crypt. Make use of it.
+From: Colin Ian King <colin.king@canonical.com>
 
-Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
----
-To: David Howells <dhowells@redhat.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-To: James Morris <jmorris@namei.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-To: Alasdair Kergon <agk@redhat.com>
-To: Mike Snitzer <snitzer@redhat.com>
-To: dm-devel@redhat.com
-To: Song Liu <song@kernel.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-raid@vger.kernel.org
-Cc: keyrings@vger.kernel.org
-Cc: linux-mtd@lists.infradead.org
-Cc: linux-security-module@vger.kernel.org
-Cc: linux-integrity@vger.kernel.org
----
- drivers/md/dm-crypt.c | 65 ++++++--------------------------------------
- 1 file changed, 9 insertions(+), 56 deletions(-)
+There are several error return paths that don't kfree the allocated
+blob, leading to memory leaks. Ensure blob is initialized to null as
+some of the error return paths in function tpm2_key_decode do not
+change blob. Add an error return path to kfree blob and use this on
+the current leaky returns.
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index 50f4cbd600d5..576d6b7ce231 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -2421,61 +2421,14 @@ static bool contains_whitespace(const char *str)
- 	return false;
+Addresses-Coverity: ("Resource leak")
+Fixes: f2219745250f ("security: keys: trusted: use ASN.1 TPM2 key format for the blobs")
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ security/keys/trusted-keys/trusted_tpm2.c | 30 ++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 9 deletions(-)
+
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index 0165da386289..930c67f98611 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -366,7 +366,7 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
+-	u8 *blob, *pub;
++	u8 *blob = NULL, *pub;
+ 	int rc;
+ 	u32 attrs;
+ 
+@@ -378,22 +378,30 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	}
+ 
+ 	/* new format carries keyhandle but old format doesn't */
+-	if (!options->keyhandle)
+-		return -EINVAL;
++	if (!options->keyhandle) {
++		rc = -EINVAL;
++		goto err;
++	}
+ 
+ 	/* must be big enough for at least the two be16 size counts */
+-	if (payload->blob_len < 4)
+-		return -EINVAL;
++	if (payload->blob_len < 4) {
++		rc = -EINVAL;
++		goto err;
++	}
+ 
+ 	private_len = get_unaligned_be16(blob);
+ 
+ 	/* must be big enough for following public_len */
+-	if (private_len + 2 + 2 > (payload->blob_len))
+-		return -E2BIG;
++	if (private_len + 2 + 2 > (payload->blob_len)) {
++		rc = -E2BIG;
++		goto err;
++	}
+ 
+ 	public_len = get_unaligned_be16(blob + 2 + private_len);
+-	if (private_len + 2 + public_len + 2 > payload->blob_len)
+-		return -E2BIG;
++	if (private_len + 2 + public_len + 2 > payload->blob_len) {
++		rc = -E2BIG;
++		goto err;
++	}
+ 
+ 	pub = blob + 2 + private_len + 2;
+ 	/* key attributes are always at offset 4 */
+@@ -441,6 +449,10 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 		rc = -EPERM;
+ 
+ 	return rc;
++
++err:
++	kfree(blob);
++	return rc;
  }
  
--static int set_key_user(struct crypt_config *cc, struct key *key)
--{
--	const struct user_key_payload *ukp;
--
--	ukp = user_key_payload_locked(key);
--	if (!ukp)
--		return -EKEYREVOKED;
--
--	if (cc->key_size != ukp->datalen)
--		return -EINVAL;
--
--	memcpy(cc->key, ukp->data, cc->key_size);
--
--	return 0;
--}
--
--static int set_key_encrypted(struct crypt_config *cc, struct key *key)
--{
--	const struct encrypted_key_payload *ekp;
--
--	ekp = key->payload.data[0];
--	if (!ekp)
--		return -EKEYREVOKED;
--
--	if (cc->key_size != ekp->decrypted_datalen)
--		return -EINVAL;
--
--	memcpy(cc->key, ekp->decrypted_data, cc->key_size);
--
--	return 0;
--}
--
--static int set_key_trusted(struct crypt_config *cc, struct key *key)
--{
--	const struct trusted_key_payload *tkp;
--
--	tkp = key->payload.data[0];
--	if (!tkp)
--		return -EKEYREVOKED;
--
--	if (cc->key_size != tkp->key_len)
--		return -EINVAL;
--
--	memcpy(cc->key, tkp->key, cc->key_size);
--
--	return 0;
--}
--
- static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string)
- {
- 	char *new_key_string, *key_desc;
- 	int ret;
-+	unsigned int len;
- 	struct key_type *type;
- 	struct key *key;
--	int (*set_key)(struct crypt_config *cc, struct key *key);
-+	const void *key_material;
- 
- 	/*
- 	 * Reject key_string with whitespace. dm core currently lacks code for
-@@ -2493,18 +2446,14 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
- 
- 	if (!strncmp(key_string, "logon:", key_desc - key_string + 1)) {
- 		type = &key_type_logon;
--		set_key = set_key_user;
- 	} else if (!strncmp(key_string, "user:", key_desc - key_string + 1)) {
- 		type = &key_type_user;
--		set_key = set_key_user;
- 	} else if (IS_ENABLED(CONFIG_ENCRYPTED_KEYS) &&
- 		   !strncmp(key_string, "encrypted:", key_desc - key_string + 1)) {
- 		type = &key_type_encrypted;
--		set_key = set_key_encrypted;
- 	} else if (IS_ENABLED(CONFIG_TRUSTED_KEYS) &&
- 	           !strncmp(key_string, "trusted:", key_desc - key_string + 1)) {
- 		type = &key_type_trusted;
--		set_key = set_key_trusted;
- 	} else {
- 		return -EINVAL;
- 	}
-@@ -2521,14 +2470,18 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
- 
- 	down_read(&key->sem);
- 
--	ret = set_key(cc, key);
--	if (ret < 0) {
-+	key_material = key_extract_material(key, &len);
-+	if (!IS_ERR(key_material) && len != cc->key_size)
-+		key_material = ERR_PTR(-EINVAL);
-+	if (IS_ERR(key_material)) {
- 		up_read(&key->sem);
- 		key_put(key);
- 		kfree_sensitive(new_key_string);
--		return ret;
-+		return PTR_ERR(key_material);
- 	}
- 
-+	memcpy(cc->key, key_material, len);
-+
- 	up_read(&key->sem);
- 	key_put(key);
- 
+ /**
 -- 
-git-series 0.9.1
+2.31.1
+
