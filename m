@@ -2,227 +2,101 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-18.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,MSGID_FROM_MTA_HEADER,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_GIT autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5C802C4338F
-	for <keyrings@archiver.kernel.org>; Mon, 26 Jul 2021 17:15:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AD66FC4338F
+	for <keyrings@archiver.kernel.org>; Tue, 27 Jul 2021 02:55:07 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 442E560F5D
-	for <keyrings@archiver.kernel.org>; Mon, 26 Jul 2021 17:15:45 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8724560FED
+	for <keyrings@archiver.kernel.org>; Tue, 27 Jul 2021 02:55:07 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S241792AbhGZQfO (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 26 Jul 2021 12:35:14 -0400
-Received: from mx0b-00069f02.pphosted.com ([205.220.177.32]:1806 "EHLO
-        mx0b-00069f02.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S241290AbhGZQeR (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 26 Jul 2021 12:34:17 -0400
-Received: from pps.filterd (m0246631.ppops.net [127.0.0.1])
-        by mx0b-00069f02.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 16QHBn6w007952;
-        Mon, 26 Jul 2021 17:13:57 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=oracle.com; h=from : to : cc :
- subject : date : message-id : in-reply-to : references : content-type :
- mime-version; s=corp-2021-07-09;
- bh=caSiU5a68S9JBTzS3b2dMJ1tHXwt2FDezGnrMdTzGSw=;
- b=rC49gI7B+p/80IyqPo6KGCgw1Pcl+U7eY3CC8KdaCo0DwEbZkxQ/NEkivbo0/sg6ugRn
- 0xkPyCVzDrMR1zjkKRwpNE3NzklNKl/lAbRXyviJAgqi7wH7UrvguDc/zIanBkZu+bVy
- QaDq7O7nX70QmvBI3byefrLTNs6CcncDm5PwkGhsHJYIwoR7lI9LfQVGciHbgKxmv3tv
- +5GAXJVrTnVDchC/5WiMLy1Zm87wY9kxtoG/970cBgGi9n1tNP7/jeRllM3TKE19LaGX
- IVc8Ofo4ZCIe2FgLffnoCmtYmSstHGD+NALlUNcrQ8+ZcWKEqu2Ri2yNbpsmOnUeXU3h RQ== 
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=oracle.com; h=from : to : cc :
- subject : date : message-id : in-reply-to : references : content-type :
- mime-version; s=corp-2020-01-29;
- bh=caSiU5a68S9JBTzS3b2dMJ1tHXwt2FDezGnrMdTzGSw=;
- b=KoDH1uxNdq8QMkzqGE8zIJGKtWxHGYFtcdwYxNF2N6DPDgn5PBoezhJ6pe+JrJuzjAoV
- l5wb5wOlCap+2sJ9tW7EV8D253/tA6b+xN4KvOmbSbFUGnFAuRT1Wdn311mGU5ZwOO9O
- niaPXHXWFHgaDOb3Ctd9qremDPTkmaFF9j+VBJBdrLnw3j6rT599hSbVsAslTHH/xEGg
- 3rd+wF4C2sPJ6IpghDxN0WxYV2tsKu/fasuU+F+maC0djK9uiL9xDOzaLAfhdaTuS9gh
- g1cAZWUVQgP5bwEY34XO8LVWcJ2DlP80KfWJBLm7feIxhXxlkJ+wrm1mgPDNoun3r3ia cQ== 
-Received: from userp3030.oracle.com (userp3030.oracle.com [156.151.31.80])
-        by mx0b-00069f02.pphosted.com with ESMTP id 3a1qkqsk2f-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Mon, 26 Jul 2021 17:13:56 +0000
-Received: from pps.filterd (userp3030.oracle.com [127.0.0.1])
-        by userp3030.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 16QHAt85089469;
-        Mon, 26 Jul 2021 17:13:53 GMT
-Received: from nam11-dm6-obe.outbound.protection.outlook.com (mail-dm6nam11lp2175.outbound.protection.outlook.com [104.47.57.175])
-        by userp3030.oracle.com with ESMTP id 3a07yvvvkc-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Mon, 26 Jul 2021 17:13:52 +0000
-ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
- b=mdnyjW+K/WhhAuAu2QSepTtUsNDsYkJqhtDiapZg8s2EL5RMsp+i1tZj5tsV0diqFWS9so7PHGzsePUe9EfMhNhdk+YcIbmS5pDsyMDI2MxPx5SARoH/hmKH1uawTVJFmySOSNkyqQVWXmmTCD6Doq3EM/Q2aTWhRTMQm7CjCxM+dxRzynE/gxbt7mNABkOBePEDpQCPO2ceFmUHpTcTvZzihKl5dtsKJ+MrX8rEdXdV4E/BJFL7v3srVeAbI5s2j0TFPWYpfy4k+pES/GBXEMiufU2qQr6RP46/paPihWohWScfAtEOWx6JFy45WDC6U3HtaQOKruBe4RYnEu8T8g==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
- s=arcselector9901;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=caSiU5a68S9JBTzS3b2dMJ1tHXwt2FDezGnrMdTzGSw=;
- b=IOhlBcLeMXig8TcCcIYUuBk0BJ37ioW51xoWZYdDh75P/lwIssCUadywss/oucnqWSpqgs+mKNwxDJXJLhTATv8AqAAvp8stJQljoADHOpEvf1gn0gt33huQUlKsIgHlX/CFBXd4STixrDF+sRT9aeEeBJgT5xfP9OieWNGJcfo4G7lqaSQ3e7meZ2GUB7c5y3RTBHNevK7YCuS3RB4AIqzUJTfNLIZ0J90g9qbp4efILrqxkb0IYv5z4YcL+vUpubdXyEtvSP2Jc40diu5JuZgVGUWbt7Z6dAZ0W+dJs/YBCfurzUaFfaaBW5CpILVf2rcrlRl2YmLUiUeXbDm7Aw==
-ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
- smtp.mailfrom=oracle.com; dmarc=pass action=none header.from=oracle.com;
- dkim=pass header.d=oracle.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
- d=oracle.onmicrosoft.com; s=selector2-oracle-onmicrosoft-com;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=caSiU5a68S9JBTzS3b2dMJ1tHXwt2FDezGnrMdTzGSw=;
- b=y+pu5MhWfQ9Y00ynnv2EwKxK5t5wELkl9odVaIBn2Hdd98cqfk+dvivfP227ekEc8mMTZ/NzTUBFyR5lkNrxsczt3RbmI0rtXk9611XDPvu8iJAL5Wnq9GzZtVGU4SMYbMZ1Xkrm1l12y3ifebXFQ/emZEwEmFRa+RPdzBbukFw=
-Authentication-Results: vger.kernel.org; dkim=none (message not signed)
- header.d=none;vger.kernel.org; dmarc=none action=none header.from=oracle.com;
-Received: from CH2PR10MB4150.namprd10.prod.outlook.com (2603:10b6:610:ac::13)
- by CH0PR10MB5211.namprd10.prod.outlook.com (2603:10b6:610:df::14) with
- Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.4352.26; Mon, 26 Jul
- 2021 17:13:51 +0000
-Received: from CH2PR10MB4150.namprd10.prod.outlook.com
- ([fe80::1d17:4a7d:92cc:8fc3]) by CH2PR10MB4150.namprd10.prod.outlook.com
- ([fe80::1d17:4a7d:92cc:8fc3%6]) with mapi id 15.20.4352.031; Mon, 26 Jul 2021
- 17:13:50 +0000
-From:   Eric Snowberg <eric.snowberg@oracle.com>
-To:     keyrings@vger.kernel.org, linux-integrity@vger.kernel.org,
-        zohar@linux.ibm.com, dhowells@redhat.com, dwmw2@infradead.org,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        jarkko@kernel.org, jmorris@namei.org, serge@hallyn.com
-Cc:     eric.snowberg@oracle.com, keescook@chromium.org,
-        gregkh@linuxfoundation.org, torvalds@linux-foundation.org,
-        scott.branden@broadcom.com, weiyongjun1@huawei.com,
-        nayna@linux.ibm.com, ebiggers@google.com, ardb@kernel.org,
-        nramas@linux.microsoft.com, lszubowi@redhat.com,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        James.Bottomley@HansenPartnership.com, pjones@redhat.com,
-        glin@suse.com, konrad.wilk@oracle.com
-Subject: [PATCH RFC v2 06/12] integrity: accessor function to get trust_moklist
-Date:   Mon, 26 Jul 2021 13:13:13 -0400
-Message-Id: <20210726171319.3133879-7-eric.snowberg@oracle.com>
-X-Mailer: git-send-email 2.18.4
-In-Reply-To: <20210726171319.3133879-1-eric.snowberg@oracle.com>
-References: <20210726171319.3133879-1-eric.snowberg@oracle.com>
-Content-Type: text/plain
-X-ClientProxiedBy: SN6PR01CA0004.prod.exchangelabs.com (2603:10b6:805:b6::17)
- To CH2PR10MB4150.namprd10.prod.outlook.com (2603:10b6:610:ac::13)
+        id S234422AbhG0COj (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 26 Jul 2021 22:14:39 -0400
+Received: from mail.kernel.org ([198.145.29.99]:41474 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S230163AbhG0COi (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Mon, 26 Jul 2021 22:14:38 -0400
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 2E5D460FEE;
+        Tue, 27 Jul 2021 02:55:06 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1627354506;
+        bh=N66m5BqH6fBSNOyaUyEyoRc1HO/1ORZUE+4M0QQOz9k=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=rDPj7DNiwMzaTMTCmJQI3c2bPDlRiJGtsz5P5RMkA+7ONiJQLE7n32QIYjCCPD7vW
+         tqZGA4s9//e7YWBI+SSJf8L9cVU8/Sjv+RcOXvqpy/KuAdgCSe8fZm8ZorPhcb7DYV
+         aINh1jmJOUt+IyGoUIFvAySOSZ1+DYqh0EJrCG/DeFny8Jp4BSR1lCP3AuwbTsLQWl
+         NS/AwnAjevQySPglrvNkPUwt9X18EmoxJpAcwkeJUxbTAhqT9a0eJBiD76xiAZK/3z
+         eNWkcEK4o0mHUSMMx3prujAuzw7vt49zZ3alo17NiQJO7ESaNyi8vC5RstX/mw2iuS
+         ZAu8HNqifKDXw==
+Date:   Tue, 27 Jul 2021 05:55:04 +0300
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Andreas Rammhold <andreas@rammhold.de>
+Cc:     James Bottomley <jejb@linux.ibm.com>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        "Serge E . Hallyn" <serge@hallyn.com>,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KEYS: trusted: Fix trusted key backends when building as
+ module
+Message-ID: <20210727025504.w4afe4m6e2k57cve@kernel.org>
+References: <20210716081722.4130161-1-andreas@rammhold.de>
 MIME-Version: 1.0
-X-MS-Exchange-MessageSentRepresentingType: 1
-Received: from localhost.us.oracle.com (148.87.23.11) by SN6PR01CA0004.prod.exchangelabs.com (2603:10b6:805:b6::17) with Microsoft SMTP Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.4352.24 via Frontend Transport; Mon, 26 Jul 2021 17:13:48 +0000
-X-MS-PublicTrafficType: Email
-X-MS-Office365-Filtering-Correlation-Id: 205f0a9e-9688-46be-eec8-08d95058bce9
-X-MS-TrafficTypeDiagnostic: CH0PR10MB5211:
-X-MS-Exchange-Transport-Forked: True
-X-Microsoft-Antispam-PRVS: <CH0PR10MB52113903E6F102A94B883F7987E89@CH0PR10MB5211.namprd10.prod.outlook.com>
-X-MS-Oob-TLC-OOBClassifiers: OLM:1728;
-X-MS-Exchange-SenderADCheck: 1
-X-MS-Exchange-AntiSpam-Relay: 0
-X-Microsoft-Antispam: BCL:0;
-X-Microsoft-Antispam-Message-Info: gHWNVPICuvYGy8s6V97CeELAU4CQKwqOzWT+m4B/tuaC67hl8IHFZMPjSTycztvrmGeCTntMnA9NavN4WsVHAGKkXXupafigwNG8ALlzuDo4K24KlKBWrqo7GYs+jgquqW4zy0Ftg4rCTgFG98djFXXBrYPFAH+Q/2k0PGoOsazFMN3zoBO6aT6lO6zRwnDIFr0Z+J9v3FfeJ1r+nRfXD/gM21XTtocpWUkIFAEYPHxIen4C/kvOlhWSvjSXGYBYJPWXxdS00r6GTt+69+SvlacestPCLv92SQEWXPddkR94eI6dbg/2yC5RpY7SO06PHmp9mObuXJ1GMoPRxGpQ/xiPnZF9hKWD4shjaBNEycxrJSMZ7CDFC3wEbLSc4mKKfeZh6DfI45NR52NV1BFqn2VwUnLaNxcujgnRHDpFiZs9CcPCp25Mh/YorS0VK0ADGEwOgna7OpKEXm8riehVAQRRe2fRARq0AWkmT7+Cq1H6Rp/frLdXuCnyvCgkT8+jbc3lhlVbmWyTKZjgqhNTZz37DBVRQa13u1wN8UMIgSQ/912YEzTbL4gZV9rxUez2VnzPxyELzYGZNaaxW9EVappJyZHDFyPnhvz//FRHwTBJLBgPSaSOjMo9NTDwudi1KlELRj1ArhGVVpNOlfpRthffcGqhSbq1E22aoV1tdSuFWmBKCjYVAlUmgBmC7Gxxu/CYsmTdKC+dpx0sM02DQK7g11tu0YJzIEzoDpjjnR0=
-X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:CH2PR10MB4150.namprd10.prod.outlook.com;PTR:;CAT:NONE;SFS:(376002)(366004)(39860400002)(346002)(136003)(396003)(1076003)(2616005)(7416002)(52116002)(7696005)(44832011)(478600001)(36756003)(66946007)(38100700002)(38350700002)(186003)(921005)(956004)(8936002)(2906002)(26005)(86362001)(8676002)(5660300002)(6666004)(4326008)(66556008)(66476007)(6486002)(83380400001)(316002)(107886003);DIR:OUT;SFP:1101;
-X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
-X-MS-Exchange-AntiSpam-MessageData-0: =?us-ascii?Q?mgKCrEMoTE6RO+dUwl/Yxhbgac1/SBvuOtGGCu1/JSwu5zoyTfiEuD1VT9aj?=
- =?us-ascii?Q?WUgg1510CWEnCCFkZAGHpxFQOMtrJMtIIeIyHxqJeJIIW7hp4ZX8gcoWgoZh?=
- =?us-ascii?Q?I/aeWdjMETNnMZ6pxr2vEpNeWyyeG+lA8xbCsc99JK6aAFGYDKUKEMpTpxdS?=
- =?us-ascii?Q?xxs23fscVaymTIy/OWp1kqEYlZgcvFl34w9on7RnVFqFneHY5w3utmpZskV/?=
- =?us-ascii?Q?8s4hWBHxJvZ2P+9ed3so3Jc7/OvRhRSx+Ye1aGN6H1mFYqvrSgoRhIUEhxFf?=
- =?us-ascii?Q?3UwnNBtJmqLNReBPqPBWbZssKf8MO9npHn5t4UNmxnh0G+roAXCEDe/MD6sg?=
- =?us-ascii?Q?FCApzMkGJaQywj/EhjmI5epBJ3li8id8r18boiDywPvCZMQ+1EH/Vr2cJSJh?=
- =?us-ascii?Q?nR8VCWTmR+5zbNHekj2YwtdtwgR1rj+f+E9+Bxh0/QGVJigaIm8OiDYXhHGA?=
- =?us-ascii?Q?3yvXoBf2gBIupK7X+Lwju2HZ7eekEDBEIMOPlG5Q+Eh7qLIvrmavW/Mh2oxe?=
- =?us-ascii?Q?Tf8duQIgiBZwip1ycnl+gw4yOzJ3Zst0Fvtja6rSft4Zgj9cT4gwDnu0rMoS?=
- =?us-ascii?Q?4WLXgoRT+pKS7UZQbOPABN2Oo3BtIqOWhVs6v1J2KirDuBKCzSLukPHWoDxq?=
- =?us-ascii?Q?/gtSmdV98mZQYXM4yX/71IGm/3coDQt5fY4/GFcSIygGcaUHZ9lpkuMR2BNK?=
- =?us-ascii?Q?NpePyWoWJ7f5llVTIBNTHtpznqN353E/ZBkN1S7LbK89JfxLUJ2GnJxVDIQa?=
- =?us-ascii?Q?t7X9TJSSpCdQ6+AbN3SBj/Y7qdMtSa+FE3e0Mpjr4UoO9dQnt5KnWbFiQo66?=
- =?us-ascii?Q?VzXm1UjnaLHqS/UWj9HCxDZhh/HJSus1i76/ZTEA4cJLb9IiqSwNHhC5JnQq?=
- =?us-ascii?Q?po6IMeG2s0eWGQKinW0VO8oVmG+rqWKhNA/IYR03N/2Q1VSDQuPqUpXGd7gW?=
- =?us-ascii?Q?FR65/MD5tGpkO+J9lMFO3Q/A68Lc0B/WPTHMpZ2T7bFhlmiD5kAaulaZdFXr?=
- =?us-ascii?Q?rP0iUBolSzxZRgBD52EF5MxAD7cACQgVtz++Zeu5eMuXRBn8Yq0iSlybdgmw?=
- =?us-ascii?Q?24PRBRFLK19K2TGKBqAKpy04t3lGJjqSwIk27uQqqknrZYZFcVPdDl1wjERz?=
- =?us-ascii?Q?eQRz0KAlWozVTT0Oh7XNGTyzP2LgVkh1OUi1Jql+Alk0Y3hcuDgQ7Bj5HPBb?=
- =?us-ascii?Q?VC3VvuC/Bvwue7eYygVS6nBOrJUN4HQhMU47RoWbESa1bi9bSb1RG8xGCMMp?=
- =?us-ascii?Q?1YeS9l8wHOPkKD+4drAOaJ5tqZQhFI6TpTx039UAnNZvwaIe6vP82SMRJgkS?=
- =?us-ascii?Q?ok63T7DGHpcxxKxlVipSNtj4?=
-X-OriginatorOrg: oracle.com
-X-MS-Exchange-CrossTenant-Network-Message-Id: 205f0a9e-9688-46be-eec8-08d95058bce9
-X-MS-Exchange-CrossTenant-AuthSource: CH2PR10MB4150.namprd10.prod.outlook.com
-X-MS-Exchange-CrossTenant-AuthAs: Internal
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 26 Jul 2021 17:13:50.8319
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-CrossTenant-Id: 4e2c6054-71cb-48f1-bd6c-3a9705aca71b
-X-MS-Exchange-CrossTenant-MailboxType: HOSTED
-X-MS-Exchange-CrossTenant-UserPrincipalName: yzP4LCBATADz8DAoa2ohUQPMsQzXYm2pSdekC7mRinIafpLdfv3NVysa9qEokUZSCRyiJk5a/uP0Crv7x/TmJrpk6VbZyijoj0dVxw20VLQ=
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: CH0PR10MB5211
-X-Proofpoint-Virus-Version: vendor=nai engine=6200 definitions=10057 signatures=668682
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 suspectscore=0 bulkscore=0 phishscore=0
- malwarescore=0 spamscore=0 mlxlogscore=999 mlxscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2104190000
- definitions=main-2107260100
-X-Proofpoint-GUID: lEaJPWbLI6Xab0iryMilh_UeldejVfH3
-X-Proofpoint-ORIG-GUID: lEaJPWbLI6Xab0iryMilh_UeldejVfH3
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20210716081722.4130161-1-andreas@rammhold.de>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Add an accessor function to see if the mok list should be trusted.
+On Fri, Jul 16, 2021 at 10:17:22AM +0200, Andreas Rammhold wrote:
+> Before this commit the kernel could end up with no trusted key sources
+> even thought both of the currently supported backends (tpm & tee) were
 
-Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
----
-v1: Initial version
-v2: Added trust_moklist function
----
- security/integrity/integrity.h                  |  5 +++++
- security/integrity/platform_certs/mok_keyring.c | 16 ++++++++++++++++
- 2 files changed, 21 insertions(+)
+Nit: "TPM and TEE" instead of "tpm & tee"
 
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 60d5c7ba05b2..1fcefceb0da1 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -279,6 +279,7 @@ integrity_audit_log_start(struct audit_context *ctx, gfp_t gfp_mask, int type)
- void __init add_to_platform_keyring(const char *source, const void *data,
- 				    size_t len);
- void __init add_to_mok_keyring(const char *source, const void *data, size_t len);
-+bool __init trust_moklist(void);
- #else
- static inline void __init add_to_platform_keyring(const char *source,
- 						  const void *data, size_t len)
-@@ -287,4 +288,8 @@ static inline void __init add_to_platform_keyring(const char *source,
- void __init add_to_mok_keyring(const char *source, const void *data, size_t len)
- {
- }
-+static inline bool __init trust_moklist(void)
-+{
-+	return false;
-+}
- #endif
-diff --git a/security/integrity/platform_certs/mok_keyring.c b/security/integrity/platform_certs/mok_keyring.c
-index f260edac0863..c7820d9136f3 100644
---- a/security/integrity/platform_certs/mok_keyring.c
-+++ b/security/integrity/platform_certs/mok_keyring.c
-@@ -8,6 +8,8 @@
- #include <linux/efi.h>
- #include "../integrity.h"
- 
-+bool trust_mok;
-+
- static __init int mok_keyring_init(void)
- {
- 	int rc;
-@@ -67,3 +69,17 @@ static __init bool uefi_check_trust_mok_keys(void)
- 	 */
- 	return (status == EFI_SUCCESS && (!(attr & EFI_VARIABLE_NON_VOLATILE)));
- }
-+
-+bool __init trust_moklist(void)
-+{
-+	static bool initialized;
-+
-+	if (!initialized) {
-+		initialized = true;
-+
-+		if (uefi_check_trust_mok_keys())
-+			trust_mok = true;
-+	}
-+
-+	return trust_mok;
-+}
--- 
-2.18.4
+> compoiled as modules. This manifested in the trusted key type not being
+> registered at all.
 
+Do you have a commit ID for the failing commit?
+
+> When checking if a CONFIG_… preprocessor variable is defined we only
+> test for the builtin (=y) case and not the module (=m) case. By using
+> the IS_ENABLE(…) macro we to test for both cases.
+
+Nit: IS_ENABLED() (without dots inside, missing 'D').
+
+> 
+> Signed-off-by: Andreas Rammhold <andreas@rammhold.de>
+> ---
+>  security/keys/trusted-keys/trusted_core.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
+> index d5c891d8d353..fd640614b168 100644
+> --- a/security/keys/trusted-keys/trusted_core.c
+> +++ b/security/keys/trusted-keys/trusted_core.c
+> @@ -27,10 +27,10 @@ module_param_named(source, trusted_key_source, charp, 0);
+>  MODULE_PARM_DESC(source, "Select trusted keys source (tpm or tee)");
+>  
+>  static const struct trusted_key_source trusted_key_sources[] = {
+> -#if defined(CONFIG_TCG_TPM)
+> +#if IS_ENABLED(CONFIG_TCG_TPM)
+>  	{ "tpm", &trusted_key_tpm_ops },
+>  #endif
+> -#if defined(CONFIG_TEE)
+> +#if IS_ENABLED(CONFIG_TEE)
+>  	{ "tee", &trusted_key_tee_ops },
+>  #endif
+>  };
+> -- 
+> 2.32.0
+> 
+> 
+
+/Jarkko
