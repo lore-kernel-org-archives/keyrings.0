@@ -2,140 +2,146 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_SANE_2 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5AD48C4320A
-	for <keyrings@archiver.kernel.org>; Wed,  4 Aug 2021 20:04:46 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3A4B0C4338F
+	for <keyrings@archiver.kernel.org>; Thu,  5 Aug 2021 13:59:10 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 395C261002
-	for <keyrings@archiver.kernel.org>; Wed,  4 Aug 2021 20:04:46 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 214EE61167
+	for <keyrings@archiver.kernel.org>; Thu,  5 Aug 2021 13:59:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231501AbhHDUE6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 4 Aug 2021 16:04:58 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47524 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231391AbhHDUE5 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 4 Aug 2021 16:04:57 -0400
-Received: from mail-lj1-x230.google.com (mail-lj1-x230.google.com [IPv6:2a00:1450:4864:20::230])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AEE9EC06179A
-        for <keyrings@vger.kernel.org>; Wed,  4 Aug 2021 13:04:44 -0700 (PDT)
-Received: by mail-lj1-x230.google.com with SMTP id o10so3997042ljp.0
-        for <keyrings@vger.kernel.org>; Wed, 04 Aug 2021 13:04:44 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=linux-foundation.org; s=google;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc;
-        bh=sahklOmuEWNKGHdHX0TfbNlW0MEZnmzRkOffEEIf8Zg=;
-        b=RBNOcGPiP0Tn2LCxIxQy3MCJV4xnMx2Bve+Q5ATjwz8evRElxC7yfTfdMiL2NXb2Iv
-         Ffx4IWqpeE13/vv/zz8Vlc0A1isK2sj4QhG0E+5tSga50RWMCXvu5U5ABqhbaIQyTtuB
-         RFVNLsQvbKmyRfVvkpKzIEGVm48rk5eJ5LI2s=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc;
-        bh=sahklOmuEWNKGHdHX0TfbNlW0MEZnmzRkOffEEIf8Zg=;
-        b=d7Gww93pdA+oD2g9UjJEZPDx8Aug4nlUisRKJs7t2MWNsRozBKtnDTZM7kEEyfw3bG
-         h1p78tHuyaY74cjBLU+C+dDHwaRDTouphZnLnWnDPJk+O8j1R4XROw4ENu3yy6OW/Udx
-         TCHl0+GSyUgycHShLPNXTl8b6J8z6WSpWVlf9f/VJc2UkWTUb/4DUvSCw8Zn+nYtHJk0
-         t79dM6go+dW+qH/tEPxRuvz0VEpk1qRo2+pCfU1As6yvL8rjHGqZhdtbFuPdQt8TLSm9
-         qDvIeYLJ707ay55Xm5Jj97oX2CxyRj2I0bpgTGx3ag+b+Ubn19pdQDZwFqz/osKxuEva
-         x2dw==
-X-Gm-Message-State: AOAM531vTkVN0ZbZzrc8/HIzdhlfwtJeQiDy0Pw6TyTxkNYXvzV17ZDV
-        jggZqxJcMnXrAW1PH8zDAbZxpBT5qQU4fbay
-X-Google-Smtp-Source: ABdhPJwENxs/BXy6JmAXjx/pyZl3JbPcWX4UPcDMr0WkyM9CnJVxN+nZVCSXkvkVPGBrbvqgl3QVwA==
-X-Received: by 2002:a2e:bf07:: with SMTP id c7mr680260ljr.386.1628107481979;
-        Wed, 04 Aug 2021 13:04:41 -0700 (PDT)
-Received: from mail-lj1-f179.google.com (mail-lj1-f179.google.com. [209.85.208.179])
-        by smtp.gmail.com with ESMTPSA id q23sm287331lfp.169.2021.08.04.13.04.40
-        for <keyrings@vger.kernel.org>
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Wed, 04 Aug 2021 13:04:41 -0700 (PDT)
-Received: by mail-lj1-f179.google.com with SMTP id o10so3996901ljp.0
-        for <keyrings@vger.kernel.org>; Wed, 04 Aug 2021 13:04:40 -0700 (PDT)
-X-Received: by 2002:a2e:84c7:: with SMTP id q7mr670782ljh.61.1628107480111;
- Wed, 04 Aug 2021 13:04:40 -0700 (PDT)
-MIME-Version: 1.0
-References: <1628086770.5rn8p04n6j.none.ref@localhost> <1628086770.5rn8p04n6j.none@localhost>
- <CAHk-=wiLr55zHUWNzmp3DeoO0DUaYp7vAzQB5KUCni5FpwC7Uw@mail.gmail.com> <1628105897.vb3ko0vb06.none@localhost>
-In-Reply-To: <1628105897.vb3ko0vb06.none@localhost>
-From:   Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Wed, 4 Aug 2021 13:04:24 -0700
-X-Gmail-Original-Message-ID: <CAHk-=wioi2+dfni1Sx2_Js_WmcgHKtzPUSDkhZ4uo0P6Qe0z+A@mail.gmail.com>
-Message-ID: <CAHk-=wioi2+dfni1Sx2_Js_WmcgHKtzPUSDkhZ4uo0P6Qe0z+A@mail.gmail.com>
-Subject: Re: [REGRESSION?] Simultaneous writes to a reader-less, non-full pipe
- can hang
-To:     "Alex Xu (Hello71)" <alex_y_xu@yahoo.ca>
-Cc:     acrichton@mozilla.com, Christian Brauner <christian@brauner.io>,
+        id S241838AbhHEN7X (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 5 Aug 2021 09:59:23 -0400
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:24588 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S241742AbhHEN7T (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 5 Aug 2021 09:59:19 -0400
+Received: from pps.filterd (m0098393.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 175DXIjH130747;
+        Thu, 5 Aug 2021 09:58:22 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
+ from : to : cc : date : in-reply-to : references : content-type :
+ mime-version : content-transfer-encoding; s=pp1;
+ bh=1rXeo9LZ8sdgK8+jRm8mIWKvquz5FEKRdek01spIM8E=;
+ b=B0OoL5oYUsPJpYeA6PqJXliiBRQAHefNVtcUiP5tpe9sCWs0KCftnLM5DE2VXaMtJM9J
+ VXV0uqEvKw3zNIP8qXwxl43ZKe0gb25TNPBB2gaRSJMKeAJdpkhe3RU8n/TIaf2YXL7g
+ j6SdWZBKJ6/h68srAz9BlDcAe8P8dqyhAMOoPphiqEgjkDjSPLKHzMxfqDDiC12lfiRa
+ dNg46SWLivT1ejINKzj3X27j+VwXgaT6CEBQxroIiza4DD5BQaBlVIOZiEPaf65Rmy5a
+ 47K3dPUYhL18WLPNUc7piQZImw46uXFV11HcVob6y8zMl8Z7PMqjYjjcsSBpUt4EAlb3 dg== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3a87f6fqcy-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Thu, 05 Aug 2021 09:58:22 -0400
+Received: from m0098393.ppops.net (m0098393.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 175DXVIX131536;
+        Thu, 5 Aug 2021 09:58:21 -0400
+Received: from ppma06ams.nl.ibm.com (66.31.33a9.ip4.static.sl-reverse.com [169.51.49.102])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3a87f6fqc4-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Thu, 05 Aug 2021 09:58:21 -0400
+Received: from pps.filterd (ppma06ams.nl.ibm.com [127.0.0.1])
+        by ppma06ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 175DwAwq032297;
+        Thu, 5 Aug 2021 13:58:18 GMT
+Received: from b06cxnps3074.portsmouth.uk.ibm.com (d06relay09.portsmouth.uk.ibm.com [9.149.109.194])
+        by ppma06ams.nl.ibm.com with ESMTP id 3a4wshub58-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Thu, 05 Aug 2021 13:58:18 +0000
+Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
+        by b06cxnps3074.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 175DwGBp55378366
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Thu, 5 Aug 2021 13:58:16 GMT
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id C31744C06D;
+        Thu,  5 Aug 2021 13:58:14 +0000 (GMT)
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 14F914C046;
+        Thu,  5 Aug 2021 13:58:10 +0000 (GMT)
+Received: from sig-9-65-205-127.ibm.com (unknown [9.65.205.127])
+        by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
+        Thu,  5 Aug 2021 13:58:09 +0000 (GMT)
+Message-ID: <de325c9efacda817c42ee83244baa0de4b246aa8.camel@linux.ibm.com>
+Subject: Re: [PATCH RFC v2 00/12] Enroll kernel keys thru MOK
+From:   Mimi Zohar <zohar@linux.ibm.com>
+To:     Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+        "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>,
         David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        keyrings@vger.kernel.org, Linux API <linux-api@vger.kernel.org>,
-        linux-block <linux-block@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ian Kent <raven@themaw.net>
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.apana.org.au>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "jarkko@kernel.org" <jarkko@kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "serge@hallyn.com" <serge@hallyn.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "scott.branden@broadcom.com" <scott.branden@broadcom.com>,
+        "weiyongjun1@huawei.com" <weiyongjun1@huawei.com>,
+        "nayna@linux.ibm.com" <nayna@linux.ibm.com>,
+        "ebiggers@google.com" <ebiggers@google.com>,
+        "ardb@kernel.org" <ardb@kernel.org>,
+        Lakshmi Ramasubramanian <nramas@linux.microsoft.com>,
+        "lszubowi@redhat.com" <lszubowi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+        <linux-security-module@vger.kernel.org>,
+        "James.Bottomley@hansenpartnership.com" 
+        <James.Bottomley@HansenPartnership.com>,
+        "pjones@redhat.com" <pjones@redhat.com>,
+        "glin@suse.com" <glin@suse.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Date:   Thu, 05 Aug 2021 09:58:09 -0400
+In-Reply-To: <3D8EF15C-E3D6-4C9A-9BA2-9F4201AC3ED3@oracle.com>
+References: <20210726171319.3133879-1-eric.snowberg@oracle.com>
+         <820cd72cd77c4716bff2bf344c64d7bcb59fc4d3.camel@linux.ibm.com>
+         <2BBC3A71-6E0D-47A2-842A-11C279A5DC56@oracle.com>
+         <5ac7f5fc866dd271ecfc9be17fef7fa47babbc6e.camel@linux.ibm.com>
+         <3D8EF15C-E3D6-4C9A-9BA2-9F4201AC3ED3@oracle.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.28.5 (3.28.5-16.el8) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: qlBak8HRa1stUzgHPBPY4JRURS4dDkrj
+X-Proofpoint-GUID: UZYE_32BMS_GhwZ0JBjQt8a9HtnpvsW8
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.391,18.0.790
+ definitions=2021-08-05_04:2021-08-05,2021-08-05 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 lowpriorityscore=0
+ spamscore=0 priorityscore=1501 bulkscore=0 phishscore=0 mlxlogscore=999
+ suspectscore=0 impostorscore=0 clxscore=1015 mlxscore=0 adultscore=0
+ malwarescore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2107140000 definitions=main-2108050082
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Wed, Aug 4, 2021 at 12:48 PM Alex Xu (Hello71) <alex_y_xu@yahoo.ca> wrote:
->
-> I agree that if this only affects programs which intentionally adjust
-> the pipe buffer size, then it is not a huge issue. The problem,
-> admittedly buried very close to the bottom of my email, is that the
-> kernel will silently provide one-page pipe buffers if the user has
-> exceeded 16384 (by default) pipe buffer pages allocated.
+On Wed, 2021-08-04 at 02:56 +0000, Eric Snowberg wrote:
 
-That's a good point.
+> Ok, I’ll update the current code to just load CA keys into the mok in v3.  This would
+> simplify the new restrict_link_by_ca function. 
 
-That "fall back to a single buffer" case is meant to make things
-hobble along if the user has exhausted the pipe buffers, but you're
-right that we might want to make that minimum be two buffers.
+Thank you!
+> 
+> With that change, do you see any issues with how I’m doing the linking?  With the 
+> mok keyring linked to the secondary keyring, the platform keyring may only contain 
+> a subset of the keys it originally contained.  But, as I described above, I don’t believe
+> it will lead to a regression since all keys get referenced. Thanks.
 
-I didn't test this, but the obvious fix seems to be just increasing
-the '1' to '2'.
+I think there is a problem.  Only the builtin keys should ever be on
+the builtin keyring.  The builtin keyring would need to be linked to
+the mok keyring.  But in the secondary keyring case, the linking
+should be the reverse, where the mok keyring would be linked to the
+secondary keyring, similar to how the builtin keyring is linked to the
+secondary keyring.
 
-  @@ -781,8 +784,8 @@ struct pipe_inode_info *alloc_pipe_info(void)
-          user_bufs = account_pipe_buffers(user, 0, pipe_bufs);
+        if (key_link(secondary_trusted_keys, builtin_trusted_keys) < 0)
+                panic("Can't link trusted keyrings\n");
 
-          if (too_many_pipe_buffers_soft(user_bufs) &&
-pipe_is_unprivileged_user()) {
-  -               user_bufs = account_pipe_buffers(user, pipe_bufs, 1);
-  -               pipe_bufs = 1;
-  +               user_bufs = account_pipe_buffers(user, pipe_bufs, 2);
-  +               pipe_bufs = 2;
-          }
 
-          if (too_many_pipe_buffers_hard(user_bufs) &&
-pipe_is_unprivileged_user())
+thanks,
 
-although a real patch would need a comment about how a single buffer
-is problematic, and probably make the '2' be a #define to not just
-repeat the same magic constant silently.
+Mimi
 
-IOW, something like
-
-  /*
-   * The general pipe use case needs at least two buffers: one
-   * for data yet to be read, and one for new data
-   */
-  #define DEF_MIN_PIPE_BUFFERS 2
-
-to go with the existing PIPE_DEF_BUFFERS (although the
-DEF_MIN_PIPE_BUFFERS use would only be in fs/pipe.c, so I guess it
-doesn't actually need to be exposed to anybody else in the pipe.h
-header file).
-
-I'd take that patch with some proper testing and a commit message.
-
-Hint hint ;)
-
-                Linus
