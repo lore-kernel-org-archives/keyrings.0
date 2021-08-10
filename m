@@ -2,232 +2,149 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.3 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=unavailable
+X-Spam-Status: No, score=-13.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6552DC4338F
-	for <keyrings@archiver.kernel.org>; Tue, 10 Aug 2021 07:41:30 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B2CBBC432BE
+	for <keyrings@archiver.kernel.org>; Tue, 10 Aug 2021 11:29:13 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 4BFD46101E
-	for <keyrings@archiver.kernel.org>; Tue, 10 Aug 2021 07:41:30 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 953DD61073
+	for <keyrings@archiver.kernel.org>; Tue, 10 Aug 2021 11:29:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233034AbhHJHls (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 10 Aug 2021 03:41:48 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52502 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229760AbhHJHls (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 10 Aug 2021 03:41:48 -0400
-Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C2134C0613D3
-        for <keyrings@vger.kernel.org>; Tue, 10 Aug 2021 00:41:26 -0700 (PDT)
-Received: from gallifrey.ext.pengutronix.de ([2001:67c:670:201:5054:ff:fe8d:eefb] helo=[IPv6:::1])
-        by metis.ext.pengutronix.de with esmtp (Exim 4.92)
-        (envelope-from <a.fatoum@pengutronix.de>)
-        id 1mDMO4-0005bc-BD; Tue, 10 Aug 2021 09:41:24 +0200
-Subject: Re: [PATCH v2] fscrypt: support trusted keys
-To:     Eric Biggers <ebiggers@kernel.org>
-Cc:     "Theodore Y. Ts'o" <tytso@mit.edu>,
-        Jaegeuk Kim <jaegeuk@kernel.org>, kernel@pengutronix.de,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
+        id S238284AbhHJL3e convert rfc822-to-8bit (ORCPT
+        <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 10 Aug 2021 07:29:34 -0400
+Received: from mail-40131.protonmail.ch ([185.70.40.131]:43282 "EHLO
+        mail-40131.protonmail.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S238252AbhHJL3e (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 10 Aug 2021 07:29:34 -0400
+Date:   Tue, 10 Aug 2021 11:29:04 +0000
+Authentication-Results: mail-40131.protonmail.ch; dkim=none
+To:     Ahmad Fatoum <a.fatoum@pengutronix.de>
+From:   David Gstir <david@sigma-star.at>
+Cc:     =?utf-8?Q?Horia_Geant=C4=83?= <horia.geanta@nxp.com>,
+        Aymen Sghaier <aymen.sghaier@nxp.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, kernel@pengutronix.de,
         James Bottomley <jejb@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
         Mimi Zohar <zohar@linux.ibm.com>,
-        Sumit Garg <sumit.garg@linaro.org>,
         David Howells <dhowells@redhat.com>,
-        linux-fscrypt@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-integrity@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20210806150928.27857-1-a.fatoum@pengutronix.de>
- <YRGdBiJQ3xqZAT4w@gmail.com>
-From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
-Message-ID: <2bc19003-82a1-0d2d-4548-3315686d77b4@pengutronix.de>
-Date:   Tue, 10 Aug 2021 09:41:20 +0200
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
- Thunderbird/78.12.0
+        James Morris <jmorris@namei.org>,
+        Eric Biggers <ebiggers@kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Udit Agarwal <udit.agarwal@nxp.com>,
+        Jan Luebbe <j.luebbe@pengutronix.de>,
+        Richard Weinberger <richard@nod.at>,
+        Franck LENORMAND <franck.lenormand@nxp.com>,
+        Sumit Garg <sumit.garg@linaro.org>,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Reply-To: David Gstir <david@sigma-star.at>
+Subject: Re: [PATCH 3/4] crypto: caam - add in-kernel interface for blob generator
+Message-ID: <796E18E6-1329-40D6-B12F-4CE6C90DD988@sigma-star.at>
+In-Reply-To: <4078060ab2e44114af8204b4defea4f3d4b9e285.1626885907.git-series.a.fatoum@pengutronix.de>
+References: <cover.9fc9298fd9d63553491871d043a18affc2dbc8a8.1626885907.git-series.a.fatoum@pengutronix.de> <4078060ab2e44114af8204b4defea4f3d4b9e285.1626885907.git-series.a.fatoum@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <YRGdBiJQ3xqZAT4w@gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:201:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: a.fatoum@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hello Eric,
+Hi Ahmad,
 
-On 09.08.21 23:24, Eric Biggers wrote:
-> Hi Ahmad,
-> 
-> This generally looks okay, but I have some comments below.
-> 
-> On Fri, Aug 06, 2021 at 05:09:28PM +0200, Ahmad Fatoum wrote:
->> Kernel trusted keys don't require userspace knowledge of the raw key
->> material and instead export a sealed blob, which can be persisted to
->> unencrypted storage. Userspace can then load this blob into the kernel,
->> where it's unsealed and from there on usable for kernel crypto.
-> 
-> Please be explicit about where and how the keys get generated in this case.
-
-I intentionally avoided talking about this. You see, the trusted key documentation[1]
-phrases it as "all keys are created in the kernel", but you consider
-"'The key material is generated
- within the kernel' [a] misleading claim'. [2]
-
-Also, I hope patches to force kernel RNG and CAAM support (using kernel RNG as
-default) will soon be accepted, which would invalidate any further claims in the
-commit message without a means to correct them.
-
-I thus restricted my commit message to the necessary bit that are needed to
-understand the patch, which is: userspace knowledge of the key material is
-not required. If you disagree, could you provide me the text you'd prefer?
-
->> This is incompatible with fscrypt, where userspace is supposed to supply
->> the raw key material. For TPMs, a work around is to do key unsealing in
->> userspace, but this may not be feasible for other trusted key backends.
-> 
-> As far as I can see, "Key unsealing in userspace" actually is the preferred way
-> to implement TPM-bound encryption.  So it doesn't seem fair to call it a "work
-> around".
-
-In the context of *kernel trusted keys*, direct interaction with the TPM
-outside the kernel to decrypt a kernel-encrypted blob is surely not the
-preferred way.
-
-For TPM-bound encryption completely in userspace? Maybe. But that's not
-what this patch is about. It's about kernel trusted keys and offloading
-part of its functionality to userspace to _work around_ lack of kernel-side
-integration is exactly that: a _work around_.
-
->> +  Most users leave this 0 and specify the raw key directly.
->> +  "trusted" keys are useful to leverage kernel support for sealing
->> +  and unsealing key material. Sealed keys can be persisted to
->> +  unencrypted storage and later be used to decrypt the file system
->> +  without requiring userspace to have knowledge of the raw key
->> +  material.
->> +  "fscrypt-provisioning" key support is intended mainly to allow
->> +  re-adding keys after a filesystem is unmounted and re-mounted,
->>    without having to store the raw keys in userspace memory.
->>  
->>  - ``raw`` is a variable-length field which must contain the actual
->>    key, ``raw_size`` bytes long.  Alternatively, if ``key_id`` is
->>    nonzero, then this field is unused.
->>  
->> +.. note::
->> +
->> +   Users should take care not to reuse the fscrypt key material with
->> +   different ciphers or in multiple contexts as this may make it
->> +   easier to deduce the key.
->> +   This also applies when the key material is supplied indirectly
->> +   via a kernel trusted key. In this case, the trusted key should
->> +   perferably be used only in a single context.
-> 
-> Again, please be explicit about key generation.  Note that key generation is
-> already discussed in a different section, "Master Keys".  There should be a
-> mention of trusted keys there.  The above note about not reusing keys probably
-> belongs there too.  (The section you're editing here is
-> "FS_IOC_ADD_ENCRYPTION_KEY", which is primarily intended to just document the
-> ioctl, so it's not necessarily the best place for this type of information.)
-
-Yes. The content of the note is more appropriate there.
-
->> @@ -577,28 +578,44 @@ static int get_keyring_key(u32 key_id, u32 type,
->>  	key_ref_t ref;
->>  	struct key *key;
->>  	const struct fscrypt_provisioning_key_payload *payload;
->> -	int err;
->> +	int err = 0;
->>  
->>  	ref = lookup_user_key(key_id, 0, KEY_NEED_SEARCH);
->>  	if (IS_ERR(ref))
->>  		return PTR_ERR(ref);
->>  	key = key_ref_to_ptr(ref);
->>  
->> -	if (key->type != &key_type_fscrypt_provisioning)
->> -		goto bad_key;
->> -	payload = key->payload.data[0];
->> +	if (key->type == &key_type_fscrypt_provisioning) {
-> 
-> This function is getting long; it probably should be broken this up into several
-> functions.  E.g.:
-
-Will do for v3.
-
-> static int get_keyring_key(u32 key_id, u32 type,
->                            struct fscrypt_master_key_secret *secret)
-> {
->         key_ref_t ref;
->         struct key *key;
->         int err;
-> 
->         ref = lookup_user_key(key_id, 0, KEY_NEED_SEARCH);
->         if (IS_ERR(ref))
->                 return PTR_ERR(ref);
->         key = key_ref_to_ptr(ref);
-> 
->         if (key->type == &key_type_fscrypt_provisioning) {
->                 err = fscrypt_get_provisioning_key(key, type, secret);
->         } else if (IS_REACHABLE(CONFIG_TRUSTED_KEYS) &&
->                    key->type == &key_type_trusted) {
->                 err = fscrypt_get_trusted_key(key, secret);
->         } else {
->                 err = -EKEYREJECTED;
->         }
->         key_ref_put(ref);
->         return err;
-> }
-> 
->> +		/* Don't allow fscrypt v1 keys to be used as v2 keys and vice versa. */
-> 
-> Please avoid overly-long lines.
-
-For v3 with helper functions, there will be one indentation level less,
-so this will be less 79 again instead of 87.
-
-> 
->> +		tkp = key->payload.data[0];
->> +		if (!tkp || tkp->key_len < FSCRYPT_MIN_KEY_SIZE ||
->> +		    tkp->key_len > FSCRYPT_MAX_KEY_SIZE) {
->> +			up_read(&key->sem);
->> +			err = -EINVAL;
->> +			goto out_put;
->> +		}
-> 
-> What does the !tkp case mean?  For "user" and "logon" keys it means "key
-> revoked", but the "trusted" key type doesn't implement revoke.  Is this included
-> just to be safe?
-
-Oh, good point. I think I cargo-culted it off encrypted key support for
-eCryptfs and dm-crypt. Encrypted keys don't support revoke either..
-
-That might be reasonable, but perhaps the error code in that
-> case (but not the invalid length cases) should be -EKEYREVOKED instead?
-
-Yes. It was like this for v1, but I missed it when dropping the
-dependency on the key_extract_material patch. Will fix for v3.
-
-[1]: https://www.kernel.org/doc/html/v5.14-rc5/security/keys/trusted-encrypted.html
-[2]: https://lore.kernel.org/linux-fscrypt/YQLzOwnPF1434kUk@gmail.com/
+> On 21.07.2021, at 18:48, Ahmad Fatoum <a.fatoum@pengutronix.de> wrote:
 
 
-Cheers and thanks for the review,
-Ahmad
+[...]
+
+> diff --git a/drivers/crypto/caam/blob_gen.c b/drivers/crypto/caam/blob_gen.c
+> new file mode 100644
+> index 000000000000..513d3f90e438
+> --- /dev/null
+> +++ b/drivers/crypto/caam/blob_gen.c
+> @@ -0,0 +1,230 @@
+
+[...]
+
+> +
+> +int caam_encap_blob(struct caam_blob_priv *priv, const char *keymod,
+> +		    void *input, void *output, size_t length)
+> +{
+> +	u32 *desc;
+> +	struct device *jrdev = &priv->jrdev;
+> +	dma_addr_t dma_in, dma_out;
+> +	struct caam_blob_job_result testres;
+> +	size_t keymod_len = strlen(keymod);
+> +	int ret;
+> +
+> +	if (length <= CAAM_BLOB_OVERHEAD || keymod_len > CAAM_BLOB_KEYMOD_LENGTH)
+
+The docs for this function mention the length <= CAAM_BLOB_MAX_LEN
+restriction. This is not checked here. Is this intended?
+
+Since you already assert that MAX_BLOB_SIZE <= CAAM_BLOB_MAX_LEN
+in security/keys/trusted-keys/trusted_caam.c, this will never
+be an issue for CAAM-based trusted-keys though.
 
 
-> 
-> - Eric
-> 
+> +		return -EINVAL;
+> +
+> +	desc = caam_blob_alloc_desc(keymod_len);
+> +	if (!desc) {
+> +		dev_err(jrdev, "unable to allocate desc\n");
+> +		return -ENOMEM;
+> +	}
+> +
+
+[...]
+
+> diff --git a/include/soc/fsl/caam-blob.h b/include/soc/fsl/caam-blob.h
+> new file mode 100644
+> index 000000000000..aebbc9335f64
+> --- /dev/null
+> +++ b/include/soc/fsl/caam-blob.h
+> @@ -0,0 +1,56 @@
+> +/* SPDX-License-Identifier: GPL-2.0-only */
+> +/*
+> + * Copyright (C) 2020 Pengutronix, Ahmad Fatoum <kernel@pengutronix.de>
+> + */
+> +
+> +#ifndef __CAAM_BLOB_GEN
+> +#define __CAAM_BLOB_GEN
+> +
+> +#include <linux/types.h>
+> +
+> +#define CAAM_BLOB_KEYMOD_LENGTH		16
+> +#define CAAM_BLOB_OVERHEAD		(32 + 16)
+> +#define CAAM_BLOB_MAX_LEN		4096
+> +
+> +struct caam_blob_priv;
+> +
+> +/** caam_blob_gen_init - initialize blob generation
+> + *
+> + * returns either pointer to new caam_blob_priv instance
+> + * or error pointer
+> + */
+> +struct caam_blob_priv *caam_blob_gen_init(void);
+> +
+> +/** caam_blob_gen_init - free blob generation resources
+
+s/init/exit/
 
 
--- 
-Pengutronix e.K.                           |                             |
-Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
-31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> + *
+> + * @priv: instance returned by caam_blob_gen_init
+> + */
+> +void caam_blob_gen_exit(struct caam_blob_priv *priv);
+
+
+Except these minor things, I noticed no issues with this whole series:
+
+Reviewed-by: David Gstir <david@sigma-star.at>
+
+
