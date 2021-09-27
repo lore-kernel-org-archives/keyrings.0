@@ -1,105 +1,103 @@
 Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
-X-Spam-Level: 
-X-Spam-Status: No, score=-17.5 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
-	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8055DC433F5
-	for <keyrings@archiver.kernel.org>; Tue, 21 Sep 2021 21:07:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2D93FC433EF
+	for <keyrings@archiver.kernel.org>; Mon, 27 Sep 2021 08:51:28 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 63D0761214
-	for <keyrings@archiver.kernel.org>; Tue, 21 Sep 2021 21:07:32 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 0738361165
+	for <keyrings@archiver.kernel.org>; Mon, 27 Sep 2021 08:51:28 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234294AbhIUVJA (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 21 Sep 2021 17:09:00 -0400
-Received: from mail.kernel.org ([198.145.29.99]:38844 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S233997AbhIUVI7 (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Tue, 21 Sep 2021 17:08:59 -0400
-Received: by mail.kernel.org (Postfix) with ESMTPSA id 3E8CE611ED;
-        Tue, 21 Sep 2021 21:07:27 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1632258447;
-        bh=KhqgCOU1H+B4j48XZ2KbxoGsnjCzuiyjcIpFTqCMxxQ=;
-        h=Subject:From:To:Cc:Date:In-Reply-To:References:From;
-        b=mmiDqp8W7ToUmvXUok5eX0WvW7OdVY5wBuyVdo7QuRceEf9R4ND6az8ZVbcx6A26H
-         DZ6BF5ifNm5jmPssa+ZSP8hEkRyUfY9l1FZQxZonSQ8dEtm4ugyAClUDFFM0ZfNrWC
-         r6T7IzSRzasfQ7ZH7y825kviG7Un6PZ1ekGkZHeQukHC/pYMpvk5baTboQ8LJXPMxf
-         FTyv7eQ5w3O02jWNf4EGT5S3awNii4rm5uDKApzaG44U8KivSWMNd6VgIvloWMtChp
-         9vFHOCu0Snks/tbzZbEutpI+Dim10D3DUvfrsXAJ4Acv7TkEkHlPzQ+vnWu3pmS4O+
-         laAo3A1MU4D1Q==
-Message-ID: <6318b58cf9ede0ffcda396cd14572d0143f6a04e.camel@kernel.org>
-Subject: Re: [PATCH] pkcs7: support EC-RDSA/streebog in SignerInfo
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     Tianjia Zhang <tianjia.zhang@linux.alibaba.com>,
-        Elvira Khabirova <e.khabirova@omp.ru>, keyrings@vger.kernel.org
-Cc:     linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, herbert@gondor.apana.org.au,
-        dhowells@redhat.com, vt@altlinux.org
-Date:   Wed, 22 Sep 2021 00:07:25 +0300
-In-Reply-To: <59bf7fdf-b06e-1533-865a-06c612f4a19c@linux.alibaba.com>
-References: <20210511174744.4f3c6c59@msk1wst204>
-         <59bf7fdf-b06e-1533-865a-06c612f4a19c@linux.alibaba.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-User-Agent: Evolution 3.36.5-0ubuntu1 
+        id S233499AbhI0IxD (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 27 Sep 2021 04:53:03 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35686 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S233403AbhI0IxC (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 27 Sep 2021 04:53:02 -0400
+Received: from mail-ed1-x536.google.com (mail-ed1-x536.google.com [IPv6:2a00:1450:4864:20::536])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4DFE3C061575
+        for <keyrings@vger.kernel.org>; Mon, 27 Sep 2021 01:51:23 -0700 (PDT)
+Received: by mail-ed1-x536.google.com with SMTP id dj4so66326548edb.5
+        for <keyrings@vger.kernel.org>; Mon, 27 Sep 2021 01:51:23 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=rammhold-de.20210112.gappssmtp.com; s=20210112;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-disposition:content-transfer-encoding:in-reply-to;
+        bh=vpiI5pj2Ftv2EK8BLb2NkBV+XKtwEHr6p/9jAqbGbAE=;
+        b=BhkSvc+zNkulAdU66B6+X3PLa6HTc7zTdIZ7CKNvaupwXco2ce3J1ojxFID/7Avvkh
+         vKV7Lz9TZZzOIcWGJuAukVWFdUKSHRmCT3np3zdY1ZBbv0sVjr96CwPggmpFw7VmdXON
+         sklUqge3izjUabowL5z/oxI0ot81qap1t4eJaodiGkQoSjjEv3IJjpNDuSqMM6wx2FJj
+         E1gBvz+oQ2DE86AidE5KJcGWKHarVm4zQUhDS2y0WpBY0ly2VN/7d6fYscJ/HiwFV9xl
+         eZ0fpHR6SvqVFFTjkFuf0J3o0ardaYbzmKiBhX0OWTYjcOzeHlqylWK4ScUTazBiL+m7
+         eAHQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:date:from:to:cc:subject:message-id:references
+         :mime-version:content-disposition:content-transfer-encoding
+         :in-reply-to;
+        bh=vpiI5pj2Ftv2EK8BLb2NkBV+XKtwEHr6p/9jAqbGbAE=;
+        b=IX3i9JHRT1cSMQoS5qe/gqds3L5kfdfpkIsXhNH1LEcQgryHZaDmc46fJ69wX16J91
+         I/JuUVWpTCxGklQ7nuNCzspc3QkUB/dL98kQa9TYjAW4vC1+D0bVPZ4qGrhB85ieaz0T
+         jvDRYtA/mvInj/DX/szneXlEqkZN5PMzJCyJzYsDf9gpmEtcaJS1cOebUDYNeDrzI/My
+         S/P4wUGxZgYpKmdR+MkG4b/MQHbDah8djf037iWK/5SlS06tldW0QhSdN8rcsWs+v82Z
+         0jACigT8HCY0Dn18XqGWEOivv4KKUtRAXf6RcTidHPorFyRCHZ4VT4IcyWQFgUTPSyJI
+         J8fA==
+X-Gm-Message-State: AOAM531+8qtv2vqDQOpHsYf9ZpmjqP8ZA+uYuo1wQ1pbUci0zAmiHhUh
+        bXCTqGvFxHeurZTuANo4BkvJ/g==
+X-Google-Smtp-Source: ABdhPJyGrcZoq7BRymoATY3WZexa99+brf/ZH5Kkqlnjq0KM2/GBXtUm597ruB9k9urrT5xeVjJXVA==
+X-Received: by 2002:a17:906:2505:: with SMTP id i5mr25674695ejb.450.1632732681907;
+        Mon, 27 Sep 2021 01:51:21 -0700 (PDT)
+Received: from localhost ([2a00:e67:5c9:a:6d7b:fc0:e9e9:7254])
+        by smtp.gmail.com with ESMTPSA id m22sm10262359edq.71.2021.09.27.01.51.20
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 27 Sep 2021 01:51:20 -0700 (PDT)
+Date:   Mon, 27 Sep 2021 10:51:04 +0200
+From:   Andreas Rammhold <andreas@rammhold.de>
+To:     Ahmad Fatoum <a.fatoum@pengutronix.de>
+Cc:     Andreas Rammhold <andreas@rammhold.de>,
+        James Bottomley <jejb@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Sumit Garg <sumit.garg@linaro.org>,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] KEYS: trusted: Fix trusted key backends when building
+ as module
+Message-ID: <20210927085104.vq42feghtaqiv6ni@wrt>
+References: <20210730012822.3460913-1-andreas@rammhold.de>
+ <0d42a11a-0117-49a9-d2c9-bc6cc405235d@pengutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0d42a11a-0117-49a9-d2c9-bc6cc405235d@pengutronix.de>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sat, 2021-09-18 at 10:39 +0800, Tianjia Zhang wrote:
-> ping.
->=20
-> On 5/11/21 10:47 PM, Elvira Khabirova wrote:
-> > Allow using EC-RDSA/streebog in pkcs7 certificates in a similar way
-> > to how it's done in the x509 parser.
-> >=20
-> > This is needed e.g. for loading kernel modules signed with EC-RDSA.
-> >=20
-> > Signed-off-by: Elvira Khabirova <e.khabirova@omp.ru>
-> > ---
-> >   crypto/asymmetric_keys/pkcs7_parser.c | 11 +++++++++++
-> >   1 file changed, 11 insertions(+)
-> >=20
-> > diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_=
-keys/pkcs7_parser.c
-> > index 967329e0a07b..39c260a04167 100644
-> > --- a/crypto/asymmetric_keys/pkcs7_parser.c
-> > +++ b/crypto/asymmetric_keys/pkcs7_parser.c
-> > @@ -248,6 +248,12 @@ int pkcs7_sig_note_digest_algo(void *context, size=
-_t hdrlen,
-> >   	case OID_sha224:
-> >   		ctx->sinfo->sig->hash_algo =3D "sha224";
-> >   		break;
-> > +	case OID_gost2012Digest256:
-> > +		ctx->sinfo->sig->hash_algo =3D "streebog256";
-> > +		break;
-> > +	case OID_gost2012Digest512:
-> > +		ctx->sinfo->sig->hash_algo =3D "streebog512";
-> > +		break;
-> >   	default:
-> >   		printk("Unsupported digest algo: %u\n", ctx->last_oid);
-> >   		return -ENOPKG;
-> > @@ -269,6 +275,11 @@ int pkcs7_sig_note_pkey_algo(void *context, size_t=
- hdrlen,
-> >   		ctx->sinfo->sig->pkey_algo =3D "rsa";
-> >   		ctx->sinfo->sig->encoding =3D "pkcs1";
-> >   		break;
-> > +	case OID_gost2012PKey256:
-> > +	case OID_gost2012PKey512:
-> > +		ctx->sinfo->sig->pkey_algo =3D "ecrdsa";
-> > +		ctx->sinfo->sig->encoding =3D "raw";
-> > +		break;
-> >   	default:
-> >   		printk("Unsupported pkey algo: %u\n", ctx->last_oid);
-> >   		return -ENOPKG;
-> >=20
+On 09:47 13.09.21, Ahmad Fatoum wrote:
+> Dear trusted key maintainers,
+> 
+> On 30.07.21 03:28, Andreas Rammhold wrote:
+> > Before this commit the kernel could end up with no trusted key sources
+> > even though both of the currently supported backends (TPM and TEE) were
+> > compiled as modules. This manifested in the trusted key type not being
+> > registered at all.
+> > 
+> > When checking if a CONFIG_… preprocessor variable is defined we only
+> > test for the builtin (=y) case and not the module (=m) case. By using
+> > the IS_REACHABLE() macro we do test for both cases.
+> > 
+> > Fixes: 5d0682be3189 ("KEYS: trusted: Add generic trusted keys framework")
+> > Signed-off-by: Andreas Rammhold <andreas@rammhold.de>
+> > Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+> Does anyone intend to pick this up?
 
-Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+Did this end up in any tree by now? I am wondering if I should resend
+the patch instead. Perhaps it was just overlooked?
 
-/Jarkko
 
+Andi
