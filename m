@@ -2,83 +2,69 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AE40AC433F5
-	for <keyrings@archiver.kernel.org>; Mon, 11 Oct 2021 10:19:27 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 02832C433F5
+	for <keyrings@archiver.kernel.org>; Tue, 12 Oct 2021 15:22:02 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 96FCF61054
-	for <keyrings@archiver.kernel.org>; Mon, 11 Oct 2021 10:19:27 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id D598860EBB
+	for <keyrings@archiver.kernel.org>; Tue, 12 Oct 2021 15:22:01 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S235854AbhJKKV0 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 11 Oct 2021 06:21:26 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42976 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235850AbhJKKVY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 11 Oct 2021 06:21:24 -0400
-Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CA582C06161C
-        for <keyrings@vger.kernel.org>; Mon, 11 Oct 2021 03:19:24 -0700 (PDT)
-Received: from gallifrey.ext.pengutronix.de ([2001:67c:670:201:5054:ff:fe8d:eefb] helo=[IPv6:::1])
-        by metis.ext.pengutronix.de with esmtp (Exim 4.92)
-        (envelope-from <a.fatoum@pengutronix.de>)
-        id 1mZsOv-0000l7-F2; Mon, 11 Oct 2021 12:19:21 +0200
-Subject: Re: [PATCH v3] KEYS: trusted: Fix trusted key backends when building
- as module
-To:     Andreas Rammhold <andreas@rammhold.de>,
+        id S233270AbhJLPYC (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 12 Oct 2021 11:24:02 -0400
+Received: from mail.kernel.org ([198.145.29.99]:53246 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S229633AbhJLPYB (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Tue, 12 Oct 2021 11:24:01 -0400
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 7E13A60E97;
+        Tue, 12 Oct 2021 15:21:59 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1634052120;
+        bh=7kLs+anK8k4vNTJePwcFay1rHFEUNiKPKTkIEwb7lwg=;
+        h=Subject:From:To:Date:In-Reply-To:References:From;
+        b=Lh/U8KEpnd0AV4fQ2vdTWljX2AdZEDVW+cizGOOUT3kljayrHoKbQNSQY5U0rtFQ0
+         EVlWZirNeLCQNlTVHGqzBygB3+VrjFQ2aAozexudpy+UIysKF2cEA2Y+nqg4syafOZ
+         vdhRPoXJ37fmo2FtHGD2ChP3tzIoO3TFEYOTSeqVre1o0Kf9J45LdOf6UwntHu/CzK
+         9ELsfgEd6iPBuGBR+WKqVmoy6MSHcDWe2qPK7pr/8w0Jx+iU+yHuKmjG65R3v6PB6J
+         0nKuoNUZSbluZxxUDX1uihmCchN4jku4K0uu0MYbYItJyl8M2w9FUNr7j2b2SOQtDy
+         7zStw67Xf4C2Q==
+Message-ID: <c6c2337ed83c237f70716cb4c62794d1d3da31f2.camel@kernel.org>
+Subject: Re: [PATCH 2/2] tpm: use SM3 instead of SM3_256
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Tianjia Zhang <tianjia.zhang@linux.alibaba.com>,
+        James Bottomley <jejb@linux.ibm.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Jason Gunthorpe <jgg@ziepe.ca>,
         David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        James Bottomley <jejb@linux.ibm.com>
-Cc:     James Morris <jmorris@namei.org>,
+        James Morris <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        Sumit Garg <sumit.garg@linaro.org>,
+        Jerry Snitselaar <jsnitsel@redhat.com>,
         linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20210730012822.3460913-1-andreas@rammhold.de>
- <0d42a11a-0117-49a9-d2c9-bc6cc405235d@pengutronix.de>
- <20210927085104.vq42feghtaqiv6ni@wrt>
- <856359f263575f01d0ce2fcf8f042321f750b38c.camel@linux.ibm.com>
- <20210927200835.wvazk73cek3t5tkf@wrt>
- <2ad2c536367028ef6d9300745586a123cb13d9f1.camel@linux.ibm.com>
- <20210927205521.7c4psu4vz5eoyfnf@wrt>
- <81602197662f3e6d032103bd1ac3690342544b7e.camel@linux.ibm.com>
- <20211002214725.fqmtbfjwtlom745c@wrt>
-From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
-Message-ID: <db5ea3c2-42df-420b-6813-f6ef2c30df6f@pengutronix.de>
-Date:   Mon, 11 Oct 2021 12:19:19 +0200
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
- Thunderbird/78.13.0
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
+Date:   Tue, 12 Oct 2021 18:21:57 +0300
+In-Reply-To: <20211009130828.101396-3-tianjia.zhang@linux.alibaba.com>
+References: <20211009130828.101396-1-tianjia.zhang@linux.alibaba.com>
+         <20211009130828.101396-3-tianjia.zhang@linux.alibaba.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.40.0-1 
 MIME-Version: 1.0
-In-Reply-To: <20211002214725.fqmtbfjwtlom745c@wrt>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:201:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: a.fatoum@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hello Mimi, David, Jarkko and James,
+On Sat, 2021-10-09 at 21:08 +0800, Tianjia Zhang wrote:
+> According to https://tools.ietf.org/id/draft-oscca-cfrg-sm3-01.html,
+> SM3 always produces a 256-bit hash value and there are no plans for
+> other length development, so there is no ambiguity in the name of sm3.
+>=20
+> Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
 
-On 02.10.21 23:47, Andreas Rammhold wrote:
->> My mistake.  Trusted and encrypted key types have always been defined
->> as tristate.  Only when EVM selects encrypted keys, and by extension
->> trusted keys, are they builtin.
-> 
-> So how do we go about this patch? Building the TPM support as module has
-> broken actually using the trusted backend. This patch fixes that while
-> still allowing it to be a builtin. If there is some configuration there
-> a module isn't acceptable I am sure that is handled within Kconfig?
-Can anyone of you four pick this up? Andreas' regression fix has
-had Jarkko's Reviewed-by for close to two months and a half now.
+This is not enough to make any changes because the commit message
+does not describe what goes wrong if we keep it as it was.
 
-Thanks,
-Ahmad
+/Jarkko
 
--- 
-Pengutronix e.K.                           |                             |
-Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
-31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
