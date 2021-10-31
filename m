@@ -2,130 +2,95 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D8275C433F5
-	for <keyrings@archiver.kernel.org>; Thu, 28 Oct 2021 13:08:23 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1A3F6C433EF
+	for <keyrings@archiver.kernel.org>; Sun, 31 Oct 2021 22:30:06 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id BD73B60E8F
-	for <keyrings@archiver.kernel.org>; Thu, 28 Oct 2021 13:08:23 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id DB0E260E9C
+	for <keyrings@archiver.kernel.org>; Sun, 31 Oct 2021 22:30:05 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230185AbhJ1NKt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 28 Oct 2021 09:10:49 -0400
-Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:59274 "EHLO
-        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S229603AbhJ1NKt (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 28 Oct 2021 09:10:49 -0400
-Received: from pps.filterd (m0098410.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 19SCnGYv016294;
-        Thu, 28 Oct 2021 13:08:12 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
- from : reply-to : to : cc : date : in-reply-to : references : content-type
- : content-transfer-encoding : mime-version; s=pp1;
- bh=8fiPYKyw0EhWbEal4tnK6baVTfmvbJ8ImkJJsxDI9cM=;
- b=W8DVNNVEqayOpJIMfqMvblEkGSgR3F9Bg8XTzVObqD/Bdjgxn7H/I+MFqCROVRWtayZ/
- iM90MsGJlPf+JhYpQlB04dyDsz9+Oefjc1L8vtmqdI0ld+v7Y7AP/4okzJvyCjj0s707
- AONemM+DNsD3rBdhE+uOc16Bk5qenX4tS3XsKwYwjopXf4tRHFiJY2OiQ2mLOdpClf31
- b2JvOneB3BE3TVbRKhWsSHNVhV46Jq2tHcBhQPlELIO3yO3Tn1zsF0tz3g9xks5pLCSB
- jMbmDfCLMWUHm4zAVxE0M1683kIkgDxY7K2JL4Yq7kiTUjXv4v3/0sfivlze8MZHTvzb Og== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3byv6r0ebr-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 28 Oct 2021 13:08:11 +0000
-Received: from m0098410.ppops.net (m0098410.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 19SCnaA6016537;
-        Thu, 28 Oct 2021 13:08:11 GMT
-Received: from ppma03dal.us.ibm.com (b.bd.3ea9.ip4.static.sl-reverse.com [169.62.189.11])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3byv6r0eb1-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 28 Oct 2021 13:08:10 +0000
-Received: from pps.filterd (ppma03dal.us.ibm.com [127.0.0.1])
-        by ppma03dal.us.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 19SCvNEW020620;
-        Thu, 28 Oct 2021 13:08:09 GMT
-Received: from b03cxnp07029.gho.boulder.ibm.com (b03cxnp07029.gho.boulder.ibm.com [9.17.130.16])
-        by ppma03dal.us.ibm.com with ESMTP id 3bx4fn598y-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 28 Oct 2021 13:08:09 +0000
-Received: from b03ledav004.gho.boulder.ibm.com (b03ledav004.gho.boulder.ibm.com [9.17.130.235])
-        by b03cxnp07029.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 19SD88Pd24183174
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Thu, 28 Oct 2021 13:08:08 GMT
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 88DC378240;
-        Thu, 28 Oct 2021 13:08:07 +0000 (GMT)
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 3233D7807C;
-        Thu, 28 Oct 2021 13:07:46 +0000 (GMT)
-Received: from jarvis.int.hansenpartnership.com (unknown [9.163.12.226])
-        by b03ledav004.gho.boulder.ibm.com (Postfix) with ESMTP;
-        Thu, 28 Oct 2021 13:07:45 +0000 (GMT)
-Message-ID: <ff3d1d11291b7e115317b06503f0ec52949122ca.camel@linux.ibm.com>
-Subject: Re: [PATCH v3 0/2] use SM3 instead of SM3_256
-From:   James Bottomley <jejb@linux.ibm.com>
-Reply-To: jejb@linux.ibm.com
-To:     Ard Biesheuvel <ardb@kernel.org>,
-        Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Cc:     Jarkko Sakkinen <jarkko@kernel.org>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Jason Gunthorpe <jgg@ziepe.ca>,
-        David Howells <dhowells@redhat.com>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Jerry Snitselaar <jsnitsel@redhat.com>,
-        linux-integrity <linux-integrity@vger.kernel.org>,
-        keyrings@vger.kernel.org,
-        Linux Doc Mailing List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Date:   Thu, 28 Oct 2021 09:07:43 -0400
-In-Reply-To: <CAMj1kXGiC-LCc-50cfddJxJ-mezO=fcLqhJHiK110CgxKusy9w@mail.gmail.com>
-References: <20211026075626.61975-1-tianjia.zhang@linux.alibaba.com>
-         <CAMj1kXGiC-LCc-50cfddJxJ-mezO=fcLqhJHiK110CgxKusy9w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-User-Agent: Evolution 3.34.4 
-X-TM-AS-GCONF: 00
-X-Proofpoint-ORIG-GUID: KOLHtfetbXM2M_5ECkPDVsAXdzorivCz
-X-Proofpoint-GUID: ThYkNwItNh-c7SaFT-nOwuL1brdOArJ_
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-UnRewURL: 0 URL was un-rewritten
+        id S230098AbhJaWch (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 31 Oct 2021 18:32:37 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41562 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S230025AbhJaWch (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 31 Oct 2021 18:32:37 -0400
+Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CE8FEC061714;
+        Sun, 31 Oct 2021 15:30:04 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
+        Content-Type:In-Reply-To:MIME-Version:Date:Message-ID:From:References:Cc:To:
+        Subject:Sender:Reply-To:Content-ID:Content-Description;
+        bh=BxpB33/UYztYD2qwFHBciLJVh+wt0BVXxu7eaiDjGSU=; b=i/V6FAbnUCJVHJFXOofkn/GgYH
+        sjG//+Z1TgwvQjG7Mcj90yJvOVXf+bEhbccx6tYrHEvB7MiiOgR6GZM6DnosZt9Co0rVfvEncbttK
+        mGYmZvj/RhoxmBlkjtogKhKlK1OQrXXKyFIcoI1FmVpvS2AKsbMgZzDVwvQHMoMu0wqPDPWSVP/H0
+        3UDZZqOZLT/JpWjMJWyJDRrUfKhVZYbtnG0Xm2tB5J80PV/w2R+Dy0djSg9ViOBcfd0TXk0E/8RzO
+        Dp/co8dmYmb5vUmcf8sOc+aPcSa0LobrHnXJ9oB6XvCCdcXWIgjjCG9dLKRLHW3IHhfQPIx2gdsZp
+        A+RWVq8Q==;
+Received: from [2601:1c0:6280:3f0::aa0b]
+        by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1mhJL1-00Ep3S-Ly; Sun, 31 Oct 2021 22:30:03 +0000
+Subject: Re: [PATCH] certs: system_keyring.c: clean up kernel-doc
+To:     Mimi Zohar <zohar@linux.ibm.com>, linux-kernel@vger.kernel.org
+Cc:     David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+References: <20211025003813.5164-1-rdunlap@infradead.org>
+ <2ed333a24e8a3009acd4ef406ff8c2c39e95e2cf.camel@linux.ibm.com>
+From:   Randy Dunlap <rdunlap@infradead.org>
+Message-ID: <b7936a1c-6f7a-f7ed-6d46-a5affef770a5@infradead.org>
+Date:   Sun, 31 Oct 2021 15:30:03 -0700
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
+ Thunderbird/78.13.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.182.1,Aquarius:18.0.790,Hydra:6.0.425,FMLib:17.0.607.475
- definitions=2021-10-28_01,2021-10-26_01,2020-04-07_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 impostorscore=0
- malwarescore=0 adultscore=0 mlxscore=0 suspectscore=0 clxscore=1015
- phishscore=0 bulkscore=0 mlxlogscore=999 priorityscore=1501 spamscore=0
- lowpriorityscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2110150000 definitions=main-2110280073
+In-Reply-To: <2ed333a24e8a3009acd4ef406ff8c2c39e95e2cf.camel@linux.ibm.com>
+Content-Type: text/plain; charset=iso-8859-15; format=flowed
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, 2021-10-26 at 18:08 +0200, Ard Biesheuvel wrote:
-> On Tue, 26 Oct 2021 at 09:56, Tianjia Zhang
-> <tianjia.zhang@linux.alibaba.com> wrote:
-> > According to https://tools.ietf.org/id/draft-oscca-cfrg-sm3-01.html
-> > ,
-> > SM3 always produces a 256-bit hash value and there are no plans for
-> > other length development, so there is no ambiguity in the name of
-> > sm3.
-> > 
+On 10/27/21 5:12 PM, Mimi Zohar wrote:
+> Hi Randy,
 > 
-> What is the point of these changes? Having '256' in the identifiers
-> is merely redundant and not factually incorrect, so why can't we just
-> leave these as they are?
+> On Sun, 2021-10-24 at 17:38 -0700, Randy Dunlap wrote:
+>> Fix some kernel-doc warnings in system_keyring.c:
+>>
+>> system_keyring.c:43: warning: expecting prototype for restrict_link_to_builtin_trusted(). Prototype was for restrict_link_by_builtin_trusted() instead
+>> system_keyring.c:77: warning: This comment starts with '/**', but isn't a kernel-doc comment. Refer Documentation/doc-guide/kernel-doc.rst
+>>   * Allocate a struct key_restriction for the "builtin and secondary trust"
+>> system_keyring.c:77: warning: missing initial short description on line:
+>>   * Allocate a struct key_restriction for the "builtin and secondary trust"
+>>
+>> Fix the warnings above and then see & fix these:
+>>
+>> system_keyring.c:43: warning: No description found for return value of 'restrict_link_by_builtin_trusted'
+>> system_keyring.c:62: warning: No description found for return value of 'restrict_link_by_builtin_and_secondary_trusted'
+>> system_keyring.c:190: warning: No description found for return value of 'verify_pkcs7_message_sig'
+>> system_keyring.c:275: warning: No description found for return value of 'verify_pkcs7_signature'
+>>
+>> This still leaves non-exported two functions that do not have their
+>> functions parameters documented: restrict_link_by_builtin_trusted() and
+>> restrict_link_by_builtin_and_secondary_trusted().
+>>
+>> Use '%' preceding constants in kernel-doc notation.
+>>
+>> Use "builtin" consistently instead of "built in" or "built-in".
+>>
+>> Don't use "/**" to begin a comment that is not in kernel-doc format.
+>>
+>> Document the use of VERIFY_USE_SECONDARY_KEYRING and
+>> VERIFY_USE_PLATFORM_KEYRING.
+>>
+> 
+> Thanks, Randy.  Even after these changes there are additional kernel
+> doc warnings.   Missing are the parameter definitions for
+> restrict_link_by_builtin_trusted() and
+> restrict_link_by_builtin_and_secondary_trusted().   The first three are
+> exactly the same as for restrict_link_by_signature().  The fourth parm
+> needs to be tweaked.
 
-Me too on this.  Plus the various standards bodies we follow are still
-using the 256 suffix and it's not clear they'll change.
+Ah, thanks for the info. I'll update the patch...
 
-Finally, I'm not sure, given the confusion over sha256 and sha3-256,
-that the IETF won't eventually decide that all hash algorithms should
-be designated by <algorithm>-<bitlength> in which case this will get
-churned again ...
-
-James
-
-
+-- 
+~Randy
