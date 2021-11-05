@@ -2,146 +2,134 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DFFFDC433EF
-	for <keyrings@archiver.kernel.org>; Thu,  4 Nov 2021 15:22:42 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B5045C433EF
+	for <keyrings@archiver.kernel.org>; Fri,  5 Nov 2021 04:02:23 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id C2E28611F2
-	for <keyrings@archiver.kernel.org>; Thu,  4 Nov 2021 15:22:42 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 923B8611C0
+	for <keyrings@archiver.kernel.org>; Fri,  5 Nov 2021 04:02:23 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231325AbhKDPZU (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 4 Nov 2021 11:25:20 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55930 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231265AbhKDPZT (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 4 Nov 2021 11:25:19 -0400
-Received: from mail.kapsi.fi (mail.kapsi.fi [IPv6:2001:67c:1be8::25])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 88097C061714
-        for <keyrings@vger.kernel.org>; Thu,  4 Nov 2021 08:22:41 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=kapsi.fi;
-         s=20161220; h=MIME-Version:Content-Transfer-Encoding:Content-Type:References
-        :In-Reply-To:Date:Cc:To:From:Subject:Message-ID:Sender:Reply-To:Content-ID:
-        Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
-        :Resent-Message-ID:List-Id:List-Help:List-Unsubscribe:List-Subscribe:
-        List-Post:List-Owner:List-Archive;
-        bh=v1zn/WofemxXZMMynb/1kFY8V904aqdP0hiMtC2sQDY=; b=Jedys6uQYvYluoicAGjC/xqMNp
-        di0/99zCscJurdQGmldTtDAg+UKaQsIQRdODHo5Ot3PbvM74Bs8CfdQvzaEdBGCm0j5olDL69hNRh
-        mz7gz609PLjKLpHY48QS1/3W9MgEX2pT8yHdhYrIdFtmoNCl4a1cK9RNGBO22sVfoNtEjVVRUpCUd
-        /Qe28OqRviq9MF16fYvR2cN/mvwDZGwlnwC6lr5ldxd66sBaY0mU6BfRfoj95b2PzbiUUMy6AqVGa
-        6yMexKS4i7KssKX5vkuRmFZLryjt04NBQfTi8/hBL4y4C0ftZxIz0RURCNwOExCnE45LAFRJy9EYO
-        eQ6MxgEg==;
-Received: from 91-152-16-26.elisa-laajakaista.fi ([91.152.16.26] helo=localhost)
-        by mail.kapsi.fi with esmtpsa (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
-        (Exim 4.89)
-        (envelope-from <jarkko.sakkinen@iki.fi>)
-        id 1mieZS-0006IQ-Q4; Thu, 04 Nov 2021 17:22:30 +0200
-Message-ID: <18d15248251412c5c56e75358875ace4e91e219b.camel@iki.fi>
-Subject: Re: [RESEND][PATCH] keys: X.509 public key issuer lookup without
- AKID
-From:   Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
-To:     David Howells <dhowells@redhat.com>,
-        Andrew Zaborowski <andrew.zaborowski@intel.com>
-Cc:     keyrings@vger.kernel.org
-Date:   Thu, 04 Nov 2021 17:22:30 +0200
-In-Reply-To: <1724749.1636034601@warthog.procyon.org.uk>
-References: <20211019075935.74627-1-andrew.zaborowski@intel.com>
-         <1724749.1636034601@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-User-Agent: Evolution 3.40.4-1 
+        id S229481AbhKEEFB (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 5 Nov 2021 00:05:01 -0400
+Received: from condef-08.nifty.com ([202.248.20.73]:31046 "EHLO
+        condef-08.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S229470AbhKEEFB (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 5 Nov 2021 00:05:01 -0400
+Received: from conuserg-08.nifty.com ([10.126.8.71])by condef-08.nifty.com with ESMTP id 1A540g2B014494
+        for <keyrings@vger.kernel.org>; Fri, 5 Nov 2021 13:01:00 +0900
+Received: from grover.. (133-32-232-101.west.xps.vectant.ne.jp [133.32.232.101]) (authenticated)
+        by conuserg-08.nifty.com with ESMTP id 1A5403LR022540;
+        Fri, 5 Nov 2021 13:00:05 +0900
+DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-08.nifty.com 1A5403LR022540
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
+        s=dec2015msa; t=1636084805;
+        bh=EPDtRPV2+xH9RWj1xZYWenqqZGDd4nEA5G4pvBvsUB0=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=sT0YkNOglsncCLPqLtafFuBl+1IGVXOaf3w2FmjLCnR834e+5PXK/ofKEbaCLP1Ne
+         lUvZFsVn9fjRIS0p5UFcuAgGAk6qAIuqH2RFaEIKRNP4dD04wnH6fMVonUZL2os6We
+         vAKWKgHv3Fnq+CbcvbvvOSACLYDj1NHf0krZwv8Ioqb6F/qdSHVrB2gAumIIeIZur2
+         30+cld5q8KY7Y2cmZGoy0NKZaJviLt0NgDpFlAw7/lr1L764U2PrNURQ5VRPZyGs62
+         uDgfGM9XIkf88y5e/rQdOOfJx7jbnDhauulhAt+pNR4tk5YZ3/0TEbjbpuyisHMWcE
+         mEYvexfW02+rg==
+X-Nifty-SrcIP: [133.32.232.101]
+From:   Masahiro Yamada <masahiroy@kernel.org>
+To:     Jarkko Sakkinen <jarkko@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+Cc:     Arnd Bergmann <arnd@arndb.de>,
+        Masahiro Yamada <masahiroy@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] certs: check-in the default x509 config file
+Date:   Fri,  5 Nov 2021 12:59:55 +0900
+Message-Id: <20211105035959.93748-3-masahiroy@kernel.org>
+X-Mailer: git-send-email 2.30.2
+In-Reply-To: <20211105035959.93748-1-masahiroy@kernel.org>
+References: <20211105035959.93748-1-masahiroy@kernel.org>
 MIME-Version: 1.0
-X-SA-Exim-Connect-IP: 91.152.16.26
-X-SA-Exim-Mail-From: jarkko.sakkinen@iki.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, 2021-11-04 at 14:03 +0000, David Howells wrote:
-> Andrew Zaborowski <andrew.zaborowski@intel.com> wrote:
->=20
-> > There are non-root X.509 v3 certificates in use out there that contain
-> > no Authority Key Identifier extension (RFC5280 section 4.2.1.1).=C2=A0 =
-For
-> > trust verification purposes the kernel asymmetric key type keeps two
-> > struct asymmetric_key_id instances that the key can be looked up by,
-> > and another two to look up the key's issuer.=C2=A0 The x509 public key =
-type
-> > and the PKCS7 type generate them from the SKID and AKID extensions in
-> > the certificate.=C2=A0 In effect current code has no way to look up the
-> > issuer certificate for verification without the AKID.
-> >=20
-> > To remedy this, add a third asymmetric_key_id blob to the arrays in
-> > both asymmetric_key_id's (for certficate subject) and in the
-> > public_keys_signature's auth_ids (for issuer lookup), using just raw
-> > subject and issuer DNs from the certificate.=C2=A0 Adapt
-> > asymmetric_key_ids() and its callers to use the third ID for lookups
-> > when none of the other two are available.=C2=A0 Attempt to keep the log=
-ic
-> > intact when they are, to minimise behaviour changes.=C2=A0 Adapt the
-> > restrict functions' NULL-checks to include that ID too.=C2=A0 Do not mo=
-dify
-> > the lookup logic in pkcs7_verify.c, the AKID extensions are still
-> > required there.
-> >=20
-> > Internally use a new "dn:" prefix to the search specifier string
-> > generated for the key lookup in find_asymmetric_key().=C2=A0 This tells
-> > asymmetric_key_match_preparse to only match the data against the raw
-> > DN in the third ID and shouldn't conflict with search specifiers
-> > already in use.
-> >=20
-> > In effect implement what (2) in the struct asymmetric_key_id comment
-> > (include/keys/asymmetric-type.h) is probably talking about already, so
-> > do not modify that comment.=C2=A0 It is also how "openssl verify" looks=
- up
-> > issuer certificates without the AKID available.=C2=A0 Lookups by the ra=
-w
-> > DN are unambiguous only provided that the CAs respect the condition in
-> > RFC5280 4.2.1.1 that the AKID may only be omitted if the CA uses
-> > a single signing key.
-> >=20
-> > The following is an example of two things that this change enables.
-> > A self-signed ceritficate is generated following the example from
-> > https://letsencrypt.org/docs/certificates-for-localhost/, and can be
-> > looked up by an identifier and verified against itself by linking to a
-> > restricted keyring -- both things not possible before due to the missin=
-g
-> > AKID extension:
-> >=20
-> > $ openssl req -x509 -out localhost.crt -outform DER -keyout localhost.k=
-ey \
-> > =C2=A0 -newkey rsa:2048 -nodes -sha256 \
-> > =C2=A0 -subj '/CN=3Dlocalhost' -extensions EXT -config <( \
-> > =C2=A0=C2=A0 echo -e "[dn]\nCN=3Dlocalhost\n[req]\ndistinguished_name =
-=3D dn\n[EXT]\n" \
-> > =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 "subjectAltName=
-=3DDNS:localhost\nkeyUsage=3DdigitalSignature\n" \
-> > =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 "extendedKeyUsag=
-e=3DserverAuth")
-> > $ keyring=3D`keyctl newring test @u`
-> > $ trusted=3D`keyctl padd asymmetric trusted $keyring < localhost.crt`; =
-\
-> > =C2=A0 echo $trusted
-> > 39726322
-> > $ keyctl search $keyring asymmetric dn:3112301006035504030c096c6f63616c=
-686f7374
-> > 39726322
-> > $ keyctl restrict_keyring $keyring asymmetric key_or_keyring:$trusted
-> > $ keyctl padd asymmetric verified $keyring < localhost.crt
-> >=20
-> > Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
-> > Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
-> > ...
-> > +=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=
-=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 * 3rd=
- are the fallbacks. If excatly one of
->=20
-> "exactly".
->=20
-> But, apart from that:
->=20
-> Acked-by: David Howells <dhowells@redhat.com>
+When x509.genkey is created, it prints a log:
 
-Thanks, I'll pick this up for my rc2 PR for v5.16.
+  Generating X.509 key generation config
 
-/Jarkko
+..., which is not the ordinary Kbuild log style.
+
+Check-in the default config as certs/default_x509.genkey to make it
+readable, and copy it to certs/x509.genkey if it is not present.
+
+The log is shown in the Kbuild style.
+
+  COPY    certs/x509.genkey
+
+Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
+---
+
+ certs/Makefile            | 24 ++++++------------------
+ certs/default_x509.genkey | 17 +++++++++++++++++
+ 2 files changed, 23 insertions(+), 18 deletions(-)
+ create mode 100644 certs/default_x509.genkey
+
+diff --git a/certs/Makefile b/certs/Makefile
+index db1fd2f4b950..fc94a260e3f3 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -98,25 +98,13 @@ $(obj)/signing_key.pem: $(obj)/x509.genkey
+ 	@$(kecho) "### Key pair generated."
+ 	@$(kecho) "###"
+ 
++quiet_cmd_copy_x509_config = COPY    $@
++      cmd_copy_x509_config = cat $(srctree)/$(src)/default_x509.genkey > $@
++
++# You can provide your own config file. If not present, copy the default one.
+ $(obj)/x509.genkey:
+-	@$(kecho) Generating X.509 key generation config
+-	@echo  >$@ "[ req ]"
+-	@echo >>$@ "default_bits = 4096"
+-	@echo >>$@ "distinguished_name = req_distinguished_name"
+-	@echo >>$@ "prompt = no"
+-	@echo >>$@ "string_mask = utf8only"
+-	@echo >>$@ "x509_extensions = myexts"
+-	@echo >>$@
+-	@echo >>$@ "[ req_distinguished_name ]"
+-	@echo >>$@ "#O = Unspecified company"
+-	@echo >>$@ "CN = Build time autogenerated kernel key"
+-	@echo >>$@ "#emailAddress = unspecified.user@unspecified.company"
+-	@echo >>$@
+-	@echo >>$@ "[ myexts ]"
+-	@echo >>$@ "basicConstraints=critical,CA:FALSE"
+-	@echo >>$@ "keyUsage=digitalSignature"
+-	@echo >>$@ "subjectKeyIdentifier=hash"
+-	@echo >>$@ "authorityKeyIdentifier=keyid"
++	$(call cmd,copy_x509_config)
++
+ endif # CONFIG_MODULE_SIG_KEY
+ 
+ $(eval $(call config_filename,MODULE_SIG_KEY))
+diff --git a/certs/default_x509.genkey b/certs/default_x509.genkey
+new file mode 100644
+index 000000000000..d4c6628cb8e5
+--- /dev/null
++++ b/certs/default_x509.genkey
+@@ -0,0 +1,17 @@
++[ req ]
++default_bits = 4096
++distinguished_name = req_distinguished_name
++prompt = no
++string_mask = utf8only
++x509_extensions = myexts
++
++[ req_distinguished_name ]
++#O = Unspecified company
++CN = Build time autogenerated kernel key
++#emailAddress = unspecified.user@unspecified.company
++
++[ myexts ]
++basicConstraints=critical,CA:FALSE
++keyUsage=digitalSignature
++subjectKeyIdentifier=hash
++authorityKeyIdentifier=keyid
+-- 
+2.30.2
 
