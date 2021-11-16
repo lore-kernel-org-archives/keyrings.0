@@ -2,158 +2,197 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 255B8C433EF
-	for <keyrings@archiver.kernel.org>; Tue, 16 Nov 2021 09:53:49 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A5EEFC433F5
+	for <keyrings@archiver.kernel.org>; Tue, 16 Nov 2021 16:00:40 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id F17FA6187F
-	for <keyrings@archiver.kernel.org>; Tue, 16 Nov 2021 09:53:48 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 89C9F61A56
+	for <keyrings@archiver.kernel.org>; Tue, 16 Nov 2021 16:00:40 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233634AbhKPJ4o (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 16 Nov 2021 04:56:44 -0500
-Received: from smtp-out2.suse.de ([195.135.220.29]:50304 "EHLO
-        smtp-out2.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S233581AbhKPJ4m (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 16 Nov 2021 04:56:42 -0500
-Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-        by smtp-out2.suse.de (Postfix) with ESMTP id 16C571FCA1;
-        Tue, 16 Nov 2021 09:53:45 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1637056425; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=azHxUlp7eftIgl7ApLEwnDINMXn9JJLFBwD7Z57SAgQ=;
-        b=Q2m9wr07PDaEXaud0/LtukS0HCwwywTfPMF0rKllod/N64xbz2mpm6MDl2P5NTwEY0twUZ
-        O6vEjSh3IjY9J7OppM4ctzYjpzqQ/LXprPEEFIVuj5R+WqD9OFOSaoSEQcWhmA2YYpG0AS
-        unJWKSgUOm8wiglA4ByVaucdi/2DyYk=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1637056425;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=azHxUlp7eftIgl7ApLEwnDINMXn9JJLFBwD7Z57SAgQ=;
-        b=KINLNJfebQBbmgPSqWqudrOsi4+MVXUUF/ABJA+deXpmn4oOVvs4jUuzBW74ioBB3MOxjJ
-        6adSRb/kSbPBf3DA==
-Received: from kunlun.suse.cz (unknown [10.100.128.76])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by relay2.suse.de (Postfix) with ESMTPS id D42A4A3B83;
-        Tue, 16 Nov 2021 09:53:44 +0000 (UTC)
-Date:   Tue, 16 Nov 2021 10:53:43 +0100
-From:   Michal =?iso-8859-1?Q?Such=E1nek?= <msuchanek@suse.de>
-To:     Nayna <nayna@linux.vnet.ibm.com>
-Cc:     Mimi Zohar <zohar@linux.ibm.com>, keyrings@vger.kernel.org,
-        Rob Herring <robh@kernel.org>, linux-s390@vger.kernel.org,
-        Vasily Gorbik <gor@linux.ibm.com>,
-        Lakshmi Ramasubramanian <nramas@linux.microsoft.com>,
-        Heiko Carstens <hca@linux.ibm.com>,
-        Jessica Yu <jeyu@kernel.org>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Luis Chamberlain <mcgrof@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Hari Bathini <hbathini@linux.ibm.com>,
-        Alexander Gordeev <agordeev@linux.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        Frank van der Linden <fllinden@amazon.com>,
-        Thiago Jung Bauermann <bauerman@linux.ibm.com>,
-        Daniel Axtens <dja@axtens.net>, buendgen@de.ibm.com
-Subject: Re: [PATCH 0/3] KEXEC_SIG with appended signature
-Message-ID: <20211116095343.GG34414@kunlun.suse.cz>
-References: <cover.1635948742.git.msuchanek@suse.de>
- <87czneeurr.fsf@dja-thinkpad.axtens.net>
- <20211105131401.GL11195@kunlun.suse.cz>
- <87a6ifehin.fsf@dja-thinkpad.axtens.net>
- <20211108120500.GO11195@kunlun.suse.cz>
- <56d2ae87-b9bf-c9fc-1395-db4769a424ea@linux.vnet.ibm.com>
- <20211112083055.GA34414@kunlun.suse.cz>
- <8cd90fea-05c9-b5f9-5e0c-84f98b2f55cd@linux.vnet.ibm.com>
+        id S238720AbhKPQDe (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 16 Nov 2021 11:03:34 -0500
+Received: from mail.kernel.org ([198.145.29.99]:60600 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S238619AbhKPQDd (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Tue, 16 Nov 2021 11:03:33 -0500
+Received: by mail.kernel.org (Postfix) with ESMTPSA id F3FFA61C12;
+        Tue, 16 Nov 2021 16:00:35 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1637078436;
+        bh=JwxnYwbgjPGa5I2tARYbozTLXPfvt8vxbd7WNU9JvRA=;
+        h=Subject:From:To:Cc:Date:In-Reply-To:References:From;
+        b=JHqr3wSXUs6/2LCB1i0BwUkEOuft8NUX2nn7LbdnN4RlbtrNAxVbkvnGGuWYDEHaj
+         g+l8IXd4nWozKS4ef3PI7UaSErC/GWw4eQ+I0lrmgayG6SJogWxn34dtnveij05Yw2
+         4mmnn6RLNJx6e/VAkFlN7yaIO7xYcKSgGSEi2+9kplKBoSZ928HsHJP0Sqm4arfD3t
+         /e7854T6dbsJd9ghvbJegay0Uhyp4fVgz4rF/efpAaxTgu7X71UanxgwgyOZY29UJJ
+         CzD6dqtEtonOIzvgCzaqKT5Mf0m2DSZ5v7JepbTROJHvcgncd8HYRVdCPNVjqAZzZO
+         VE/H0jUXQRlqA==
+Message-ID: <eac5f11d7ddcc65d16a9a949c5cf44851bff8f5f.camel@kernel.org>
+Subject: Re: [PATCH v7 00/17] Enroll kernel keys thru MOK
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Eric Snowberg <eric.snowberg@oracle.com>, keyrings@vger.kernel.org,
+        linux-integrity@vger.kernel.org, zohar@linux.ibm.com,
+        dhowells@redhat.com, dwmw2@infradead.org,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        jmorris@namei.org, serge@hallyn.com
+Cc:     keescook@chromium.org, torvalds@linux-foundation.org,
+        weiyongjun1@huawei.com, nayna@linux.ibm.com, ebiggers@google.com,
+        ardb@kernel.org, nramas@linux.microsoft.com, lszubowi@redhat.com,
+        jason@zx2c4.com, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        James.Bottomley@HansenPartnership.com, pjones@redhat.com,
+        konrad.wilk@oracle.com
+Date:   Tue, 16 Nov 2021 18:00:34 +0200
+In-Reply-To: <20211116001545.2639333-1-eric.snowberg@oracle.com>
+References: <20211116001545.2639333-1-eric.snowberg@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.40.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <8cd90fea-05c9-b5f9-5e0c-84f98b2f55cd@linux.vnet.ibm.com>
-User-Agent: Mutt/1.10.1 (2018-07-13)
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, Nov 15, 2021 at 06:53:53PM -0500, Nayna wrote:
-> 
-> On 11/12/21 03:30, Michal Suchánek wrote:
-> > Hello,
-> > 
-> > On Thu, Nov 11, 2021 at 05:26:41PM -0500, Nayna wrote:
-> > > On 11/8/21 07:05, Michal Suchánek wrote:
-> > > > Hello,
-> > > > 
+On Mon, 2021-11-15 at 19:15 -0500, Eric Snowberg wrote:
+> Back in 2013 Linus requested a feature to allow end-users to have the=20
+> ability "to add their own keys and sign modules they trust". This was
+> his *second* order outlined here [1]. There have been many attempts=20
+> over the years to solve this problem, all have been rejected.=C2=A0 Many=
+=20
+> of the failed attempts loaded all preboot firmware keys into the kernel,
+> including the Secure Boot keys. Many distributions carry one of these=20
+> rejected attempts [2], [3], [4]. This series tries to solve this problem=
+=20
+> with a solution that takes into account all the problems brought up in=
+=20
+> the previous attempts.
+>=20
+> On UEFI based systems, this series introduces a new Linux kernel keyring=
+=20
+> containing the Machine Owner Keys (MOK) called machine. It also defines
+> a new MOK variable in shim. This variable allows the end-user to decide=
+=20
+> if they want to load MOK keys into the machine keyring. Mimi has suggeste=
+d=20
+> that only CA keys contained within the MOK be loaded into the machine=20
+> keyring. All other certs will load into the platform keyring instead.
+>=20
+> By default, nothing changes; MOK keys are not loaded into the machine
+> keyring.=C2=A0 They are only loaded after the end-user makes the decision=
+=20
+> themselves.=C2=A0 The end-user would set this through mokutil using a new=
+=20
+> --trust-mok option [5]. This would work similar to how the kernel uses=
+=20
+> MOK variables to enable/disable signature validation as well as use/ignor=
+e=20
+> the db. Any kernel operation that uses either the builtin or secondary=
+=20
+> trusted keys as a trust source shall also reference the new machine=20
+> keyring as a trust source.
+>=20
+> Secure Boot keys will never be loaded into the machine keyring.=C2=A0 The=
+y
+> will always be loaded into the platform keyring.=C2=A0 If an end-user wan=
+ted=20
+> to load one, they would need to enroll it into the MOK.
+>=20
+> Steps required by the end user:
+>=20
+> Sign kernel module with user created key:
+> $ /usr/src/kernels/$(uname -r)/scripts/sign-file sha512 \
+> =C2=A0=C2=A0 machine_signing_key.priv machine_signing_key.x509 my_module.=
+ko
+>=20
+> Import the key into the MOK
+> $ mokutil --import machine_signing_key.x509
+>=20
+> Setup the kernel to load MOK keys into the .machine keyring
+> $ mokutil --trust-mok
+>=20
+> Then reboot, the MokManager will load and ask if you want to trust the
+> MOK key and enroll the MOK into the MOKList.=C2=A0 Afterwards the signed =
+kernel
+> module will load.
+>=20
+> I have included=C2=A0 a link to the mokutil [5] changes I have made to su=
+pport=20
+> this new functionality.=C2=A0 The shim changes have now been accepted
+> upstream [6].
+>=20
+> [1] https://marc.info/?l=3Dlinux-kernel&m=3D136185386310140&w=3D2
+> [2] https://lore.kernel.org/lkml/1479737095.2487.34.camel@linux.vnet.ibm.=
+com/
+> [3] https://lore.kernel.org/lkml/1556221605.24945.3.camel@HansenPartnersh=
+ip.com/
+> [4] https://lore.kernel.org/linux-integrity/1e41f22b1f11784f1e943f32bf620=
+34d4e054cdb.camel@HansenPartnership.com/
+> [5] https://github.com/esnowberg/mokutil/tree/mokvars-v3
+> [6] https://github.com/rhboot/shim/commit/4e513405b4f1641710115780d19dcec=
+130c5208f
+>=20
+> Eric Snowberg (17):
+> =C2=A0 integrity: Introduce a Linux keyring called machine
+> =C2=A0 integrity: Do not allow machine keyring updates following init
+> =C2=A0 KEYS: Create static version of public_key_verify_signature
+> =C2=A0 X.509: Parse Basic Constraints for CA
+> =C2=A0 KEYS: CA link restriction
+> =C2=A0 integrity: restrict INTEGRITY_KEYRING_MACHINE to restrict_link_by_=
+ca
+> =C2=A0 integrity: Fix warning about missing prototypes
+> =C2=A0 integrity: add new keyring handler for mok keys
+> =C2=A0 KEYS: Rename get_builtin_and_secondary_restriction
+> =C2=A0 KEYS: add a reference to machine keyring
+> =C2=A0 KEYS: Introduce link restriction for machine keys
+> =C2=A0 KEYS: integrity: change link restriction to trust the machine keyr=
+ing
+> =C2=A0 KEYS: link secondary_trusted_keys to machine trusted keys
+> =C2=A0 integrity: store reference to machine keyring
+> =C2=A0 efi/mokvar: move up init order
+> =C2=A0 integrity: Trust MOK keys if MokListTrustedRT found
+> =C2=A0 integrity: Only use machine keyring when uefi_check_trust_mok_keys=
+ is
+> =C2=A0=C2=A0=C2=A0 true
+>=20
+> =C2=A0certs/system_keyring.c=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=
+=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+=C2=A0=C2=A0=C2=A0 | 44 ++++++++++-
+> =C2=A0crypto/asymmetric_keys/restrict.c=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=
+=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 | 43 +++++++++++
+> =C2=A0crypto/asymmetric_keys/x509_cert_parser.c=C2=A0=C2=A0=C2=A0=C2=A0 |=
+=C2=A0 9 +++
+> =C2=A0drivers/firmware/efi/mokvar-table.c=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 |=C2=A0 2 +-
+> =C2=A0include/crypto/public_key.h=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=
+=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 | 15 =
+++++
+> =C2=A0include/keys/system_keyring.h=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 | 14 ++++
+> =C2=A0security/integrity/Kconfig=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=
+=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+ | 12 +++
+> =C2=A0security/integrity/Makefile=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=
+=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 |=C2=
+=A0 1 +
+> =C2=A0security/integrity/digsig.c=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=
+=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 | 23 =
++++++-
+> =C2=A0security/integrity/integrity.h=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 | 17 +++-
+> =C2=A0.../platform_certs/keyring_handler.c=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+=C2=A0=C2=A0=C2=A0=C2=A0 | 18 ++++-
+> =C2=A0.../platform_certs/keyring_handler.h=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+=C2=A0=C2=A0=C2=A0=C2=A0 |=C2=A0 5 ++
+> =C2=A0security/integrity/platform_certs/load_uefi.c |=C2=A0 4 +-
+> =C2=A0.../platform_certs/machine_keyring.c=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=
+=C2=A0=C2=A0=C2=A0=C2=A0 | 77 +++++++++++++++++++
+> =C2=A014 files changed, 273 insertions(+), 11 deletions(-)
+> =C2=A0create mode 100644 security/integrity/platform_certs/machine_keyrin=
+g.c
+>=20
+>=20
+> base-commit: fa55b7dcdc43c1aa1ba12bca9d2dd4318c2a0dbf
 
-> > > > The other part is that distributions apply 'lockdown' patches that change
-> > > > the security policy depending on secure boot status which were rejected
-> > > > by upstream which only hook into the _SIG options, and not into the IMA_
-> > > > options. Of course, I expect this to change when the IMA options are
-> > > > universally available across architectures and the support picked up by
-> > > > distributions.
-> > > > 
-> > > > Which brings the third point: IMA features vary across architectures,
-> > > > and KEXEC_SIG is more common than IMA_KEXEC.
-> > > > 
-> > > > config/arm64/default:CONFIG_HAVE_IMA_KEXEC=y
-> > > > config/ppc64le/default:CONFIG_HAVE_IMA_KEXEC=y
-> > > > 
-> > > > config/arm64/default:CONFIG_KEXEC_SIG=y
-> > > > config/s390x/default:CONFIG_KEXEC_SIG=y
-> > > > config/x86_64/default:CONFIG_KEXEC_SIG=y
-> > > > 
-> > > > KEXEC_SIG makes it much easier to get uniform features across
-> > > > architectures.
-> > > Architectures use KEXEC_SIG vs IMA_KEXEC based on their requirement.
-> > > IMA_KEXEC is for the kernel images signed using sign-file (appended
-> > > signatures, not PECOFF), provides measurement along with verification, and
-> > That's certainly not the case. S390 uses appended signatures with
-> > KEXEC_SIG, arm64 uses PECOFF with both KEXEC_SIG and IMA_KEXEC.
-> 
-> Yes, S390 uses appended signature, but they also do not support
-> measurements.
-> 
-> On the other hand for arm64/x86, PECOFF works only with KEXEC_SIG. Look at
-> the KEXEC_IMAGE_VERIFY_SIG config dependencies in arch/arm64/Kconfig and
-> KEXEC_BZIMAGE_VERIFY_SIG config dependencies in arch/x86/Kconfig. Now, if
-> KEXEC_SIG is not enabled, then IMA appraisal policies are enforced if secure
-> boot is enabled, refer to security/integrity/ima_efi.c . IMA would fail
-> verification if kernel is not signed with module sig appended signatures or
-> signature verification fails.
-> 
-> In short, IMA is used to enforce the existence of a policy if secure boot is
-> enabled. If they don't support module sig appended signatures, by definition
-> it fails. Thus PECOFF doesn't work with both KEXEC_SIG and IMA_KEXEC, but
-> only with KEXEC_SIG.
+Does shim have the necessary features in a release?
 
-Then IMA_KEXEC is a no-go. It is not supported on all architectures and
-it principially cannot be supported because it does not support PECOFF
-which is needed to boot the kernel on EFI platforms. To get feature
-parity across architectures KEXEC_SIG is required.
-
-> > 
-> > > is tied to secureboot state of the system at boot time.
-> > In distrubutions it's also the case with KEXEC_SIG, it's only upstream
-> > where this is different. I don't know why Linux upstream has rejected
-> > this support for KEXEC_SIG.
-> > 
-> > Anyway, sounds like the difference is that IMA provides measurement but
-> > if you don't use it it does not makes any difference except more comlex
-> > code.
-> I am unsure what do you mean by "complex code" here. Can you please
-> elaborate ? IMA policies support for secureboot already exists and can be
-> used as it is without adding any extra work as in
-> arch/powerpc/kernel/ima_arch.c.
-
-The code exists but using it to replace KEXEC_SIG also requires
-understanding the code and the implications of using it. At a glance the
-IMA codebase is much bigger and more convoluted compared to KEXEC_SIG
-and MODULE_SIG.
-
-Thanks
-
-Michal
+/Jarkko
