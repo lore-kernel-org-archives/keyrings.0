@@ -2,326 +2,114 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AFE7EC43219
-	for <keyrings@archiver.kernel.org>; Sun, 12 Dec 2021 19:31:22 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6D5ACC433EF
+	for <keyrings@archiver.kernel.org>; Sun, 12 Dec 2021 21:29:35 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231157AbhLLTbT (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sun, 12 Dec 2021 14:31:19 -0500
-Received: from conuserg-08.nifty.com ([210.131.2.75]:25069 "EHLO
-        conuserg-08.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229687AbhLLTbD (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sun, 12 Dec 2021 14:31:03 -0500
-Received: from grover.. (133-32-232-101.west.xps.vectant.ne.jp [133.32.232.101]) (authenticated)
-        by conuserg-08.nifty.com with ESMTP id 1BCJTqAs000552;
-        Mon, 13 Dec 2021 04:29:59 +0900
-DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-08.nifty.com 1BCJTqAs000552
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
-        s=dec2015msa; t=1639337399;
-        bh=vl4/vU5Yj4FhnAYq6MYmNSIymglt2Z7uN4joqdbcY0M=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=VqMpPBowsXc6uZFHeFfTgf0gH7Knv8BBD3xHU4dNSMFR8AINlGkZtWADyqUG1QOIJ
-         bCiOv9tLytWab7HowBTsxXK5w/yeC/OPZhpAN7OGT/e8ceCgTo+g3kjB5TpPv8PTUR
-         MObNjkZKeZ3CconEs9w2R60dhAnMIvCOSlAQCZWR4Ads113uDWrG0fEJKlhDY2abek
-         E2CBSDZUptstnb/47nirgR7DUdHGPvA7fMDyHhAQ2DAhm5ij6u4msP0k2f1VTKpc+9
-         O8V1kNYUD0+WOZdrNfuYWh/8MJcw0rlgUgZcNpUylwgOhRTeCXYKkQhZdkAu/OwfEs
-         oQele+BT5FHWw==
-X-Nifty-SrcIP: [133.32.232.101]
-From:   Masahiro Yamada <masahiroy@kernel.org>
-To:     linux-kbuild@vger.kernel.org
-Cc:     Michal Simek <michal.simek@xilinx.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        keyrings@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        Masahiro Yamada <masahiroy@kernel.org>
-Subject: [PATCH 08/10] kbuild: do not include include/config/auto.conf from shell scripts
-Date:   Mon, 13 Dec 2021 04:29:39 +0900
-Message-Id: <20211212192941.1149247-9-masahiroy@kernel.org>
-X-Mailer: git-send-email 2.32.0
-In-Reply-To: <20211212192941.1149247-1-masahiroy@kernel.org>
-References: <20211212192941.1149247-1-masahiroy@kernel.org>
+        id S229628AbhLLV3e (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 12 Dec 2021 16:29:34 -0500
+Received: from mail.hallyn.com ([178.63.66.53]:32972 "EHLO mail.hallyn.com"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S229619AbhLLV3d (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Sun, 12 Dec 2021 16:29:33 -0500
+X-Greylist: delayed 492 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Dec 2021 16:29:33 EST
+Received: by mail.hallyn.com (Postfix, from userid 1001)
+        id 6FF246B4; Sun, 12 Dec 2021 15:21:17 -0600 (CST)
+Date:   Sun, 12 Dec 2021 15:21:17 -0600
+From:   "Serge E. Hallyn" <serge@hallyn.com>
+To:     Jianglei Nie <niejianglei2021@163.com>
+Cc:     jejb@linux.ibm.com, jarkko@kernel.org, zohar@linux.ibm.com,
+        dhowells@redhat.com, jmorris@namei.org, serge@hallyn.com,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] security:trusted_tpm2: Fix memory leak in
+ tpm2_key_encode()
+Message-ID: <20211212212117.GA5737@mail.hallyn.com>
+References: <20211212135403.59724-1-niejianglei2021@163.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20211212135403.59724-1-niejianglei2021@163.com>
+User-Agent: Mutt/1.9.4 (2018-02-28)
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Richard Weinberger pointed out the risk of sourcing the kernel config
-from shell scripts [1], and proposed some patches [2], [3]. It is a good
-point, but it took a long time because I was wondering how to fix this.
+On Sun, Dec 12, 2021 at 09:54:03PM +0800, Jianglei Nie wrote:
+> Line 36 (#1) allocates a memory chunk for scratch by kmalloc(), but
+> it is never freed through the function, which will lead to a memory
+> leak.
+> 
+> We should kfree() scratch before the function returns (#2, #3 and #4).
+> 
+> 31 static int tpm2_key_encode(struct trusted_key_payload *payload,
+> 32			   struct trusted_key_options *options,
+> 33			   u8 *src, u32 len)
+> 34 {
+> 36	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
+>       	// #1: kmalloc space
+> 37	u8 *work = scratch, *work1;
+> 50	if (!scratch)
+> 51		return -ENOMEM;
+> 
+> 56	if (options->blobauth_len == 0) {
+> 60		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode"))
+> 61			return PTR_ERR(w); // #2: missing kfree
+> 63	}
+> 
+> 71	if (WARN(work - scratch + pub_len + priv_len + 14 > SCRATCH_SIZE,
+> 72		 "BUG: scratch buffer is too small"))
+> 73		return -EINVAL; // #3: missing kfree
+> 
+>   	// #4: missing kfree: scratch is never used afterwards.
+> 82	if (WARN(IS_ERR(work1), "BUG: ASN.1 encoder failed"))
+> 83		return PTR_ERR(work1);
+> 
+> 85	return work1 - payload->blob;
+> 86 }
+> 
+> Signed-off-by: Jianglei Nie <niejianglei2021@163.com>
 
-This commit goes with simple grep approach because there are only a few
-scripts including the kernel configuration.
+I don't know that we need to keep the line by line recap in
+the full git log, but it def looks correct:
 
-scripts/link_vmlinux.sh has references to a bunch of CONFIG options,
-all of which are boolean. I added is_enabled() helper as
-scripts/package/{mkdebian,builddeb} do.
+Reviewed-by: Serge Hallyn <serge@hallyn.com>
 
-scripts/gen_autoksyms.sh uses 'eval', stating "to expand the whitelist
-path". I removed it since it is the issue we are trying to fix.
+thanks,
+-serge
 
-I was a bit worried about the cost of invoking the grep command over
-again. I extracted the grep parts from it, and measured the cost. It
-was approximately 0.03 sec, which I hope is acceptable.
-
-[test code]
-
-  $ cat test-grep.sh
-  #!/bin/sh
-
-  is_enabled() {
-          grep -q "^$1=y" include/config/auto.conf
-  }
-
-  is_enabled CONFIG_LTO_CLANG
-  is_enabled CONFIG_LTO_CLANG
-  is_enabled CONFIG_STACK_VALIDATION
-  is_enabled CONFIG_UNWINDER_ORC
-  is_enabled CONFIG_FTRACE_MCOUNT_USE_OBJTOOL
-  is_enabled CONFIG_VMLINUX_VALIDATION
-  is_enabled CONFIG_FRAME_POINTER
-  is_enabled CONFIG_GCOV_KERNEL
-  is_enabled CONFIG_LTO_CLANG
-  is_enabled CONFIG_RETPOLINE
-  is_enabled CONFIG_X86_SMAP
-  is_enabled CONFIG_LTO_CLANG
-  is_enabled CONFIG_VMLINUX_MAP
-  is_enabled CONFIG_KALLSYMS_ALL
-  is_enabled CONFIG_KALLSYMS_ABSOLUTE_PERCPU
-  is_enabled CONFIG_KALLSYMS_BASE_RELATIVE
-  is_enabled CONFIG_DEBUG_INFO_BTF
-  is_enabled CONFIG_KALLSYMS
-  is_enabled CONFIG_DEBUG_INFO_BTF
-  is_enabled CONFIG_BPF
-  is_enabled CONFIG_BUILDTIME_TABLE_SORT
-  is_enabled CONFIG_KALLSYMS
-
-  $ time ./test-grep.sh
-  real    0m0.036s
-  user    0m0.027s
-  sys     m0.009s
-
-[1]: https://lore.kernel.org/all/1919455.eZKeABUfgV@blindfold/
-[2]: https://lore.kernel.org/all/20180219092245.26404-1-richard@nod.at/
-[3]: https://lore.kernel.org/all/20210920213957.1064-2-richard@nod.at/
-Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
----
-
- scripts/gen_autoksyms.sh |  6 ++---
- scripts/link-vmlinux.sh  | 47 ++++++++++++++++++++--------------------
- scripts/setlocalversion  |  9 ++++----
- 3 files changed, 30 insertions(+), 32 deletions(-)
-
-diff --git a/scripts/gen_autoksyms.sh b/scripts/gen_autoksyms.sh
-index 6ed0d225c8b1..12ffb01f13cb 100755
---- a/scripts/gen_autoksyms.sh
-+++ b/scripts/gen_autoksyms.sh
-@@ -26,10 +26,8 @@ if [ -n "$CONFIG_MODVERSIONS" ]; then
- 	needed_symbols="$needed_symbols module_layout"
- fi
- 
--ksym_wl=
--if [ -n "$CONFIG_UNUSED_KSYMS_WHITELIST" ]; then
--	# Use 'eval' to expand the whitelist path and check if it is relative
--	eval ksym_wl="$CONFIG_UNUSED_KSYMS_WHITELIST"
-+ksym_wl=$(sed -n 's/^CONFIG_UNUSED_KSYMS_WHITELIST="\(.*\)"$/\1/p' include/config/auto.conf)
-+if [ -n "$ksym_wl" ]; then
- 	[ "${ksym_wl}" != "${ksym_wl#/}" ] || ksym_wl="$abs_srctree/$ksym_wl"
- 	if [ ! -f "$ksym_wl" ] || [ ! -r "$ksym_wl" ]; then
- 		echo "ERROR: '$ksym_wl' whitelist file not found" >&2
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 5cdd9bc5c385..a4b61a2f65db 100755
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -34,6 +34,10 @@ LD="$1"
- KBUILD_LDFLAGS="$2"
- LDFLAGS_vmlinux="$3"
- 
-+is_enabled() {
-+	grep -q "^$1=y" include/config/auto.conf
-+}
-+
- # Nice output in kbuild format
- # Will be supressed by "make -s"
- info()
-@@ -80,11 +84,11 @@ modpost_link()
- 		${KBUILD_VMLINUX_LIBS}				\
- 		--end-group"
- 
--	if [ -n "${CONFIG_LTO_CLANG}" ]; then
-+	if is_enabled CONFIG_LTO_CLANG; then
- 		gen_initcalls
- 		lds="-T .tmp_initcalls.lds"
- 
--		if [ -n "${CONFIG_MODVERSIONS}" ]; then
-+		if is_enabled CONFIG_MODVERSIONS; then
- 			gen_symversions
- 			lds="${lds} -T .tmp_symversions.lds"
- 		fi
-@@ -104,21 +108,21 @@ objtool_link()
- 	local objtoolcmd;
- 	local objtoolopt;
- 
--	if [ "${CONFIG_LTO_CLANG} ${CONFIG_STACK_VALIDATION}" = "y y" ]; then
-+	if is_enabled CONFIG_LTO_CLANG && is_enabled CONFIG_STACK_VALIDATION; then
- 		# Don't perform vmlinux validation unless explicitly requested,
- 		# but run objtool on vmlinux.o now that we have an object file.
--		if [ -n "${CONFIG_UNWINDER_ORC}" ]; then
-+		if is_enabled CONFIG_UNWINDER_ORC; then
- 			objtoolcmd="orc generate"
- 		fi
- 
- 		objtoolopt="${objtoolopt} --duplicate"
- 
--		if [ -n "${CONFIG_FTRACE_MCOUNT_USE_OBJTOOL}" ]; then
-+		if is_enabled CONFIG_FTRACE_MCOUNT_USE_OBJTOOL; then
- 			objtoolopt="${objtoolopt} --mcount"
- 		fi
- 	fi
- 
--	if [ -n "${CONFIG_VMLINUX_VALIDATION}" ]; then
-+	if is_enabled CONFIG_VMLINUX_VALIDATION; then
- 		objtoolopt="${objtoolopt} --noinstr"
- 	fi
- 
-@@ -127,16 +131,16 @@ objtool_link()
- 			objtoolcmd="check"
- 		fi
- 		objtoolopt="${objtoolopt} --vmlinux"
--		if [ -z "${CONFIG_FRAME_POINTER}" ]; then
-+		if ! is_enabled CONFIG_FRAME_POINTER; then
- 			objtoolopt="${objtoolopt} --no-fp"
- 		fi
--		if [ -n "${CONFIG_GCOV_KERNEL}" ] || [ -n "${CONFIG_LTO_CLANG}" ]; then
-+		if is_enabled CONFIG_GCOV_KERNEL || is_enabled CONFIG_LTO_CLANG; then
- 			objtoolopt="${objtoolopt} --no-unreachable"
- 		fi
--		if [ -n "${CONFIG_RETPOLINE}" ]; then
-+		if is_enabled CONFIG_RETPOLINE; then
- 			objtoolopt="${objtoolopt} --retpoline"
- 		fi
--		if [ -n "${CONFIG_X86_SMAP}" ]; then
-+		if is_enabled CONFIG_X86_SMAP; then
- 			objtoolopt="${objtoolopt} --uaccess"
- 		fi
- 		info OBJTOOL ${1}
-@@ -161,7 +165,7 @@ vmlinux_link()
- 	# skip output file argument
- 	shift
- 
--	if [ -n "${CONFIG_LTO_CLANG}" ]; then
-+	if is_enabled CONFIG_LTO_CLANG; then
- 		# Use vmlinux.o instead of performing the slow LTO link again.
- 		objs=vmlinux.o
- 		libs=
-@@ -189,7 +193,7 @@ vmlinux_link()
- 		ldflags="${ldflags} ${wl}--strip-debug"
- 	fi
- 
--	if [ -n "${CONFIG_VMLINUX_MAP}" ]; then
-+	if is_enabled CONFIG_VMLINUX_MAP; then
- 		ldflags="${ldflags} ${wl}-Map=${output}.map"
- 	fi
- 
-@@ -239,15 +243,15 @@ kallsyms()
- {
- 	local kallsymopt;
- 
--	if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
-+	if is_enabled CONFIG_KALLSYMS_ALL; then
- 		kallsymopt="${kallsymopt} --all-symbols"
- 	fi
- 
--	if [ -n "${CONFIG_KALLSYMS_ABSOLUTE_PERCPU}" ]; then
-+	if is_enabled CONFIG_KALLSYMS_ABSOLUTE_PERCPU; then
- 		kallsymopt="${kallsymopt} --absolute-percpu"
- 	fi
- 
--	if [ -n "${CONFIG_KALLSYMS_BASE_RELATIVE}" ]; then
-+	if is_enabled CONFIG_KALLSYMS_BASE_RELATIVE; then
- 		kallsymopt="${kallsymopt} --base-relative"
- 	fi
- 
-@@ -312,9 +316,6 @@ if [ "$1" = "clean" ]; then
- 	exit 0
- fi
- 
--# We need access to CONFIG_ symbols
--. include/config/auto.conf
--
- # Update version
- info GEN .version
- if [ -r .version ]; then
-@@ -343,7 +344,7 @@ tr '\0' '\n' < modules.builtin.modinfo | sed -n 's/^[[:alnum:]:_]*\.file=//p' |
- 	tr ' ' '\n' | uniq | sed -e 's:^:kernel/:' -e 's/$/.ko/' > modules.builtin
- 
- btf_vmlinux_bin_o=""
--if [ -n "${CONFIG_DEBUG_INFO_BTF}" ]; then
-+if is_enabled CONFIG_DEBUG_INFO_BTF; then
- 	btf_vmlinux_bin_o=.btf.vmlinux.bin.o
- 	if ! gen_btf .tmp_vmlinux.btf $btf_vmlinux_bin_o ; then
- 		echo >&2 "Failed to generate BTF for vmlinux"
-@@ -355,7 +356,7 @@ fi
- kallsymso=""
- kallsymso_prev=""
- kallsyms_vmlinux=""
--if [ -n "${CONFIG_KALLSYMS}" ]; then
-+if is_enabled CONFIG_KALLSYMS; then
- 
- 	# kallsyms support
- 	# Generate section listing all symbols and add it into vmlinux
-@@ -395,12 +396,12 @@ fi
- vmlinux_link vmlinux "${kallsymso}" ${btf_vmlinux_bin_o}
- 
- # fill in BTF IDs
--if [ -n "${CONFIG_DEBUG_INFO_BTF}" -a -n "${CONFIG_BPF}" ]; then
-+if is_enabled CONFIG_DEBUG_INFO_BTF && is_enabled CONFIG_BPF; then
- 	info BTFIDS vmlinux
- 	${RESOLVE_BTFIDS} vmlinux
- fi
- 
--if [ -n "${CONFIG_BUILDTIME_TABLE_SORT}" ]; then
-+if is_enabled CONFIG_BUILDTIME_TABLE_SORT; then
- 	info SORTTAB vmlinux
- 	if ! sorttable vmlinux; then
- 		echo >&2 Failed to sort kernel tables
-@@ -412,7 +413,7 @@ info SYSMAP System.map
- mksysmap vmlinux System.map
- 
- # step a (see comment above)
--if [ -n "${CONFIG_KALLSYMS}" ]; then
-+if is_enabled CONFIG_KALLSYMS; then
- 	mksysmap ${kallsyms_vmlinux} .tmp_System.map
- 
- 	if ! cmp -s System.map .tmp_System.map; then
-diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-index 6b54e46a0f12..d06137405190 100755
---- a/scripts/setlocalversion
-+++ b/scripts/setlocalversion
-@@ -111,9 +111,7 @@ if $scm_only; then
- 	exit
- fi
- 
--if test -e include/config/auto.conf; then
--	. include/config/auto.conf
--else
-+if ! test -e include/config/auto.conf; then
- 	echo "Error: kernelrelease not valid - run 'make prepare' to update it" >&2
- 	exit 1
- fi
-@@ -125,10 +123,11 @@ if test ! "$srctree" -ef .; then
- fi
- 
- # CONFIG_LOCALVERSION and LOCALVERSION (if set)
--res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}"
-+config_localversion=$(sed -n 's/^CONFIG_LOCALVERSION="\(.*\)"$/\1/p' include/config/auto.conf)
-+res="${res}${config_localversion}${LOCALVERSION}"
- 
- # scm version string if not at a tagged commit
--if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
-+if grep -q "^CONFIG_LOCALVERSION_AUTO=y$" include/config/auto.conf; then
- 	# full scm version string
- 	res="$res$(scm_version)"
- elif [ "${LOCALVERSION+set}" != "set" ]; then
--- 
-2.32.0
-
+> ---
+>  security/keys/trusted-keys/trusted_tpm2.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+> index 0165da386289..3408a74c855f 100644
+> --- a/security/keys/trusted-keys/trusted_tpm2.c
+> +++ b/security/keys/trusted-keys/trusted_tpm2.c
+> @@ -57,8 +57,10 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
+>  		unsigned char bool[3], *w = bool;
+>  		/* tag 0 is emptyAuth */
+>  		w = asn1_encode_boolean(w, w + sizeof(bool), true);
+> -		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode"))
+> +		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode")) {
+> +			kfree(scratch);
+>  			return PTR_ERR(w);
+> +		}
+>  		work = asn1_encode_tag(work, end_work, 0, bool, w - bool);
+>  	}
+>  
+> @@ -69,9 +71,12 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
+>  	 * trigger, so if it does there's something nefarious going on
+>  	 */
+>  	if (WARN(work - scratch + pub_len + priv_len + 14 > SCRATCH_SIZE,
+> -		 "BUG: scratch buffer is too small"))
+> +		 "BUG: scratch buffer is too small")) {
+> +		kfree(scratch);
+>  		return -EINVAL;
+> +	}
+>  
+> +	kfree(scratch);
+>  	work = asn1_encode_integer(work, end_work, options->keyhandle);
+>  	work = asn1_encode_octet_string(work, end_work, pub, pub_len);
+>  	work = asn1_encode_octet_string(work, end_work, priv, priv_len);
+> -- 
+> 2.25.1
