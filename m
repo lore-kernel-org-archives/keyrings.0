@@ -2,29 +2,29 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A1D2FC4332F
-	for <keyrings@archiver.kernel.org>; Sun, 12 Dec 2021 19:31:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 29766C433F5
+	for <keyrings@archiver.kernel.org>; Sun, 12 Dec 2021 19:31:16 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230251AbhLLTbG (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sun, 12 Dec 2021 14:31:06 -0500
-Received: from conuserg-08.nifty.com ([210.131.2.75]:25068 "EHLO
+        id S229907AbhLLTbE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 12 Dec 2021 14:31:04 -0500
+Received: from conuserg-08.nifty.com ([210.131.2.75]:25054 "EHLO
         conuserg-08.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229677AbhLLTbD (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sun, 12 Dec 2021 14:31:03 -0500
+        with ESMTP id S229600AbhLLTbC (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 12 Dec 2021 14:31:02 -0500
 Received: from grover.. (133-32-232-101.west.xps.vectant.ne.jp [133.32.232.101]) (authenticated)
-        by conuserg-08.nifty.com with ESMTP id 1BCJTqAu000552;
-        Mon, 13 Dec 2021 04:30:00 +0900
-DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-08.nifty.com 1BCJTqAu000552
+        by conuserg-08.nifty.com with ESMTP id 1BCJTqAk000552;
+        Mon, 13 Dec 2021 04:29:52 +0900
+DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-08.nifty.com 1BCJTqAk000552
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
-        s=dec2015msa; t=1639337401;
-        bh=UTYKGj88xYToscrUiygI8mCc6KISWEtozuMy+fS5oOs=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=KCgeTjseCnfEnf23cAtZpH+SF1PG0fz94Jpmlvqj0rdXjFDYgkDHcMXziM2yJ5H21
-         +OYWsJWkMJ187PTnH0UP5p7uAKOYtcKcoerV0vpo0c9t9qUwEbs4rrOkS5rJYG+sYf
-         mkKieUCPcYuxbhuxivVDGd+X2o/4hrxMfLJMWwuWuzD7UWHiRiP4Fg9ADWzlYaXOHV
-         x/lNyL9ESqR48kcOllow/sxJoe/pOJm7CsPi4al9IU45pr30i+AjJCHoaoWq695NSx
-         9yPDuUtXA/f3GK8vm3c6nuDktGb8/IUPNxHXb+AuYFQ+fcr6z/lW50RN/FaDO/b3YE
-         CtJ9/RihBpFYQ==
+        s=dec2015msa; t=1639337393;
+        bh=FXw958wyo8ETkKfX7PUkbCcYnUmIcy1cqQ//+4bN/Sg=;
+        h=From:To:Cc:Subject:Date:From;
+        b=ohvtGUFWSUwc68OTx4V2VSL2Wv0mzlcaItMXt9jwLUaF37y0y5w++Hdivpi6k8cgz
+         96UrTLG0976RF4BOZrskI2YFO7GJcwbVMIOsHgqei7Ikn2o774YMePwh7y5izqUokg
+         CM7vSOxLPHo1LhvsfCOImQlYbnRzAirsTYvDqDKMXfzrlVhrkH3IyGiTW7fyjG9xbG
+         YaGLO2pExbYrar9c6TQUHzJBdUcz1e4kQyoJySslYGnzo0WkOiYsNnKxxv9L+rsN9w
+         tWYebiiak+JP/IvuNV2UB/8Zh2bcuwiqEESoUaLYux/i/xNJTvwaoHv/R27ZerMBBS
+         TaXme7Ke5Dxuw==
 X-Nifty-SrcIP: [133.32.232.101]
 From:   Masahiro Yamada <masahiroy@kernel.org>
 To:     linux-kbuild@vger.kernel.org
@@ -33,44 +33,68 @@ Cc:     Michal Simek <michal.simek@xilinx.com>, linux-arch@vger.kernel.org,
         David Woodhouse <dwmw2@infradead.org>,
         keyrings@vger.kernel.org, Richard Weinberger <richard@nod.at>,
         Masahiro Yamada <masahiroy@kernel.org>
-Subject: [PATCH 10/10] microblaze: use built-in function to get CPU_{MAJOR,MINOR,REV}
-Date:   Mon, 13 Dec 2021 04:29:41 +0900
-Message-Id: <20211212192941.1149247-11-masahiroy@kernel.org>
+Subject: [PATCH 00/10] kbuild: do not quote string values in Makefile
+Date:   Mon, 13 Dec 2021 04:29:31 +0900
+Message-Id: <20211212192941.1149247-1-masahiroy@kernel.org>
 X-Mailer: git-send-email 2.32.0
-In-Reply-To: <20211212192941.1149247-1-masahiroy@kernel.org>
-References: <20211212192941.1149247-1-masahiroy@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Use built-in functions instead of shell commands to avoid forking
-processes.
 
-Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
----
+This patch refactors the code as outlined in:
 
- arch/microblaze/Makefile | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+  https://lore.kernel.org/linux-kbuild/CAK7LNAR-VXwHFEJqCcrFDZj+_4+Xd6oynbj_0eS8N504_ydmyw@mail.gmail.com/
 
-diff --git a/arch/microblaze/Makefile b/arch/microblaze/Makefile
-index a25e76d89e86..1826d9ce4459 100644
---- a/arch/microblaze/Makefile
-+++ b/arch/microblaze/Makefile
-@@ -6,9 +6,9 @@ UTS_SYSNAME = -DUTS_SYSNAME=\"Linux\"
- # What CPU version are we building for, and crack it open
- # as major.minor.rev
- CPU_VER   := $(CONFIG_XILINX_MICROBLAZE0_HW_VER)
--CPU_MAJOR := $(shell echo $(CPU_VER) | cut -d '.' -f 1)
--CPU_MINOR := $(shell echo $(CPU_VER) | cut -d '.' -f 2)
--CPU_REV   := $(shell echo $(CPU_VER) | cut -d '.' -f 3)
-+CPU_MAJOR := $(word 1, $(subst ., , $(CPU_VER)))
-+CPU_MINOR := $(word 2, $(subst ., , $(CPU_VER)))
-+CPU_REV   := $(word 3, $(subst ., , $(CPU_VER)))
- 
- export CPU_VER CPU_MAJOR CPU_MINOR CPU_REV
- 
+First some patches refactor certs/Makefile. This Makefile is written
+in a too complicated way.
+
+I will revert cd8c917a56f20f48748dd43d9ae3caff51d5b987
+after this lands in the upstream.
+
+
+
+Masahiro Yamada (10):
+  certs: use $@ to simplify the key generation rule
+  certs: unify duplicated cmd_extract_certs and improve the log
+  certs: remove unneeded -I$(srctree) option for system_certificates.o
+  certs: refactor file cleaning
+  certs: remove misleading comments about GCC PR
+  kbuild: stop using config_filename in scripts/Makefile.modsign
+  certs: simplify $(srctree)/ handling and remove config_filename macro
+  kbuild: do not include include/config/auto.conf from shell scripts
+  kbuild: do not quote string values in include/config/auto.conf
+  microblaze: use built-in function to get CPU_{MAJOR,MINOR,REV}
+
+ Makefile                                      |  6 +--
+ arch/arc/Makefile                             |  4 +-
+ arch/arc/boot/dts/Makefile                    |  4 +-
+ arch/h8300/boot/dts/Makefile                  |  6 +--
+ arch/microblaze/Makefile                      |  8 ++--
+ arch/nds32/boot/dts/Makefile                  |  7 +--
+ arch/nios2/boot/dts/Makefile                  |  2 +-
+ arch/openrisc/boot/dts/Makefile               |  7 +--
+ arch/powerpc/boot/Makefile                    |  2 +-
+ arch/riscv/boot/dts/canaan/Makefile           |  4 +-
+ arch/sh/boot/dts/Makefile                     |  4 +-
+ arch/xtensa/Makefile                          |  2 +-
+ arch/xtensa/boot/dts/Makefile                 |  5 +-
+ certs/Makefile                                | 48 ++++++-------------
+ drivers/acpi/Makefile                         |  2 +-
+ drivers/base/firmware_loader/builtin/Makefile |  4 +-
+ init/Makefile                                 |  2 +-
+ net/wireless/Makefile                         |  4 +-
+ scripts/Kbuild.include                        | 47 ------------------
+ scripts/Makefile.modinst                      |  4 +-
+ scripts/gen_autoksyms.sh                      |  6 +--
+ scripts/kconfig/confdata.c                    |  2 +-
+ scripts/link-vmlinux.sh                       | 47 +++++++++---------
+ scripts/setlocalversion                       |  9 ++--
+ usr/Makefile                                  |  2 +-
+ 25 files changed, 74 insertions(+), 164 deletions(-)
+
 -- 
 2.32.0
 
