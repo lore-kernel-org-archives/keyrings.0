@@ -2,156 +2,165 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C0FDEC433FE
-	for <keyrings@archiver.kernel.org>; Wed,  5 Jan 2022 20:18:42 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 5EAB9C433EF
+	for <keyrings@archiver.kernel.org>; Wed,  5 Jan 2022 23:51:43 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S243955AbiAEUSm (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 5 Jan 2022 15:18:42 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37606 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S243951AbiAEUSl (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 5 Jan 2022 15:18:41 -0500
-Received: from mail-yb1-xb2a.google.com (mail-yb1-xb2a.google.com [IPv6:2607:f8b0:4864:20::b2a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4EC96C0611FF
-        for <keyrings@vger.kernel.org>; Wed,  5 Jan 2022 12:18:41 -0800 (PST)
-Received: by mail-yb1-xb2a.google.com with SMTP id j83so1275504ybg.2
-        for <keyrings@vger.kernel.org>; Wed, 05 Jan 2022 12:18:41 -0800 (PST)
+        id S245632AbiAEXvm (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 5 Jan 2022 18:51:42 -0500
+Received: from mx0b-00069f02.pphosted.com ([205.220.177.32]:39982 "EHLO
+        mx0b-00069f02.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S245569AbiAEXvF (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 5 Jan 2022 18:51:05 -0500
+Received: from pps.filterd (m0246632.ppops.net [127.0.0.1])
+        by mx0b-00069f02.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 205N4rFv025697;
+        Wed, 5 Jan 2022 23:50:46 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=oracle.com; h=from : to : cc :
+ subject : date : message-id : in-reply-to : references : content-type :
+ mime-version; s=corp-2021-07-09;
+ bh=moN0N9AohXo6kI25Abl/whL3aL6xWbMk0+iw4AQavBA=;
+ b=cEuTjykI1umvhjReQrGFnJUfG4UPtWbarCrKBx7CZi5gG9B7ot1vmpX6Tc61DZdZt85e
+ zDHsBmqegeUW3YL7MqzzHZd5hULPYGsSVBk9FZem9+Oc31sJY94ljaRoW3hpl1dgxlu4
+ Eg1bPhbgcx3VbUCTRXrTuK1RzAhGVktdxpF14yYVGWod4MT7cbjFwahqRekvRoWQfmTg
+ A6cdDBqHnLTG07P+nu+HQCR5majCyn6IwtmklPAMEaXz+sJk3VeLa0iQ35xGZazbYQwp
+ atb1BlRDFsV/OeRtAuBeHrbCgwUkMul05Eew+6tLibz6XEpiWyzhuVqLHs/llvPIv4+E Ug== 
+Received: from userp3020.oracle.com (userp3020.oracle.com [156.151.31.79])
+        by mx0b-00069f02.pphosted.com with ESMTP id 3ddmpmg209-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Wed, 05 Jan 2022 23:50:46 +0000
+Received: from pps.filterd (userp3020.oracle.com [127.0.0.1])
+        by userp3020.oracle.com (8.16.1.2/8.16.1.2) with SMTP id 205NjHlX177030;
+        Wed, 5 Jan 2022 23:50:45 GMT
+Received: from nam11-co1-obe.outbound.protection.outlook.com (mail-co1nam11lp2175.outbound.protection.outlook.com [104.47.56.175])
+        by userp3020.oracle.com with ESMTP id 3ddmq5shfg-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Wed, 05 Jan 2022 23:50:44 +0000
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
+ b=ktsOn+QcRWJWxTfywr8YBNRiFDEJ17xmklwrXVJmfBxzurfRQdrbJntAbrjKg4rx8HyLQSNDHNH3H+4PefJQJYo0ECP6EnkV/xCbjn9w5VaGUnyDdB9zg1R2pXXiEn4Ng0K9x5Hdn0C4U306rEmmvn02W4RDgmpjwqGHDdRYNrndX+J3uZVsYvAH2QAiYg12Md+qyS6J23rW1wpQ+MMXsqoXNxZAqi9zlABrcK84jv4FT0wjHNIqDTpJyIhkay1mxUAFiUkkErdvQ5KCOtoRrMNyfYOvCsLEAASf8wIQe6ZUCaBo9smC9HbKWjPXcMIyvpxktExNo4XzA5N+TiSwMg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector9901;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=moN0N9AohXo6kI25Abl/whL3aL6xWbMk0+iw4AQavBA=;
+ b=WOnIWTi0D+baL9TKf/u4lYtsk5hL8+UMBlPbtjYEpU3UCknpZ/691k5896uYeu2ABftAtdEj6lzbCpcFtTs35j6TzVwUvZcHxeIPlJMgR9hBYaIICE8A6uYZO8Gu/lGChbmEVtSJe8fc5DEC6W90nRBdC1JECEOlRJG3voeNq2SSJjaZgRpy5xfL52WNurPklKaN9oI+S+kwmDdp4+F0wrVvrmRr8j931erzZahI2nKWaHYxZIxgA2NqwXgfTGj3Ts/wcgwmEP1r0Ozs3XX7xtbwoani7hpGjx8G5TvDvCyWpzFoV9lLdsAxFydoaEQD+kPYk3E6CLE9q0lc8/Tauw==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=oracle.com; dmarc=pass action=none header.from=oracle.com;
+ dkim=pass header.d=oracle.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20210112;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc;
-        bh=koUG4mBaX/32RQiwrPD+XRtpDsLQ6tXsD9l8tNIsTsM=;
-        b=pTM4fbhrLR0L/UsKn5Elp+TBieKwifmdJJdKIcbCH1YbtfYeuZShXeHtuZNS5wYmic
-         h23ROpOIL82AMYBxJtcr9Egz+EZwhVkXyRCMwCiT0AS2lS/dp51hran0Vx4s+c0gdbPl
-         4hrxtvn6EJtmZEdXMhYOJrGEWFbKxRwiFFf3lDwaNUQcZiHxPxnufbvjiMtOLS4Vva2l
-         KYxsRFmD4gdprdIu5MwNQNiNafGUE2XpzxtjD5dCsA0MYITeHA80YxQF3/A9Bdv6KWJo
-         reCQ49By88S1uOEqJutLC0Y6yOVQJc0uJzp05KLlVodxkxrkwO0c8R92CdRYu7tEssVm
-         1xcg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc;
-        bh=koUG4mBaX/32RQiwrPD+XRtpDsLQ6tXsD9l8tNIsTsM=;
-        b=aq24dq4+r3u1yjR6RPtxfBgB+H8CNImP+TPNmvM1Y5LPi/BxsJhdxi5CwffBCqJQgS
-         pNLOO3sFnN5+nPoDqMbLJNaCi4RiOwcw6/s3YNxRQ4ZrIkTOrUmlhopgWPFIDYGBtNDD
-         5idWyHHivebBsvrrNLiqM6+nSnkObB2D+WnpuyIO1C0an4eyCcgdNS4wgkbZhYPYnlho
-         90CX60sWIVgTVBZADP+2qcnwPHC6MYl1rlXyLmWCe2ds/tW5FbH5cmZ1f5GZ6hpKH5xD
-         pi1g39zenCnZpTKnUMjD6TDWc9sxoX0Cj6X7VLzO+c4nXamhM9ft3Tm5vlZRt9lskS2x
-         IlxQ==
-X-Gm-Message-State: AOAM530UeO8ycRbblCeXknjgYv/Om0FuwoA519Ce+1Aa/qOzFkQrhHow
-        Q34NCwpMydEYhZm6+9qxkX+xLoifhvRMbeUjIjp5Hw==
-X-Google-Smtp-Source: ABdhPJw+MtswP+bBIXzw2fD0VxSWv4TW1Zt5sSALH37S5MTkdypofzG6IRLw0xceqMUHVuy/3rntj/a1H0Cn1JQnB4A=
-X-Received: by 2002:a05:6902:124f:: with SMTP id t15mr80500510ybu.644.1641413920152;
- Wed, 05 Jan 2022 12:18:40 -0800 (PST)
+ d=oracle.onmicrosoft.com; s=selector2-oracle-onmicrosoft-com;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=moN0N9AohXo6kI25Abl/whL3aL6xWbMk0+iw4AQavBA=;
+ b=mk2Xg5M+12K0fpGJ8/uxCuvkcE94CV2pxXuBQjBCCXAPcyUQ/9VwDY5ZL47CMB1z7Qg0XetpJpigwFinCYRZkcTmpmMHSzbif8I7+avAB7DuBhIJtJ7CLBbJtfxrIcp9OVTSF78raslhXvFDsPls/Ysie7pR7fIhaQWHfyKNVqw=
+Received: from CH2PR10MB4150.namprd10.prod.outlook.com (2603:10b6:610:ac::13)
+ by CH0PR10MB5034.namprd10.prod.outlook.com (2603:10b6:610:c9::21) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.4844.15; Wed, 5 Jan
+ 2022 23:50:42 +0000
+Received: from CH2PR10MB4150.namprd10.prod.outlook.com
+ ([fe80::cc63:ba5d:5d87:579a]) by CH2PR10MB4150.namprd10.prod.outlook.com
+ ([fe80::cc63:ba5d:5d87:579a%4]) with mapi id 15.20.4867.009; Wed, 5 Jan 2022
+ 23:50:42 +0000
+From:   Eric Snowberg <eric.snowberg@oracle.com>
+To:     dhowells@redhat.com, dwmw2@infradead.org, ardb@kernel.org,
+        jarkko@kernel.org
+Cc:     jmorris@namei.org, serge@hallyn.com, eric.snowberg@oracle.com,
+        nayna@linux.ibm.com, zohar@linux.ibm.com, keescook@chromium.org,
+        torvalds@linux-foundation.org, weiyongjun1@huawei.com,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-security-module@vger.kernel.org,
+        James.Bottomley@HansenPartnership.com, pjones@redhat.com,
+        konrad.wilk@oracle.com
+Subject: [PATCH v9 6/8] efi/mokvar: move up init order
+Date:   Wed,  5 Jan 2022 18:50:10 -0500
+Message-Id: <20220105235012.2497118-7-eric.snowberg@oracle.com>
+X-Mailer: git-send-email 2.18.4
+In-Reply-To: <20220105235012.2497118-1-eric.snowberg@oracle.com>
+References: <20220105235012.2497118-1-eric.snowberg@oracle.com>
+Content-Type: text/plain
+X-ClientProxiedBy: SN4PR0501CA0095.namprd05.prod.outlook.com
+ (2603:10b6:803:22::33) To CH2PR10MB4150.namprd10.prod.outlook.com
+ (2603:10b6:610:ac::13)
 MIME-Version: 1.0
-References: <20211229215330.4134835-1-yaelt@google.com> <CAFA6WYPuPHgcnzt6j+Q-EA2Dos6vBDukrjpheo5srLVXFrifEg@mail.gmail.com>
- <5a38824152eeee0fc9ba0a4fd2308bb6e0970059.camel@linux.ibm.com> <CAFA6WYOJt3=YMTt_QQSq6Z-MK42hwWspgSpasw2fuPtVFcP3uA@mail.gmail.com>
-In-Reply-To: <CAFA6WYOJt3=YMTt_QQSq6Z-MK42hwWspgSpasw2fuPtVFcP3uA@mail.gmail.com>
-From:   Yael Tiomkin <yaelt@google.com>
-Date:   Wed, 5 Jan 2022 15:18:29 -0500
-Message-ID: <CAKoutNvW1c7MkTaFwyrD7MjUVXvTtcBOGFULMittJ5vzjMN0mg@mail.gmail.com>
-Subject: Re: [PATCH v4] KEYS: encrypted: Instantiate key with user-provided
- decrypted data
-To:     Sumit Garg <sumit.garg@linaro.org>
-Cc:     Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org,
-        jejb@linux.ibm.com, Jarkko Sakkinen <jarkko@kernel.org>,
-        corbet@lwn.net, dhowells@redhat.com, jmorris@namei.org,
-        serge@hallyn.com, keyrings@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        =?UTF-8?Q?Jan_L=C3=BCbbe?= <jlu@pengutronix.de>,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
+X-MS-PublicTrafficType: Email
+X-MS-Office365-Filtering-Correlation-Id: 529425aa-4282-4166-4488-08d9d0a62f27
+X-MS-TrafficTypeDiagnostic: CH0PR10MB5034:EE_
+X-Microsoft-Antispam-PRVS: <CH0PR10MB503459E5EE48BF3EA9C7891D874B9@CH0PR10MB5034.namprd10.prod.outlook.com>
+X-MS-Oob-TLC-OOBClassifiers: OLM:1443;
+X-MS-Exchange-SenderADCheck: 1
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam: BCL:0;
+X-Microsoft-Antispam-Message-Info: d6pCyBKg7TZMV4kC2kVehoAH04dMRIFtQ7yyKGCjbgsEKz8JQWbsdhBvIgPUM30utHTmWb1yokCJN7piqggnQVP2lAAu+ixhAv+2rgA7mDHAZbxVxpGxYNOL2sVktQLWdFLq5t8Xjometmt9PEuPw0DdFGBQn8KfEjAlpWzRUucTXnmxnsfbi1M5o5oHFrNR6ICmg91SFDIUOerJNhVp4FbUboI1RwgDWsuazcRLXUG7z88CnS7RkFnAZJNtyujO+q+YD+xBCN53qgi5wtBm69H1DuOhAl6LZDhomnHq1A/Y22+q68o2wJdZArzajrC2ox8JDtjvYPrQORw29CTclZkdUk+F47oVvIsFOu8Nm1cliiXSqcuznmaZPU0oVjnoju0wTggc0J6hKzlmknVJevdQXpLJieUUbUPWQhI/kyNNf8epvWcaoZ6b1EuclAFEetS5eYGQ/prvyDhQq/TgmmYEHeS56IurTrHf+pMCSv741+WKZJsGbAe5czwaJc5HNnJPbUHOwqLXRQ1fLHCQ9D6wyREBhv58ASIaDSohgqgRL54HzX2ockHTt+85PWS+Oypd5Y+zIx9g9gy9EbXi4fn7oDxJojjznTYd3SLZaG0kM7CrOOyWo614I4h0GQcTn9BjONR5rk+pISJsh7uJugHDtHU0GkSpd6aYe1FTjnmz+lwhYcqQwFA9I4EMu9s09So0O9AiwCp/gwtINrWMXQ==
+X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:CH2PR10MB4150.namprd10.prod.outlook.com;PTR:;CAT:NONE;SFS:(366004)(186003)(6512007)(8676002)(316002)(2906002)(66556008)(6506007)(508600001)(8936002)(66476007)(52116002)(2616005)(86362001)(4744005)(66946007)(4326008)(7416002)(36756003)(38100700002)(107886003)(6666004)(44832011)(26005)(6486002)(5660300002)(83380400001)(1076003)(38350700002);DIR:OUT;SFP:1101;
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-MessageData-0: =?us-ascii?Q?gtaFpKpdlrX3FZibBANviyAgrsqQlZfKF5RMo/2hsosfyGRa7XJnB2k5DXqn?=
+ =?us-ascii?Q?AVi8RkkisPBIEuCXy6fjW6l/CwfAFfiICynJ5TejujF8uYQDu5xMemErWzy3?=
+ =?us-ascii?Q?wkirSlG8LH8XvaBojJNOOZHMqKV8kkIwl2Bp/EfiXNKopHCCXEUa8V8KHdMu?=
+ =?us-ascii?Q?Y7dKaeKIIcRbIoiMHsvAk7guVqXRbYDnCDdorwpPYy/odCgXaGjwIMuYrLwp?=
+ =?us-ascii?Q?RBFaOjuuPVI3z/GreJB//kBuRsxBFnoEf9QpPgaJbjPlE0d+fAXquCpjq/oB?=
+ =?us-ascii?Q?i6NXlrcX5hGZbH+FcQusKX30namftNJ59yBD8qN5wyREg2r5TQ+pb+iOLZ0N?=
+ =?us-ascii?Q?ROk4OAq+4F39jkGxlZC8+dSaVjqNZoILdeanS+TQqgygFQQOSh5arvZ5bBm5?=
+ =?us-ascii?Q?8qNB9LyB/L1xpZL+GKvFThVbaXDqKAAKVuLPdwEjGFWzeHWbROKcPCWrLwHF?=
+ =?us-ascii?Q?NB80bGwvnMQ5g0JIAFWw6TgwQlQuCV7kZJyp69pQMqzRhcMosXY/AARO4Jff?=
+ =?us-ascii?Q?utgroGtQv6lo4hCMD1ul+VRmHg7AGq+zISafYx+lV4pXSTZE0bZue/+YND6o?=
+ =?us-ascii?Q?8p9XtPFMZd+ZQ9gmuMMjptw4tAa4QYlFrftqzBfwXJdPG09B4ijqORSrFfxD?=
+ =?us-ascii?Q?7NrGx39j8ZGHmI4idhaCuIDYnD+hH2lm3IDhbRIIqU30Je508ZmzZ2mp6OWy?=
+ =?us-ascii?Q?s8OmidLffgoSvcN7HX+Dabg2gGQQgX54weJzJu5fO0jq6jv4qe/eHuJoSloh?=
+ =?us-ascii?Q?VHJMmFKqhEbBmJjgVUpXVCV4ieV7MHHUMRn9IzrYf09eUiGy6MiZ5dlU547+?=
+ =?us-ascii?Q?bQ1Rv+qIV9aOCI1M2OY78kkn2fRDq59xtt89lwVrsTvasTPMtsIUbw5YCXGx?=
+ =?us-ascii?Q?AqAFAgBQBKbBD+VxbLn/cBDLOHg9fXGYag4zVscrfuVCO8xmnd0kYryZAF0X?=
+ =?us-ascii?Q?laMAVAdXdq+OyqTb2v+Cj0L0DXqy7ZzDyFcmz8AeuzQ7O64KxjwHwwMc55qf?=
+ =?us-ascii?Q?iwNWhZDgCChQU57cdDeu5nFYi6xWakrs2AsGeQVhQypiGBkJzLqaO9lzVSVN?=
+ =?us-ascii?Q?vxHdGKLN7a9kIqi+1eUs3nrsD81jT5GltxZtbampSyt1NxLpijyssyJnihFs?=
+ =?us-ascii?Q?AU4DbZKbnAwAb1PJ4Xkn/Nt1KnNi9yELBoEkiDG5WJkYX0DMIM5iH+8cOWgE?=
+ =?us-ascii?Q?1fRFPFWgZhjcREK0JIWlw8vE/u8o5fjf0bB02n5Bx8lva625ABLoLwnBux0z?=
+ =?us-ascii?Q?eCiAgMIYV035WPITitI02fQJreUIBYMhjt//9AG7aPBWObKANBlubAYIYJmH?=
+ =?us-ascii?Q?YJ0frllOmAh7RjJewSP4L75fPbEhpm58t5C6zNwdjlJIt+/Mn6wefwKMwpaa?=
+ =?us-ascii?Q?+QSvWIIpbgmx8u0/gPrilx7YiSq8KN6t4yum2+wH4l1iWEdbXKkUaonTibJ9?=
+ =?us-ascii?Q?UTJZBe1OjNHXSEskZqJQD5NNgxsFRoIJCQOmOw7dEJ0hciysfPCrtYnoV9Lm?=
+ =?us-ascii?Q?aHyLj7ezifjs2ATNpTHVonrpoC0ubxoC/c5tm2Tg4icg1eQgkBxdKEWs4KIO?=
+ =?us-ascii?Q?DrHNt+Pi1IsAcG6JkorJFcV8gnNOwhrfWefGobDF+enw/V2PN//NTbbxJMkd?=
+ =?us-ascii?Q?ge5S/ZT0gAEelxgqJFLB+JDLo0LVzq5GPD7Fkh5IQLrl+9nrmWjns+izd309?=
+ =?us-ascii?Q?sGZZ/g=3D=3D?=
+X-OriginatorOrg: oracle.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 529425aa-4282-4166-4488-08d9d0a62f27
+X-MS-Exchange-CrossTenant-AuthSource: CH2PR10MB4150.namprd10.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2022 23:50:42.5775
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 4e2c6054-71cb-48f1-bd6c-3a9705aca71b
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: AUqR/EgvoJlquu4Xg2iu7YEv9kqA/+wrCpxvRfZjh1ugjI3ltBtuTWFsaRMJoijB2/4TXanBI2GwP2kOCVcf4APbYhnh4GvNgeWaXzb0h7c=
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CH0PR10MB5034
+X-Proofpoint-Virus-Version: vendor=nai engine=6300 definitions=10218 signatures=668683
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 malwarescore=0 mlxscore=0 spamscore=0
+ suspectscore=0 mlxlogscore=999 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2112160000
+ definitions=main-2201050150
+X-Proofpoint-GUID: 6_ceHJItPutMruteO1WAwVdJHeZj1qc3
+X-Proofpoint-ORIG-GUID: 6_ceHJItPutMruteO1WAwVdJHeZj1qc3
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi Sumit,
+Move up the init order so it can be used by the new machine keyring.
 
-On Mon, Jan 3, 2022 at 1:51 AM Sumit Garg <sumit.garg@linaro.org> wrote:
->
-> Hi Mimi,
->
-> Apologies for the delayed reply as I was on leave for a long new year weekend.
->
-> On Thu, 30 Dec 2021 at 18:59, Mimi Zohar <zohar@linux.ibm.com> wrote:
-> >
-> > Hi Sumit,
-> >
-> > On Thu, 2021-12-30 at 15:37 +0530, Sumit Garg wrote:
-> > > + Jan, Ahmad
-> > >
-> > > On Thu, 30 Dec 2021 at 03:24, Yael Tiomkin <yaelt@google.com> wrote:
-> > > >
-> > > > The encrypted.c class supports instantiation of encrypted keys with
-> > > > either an already-encrypted key material, or by generating new key
-> > > > material based on random numbers. This patch defines a new datablob
-> > > > format: [<format>] <master-key name> <decrypted data length>
-> > > > <decrypted data> that allows to instantiate encrypted keys using
-> > > > user-provided decrypted data, and therefore allows to perform key
-> > > > encryption from userspace. The decrypted key material will be
-> > > > inaccessible from userspace.
-> > >
-> > > This type of user-space key import feature has already been discussed
-> > > at large in the context of trusted keys here [1]. So what makes it
-> > > special in case of encrypted keys such that it isn't a "UNSAFE_IMPORT"
-> > > or "DEBUGGING_IMPORT" or "DEVELOPMENT_IMPORT", ...?
-> > >
-> > > [1] https://lore.kernel.org/linux-integrity/74830d4f-5a76-8ba8-aad0-0d79f7c01af9@pengutronix.de/
-> > >
-> > > -Sumit
-> > >
-> > > >
-> > > > Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-> > > > Signed-off-by: Yael Tiomkin <yaelt@google.com>
-> >
-> > There is a difference between trusted and encrypted keys.
->
-> Yeah I understand the implementation differences.
->
-> >  So in
-> > addition to pointing to the rather long discussion thread, please
-> > summarize the conclusion and, assuming you agree, include why in once
-> > case it was acceptable and in the other it wasn't to provide userspace
-> > key data.
->
-> My major concern with importing user-space key data in *plain* format
-> is that if import is *not* done in a safe (manufacturing or
-> production) environment then the plain key data is susceptible to
-> user-space compromises when the device is in the field.
+Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
+---
+v7: Initial version
+v9: Unmodified from v7
+---
+ drivers/firmware/efi/mokvar-table.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I agree this can happen. Key distribution in any scenario needs to be
-secure and this could also potentially be an issue if the key is first
-encrypted and then imported. We can make sure the documentation
-highlights the safety requirement.
+diff --git a/drivers/firmware/efi/mokvar-table.c b/drivers/firmware/efi/mokvar-table.c
+index 38722d2009e2..5ed0602c2f75 100644
+--- a/drivers/firmware/efi/mokvar-table.c
++++ b/drivers/firmware/efi/mokvar-table.c
+@@ -359,4 +359,4 @@ static int __init efi_mokvar_sysfs_init(void)
+ 	}
+ 	return err;
+ }
+-device_initcall(efi_mokvar_sysfs_init);
++fs_initcall(efi_mokvar_sysfs_init);
+-- 
+2.18.4
 
->
-> And it sounds like we are diverting from basic definition [1] of encrypted keys:
->
-> "Trusted and Encrypted Keys are two new key types added to the
-> existing kernel key ring service. Both of these new types are variable
-> length symmetric keys, and in both cases all keys are created in the
-> kernel, and **user space sees, stores, and loads** only encrypted
-> blobs."
->
-> Also, as Jarrko mentioned earlier the use-case is still not clear to
-> me as well. Isn't user logon keys an alternative option for
-> non-readable user-space keys?
-
-The goal in this change is to allow key encryption from userspace,
-using user-provided decrypted data. This cannot be achieved in logon
-keys, which as you mentioned, are simply non-readable user type keys.
-
-
->
-> [1] https://www.kernel.org/doc/html/v4.13/security/keys/trusted-encrypted.html
->
-> -Sumit
->
-> >
-> > thanks,
-> >
-> > Mimi
-> >
-
-Yael
