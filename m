@@ -2,146 +2,134 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9B085C433F5
-	for <keyrings@archiver.kernel.org>; Wed,  5 Jan 2022 17:54:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9F42AC43217
+	for <keyrings@archiver.kernel.org>; Wed,  5 Jan 2022 17:54:42 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S242590AbiAERyk (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 5 Jan 2022 12:54:40 -0500
-Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:17576 "EHLO
+        id S242604AbiAERyl (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 5 Jan 2022 12:54:41 -0500
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:35596 "EHLO
         mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S242575AbiAERye (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 5 Jan 2022 12:54:34 -0500
-Received: from pps.filterd (m0098399.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 205Gdfbm001184;
-        Wed, 5 Jan 2022 17:54:29 GMT
+        by vger.kernel.org with ESMTP id S242614AbiAERyj (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 5 Jan 2022 12:54:39 -0500
+Received: from pps.filterd (m0098396.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 205Hh0CM024207;
+        Wed, 5 Jan 2022 17:54:35 GMT
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : mime-version : content-transfer-encoding; s=pp1;
- bh=a/hNyN174JDvdNNm/i87MV7ShBYIpTBhS4It78lqvIc=;
- b=jo0L6m6CansbM71w+v8yXyYkAISYzTwyp0KGFDgmxp1iC/bki9crOoIB8A2FHsxVLGFO
- UM7KOqfw9PS+hbN+Wr9I0+7KVW1dIqZUOWTZwECXBDRy+eFyJy7VAXE5KI8t6ruAer1X
- PPXh2xly903qxSA2vPEmNjYI8YsK1cAlWsIT3EXtWzyqxVyGa1jBoK+E/02iXdRgOwYa
- aJzZz+Phbj41iJjzPLG9tKcJj4KGYJD+qebagZvqNzcnOWNhdM+XvcjYOvBrMKhxIm0Z
- c8NjywiCz8N6WhbCj9Bq85M6kB3yEcgjfBhnKYoYdy4XdQWnHo0c+QG4N6jM6/Edeycd 0g== 
+ : date : message-id : in-reply-to : references : mime-version :
+ content-transfer-encoding; s=pp1;
+ bh=Ev05CCMpM+4xVv2FkPcOQa9cW4aBBNjgmR99qDddj/I=;
+ b=XnYweohWhqpjwt3+I2gguvXpSeydAZBW/QxI3CQbv1API3hwAfyemUN1CHvMc64JpyVR
+ pCS7WeUp9zTtg6mVcvYBGTyI6hE2TwdbvX2szGix1yQFiHwndeUvp+BZvSe9b0ag7Q4K
+ HfDw4ypo9ex5Dl7lxgEEH9exEffOFsLGIpuEULJDWIJ9Taup04cbk7KADDEogdXLX/H5
+ 3JOz9vsYj/4JbKdxVpwJth2zzUKg5rBj6AYZ/UVWdkv/UYpIbr5WDYfMwjDbNMP1edca
+ 5tp4YEcAazySVObkvvDCtNK2mWvO3JZu9MPJvco6Pca8rOlXKWa3f9d88QGbSAIAiq0K ww== 
 Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3dcq0s3stx-1
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3dckgpq4m4-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Wed, 05 Jan 2022 17:54:29 +0000
-Received: from m0098399.ppops.net (m0098399.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 205GAqv3009846;
-        Wed, 5 Jan 2022 17:54:29 GMT
+        Wed, 05 Jan 2022 17:54:35 +0000
+Received: from m0098396.ppops.net (m0098396.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 205HiwAJ032123;
+        Wed, 5 Jan 2022 17:54:34 GMT
 Received: from ppma06ams.nl.ibm.com (66.31.33a9.ip4.static.sl-reverse.com [169.51.49.102])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3dcq0s3st8-1
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3dckgpq4kk-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Wed, 05 Jan 2022 17:54:28 +0000
+        Wed, 05 Jan 2022 17:54:34 +0000
 Received: from pps.filterd (ppma06ams.nl.ibm.com [127.0.0.1])
-        by ppma06ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 205Hm5x6021359;
-        Wed, 5 Jan 2022 17:54:26 GMT
-Received: from b06cxnps3074.portsmouth.uk.ibm.com (d06relay09.portsmouth.uk.ibm.com [9.149.109.194])
-        by ppma06ams.nl.ibm.com with ESMTP id 3dae7k3wqk-1
+        by ppma06ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 205HmA4m021400;
+        Wed, 5 Jan 2022 17:54:32 GMT
+Received: from b06cxnps4075.portsmouth.uk.ibm.com (d06relay12.portsmouth.uk.ibm.com [9.149.109.197])
+        by ppma06ams.nl.ibm.com with ESMTP id 3dae7k3wra-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Wed, 05 Jan 2022 17:54:26 +0000
+        Wed, 05 Jan 2022 17:54:32 +0000
 Received: from d06av24.portsmouth.uk.ibm.com (mk.ibm.com [9.149.105.60])
-        by b06cxnps3074.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 205HsNVW27984216
+        by b06cxnps4075.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 205HsSl737224880
         (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Wed, 5 Jan 2022 17:54:23 GMT
+        Wed, 5 Jan 2022 17:54:28 GMT
 Received: from d06av24.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 055ED4204D;
-        Wed,  5 Jan 2022 17:54:23 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id B889042047;
+        Wed,  5 Jan 2022 17:54:28 +0000 (GMT)
 Received: from d06av24.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 8981D4204C;
-        Wed,  5 Jan 2022 17:54:20 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id 79E584203F;
+        Wed,  5 Jan 2022 17:54:26 +0000 (GMT)
 Received: from li-4b5937cc-25c4-11b2-a85c-cea3a66903e4.ibm.com.com (unknown [9.211.129.18])
         by d06av24.portsmouth.uk.ibm.com (Postfix) with ESMTP;
-        Wed,  5 Jan 2022 17:54:20 +0000 (GMT)
+        Wed,  5 Jan 2022 17:54:26 +0000 (GMT)
 From:   Nayna Jain <nayna@linux.ibm.com>
 To:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
 Cc:     dhowells@redhat.com, zohar@linux.ibm.com, jarkko@kernel.org,
         linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, dimitri.ledkov@canonical.com,
         seth@forshee.me, Nayna Jain <nayna@linux.ibm.com>
-Subject: [PATCH v7 0/3] integrity: support including firmware ".platform" keys at build time 
-Date:   Wed,  5 Jan 2022 12:54:07 -0500
-Message-Id: <20220105175410.554444-1-nayna@linux.ibm.com>
+Subject: [PATCH v7 2/3] integrity: make integrity_keyring_from_id() non-static
+Date:   Wed,  5 Jan 2022 12:54:09 -0500
+Message-Id: <20220105175410.554444-3-nayna@linux.ibm.com>
 X-Mailer: git-send-email 2.27.0
+In-Reply-To: <20220105175410.554444-1-nayna@linux.ibm.com>
+References: <20220105175410.554444-1-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: Q1MknRTnjF1ZnyS4KjnINjuq5udcdStZ
-X-Proofpoint-ORIG-GUID: XXkfOg9bfQ9nJOj3tCk0Qnj2l7w0DOYV
+X-Proofpoint-GUID: th7ZWrvkxiV3qLe8xKoHr-uBxFqIy_Q1
+X-Proofpoint-ORIG-GUID: tlHwiohzxd5x44tPaCII1iO9KTkLsvPz
 X-Proofpoint-Virus-Version: vendor=baseguard
  engine=ICAP:2.0.205,Aquarius:18.0.790,Hydra:6.0.425,FMLib:17.11.62.513
  definitions=2022-01-05_05,2022-01-04_01,2021-12-02_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 clxscore=1015
- lowpriorityscore=0 impostorscore=0 adultscore=0 mlxlogscore=999
- malwarescore=0 suspectscore=0 spamscore=0 phishscore=0 priorityscore=1501
- mlxscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 bulkscore=0 phishscore=0
+ adultscore=0 spamscore=0 mlxlogscore=999 mlxscore=0 clxscore=1015
+ lowpriorityscore=0 impostorscore=0 priorityscore=1501 suspectscore=0
+ malwarescore=0 classifier=spam adjust=0 reason=mlx scancount=1
  engine=8.12.0-2110150000 definitions=main-2201050116
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Some firmware support secure boot by embedding static keys to verify the
-Linux kernel during boot. However, these firmware do not expose an
-interface for the kernel to load firmware keys onto the ".platform"
-keyring, preventing the kernel from verifying the kexec kernel image
-signature.
+Make integrity_keyring_from_id() non-static so that it is accessible
+by other files in security/integrity.
 
-This patchset exports load_certificate_list() and defines a new function
-load_builtin_platform_cert() to load compiled in certificates onto the
-".platform" keyring.
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+---
+ security/integrity/digsig.c    | 2 +-
+ security/integrity/integrity.h | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-Note: It seems last time my patches didn't go through mailing list. My
-apologies to those who are receiving it twice.
-
-Changelog:
-
-v7:
-* Incldues Jarkko's feedback on patch description for Patch 1 and 3.
-
-v6:
-* Includes Jarkko's feedback:
- * Split Patch 2 into two.
- * Update Patch description.
-
-v5:
-* Renamed load_builtin_platform_cert() to load_platform_certificate_list()
-and config INTEGRITY_PLATFORM_BUILTIN_KEYS to INTEGRITY_PLATFORM_KEYS, as
-suggested by Mimi Zohar.
-
-v4:
-* Split into two patches as per Mimi Zohar and Dimitri John Ledkov
-recommendation.
-
-v3:
-* Included Jarkko's feedback
- ** updated patch description to include approach.
- ** removed extern for function declaration in the .h file.
-* Included load_certificate_list() within #ifdef CONFIG_KEYS condition.
-
-v2:
-* Fixed the error reported by kernel test robot
-* Updated patch description based on Jarkko's feedback.
-
-Nayna Jain (3):
-  certs: export load_certificate_list() to be used outside certs/
-  integrity: make integrity_keyring_from_id() non-static
-  integrity: support including firmware ".platform" keys at build time
-
- certs/Makefile                                |  5 ++--
- certs/blacklist.c                             |  1 -
- certs/common.c                                |  2 +-
- certs/common.h                                |  9 -------
- certs/system_keyring.c                        |  1 -
- include/keys/system_keyring.h                 |  6 +++++
- security/integrity/Kconfig                    | 10 +++++++
- security/integrity/Makefile                   | 17 +++++++++++-
- security/integrity/digsig.c                   |  2 +-
- security/integrity/integrity.h                |  6 +++++
- .../integrity/platform_certs/platform_cert.S  | 23 ++++++++++++++++
- .../platform_certs/platform_keyring.c         | 26 +++++++++++++++++++
- 12 files changed, 92 insertions(+), 16 deletions(-)
- delete mode 100644 certs/common.h
- create mode 100644 security/integrity/platform_certs/platform_cert.S
-
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 3b06a01bd0fd..0ea40ed8dfcb 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -38,7 +38,7 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
+ 
+-static struct key *integrity_keyring_from_id(const unsigned int id)
++struct key *integrity_keyring_from_id(const unsigned int id)
+ {
+ 	if (id >= INTEGRITY_KEYRING_MAX)
+ 		return ERR_PTR(-EINVAL);
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 547425c20e11..feb84e1b1105 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -167,6 +167,7 @@ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
+ int __init integrity_load_cert(const unsigned int id, const char *source,
+ 			       const void *data, size_t len, key_perm_t perm);
++struct key *integrity_keyring_from_id(const unsigned int id);
+ #else
+ 
+ static inline int integrity_digsig_verify(const unsigned int id,
+@@ -194,6 +195,11 @@ static inline int __init integrity_load_cert(const unsigned int id,
+ {
+ 	return 0;
+ }
++
++static inline struct key *integrity_keyring_from_id(const unsigned int id)
++{
++	return ERR_PTR(-EOPNOTSUPP);
++}
+ #endif /* CONFIG_INTEGRITY_SIGNATURE */
+ 
+ #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
 -- 
 2.27.0
+
