@@ -2,314 +2,120 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A9ACFC433EF
-	for <keyrings@archiver.kernel.org>; Tue, 11 Jan 2022 11:38:19 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3F9F1C433EF
+	for <keyrings@archiver.kernel.org>; Tue, 11 Jan 2022 18:04:02 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1349590AbiAKLiC (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 11 Jan 2022 06:38:02 -0500
-Received: from smtp-out2.suse.de ([195.135.220.29]:33626 "EHLO
-        smtp-out2.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1349546AbiAKLh7 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 11 Jan 2022 06:37:59 -0500
-Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-        by smtp-out2.suse.de (Postfix) with ESMTP id 9ACCA1F3BE;
-        Tue, 11 Jan 2022 11:37:57 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1641901077; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=E5S+PDIMt0cv778Ug4dTHgOhwSV6I7mLY7fYsPSMbc8=;
-        b=cNTa4UdEI8NMT2ulyV45F/C/V13CVcxnHg2/esmZQ9mIhQ4wW8tFjineNtW9R8OYNjpyzQ
-        /zlZ9M4CizPX6Da//4DbLf1GFhpmIzRgQqK8WzvxT/I3jGEGk7/mfQepNvv2M1J7zCxtl2
-        fc3gS9gTAYfCRnrha03OmoNgg3j/HZY=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1641901077;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=E5S+PDIMt0cv778Ug4dTHgOhwSV6I7mLY7fYsPSMbc8=;
-        b=Gx/naHnidUOgdbPPRqig0Wgs+UDBOAiZnhMMzrD37EGj9I3JOKbn2QGeVXTk7DLgO/rsjU
-        BxTzShMlokMLUABA==
-Received: from kitsune.suse.cz (kitsune.suse.cz [10.100.12.127])
-        by relay2.suse.de (Postfix) with ESMTP id 5459AA3B8F;
-        Tue, 11 Jan 2022 11:37:57 +0000 (UTC)
-From:   Michal Suchanek <msuchanek@suse.de>
-To:     keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-integrity@vger.kernel.org
-Cc:     Michal Suchanek <msuchanek@suse.de>, kexec@lists.infradead.org,
-        Philipp Rudo <prudo@redhat.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        Nayna <nayna@linux.vnet.ibm.com>, Rob Herring <robh@kernel.org>,
-        linux-s390@vger.kernel.org, Vasily Gorbik <gor@linux.ibm.com>,
-        Lakshmi Ramasubramanian <nramas@linux.microsoft.com>,
-        Heiko Carstens <hca@linux.ibm.com>,
-        Jessica Yu <jeyu@kernel.org>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Luis Chamberlain <mcgrof@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Hari Bathini <hbathini@linux.ibm.com>,
-        Alexander Gordeev <agordeev@linux.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        Frank van der Linden <fllinden@amazon.com>,
-        Thiago Jung Bauermann <bauerman@linux.ibm.com>,
-        Daniel Axtens <dja@axtens.net>, buendgen@de.ibm.com,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Christian Borntraeger <borntraeger@linux.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Sven Schnelle <svens@linux.ibm.com>,
-        Baoquan He <bhe@redhat.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v5 3/6] kexec_file: Don't opencode appended signature verification.
-Date:   Tue, 11 Jan 2022 12:37:45 +0100
-Message-Id: <7834eb187ef67cd88fc67f10e831130e3717d776.1641900831.git.msuchanek@suse.de>
-X-Mailer: git-send-email 2.31.1
-In-Reply-To: <cover.1641900831.git.msuchanek@suse.de>
-References: <cover.1641900831.git.msuchanek@suse.de>
+        id S1345055AbiAKSEA (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 11 Jan 2022 13:04:00 -0500
+Received: from frasgout.his.huawei.com ([185.176.79.56]:4389 "EHLO
+        frasgout.his.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1345158AbiAKSDv (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 11 Jan 2022 13:03:51 -0500
+Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.200])
+        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4JYJPq0CrVz67cQc;
+        Wed, 12 Jan 2022 02:00:15 +0800 (CST)
+Received: from roberto-ThinkStation-P620.huawei.com (10.204.63.22) by
+ fraeml714-chm.china.huawei.com (10.206.15.33) with Microsoft SMTP Server
+ (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
+ 15.1.2308.20; Tue, 11 Jan 2022 19:03:47 +0100
+From:   Roberto Sassu <roberto.sassu@huawei.com>
+To:     <dhowells@redhat.com>, <dwmw2@infradead.org>,
+        <herbert@gondor.apana.org.au>, <davem@davemloft.net>
+CC:     <keyrings@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
+        <linux-integrity@vger.kernel.org>, <linux-fscrypt@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <zohar@linux.ibm.com>,
+        <ebiggers@kernel.org>, Roberto Sassu <roberto.sassu@huawei.com>
+Subject: [PATCH 01/14] mpi: Introduce mpi_key_length()
+Date:   Tue, 11 Jan 2022 19:03:05 +0100
+Message-ID: <20220111180318.591029-2-roberto.sassu@huawei.com>
+X-Mailer: git-send-email 2.32.0
+In-Reply-To: <20220111180318.591029-1-roberto.sassu@huawei.com>
+References: <20220111180318.591029-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7BIT
+Content-Type:   text/plain; charset=US-ASCII
+X-Originating-IP: [10.204.63.22]
+X-ClientProxiedBy: lhreml754-chm.china.huawei.com (10.201.108.204) To
+ fraeml714-chm.china.huawei.com (10.206.15.33)
+X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Module verification already implements appeded signature verification.
+Introduce the new function to get the number of bits and bytes from an MPI.
 
-Reuse it for kexec_file.
-
-Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
-v3: - Philipp Rudo <prudo@redhat.com>: Update the dependency on
-      MODULE_SIG_FORMAT to MODULE_SIG
-    - Include linux/verification.h - previously added in earlier patch
-v4: - kernel test robot <lkp@intel.com>: Use unsigned long rather than size_t for data length
-    - Update the code in kernel/module_signing.c to use pointer rather
-      than memcpy as the kexec and IMA code does
----
- arch/powerpc/Kconfig                  |  2 +-
- arch/powerpc/kexec/elf_64.c           | 19 +++------------
- arch/s390/Kconfig                     |  2 +-
- arch/s390/kernel/machine_kexec_file.c | 18 ++------------
- include/linux/verification.h          |  3 +++
- kernel/module-internal.h              |  2 --
- kernel/module.c                       |  4 +++-
- kernel/module_signing.c               | 34 ++++++++++++++++-----------
- 8 files changed, 33 insertions(+), 51 deletions(-)
+ include/linux/mpi.h |  2 ++
+ lib/mpi/mpicoder.c  | 33 ++++++++++++++++++++++++++-------
+ 2 files changed, 28 insertions(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 1cde9b6c5987..4092187474ff 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -562,7 +562,7 @@ config ARCH_HAS_KEXEC_PURGATORY
- 
- config KEXEC_SIG
- 	bool "Verify kernel signature during kexec_file_load() syscall"
--	depends on KEXEC_FILE && MODULE_SIG_FORMAT
-+	depends on KEXEC_FILE && MODULE_SIG
- 	help
- 	  This option makes kernel signature verification mandatory for
- 	  the kexec_file_load() syscall.
-diff --git a/arch/powerpc/kexec/elf_64.c b/arch/powerpc/kexec/elf_64.c
-index 98d1cb5135b4..64cd314cce0d 100644
---- a/arch/powerpc/kexec/elf_64.c
-+++ b/arch/powerpc/kexec/elf_64.c
-@@ -23,6 +23,7 @@
- #include <linux/of_fdt.h>
- #include <linux/slab.h>
- #include <linux/types.h>
-+#include <linux/verification.h>
- #include <linux/module_signature.h>
- 
- static void *elf64_load(struct kimage *image, char *kernel_buf,
-@@ -156,9 +157,6 @@ static void *elf64_load(struct kimage *image, char *kernel_buf,
- int elf64_verify_sig(const char *kernel, unsigned long kernel_len)
- {
- 	const unsigned long marker_len = sizeof(MODULE_SIG_STRING) - 1;
--	struct module_signature *ms;
--	unsigned long sig_len;
--	int ret;
- 
- 	if (marker_len > kernel_len)
- 		return -EKEYREJECTED;
-@@ -168,19 +166,8 @@ int elf64_verify_sig(const char *kernel, unsigned long kernel_len)
- 		return -EKEYREJECTED;
- 	kernel_len -= marker_len;
- 
--	ms = (void *)kernel + kernel_len - sizeof(*ms);
--	ret = mod_check_sig(ms, kernel_len, "kexec");
--	if (ret)
--		return ret;
--
--	sig_len = be32_to_cpu(ms->sig_len);
--	kernel_len -= sizeof(*ms) + sig_len;
--
--	return verify_pkcs7_signature(kernel, kernel_len,
--				      kernel + kernel_len, sig_len,
--				      VERIFY_USE_PLATFORM_KEYRING,
--				      VERIFYING_MODULE_SIGNATURE,
--				      NULL, NULL);
-+	return verify_appended_signature(kernel, &kernel_len, VERIFY_USE_PLATFORM_KEYRING,
-+					 "kexec_file");
- }
- #endif /* CONFIG_KEXEC_SIG */
- 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 2a5bb4f29cfe..cece7152ea35 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -544,7 +544,7 @@ config ARCH_HAS_KEXEC_PURGATORY
- 
- config KEXEC_SIG
- 	bool "Verify kernel signature during kexec_file_load() syscall"
--	depends on KEXEC_FILE && MODULE_SIG_FORMAT
-+	depends on KEXEC_FILE && MODULE_SIG
- 	help
- 	  This option makes kernel signature verification mandatory for
- 	  the kexec_file_load() syscall.
-diff --git a/arch/s390/kernel/machine_kexec_file.c b/arch/s390/kernel/machine_kexec_file.c
-index c944d71316c7..345f2eab6e04 100644
---- a/arch/s390/kernel/machine_kexec_file.c
-+++ b/arch/s390/kernel/machine_kexec_file.c
-@@ -29,9 +29,6 @@ const struct kexec_file_ops * const kexec_file_loaders[] = {
- int s390_verify_sig(const char *kernel, unsigned long kernel_len)
- {
- 	const unsigned long marker_len = sizeof(MODULE_SIG_STRING) - 1;
--	struct module_signature *ms;
--	unsigned long sig_len;
--	int ret;
- 
- 	/* Skip signature verification when not secure IPLed. */
- 	if (!ipl_secure_flag)
-@@ -45,19 +42,8 @@ int s390_verify_sig(const char *kernel, unsigned long kernel_len)
- 		return -EKEYREJECTED;
- 	kernel_len -= marker_len;
- 
--	ms = (void *)kernel + kernel_len - sizeof(*ms);
--	ret = mod_check_sig(ms, kernel_len, "kexec");
--	if (ret)
--		return ret;
--
--	sig_len = be32_to_cpu(ms->sig_len);
--	kernel_len -= sizeof(*ms) + sig_len;
--
--	return verify_pkcs7_signature(kernel, kernel_len,
--				      kernel + kernel_len, sig_len,
--				      VERIFY_USE_PLATFORM_KEYRING,
--				      VERIFYING_MODULE_SIGNATURE,
--				      NULL, NULL);
-+	return verify_appended_signature(kernel, &kernel_len, VERIFY_USE_PLATFORM_KEYRING,
-+					"kexec_file");
- }
- #endif /* CONFIG_KEXEC_SIG */
- 
-diff --git a/include/linux/verification.h b/include/linux/verification.h
-index a655923335ae..32db9287a7b0 100644
---- a/include/linux/verification.h
-+++ b/include/linux/verification.h
-@@ -60,5 +60,8 @@ extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
- 				   enum key_being_used_for usage);
- #endif
- 
-+int verify_appended_signature(const void *data, unsigned long *len,
-+			      struct key *trusted_keys, const char *what);
-+
- #endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
- #endif /* _LINUX_VERIFY_PEFILE_H */
-diff --git a/kernel/module-internal.h b/kernel/module-internal.h
-index 33783abc377b..80461e14bf29 100644
---- a/kernel/module-internal.h
-+++ b/kernel/module-internal.h
-@@ -27,5 +27,3 @@ struct load_info {
- 		unsigned int sym, str, mod, vers, info, pcpu;
- 	} index;
+diff --git a/include/linux/mpi.h b/include/linux/mpi.h
+index eb0d1c1db208..a7dd4c9d8120 100644
+--- a/include/linux/mpi.h
++++ b/include/linux/mpi.h
+@@ -90,6 +90,8 @@ enum gcry_mpi_format {
  };
--
--extern int mod_verify_sig(const void *mod, struct load_info *info);
-diff --git a/kernel/module.c b/kernel/module.c
-index 84a9141a5e15..8481933dfa92 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -57,6 +57,7 @@
- #include <linux/bsearch.h>
- #include <linux/dynamic_debug.h>
- #include <linux/audit.h>
-+#include <linux/verification.h>
- #include <uapi/linux/module.h>
- #include "module-internal.h"
  
-@@ -2894,7 +2895,8 @@ static int module_sig_check(struct load_info *info, int flags)
- 	    memcmp(mod + info->len - markerlen, MODULE_SIG_STRING, markerlen) == 0) {
- 		/* We truncate the module to discard the signature */
- 		info->len -= markerlen;
--		err = mod_verify_sig(mod, info);
-+		err = verify_appended_signature(mod, &info->len,
-+						VERIFY_USE_SECONDARY_KEYRING, "module");
- 		if (!err) {
- 			info->sig_ok = true;
- 			return 0;
-diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-index 8723ae70ea1f..30149969f21f 100644
---- a/kernel/module_signing.c
-+++ b/kernel/module_signing.c
-@@ -14,32 +14,38 @@
- #include <crypto/public_key.h>
- #include "module-internal.h"
- 
--/*
-- * Verify the signature on a module.
-+/**
-+ * verify_appended_signature - Verify the signature on a module with the
-+ * signature marker stripped.
-+ * @data: The data to be verified
-+ * @len: Size of @data.
-+ * @trusted_keys: Keyring to use for verification
-+ * @what: Informational string for log messages
-  */
--int mod_verify_sig(const void *mod, struct load_info *info)
-+int verify_appended_signature(const void *data, unsigned long *len,
-+			      struct key *trusted_keys, const char *what)
- {
--	struct module_signature ms;
--	size_t sig_len, modlen = info->len;
-+	struct module_signature *ms;
-+	unsigned long sig_len, modlen = *len;
- 	int ret;
- 
--	pr_devel("==>%s(,%zu)\n", __func__, modlen);
-+	pr_devel("==>%s(,%lu)\n", __func__, modlen);
- 
--	if (modlen <= sizeof(ms))
-+	if (modlen <= sizeof(*ms))
- 		return -EBADMSG;
- 
--	memcpy(&ms, mod + (modlen - sizeof(ms)), sizeof(ms));
-+	ms = data + modlen - sizeof(*ms);
- 
--	ret = mod_check_sig(&ms, modlen, "module");
-+	ret = mod_check_sig(ms, modlen, what);
- 	if (ret)
- 		return ret;
- 
--	sig_len = be32_to_cpu(ms.sig_len);
--	modlen -= sig_len + sizeof(ms);
--	info->len = modlen;
-+	sig_len = be32_to_cpu(ms->sig_len);
-+	modlen -= sig_len + sizeof(*ms);
-+	*len = modlen;
- 
--	return verify_pkcs7_signature(mod, modlen, mod + modlen, sig_len,
--				      VERIFY_USE_SECONDARY_KEYRING,
-+	return verify_pkcs7_signature(data, modlen, data + modlen, sig_len,
-+				      trusted_keys,
- 				      VERIFYING_MODULE_SIGNATURE,
- 				      NULL, NULL);
+ MPI mpi_read_raw_data(const void *xbuffer, size_t nbytes);
++int mpi_key_length(const void *xbuffer, unsigned int ret_nread,
++		   unsigned int *nbits_arg, unsigned int *nbytes_arg);
+ MPI mpi_read_from_buffer(const void *buffer, unsigned *ret_nread);
+ int mpi_fromstr(MPI val, const char *str);
+ MPI mpi_scanval(const char *string);
+diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
+index 39c4c6731094..cd10ae9968b7 100644
+--- a/lib/mpi/mpicoder.c
++++ b/lib/mpi/mpicoder.c
+@@ -79,22 +79,41 @@ MPI mpi_read_raw_data(const void *xbuffer, size_t nbytes)
  }
+ EXPORT_SYMBOL_GPL(mpi_read_raw_data);
+ 
+-MPI mpi_read_from_buffer(const void *xbuffer, unsigned *ret_nread)
++int mpi_key_length(const void *xbuffer, unsigned int ret_nread,
++		   unsigned int *nbits_arg, unsigned int *nbytes_arg)
+ {
+ 	const uint8_t *buffer = xbuffer;
+-	unsigned int nbits, nbytes;
+-	MPI val;
++	unsigned int nbits;
+ 
+-	if (*ret_nread < 2)
+-		return ERR_PTR(-EINVAL);
++	if (ret_nread < 2)
++		return -EINVAL;
+ 	nbits = buffer[0] << 8 | buffer[1];
+ 
+ 	if (nbits > MAX_EXTERN_MPI_BITS) {
+ 		pr_info("MPI: mpi too large (%u bits)\n", nbits);
+-		return ERR_PTR(-EINVAL);
++		return -EINVAL;
+ 	}
+ 
+-	nbytes = DIV_ROUND_UP(nbits, 8);
++	if (nbits_arg)
++		*nbits_arg = nbits;
++	if (nbytes_arg)
++		*nbytes_arg = DIV_ROUND_UP(nbits, 8);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(mpi_key_length);
++
++MPI mpi_read_from_buffer(const void *xbuffer, unsigned int *ret_nread)
++{
++	const uint8_t *buffer = xbuffer;
++	unsigned int nbytes;
++	MPI val;
++	int ret;
++
++	ret = mpi_key_length(xbuffer, *ret_nread, NULL, &nbytes);
++	if (ret < 0)
++		return ERR_PTR(ret);
++
+ 	if (nbytes + 2 > *ret_nread) {
+ 		pr_info("MPI: mpi larger than buffer nbytes=%u ret_nread=%u\n",
+ 				nbytes, *ret_nread);
 -- 
-2.31.1
+2.32.0
 
