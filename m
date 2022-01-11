@@ -2,22 +2,22 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4EFFBC433FE
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B8CC1C43219
 	for <keyrings@archiver.kernel.org>; Tue, 11 Jan 2022 18:04:53 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S242233AbiAKSEu (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 11 Jan 2022 13:04:50 -0500
-Received: from frasgout.his.huawei.com ([185.176.79.56]:4391 "EHLO
+        id S1345277AbiAKSEw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 11 Jan 2022 13:04:52 -0500
+Received: from frasgout.his.huawei.com ([185.176.79.56]:4395 "EHLO
         frasgout.his.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1345189AbiAKSDw (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 11 Jan 2022 13:03:52 -0500
-Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.201])
-        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4JYJPr45rbz67wXw;
-        Wed, 12 Jan 2022 02:00:16 +0800 (CST)
+        with ESMTP id S1345494AbiAKSDz (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 11 Jan 2022 13:03:55 -0500
+Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.206])
+        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4JYJQp5x6Vz683S6;
+        Wed, 12 Jan 2022 02:01:06 +0800 (CST)
 Received: from roberto-ThinkStation-P620.huawei.com (10.204.63.22) by
  fraeml714-chm.china.huawei.com (10.206.15.33) with Microsoft SMTP Server
  (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2308.20; Tue, 11 Jan 2022 19:03:49 +0100
+ 15.1.2308.20; Tue, 11 Jan 2022 19:03:52 +0100
 From:   Roberto Sassu <roberto.sassu@huawei.com>
 To:     <dhowells@redhat.com>, <dwmw2@infradead.org>,
         <herbert@gondor.apana.org.au>, <davem@davemloft.net>
@@ -25,9 +25,9 @@ CC:     <keyrings@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
         <linux-integrity@vger.kernel.org>, <linux-fscrypt@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <zohar@linux.ibm.com>,
         <ebiggers@kernel.org>, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: [PATCH 03/14] PGPLIB: PGP definitions (RFC 4880)
-Date:   Tue, 11 Jan 2022 19:03:07 +0100
-Message-ID: <20220111180318.591029-4-roberto.sassu@huawei.com>
+Subject: [PATCH 07/14] KEYS: Provide PGP key description autogeneration
+Date:   Tue, 11 Jan 2022 19:03:11 +0100
+Message-ID: <20220111180318.591029-8-roberto.sassu@huawei.com>
 X-Mailer: git-send-email 2.32.0
 In-Reply-To: <20220111180318.591029-1-roberto.sassu@huawei.com>
 References: <20220111180318.591029-1-roberto.sassu@huawei.com>
@@ -44,230 +44,104 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 From: David Howells <dhowells@redhat.com>
 
-Provide some useful PGP definitions from RFC 4880.  These describe details
-of public key crypto as used by crypto keys for things like signature
-verification.
+Provide a facility to autogenerate the name of PGP keys from the contents
+of the payload.  If add_key() is given a blank description, a description
+is constructed from the last user ID packet in the payload data plus the
+last 8 hex digits of the key ID.  For instance:
+
+	keyctl padd asymmetric "" @s </tmp/key.pub
+
+might create a key with a constructed description that can be seen in
+/proc/keys:
+
+2f674b96 I--Q---     1 perm 39390000     0     0 crypto    \
+			Sample kernel key 31f0ae93: PGP.RSA 31f0ae93 []
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Co-developed-by: Roberto Sassu <roberto.sassu@huawei.com>
 Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
- crypto/asymmetric_keys/pgp.h | 206 +++++++++++++++++++++++++++++++++++
- 1 file changed, 206 insertions(+)
- create mode 100644 crypto/asymmetric_keys/pgp.h
+ crypto/asymmetric_keys/pgp_public_key.c | 47 ++++++++++++++++++++++++-
+ 1 file changed, 46 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/pgp.h b/crypto/asymmetric_keys/pgp.h
-new file mode 100644
-index 000000000000..5eb4f4222090
---- /dev/null
-+++ b/crypto/asymmetric_keys/pgp.h
-@@ -0,0 +1,206 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+/* PGP definitions (RFC 4880)
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ */
+diff --git a/crypto/asymmetric_keys/pgp_public_key.c b/crypto/asymmetric_keys/pgp_public_key.c
+index 2763a53ea378..378ed5ff0a3a 100644
+--- a/crypto/asymmetric_keys/pgp_public_key.c
++++ b/crypto/asymmetric_keys/pgp_public_key.c
+@@ -59,6 +59,8 @@ struct pgp_key_data_parse_context {
+ 	struct public_key *pub;
+ 	u8 raw_fingerprint[HASH_MAX_DIGESTSIZE];
+ 	size_t raw_fingerprint_len;
++	const char *user_id;
++	size_t user_id_len;
+ };
+ 
+ /*
+@@ -210,6 +212,15 @@ static int pgp_process_public_key(struct pgp_parse_context *context,
+ 
+ 	kenter(",%u,%u,,%zu", type, headerlen, datalen);
+ 
++	if (type == PGP_PKT_USER_ID) {
++		if (!ctx->user_id_len) {
++			ctx->user_id = data;
++			ctx->user_id_len = datalen;
++		}
++		kleave(" = 0 [user ID]");
++		return 0;
++	}
 +
-+#include <linux/types.h>
+ 	if (ctx->raw_fingerprint_len) {
+ 		kleave(" = -ENOKEY [already]");
+ 		return -EBADMSG;
+@@ -315,13 +326,47 @@ static int pgp_key_parse(struct key_preparsed_payload *prep)
+ 	kenter("");
+ 
+ 	memset(&ctx, 0, sizeof(ctx));
+-	ctx.pgp.types_of_interest = (1 << PGP_PKT_PUBLIC_KEY);
++	ctx.pgp.types_of_interest = (1 << PGP_PKT_PUBLIC_KEY) |
++				    (1 << PGP_PKT_USER_ID);
+ 	ctx.pgp.process_packet = pgp_process_public_key;
+ 
+ 	ret = pgp_parse_packets(prep->data, prep->datalen, &ctx.pgp);
+ 	if (ret < 0)
+ 		goto error;
+ 
++	if (ctx.user_id && ctx.user_id_len > 0) {
++		/*
++		 * Propose a description for the key (user ID without the
++		 * comment).
++		 */
++		size_t ulen = ctx.user_id_len;
++		const char *p;
 +
-+struct pgp_key_ID {
-+	u8 id[8];
-+} __packed;
++		p = memchr(ctx.user_id, '(', ulen);
++		if (p) {
++			/* Remove the comment */
++			do {
++				p--;
++			} while (*p == ' ' && p > ctx.user_id);
++			if (*p != ' ')
++				p++;
++			ulen = p - ctx.user_id;
++		}
 +
-+struct pgp_time {
-+	u8 time[4];
-+} __packed;
++		if (ulen > 255 - 9)
++			ulen = 255 - 9;
++		prep->description = kmalloc(ulen + 1 + 8 + 1, GFP_KERNEL);
++		ret = -ENOMEM;
++		if (!prep->description)
++			goto error;
++		memcpy(prep->description, ctx.user_id, ulen);
++		prep->description[ulen] = ' ';
++		bin2hex(prep->description + ulen + 1,
++			ctx.raw_fingerprint + ctx.raw_fingerprint_len - 4, 4);
++		prep->description[ulen + 9] = 0;
++		pr_debug("desc '%s'\n", prep->description);
++	}
 +
-+/*
-+ * PGP public-key algorithm identifiers [RFC4880: 9.1]
-+ */
-+enum pgp_pubkey_algo {
-+	PGP_PUBKEY_RSA_ENC_OR_SIG	= 1,
-+	PGP_PUBKEY_RSA_ENC_ONLY		= 2,
-+	PGP_PUBKEY_RSA_SIG_ONLY		= 3,
-+	PGP_PUBKEY_ELGAMAL		= 16,
-+	PGP_PUBKEY_DSA			= 17,
-+	PGP_PUBKEY__LAST
-+};
-+
-+/*
-+ * PGP symmetric-key algorithm identifiers [RFC4880: 9.2]
-+ */
-+enum pgp_symkey_algo {
-+	PGP_SYMKEY_PLAINTEXT		= 0,
-+	PGP_SYMKEY_IDEA			= 1,
-+	PGP_SYMKEY_3DES			= 2,
-+	PGP_SYMKEY_CAST5		= 3,
-+	PGP_SYMKEY_BLOWFISH		= 4,
-+	PGP_SYMKEY_AES_128KEY		= 7,
-+	PGP_SYMKEY_AES_192KEY		= 8,
-+	PGP_SYMKEY_AES_256KEY		= 9,
-+	PGP_SYMKEY_TWOFISH_256KEY	= 10,
-+};
-+
-+/*
-+ * PGP compression algorithm identifiers [RFC4880: 9.3]
-+ */
-+enum pgp_compr_algo {
-+	PGP_COMPR_UNCOMPRESSED		= 0,
-+	PGP_COMPR_ZIP			= 1,
-+	PGP_COMPR_ZLIB			= 2,
-+	PGP_COMPR_BZIP2			= 3,
-+};
-+
-+/*
-+ * PGP hash algorithm identifiers [RFC4880: 9.4]
-+ */
-+enum pgp_hash_algo {
-+	PGP_HASH_MD5			= 1,
-+	PGP_HASH_SHA1			= 2,
-+	PGP_HASH_RIPE_MD_160		= 3,
-+	PGP_HASH_SHA256			= 8,
-+	PGP_HASH_SHA384			= 9,
-+	PGP_HASH_SHA512			= 10,
-+	PGP_HASH_SHA224			= 11,
-+	PGP_HASH__LAST
-+};
-+
-+extern const char *const pgp_hash_algorithms[PGP_HASH__LAST];
-+
-+/*
-+ * PGP packet type tags [RFC4880: 4.3].
-+ */
-+enum pgp_packet_tag {
-+	PGP_PKT_RESERVED		= 0,
-+	PGP_PKT_PUBKEY_ENC_SESSION_KEY	= 1,
-+	PGP_PKT_SIGNATURE		= 2,
-+	PGP_PKT_SYMKEY_ENC_SESSION_KEY	= 3,
-+	PGP_PKT_ONEPASS_SIGNATURE	= 4,
-+	PGP_PKT_SECRET_KEY		= 5,
-+	PGP_PKT_PUBLIC_KEY		= 6,
-+	PGP_PKT_SECRET_SUBKEY		= 7,
-+	PGP_PKT_COMPRESSED_DATA		= 8,
-+	PGP_PKT_SYM_ENC_DATA		= 9,
-+	PGP_PKT_MARKER			= 10,
-+	PGP_PKT_LITERAL_DATA		= 11,
-+	PGP_PKT_TRUST			= 12,
-+	PGP_PKT_USER_ID			= 13,
-+	PGP_PKT_PUBLIC_SUBKEY		= 14,
-+	PGP_PKT_USER_ATTRIBUTE		= 17,
-+	PGP_PKT_SYM_ENC_AND_INTEG_DATA	= 18,
-+	PGP_PKT_MODIFY_DETECT_CODE	= 19,
-+	PGP_PKT_PRIVATE_0		= 60,
-+	PGP_PKT_PRIVATE_3		= 63,
-+	PGP_PKT__HIGHEST		= 63
-+};
-+
-+/*
-+ * Signature (tag 2) packet [RFC4880: 5.2].
-+ */
-+enum pgp_signature_version {
-+	PGP_SIG_VERSION_3			= 3,
-+	PGP_SIG_VERSION_4			= 4,
-+};
-+
-+enum pgp_signature_type {
-+	PGP_SIG_BINARY_DOCUMENT_SIG		= 0x00,
-+	PGP_SIG_CANONICAL_TEXT_DOCUMENT_SIG	= 0x01,
-+	PGP_SIG_STANDALONE_SIG			= 0x02,
-+	PGP_SIG_GENERAL_CERT_OF_UID_PUBKEY	= 0x10,
-+	PGP_SIG_PERSONAL_CERT_OF_UID_PUBKEY	= 0x11,
-+	PGP_SIG_CASUAL_CERT_OF_UID_PUBKEY	= 0x12,
-+	PGP_SIG_POSTITIVE_CERT_OF_UID_PUBKEY	= 0x13,
-+	PGP_SIG_SUBKEY_BINDING_SIG		= 0x18,
-+	PGP_SIG_PRIMARY_KEY_BINDING_SIG		= 0x19,
-+	PGP_SIG_DIRECTLY_ON_KEY			= 0x1F,
-+	PGP_SIG_KEY_REVOCATION_SIG		= 0x20,
-+	PGP_SIG_SUBKEY_REVOCATION_SIG		= 0x28,
-+	PGP_SIG_CERT_REVOCATION_SIG		= 0x30,
-+	PGP_SIG_TIMESTAMP_SIG			= 0x40,
-+	PGP_SIG_THIRD_PARTY_CONFIRM_SIG		= 0x50,
-+};
-+
-+struct pgp_signature_v3_packet {
-+	enum pgp_signature_version version : 8; /* == PGP_SIG_VERSION_3 */
-+	u8	length_of_hashed;	/* == 5 */
-+	struct {
-+		enum pgp_signature_type signature_type : 8;
-+		struct pgp_time	creation_time;
-+	} __packed hashed;
-+	struct pgp_key_ID issuer;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+} __packed;
-+
-+struct pgp_signature_v4_packet {
-+	enum pgp_signature_version version : 8;	/* == PGP_SIG_VERSION_4 */
-+	enum pgp_signature_type signature_type : 8;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+} __packed;
-+
-+/*
-+ * V4 signature subpacket types [RFC4880: 5.2.3.1].
-+ */
-+enum pgp_sig_subpkt_type {
-+	PGP_SIG_CREATION_TIME			= 2,
-+	PGP_SIG_EXPIRATION_TIME			= 3,
-+	PGP_SIG_EXPORTABLE_CERT			= 4,
-+	PGP_SIG_TRUST_SIG			= 5,
-+	PGP_SIG_REGEXP				= 6,
-+	PGP_SIG_REVOCABLE			= 7,
-+	PGP_SIG_KEY_EXPIRATION_TIME		= 9,
-+	PGP_SIG_PREF_SYM_ALGO			= 11,
-+	PGP_SIG_REVOCATION_KEY			= 12,
-+	PGP_SIG_ISSUER				= 16,
-+	PGP_SIG_NOTATION_DATA			= 20,
-+	PGP_SIG_PREF_HASH_ALGO			= 21,
-+	PGP_SIG_PREF_COMPR_ALGO			= 22,
-+	PGP_SIG_KEY_SERVER_PREFS		= 23,
-+	PGP_SIG_PREF_KEY_SERVER			= 24,
-+	PGP_SIG_PRIMARY_USER_ID			= 25,
-+	PGP_SIG_POLICY_URI			= 26,
-+	PGP_SIG_KEY_FLAGS			= 27,
-+	PGP_SIG_SIGNERS_USER_ID			= 28,
-+	PGP_SIG_REASON_FOR_REVOCATION		= 29,
-+	PGP_SIG_FEATURES			= 30,
-+	PGP_SIG_TARGET				= 31,
-+	PGP_SIG_EMBEDDED_SIG			= 32,
-+	PGP_SIG__LAST
-+};
-+
-+#define PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK	0x80
-+
-+/*
-+ * Key (tag 5, 6, 7 and 14) packet
-+ */
-+enum pgp_key_version {
-+	PGP_KEY_VERSION_2			= 2,
-+	PGP_KEY_VERSION_3			= 3,
-+	PGP_KEY_VERSION_4			= 4,
-+};
-+
-+struct pgp_key_v3_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	u8 expiry[2];			/* 0 or time in days till expiry */
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+} __packed;
-+
-+struct pgp_key_v4_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+} __packed;
-+
-+/*
-+ * Literal Data (tag 11) packet
-+ */
-+enum pgp_literal_data_format {
-+	PGP_LIT_FORMAT_BINARY			= 0x62,
-+	PGP_LIT_FORMAT_TEXT			= 0x74,
-+	PGP_LIT_FORMAT_TEXT_UTF8		= 0x75,
-+};
+ 	/* We're pinning the module by being linked against it */
+ 	__module_get(public_key_subtype.owner);
+ 	prep->payload.data[asym_subtype] = &public_key_subtype;
 -- 
 2.32.0
 
