@@ -2,395 +2,131 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 20A11C4167B
-	for <keyrings@archiver.kernel.org>; Tue, 11 Jan 2022 18:06:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id BAEC9C433FE
+	for <keyrings@archiver.kernel.org>; Tue, 11 Jan 2022 18:19:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1345236AbiAKSGb (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 11 Jan 2022 13:06:31 -0500
-Received: from frasgout.his.huawei.com ([185.176.79.56]:4393 "EHLO
-        frasgout.his.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1345458AbiAKSDy (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 11 Jan 2022 13:03:54 -0500
-Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.226])
-        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4JYJTw627tz681p5;
-        Wed, 12 Jan 2022 02:03:48 +0800 (CST)
-Received: from roberto-ThinkStation-P620.huawei.com (10.204.63.22) by
- fraeml714-chm.china.huawei.com (10.206.15.33) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2308.20; Tue, 11 Jan 2022 19:03:50 +0100
-From:   Roberto Sassu <roberto.sassu@huawei.com>
-To:     <dhowells@redhat.com>, <dwmw2@infradead.org>,
-        <herbert@gondor.apana.org.au>, <davem@davemloft.net>
-CC:     <keyrings@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
-        <linux-integrity@vger.kernel.org>, <linux-fscrypt@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <zohar@linux.ibm.com>,
-        <ebiggers@kernel.org>, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: [PATCH 05/14] PGPLIB: Signature parser
-Date:   Tue, 11 Jan 2022 19:03:09 +0100
-Message-ID: <20220111180318.591029-6-roberto.sassu@huawei.com>
-X-Mailer: git-send-email 2.32.0
-In-Reply-To: <20220111180318.591029-1-roberto.sassu@huawei.com>
-References: <20220111180318.591029-1-roberto.sassu@huawei.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Type:   text/plain; charset=US-ASCII
-X-Originating-IP: [10.204.63.22]
-X-ClientProxiedBy: lhreml754-chm.china.huawei.com (10.201.108.204) To
- fraeml714-chm.china.huawei.com (10.206.15.33)
-X-CFilter-Loop: Reflected
+        id S1344767AbiAKSTP (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 11 Jan 2022 13:19:15 -0500
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:10116 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1344629AbiAKSTL (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 11 Jan 2022 13:19:11 -0500
+Received: from pps.filterd (m0098399.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 20BHdmUx000777;
+        Tue, 11 Jan 2022 18:16:45 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
+ from : to : cc : date : in-reply-to : references : content-type :
+ mime-version : content-transfer-encoding; s=pp1;
+ bh=f23pSkAQkmTfG63MYPw5lvGkPGpCHSGtCMNQ0RMPVVw=;
+ b=N+it7FobbBF3xJcmaNg2iZZ98mYKy6HWCX+u8RfBEw1GG7keGo90reSd69lYwS0WJHuK
+ loz4psJdgKhiSFY8/6YeQOlTmpq7hYJlDVeifMzDYezPJPhxG5wTCZg1h4KGL0W+CUvH
+ c+UIkBqMgIYHYPUZYVW1trpsRaf7PaE0eTGT4P0IBT7HHnnqjz5kkwIR/uqV46WkryRz
+ cUyagGQPvwlIj327i35I3wXvbkp2ZR1gt3ZaL4JqBJJrq4/uF/yi5kJSNfJK0qTAnVFT
+ 9zb4jLQHby+Y6QDkWZZD0FoVcOtQ0N5k1bXjLNC0QD3GrSOmCj2l2jE65WRU72kBofS6 zA== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3dhbp7e0pn-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 11 Jan 2022 18:16:45 +0000
+Received: from m0098399.ppops.net (m0098399.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 20BIDEJU016077;
+        Tue, 11 Jan 2022 18:16:44 GMT
+Received: from ppma04ams.nl.ibm.com (63.31.33a9.ip4.static.sl-reverse.com [169.51.49.99])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3dhbp7e0nf-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 11 Jan 2022 18:16:44 +0000
+Received: from pps.filterd (ppma04ams.nl.ibm.com [127.0.0.1])
+        by ppma04ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 20BIFZZY006044;
+        Tue, 11 Jan 2022 18:16:41 GMT
+Received: from b06avi18878370.portsmouth.uk.ibm.com (b06avi18878370.portsmouth.uk.ibm.com [9.149.26.194])
+        by ppma04ams.nl.ibm.com with ESMTP id 3df2892wsv-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 11 Jan 2022 18:16:41 +0000
+Received: from d06av25.portsmouth.uk.ibm.com (d06av25.portsmouth.uk.ibm.com [9.149.105.61])
+        by b06avi18878370.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 20BIGdvP45875706
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Tue, 11 Jan 2022 18:16:39 GMT
+Received: from d06av25.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 4395611C050;
+        Tue, 11 Jan 2022 18:16:39 +0000 (GMT)
+Received: from d06av25.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 0C56911C05B;
+        Tue, 11 Jan 2022 18:16:37 +0000 (GMT)
+Received: from sig-9-65-94-95.ibm.com (unknown [9.65.94.95])
+        by d06av25.portsmouth.uk.ibm.com (Postfix) with ESMTP;
+        Tue, 11 Jan 2022 18:16:36 +0000 (GMT)
+Message-ID: <a384fcf8bdd9ff79456e9669fc61ab50ec4e1c55.camel@linux.ibm.com>
+Subject: Re: [PATCH v9 2/8] integrity: Introduce a Linux keyring called
+ machine
+From:   Mimi Zohar <zohar@linux.ibm.com>
+To:     Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     David Howells <dhowells@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "ardb@kernel.org" <ardb@kernel.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "serge@hallyn.com" <serge@hallyn.com>,
+        "nayna@linux.ibm.com" <nayna@linux.ibm.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "weiyongjun1@huawei.com" <weiyongjun1@huawei.com>,
+        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+        <linux-security-module@vger.kernel.org>,
+        "James.Bottomley@hansenpartnership.com" 
+        <James.Bottomley@HansenPartnership.com>,
+        "pjones@redhat.com" <pjones@redhat.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Date:   Tue, 11 Jan 2022 13:16:36 -0500
+In-Reply-To: <100B070F-7EB4-4BF7-B2B9-E5AE78D3066A@oracle.com>
+References: <20220105235012.2497118-1-eric.snowberg@oracle.com>
+         <20220105235012.2497118-3-eric.snowberg@oracle.com>
+         <883da244c04fcb07add9984859a09d7b1827880a.camel@linux.ibm.com>
+         <100B070F-7EB4-4BF7-B2B9-E5AE78D3066A@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.28.5 (3.28.5-18.el8) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-GUID: GtMCw9gU-05vUSKvCgnmnFZN-mUkf-aF
+X-Proofpoint-ORIG-GUID: zoiRmxjG6RJRitTOPoRW8Bc1iQ31vQ07
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.205,Aquarius:18.0.790,Hydra:6.0.425,FMLib:17.11.62.513
+ definitions=2022-01-11_04,2022-01-11_01,2021-12-02_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 phishscore=0
+ lowpriorityscore=0 suspectscore=0 spamscore=0 malwarescore=0
+ mlxlogscore=999 clxscore=1015 impostorscore=0 priorityscore=1501
+ mlxscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=8.12.0-2110150000 definitions=main-2201110098
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+On Mon, 2022-01-10 at 23:25 +0000, Eric Snowberg wrote:
+> > Jarkko, my concern is that once this version of the patch set is
+> > upstreamed, would limiting which keys may be loaded onto the .machine
+> > keyring be considered a regression?
+> 
+> 
+> Currently certificates built into the kernel do not have a CA restriction on them.  
+> IMA will trust anything in this keyring even if the CA bit is not set.  While it would 
+> be advisable for a kernel to be built with a CA, nothing currently enforces it. 
+> 
+> My thinking for the dropped CA restriction patches was to introduce a new Kconfig.  
+> This Kconfig would do the CA enforcement on the machine keyring.  However if the 
+> Kconfig option was not set for enforcement, it would work as it does in this series, 
+> plus it would allow IMA to work with non-CA keys.  This would be done by removing 
+> the restriction placed in this patch. Let me know your thoughts on whether this would 
+> be an appropriate solution.  I believe this would get around what you are identifying as 
+> a possible regression.
 
-Provide some PGP signature parsing helpers:
+True the problem currently exists with the builtin keys, but there's a
+major difference between trusting the builtin keys and those being
+loading via MOK.  This is an integrity gap that needs to be closed and
+shouldn't be expanded to keys on the .machine keyring.
 
- (1) A function to parse V4 signature subpackets and pass the desired ones
-     to a processor function:
+"plus it would allow IMA to work with non-CA keys" is unacceptable.
 
-	int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
-				  struct pgp_parse_sig_context *ctx);
-
- (2) A function to parse out basic signature parameters from any PGP
-     signature such that the algorithms and public key can be selected:
-
-	int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-				 struct pgp_sig_parameters *p);
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Co-developed-by: Roberto Sassu <roberto.sassu@huawei.com>
-Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
----
- crypto/asymmetric_keys/pgp_library.c | 284 +++++++++++++++++++++++++++
- crypto/asymmetric_keys/pgplib.h      |  25 +++
- 2 files changed, 309 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/pgp_library.c b/crypto/asymmetric_keys/pgp_library.c
-index d2c3149983d5..de4a748db9be 100644
---- a/crypto/asymmetric_keys/pgp_library.c
-+++ b/crypto/asymmetric_keys/pgp_library.c
-@@ -270,3 +270,287 @@ int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(pgp_parse_public_key);
-+
-+/**
-+ * pgp_parse_sig_subpkt_header - Parse a PGP V4 signature subpacket header
-+ * @_data: Start of the subpacket (updated to subpacket data)
-+ * @_datalen: Amount of data remaining in buffer (decreased)
-+ * @_type: Where the subpacket type will be returned
-+ *
-+ * Parse a PGP V4 signature subpacket header [RFC 4880: 5.2.3.1].
-+ *
-+ * Return: packet data size on success; non-zero on error.  If successful,
-+ * *_data and *_datalen will have been updated and *_headerlen will be set to
-+ * hold the length of the packet header.
-+ */
-+static ssize_t pgp_parse_sig_subpkt_header(const u8 **_data, size_t *_datalen,
-+					   enum pgp_sig_subpkt_type *_type)
-+{
-+	enum pgp_sig_subpkt_type type;
-+	const u8 *data = *_data;
-+	size_t size, datalen = *_datalen;
-+
-+	pr_devel("-->%s(,%zu,,)\n", __func__, datalen);
-+
-+	if (datalen < 2)
-+		goto short_subpacket;
-+
-+	pr_devel("subpkt hdr %02x, %02x\n", data[0], data[1]);
-+
-+	switch (data[0]) {
-+	case 0x00 ... 0xbf:
-+		/* One-byte length */
-+		size = data[0];
-+		data++;
-+		datalen--;
-+		break;
-+	case 0xc0 ... 0xfe:
-+		/* Two-byte length */
-+		if (datalen < 3)
-+			goto short_subpacket;
-+		size = (data[0] - 192) * 256;
-+		size += data[1] + 192;
-+		data += 2;
-+		datalen -= 2;
-+		break;
-+	case 0xff:
-+		if (datalen < 6)
-+			goto short_subpacket;
-+		size  = data[1] << 24;
-+		size |= data[2] << 16;
-+		size |= data[3] << 8;
-+		size |= data[4];
-+		data += 5;
-+		datalen -= 5;
-+		break;
-+	}
-+
-+	/* The type octet is included in the size */
-+	pr_devel("datalen=%zu size=%zu\n", datalen, size);
-+	if (datalen < size)
-+		goto short_subpacket;
-+	if (size == 0)
-+		goto very_short_subpacket;
-+	if (size > INT_MAX)
-+		goto too_big;
-+
-+	type = *data++ & ~PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK;
-+	datalen--;
-+	size--;
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	*_type = type;
-+	pr_devel("Found subpkt type=%u size=%zd\n", type, size);
-+	return size;
-+
-+very_short_subpacket:
-+	pr_debug("Signature subpacket size can't be zero\n");
-+	return -EBADMSG;
-+short_subpacket:
-+	pr_debug("Attempt to parse short signature subpacket\n");
-+	return -EBADMSG;
-+too_big:
-+	pr_debug("Signature subpacket size >2G\n");
-+	return -EMSGSIZE;
-+}
-+
-+/**
-+ * pgp_parse_sig_subpkts - Parse a set of PGP V4 signatute subpackets
-+ * @data: Data to be parsed (updated)
-+ * @datalen: Amount of data (updated)
-+ * @ctx: Parsing context
-+ *
-+ * Parse a set of PGP signature subpackets [RFC 4880: 5.2.3].
-+ *
-+ * Return: 0 on successful parsing, an error value otherwise
-+ */
-+static int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
-+				 struct pgp_parse_sig_context *ctx)
-+{
-+	enum pgp_sig_subpkt_type type;
-+	ssize_t pktlen;
-+	int ret;
-+
-+	pr_devel("-->%s(,%zu,,)\n", __func__, datalen);
-+
-+	while (datalen > 2) {
-+		pktlen = pgp_parse_sig_subpkt_header(&data, &datalen, &type);
-+		if (pktlen < 0)
-+			return pktlen;
-+		if (test_bit(type, ctx->types_of_interest)) {
-+			ret = ctx->process_packet(ctx, type, data, pktlen);
-+			if (ret < 0)
-+				return ret;
-+		}
-+		data += pktlen;
-+		datalen -= pktlen;
-+	}
-+
-+	if (datalen != 0) {
-+		pr_debug("Excess octets in signature subpacket stream\n");
-+		return -EBADMSG;
-+	}
-+
-+	return 0;
-+}
-+
-+struct pgp_parse_sig_params_ctx {
-+	struct pgp_parse_sig_context base;
-+	struct pgp_sig_parameters *params;
-+	bool got_the_issuer;
-+};
-+
-+/*
-+ * Process a V4 signature subpacket.
-+ */
-+static int pgp_process_sig_params_subpkt(struct pgp_parse_sig_context *context,
-+					 enum pgp_sig_subpkt_type type,
-+					 const u8 *data,
-+					 size_t datalen)
-+{
-+	struct pgp_parse_sig_params_ctx *ctx =
-+		container_of(context, struct pgp_parse_sig_params_ctx, base);
-+
-+	if (ctx->got_the_issuer) {
-+		pr_debug("V4 signature packet has multiple issuers\n");
-+		return -EBADMSG;
-+	}
-+
-+	if (datalen != 8) {
-+		pr_debug("V4 signature issuer subpkt not 8 long (%zu)\n",
-+			   datalen);
-+		return -EBADMSG;
-+	}
-+
-+	memcpy(&ctx->params->issuer, data, 8);
-+	ctx->got_the_issuer = true;
-+	return 0;
-+}
-+
-+/**
-+ * pgp_parse_sig_params - Parse basic parameters from a PGP signature packet
-+ * @_data: Content of packet (updated)
-+ * @_datalen: Length of packet remaining (updated)
-+ * @p: The basic parameters
-+ *
-+ * Parse the basic parameters from a PGP signature packet [RFC 4880: 5.2] that
-+ * are needed to start off a signature verification operation.  The only ones
-+ * actually necessary are the signature type (which affects how the data is
-+ * transformed) and the hash algorithm.
-+ *
-+ * We also extract the public key algorithm and the issuer's key ID as we'll
-+ * need those to determine if we actually have the public key available.  If
-+ * not, then we can't verify the signature anyway.
-+ *
-+ * Return: 0 if successful or a negative error code.  *_data and *_datalen are
-+ * updated to point to the 16-bit subset of the hash value and the set of MPIs.
-+ */
-+int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-+			 struct pgp_sig_parameters *p)
-+{
-+	const u8 *data = *_data;
-+	size_t datalen = *_datalen;
-+	int ret;
-+
-+	pr_devel("-->%s(,%zu,,)\n", __func__, datalen);
-+
-+	if (datalen < 1)
-+		return -EBADMSG;
-+	p->version = *data;
-+
-+	if (p->version == PGP_SIG_VERSION_3) {
-+		const struct pgp_signature_v3_packet *v3 = (const void *)data;
-+
-+		if (datalen < sizeof(*v3)) {
-+			pr_debug("Short V3 signature packet\n");
-+			return -EBADMSG;
-+		}
-+		datalen -= sizeof(*v3);
-+		data += sizeof(*v3);
-+
-+		/* V3 has everything we need in the header */
-+		p->signature_type = v3->hashed.signature_type;
-+		memcpy(&p->issuer, &v3->issuer, 8);
-+		p->pubkey_algo = v3->pubkey_algo;
-+		p->hash_algo = v3->hash_algo;
-+
-+	} else if (p->version == PGP_SIG_VERSION_4) {
-+		const struct pgp_signature_v4_packet *v4 = (const void *)data;
-+		struct pgp_parse_sig_params_ctx ctx = {
-+			.base.process_packet = pgp_process_sig_params_subpkt,
-+			.params = p,
-+			.got_the_issuer = false,
-+		};
-+		size_t subdatalen;
-+
-+		if (datalen < sizeof(*v4) + 2 + 2 + 2) {
-+			pr_debug("Short V4 signature packet\n");
-+			return -EBADMSG;
-+		}
-+		datalen -= sizeof(*v4);
-+		data += sizeof(*v4);
-+
-+		/* V4 has most things in the header... */
-+		p->signature_type = v4->signature_type;
-+		p->pubkey_algo = v4->pubkey_algo;
-+		p->hash_algo = v4->hash_algo;
-+
-+		/*
-+		 * ... but we have to get the key ID from the subpackets, of
-+		 * which there are two sets.
-+		 */
-+		__set_bit(PGP_SIG_ISSUER, ctx.base.types_of_interest);
-+
-+		subdatalen  = *data++ << 8;
-+		subdatalen |= *data++;
-+		datalen -= 2;
-+		if (subdatalen) {
-+			/* Hashed subpackets */
-+			pr_devel("hashed data: %zu (after %zu)\n",
-+				 subdatalen, sizeof(*v4));
-+			if (subdatalen > datalen + 2 + 2) {
-+				pr_debug("Short V4 signature packet [hdata]\n");
-+				return -EBADMSG;
-+			}
-+			ret = pgp_parse_sig_subpkts(data, subdatalen,
-+						    &ctx.base);
-+			if (ret < 0)
-+				return ret;
-+			data += subdatalen;
-+			datalen -= subdatalen;
-+		}
-+
-+		subdatalen  = *data++ << 8;
-+		subdatalen |= *data++;
-+		datalen -= 2;
-+		if (subdatalen) {
-+			/* Unhashed subpackets */
-+			pr_devel("unhashed data: %zu\n", subdatalen);
-+			if (subdatalen > datalen + 2) {
-+				pr_debug("Short V4 signature packet [udata]\n");
-+				return -EBADMSG;
-+			}
-+			ret = pgp_parse_sig_subpkts(data, subdatalen,
-+						    &ctx.base);
-+			if (ret < 0)
-+				return ret;
-+			data += subdatalen;
-+			datalen -= subdatalen;
-+		}
-+
-+		if (!ctx.got_the_issuer) {
-+			pr_debug("V4 signature packet lacks issuer\n");
-+			return -EBADMSG;
-+		}
-+	} else {
-+		pr_debug("Signature packet with unhandled version %d\n",
-+			 p->version);
-+		return -EBADMSG;
-+	}
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pgp_parse_sig_params);
-diff --git a/crypto/asymmetric_keys/pgplib.h b/crypto/asymmetric_keys/pgplib.h
-index d82b84179433..967e2853186d 100644
---- a/crypto/asymmetric_keys/pgplib.h
-+++ b/crypto/asymmetric_keys/pgplib.h
-@@ -31,3 +31,28 @@ struct pgp_parse_pubkey {
- 
- extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
- 				struct pgp_parse_pubkey *pk);
-+
-+struct pgp_parse_sig_context {
-+	unsigned long types_of_interest[128 / BITS_PER_LONG];
-+	int (*process_packet)(struct pgp_parse_sig_context *context,
-+			      enum pgp_sig_subpkt_type type,
-+			      const u8 *data,
-+			      size_t datalen);
-+};
-+
-+extern int pgp_parse_sig_packets(const u8 *data, size_t datalen,
-+				 struct pgp_parse_sig_context *ctx);
-+
-+struct pgp_sig_parameters {
-+	enum pgp_signature_version version : 8;
-+	enum pgp_signature_type signature_type : 8;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+	union {
-+		struct pgp_key_ID issuer;
-+		__be32 issuer32[2];
-+	};
-+};
-+
-+extern int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-+				struct pgp_sig_parameters *p);
--- 
-2.32.0
+Mimi
 
