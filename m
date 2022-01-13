@@ -2,161 +2,260 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9F4D6C433FE
-	for <keyrings@archiver.kernel.org>; Thu, 13 Jan 2022 09:12:06 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 88639C433F5
+	for <keyrings@archiver.kernel.org>; Thu, 13 Jan 2022 19:01:59 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234002AbiAMJMG (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 13 Jan 2022 04:12:06 -0500
-Received: from frasgout.his.huawei.com ([185.176.79.56]:4409 "EHLO
-        frasgout.his.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S233890AbiAMJLf (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 13 Jan 2022 04:11:35 -0500
-Received: from fraeml713-chm.china.huawei.com (unknown [172.18.147.206])
-        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4JZJZk6BsVz67lZV;
-        Thu, 13 Jan 2022 17:11:26 +0800 (CST)
-Received: from fraeml714-chm.china.huawei.com (10.206.15.33) by
- fraeml713-chm.china.huawei.com (10.206.15.32) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2308.20; Thu, 13 Jan 2022 10:11:31 +0100
-Received: from fraeml714-chm.china.huawei.com ([10.206.15.33]) by
- fraeml714-chm.china.huawei.com ([10.206.15.33]) with mapi id 15.01.2308.020;
- Thu, 13 Jan 2022 10:11:31 +0100
-From:   Roberto Sassu <roberto.sassu@huawei.com>
-To:     "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>
-CC:     "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>,
-        "linux-fscrypt@vger.kernel.org" <linux-fscrypt@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "zohar@linux.ibm.com" <zohar@linux.ibm.com>,
-        "ebiggers@kernel.org" <ebiggers@kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.apana.org.au>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: RE: [PATCH 00/14] KEYS: Add support for PGP keys and signatures
-Thread-Topic: [PATCH 00/14] KEYS: Add support for PGP keys and signatures
-Thread-Index: AQHYBxWUAJoIvMeqLk2UYoD6PZRMZ6xeNfyAgADgBLCAAK1lAIAA3Hrw
-Date:   Thu, 13 Jan 2022 09:11:31 +0000
-Message-ID: <f30d8240a38b48bb92f86a6e4c951918@huawei.com>
-References: <20220111180318.591029-1-roberto.sassu@huawei.com>
- <ab29dd6f-1301-e012-8898-9c739ca511a3@maciej.szmigiero.name>
- <b37f9c0e9bf941f0b778c6949538835d@huawei.com>
- <ab3d2bda-a704-f5d3-adee-e52b7d0a4641@maciej.szmigiero.name>
-In-Reply-To: <ab3d2bda-a704-f5d3-adee-e52b7d0a4641@maciej.szmigiero.name>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.204.63.33]
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+        id S237794AbiAMTB6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 13 Jan 2022 14:01:58 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42138 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S237758AbiAMTB6 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 13 Jan 2022 14:01:58 -0500
+Received: from mail-yb1-xb2d.google.com (mail-yb1-xb2d.google.com [IPv6:2607:f8b0:4864:20::b2d])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6208BC06173F
+        for <keyrings@vger.kernel.org>; Thu, 13 Jan 2022 11:01:57 -0800 (PST)
+Received: by mail-yb1-xb2d.google.com with SMTP id h14so17742161ybe.12
+        for <keyrings@vger.kernel.org>; Thu, 13 Jan 2022 11:01:57 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=20210112;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc:content-transfer-encoding;
+        bh=s7no2mwVnA8Y80ATpS2yfSJHmaemb43/gEhIUgG9MmM=;
+        b=gPCx5wOTSGBrerJ3v9PTzZCXk8wTYnMG0lJySi/8uJGluds5qYvAPEg9ZeyOqPDb59
+         dFGNzcjpQxJ4Beh1LKBzocOKeH5m5Bj1mlhwE4i0HWTwS2NX/Vtt8xsaJX17s8lUA8ij
+         2HVwFi9hd0KM+ME0XvPem16FvjYPtR/Fg1ovfKBfhGkv7XT17UmewT0saNB/mloNrIDq
+         HkoZr13GL4wP98jRgZgwu9G80UFvWFCU4aFwqMV+wClPqJSKl3oKCslNwqDZesFYrR3s
+         AdNtvwEUDMbFQ0c3YzeEg6EDqq+8FhscNHklN5kbycsJ+CA3b4023govT5tYJ6V+0/cg
+         oP8Q==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc:content-transfer-encoding;
+        bh=s7no2mwVnA8Y80ATpS2yfSJHmaemb43/gEhIUgG9MmM=;
+        b=0difgycIi4NFGrNWyzkiUWlj3cz4Q/WAWu9Xse2aJdZVJQ0+NO8p3w2q3uAKZYbWpG
+         mSZ8IpOkzZBTXYnq05R3r04Rjhx4ErT//nwyR4+5aCJHIBj7EyEQ717uCsJhr/UDRzi2
+         gkna54hn3y1p9XGX05pZYtMy3yck4p1jglyFXl3gWu0zOxcqKxdXz8/ulte9s/Z24SrM
+         9eBe4RYIFFWRzq0lFmSPf9IKHsc0cXjB1d/ag1D6/nQOFbDQuh3mWCIRoQLm6Qiijq1Y
+         Q1fqjMwIavgWD2h6kaUFjCfmrCarfEIMOlh5YY69SzPZRyQhfU4bcKCsHICb2FUCX/Y9
+         s75w==
+X-Gm-Message-State: AOAM533HLOuc5kXPRjlifpBgwMA8VzzqN/OfUUiW3pBDA2PvvoWhKzOp
+        YEQpXPLvZEVxIe3HqLRrWGyceF2eDRBYrGD9gE/D3g==
+X-Google-Smtp-Source: ABdhPJzFSwMgP9xhJ00b311ltVFfDwnHYMUk0+UKogKKtjb52j2BhgejGEbBcjDESWOu8l8hrlRkET+Vm1i+5/lRWhA=
+X-Received: by 2002:a25:bbc7:: with SMTP id c7mr7138512ybk.725.1642100516241;
+ Thu, 13 Jan 2022 11:01:56 -0800 (PST)
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+References: <20211229215330.4134835-1-yaelt@google.com> <e29dc7de-b656-7c27-2294-fb4936e99e69@linux.vnet.ibm.com>
+In-Reply-To: <e29dc7de-b656-7c27-2294-fb4936e99e69@linux.vnet.ibm.com>
+From:   Yael Tiomkin <yaelt@google.com>
+Date:   Thu, 13 Jan 2022 14:01:45 -0500
+Message-ID: <CAKoutNspnn-VuKsxODYdX4P68vCpRveRFG=FKCVG9Vu-vev4fg@mail.gmail.com>
+Subject: Re: [PATCH v4] KEYS: encrypted: Instantiate key with user-provided
+ decrypted data
+To:     Nayna <nayna@linux.vnet.ibm.com>
+Cc:     linux-integrity@vger.kernel.org, jejb@linux.ibm.com,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Mimi Zohar <zohar@linux.ibm.com>, corbet@lwn.net,
+        dhowells@redhat.com, jmorris@namei.org, serge@hallyn.com,
+        keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-PiBGcm9tOiBNYWNpZWogUy4gU3ptaWdpZXJvIFttYWlsdG86bWFpbEBtYWNpZWouc3ptaWdpZXJv
-Lm5hbWVdDQo+IFNlbnQ6IFdlZG5lc2RheSwgSmFudWFyeSAxMiwgMjAyMiA5OjE2IFBNDQo+IE9u
-IDEyLjAxLjIwMjIgMTA6MTYsIFJvYmVydG8gU2Fzc3Ugd3JvdGU6DQo+ID4+IEZyb206IE1hY2ll
-aiBTLiBTem1pZ2llcm8gW21haWx0bzptYWlsQG1hY2llai5zem1pZ2llcm8ubmFtZV0NCj4gPj4g
-U2VudDogVHVlc2RheSwgSmFudWFyeSAxMSwgMjAyMiA5OjMzIFBNDQo+ID4+IE9uIDExLjAxLjIw
-MjIgMTk6MDMsIFJvYmVydG8gU2Fzc3Ugd3JvdGU6DQo+ID4+PiBTdXBwb3J0IGZvciBQR1Aga2V5
-cyBhbmQgc2lnbmF0dXJlcyB3YXMgcHJvcG9zZWQgYnkgRGF2aWQgbG9uZyB0aW1lIGFnbywNCj4g
-Pj4+IGJlZm9yZSB0aGUgZGVjaXNpb24gb2YgdXNpbmcgUEtDUyM3IGZvciBrZXJuZWwgbW9kdWxl
-cyBzaWduYXR1cmVzDQo+ID4+PiB2ZXJpZmljYXRpb24gd2FzIG1hZGUuIEFmdGVyIHRoYXQsIHRo
-ZXJlIGhhcyBiZWVuIG5vdCBlbm91Z2ggaW50ZXJlc3QgdG8NCj4gPj4+IHN1cHBvcnQgUEdQIHRv
-by4NCj4gPj4+DQo+ID4+PiBMYXRlbHksIHdoZW4gZGlzY3Vzc2luZyBhIHByb3Bvc2FsIG9mIGlu
-dHJvZHVjaW5nIGZzdmVyaXR5IHNpZ25hdHVyZXMgaW4NCj4gPj4+IEZlZG9yYSBbMV0sIGRldmVs
-b3BlcnMgZXhwcmVzc2VkIHRoZWlyIHByZWZlcmVuY2Ugb24gbm90IGhhdmluZyBhIHNlcGFyYXRl
-DQo+ID4+PiBrZXkgZm9yIHNpZ25pbmcsIHdoaWNoIHdvdWxkIGNvbXBsaWNhdGUgdGhlIG1hbmFn
-ZW1lbnQgb2YgdGhlDQo+IGRpc3RyaWJ1dGlvbi4NCj4gPj4+IFRoZXkgd291bGQgYmUgbW9yZSBp
-biBmYXZvciBvZiB1c2luZyB0aGUgc2FtZSBQR1Aga2V5LCBjdXJyZW50bHkgdXNlZCBmb3INCj4g
-Pj4+IHNpZ25pbmcgUlBNIGhlYWRlcnMsIGFsc28gZm9yIGZpbGUtYmFzZWQgc2lnbmF0dXJlcyAo
-bm90IG9ubHkgZnN2ZXJpdHksIGJ1dA0KPiA+Pj4gYWxzbyBJTUEgb25lcykuDQo+ID4+DQo+ID4+
-IEFyZW4ndCBQR1Aga2V5cyBzaW1wbHkgUlNBIC8gRUNDIC8gRWREU0Ega2V5cyB3aXRoIGFkZGl0
-aW9uYWwgbWV0YWRhdGE/DQo+ID4+IENhbid0IHRoZXkgYmUgdW53cmFwcGVkIGZyb20gdGhlaXIg
-KGNvbXBsZXgpIFBHUCBmb3JtYXQgaW4gdXNlcnNwYWNlIGFuZA0KPiA+PiBsb2FkZWQgcmF3IGlu
-dG8gdGhlIGtlcm5lbCwgaW4gYSBzaW1pbGFyIHdheSBhcyB0aGV5IGFyZSBzb21ldGltZXMgdXNl
-ZA0KPiA+PiBmb3IgU1NIIGF1dGhlbnRpY2F0aW9uPw0KPiA+DQo+ID4gUHJvYmFibHksIHRoaXMg
-d291bGQgYmUgcG9zc2libGUgYnkgaW50cm9kdWNpbmcgYSBuZXcgYXN5bW1ldHJpYw0KPiA+IGtl
-eSBzdWJ0eXBlIHBhcnNpbmcgUEdQIGtleXMgYW5kIHNpZ25hdHVyZXMgaW4gYSBtb3JlIHNpbXBs
-ZSBmb3JtYXQsDQo+ID4gYWZ0ZXIgY29udmVyc2lvbiBieSB1c2VyIHNwYWNlLiBCdXQgc3RpbGws
-IGEgcGFyc2VyIHdvdWxkIGJlIHJlcXVpcmVkLg0KPiA+IFRvIGJlIGhvbmVzdCwgSSB3b3VsZCBw
-cmVmZXIgdG8gaW1wbGVtZW50IChhY3R1YWxseSBEYXZpZCBkaWQpIGENCj4gPiBwYXJzZXIgZm9s
-bG93aW5nIGFuIFJGQywgdGhhbiBkZXZlbG9waW5nIGEgbmV3IG9uZS4NCj4gDQo+IEEgcGFyc2Vy
-IGluIHVzZXJzcGFjZSBpcyBwcmVmZXJyZWQgdG8gb25lIGluIGtlcm5lbCBzaW5jZSBpZiB0aGVy
-ZSBpcw0KPiBhIGJ1ZyBzb21ld2hlcmUgaXRzIGNvbnNlcXVlbmNlcyBhcmUgbXVjaCBsZXNzIHNl
-dmVyZS4NCj4gQW5kIGV4cGVyaWVuY2Ugc2hvd3MgdGhhdCBwYXJzZXJzIGFyZSBlc3BlY2lhbGx5
-IHByb25lIHRvIGJ1Z3MuDQo+IEEgdXNlcnNwYWNlIGltcGxlbWVudGF0aW9uIGNhbiBhbHNvIGJl
-IHRpZ2h0bHkgc2FuZGJveGVkIGZvciBleHRyYQ0KPiBzZWN1cml0eS4NCj4gDQo+IFRoZXJlIGFy
-ZSBtYW55IGV4aXN0aW5nIE9wZW5QR1AgcGFyc2luZyBsaWJyYXJpZXMgdG8gY2hvb3NlIGZyb20u
-DQoNCkkgdW5kZXJzdGFuZCB5b3VyIHBvaW50LiBIb3dldmVyLCBpdCBkb2VzIG5vdCBzZWVtIHRv
-IG1lIGxlc3MNCnJpc2t5IHRvIGRlZmluZSBhIG5ldyBmb3JtYXQgdG8gdXBsb2FkIHRoZSBSU0Eg
-a2V5IGFuZCB0aGUgc2lnbmF0dXJlDQp0byBhdm9pZCB0aGUgY29tcGxleGl0eSBvZiBQR1AuIEFs
-c28sIGl0IGRvZXMgbm90IHNlZW0gbW9yZQ0KY29tcGxleCB0aGFuIFBLQ1MjNywgd2hpY2ggaXMg
-YWxyZWFkeSBpbiB0aGUga2VybmVsLg0KDQpJbiBhZGRpdGlvbiwgdGhlcmUgYXJlIGFzcGVjdHMg
-b2YgUEdQIHRoYXQgYW55d2F5IGhhdmUgdG8gYmUgdGFrZW4NCmludG8gYWNjb3VudC4gT25lIGV4
-YW1wbGUgaXMgdGhlIGRpZ2VzdCBjYWxjdWxhdGlvbiwgd2hpY2ggZGVwZW5kcw0KYWxzbyBvbiB0
-aGUgUEdQIHBhY2tldC4gV2hlbmV2ZXIgdGhlIGtlcm5lbCB2ZXJpZmllcyB0aGUgc2lnbmF0dXJl
-LA0KdGhlIGFkZGl0aW9uYWwgZGF0YSBuZWVkIHRvIGJlIGFwcGVuZGVkIHRvIHRoZSBvcmlnaW5h
-bCBkYXRhLiBUaGlzDQpyaXNrcyB0byBjcmVhdGUgbW9yZSBjb25mdXNpb24sIGFzIHRoZSBjb25z
-dW1lciBvZiB0aGUgZGF0YSBiZWluZw0KdmVyaWZpZWQgbWlnaHQgbm90IGJlIHByZXBhcmVkIHRv
-IGhhbmRsZSB0aGUgYWRkaXRpb25hbCBkYXRhDQpyZXF1aXJlZCBmb3Igc2lnbmF0dXJlIHZlcmlm
-aWNhdGlvbi4NCg0KVGhlIGtlcm5lbCBoYXMgYWxyZWFkeSBhIHdlbGwtZGVmaW5lZCB3YXkgdG8g
-cHJvY2VzcyBkYXRhIHdpdGgNCmEgc2lnbmF0dXJlLiBJdCBleHBlY3RzIGEgZGF0YSBzdHJ1Y3R1
-cmUgY2FsbGVkIG1vZHVsZV9zaWduYXR1cmUNCmF0IHRoZSBlbmQgb2YgdGhlIGRhdGEgdG8gdmVy
-aWZ5LCB3aGljaCBpbmNsdWRlIGluZm9ybWF0aW9uIHJlcXVpcmVkDQpmb3IgdGhlIHZlcmlmaWNh
-dGlvbiBzdWNoIGFzIHRoZSBkaWdlc3QgYWxnb3JpdGhtLCBrZXkgSUQsIGV0Yy4gSXQNCmFsc28g
-aGFzIGEgc2VsZWN0b3IgY2FsbGVkIFBLRVlfSURfUEdQLCBzbyB0aGF0IHRoZSBjb2RlIHdvdWxk
-DQpoYW5kbGUgYSBQR1Agc2lnbmF0dXJlLiBUaGlzIGRhdGEgc3RydWN0dXJlIGRvZXMgbm90IGlu
-Y2x1ZGUgc3BhY2UNCmZvciB0aGUgYWRkaXRpb25hbCBkYXRhIHJlcXVpcmVkIGZvciB0aGUgc2ln
-bmF0dXJlIHZlcmlmaWNhdGlvbi4NCg0KVGhpcyBwYXRjaCBzZXQgaW5zdGVhZCBvZmZlcnMgdGhl
-IG5ldyBmdW5jdGlvbiB2ZXJpZnlfcGdwX3NpZ25hdHVyZSgpLA0Kd2hpY2ggdGFrZXMgdGhlIHNh
-bWUgYXJndW1lbnRzIGFzIHZlcmlmeV9wa2NzN19zaWduYXR1cmUoKSwgYW5kDQpjYW4gYmUgdXNl
-ZCBhcyBpbiB0aGUgZXhhbXBsZSBJIG1lbnRpb25lZCBhYm92ZSBpbiBhIHN3aXRjaCgpIHdoZXJl
-DQp0aGUgc2VsZWN0b3IgaXMgdGhlIHNpZ25hdHVyZSB0eXBlLg0KDQpUaGlzIHBhdGNoIHNldCBh
-bHNvIG9mZmVycyB0aGUgaW5kaXZpZHVhbCBmdW5jdGlvbnMgY2FsbGVkIGluc2lkZQ0KdmVyaWZ5
-X3BncF9zaWduYXR1cmUoKSwgdG8gc3VwcG9ydCB0aGUgY2FzZSB3aGVyZSB0aGUgc2lnbmF0dXJl
-DQp2ZXJpZmljYXRpb24gcHJvY2VzcyBpcyBzcGxpdCBpbiBtdWx0aXBsZSBwYXJ0cw0KKGUuZy4g
-c2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfbW9kc2lnLmMpLiBBbHNvIGluIHRoaXMgY2FzZSwN
-CnRoZSBhcmd1bWVudHMgcGFzc2VkIHRvIHRoZSBQR1AtcmVsYXRlZCBmdW5jdGlvbnMgYXJlIHNp
-bWlsYXINCnRvIHRoZSBQS0NTIzcgb25lcy4NCg0KQW5vdGhlciBjb25jZXJuIHRoYXQgSSBoYXZl
-IGlzIHRoYXQsIHRoZSBhcHByb2FjaCBvZiB1c2luZyBhbg0KT3BlblBHUCBsaWJyYXJ5IHN0aWxs
-IHJlcXVpcmVzIHRoZSBMaW51eCBkaXN0cmlidXRpb24gdmVuZG9ycyB0bw0KZG8gYSB0cmFuc2Zv
-cm1hdGlvbiBmcm9tIHRoZSBzb3VyY2UgZGF0YSB0aGV5IGhhdmUgdG8gYW5vdGhlcg0KZm9ybWF0
-LiBUaGV5IGhhdmUgYW55d2F5IHRvIGNlcnRpZnkgdGhpcyB0cmFuc2Zvcm1hdGlvbiwgZXZlbg0K
-aWYgaXQgaXMgZG9uZSBpbiB1c2VyIHNwYWNlLiBNYXliZSBpdCBpcyBlYXNpZXIgdG8ga2VlcCB0
-aGUgb3JpZ2luYWwNCmRhdGEgYW5kIHZlcmlmeSB0aGUgbWluaW11bSBuZWNlc3NhcnkgdG8gaGFu
-ZGxlIFBHUCBrZXlzIGFuZA0Kc2lnbmF0dXJlIGluIHRoZSBrZXJuZWwsIHJhdGhlciB0aGFuIHZl
-cmlmeWluZyBhIGxpYnJhcnkgcnVubmluZw0KaW4gdXNlciBzcGFjZSB3aXRoIG1hbnkgb3RoZXIg
-ZnVuY3Rpb25zLg0KDQo+ID4+IFRoaXMgd2lsbCBzYXZlIHVzIGZyb20gaGF2aW5nIHRvIGFkZCBj
-b21wbGV4IHBhcnNlcnMgKGEgd2VsbC1rbm93biBzb3VyY2UNCj4gPj4gb2YgYnVncykgaW50byB0
-aGUga2VybmVsIC0gSSBndWVzcyB0aGVyZSBhcmVuJ3QgYW55IHBsYW5zIHRvIGFkZCBhbg0KPiA+
-PiBpbi1rZXJuZWwgUEdQIFdlYiBvZiBUcnVzdCBpbXBsZW1lbnRhdGlvbi4NCj4gPg0KPiA+IEkg
-ZXh0ZW5zaXZlbHkgdGVzdGVkIHRoZSBpbXBsZW1lbnRhdGlvbiB3aXRoIGFuIGFkLWhvYyBmYXVs
-dCBpbmplY3RvciwNCj4gPiB0byBzZWUgaWYgdGhlIGNvZGUgY2FuIGNvcnJlY3RseSBoYW5kbGUg
-ZXJyb3JzLiBJIGFsc28gZGV2ZWxvcGVkIGENCj4gPiBmdXp6ZXIgdG8gY29ycnVwdCB0aGUgZGF0
-YSBiZWZvcmUgaXQgaXMgcmVhZCBieSB0aGUga2VybmVsLiBGaW5hbGx5LA0KPiA+IEkgY2hlY2tl
-ZCB0aGF0IHRoZXJlIGFyZSBub3QgbWVtb3J5IGxlYWtzLiBCdXQgSSBhZ3JlZSwgdGhlcmUgY291
-bGQNCj4gPiBzdGlsbCBiZSBidWdzLg0KPiA+DQo+ID4gSWYgeW91IG1lYW4gdGhhdCBhIGtleSBj
-YW4gYmUgYWRkZWQgdG8gdGhlIGtlcm5lbCBpZiBpcyB2b3VjaGVkIGZvcg0KPiA+IGJ5IGFub3Ro
-ZXIga2V5IGluIHRoZSBidWlsdC1pbiBrZXlyaW5nLCBJIGFjdHVhbGx5IGltcGxlbWVudGVkIHRo
-aXMNCj4gPiAod2FzIG1pc3NpbmcgaW4gdGhlIG9yaWdpbmFsIGltcGxlbWVudGF0aW9uKS4gU29t
-ZSBrZXlyaW5ncywgZS5nLiAuaW1hLA0KPiA+IGhhdmUgdGhpcyByZXN0cmljdGlvbi4NCj4gPg0K
-PiA+IFRoZSB3YXkgdGhpcyB3b3JrcyBpcyB0aGF0LCB3aGVuZXZlciB5b3UgYWRkIGEgUEdQIGtl
-eSB0byB0aGUNCj4gPiBrZXJuZWwsIHRoZSBwYXJzZXIgdGFrZXMgbm90IG9ubHkgdGhlIHB1Ymxp
-YyBrZXkgYW5kIHRoZSB1c2VyIElELA0KPiA+IGJ1dCBhbHNvIGl0cyBzaWduYXR1cmUgYnkgdGhl
-IHNhbWUgb3IgYW5vdGhlciBQR1Aga2V5Lg0KPiA+DQo+ID4gVGhlIHNpZ25hdHVyZSBpcyB2ZXJp
-ZmllZCB3aGVuIHRoZSBrZXkgaXMgYWRkZWQgdG8gdGhlIGtleXJpbmcNCj4gPiB3aXRoIHRoYXQg
-cmVzdHJpY3Rpb24sIGFuZCBvbmx5IGlmIHRoZSB2ZXJpZmljYXRpb24gaXMgc3VjY2Vzc2Z1bA0K
-PiA+IHRoZSBrZXkgY2FuIGJlIGFkZGVkLg0KPiANCj4gSSB1bmRlcnN0YW5kIGJ1dCBpdCB3b3Vs
-ZCBiZSBncmVhdCB0byBtYWtlIHVzZSBhcyBtdWNoIGFzIHBvc3NpYmxlIG9mDQo+IHRoZSBleGlz
-dGluZyBpbi1rZXJuZWwgc2lnbmF0dXJlIHZlcmlmaWNhdGlvbiBtZWNoYW5pc21zLg0KDQpZZXMu
-IEkgdGhpbmsgdGhpcyBpcyB0aGUgcHVycG9zZSBvZiB0aGUgYXN5bW1ldHJpYyBzdWJ0eXBlcy4g
-VGhleQ0KaW50cm9kdWNlIGEgcGFyc2VyIGZvciB0aGUgc3BlY2lmaWMgZm9ybWF0LCBidXQgb25j
-ZSB0aGUgcmVsZXZhbnQNCmluZm9ybWF0aW9uIGFyZSBleHRyYWN0ZWQsIHRoZSBpbi1rZXJuZWwg
-bWVjaGFuaXNtcyBhcmUgdXNlZC4NCg0KUm9iZXJ0bw0KDQpIVUFXRUkgVEVDSE5PTE9HSUVTIER1
-ZXNzZWxkb3JmIEdtYkgsIEhSQiA1NjA2Mw0KTWFuYWdpbmcgRGlyZWN0b3I6IExpIFBlbmcsIFpo
-b25nIFJvbmdodWENCg0KPiA+IFJvYmVydG8NCj4gDQo+IFRoYW5rcywNCj4gTWFjaWVqDQoNCg==
+On Mon, Jan 10, 2022 at 11:04 AM Nayna <nayna@linux.vnet.ibm.com> wrote:
+>
+>
+> On 12/29/21 16:53, Yael Tiomkin wrote:
+> > The encrypted.c class supports instantiation of encrypted keys with
+> > either an already-encrypted key material, or by generating new key
+> > material based on random numbers. This patch defines a new datablob
+> > format: [<format>] <master-key name> <decrypted data length>
+> > <decrypted data> that allows to instantiate encrypted keys using
+> > user-provided decrypted data, and therefore allows to perform key
+> > encryption from userspace. The decrypted key material will be
+> > inaccessible from userspace.
+> >
+> > Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+> > Signed-off-by: Yael Tiomkin <yaelt@google.com>
+> > ---
+> >
+> > Notes:
+> >      v -> v2: fixed compilation error.
+> >
+> >      v2 -> v3: modified documentation.
+> >
+> >      v3 -> v4: modified commit message.
+> >
+> >   .../security/keys/trusted-encrypted.rst       | 25 ++++++--
+> >   security/keys/encrypted-keys/encrypted.c      | 62 +++++++++++++-----=
+-
+> >   2 files changed, 63 insertions(+), 24 deletions(-)
+> >
+> > diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Docume=
+ntation/security/keys/trusted-encrypted.rst
+> > index 80d5a5af62a1..f614dad7de12 100644
+> > --- a/Documentation/security/keys/trusted-encrypted.rst
+> > +++ b/Documentation/security/keys/trusted-encrypted.rst
+> > @@ -107,12 +107,13 @@ Encrypted Keys
+> >   --------------
+> >
+> >   Encrypted keys do not depend on a trust source, and are faster, as th=
+ey use AES
+> > -for encryption/decryption. New keys are created from kernel-generated =
+random
+> > -numbers, and are encrypted/decrypted using a specified =E2=80=98master=
+=E2=80=99 key. The
+> > -=E2=80=98master=E2=80=99 key can either be a trusted-key or user-key t=
+ype. The main disadvantage
+> > -of encrypted keys is that if they are not rooted in a trusted key, the=
+y are only
+> > -as secure as the user key encrypting them. The master user key should =
+therefore
+> > -be loaded in as secure a way as possible, preferably early in boot.
+> > +for encryption/decryption. New keys are created either from kernel-gen=
+erated
+> > +random numbers or user-provided decrypted data, and are encrypted/decr=
+ypted
+> > +using a specified =E2=80=98master=E2=80=99 key. The =E2=80=98master=E2=
+=80=99 key can either be a trusted-key or
+> > +user-key type. The main disadvantage of encrypted keys is that if they=
+ are not
+> > +rooted in a trusted key, they are only as secure as the user key encry=
+pting
+> > +them. The master user key should therefore be loaded in as secure a wa=
+y as
+> > +possible, preferably early in boot.
+> >
+> >
+> >   Usage
+> > @@ -199,6 +200,8 @@ Usage::
+> >
+> >       keyctl add encrypted name "new [format] key-type:master-key-name =
+keylen"
+> >           ring
+> > +    keyctl add encrypted name "new [format] key-type:master-key-name k=
+eylen
+> > +        decrypted-data" ring
+> >       keyctl add encrypted name "load hex_blob" ring
+> >       keyctl update keyid "update key-type:master-key-name"
+> >
+> > @@ -303,6 +306,16 @@ Load an encrypted key "evm" from saved blob::
+> >       82dbbc55be2a44616e4959430436dc4f2a7a9659aa60bb4652aeb2120f149ed19=
+7c564e0
+> >       24717c64 5972dcb82ab2dde83376d82b2e3c09ffc
+> >
+> > +Instantiate an encrypted key "evm" using user-provided decrypted data:=
+:
+> > +
+> > +    $ keyctl add encrypted evm "new default user:kmk 32 `cat evm_decry=
+pted_data.blob`" @u
+> > +    794890253
+> > +
+> > +    $ keyctl print 794890253
+> > +    default user:kmk 32 2375725ad57798846a9bbd240de8906f006e66c03af53b=
+1b382d
+> > +    bbc55be2a44616e4959430436dc4f2a7a9659aa60bb4652aeb2120f149ed197c56=
+4e0247
+> > +    17c64 5972dcb82ab2dde83376d82b2e3c09ffc
+> > +
+> >   Other uses for trusted and encrypted keys, such as for disk and file =
+encryption
+> >   are anticipated.  In particular the new format 'ecryptfs' has been de=
+fined
+> >   in order to use encrypted keys to mount an eCryptfs filesystem.  More=
+ details
+> > diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/e=
+ncrypted-keys/encrypted.c
+> > index 87432b35d771..baf6fba5e05e 100644
+> > --- a/security/keys/encrypted-keys/encrypted.c
+> > +++ b/security/keys/encrypted-keys/encrypted.c
+> > @@ -159,6 +159,7 @@ static int valid_master_desc(const char *new_desc, =
+const char *orig_desc)
+> >    *
+> >    * datablob format:
+> >    * new [<format>] <master-key name> <decrypted data length>
+> > + * new [<format>] <master-key name> <decrypted data length> <decrypted=
+ data>
+> >    * load [<format>] <master-key name> <decrypted data length>
+> >    *     <encrypted iv + data>
+> >    * update <new-master-key name>
+> > @@ -170,7 +171,7 @@ static int valid_master_desc(const char *new_desc, =
+const char *orig_desc)
+> >    */
+> >   static int datablob_parse(char *datablob, const char **format,
+> >                         char **master_desc, char **decrypted_datalen,
+> > -                       char **hex_encoded_iv)
+> > +                       char **hex_encoded_iv, char **decrypted_data)
+> >   {
+> >       substring_t args[MAX_OPT_ARGS];
+> >       int ret =3D -EINVAL;
+> > @@ -231,6 +232,8 @@ static int datablob_parse(char *datablob, const cha=
+r **format,
+> >                               "when called from .update method\n", keyw=
+ord);
+> >                       break;
+> >               }
+> > +             *decrypted_data =3D strsep(&datablob, " \t");
+> > +
+> >               ret =3D 0;
+> >               break;
+> >       case Opt_load:
+> > @@ -595,7 +598,8 @@ static int derived_key_decrypt(struct encrypted_key=
+_payload *epayload,
+> >   static struct encrypted_key_payload *encrypted_key_alloc(struct key *=
+key,
+> >                                                        const char *form=
+at,
+> >                                                        const char *mast=
+er_desc,
+> > -                                                      const char *data=
+len)
+> > +                                                      const char *data=
+len,
+> > +                                                      const char *decr=
+ypted_data)
+> >   {
+> >       struct encrypted_key_payload *epayload =3D NULL;
+> >       unsigned short datablob_len;
+> > @@ -604,6 +608,7 @@ static struct encrypted_key_payload *encrypted_key_=
+alloc(struct key *key,
+> >       unsigned int encrypted_datalen;
+> >       unsigned int format_len;
+> >       long dlen;
+> > +     int i;
+> >       int ret;
+> >
+> >       ret =3D kstrtol(datalen, 10, &dlen);
+> > @@ -613,6 +618,20 @@ static struct encrypted_key_payload *encrypted_key=
+_alloc(struct key *key,
+> >       format_len =3D (!format) ? strlen(key_format_default) : strlen(fo=
+rmat);
+> >       decrypted_datalen =3D dlen;
+> >       payload_datalen =3D decrypted_datalen;
+> > +
+> > +     if (decrypted_data) {
+> > +             if (strlen(decrypted_data) !=3D decrypted_datalen) {
+> > +                     pr_err("encrypted key: decrypted data provided do=
+es not match decrypted data length provided\n");
+> > +                     return ERR_PTR(-EINVAL);
+> > +             }
+> > +             for (i =3D 0; i < strlen(decrypted_data); i++) {
+> > +                     if (!isalnum(decrypted_data[i])) {
+>
+> User-provided decrypted data may have special characters, commonly used
+> in passwords or key phrases, apart from alphanumeric.  Replace isalnum
+> with !iscntrl() to validate against control characters but allow special
+> characters.
+>
+> Thanks & Regards,
+>
+>       - Nayna
+>
+
+Hi Nayna,
+I wonder if we should use isprint() instead?
+
+Yael
