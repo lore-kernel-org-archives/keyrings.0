@@ -2,80 +2,63 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 24F62C433FE
-	for <keyrings@archiver.kernel.org>; Fri, 14 Jan 2022 00:30:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 44008C4167B
+	for <keyrings@archiver.kernel.org>; Fri, 14 Jan 2022 00:30:55 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S238432AbiANAax (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 13 Jan 2022 19:30:53 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59254 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230491AbiANAax (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 13 Jan 2022 19:30:53 -0500
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0060EC061574;
-        Thu, 13 Jan 2022 16:30:52 -0800 (PST)
+        id S238426AbiANAay (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 13 Jan 2022 19:30:54 -0500
+Received: from ams.source.kernel.org ([145.40.68.75]:35686 "EHLO
+        ams.source.kernel.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S238427AbiANAay (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 13 Jan 2022 19:30:54 -0500
 Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 91CDC61D56;
+        by ams.source.kernel.org (Postfix) with ESMTPS id ABC8DB823E5;
         Fri, 14 Jan 2022 00:30:52 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id D464CC36AF2;
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3C70FC36AEB;
         Fri, 14 Jan 2022 00:30:51 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1642120252;
-        bh=rwCDnubWfEx4pJC1wzdIQEzshROf9zYzr5NaTwIbkWI=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=tdlYQMswFl8WIpzLwtZMYXyVGhOr0vlozFp6DmxftWg4YT+H2rvRu4QA2Pw59HxQR
-         6XxosGER0cBSMqpG2erWmjoHg4E2EjYqJP5WUKYiIfLSONUepnNwNh5DiyDKAum7h/
-         TUF5Blmm6mbPWI/v1Mx8pBPj8GxTPZ+sJTOm5htQol1ShWz/Q1A6bRt86K/js4WrKJ
-         Wpj+iKACcpYpWaJ96DDjZNNs1V/liv1WnxilSXd+afy+YdRl14UNFYLxUeLjg7Emib
-         9Xex/nAkgj9Ps3OFiy0pwqPSNMvY9SbWZvVo02k3puZTQw9A1FKJu8kU2Fp/qqDf7K
-         CDpPWAIAK3ZhA==
+        s=k20201202; t=1642120251;
+        bh=9/XHk4RvSS656zeV4onzLM9pbNe+LNr64q6UP1/ojFk=;
+        h=From:To:Cc:Subject:Date:From;
+        b=XtUe/NIl2zu1Z31gD4pEN8MqcT5TspPEtx8phreKcha0rn3+4HPYaKSCfBLSETgfV
+         OKjnwxQINPO/BY0UkQkVclpUOGwhhVwVC1hoKrGn8shPyGArpuAjk/MVNz+VSaXknN
+         5g8CC22S4bIC8fJ3FPdpQ/qYllPOgfrxL3ynAh9av2Vedfjq93fbdDxfl66gtbVopT
+         KZLyxCOgX+zrhd6Osz80mmPcXHqgPmdN25kLMhOjFnTy0DLqwG7cpQ/kERnTdW0YVp
+         0vQlDHiHPl90wlL8htT+8pRk6xjp/Xbv+7W2zaNEvotNUphLB2AGDB2sLQs9qe9skp
+         rnsYwqWPpZs9A==
 From:   Eric Biggers <ebiggers@kernel.org>
 To:     keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>
 Cc:     linux-crypto@vger.kernel.org
-Subject: [PATCH 2/4] KEYS: x509: remove unused fields
-Date:   Thu, 13 Jan 2022 16:29:18 -0800
-Message-Id: <20220114002920.103858-3-ebiggers@kernel.org>
+Subject: [PATCH 0/4] KEYS: x509: various cleanups
+Date:   Thu, 13 Jan 2022 16:29:16 -0800
+Message-Id: <20220114002920.103858-1-ebiggers@kernel.org>
 X-Mailer: git-send-email 2.34.1
-In-Reply-To: <20220114002920.103858-1-ebiggers@kernel.org>
-References: <20220114002920.103858-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+This series cleans up a few things in the X.509 certificate parser.
 
-Remove unused fields from struct x509_parse_context.
+Eric Biggers (4):
+  KEYS: x509: clearly distinguish between key and signature algorithms
+  KEYS: x509: remove unused fields
+  KEYS: x509: remove never-set ->unsupported_key flag
+  KEYS: x509: remove dead code that set ->unsupported_sig
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- crypto/asymmetric_keys/x509_cert_parser.c | 2 --
- 1 file changed, 2 deletions(-)
+ crypto/asymmetric_keys/pkcs7_verify.c     |  3 --
+ crypto/asymmetric_keys/x509.asn1          |  2 +-
+ crypto/asymmetric_keys/x509_cert_parser.c | 34 ++++++++++++-----------
+ crypto/asymmetric_keys/x509_parser.h      |  1 -
+ crypto/asymmetric_keys/x509_public_key.c  | 18 ------------
+ 5 files changed, 19 insertions(+), 39 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index aec2396a7f7e..2899ed80bb18 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -19,7 +19,6 @@
- struct x509_parse_context {
- 	struct x509_certificate	*cert;		/* Certificate being constructed */
- 	unsigned long	data;			/* Start of data */
--	const void	*cert_start;		/* Start of cert content */
- 	const void	*key;			/* Key data */
- 	size_t		key_size;		/* Size of key data */
- 	const void	*params;		/* Key parameters */
-@@ -27,7 +26,6 @@ struct x509_parse_context {
- 	enum OID	key_algo;		/* Algorithm used by the cert's key */
- 	enum OID	last_oid;		/* Last OID encountered */
- 	enum OID	sig_algo;		/* Algorithm used to sign the cert */
--	unsigned char	nr_mpi;			/* Number of MPIs stored */
- 	u8		o_size;			/* Size of organizationName (O) */
- 	u8		cn_size;		/* Size of commonName (CN) */
- 	u8		email_size;		/* Size of emailAddress */
+
+base-commit: feb7a43de5ef625ad74097d8fd3481d5dbc06a59
 -- 
 2.34.1
 
