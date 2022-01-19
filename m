@@ -2,89 +2,75 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0FCFEC31D68
-	for <keyrings@archiver.kernel.org>; Wed, 19 Jan 2022 00:15:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 39221C433F5
+	for <keyrings@archiver.kernel.org>; Wed, 19 Jan 2022 00:18:32 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1348506AbiASAPD (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 18 Jan 2022 19:15:03 -0500
-Received: from ams.source.kernel.org ([145.40.68.75]:47630 "EHLO
-        ams.source.kernel.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1347584AbiASAO6 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 18 Jan 2022 19:14:58 -0500
+        id S1350386AbiASASb (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 18 Jan 2022 19:18:31 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50806 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S244782AbiASASb (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 18 Jan 2022 19:18:31 -0500
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3CB8CC061574;
+        Tue, 18 Jan 2022 16:18:31 -0800 (PST)
 Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by ams.source.kernel.org (Postfix) with ESMTPS id 7DC76B81835;
-        Wed, 19 Jan 2022 00:14:57 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 02791C340E8;
-        Wed, 19 Jan 2022 00:14:55 +0000 (UTC)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id B5CE2614B8;
+        Wed, 19 Jan 2022 00:18:30 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id D7523C340E0;
+        Wed, 19 Jan 2022 00:18:29 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1642551296;
-        bh=+cyvg79Yoc1+H+2u1HYQD/NiYmUvcj5Tf7vTlBCGeck=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=ghM5M8Icx8UJsYh+afyAa1Wq0/G53gIa4CSA5ulAf7X45HJPLRUnEkxq0MvdD2f8/
-         3sTvGaauD5/6IowA1USStvJ3CujJ/Hvvf5MiKjYeQjsmw/ifitgEGDx+VImJUeSkWe
-         UwYg6Hj4KA61rH8Y1JTXTB8soRDxasihI4hratpnfaiQ+ZIa+NaPNx5+4/pl34iq75
-         3Ibvlt2Zm5UAYB99AOI5+XdPtEMIcx8SM9jH6qXiFjUycZ5pU6adHrghgoHCOy+bgn
-         ENYOUqDBCGdUcCKa40UqvEbbo8T2mIGiAM/j9pzkKRw4KNEuTZD5HJQVbyP66tiCxx
-         Wf+wdxKVa4RGg==
+        s=k20201202; t=1642551510;
+        bh=5Tf0l9OJlBOiQqmblg2h3eakocTe+K3hVsNuIhBqNYU=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=jllIWL0W2wQPKirORuD/sk36gzXNdYkYUVI2mXkyCIOy9smwLK99vfbHEi3f02BWq
+         1M5RYeBYqp7lvH1YFsfuUXly0teYfHiMQW5nYUh7I/bAiKbL/W3Jph9cLahs1OLxXE
+         89gwHvEHzc17bL0ufzN6W4owSco5cvPYk6NdkD1QIwu5hDHoT8BW2/ricNd7KgqqG0
+         0etF9QHnoxbc3N4bIFdW/X2TicG3yEB2Mn0pKe8wOKY66V/1D7M+Ptu9iRukbA8BaG
+         R7kRSjhHCNKrPFFDPZpsi75BbIug31QzF5jzXots+ACQj3a5dm6OmB2yBBwHW67qv+
+         +oiyAw8uMU4LA==
+Date:   Tue, 18 Jan 2022 16:18:28 -0800
 From:   Eric Biggers <ebiggers@kernel.org>
-To:     linux-crypto@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Cc:     keyrings@vger.kernel.org, Vitaly Chikunov <vt@altlinux.org>,
-        Denis Kenzior <denkenz@gmail.com>, stable@vger.kernel.org,
-        Tadeusz Struk <tadeusz.struk@linaro.org>
-Subject: [PATCH v2 3/5] crypto: rsa-pkcs1pad - restore signature length check
-Date:   Tue, 18 Jan 2022 16:13:04 -0800
-Message-Id: <20220119001306.85355-4-ebiggers@kernel.org>
-X-Mailer: git-send-email 2.34.1
-In-Reply-To: <20220119001306.85355-1-ebiggers@kernel.org>
-References: <20220119001306.85355-1-ebiggers@kernel.org>
+To:     Mimi Zohar <zohar@linux.ibm.com>
+Cc:     linux-integrity@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        keyrings@vger.kernel.org, Vitaly Chikunov <vt@altlinux.org>,
+        Tianjia Zhang <tianjia.zhang@linux.alibaba.com>,
+        Stefan Berger <stefanb@linux.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] ima: fix reference leak in asymmetric_verify()
+Message-ID: <YedY1BCKSKXn2Dcc@sol.localdomain>
+References: <20220113194438.69202-1-ebiggers@kernel.org>
+ <55c5576db2bb0f8a2b9d509f4d1160911388fa41.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <55c5576db2bb0f8a2b9d509f4d1160911388fa41.camel@linux.ibm.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+On Thu, Jan 13, 2022 at 08:52:59PM -0500, Mimi Zohar wrote:
+> Hi Eric,
+> 
+> On Thu, 2022-01-13 at 11:44 -0800, Eric Biggers wrote:
+> > From: Eric Biggers <ebiggers@google.com>
+> > 
+> > Don't leak a reference to the key if its algorithm is unknown.
+> > 
+> > Fixes: 947d70597236 ("ima: Support EC keys for signature verification")
+> > Cc: <stable@vger.kernel.org> # v5.13+
+> > Signed-off-by: Eric Biggers <ebiggers@google.com>
+> 
+> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+> 
 
-RSA PKCS#1 v1.5 signatures are required to be the same length as the RSA
-key size.  RFC8017 specifically requires the verifier to check this
-(https://datatracker.ietf.org/doc/html/rfc8017#section-8.2.2).
+Thanks.  You're intending to apply this patch, right?  Or are you expecting
+someone else to?  get_maintainer.pl didn't associate this file with IMA, but I
+see you sent out a patch to fix that
+(https://lore.kernel.org/linux-integrity/20220117230229.16475-1-zohar@linux.ibm.com/T/#u).
 
-Commit a49de377e051 ("crypto: Add hash param to pkcs1pad") changed the
-kernel to allow longer signatures, but didn't explain this part of the
-change; it seems to be unrelated to the rest of the commit.
-
-Revert this change, since it doesn't appear to be correct.
-
-We can be pretty sure that no one is relying on overly-long signatures
-(which would have to be front-padded with zeroes) being supported, given
-that they would have been broken since commit c7381b012872
-("crypto: akcipher - new verify API for public key algorithms").
-
-Fixes: a49de377e051 ("crypto: Add hash param to pkcs1pad")
-Cc: <stable@vger.kernel.org> # v4.6+
-Cc: Tadeusz Struk <tadeusz.struk@linaro.org>
-Suggested-by: Vitaly Chikunov <vt@altlinux.org>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- crypto/rsa-pkcs1pad.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
-index 7b223adebabf6..6b556ddeb3a00 100644
---- a/crypto/rsa-pkcs1pad.c
-+++ b/crypto/rsa-pkcs1pad.c
-@@ -538,7 +538,7 @@ static int pkcs1pad_verify(struct akcipher_request *req)
- 
- 	if (WARN_ON(req->dst) ||
- 	    WARN_ON(!req->dst_len) ||
--	    !ctx->key_size || req->src_len < ctx->key_size)
-+	    !ctx->key_size || req->src_len != ctx->key_size)
- 		return -EINVAL;
- 
- 	req_ctx->out_buf = kmalloc(ctx->key_size + req->dst_len, GFP_KERNEL);
--- 
-2.34.1
-
+- Eric
