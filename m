@@ -2,104 +2,80 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 45414C4321E
-	for <keyrings@archiver.kernel.org>; Mon, 31 Jan 2022 11:46:33 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9584EC433FE
+	for <keyrings@archiver.kernel.org>; Tue,  1 Feb 2022 00:34:57 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1358954AbiAaLqc (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 31 Jan 2022 06:46:32 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51654 "EHLO
+        id S230492AbiBAAe5 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 31 Jan 2022 19:34:57 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35432 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1350915AbiAaLk2 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 31 Jan 2022 06:40:28 -0500
-Received: from smtp-42ad.mail.infomaniak.ch (smtp-42ad.mail.infomaniak.ch [IPv6:2001:1600:3:17::42ad])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2DE39C034629;
-        Mon, 31 Jan 2022 03:25:54 -0800 (PST)
-Received: from smtp-3-0000.mail.infomaniak.ch (unknown [10.4.36.107])
-        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4JnQjX476KzMqHf0;
-        Mon, 31 Jan 2022 12:25:52 +0100 (CET)
-Received: from ns3096276.ip-94-23-54.eu (unknown [23.97.221.149])
-        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4JnQjT5rHWzljTg9;
-        Mon, 31 Jan 2022 12:25:49 +0100 (CET)
-Message-ID: <e4707df2-ecc2-0471-87fc-c54e774fe315@digikod.net>
-Date:   Mon, 31 Jan 2022 12:33:51 +0100
+        with ESMTP id S230483AbiBAAe4 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 31 Jan 2022 19:34:56 -0500
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8739FC06173D;
+        Mon, 31 Jan 2022 16:34:56 -0800 (PST)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id DE7FB6116E;
+        Tue,  1 Feb 2022 00:34:55 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 08072C340E8;
+        Tue,  1 Feb 2022 00:34:54 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1643675695;
+        bh=lXBovqo+R3QKjCrOtBlrRmBSkmbzyMj69jJ1tFnSyPk=;
+        h=From:To:Cc:Subject:Date:From;
+        b=na13lXmoATd2GRBbnrQQu9ZuqCrsT2iYgJXc4JQUooti1j7DJpbB+G4EzVR/8DU0I
+         /D7aI/Bd2U6oe1n2cP7kg9I8tsoUz8qK7rwLtGvVReelM+t0/FWV5eADB4jabiG1kb
+         5uu8GxczziDdZSINWyzuosUKoXyF5Y66Wuh5Z9ekQlNRWwduNdl5sgIR0Pf2t5rzzO
+         UBG5hFzIthenO9A+zxr5nTdjJjWr3R0mFJvb71kGQeeea9r0P0WYXbHPJNhjOOjKmr
+         2wLIjD7SupP6gXsM3KHFX8YwKevVyogz2xku5LiTuwya9BGOgXr8fCLSyPkdtxr6Do
+         VnJHLJT44GG5w==
+From:   Eric Biggers <ebiggers@kernel.org>
+To:     keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko@kernel.org>,
+        David Howells <dhowells@redhat.com>
+Cc:     linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
+        Stefan Berger <stefanb@linux.ibm.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Tianjia Zhang <tianjia.zhang@linux.alibaba.com>,
+        Vitaly Chikunov <vt@altlinux.org>,
+        Mimi Zohar <zohar@linux.ibm.com>
+Subject: [PATCH 0/2] Fix bugs in public_key_verify_signature()
+Date:   Mon, 31 Jan 2022 16:34:12 -0800
+Message-Id: <20220201003414.55380-1-ebiggers@kernel.org>
+X-Mailer: git-send-email 2.35.1
 MIME-Version: 1.0
-User-Agent: 
-Content-Language: en-US
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     "David S . Miller" <davem@davemloft.net>,
-        Eric Snowberg <eric.snowberg@oracle.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        James Morris <jmorris@namei.org>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        "Serge E . Hallyn" <serge@hallyn.com>,
-        Tyler Hicks <tyhicks@linux.microsoft.com>,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        Andreas Rammhold <andreas@rammhold.de>,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-References: <20210712170313.884724-1-mic@digikod.net>
- <7e8d27da-b5d4-e42c-af01-5c03a7f36a6b@digikod.net> <YcGVZitNa23PCSFV@iki.fi>
- <5030a9ff-a1d1-a9bd-902a-77c3d1d87446@digikod.net> <Ydc/E3S2vmtDOnpw@iki.fi>
- <YddADJJNLDlQAYRW@iki.fi> <86c5010e-a926-023a-8915-d6605cfc4f0a@digikod.net>
-From:   =?UTF-8?Q?Micka=c3=abl_Sala=c3=bcn?= <mic@digikod.net>
-Subject: Re: [PATCH v8 0/5] Enable root to update the blacklist keyring
-In-Reply-To: <86c5010e-a926-023a-8915-d6605cfc4f0a@digikod.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+This patchset fixes some bugs in public_key_verify_signature() where it
+could be tricked into using the wrong algorithm, as was discussed at
+https://lore.kernel.org/linux-integrity/20211202215507.298415-1-zohar@linux.ibm.com/T/#t
 
-On 07/01/2022 13:14, Mickaël Salaün wrote:
-> 
-> On 06/01/2022 20:16, Jarkko Sakkinen wrote:
->> On Thu, Jan 06, 2022 at 09:12:22PM +0200, Jarkko Sakkinen wrote:
->>> On Tue, Jan 04, 2022 at 04:56:36PM +0100, Mickaël Salaün wrote:
->>>>
->>>> On 21/12/2021 09:50, Jarkko Sakkinen wrote:
->>>>> On Mon, Dec 13, 2021 at 04:30:29PM +0100, Mickaël Salaün wrote:
->>>>>> Hi Jarkko,
->>>>>>
->>>>>> Since everyone seems OK with this and had plenty of time to 
->>>>>> complain, could
->>>>>> you please take this patch series in your tree? It still applies on
->>>>>> v5.16-rc5 and it is really important to us. Please let me know if 
->>>>>> you need
->>>>>> something more.
->>>>>>
->>>>>> Regards,
->>>>>>    Mickaël
->>>>>
->>>>> I'm off-work up until end of the year, i.e. I will address only 
->>>>> important
->>>>> bug fixes and v5.16 up until that.
->>>>>
->>>>> If any of the patches is yet missing my ack, feel free to
->>>>>
->>>>> Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
->>>>
->>>> Thanks Jarkko. Can you please take it into your tree?
->>>
->>> I can yes, as I need to anyway do a revised PR for v5.17, as one commit
->>> in my first trial had a truncated fixes tag.
->>
->> Please check:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
->>
->> /Jarkko
-> 
-> Great, thanks!
+I'd appreciate it if the people who care about each of the supported
+public key algorithms (RSA, ECDSA, ECRDSA, and SM2) would test this
+patchset to make sure it still works for their use case(s).  I've tested
+that X.509 and PKCS#7 with RSA still work.
 
-Hi Jarkko,
+Note, I have *not* included a fix for SM2 being implemented incorrectly.
+That is another bug that I pointed out in the above thread.  I think
+that bug is for the people who actually care about SM2.
 
-I noticed your commits 
-https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git/commit/?id=3ec9c3a0531ac868422be3b12fc17310ed8c07dc 
-are no more referenced in your tree. Is there an issue?
+This applies to v5.17-rc2.
 
-Regards,
-  Mickaël
+Eric Biggers (2):
+  KEYS: asymmetric: enforce that sig algo matches key algo
+  KEYS: asymmetric: properly validate hash_algo and encoding
+
+ crypto/asymmetric_keys/pkcs7_verify.c    |   6 --
+ crypto/asymmetric_keys/public_key.c      | 126 ++++++++++++++++-------
+ crypto/asymmetric_keys/x509_public_key.c |   6 --
+ 3 files changed, 91 insertions(+), 47 deletions(-)
+
+
+base-commit: 26291c54e111ff6ba87a164d85d4a4e134b7315c
+-- 
+2.35.1
+
