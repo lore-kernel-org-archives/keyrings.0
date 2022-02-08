@@ -2,117 +2,64 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DDBC3C433F5
-	for <keyrings@archiver.kernel.org>; Tue,  8 Feb 2022 11:29:52 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C378EC4167E
+	for <keyrings@archiver.kernel.org>; Tue,  8 Feb 2022 13:16:06 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1349955AbiBHL3p (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 8 Feb 2022 06:29:45 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45656 "EHLO
+        id S1348959AbiBHNQE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 8 Feb 2022 08:16:04 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38090 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1355553AbiBHJps (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Feb 2022 04:45:48 -0500
-Received: from out30-45.freemail.mail.aliyun.com (out30-45.freemail.mail.aliyun.com [115.124.30.45])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 83BD7C03FEC0;
-        Tue,  8 Feb 2022 01:45:46 -0800 (PST)
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R371e4;CH=green;DM=||false|;DS=||;FP=0|-1|-1|-1|0|-1|-1|-1;HT=e01e04407;MF=tianjia.zhang@linux.alibaba.com;NM=1;PH=DS;RN=12;SR=0;TI=SMTPD_---0V3vxzfq_1644313541;
-Received: from 30.240.99.213(mailfrom:tianjia.zhang@linux.alibaba.com fp:SMTPD_---0V3vxzfq_1644313541)
-          by smtp.aliyun-inc.com(127.0.0.1);
-          Tue, 08 Feb 2022 17:45:42 +0800
-Message-ID: <8ca7c447-3fd6-612b-f903-3111eaddf6e6@linux.alibaba.com>
-Date:   Tue, 8 Feb 2022 17:45:40 +0800
+        with ESMTP id S1348284AbiBHNKm (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Feb 2022 08:10:42 -0500
+Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 22905C03FECE;
+        Tue,  8 Feb 2022 05:10:40 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=casper.20170209; h=In-Reply-To:Content-Type:MIME-Version:
+        References:Message-ID:Subject:Cc:To:From:Date:Sender:Reply-To:
+        Content-Transfer-Encoding:Content-ID:Content-Description;
+        bh=SLOtUPizIxEMzl9MHmssXbkKq3wV6EV1FfuM53oIxG8=; b=DBwru8G20qotyb5cEIMslVov3c
+        TGTgULRVMePaSIfKHeCY43YdN05D97O7K37hs8fQc2ETyaYRHlaggWJ1i4R2+qPbs0tePzIB8dysR
+        2Ut7zGGdYP0JPztkbpWaNoCPqIWSBT3GLimeBBpK4pQwhD2i6jFANoSdCZlP7fOzLX3kXhEr83GIu
+        NY4Ki8Y78QebuMiWK+OzrqH0ycgDEaIRYHdOLFmmB42Wn8eu4CyIIsfJ4QO7/q/EQ5tiC1eORudQz
+        +flOWaS1aWhUwXJX+MB+tt/HP4c9lGh9kkAfLl2DEuK1gDKKG2XvNwp2/OSOXymwi2x9kQYLkFXTR
+        W4SeP7SA==;
+Received: from willy by casper.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1nHQGQ-004rIV-A0; Tue, 08 Feb 2022 13:10:34 +0000
+Date:   Tue, 8 Feb 2022 13:10:34 +0000
+From:   Matthew Wilcox <willy@infradead.org>
+To:     Julian Andres Klode <julian.klode@canonical.com>
+Cc:     Masahiro Yamada <masahiroy@kernel.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        linux-efi <linux-efi@vger.kernel.org>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        efi@lists.einval.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        debian-kernel <debian-kernel@lists.debian.org>
+Subject: Re: [PATCH v2] builddeb: Support signing kernels with the module
+ signing key
+Message-ID: <YgJrypdQium7AcWV@casper.infradead.org>
+References: <20211218031122.4117631-1-willy@infradead.org>
+ <CAK7LNAQUChvX3NoukBnjBfJJGu+a96pfbM--xHEHOygWPgE9eA@mail.gmail.com>
+ <YdSOV7LL0vWCMcWl@casper.infradead.org>
+ <CAK7LNAQgixJSnDUMfjc+tg90oMdVoh+i5faEn-rqgmHR3Bk6dQ@mail.gmail.com>
+ <20220208110122.2z4cmbqexmnxuxld@jak-t480s>
 MIME-Version: 1.0
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0)
- Gecko/20100101 Thunderbird/91.5.0
-Subject: Re: [PATCH] KEYS: asymmetric: enforce SM2 signature use pkey algo
-Content-Language: en-US
-To:     Eric Biggers <ebiggers@kernel.org>
-Cc:     Mimi Zohar <zohar@linux.ibm.com>,
-        Vitaly Chikunov <vt@altlinux.org>,
-        Stefan Berger <stefanb@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        David Howells <dhowells@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org
-References: <20220201003414.55380-1-ebiggers@kernel.org>
- <20220207114327.7929-1-tianjia.zhang@linux.alibaba.com>
- <YgIBKeFkiKtD1unK@sol.localdomain>
-From:   Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-In-Reply-To: <YgIBKeFkiKtD1unK@sol.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20220208110122.2z4cmbqexmnxuxld@jak-t480s>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi Eric,
+On Tue, Feb 08, 2022 at 12:01:22PM +0100, Julian Andres Klode wrote:
+> It's worth pointing out that in Ubuntu, the generated MOK key
+> is for module signing only (extended key usage 1.3.6.1.4.1.2312.16.1.2),
+> kernels signed with it will NOT be bootable.
 
-On 2/8/22 1:35 PM, Eric Biggers wrote:
-> On Mon, Feb 07, 2022 at 07:43:27PM +0800, Tianjia Zhang wrote:
->> The signature verification of SM2 needs to add the Za value and
->> recalculate sig->digest, which requires the detection of the pkey_algo
->> in public_key_verify_signature(). As Eric Biggers said, the pkey_algo
->> field in sig is attacker-controlled and should be use pkey->pkey_algo
->> instead of sig->pkey_algo, and secondly, if sig->pkey_algo is NULL, it
->> will also cause signature verification failure.
->>
->> The software_key_determine_akcipher() already forces the algorithms
->> are matched, so the SM3 algorithm is enforced in the SM2 signature,
->> although this has been checked, we still avoid using any algorithm
->> information in the signature as input.
->>
->> Reported-by: Eric Biggers <ebiggers@google.com>
->> Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-> 
-> Can you add a Fixes tag?
-> 
-
-Thanks, the v2 patch with Fixes tag added has been appended to your
-v2 series.
-
->> ---
->>   crypto/asymmetric_keys/public_key.c | 6 +++---
->>   1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
->> index a603ee8afdb8..ea9a5501f87e 100644
->> --- a/crypto/asymmetric_keys/public_key.c
->> +++ b/crypto/asymmetric_keys/public_key.c
->> @@ -309,7 +309,8 @@ static int cert_sig_digest_update(const struct public_key_signature *sig,
->>   	if (ret)
->>   		return ret;
->>   
->> -	tfm = crypto_alloc_shash(sig->hash_algo, 0, 0);
->> +	/* SM2 signatures always use the SM3 hash algorithm */
->> +	tfm = crypto_alloc_shash("sm3", 0, 0);
->>   	if (IS_ERR(tfm))
->>   		return PTR_ERR(tfm);
->>   
->> @@ -414,8 +415,7 @@ int public_key_verify_signature(const struct public_key *pkey,
->>   	if (ret)
->>   		goto error_free_key;
->>   
->> -	if (sig->pkey_algo && strcmp(sig->pkey_algo, "sm2") == 0 &&
->> -	    sig->data_size) {
->> +	if (strcmp(pkey->pkey_algo, "sm2") == 0 && sig->data_size) {
->>   		ret = cert_sig_digest_update(sig, tfm);
->>   		if (ret)
->>   			goto error_free_key;
->> -- 
-> 
-> This is an improvement, but do you also have a plan to address the problem where
-> the code allows the "Za" hash step to be skipped?  The definitions of SM2 that I
-> could find require that step.  So, it is unclear that the algorithm with that
-> step skipped is still SM2, and how its security relates to that of the SM2
-> algorithm as actually defined.
-> 
-> - Eric
-The design of this Za has indeed brought us a lot of trouble, which
-makes the two separate steps of calculating the hash and signature
-forced to be coupled together. At present, it is a better way to design
-skipping Za as an option. I will try to do this, which of course also
-includes application layer libraries, like openssl.
-
-Best regards,
-Tianjia
+Why should these be separate keys?  There's no meaningful security
+boundary between a kernel module and the ernel itself; a kernel
+modulecan, for example, write to CR3, and that's game over for
+any pretence at separation.
