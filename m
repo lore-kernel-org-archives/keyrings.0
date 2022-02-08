@@ -2,246 +2,148 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 97E3EC433FE
-	for <keyrings@archiver.kernel.org>; Tue,  8 Feb 2022 04:10:55 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 57CB3C4167E
+	for <keyrings@archiver.kernel.org>; Tue,  8 Feb 2022 05:33:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1346554AbiBHEKx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 7 Feb 2022 23:10:53 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42750 "EHLO
+        id S231794AbiBHFdN (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 8 Feb 2022 00:33:13 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36694 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1346551AbiBHEKh (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 7 Feb 2022 23:10:37 -0500
-X-Greylist: delayed 53239 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Mon, 07 Feb 2022 20:10:36 PST
-Received: from conssluserg-04.nifty.com (conssluserg-04.nifty.com [210.131.2.83])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 36C8AC0401E5;
-        Mon,  7 Feb 2022 20:10:35 -0800 (PST)
-Received: from mail-pl1-f180.google.com (mail-pl1-f180.google.com [209.85.214.180]) (authenticated)
-        by conssluserg-04.nifty.com with ESMTP id 2184A8dd013689;
-        Tue, 8 Feb 2022 13:10:09 +0900
-DKIM-Filter: OpenDKIM Filter v2.10.3 conssluserg-04.nifty.com 2184A8dd013689
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
-        s=dec2015msa; t=1644293409;
-        bh=E+V6j8SShKCKnUvb94ZDN8qqmAiMleuldICMqxNk3tY=;
-        h=References:In-Reply-To:From:Date:Subject:To:Cc:From;
-        b=yEXvwqXeVmpASEyhudK44MRKzeOH+qZkBs9I2Hai4TOGI5/uxB+IZuaf6y6WWKECA
-         OOyhrt5tST/fJxM7fRdQeEmD0LZMc5atKdrBoe0R4c+fyrUQUeDziwEYRf1EIDvJz+
-         OXxQnsILdgG5wP/8b3fo3QjbSw/7vkOda1jEiIzA0+/AwBHhshUKPdEHM3UhoYSNcY
-         kLpRTWL04eHMRo6urhGFfsErdhP2+64lnedKNJs6tMQ8dLkPKhVE5BLgqYAxFgkUvh
-         //QKz3NYfNgMQ74x6AndJR9FGcVAHVcwH16y7p3q1zguy+RcKn3PN46+mybFYCM8+9
-         9tYV8eo31zo7Q==
-X-Nifty-SrcIP: [209.85.214.180]
-Received: by mail-pl1-f180.google.com with SMTP id z17so2818966plb.9;
-        Mon, 07 Feb 2022 20:10:09 -0800 (PST)
-X-Gm-Message-State: AOAM533A1o1I9MofQFIhxysXL4nrOyy57VZznbJGsu/gI17QqoiLMzCo
-        MRPBu0inWQhMpA29kiE9Wc1Cf7q3Sd+xqt0wJfo=
-X-Google-Smtp-Source: ABdhPJzzu81qls4q4z/BR+NdJ7uNu//QPmhrf32fuCb34ypu6aMT0BaPGfHIdqGKtyC8QBu9zv76jzo0rzV8BvoGrfY=
-X-Received: by 2002:a17:903:22cd:: with SMTP id y13mr2746325plg.99.1644293408381;
- Mon, 07 Feb 2022 20:10:08 -0800 (PST)
+        with ESMTP id S233025AbiBHF1d (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Feb 2022 00:27:33 -0500
+Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5959AC0401ED;
+        Mon,  7 Feb 2022 21:27:32 -0800 (PST)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by ams.source.kernel.org (Postfix) with ESMTPS id 1C2DBB8184D;
+        Tue,  8 Feb 2022 05:27:31 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 94B2EC340EE;
+        Tue,  8 Feb 2022 05:27:29 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1644298049;
+        bh=nySwKR/PHIBHwyTLPaSdVAxC7gXi5UWq5MF9bzSt6xY=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=pPjXv23JFaSD8bLVgcMfzH+kQ30b6Jj5vVgrSi1yurD1Xq8KidYa7sPMMiuIBwkU4
+         t5Ers/gUj5ODos4GDROBJbc3qExRMewqsgwh4OBdL6Ug7BN/JusjojmeqMy/5w9GGW
+         SH+RT0ShbZCzD1RXbEM7lmKuS4ilB2SO3JUpm5dXWxhDjEWebWiQvIfr2YPYk9stIb
+         4m44ZT852SXDx7lK5fxjGnBMOnsiY0ONZbHD8pZ1Ngle75WBkgINCVPx0TEAZEfJic
+         hWuO8vzM0pWEqZ9vRgkxwGNFUKJ/kyt98LaRovgDjXx5+8Fw08E5rPCc4Lvr1iNkIM
+         dAE5I+Kh9MLLg==
+From:   Eric Biggers <ebiggers@kernel.org>
+To:     keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko@kernel.org>,
+        David Howells <dhowells@redhat.com>
+Cc:     linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
+        Stefan Berger <stefanb@linux.ibm.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Tianjia Zhang <tianjia.zhang@linux.alibaba.com>,
+        Vitaly Chikunov <vt@altlinux.org>,
+        Mimi Zohar <zohar@linux.ibm.com>, stable@vger.kernel.org
+Subject: [PATCH v2 1/2] KEYS: asymmetric: enforce that sig algo matches key algo
+Date:   Mon,  7 Feb 2022 21:24:47 -0800
+Message-Id: <20220208052448.409152-2-ebiggers@kernel.org>
+X-Mailer: git-send-email 2.35.1
+In-Reply-To: <20220208052448.409152-1-ebiggers@kernel.org>
+References: <20220208052448.409152-1-ebiggers@kernel.org>
 MIME-Version: 1.0
-References: <20211218031122.4117631-1-willy@infradead.org> <CAK7LNAQUChvX3NoukBnjBfJJGu+a96pfbM--xHEHOygWPgE9eA@mail.gmail.com>
- <YdSOV7LL0vWCMcWl@casper.infradead.org> <CAK7LNAQgixJSnDUMfjc+tg90oMdVoh+i5faEn-rqgmHR3Bk6dQ@mail.gmail.com>
- <YgEfDUh6R5A507QD@casper.infradead.org>
-In-Reply-To: <YgEfDUh6R5A507QD@casper.infradead.org>
-From:   Masahiro Yamada <masahiroy@kernel.org>
-Date:   Tue, 8 Feb 2022 13:09:32 +0900
-X-Gmail-Original-Message-ID: <CAK7LNASqvQYEf0tSS=hSkKtiZv50t0qFUbmkSdv0-QJ2iPYTfw@mail.gmail.com>
-Message-ID: <CAK7LNASqvQYEf0tSS=hSkKtiZv50t0qFUbmkSdv0-QJ2iPYTfw@mail.gmail.com>
-Subject: Re: [PATCH v2] builddeb: Support signing kernels with the module
- signing key
-To:     Matthew Wilcox <willy@infradead.org>
-Cc:     Ben Hutchings <ben@decadent.org.uk>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        efi@lists.einval.com,
-        debian-kernel <debian-kernel@lists.debian.org>,
-        linux-efi <linux-efi@vger.kernel.org>,
-        Ard Biesheuvel <ardb@kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, Feb 7, 2022 at 10:31 PM Matthew Wilcox <willy@infradead.org> wrote:
->
-> On Mon, Feb 07, 2022 at 09:33:46PM +0900, Masahiro Yamada wrote:
-> > Added "Ben Hutchings <ben@decadent.org.uk>"
-> >
-> > On Wed, Jan 5, 2022 at 3:13 AM Matthew Wilcox <willy@infradead.org> wrote:
-> > >
-> > > On Wed, Jan 05, 2022 at 12:39:57AM +0900, Masahiro Yamada wrote:
-> > > > > +vmlinux=$($MAKE -s -f $srctree/Makefile image_name)
-> > > > > +key=
-> > > > > +if is_enabled CONFIG_EFI_STUB && is_enabled CONFIG_MODULE_SIG; then
-> > > > > +       cert=$(grep ^CONFIG_MODULE_SIG_KEY= include/config/auto.conf | cut -d\" -f2)
-> > > > > +       if [ ! -f $cert ]; then
-> > > > > +               cert=$srctree/$cert
-> > > > > +       fi
-> > > > > +
-> > > > > +       key=${cert%pem}priv
-> > > > > +       if [ ! -f $key ]; then
-> > > > > +               key=$cert
-> > > > > +       fi
-> > > >
-> > > >
-> > > > I still do not understand this part.
-> > > >
-> > > > It is true that the Debian document you referred to creates separate files
-> > > > for the key and the certificate:
-> > > >   # openssl req -new -x509 -newkey rsa:2048 -keyout MOK.priv -outform
-> > > > DER -out MOK.der -days 36500 -subj "/CN=My Name/" -nodes
-> > > >
-> > > > but, is such a use-case possible in Kbuild?
-> > >
-> > > If someone has followed the Debian instructions for creating a MOK,
-> > > then they will have two separate files.  We should support both the case
-> > > where someone has created a Debian MOK and the case where someone has
-> > > used Kbuild to create this foolish blob with both private and public
-> > > key in one file.
-> >
-> > But, this patch is doing different things than the Debian document.
-> >
-> >
-> > The Debian document you referred to says:
-> >   "Ubuntu puts its MOK key under /var/lib/shim-signed/mok/ and some
-> >    software such as Oracle's virtualbox package expect the key there
-> >    so we follow suit (see 989463 for reference) and put it at the same place"
->
-> Uhh ... it does now.  It didn't when I originally wrote this patch.
-> Apparently it was updated in November:
-> https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=989463
+From: Eric Biggers <ebiggers@google.com>
 
+Most callers of public_key_verify_signature(), including most indirect
+callers via verify_signature() as well as pkcs7_verify_sig_chain(),
+don't check that public_key_signature::pkey_algo matches
+public_key::pkey_algo.  These should always match.  However, a malicious
+signature could intentionally declare an unintended algorithm.  It is
+essential that such signatures be rejected outright, or that the
+algorithm of the *key* be used -- not the algorithm of the signature as
+that would allow attackers to choose the algorithm used.
 
-I checked the diff.
+Currently, public_key_verify_signature() correctly uses the key's
+algorithm when deciding which akcipher to allocate.  That's good.
+However, it uses the signature's algorithm when deciding whether to do
+the first step of SM2, which is incorrect.  Also, v4.19 and older
+kernels used the signature's algorithm for the entire process.
 
-Back in November, the key/cert were generated in /root directory.
+Prevent such errors by making public_key_verify_signature() enforce that
+the signature's algorithm (if given) matches the key's algorithm.
 
-In the latest instruction, the recommended location is
-/var/lib/shim-signed/mok/.
+Also remove two checks of this done by callers, which are now redundant.
 
+Cc: stable@vger.kernel.org
+Tested-by: Stefan Berger <stefanb@linux.ibm.com>
+Tested-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ crypto/asymmetric_keys/pkcs7_verify.c    |  6 ------
+ crypto/asymmetric_keys/public_key.c      | 15 +++++++++++++++
+ crypto/asymmetric_keys/x509_public_key.c |  6 ------
+ 3 files changed, 15 insertions(+), 12 deletions(-)
 
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 0b4d07aa8811..f94a1d1ad3a6 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -174,12 +174,6 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
+ 		pr_devel("Sig %u: Found cert serial match X.509[%u]\n",
+ 			 sinfo->index, certix);
+ 
+-		if (strcmp(x509->pub->pkey_algo, sinfo->sig->pkey_algo) != 0) {
+-			pr_warn("Sig %u: X.509 algo and PKCS#7 sig algo don't match\n",
+-				sinfo->index);
+-			continue;
+-		}
+-
+ 		sinfo->signer = x509;
+ 		return 0;
+ 	}
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 4fefb219bfdc..e36213945686 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -325,6 +325,21 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	BUG_ON(!sig);
+ 	BUG_ON(!sig->s);
+ 
++	/*
++	 * If the signature specifies a public key algorithm, it *must* match
++	 * the key's actual public key algorithm.
++	 *
++	 * Small exception: ECDSA signatures don't specify the curve, but ECDSA
++	 * keys do.  So the strings can mismatch slightly in that case:
++	 * "ecdsa-nist-*" for the key, but "ecdsa" for the signature.
++	 */
++	if (sig->pkey_algo) {
++		if (strcmp(pkey->pkey_algo, sig->pkey_algo) != 0 &&
++		    (strncmp(pkey->pkey_algo, "ecdsa-", 6) != 0 ||
++		     strcmp(sig->pkey_algo, "ecdsa") != 0))
++			return -EKEYREJECTED;
++	}
++
+ 	ret = software_key_determine_akcipher(sig->encoding,
+ 					      sig->hash_algo,
+ 					      pkey, alg_name);
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index fe14cae115b5..71cc1738fbfd 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -128,12 +128,6 @@ int x509_check_for_self_signed(struct x509_certificate *cert)
+ 			goto out;
+ 	}
+ 
+-	ret = -EKEYREJECTED;
+-	if (strcmp(cert->pub->pkey_algo, cert->sig->pkey_algo) != 0 &&
+-	    (strncmp(cert->pub->pkey_algo, "ecdsa-", 6) != 0 ||
+-	     strcmp(cert->sig->pkey_algo, "ecdsa") != 0))
+-		goto out;
+-
+ 	ret = public_key_verify_signature(cert->pub, cert->sig);
+ 	if (ret < 0) {
+ 		if (ret == -ENOPKG) {
+-- 
+2.35.1
 
-
-
-
-> > In Debian, MOK is generated under /var/lib/shim-signed/mok/,
-> > and its primary use is for signing the kernel.
-> > Then, you can reuse it for signing modules as well.
-> >
-> >
-> > This patch adopts the opposite direction:
-> >   Kbuild generates the module signing key, then
-> >   this patch reuses it for singing the kernel.
->
-> The patch only does this because you asked it to be changed to do this!
-> Look back at the version I originally sent out.  It didn't generate
-> the module signing key at all.  I had no idea the kernel build was even
-> capable of doing such a thing until you pointed it out.
-
-Sorry, I do not understand what you are talking about.
-
-I assume you are talking about v1 patch.
-https://patchwork.kernel.org/project/linux-kbuild/patch/20211013200536.1851070-1-willy@infradead.org/
-
-Honestly, I did not have expert knowledge in the secure boot,
-but anyway I observed build errors, and I pointed it out.
-
-Other than the build error, your original patch was written in the way
-to use CONFIG_MODULE_SIG_KEY  for signing the kernel.
-This is the same between v1 and v2.
-
-Looking at the instruction in the Debian page,
-now I am wondering if this is the right thing to do
-because signing the kernel and signing the modules
-are different things.
-
-The old debian page (I checked the old page back in November)
-did not mention CONFIG_MODULE_SIG_KEY either.
-
-
-> I followed the instructions in the Debian document *that existed at
-> the time* (and now apparently we can't see because Debian uses an
-> inept type of wiki that can't show old versions).  I generated a key
-> and did not store it in the build tree.  I enrolled that key.
-> And then I thought "It would be nice if I didn't have to do all this
-> manual work after installing a new kernel so that my machine would
-> boot".
-
-I agree on this point.
-It will be nice to avoid manual work in the kernel signing steps.
-
-
-
->
-> And here we are, months later, and you're complaining about ...
-> something?
-
-Sorry for the delay and annoyance.
-
-After reading the latest Debian doc closely, I think we can automate
-the kernel signing by using the key located in /var/lib/shim-signed/mok/
-instead of CONFIG_MODULE_SIG_KEY.
-
-
-If I am wrong, I hope some input from people in the CC list.
-
-
-
-
-
-
-
-
-
->
-> > The key is located in the kernel build tree
-> > (that is, the key is lost when you run "make mrproper").
-> >
-> > You need to "mokutil --import path/to/module/sining/key"
-> > every time Kbuild generates a new key.
-> >
-> >
-> >
-> > So, another possible approach is:
-> >
-> > builddeb signs the kernel with the key
-> > in /var/lib/shim-signed/mok/.
-> >
-> > I think this is more aligned with the debian documenation.
-> >
-> > I added Ben Hutchings, who might give us insights.
-> >
-> >
-> >
-> >
-> >
-> >
-> >
-> > > > In the old days, yes, the key and the certificate were stored in separate files.
-> > > > (the key in *.priv and the certificate in *.x509)
-> > > >
-> > > >
-> > > > Please read this commit:
-> > >
-> > > Yes, I did.
-> > >
-> > > > The motivation for this change is still questionable to me;
-> > > > the commit description sounds like they merged *.priv and *.x509
-> > > > into *.pem just because they could not write a correct Makefile.
-> > > > (If requested, I can write a correct Makefile that works in parallel build)
-> > >
-> > > I think that would be preferable.  Putting the private and public keys
-> > > in the same file cannot be good security practice!
-> >
-> >
-> >
-> > --
-> > Best Regards
-> > Masahiro Yamada
-
-
-
---
-Best Regards
-Masahiro Yamada
