@@ -2,42 +2,42 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 11ACAC4332F
-	for <keyrings@archiver.kernel.org>; Tue, 15 Feb 2022 19:40:20 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CC640C433F5
+	for <keyrings@archiver.kernel.org>; Tue, 15 Feb 2022 19:40:37 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S243763AbiBOTk2 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 15 Feb 2022 14:40:28 -0500
-Received: from mxb-00190b01.gslb.pphosted.com ([23.128.96.19]:44740 "EHLO
+        id S243785AbiBOTkq (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 15 Feb 2022 14:40:46 -0500
+Received: from mxb-00190b01.gslb.pphosted.com ([23.128.96.19]:44866 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S243757AbiBOTk1 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 15 Feb 2022 14:40:27 -0500
+        with ESMTP id S243772AbiBOTka (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 15 Feb 2022 14:40:30 -0500
 Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.220.28])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 12284DEB6;
-        Tue, 15 Feb 2022 11:40:15 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D5816DEAF;
+        Tue, 15 Feb 2022 11:40:19 -0800 (PST)
 Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-        by smtp-out1.suse.de (Postfix) with ESMTP id 204E42112A;
-        Tue, 15 Feb 2022 19:40:14 +0000 (UTC)
+        by smtp-out1.suse.de (Postfix) with ESMTP id 925FC212BC;
+        Tue, 15 Feb 2022 19:40:18 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1644954014; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+        t=1644954018; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
          mime-version:mime-version:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=/Xag/tiYIWZjYv+wxtYhQ+mbygAAZdHDwq6nPQfuZzo=;
-        b=Fjdwzsuxb9ZxQn/KzDhNEM1i3t8Jg1CLxu4AXw4xy8OCPM6Z5b7DevDOj5kfhMEGo+vRUD
-        zjmIIjGVbOvcRnkjy1Mk5+oEZocOyZBi/e5u5l2CFNssckXTQOWkRfq5S13zn6LSQZnh6h
-        NZU/J/MyJFptCBTVmv3F+NK+9ccFgvg=
+        bh=paASHUob1sIoerzV6STcfpbtVsZc1wGF58vxL8uX3EY=;
+        b=Bdn/l637OdkswNZQSSm2sZAlaHzVip/VSOE91vJVdILHC2dxFlD7JKAkDg3IttcZbIiDAQ
+        9lPczQnE+i97i48qMfZ2/lZyLNxEfViLsQKdQllfovuB1SF2za1PucpFrLLkQ+gJbAr5ki
+        paH2VI/pjoXhQrkCCWf35uJEQUHOxb0=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1644954014;
+        s=susede2_ed25519; t=1644954018;
         h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
          mime-version:mime-version:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=/Xag/tiYIWZjYv+wxtYhQ+mbygAAZdHDwq6nPQfuZzo=;
-        b=f86nJeBFiwa8nt/hv1OO6lAbHJRRZ7eOgXRZxhJhheKW1mRwObnmFtHwvqdvv9Uj/2QAF8
-        dSFa6e5gxSq2ZCCQ==
+        bh=paASHUob1sIoerzV6STcfpbtVsZc1wGF58vxL8uX3EY=;
+        b=YXLOvClTKrsVp4RnU/YCSGih1ibEVb01h7+4vRxPi+YOxT47hsBbvaY4Z7ExOxKRLsKWuz
+        eZuUqF0VptfxEXDw==
 Received: from kitsune.suse.cz (kitsune.suse.cz [10.100.12.127])
-        by relay2.suse.de (Postfix) with ESMTP id DD1BDA3B81;
-        Tue, 15 Feb 2022 19:40:13 +0000 (UTC)
+        by relay2.suse.de (Postfix) with ESMTP id 580E1A3B87;
+        Tue, 15 Feb 2022 19:40:18 +0000 (UTC)
 From:   Michal Suchanek <msuchanek@suse.de>
 Cc:     Michal Suchanek <msuchanek@suse.de>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -56,12 +56,12 @@ Cc:     Michal Suchanek <msuchanek@suse.de>,
         Kairui Song <kasong@redhat.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, kexec@lists.infradead.org,
-        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH 1/4] Fix arm64 kexec forbidding kernels signed with keys in the secondary keyring to boot
-Date:   Tue, 15 Feb 2022 20:39:38 +0100
-Message-Id: <83b3583f35c50c609739a8d857d14e8410293373.1644953683.git.msuchanek@suse.de>
+        linux-s390@vger.kernel.org, Philipp Rudo <prudo@linux.ibm.com>,
+        kexec@lists.infradead.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org, stable@kernel.org
+Subject: [PATCH 3/4] kexec, KEYS, s390: Make use of built-in and secondary keyring for signature verification
+Date:   Tue, 15 Feb 2022 20:39:40 +0100
+Message-Id: <9f8b71f368843568d7dd6764f8c8a68b1f3a9bbc.1644953683.git.msuchanek@suse.de>
 X-Mailer: git-send-email 2.31.1
 In-Reply-To: <cover.1644953683.git.msuchanek@suse.de>
 References: <cover.1644953683.git.msuchanek@suse.de>
@@ -72,41 +72,59 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-commit d3bfe84129f6 ("certs: Add a secondary system keyring that can be added to dynamically")
-split of .system_keyring into .builtin_trusted_keys and
-.secondary_trusted_keys broke kexec, thereby preventing kernels signed by
-keys which are now in the secondary keyring from being kexec'd.
+commit e23a8020ce4e ("s390/kexec_file: Signature verification prototype")
+adds support for KEXEC_SIG verification with keys from platform keyring
+but the built-in keys and secondary keyring are not used.
 
-Fix this by passing VERIFY_USE_SECONDARY_KEYRING to
-verify_pefile_signature().
+Add support for the built-in keys and secondary keyring as x86 does.
 
-Cherry-picked from
-commit ea93102f3224 ("Fix kexec forbidding kernels signed with keys in the secondary keyring to boot")
-
-Fixes: 732b7b93d849 ("arm64: kexec_file: add kernel signature verification support")
+Fixes: e23a8020ce4e ("s390/kexec_file: Signature verification prototype")
+Cc: Philipp Rudo <prudo@linux.ibm.com>
 Cc: kexec@lists.infradead.org
 Cc: keyrings@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
 Cc: stable@kernel.org
 Signed-off-by: Michal Suchanek <msuchanek@suse.de>
 ---
- arch/arm64/kernel/kexec_image.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/s390/kernel/machine_kexec_file.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm64/kernel/kexec_image.c b/arch/arm64/kernel/kexec_image.c
-index 9ec34690e255..1fbf2ee7c005 100644
---- a/arch/arm64/kernel/kexec_image.c
-+++ b/arch/arm64/kernel/kexec_image.c
-@@ -133,7 +133,8 @@ static void *image_load(struct kimage *image,
- #ifdef CONFIG_KEXEC_IMAGE_VERIFY_SIG
- static int image_verify_sig(const char *kernel, unsigned long kernel_len)
- {
--	return verify_pefile_signature(kernel, kernel_len, NULL,
-+	return verify_pefile_signature(kernel, kernel_len,
-+				       VERIFY_USE_SECONDARY_KEYRING,
- 				       VERIFYING_KEXEC_PE_SIGNATURE);
+diff --git a/arch/s390/kernel/machine_kexec_file.c b/arch/s390/kernel/machine_kexec_file.c
+index 8f43575a4dd3..fc6d5f58debe 100644
+--- a/arch/s390/kernel/machine_kexec_file.c
++++ b/arch/s390/kernel/machine_kexec_file.c
+@@ -31,6 +31,7 @@ int s390_verify_sig(const char *kernel, unsigned long kernel_len)
+ 	const unsigned long marker_len = sizeof(MODULE_SIG_STRING) - 1;
+ 	struct module_signature *ms;
+ 	unsigned long sig_len;
++	int ret;
+ 
+ 	/* Skip signature verification when not secure IPLed. */
+ 	if (!ipl_secure_flag)
+@@ -65,11 +66,18 @@ int s390_verify_sig(const char *kernel, unsigned long kernel_len)
+ 		return -EBADMSG;
+ 	}
+ 
+-	return verify_pkcs7_signature(kernel, kernel_len,
+-				      kernel + kernel_len, sig_len,
+-				      VERIFY_USE_PLATFORM_KEYRING,
+-				      VERIFYING_MODULE_SIGNATURE,
+-				      NULL, NULL);
++	ret = verify_pkcs7_signature(kernel, kernel_len,
++				     kernel + kernel_len, sig_len,
++				     VERIFY_USE_SECONDARY_KEYRING,
++				     VERIFYING_MODULE_SIGNATURE,
++				     NULL, NULL);
++	if (ret == -ENOKEY && IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING))
++		ret = verify_pkcs7_signature(kernel, kernel_len,
++					     kernel + kernel_len, sig_len,
++					     VERIFY_USE_PLATFORM_KEYRING,
++					     VERIFYING_MODULE_SIGNATURE,
++					     NULL, NULL);
++	return ret;
  }
- #endif
+ #endif /* CONFIG_KEXEC_SIG */
+ 
 -- 
 2.31.1
 
