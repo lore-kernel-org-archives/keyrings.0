@@ -2,115 +2,119 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E8613C433FE
-	for <keyrings@archiver.kernel.org>; Fri, 18 Feb 2022 04:47:51 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9BC10C433EF
+	for <keyrings@archiver.kernel.org>; Fri, 18 Feb 2022 04:47:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229720AbiBREsE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 17 Feb 2022 23:48:04 -0500
-Received: from mxb-00190b01.gslb.pphosted.com ([23.128.96.19]:60458 "EHLO
+        id S229941AbiBREsF (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 17 Feb 2022 23:48:05 -0500
+Received: from mxb-00190b01.gslb.pphosted.com ([23.128.96.19]:60460 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229753AbiBREsC (ORCPT
+        with ESMTP id S229781AbiBREsC (ORCPT
         <rfc822;keyrings@vger.kernel.org>); Thu, 17 Feb 2022 23:48:02 -0500
 Received: from conuserg-11.nifty.com (conuserg-11.nifty.com [210.131.2.78])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D6B5315A39;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D6BFD2A267;
         Thu, 17 Feb 2022 20:47:45 -0800 (PST)
 Received: from grover.. (133-32-176-37.west.xps.vectant.ne.jp [133.32.176.37]) (authenticated)
-        by conuserg-11.nifty.com with ESMTP id 21I4kcpE010407;
-        Fri, 18 Feb 2022 13:46:39 +0900
-DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-11.nifty.com 21I4kcpE010407
+        by conuserg-11.nifty.com with ESMTP id 21I4kcpD010407;
+        Fri, 18 Feb 2022 13:46:38 +0900
+DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-11.nifty.com 21I4kcpD010407
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
-        s=dec2015msa; t=1645159600;
-        bh=GN3A4s3pyb9fSh7Ms+c8YnkOwQrlzBzILa3sx7wg7n4=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=fjhE2x8OF4hry3M8b93q2elLg1KmVBLLr1Us8YxSi6WaCnrDF4Mu1x0K1r92mcl+l
-         xzZEEG20cYqZPaOU90e2gG8nbcoZ8d/LeXZhUeDpYf2j3wyDWVaxNkoHaA/gk/iU4G
-         6bRf08tBbVvo28ZikRbL3P9tMVGgHvFcCFbegrW/kLrXn9pMH24Tey+LKij59Ai2lQ
-         0moyw9m50iI6JxrmJNYUJhm+OALH6Ba4O3r56Md7QQJhaLPJpTqKPRHmN4zFV+vNr1
-         ccXcvxAzhWVq6lYdfjiAbHlwMiiiUim5N4fZcVhxgOCh/pGEsH+aa7fVdyCNWlQ8R6
-         LgKHyk5T0a0pw==
+        s=dec2015msa; t=1645159599;
+        bh=JIjbg7vgzAe37E26iyaSzTnZQmUAVRx74bHrvZXfv4Y=;
+        h=From:To:Cc:Subject:Date:From;
+        b=0ZMfvvYrLvkbVPttL8eDFaVoj19pgO+okECRE1fVHZRBMuTUaUAWIu1Aji3zl9cek
+         Fukii7oFc2BT2GII/0p2Wu0Yxkishv8Fb5Nnd4ljU+K27K6t8yA4yIRuVIH5/B4imN
+         WG6LPfkJJ5wWdXimKmd0MaSjrR31IP5a6ANeUc6rs1wjKHwBa17Yc+zolWH6B4gfE8
+         eWUxEU6i1WRIL4HqRFo275ycNsjLv0bvWq6FvndkFDkxygUpVvyrWcxnEbAwG/O7d0
+         onyaiAo00EdgBB1bktFaD8KSa0M/tKzci/Qc3eSiboivfvISKrLK1U99dWE4K6xz2B
+         kEEkTZ6LK8wAA==
 X-Nifty-SrcIP: [133.32.176.37]
 From:   Masahiro Yamada <masahiroy@kernel.org>
 To:     linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 Cc:     linux-kernel@vger.kernel.org,
         Masahiro Yamada <masahiroy@kernel.org>
-Subject: [PATCH 2/2] certs: simplify empty certs creation in certs/Makefile
-Date:   Fri, 18 Feb 2022 13:46:34 +0900
-Message-Id: <20220218044634.169520-2-masahiroy@kernel.org>
+Subject: [PATCH 1/2] certs: include certs/signing_key.x509 unconditionally
+Date:   Fri, 18 Feb 2022 13:46:33 +0900
+Message-Id: <20220218044634.169520-1-masahiroy@kernel.org>
 X-Mailer: git-send-email 2.32.0
-In-Reply-To: <20220218044634.169520-1-masahiroy@kernel.org>
-References: <20220218044634.169520-1-masahiroy@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-To create an empty cert file, we need to pass "" to the extract-cert
-tool, which is common for all the three call-sites of cmd_exract_certs.
+I do not see much sense in the #if conditional in system_certificates.S;
+even if the condition is true, there exists no signing key when
+CONFIG_MODULE_SIG_KEY="".
 
-Factor out the logic into extract-cert-in.
+So, certs/Makefile generates empty certs/signing_key.x509 in such a
+case. We can always do this, irrespective of CONFIG_MODULE_SIG or
+(CONFIG_IMA_APPRAISE_MODSIG && CONFIG_MODULES).
 
-One exceptional case is PKCS#11 case, where we override extract-cert-in
-with the URI.
+We only need to check CONFIG_MODULE_SIG_KEY, then both *.S and Makefile
+will become much simpler.
 
 Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
 ---
 
- certs/Makefile | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ certs/Makefile              | 16 ----------------
+ certs/system_certificates.S |  3 ---
+ 2 files changed, 19 deletions(-)
 
 diff --git a/certs/Makefile b/certs/Makefile
-index 68c1d7b9a388..d8443cfb1c40 100644
+index 3ea7fe60823f..68c1d7b9a388 100644
 --- a/certs/Makefile
 +++ b/certs/Makefile
-@@ -13,12 +13,13 @@ obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_nohashes.o
- endif
- 
- quiet_cmd_extract_certs  = CERT    $@
--      cmd_extract_certs  = $(obj)/extract-cert $(2) $@
-+      cmd_extract_certs  = $(obj)/extract-cert $(extract-cert-in) $@
-+extract-cert-in = $(or $(filter-out $(obj)/extract-cert, $(real-prereqs)),"")
- 
- $(obj)/system_certificates.o: $(obj)/x509_certificate_list
- 
- $(obj)/x509_certificate_list: $(CONFIG_SYSTEM_TRUSTED_KEYS) $(obj)/extract-cert FORCE
--	$(call if_changed,extract_certs,$(if $(CONFIG_SYSTEM_TRUSTED_KEYS),$<,""))
-+	$(call if_changed,extract_certs)
+@@ -22,25 +22,10 @@ $(obj)/x509_certificate_list: $(CONFIG_SYSTEM_TRUSTED_KEYS) $(obj)/extract-cert
  
  targets += x509_certificate_list
  
-@@ -52,22 +53,22 @@ $(obj)/x509.genkey:
- 
- endif # CONFIG_MODULE_SIG_KEY
- 
--# If CONFIG_MODULE_SIG_KEY isn't a PKCS#11 URI, depend on it
--ifneq ($(filter-out pkcs11:%, $(CONFIG_MODULE_SIG_KEY)),)
--X509_DEP := $(CONFIG_MODULE_SIG_KEY)
+-ifeq ($(CONFIG_MODULE_SIG),y)
+-	SIGN_KEY = y
 -endif
 -
- $(obj)/system_certificates.o: $(obj)/signing_key.x509
+-ifeq ($(CONFIG_IMA_APPRAISE_MODSIG),y)
+-ifeq ($(CONFIG_MODULES),y)
+-	SIGN_KEY = y
+-endif
+-endif
+-
+-ifdef SIGN_KEY
+-###############################################################################
+-#
+ # If module signing is requested, say by allyesconfig, but a key has not been
+ # supplied, then one will need to be generated to make sure the build does not
+ # fail and that the kernel may be used afterwards.
+ #
+-###############################################################################
+-
+ # We do it this way rather than having a boolean option for enabling an
+ # external private key, because 'make randconfig' might enable such a
+ # boolean option and we unfortunately can't make it depend on !RANDCONFIG.
+@@ -76,7 +61,6 @@ $(obj)/system_certificates.o: $(obj)/signing_key.x509
  
--$(obj)/signing_key.x509: $(X509_DEP) $(obj)/extract-cert FORCE
--	$(call if_changed,extract_certs,$(if $(CONFIG_MODULE_SIG_KEY),$(if $(X509_DEP),$<,$(CONFIG_MODULE_SIG_KEY)),""))
-+PKCS11_URI := $(filter pkcs11:%, $(CONFIG_MODULE_SIG_KEY))
-+ifdef PKCS11_URI
-+$(obj)/signing_key.x509: extract-cert-in := $(PKCS11_URI)
-+endif
-+
-+$(obj)/signing_key.x509: $(filter-out $(PKCS11_URI),$(CONFIG_MODULE_SIG_KEY)) $(obj)/extract-cert FORCE
-+	$(call if_changed,extract_certs)
+ $(obj)/signing_key.x509: $(X509_DEP) $(obj)/extract-cert FORCE
+ 	$(call if_changed,extract_certs,$(if $(CONFIG_MODULE_SIG_KEY),$(if $(X509_DEP),$<,$(CONFIG_MODULE_SIG_KEY)),""))
+-endif # CONFIG_MODULE_SIG
  
  targets += signing_key.x509
  
- $(obj)/revocation_certificates.o: $(obj)/x509_revocation_list
- 
- $(obj)/x509_revocation_list: $(CONFIG_SYSTEM_REVOCATION_KEYS) $(obj)/extract-cert FORCE
--	$(call if_changed,extract_certs,$(if $(CONFIG_SYSTEM_REVOCATION_KEYS),$<,""))
-+	$(call if_changed,extract_certs)
- 
- targets += x509_revocation_list
- 
+diff --git a/certs/system_certificates.S b/certs/system_certificates.S
+index e1645e6f4d97..003e25d4a17e 100644
+--- a/certs/system_certificates.S
++++ b/certs/system_certificates.S
+@@ -9,10 +9,7 @@
+ system_certificate_list:
+ __cert_list_start:
+ __module_cert_start:
+-#if defined(CONFIG_MODULE_SIG) || (defined(CONFIG_IMA_APPRAISE_MODSIG) \
+-			       && defined(CONFIG_MODULES))
+ 	.incbin "certs/signing_key.x509"
+-#endif
+ __module_cert_end:
+ 	.incbin "certs/x509_certificate_list"
+ __cert_list_end:
 -- 
 2.32.0
 
