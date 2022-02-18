@@ -2,119 +2,175 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9BC10C433EF
-	for <keyrings@archiver.kernel.org>; Fri, 18 Feb 2022 04:47:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B7399C4332F
+	for <keyrings@archiver.kernel.org>; Fri, 18 Feb 2022 22:05:50 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229941AbiBREsF (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 17 Feb 2022 23:48:05 -0500
-Received: from mxb-00190b01.gslb.pphosted.com ([23.128.96.19]:60460 "EHLO
+        id S235222AbiBRWGF (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 18 Feb 2022 17:06:05 -0500
+Received: from mxb-00190b01.gslb.pphosted.com ([23.128.96.19]:42398 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229781AbiBREsC (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 17 Feb 2022 23:48:02 -0500
-Received: from conuserg-11.nifty.com (conuserg-11.nifty.com [210.131.2.78])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D6BFD2A267;
-        Thu, 17 Feb 2022 20:47:45 -0800 (PST)
-Received: from grover.. (133-32-176-37.west.xps.vectant.ne.jp [133.32.176.37]) (authenticated)
-        by conuserg-11.nifty.com with ESMTP id 21I4kcpD010407;
-        Fri, 18 Feb 2022 13:46:38 +0900
-DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-11.nifty.com 21I4kcpD010407
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
-        s=dec2015msa; t=1645159599;
-        bh=JIjbg7vgzAe37E26iyaSzTnZQmUAVRx74bHrvZXfv4Y=;
-        h=From:To:Cc:Subject:Date:From;
-        b=0ZMfvvYrLvkbVPttL8eDFaVoj19pgO+okECRE1fVHZRBMuTUaUAWIu1Aji3zl9cek
-         Fukii7oFc2BT2GII/0p2Wu0Yxkishv8Fb5Nnd4ljU+K27K6t8yA4yIRuVIH5/B4imN
-         WG6LPfkJJ5wWdXimKmd0MaSjrR31IP5a6ANeUc6rs1wjKHwBa17Yc+zolWH6B4gfE8
-         eWUxEU6i1WRIL4HqRFo275ycNsjLv0bvWq6FvndkFDkxygUpVvyrWcxnEbAwG/O7d0
-         onyaiAo00EdgBB1bktFaD8KSa0M/tKzci/Qc3eSiboivfvISKrLK1U99dWE4K6xz2B
-         kEEkTZ6LK8wAA==
-X-Nifty-SrcIP: [133.32.176.37]
-From:   Masahiro Yamada <masahiroy@kernel.org>
-To:     linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
-Cc:     linux-kernel@vger.kernel.org,
-        Masahiro Yamada <masahiroy@kernel.org>
-Subject: [PATCH 1/2] certs: include certs/signing_key.x509 unconditionally
-Date:   Fri, 18 Feb 2022 13:46:33 +0900
-Message-Id: <20220218044634.169520-1-masahiroy@kernel.org>
-X-Mailer: git-send-email 2.32.0
+        with ESMTP id S231815AbiBRWGE (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 18 Feb 2022 17:06:04 -0500
+Received: from mail-pl1-x632.google.com (mail-pl1-x632.google.com [IPv6:2607:f8b0:4864:20::632])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 67A011712A8
+        for <keyrings@vger.kernel.org>; Fri, 18 Feb 2022 14:05:46 -0800 (PST)
+Received: by mail-pl1-x632.google.com with SMTP id y18so8171160plb.11
+        for <keyrings@vger.kernel.org>; Fri, 18 Feb 2022 14:05:46 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=intel-com.20210112.gappssmtp.com; s=20210112;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc;
+        bh=vvUsBk8WOyHWPnfmlJUYHHjEnYQBDUZG873sZWj142g=;
+        b=K4s9vs2YZWhm+MEIFx3oIqxhn2FvZQ6dkjYcFCVQa0VrvblHEWi+u/adBMkp683Wf5
+         mULhbASkbQbVwiOBSavb35xHh+4vNOxePt1U9y6NKDKDKQs8GaNdw4m2qKSF4nCQuouC
+         rhd7+wky5+6uxalrFoJ4YHiUX/5CAQRnpRfv1BVDms0xfRVz4dpQBY+ed+4Q54jdG98g
+         RLZ6x/dtrOtLcwbqk0wJG4ElefoLKPKlbdGpq73HJNfXsdValYIijqBIfJC/14hIGmiv
+         c1zhMRkE4PMR6pPwvZEc2Q/SPJNc0ylpoK5IGFXubPDncT9pKX3+5PDev2DtwQ7xGp0B
+         nt3w==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc;
+        bh=vvUsBk8WOyHWPnfmlJUYHHjEnYQBDUZG873sZWj142g=;
+        b=0FMdGtpv/7cxVEYd41zdTZTqpV2ECD/M8gMlh8TGRvyya7067hhveeN71/uj7iI4yF
+         HlXIY9flYa7bavtVOOWa0bBhwAYWQbHIO6IEpuY4v5v2dcRBaD0rkexkmpDEXNZsfBP6
+         glVptet8zHnBXXkFNE+V4VpocpOEXDiGpHBNM+Up63810TSBmGcs/ShKjK80YEwpiZJV
+         W3QEMUNg3zJOBF90jHO/yoOy+bXs3rc4o6CmTNB2KOunLixfEAki/+4o4faCPmzSDg54
+         Rdac0G5LX9RR9xhmirldIw9HgDHhUR/uGeCDrM27qwIVX481wpZmv7m/kb7sjAQEWCV7
+         oBgQ==
+X-Gm-Message-State: AOAM530XdEEXlZ2kPnBPzxKAQXDw7Ehxj30a+T+9hrZlE0khx/8Fn5bp
+        YLR1izueslnbQMU2X+76Hawfkv15HsS2iuW2krqyE+EsgwY=
+X-Google-Smtp-Source: ABdhPJyXDciKyO7mjGd2xYKr0AiM1W/M7sz3B7BSgqp5Vv+OSUq8q6jdOz+Q9YgFsMHh7MHyP4i9xutC6svUK1/BZEk=
+X-Received: by 2002:a17:902:7296:b0:14b:4bc6:e81 with SMTP id
+ d22-20020a170902729600b0014b4bc60e81mr9291198pll.132.1645221945889; Fri, 18
+ Feb 2022 14:05:45 -0800 (PST)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+References: <20210804161839.3492053-1-Jonathan.Cameron@huawei.com> <20210804161839.3492053-3-Jonathan.Cameron@huawei.com>
+In-Reply-To: <20210804161839.3492053-3-Jonathan.Cameron@huawei.com>
+From:   Dan Williams <dan.j.williams@intel.com>
+Date:   Fri, 18 Feb 2022 14:05:35 -0800
+Message-ID: <CAPcyv4iiZMd6GmyRG+SMcYF_5JEqj8zrti_gjffTvOE27srbUw@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/4] spdm: Introduce a library for DMTF SPDM
+To:     Jonathan Cameron <Jonathan.Cameron@huawei.com>
+Cc:     linux-cxl@vger.kernel.org, Linux PCI <linux-pci@vger.kernel.org>,
+        "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>,
+        Chris Browy <cbrowy@avery-design.com>,
+        Linuxarm <linuxarm@huawei.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Bjorn Helgaas <bjorn@helgaas.com>,
+        Jeremy Kerr <jk@codeconstruct.com.au>,
+        David E Box <david.e.box@intel.com>
+Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-I do not see much sense in the #if conditional in system_certificates.S;
-even if the condition is true, there exists no signing key when
-CONFIG_MODULE_SIG_KEY="".
+On Wed, Aug 4, 2021 at 9:23 AM Jonathan Cameron
+<Jonathan.Cameron@huawei.com> wrote:
+>
+> The Security Protocol and Data Model (SPDM) defines messages,
+> data objects and sequences for performing message exchanges between
+> devices over various transports and physical media.
+>
+> As the kernel supports several possible transports (mctp, PCI DOE)
+> introduce a library than can in turn be used with all those transports.
+>
+> There are a large number of open questions around how we do this that
+> need to be resolved. These include:
+> *  Key chain management
+>    - Current approach is to use a keychain provide as part of per transport
+>      initialization for the root certificates which are assumed to be
+>      loaded into that keychain, perhaps in an initrd script.
+>    - Each SPDM instance then has its own keychain to manage its
+>      certificates. It may make sense to drop this, but that looks like it
+>      will make a lot of the standard infrastructure harder to use.
+>  *  ECC algorithms needing ASN1 encoded signatures.  I'm struggling to find
+>     any specification that actual 'requires' that choice vs raw data, so my
+>     guess is that this is a question of existing usecases (x509 certs seem
+>     to use this form, but CHALLENGE_AUTH SPDM seems to use raw data).
+>     I'm not sure whether we are better off just encoding the signature in
+>     ASN1 as currently done in this series, or if it is worth a tweaking
+>     things in the crypto layers.
+>  *  Lots of options in actual implementation to look at.
+>
+> Signed-off-by: Jonathan Cameron <Jonathan.Cameron@huawei.com>
+> ---
+>  lib/Kconfig  |    3 +
+>  lib/Makefile |    2 +
+>  lib/spdm.c   | 1196 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 1201 insertions(+)
+>
+> diff --git a/lib/Kconfig b/lib/Kconfig
+> index ac3b30697b2b..0aa2fef6a592 100644
+> --- a/lib/Kconfig
+> +++ b/lib/Kconfig
+> @@ -704,3 +704,6 @@ config PLDMFW
+>
+>  config ASN1_ENCODER
+>         tristate
+> +
+> +config SPDM
+> +       tristate
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 2cc359ec1fdd..566166d6936e 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -282,6 +282,8 @@ obj-$(CONFIG_PERCPU_TEST) += percpu_test.o
+>  obj-$(CONFIG_ASN1) += asn1_decoder.o
+>  obj-$(CONFIG_ASN1_ENCODER) += asn1_encoder.o
+>
+> +obj-$(CONFIG_SPDM) += spdm.o
+> +
+>  obj-$(CONFIG_FONT_SUPPORT) += fonts/
+>
+>  hostprogs      := gen_crc32table
+> diff --git a/lib/spdm.c b/lib/spdm.c
+> new file mode 100644
+> index 000000000000..3ce2341647f8
+> --- /dev/null
+> +++ b/lib/spdm.c
+> @@ -0,0 +1,1196 @@
+> +// SPDX-License-Identifier: GPL-2.0
+> +/*
+> + * DMTF Security Protocol and Data Model
+> + *
+> + * Copyright (C) 2021 Huawei
+> + *     Jonathan Cameron <Jonathan.Cameron@huawei.com>
+> + */
+> +
+> +#include <linux/asn1_encoder.h>
+> +#include <linux/asn1_ber_bytecode.h>
+> +#include <linux/bitfield.h>
+> +#include <linux/cred.h>
+> +#include <linux/dev_printk.h>
+> +#include <linux/digsig.h>
+> +#include <linux/idr.h>
+> +#include <linux/key.h>
+> +#include <linux/module.h>
+> +#include <linux/random.h>
+> +#include <linux/spdm.h>
+> +
+> +#include <crypto/akcipher.h>
+> +#include <crypto/hash.h>
+> +#include <crypto/public_key.h>
+> +#include <keys/asymmetric-type.h>
+> +#include <keys/user-type.h>
+> +#include <asm/unaligned.h>
+> +
+> +/*
+> + * Todo
+> + * - Secure channel setup.
+> + * - Multiple slot support.
+> + * - Measurement support (over secure channel or within CHALLENGE_AUTH.
+> + * - Support more core algorithms (not CMA does not require them, but may use
+> + *   them if present.
+> + * - Extended algorithm, support.
+> + */
+> +/*
+> + * Discussions points
+> + * 1. Worth adding an SPDM layer around a transport layer?
 
-So, certs/Makefile generates empty certs/signing_key.x509 in such a
-case. We can always do this, irrespective of CONFIG_MODULE_SIG or
-(CONFIG_IMA_APPRAISE_MODSIG && CONFIG_MODULES).
+I came here to say yes to this question. I am seeing interest in SPDM
+outside of a DOE transport.
 
-We only need to check CONFIG_MODULE_SIG_KEY, then both *.S and Makefile
-will become much simpler.
-
-Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
----
-
- certs/Makefile              | 16 ----------------
- certs/system_certificates.S |  3 ---
- 2 files changed, 19 deletions(-)
-
-diff --git a/certs/Makefile b/certs/Makefile
-index 3ea7fe60823f..68c1d7b9a388 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -22,25 +22,10 @@ $(obj)/x509_certificate_list: $(CONFIG_SYSTEM_TRUSTED_KEYS) $(obj)/extract-cert
- 
- targets += x509_certificate_list
- 
--ifeq ($(CONFIG_MODULE_SIG),y)
--	SIGN_KEY = y
--endif
--
--ifeq ($(CONFIG_IMA_APPRAISE_MODSIG),y)
--ifeq ($(CONFIG_MODULES),y)
--	SIGN_KEY = y
--endif
--endif
--
--ifdef SIGN_KEY
--###############################################################################
--#
- # If module signing is requested, say by allyesconfig, but a key has not been
- # supplied, then one will need to be generated to make sure the build does not
- # fail and that the kernel may be used afterwards.
- #
--###############################################################################
--
- # We do it this way rather than having a boolean option for enabling an
- # external private key, because 'make randconfig' might enable such a
- # boolean option and we unfortunately can't make it depend on !RANDCONFIG.
-@@ -76,7 +61,6 @@ $(obj)/system_certificates.o: $(obj)/signing_key.x509
- 
- $(obj)/signing_key.x509: $(X509_DEP) $(obj)/extract-cert FORCE
- 	$(call if_changed,extract_certs,$(if $(CONFIG_MODULE_SIG_KEY),$(if $(X509_DEP),$<,$(CONFIG_MODULE_SIG_KEY)),""))
--endif # CONFIG_MODULE_SIG
- 
- targets += signing_key.x509
- 
-diff --git a/certs/system_certificates.S b/certs/system_certificates.S
-index e1645e6f4d97..003e25d4a17e 100644
---- a/certs/system_certificates.S
-+++ b/certs/system_certificates.S
-@@ -9,10 +9,7 @@
- system_certificate_list:
- __cert_list_start:
- __module_cert_start:
--#if defined(CONFIG_MODULE_SIG) || (defined(CONFIG_IMA_APPRAISE_MODSIG) \
--			       && defined(CONFIG_MODULES))
- 	.incbin "certs/signing_key.x509"
--#endif
- __module_cert_end:
- 	.incbin "certs/x509_certificate_list"
- __cert_list_end:
--- 
-2.32.0
-
+Hope to find my way back to testing these bits out soon...
