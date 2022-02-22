@@ -2,111 +2,127 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5092FC433FE
-	for <keyrings@archiver.kernel.org>; Tue, 22 Feb 2022 13:43:57 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 81363C433F5
+	for <keyrings@archiver.kernel.org>; Tue, 22 Feb 2022 19:59:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232517AbiBVNoV (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 22 Feb 2022 08:44:21 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44906 "EHLO
+        id S234425AbiBVT7k (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 22 Feb 2022 14:59:40 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38562 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231400AbiBVNoU (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 22 Feb 2022 08:44:20 -0500
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C569411EF14;
-        Tue, 22 Feb 2022 05:43:55 -0800 (PST)
-Received: from pps.filterd (m0098410.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 21MDhWDv022674;
-        Tue, 22 Feb 2022 13:43:34 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
- from : to : cc : date : in-reply-to : references : content-type :
- content-transfer-encoding : mime-version; s=pp1;
- bh=42wDX7voY/HwLK+YbIrcCBtOc36Zfb0t64NhpgUMQ3w=;
- b=Q6U5e5vRcwsOaPHvcqHT+pa7ciOFaykICdpHWWfdo53HTs4SB4/KgpYZkDC2MSRiYAm9
- g0lT/DZ3tm8mLgODEG1wtSeQKeIbE3H32qoV/37l4sdkIOgXucjhrgDErJiThMumqJg1
- gUM06IzY3KY6mpGzeTSA273Jgb+N27OcXhl2CXfyD3lhILb4MUa7jAK/nu2GneC4/YlV
- oo544cYamJSqiZqyanC8hzjDz6CIOTeVRDhq/ZM0QONaFGNr7B8dj0HzQa1tk7RQX+c/
- 3D0iP2tEbIHv+qB6gDrb4mk/g2JjItdqA+ggICb1oGcc6XboHIPO8U2eYTEZZMNLFdzx lQ== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3ecxg9v01q-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 22 Feb 2022 13:43:34 +0000
-Received: from m0098410.ppops.net (m0098410.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 21MDhXpq022905;
-        Tue, 22 Feb 2022 13:43:33 GMT
-Received: from ppma04ams.nl.ibm.com (63.31.33a9.ip4.static.sl-reverse.com [169.51.49.99])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3ecxg9uyxe-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 22 Feb 2022 13:43:33 +0000
-Received: from pps.filterd (ppma04ams.nl.ibm.com [127.0.0.1])
-        by ppma04ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 21MDdgMS000828;
-        Tue, 22 Feb 2022 13:43:23 GMT
-Received: from b06cxnps4076.portsmouth.uk.ibm.com (d06relay13.portsmouth.uk.ibm.com [9.149.109.198])
-        by ppma04ams.nl.ibm.com with ESMTP id 3ear6931vg-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Tue, 22 Feb 2022 13:43:23 +0000
-Received: from d06av26.portsmouth.uk.ibm.com (d06av26.portsmouth.uk.ibm.com [9.149.105.62])
-        by b06cxnps4076.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 21MDhLZh40567134
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Tue, 22 Feb 2022 13:43:21 GMT
-Received: from d06av26.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 630DEAE051;
-        Tue, 22 Feb 2022 13:43:21 +0000 (GMT)
-Received: from d06av26.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 57658AE045;
-        Tue, 22 Feb 2022 13:43:19 +0000 (GMT)
-Received: from sig-9-65-81-84.ibm.com (unknown [9.65.81.84])
-        by d06av26.portsmouth.uk.ibm.com (Postfix) with ESMTP;
-        Tue, 22 Feb 2022 13:43:19 +0000 (GMT)
-Message-ID: <5f685d7d4aa6f4253cb4b779d639bd8435dedacc.camel@linux.ibm.com>
-Subject: Re: [PATCH v10 0/8] Enroll kernel keys thru MOK
-From:   Mimi Zohar <zohar@linux.ibm.com>
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     Eric Snowberg <eric.snowberg@oracle.com>, dhowells@redhat.com,
-        dwmw2@infradead.org, ardb@kernel.org, jmorris@namei.org,
-        serge@hallyn.com, nayna@linux.ibm.com, keescook@chromium.org,
-        torvalds@linux-foundation.org, weiyongjun1@huawei.com,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-security-module@vger.kernel.org,
-        James.Bottomley@hansenpartnership.com, pjones@redhat.com,
-        konrad.wilk@oracle.com
-Date:   Tue, 22 Feb 2022 08:43:18 -0500
-In-Reply-To: <YhTWhcIx9B/pyiwD@iki.fi>
-References: <20220126025834.255493-1-eric.snowberg@oracle.com>
-         <YfFP6OHqBVNWKL2C@iki.fi> <YfFTf6vIpNMIrwH0@iki.fi>
-         <78d2c13ad60b5f845cb841d257d1b41290f575c6.camel@linux.ibm.com>
-         <YhKP12KEmyqyS8rj@iki.fi>
-         <8e9e4bc3bbd831a606f264ec3f4dfcafdeebece6.camel@linux.ibm.com>
-         <YhTWhcIx9B/pyiwD@iki.fi>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.28.5 (3.28.5-18.el8) 
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: a2L47UilmZMiKGB4uGFvWuxZzD2L1YZN
-X-Proofpoint-ORIG-GUID: 95iJdQevqT-1h3nV91PXwhQDiY9JQ14e
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-UnRewURL: 0 URL was un-rewritten
+        with ESMTP id S233540AbiBVT7j (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 22 Feb 2022 14:59:39 -0500
+Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6AC2FE7F69
+        for <keyrings@vger.kernel.org>; Tue, 22 Feb 2022 11:59:13 -0800 (PST)
+Received: from dude.hi.pengutronix.de ([2001:67c:670:100:1d::7])
+        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
+        (Exim 4.92)
+        (envelope-from <afa@pengutronix.de>)
+        id 1nMbJF-00050W-2Y; Tue, 22 Feb 2022 20:58:53 +0100
+Received: from afa by dude.hi.pengutronix.de with local (Exim 4.94.2)
+        (envelope-from <afa@pengutronix.de>)
+        id 1nMbJC-009hyS-Dw; Tue, 22 Feb 2022 20:58:50 +0100
+From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
+To:     James Bottomley <jejb@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>
+Cc:     kernel@pengutronix.de, Sumit Garg <sumit.garg@linaro.org>,
+        David Gstir <david@sigma-star.at>,
+        Tim Harvey <tharvey@gateworks.com>,
+        Ahmad Fatoum <a.fatoum@pengutronix.de>,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>,
+        Aymen Sghaier <aymen.sghaier@nxp.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Biggers <ebiggers@kernel.org>,
+        Jan Luebbe <j.luebbe@pengutronix.de>,
+        Richard Weinberger <richard@nod.at>,
+        Franck LENORMAND <franck.lenormand@nxp.com>,
+        Matthias Schiffer <matthias.schiffer@ew.tq-group.com>,
+        Pankaj Gupta <pankaj.gupta@nxp.com>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH v5 3/5] KEYS: trusted: allow trust sources to use kernel RNG for key material
+Date:   Tue, 22 Feb 2022 20:58:17 +0100
+Message-Id: <20220222195819.2313913-4-a.fatoum@pengutronix.de>
+X-Mailer: git-send-email 2.30.2
+In-Reply-To: <20220222195819.2313913-1-a.fatoum@pengutronix.de>
+References: <20220222195819.2313913-1-a.fatoum@pengutronix.de>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.205,Aquarius:18.0.816,Hydra:6.0.425,FMLib:17.11.62.513
- definitions=2022-02-22_03,2022-02-21_02,2021-12-02_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 malwarescore=0
- priorityscore=1501 spamscore=0 clxscore=1015 lowpriorityscore=0
- phishscore=0 bulkscore=0 impostorscore=0 mlxscore=0 suspectscore=0
- mlxlogscore=999 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=8.12.0-2201110000 definitions=main-2202220078
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
+X-SA-Exim-Mail-From: afa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, 2022-02-22 at 13:26 +0100, Jarkko Sakkinen wrote:
-> This is the problem I'm encountering:
-> 
-> https://lore.kernel.org/keyrings/YhLNYxBTbKW62vtC@iki.fi/
+The two existing trusted key sources don't make use of the kernel RNG,
+but instead let the hardware that does the sealing/unsealing also
+generate the random key material. While a previous change offers users
+the choice to use the kernel RNG instead for both, new trust sources
+may want to unconditionally use the kernel RNG for generating key
+material, like it's done elsewhere in the kernel.
 
-Try using the Message-Id: <
-20220126025834.255493-1-eric.snowberg@oracle.com>
+This is especially prudent for hardware that has proven-in-production
+HWRNG drivers implemented, as otherwise code would have to be duplicated
+only to arrive at a possibly worse result.
 
+Make this possible by turning struct trusted_key_ops::get_random
+into an optional member. If a driver leaves it NULL, kernel RNG
+will be used instead.
+
+Acked-by: Sumit Garg <sumit.garg@linaro.org>
+Reviewed-by: David Gstir <david@sigma-star.at>
+Tested-By: Tim Harvey <tharvey@gateworks.com>
+Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
+---
+To: James Bottomley <jejb@linux.ibm.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+To: Mimi Zohar <zohar@linux.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Horia Geantă" <horia.geanta@nxp.com>
+Cc: Aymen Sghaier <aymen.sghaier@nxp.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Biggers <ebiggers@kernel.org>
+Cc: Jan Luebbe <j.luebbe@pengutronix.de>
+Cc: David Gstir <david@sigma-star.at>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Franck LENORMAND <franck.lenormand@nxp.com>
+Cc: Sumit Garg <sumit.garg@linaro.org>
+Cc: Tim Harvey <tharvey@gateworks.com>
+Cc: Matthias Schiffer <matthias.schiffer@ew.tq-group.com>
+Cc: Pankaj Gupta <pankaj.gupta@nxp.com>
+Cc: keyrings@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+---
+ include/keys/trusted-type.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+index d89fa2579ac0..4eb64548a74f 100644
+--- a/include/keys/trusted-type.h
++++ b/include/keys/trusted-type.h
+@@ -64,7 +64,7 @@ struct trusted_key_ops {
+ 	/* Unseal a key. */
+ 	int (*unseal)(struct trusted_key_payload *p, char *datablob);
+ 
+-	/* Get a randomized key. */
++	/* Optional: Get a randomized key. */
+ 	int (*get_random)(unsigned char *key, size_t key_len);
+ 
+ 	/* Exit key interface. */
 -- 
-thanks,
-
-Mimi
+2.30.2
 
