@@ -2,140 +2,240 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8C50FC4332F
-	for <keyrings@archiver.kernel.org>; Fri, 11 Mar 2022 22:45:46 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6C987C433EF
+	for <keyrings@archiver.kernel.org>; Fri, 11 Mar 2022 22:47:12 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229505AbiCKWqs (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 11 Mar 2022 17:46:48 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49120 "EHLO
+        id S229532AbiCKWsO (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 11 Mar 2022 17:48:14 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49126 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229711AbiCKWq0 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 11 Mar 2022 17:46:26 -0500
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 869082E86F6;
-        Fri, 11 Mar 2022 14:37:18 -0800 (PST)
-Received: from pps.filterd (m0098410.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 22BJgiEv026670;
-        Fri, 11 Mar 2022 21:03:20 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : date :
- subject : to : cc : references : from : in-reply-to : content-type :
- content-transfer-encoding : mime-version; s=pp1;
- bh=c4oKa8YHconhNmykPPJwtaqGobzI4xAAjjShykA4Yy4=;
- b=P4fMWLfPd6F+D1ws06rfxwKmj76Hh5u47Nmtjykkn7GbNk4rKldp0Wtb/BoInpxFw7dE
- TB9Cjmxd2a4ncFxSbAblt/yP5iPYXemyo3zBNSg34WgCbJO2cK0XZWDx8/AWgDse4vw5
- O0eZ1t1WTHP+QGAKfTQw5So2uX5dQYo40OuWgbNUebN7idHJf+CKIBVjYdlEZrhru9r/
- V5eHTGXnYQ3W99RzAgPX5dI8RT88dtg18iaMUYZKsRRfn2lW9z3N4l44eDyZFOaPvgiV
- FGAf9Hc8pwNXI8fz77iEYdRYL2YG77/p9/WbNeAvjJfC6UtBfSfAmoQ8B8I0D4SokxRP xQ== 
+        with ESMTP id S229580AbiCKWsA (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 11 Mar 2022 17:48:00 -0500
+Received: from mx0a-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 79535B8238;
+        Fri, 11 Mar 2022 14:35:50 -0800 (PST)
+Received: from pps.filterd (m0098413.ppops.net [127.0.0.1])
+        by mx0b-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 22BKcMu3014752;
+        Fri, 11 Mar 2022 21:04:10 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
+ : date : message-id : in-reply-to : references : mime-version :
+ content-transfer-encoding; s=pp1;
+ bh=B3pdfYyWo0OhCVTNyH6THmXanl+fxg8Ys7u7zsO5kBI=;
+ b=ABM9IjlJPRLAHgeKHmWkyEmOiWGcsYcaEwQKCm2VSvD8ie6Joow82pkkUdLXBYZBnHVA
+ qyyg7LUEbM2uXfOjXax8T/ZmwJ525C/p7hd1JHBBE9gdrqUSd0I16L2nkc/XQrkMXzLc
+ v4qIVnb9hhre6oaIzz7mzYHqbg7v5rBIk9+zpu2ny+yryZ2oXF1eIBUsQtQM/d2jPzRf
+ ScYVzDURsHruLFGA+HTU8u0v+bEavW2aYV0Kx6/htFlE05Bm4lwysigNBAmEoMmT3FSh
+ MNp49FZyQoAChnyltZCvTV90dtFvlI5XD7+++9aBRQNaqHTNAg1wwuiZVCEzunK8+P5j 2Q== 
 Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3eqtfgpa6v-1
+        by mx0b-001b2d01.pphosted.com with ESMTP id 3eqrre7gms-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:03:20 +0000
-Received: from m0098410.ppops.net (m0098410.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 22BKpO7I020866;
-        Fri, 11 Mar 2022 21:03:19 GMT
-Received: from ppma01dal.us.ibm.com (83.d6.3fa9.ip4.static.sl-reverse.com [169.63.214.131])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3eqtfgpa6f-1
+        Fri, 11 Mar 2022 21:04:10 +0000
+Received: from m0098413.ppops.net (m0098413.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 22BKpVgJ005143;
+        Fri, 11 Mar 2022 21:04:10 GMT
+Received: from ppma04fra.de.ibm.com (6a.4a.5195.ip4.static.sl-reverse.com [149.81.74.106])
+        by mx0b-001b2d01.pphosted.com with ESMTP id 3eqrre7gmc-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:03:19 +0000
-Received: from pps.filterd (ppma01dal.us.ibm.com [127.0.0.1])
-        by ppma01dal.us.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 22BL3Gua024566;
-        Fri, 11 Mar 2022 21:03:18 GMT
-Received: from b01cxnp23034.gho.pok.ibm.com (b01cxnp23034.gho.pok.ibm.com [9.57.198.29])
-        by ppma01dal.us.ibm.com with ESMTP id 3emgamjwy0-1
+        Fri, 11 Mar 2022 21:04:09 +0000
+Received: from pps.filterd (ppma04fra.de.ibm.com [127.0.0.1])
+        by ppma04fra.de.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 22BL3Vxd011402;
+        Fri, 11 Mar 2022 21:04:08 GMT
+Received: from b06cxnps3074.portsmouth.uk.ibm.com (d06relay09.portsmouth.uk.ibm.com [9.149.109.194])
+        by ppma04fra.de.ibm.com with ESMTP id 3ep8c3y13g-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:03:18 +0000
-Received: from b01ledav001.gho.pok.ibm.com (b01ledav001.gho.pok.ibm.com [9.57.199.106])
-        by b01cxnp23034.gho.pok.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 22BL3Gxx38994426
+        Fri, 11 Mar 2022 21:04:07 +0000
+Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
+        by b06cxnps3074.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 22BL44NA17105370
         (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 11 Mar 2022 21:03:16 GMT
-Received: from b01ledav001.gho.pok.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id BB2B328059;
-        Fri, 11 Mar 2022 21:03:16 +0000 (GMT)
-Received: from b01ledav001.gho.pok.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 89C2B2805A;
-        Fri, 11 Mar 2022 21:03:13 +0000 (GMT)
-Received: from [9.211.110.168] (unknown [9.211.110.168])
-        by b01ledav001.gho.pok.ibm.com (Postfix) with ESMTP;
-        Fri, 11 Mar 2022 21:03:13 +0000 (GMT)
-Message-ID: <f92ec4d8-47c0-ece5-3c52-caeb8265881c@linux.vnet.ibm.com>
-Date:   Fri, 11 Mar 2022 16:03:12 -0500
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101
- Thunderbird/91.6.0
-Subject: Re: [PATCH v11 0/4] integrity: support including firmware ".platform"
- keys at build time
-Content-Language: en-US
-To:     Jarkko Sakkinen <jarkko@kernel.org>,
-        Nageswara Sastry <rnsastry@linux.ibm.com>,
-        Nayna Jain <nayna@linux.ibm.com>,
-        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
-Cc:     dhowells@redhat.com, zohar@linux.ibm.com,
+        Fri, 11 Mar 2022 21:04:04 GMT
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 794CE4C044;
+        Fri, 11 Mar 2022 21:04:04 +0000 (GMT)
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id EA4424C04A;
+        Fri, 11 Mar 2022 21:04:00 +0000 (GMT)
+Received: from li-4b5937cc-25c4-11b2-a85c-cea3a66903e4.ibm.com.com (unknown [9.211.110.168])
+        by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
+        Fri, 11 Mar 2022 21:04:00 +0000 (GMT)
+From:   Nayna Jain <nayna@linux.ibm.com>
+To:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
+Cc:     dhowells@redhat.com, zohar@linux.ibm.com, jarkko@kernel.org,
         linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, dimitri.ledkov@canonical.com,
-        seth@forshee.me, Masahiro Yamada <masahiroy@kernel.org>
-References: <20220310214450.676505-1-nayna@linux.ibm.com>
- <4afae87c-2986-6b0e-07be-954dd4937afd@linux.ibm.com>
- <f78d11fefd13bd17748e36621acee9c2f27a77f6.camel@kernel.org>
-From:   Nayna <nayna@linux.vnet.ibm.com>
-In-Reply-To: <f78d11fefd13bd17748e36621acee9c2f27a77f6.camel@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-X-TM-AS-GCONF: 00
-X-Proofpoint-ORIG-GUID: Heow9UKywaWt9NTO6YuP7NDv5g_6SmDY
-X-Proofpoint-GUID: e7V-kq4jBh8gRnlsxn6EdPMwfBVMWcS8
-Content-Transfer-Encoding: 8bit
-X-Proofpoint-UnRewURL: 0 URL was un-rewritten
+        seth@forshee.me, rnsastry@linux.ibm.com, masahiroy@kernel.org,
+        Nayna Jain <nayna@linux.ibm.com>
+Subject: [PATCH v12 3/4] Revert "certs: move scripts/extract-cert to certs/"
+Date:   Fri, 11 Mar 2022 16:03:43 -0500
+Message-Id: <20220311210344.102396-4-nayna@linux.ibm.com>
+X-Mailer: git-send-email 2.27.0
+In-Reply-To: <20220311210344.102396-1-nayna@linux.ibm.com>
+References: <20220311210344.102396-1-nayna@linux.ibm.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: _q_TZ-tT8swzcoq0TjhDlkqVAnv9rVcB
+X-Proofpoint-GUID: hgIUDV40yWuKk1lrLc0BTMgepHsIWZzI
 X-Proofpoint-Virus-Version: vendor=baseguard
  engine=ICAP:2.0.205,Aquarius:18.0.816,Hydra:6.0.425,FMLib:17.11.64.514
- definitions=2022-03-11_08,2022-03-11_02,2022-02-23_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxscore=0 phishscore=0
- bulkscore=0 impostorscore=0 lowpriorityscore=0 suspectscore=0
- priorityscore=1501 malwarescore=0 adultscore=0 clxscore=1011 spamscore=0
- mlxlogscore=999 classifier=spam adjust=0 reason=mlx scancount=1
+ definitions=2022-03-11_09,2022-03-11_02,2022-02-23_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 clxscore=1015
+ priorityscore=1501 bulkscore=0 malwarescore=0 suspectscore=0 spamscore=0
+ lowpriorityscore=0 mlxlogscore=999 adultscore=0 impostorscore=0
+ phishscore=0 mlxscore=0 classifier=spam adjust=0 reason=mlx scancount=1
  engine=8.12.0-2202240000 definitions=main-2203110103
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+This reverts commit 340a02535ee785c64c62a9c45706597a0139e972.
 
-On 3/11/22 11:42, Jarkko Sakkinen wrote:
-> On Fri, 2022-03-11 at 10:11 +0530, Nageswara Sastry wrote:
->>
->> On 11/03/22 3:14 am, Nayna Jain wrote:
->>> Some firmware support secure boot by embedding static keys to verify the
->>> Linux kernel during boot. However, these firmware do not expose an
->>> interface for the kernel to load firmware keys onto the ".platform"
->>> keyring, preventing the kernel from verifying the kexec kernel image
->>> signature.
->>>
->>> This patchset exports load_certificate_list() and defines a new function
->>> load_builtin_platform_cert() to load compiled in certificates onto the
->>> ".platform" keyring.
->>>
->>> Changelog:
->>> v11:
->>> * Added a new patch to conditionally build extract-cert if
->>> PLATFORM_KEYRING is enabled.
->>>
->> Tested the following four patches with and with out setting
->> CONFIG_INTEGRITY_PLATFORM_KEYS
->>
->> Tested-by: Nageswara R Sastry <rnsastry@linux.ibm.com>
-> OK, I added it:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
+extract-cert is used outside certs/ by INTEGRITY_PLATFORM_KEYRING.
 
-Thanks Jarkko. Masahiro Yamada would prefer to revert the original 
-commit 340a02535ee785c64c62a9c45706597a0139e972 i.e. move extract-cert 
-back to the scripts/ directory.
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+---
+ MAINTAINERS                       |  1 +
+ certs/.gitignore                  |  1 -
+ certs/Makefile                    | 13 ++++---------
+ scripts/.gitignore                |  1 +
+ scripts/Makefile                  | 11 +++++++++--
+ {certs => scripts}/extract-cert.c |  2 +-
+ scripts/remove-stale-files        |  2 --
+ 7 files changed, 16 insertions(+), 15 deletions(-)
+ rename {certs => scripts}/extract-cert.c (98%)
 
-I am just posting v12 which includes Masahiro feedback. Nageswara has 
-already tested v12 version as well.
-
-I am fine either way 1.) Adding v11 and then separately handling of 
-reverting of the commit or 2.) Adding v12 version which includes the 
-revert. I leave the decision on you as to which one to upstream.
-
-Thanks & Regards,
-
-     - Nayna
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 05fd080b82f3..cf4cd22ca3a0 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4471,6 +4471,7 @@ L:	keyrings@vger.kernel.org
+ S:	Maintained
+ F:	Documentation/admin-guide/module-signing.rst
+ F:	certs/
++F:	scripts/extract-cert.c
+ F:	scripts/sign-file.c
+ 
+ CFAG12864B LCD DRIVER
+diff --git a/certs/.gitignore b/certs/.gitignore
+index 9e42fe3e02f5..8c3763f80be3 100644
+--- a/certs/.gitignore
++++ b/certs/.gitignore
+@@ -1,4 +1,3 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-/extract-cert
+ /x509_certificate_list
+ /x509_revocation_list
+diff --git a/certs/Makefile b/certs/Makefile
+index b92b6ff339d5..a4a6f6a78904 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -14,11 +14,11 @@ obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_nohashes.o
+ endif
+ 
+ quiet_cmd_extract_certs  = CERT    $@
+-      cmd_extract_certs  = $(obj)/extract-cert $(2) $@
++      cmd_extract_certs  = scripts/extract-cert $(2) $@
+ 
+ $(obj)/system_certificates.o: $(obj)/x509_certificate_list
+ 
+-$(obj)/x509_certificate_list: $(CONFIG_SYSTEM_TRUSTED_KEYS) $(obj)/extract-cert FORCE
++$(obj)/x509_certificate_list: $(CONFIG_SYSTEM_TRUSTED_KEYS) scripts/extract-cert FORCE
+ 	$(call if_changed,extract_certs,$(if $(CONFIG_SYSTEM_TRUSTED_KEYS),$<,""))
+ 
+ targets += x509_certificate_list
+@@ -75,7 +75,7 @@ endif
+ 
+ $(obj)/system_certificates.o: $(obj)/signing_key.x509
+ 
+-$(obj)/signing_key.x509: $(X509_DEP) $(obj)/extract-cert FORCE
++$(obj)/signing_key.x509: $(X509_DEP) scripts/extract-cert FORCE
+ 	$(call if_changed,extract_certs,$(if $(CONFIG_MODULE_SIG_KEY),$(if $(X509_DEP),$<,$(CONFIG_MODULE_SIG_KEY)),""))
+ endif # CONFIG_MODULE_SIG
+ 
+@@ -83,12 +83,7 @@ targets += signing_key.x509
+ 
+ $(obj)/revocation_certificates.o: $(obj)/x509_revocation_list
+ 
+-$(obj)/x509_revocation_list: $(CONFIG_SYSTEM_REVOCATION_KEYS) $(obj)/extract-cert FORCE
++$(obj)/x509_revocation_list: $(CONFIG_SYSTEM_REVOCATION_KEYS) scripts/extract-cert FORCE
+ 	$(call if_changed,extract_certs,$(if $(CONFIG_SYSTEM_REVOCATION_KEYS),$<,""))
+ 
+ targets += x509_revocation_list
+-
+-hostprogs := extract-cert
+-
+-HOSTCFLAGS_extract-cert.o = $(shell pkg-config --cflags libcrypto 2> /dev/null)
+-HOSTLDLIBS_extract-cert = $(shell pkg-config --libs libcrypto 2> /dev/null || echo -lcrypto)
+diff --git a/scripts/.gitignore b/scripts/.gitignore
+index eed308bef604..e83c620ef52c 100644
+--- a/scripts/.gitignore
++++ b/scripts/.gitignore
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ /asn1_compiler
+ /bin2c
++/extract-cert
+ /insert-sys-cert
+ /kallsyms
+ /module.lds
+diff --git a/scripts/Makefile b/scripts/Makefile
+index ce5aa9030b74..cedc1f0e21d8 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -3,19 +3,26 @@
+ # scripts contains sources for various helper programs used throughout
+ # the kernel for the build process.
+ 
++CRYPTO_LIBS = $(shell pkg-config --libs libcrypto 2> /dev/null || echo -lcrypto)
++CRYPTO_CFLAGS = $(shell pkg-config --cflags libcrypto 2> /dev/null)
++
+ hostprogs-always-$(CONFIG_BUILD_BIN2C)			+= bin2c
+ hostprogs-always-$(CONFIG_KALLSYMS)			+= kallsyms
+ hostprogs-always-$(BUILD_C_RECORDMCOUNT)		+= recordmcount
+ hostprogs-always-$(CONFIG_BUILDTIME_TABLE_SORT)		+= sorttable
+ hostprogs-always-$(CONFIG_ASN1)				+= asn1_compiler
+ hostprogs-always-$(CONFIG_MODULE_SIG_FORMAT)		+= sign-file
++hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)	+= extract-cert
+ hostprogs-always-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE)	+= insert-sys-cert
++hostprogs-always-$(CONFIG_SYSTEM_REVOCATION_LIST)	+= extract-cert
+ 
+ HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
+ HOSTLDLIBS_sorttable = -lpthread
+ HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
+-HOSTCFLAGS_sign-file.o = $(shell pkg-config --cflags libcrypto 2> /dev/null)
+-HOSTLDLIBS_sign-file = $(shell pkg-config --libs libcrypto 2> /dev/null || echo -lcrypto)
++HOSTCFLAGS_sign-file.o = $(CRYPTO_CFLAGS)
++HOSTLDLIBS_sign-file = $(CRYPTO_LIBS)
++HOSTCFLAGS_extract-cert.o = $(CRYPTO_CFLAGS)
++HOSTLDLIBS_extract-cert = $(CRYPTO_LIBS)
+ 
+ ifdef CONFIG_UNWINDER_ORC
+ ifeq ($(ARCH),x86_64)
+diff --git a/certs/extract-cert.c b/scripts/extract-cert.c
+similarity index 98%
+rename from certs/extract-cert.c
+rename to scripts/extract-cert.c
+index f7ef7862f207..3bc48c726c41 100644
+--- a/certs/extract-cert.c
++++ b/scripts/extract-cert.c
+@@ -29,7 +29,7 @@ static __attribute__((noreturn))
+ void format(void)
+ {
+ 	fprintf(stderr,
+-		"Usage: extract-cert <source> <dest>\n");
++		"Usage: scripts/extract-cert <source> <dest>\n");
+ 	exit(2);
+ }
+ 
+diff --git a/scripts/remove-stale-files b/scripts/remove-stale-files
+index 7adab4618035..80430b8fb617 100755
+--- a/scripts/remove-stale-files
++++ b/scripts/remove-stale-files
+@@ -39,5 +39,3 @@ if [ -n "${building_out_of_srctree}" ]; then
+ 		rm -f arch/parisc/boot/compressed/${f}
+ 	done
+ fi
+-
+-rm -f scripts/extract-cert
+-- 
+2.34.1
 
