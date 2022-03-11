@@ -2,61 +2,61 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EDFF9C433EF
-	for <keyrings@archiver.kernel.org>; Fri, 11 Mar 2022 22:52:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 42E95C4332F
+	for <keyrings@archiver.kernel.org>; Fri, 11 Mar 2022 22:53:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230123AbiCKWxr (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 11 Mar 2022 17:53:47 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40310 "EHLO
+        id S230082AbiCKWyz (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 11 Mar 2022 17:54:55 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35194 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231194AbiCKWxa (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 11 Mar 2022 17:53:30 -0500
-Received: from mx0a-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5936F2E4087;
-        Fri, 11 Mar 2022 14:29:25 -0800 (PST)
-Received: from pps.filterd (m0098414.ppops.net [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 22BKcAX9022137;
-        Fri, 11 Mar 2022 21:04:14 GMT
+        with ESMTP id S230099AbiCKWyj (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 11 Mar 2022 17:54:39 -0500
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 106352706DE;
+        Fri, 11 Mar 2022 14:28:17 -0800 (PST)
+Received: from pps.filterd (m0098399.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 22BHxUkg003827;
+        Fri, 11 Mar 2022 21:04:07 GMT
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
  : date : message-id : in-reply-to : references : mime-version :
  content-transfer-encoding; s=pp1;
- bh=YkYGmfeYZMf+8hugmF5odKW/SoWqd7Itn5m4OyORHmQ=;
- b=USY9GIwIkSfgzDBx94LZkA9T9R5K1U0OeEejoPYdxbJA7nvRv/4RWpdP2wU9MmmOYYoX
- KvLmbqRbz0X1XUbOeTMJY2zJPQxHgzOlxo8yI/AQWQsVttTqut1O/4u/Bva2GDtTnxud
- uMQ9LfR3RDJ4grpJY3OjQlBu0SvfgddHWQw/5HO4UqcNX/hZeWGtVaLmToBipAH/yIXk
- fi01sC+LvETBLSjyZLQQbdWC7ozcEgXVIfZpTvPlcIRno46x7ENQGCjXwC2YrxM8vzCg
- zq2GcyeDHotl9kBTXYNPQqZLNmicEqn3vldFlKWl2/zGfAuf6NsYeHZHQwgy/6oVcK3e 8g== 
+ bh=HBiwIFdfCpXFXTjddD97v7AqI4oARpQF2Ep15Ju6G+4=;
+ b=B+ASO5LkeGSY2+xtPOWXP2MYNenvP1NjhF8ESaG1m1QSvZwCh3xMaWqOzWPbEZxWzKaS
+ SCR0MWEvADd/+UJ0NztjZG1r3TSR5IsXYD/JRgFq8pvDF36AGVnvV3ZCmG/75KAfpbfd
+ WpeRi6sTMEkQ2/tsXT0Ctc/xxT32oYtqaQy6fS+HlwThkFHaN/BIVooFYvibPWWsY4D6
+ ZqQ8S5fdakbhhyXwB6ve9NlCTfdarAawGMBUbl7GFtjm6nu+k3Ypgb4DVOjsVMVOrGao
+ rfrXYukAGQ/eFZnaHr/FyEnzcBpeKSUXeA+CwbZIRt/6Wp4BN69cYCjC9cDm8DwXCBsC 4g== 
 Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 3eqm1bdkdt-1
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3eq7xn68a0-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:04:14 +0000
-Received: from m0098414.ppops.net (m0098414.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 22BL0puh027697;
-        Fri, 11 Mar 2022 21:04:13 GMT
-Received: from ppma03ams.nl.ibm.com (62.31.33a9.ip4.static.sl-reverse.com [169.51.49.98])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 3eqm1bdkdd-1
+        Fri, 11 Mar 2022 21:04:06 +0000
+Received: from m0098399.ppops.net (m0098399.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 22BKM4Bu007079;
+        Fri, 11 Mar 2022 21:04:06 GMT
+Received: from ppma05fra.de.ibm.com (6c.4a.5195.ip4.static.sl-reverse.com [149.81.74.108])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3eq7xn6899-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:04:13 +0000
-Received: from pps.filterd (ppma03ams.nl.ibm.com [127.0.0.1])
-        by ppma03ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 22BL3qcs003063;
-        Fri, 11 Mar 2022 21:04:11 GMT
-Received: from b06avi18626390.portsmouth.uk.ibm.com (b06avi18626390.portsmouth.uk.ibm.com [9.149.26.192])
-        by ppma03ams.nl.ibm.com with ESMTP id 3ekyg97smh-1
+        Fri, 11 Mar 2022 21:04:06 +0000
+Received: from pps.filterd (ppma05fra.de.ibm.com [127.0.0.1])
+        by ppma05fra.de.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 22BL43Dr017632;
+        Fri, 11 Mar 2022 21:04:03 GMT
+Received: from b06avi18878370.portsmouth.uk.ibm.com (b06avi18878370.portsmouth.uk.ibm.com [9.149.26.194])
+        by ppma05fra.de.ibm.com with ESMTP id 3epyswcdgh-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:04:11 +0000
+        Fri, 11 Mar 2022 21:04:03 +0000
 Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
-        by b06avi18626390.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 22BKqpaN45482458
+        by b06avi18878370.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 22BL41Tg41026010
         (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 11 Mar 2022 20:52:51 GMT
+        Fri, 11 Mar 2022 21:04:01 GMT
 Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 58B954C040;
-        Fri, 11 Mar 2022 21:04:08 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id 846A54C046;
+        Fri, 11 Mar 2022 21:04:00 +0000 (GMT)
 Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 06D0B4C044;
-        Fri, 11 Mar 2022 21:04:05 +0000 (GMT)
+        by IMSVA (Postfix) with ESMTP id 09E0A4C04A;
+        Fri, 11 Mar 2022 21:03:57 +0000 (GMT)
 Received: from li-4b5937cc-25c4-11b2-a85c-cea3a66903e4.ibm.com.com (unknown [9.211.110.168])
         by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
-        Fri, 11 Mar 2022 21:04:04 +0000 (GMT)
+        Fri, 11 Mar 2022 21:03:56 +0000 (GMT)
 From:   Nayna Jain <nayna@linux.ibm.com>
 To:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
 Cc:     dhowells@redhat.com, zohar@linux.ibm.com, jarkko@kernel.org,
@@ -64,206 +64,76 @@ Cc:     dhowells@redhat.com, zohar@linux.ibm.com, jarkko@kernel.org,
         linux-kernel@vger.kernel.org, dimitri.ledkov@canonical.com,
         seth@forshee.me, rnsastry@linux.ibm.com, masahiroy@kernel.org,
         Nayna Jain <nayna@linux.ibm.com>
-Subject: [PATCH v12 4/4] integrity: support including firmware ".platform" keys at build time
-Date:   Fri, 11 Mar 2022 16:03:44 -0500
-Message-Id: <20220311210344.102396-5-nayna@linux.ibm.com>
+Subject: [PATCH v12 2/4] integrity: make integrity_keyring_from_id() non-static
+Date:   Fri, 11 Mar 2022 16:03:42 -0500
+Message-Id: <20220311210344.102396-3-nayna@linux.ibm.com>
 X-Mailer: git-send-email 2.27.0
 In-Reply-To: <20220311210344.102396-1-nayna@linux.ibm.com>
 References: <20220311210344.102396-1-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-TM-AS-GCONF: 00
-X-Proofpoint-ORIG-GUID: nLVnCLBubX1QQ1byyP1hD16iL_mMTain
-X-Proofpoint-GUID: DO8PiVkQRPNpIlXFc3t7ctO_2pSvozgp
+X-Proofpoint-GUID: GVioA75BLK0CflhTIS__0pKMBbGiD-3F
+X-Proofpoint-ORIG-GUID: k3Lzpy4Us1g2M6nhCtrlTq64GCvLA9-7
 X-Proofpoint-Virus-Version: vendor=baseguard
  engine=ICAP:2.0.205,Aquarius:18.0.816,Hydra:6.0.425,FMLib:17.11.64.514
- definitions=2022-03-11_09,2022-03-11_02,2022-02-23_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 lowpriorityscore=0
- clxscore=1015 suspectscore=0 impostorscore=0 priorityscore=1501
- adultscore=0 mlxscore=0 bulkscore=0 spamscore=0 mlxlogscore=999
- phishscore=0 malwarescore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=8.12.0-2202240000 definitions=main-2203110103
+ definitions=2022-03-11_08,2022-03-11_02,2022-02-23_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxlogscore=999 bulkscore=0
+ spamscore=0 phishscore=0 malwarescore=0 adultscore=0 clxscore=1015
+ priorityscore=1501 impostorscore=0 mlxscore=0 suspectscore=0
+ lowpriorityscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2202240000 definitions=main-2203110103
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Allow firmware keys to be embedded in the Linux kernel and loaded onto
-the ".platform" keyring on boot.
-
-The firmware keys can be specified in a file as a list of PEM encoded
-certificates using new config INTEGRITY_PLATFORM_KEYS. The certificates
-are embedded in the image by converting the PEM-formatted certificates
-into DER(binary) and generating
-security/integrity/platform_certs/platform_certificate_list file at
-build time. On boot, the embedded certs from the image are loaded onto
-the ".platform" keyring at late_initcall(), ensuring the platform keyring
-exists before loading the keys.
+Make integrity_keyring_from_id() non-static so that it is accessible
+by other files in security/integrity.
 
 Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
 ---
- scripts/Makefile                              |  1 +
- security/integrity/Kconfig                    | 10 ++++++++
- security/integrity/Makefile                   | 15 +++++++++++-
- security/integrity/integrity.h                |  3 +++
- .../integrity/platform_certs/platform_cert.S  | 23 +++++++++++++++++++
- .../platform_certs/platform_keyring.c         | 23 +++++++++++++++++++
- 6 files changed, 74 insertions(+), 1 deletion(-)
- create mode 100644 security/integrity/platform_certs/platform_cert.S
+ security/integrity/digsig.c    | 2 +-
+ security/integrity/integrity.h | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/scripts/Makefile b/scripts/Makefile
-index cedc1f0e21d8..c569594af4a6 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -15,6 +15,7 @@ hostprogs-always-$(CONFIG_MODULE_SIG_FORMAT)		+= sign-file
- hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)	+= extract-cert
- hostprogs-always-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE)	+= insert-sys-cert
- hostprogs-always-$(CONFIG_SYSTEM_REVOCATION_LIST)	+= extract-cert
-+hostprogs-always-$(CONFIG_INTEGRITY_PLATFORM_KEYRING)	+= extract-cert
- 
- HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
- HOSTLDLIBS_sorttable = -lpthread
-diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-index 599429f99f99..77b2c22c0e1b 100644
---- a/security/integrity/Kconfig
-+++ b/security/integrity/Kconfig
-@@ -62,6 +62,16 @@ config INTEGRITY_PLATFORM_KEYRING
-          provided by the platform for verifying the kexec'ed kerned image
-          and, possibly, the initramfs signature.
- 
-+config INTEGRITY_PLATFORM_KEYS
-+        string "Builtin X.509 keys for .platform keyring"
-+        depends on KEYS
-+        depends on ASYMMETRIC_KEY_TYPE
-+        depends on INTEGRITY_PLATFORM_KEYRING
-+        help
-+          If set, this option should be the filename of a PEM-formatted file
-+          containing X.509 certificates to be loaded onto the ".platform"
-+          keyring.
-+
- config INTEGRITY_MACHINE_KEYRING
- 	bool "Provide a keyring to which Machine Owner Keys may be added"
- 	depends on SECONDARY_TRUSTED_KEYRING
-diff --git a/security/integrity/Makefile b/security/integrity/Makefile
-index d0ffe37dc1d6..4154bf4996a9 100644
---- a/security/integrity/Makefile
-+++ b/security/integrity/Makefile
-@@ -3,13 +3,17 @@
- # Makefile for caching inode integrity data (iint)
- #
- 
-+quiet_cmd_extract_certs  = CERT  $@
-+      cmd_extract_certs  = scripts/extract-cert $(2) $@
-+
- obj-$(CONFIG_INTEGRITY) += integrity.o
- 
- integrity-y := iint.o
- integrity-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
- integrity-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
- integrity-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
--integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o
-+integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o \
-+						  platform_certs/platform_cert.o
- integrity-$(CONFIG_INTEGRITY_MACHINE_KEYRING) += platform_certs/machine_keyring.o
- integrity-$(CONFIG_LOAD_UEFI_KEYS) += platform_certs/efi_parser.o \
- 				      platform_certs/load_uefi.o \
-@@ -20,3 +24,12 @@ integrity-$(CONFIG_LOAD_PPC_KEYS) += platform_certs/efi_parser.o \
-                                      platform_certs/keyring_handler.o
- obj-$(CONFIG_IMA)			+= ima/
- obj-$(CONFIG_EVM)			+= evm/
-+
-+$(obj)/platform_certs/platform_cert.o: $(obj)/platform_certs/platform_certificate_list
-+
-+targets += platform_certificate_list
-+
-+$(obj)/platform_certs/platform_certificate_list: $(CONFIG_INTEGRITY_PLATFORM_KEYS) scripts/extract-cert FORCE
-+	$(call if_changed,extract_certs,$(if $(CONFIG_INTEGRITY_PLATFORM_KEYS),$<,""))
-+
-+clean-files := platform_certs/platform_certificate_list
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 76e9a9515f99..219da29fecf7 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -282,6 +282,9 @@ integrity_audit_log_start(struct audit_context *ctx, gfp_t gfp_mask, int type)
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index c8c8a4a4e7a0..9c3165c07935 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -39,7 +39,7 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
  #endif
  
- #ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-+extern __initconst const u8 platform_certificate_list[];
-+extern __initconst const unsigned long platform_certificate_list_size;
-+
- void __init add_to_platform_keyring(const char *source, const void *data,
- 				    size_t len);
+-static struct key *integrity_keyring_from_id(const unsigned int id)
++struct key *integrity_keyring_from_id(const unsigned int id)
+ {
+ 	if (id >= INTEGRITY_KEYRING_MAX)
+ 		return ERR_PTR(-EINVAL);
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 2e214c761158..76e9a9515f99 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -168,6 +168,7 @@ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
+ int __init integrity_load_cert(const unsigned int id, const char *source,
+ 			       const void *data, size_t len, key_perm_t perm);
++struct key *integrity_keyring_from_id(const unsigned int id);
  #else
-diff --git a/security/integrity/platform_certs/platform_cert.S b/security/integrity/platform_certs/platform_cert.S
-new file mode 100644
-index 000000000000..20bccce5dc5a
---- /dev/null
-+++ b/security/integrity/platform_certs/platform_cert.S
-@@ -0,0 +1,23 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+#include <linux/export.h>
-+#include <linux/init.h>
-+
-+	__INITRODATA
-+
-+	.align 8
-+#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-+	.globl platform_certificate_list
-+platform_certificate_list:
-+__cert_list_start:
-+	.incbin "security/integrity/platform_certs/platform_certificate_list"
-+__cert_list_end:
-+#endif
-+
-+	.align 8
-+	.globl platform_certificate_list_size
-+platform_certificate_list_size:
-+#ifdef CONFIG_64BIT
-+	.quad __cert_list_end - __cert_list_start
-+#else
-+	.long __cert_list_end - __cert_list_start
-+#endif
-diff --git a/security/integrity/platform_certs/platform_keyring.c b/security/integrity/platform_certs/platform_keyring.c
-index bcafd7387729..c2368912fd1b 100644
---- a/security/integrity/platform_certs/platform_keyring.c
-+++ b/security/integrity/platform_certs/platform_keyring.c
-@@ -12,6 +12,7 @@
- #include <linux/cred.h>
- #include <linux/err.h>
- #include <linux/slab.h>
-+#include <keys/system_keyring.h>
- #include "../integrity.h"
  
- /**
-@@ -37,6 +38,28 @@ void __init add_to_platform_keyring(const char *source, const void *data,
- 		pr_info("Error adding keys to platform keyring %s\n", source);
+ static inline int integrity_digsig_verify(const unsigned int id,
+@@ -195,6 +196,11 @@ static inline int __init integrity_load_cert(const unsigned int id,
+ {
+ 	return 0;
  }
- 
-+static __init int load_platform_certificate_list(void)
++
++static inline struct key *integrity_keyring_from_id(const unsigned int id)
 +{
-+	const u8 *p;
-+	unsigned long size;
-+	int rc;
-+	struct key *keyring;
-+
-+	p = platform_certificate_list;
-+	size = platform_certificate_list_size;
-+
-+	keyring = integrity_keyring_from_id(INTEGRITY_KEYRING_PLATFORM);
-+	if (IS_ERR(keyring))
-+		return PTR_ERR(keyring);
-+
-+	rc = load_certificate_list(p, size, keyring);
-+	if (rc)
-+		pr_info("Error adding keys to platform keyring %d\n", rc);
-+
-+	return rc;
++	return ERR_PTR(-EOPNOTSUPP);
 +}
-+late_initcall(load_platform_certificate_list);
-+
- /*
-  * Create the trusted keyrings.
-  */
+ #endif /* CONFIG_INTEGRITY_SIGNATURE */
+ 
+ #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
 -- 
 2.34.1
 
