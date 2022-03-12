@@ -2,176 +2,169 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BECDCC433EF
-	for <keyrings@archiver.kernel.org>; Fri, 11 Mar 2022 23:00:44 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 5666BC433FE
+	for <keyrings@archiver.kernel.org>; Sat, 12 Mar 2022 02:43:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230097AbiCKXBr (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 11 Mar 2022 18:01:47 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44662 "EHLO
+        id S229674AbiCLCoL (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 11 Mar 2022 21:44:11 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36246 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230154AbiCKXBj (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 11 Mar 2022 18:01:39 -0500
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2F32CD4CAF;
-        Fri, 11 Mar 2022 14:54:06 -0800 (PST)
-Received: from pps.filterd (m0098394.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 22BKJfOq013012;
-        Fri, 11 Mar 2022 21:03:59 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : content-transfer-encoding : mime-version; s=pp1;
- bh=AMfTQPWUKvQIp3nGKr1gvqWa8g4OU+tTTF1NxO5iCBw=;
- b=quf1nfXdI9fv3YZig4FtVW3NetDo+gTB0baRqAESMexUEBwK//ED/7yl6TJgwg3UwiWq
- 8VJs6HOk/IybdvCrfv+433ukp3q4rZZ7GeDP+MaS4OYP46HvzRIJc9kBDcNObF0PFGMc
- zvUwXV6JmVgGwMUpKG2xGoneRSEv5xoricxvsjlaJczedrMr1ikb2PJPxPQGheJJ8WVJ
- Qn4KexsvLsqErWxR/VnzzIHG/5jR84OpueX6Ufu3wZQehe/uJ8gV5r3HxWCVckR52N8E
- C9GqvUQjBjlN9IgyxztBynas/c4fXeIeyJOpRI0VgLcaNvDT1fTl0OsDPvbwjsmslcw3 fw== 
+        with ESMTP id S229505AbiCLCoK (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 11 Mar 2022 21:44:10 -0500
+Received: from mx0a-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 173B54990E;
+        Fri, 11 Mar 2022 18:43:06 -0800 (PST)
+Received: from pps.filterd (m0098414.ppops.net [127.0.0.1])
+        by mx0b-001b2d01.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 22C1RWuw020335;
+        Sat, 12 Mar 2022 02:43:01 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : date :
+ mime-version : subject : to : cc : references : from : in-reply-to :
+ content-type : content-transfer-encoding; s=pp1;
+ bh=1TZKdmVhIrLLgqUyFftdM7a+EouW7q6P7U9Yn32JeKQ=;
+ b=EqYV7y8tOALck/9LmIsuEscvpBxe70uFXDFgTsnD8wp7yjYN8FbkxOsUfEnQ6d94pi51
+ QoPi5IpnWjUVWhQ2Bt4OjBSYz4R81yWvQYfF3ttGGBLozJm/VaT36qyAAqDjQlp4TDvI
+ TurcwqdFf+ZcJDiaVxWtOFod4T7uBvO0S3aMvb6eOryd8gYQUEdzD6yXiojsPQtfK3Xh
+ irVQdzT6asfTLZ6KMzlKmPYRlZkEr/4twBwiq8IaEYBi8ocCsK6XD6iM1eMSp03yyHyK
+ hwgFXef7osvsX296KDYJpQuIs3D6WLlqaLcE7t2n5lztdUteyic1dobvvtt6Reb19KnV CQ== 
 Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3eqfxgv0hf-1
+        by mx0b-001b2d01.pphosted.com with ESMTP id 3eqm1bhtg9-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:03:59 +0000
-Received: from m0098394.ppops.net (m0098394.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 22BKtLBA002633;
-        Fri, 11 Mar 2022 21:03:58 GMT
-Received: from ppma01fra.de.ibm.com (46.49.7a9f.ip4.static.sl-reverse.com [159.122.73.70])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 3eqfxgv0gs-1
+        Sat, 12 Mar 2022 02:43:00 +0000
+Received: from m0098414.ppops.net (m0098414.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 22C2Ztsr026366;
+        Sat, 12 Mar 2022 02:43:00 GMT
+Received: from ppma05fra.de.ibm.com (6c.4a.5195.ip4.static.sl-reverse.com [149.81.74.108])
+        by mx0b-001b2d01.pphosted.com with ESMTP id 3eqm1bhtfs-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:03:58 +0000
-Received: from pps.filterd (ppma01fra.de.ibm.com [127.0.0.1])
-        by ppma01fra.de.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 22BL3caM025881;
-        Fri, 11 Mar 2022 21:03:56 GMT
-Received: from b06cxnps4076.portsmouth.uk.ibm.com (d06relay13.portsmouth.uk.ibm.com [9.149.109.198])
-        by ppma01fra.de.ibm.com with ESMTP id 3ekyg8njt0-1
+        Sat, 12 Mar 2022 02:43:00 +0000
+Received: from pps.filterd (ppma05fra.de.ibm.com [127.0.0.1])
+        by ppma05fra.de.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 22C2bsfU022802;
+        Sat, 12 Mar 2022 02:42:58 GMT
+Received: from b06cxnps3074.portsmouth.uk.ibm.com (d06relay09.portsmouth.uk.ibm.com [9.149.109.194])
+        by ppma05fra.de.ibm.com with ESMTP id 3epyswcqjg-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Fri, 11 Mar 2022 21:03:55 +0000
-Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
-        by b06cxnps4076.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 22BL3qIc48169228
+        Sat, 12 Mar 2022 02:42:58 +0000
+Received: from b06wcsmtp001.portsmouth.uk.ibm.com (b06wcsmtp001.portsmouth.uk.ibm.com [9.149.105.160])
+        by b06cxnps3074.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 22C2gs4e16318948
         (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 11 Mar 2022 21:03:52 GMT
-Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 889094C040;
-        Fri, 11 Mar 2022 21:03:52 +0000 (GMT)
-Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id CFA544C04E;
-        Fri, 11 Mar 2022 21:03:48 +0000 (GMT)
-Received: from li-4b5937cc-25c4-11b2-a85c-cea3a66903e4.ibm.com.com (unknown [9.211.110.168])
-        by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
-        Fri, 11 Mar 2022 21:03:48 +0000 (GMT)
-From:   Nayna Jain <nayna@linux.ibm.com>
-To:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
+        Sat, 12 Mar 2022 02:42:55 GMT
+Received: from b06wcsmtp001.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id D4B2CA4054;
+        Sat, 12 Mar 2022 02:42:54 +0000 (GMT)
+Received: from b06wcsmtp001.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 4C55DA4062;
+        Sat, 12 Mar 2022 02:42:52 +0000 (GMT)
+Received: from [9.43.110.208] (unknown [9.43.110.208])
+        by b06wcsmtp001.portsmouth.uk.ibm.com (Postfix) with ESMTPS;
+        Sat, 12 Mar 2022 02:42:52 +0000 (GMT)
+Message-ID: <e59f2006-6af2-5f3a-eb34-cc8ccc99d75f@linux.ibm.com>
+Date:   Sat, 12 Mar 2022 08:12:50 +0530
+MIME-Version: 1.0
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0)
+ Gecko/20100101 Thunderbird/91.7.0
+Subject: Re: [PATCH v12 0/4] integrity: support including firmware ".platform"
+ keys at build time
+To:     Nayna Jain <nayna@linux.ibm.com>, linux-integrity@vger.kernel.org,
+        keyrings@vger.kernel.org
 Cc:     dhowells@redhat.com, zohar@linux.ibm.com, jarkko@kernel.org,
         linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, dimitri.ledkov@canonical.com,
-        seth@forshee.me, rnsastry@linux.ibm.com, masahiroy@kernel.org,
-        Nayna Jain <nayna@linux.ibm.com>
-Subject: [PATCH v12 0/4] integrity: support including firmware ".platform" keys at build time 
-Date:   Fri, 11 Mar 2022 16:03:40 -0500
-Message-Id: <20220311210344.102396-1-nayna@linux.ibm.com>
-X-Mailer: git-send-email 2.27.0
+        seth@forshee.me, masahiroy@kernel.org
+References: <20220311210344.102396-1-nayna@linux.ibm.com>
+From:   Nageswara Sastry <rnsastry@linux.ibm.com>
+In-Reply-To: <20220311210344.102396-1-nayna@linux.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: vFj6BitYF0x-cbuTSlcAlvP41isWo2s8
-X-Proofpoint-ORIG-GUID: 29tSgp1oZs-enh7p1uMj0CP5vo99aQgQ
-Content-Transfer-Encoding: 8bit
-X-Proofpoint-UnRewURL: 0 URL was un-rewritten
-MIME-Version: 1.0
+X-Proofpoint-ORIG-GUID: DASKLwDxXsXxtZB25zaNWsfr2jBMskun
+X-Proofpoint-GUID: oCrjtsqQ0jzmm6vb2fhrSdiBrM6JpE1q
 X-Proofpoint-Virus-Version: vendor=baseguard
  engine=ICAP:2.0.205,Aquarius:18.0.816,Hydra:6.0.425,FMLib:17.11.64.514
- definitions=2022-03-11_08,2022-03-11_02,2022-02-23_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 impostorscore=0 phishscore=0
- lowpriorityscore=0 suspectscore=0 bulkscore=0 clxscore=1015 adultscore=0
- mlxscore=0 spamscore=0 mlxlogscore=999 priorityscore=1501 malwarescore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2202240000
- definitions=main-2203110103
+ definitions=2022-03-11_10,2022-03-11_02,2022-02-23_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 lowpriorityscore=0
+ clxscore=1015 suspectscore=0 impostorscore=0 priorityscore=1501
+ adultscore=0 mlxscore=0 bulkscore=0 spamscore=0 mlxlogscore=999
+ phishscore=0 malwarescore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=8.12.0-2202240000 definitions=main-2203120013
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Some firmware support secure boot by embedding static keys to verify the
-Linux kernel during boot. However, these firmware do not expose an
-interface for the kernel to load firmware keys onto the ".platform"
-keyring, preventing the kernel from verifying the kexec kernel image
-signature.
-
-This patchset exports load_certificate_list() and defines a new function
-load_builtin_platform_cert() to load compiled in certificates onto the
-".platform" keyring.
-
-Changelog:
-v12:
-* Replace Patch 3/4 with reverting of the commit as suggested by
-Masahiro Yamada.
-
-v11:
-* Added a new patch to conditionally build extract-cert if
-PLATFORM_KEYRING is enabled.
-
-v10:
-* Fixed the externs warning for Patch 3.
-
-v9:
-* Rebased on Jarkko's repo - 
-git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
-
-v8:
-* Includes Jarkko's feedback on patch description and removed Reported-by
-for Patch 1.
-
-v7:
-* Incldues Jarkko's feedback on patch description for Patch 1 and 3.
-
-v6:
-* Includes Jarkko's feedback:
- * Split Patch 2 into two.
- * Update Patch description.
-
-v5:
-* Renamed load_builtin_platform_cert() to load_platform_certificate_list()
-and config INTEGRITY_PLATFORM_BUILTIN_KEYS to INTEGRITY_PLATFORM_KEYS, as
-suggested by Mimi Zohar.
-
-v4:
-* Split into two patches as per Mimi Zohar and Dimitri John Ledkov
-recommendation.
-
-v3:
-* Included Jarkko's feedback
- ** updated patch description to include approach.
- ** removed extern for function declaration in the .h file.
-* Included load_certificate_list() within #ifdef CONFIG_KEYS condition.
-
-v2:
-* Fixed the error reported by kernel test robot
-* Updated patch description based on Jarkko's feedback.
-
-Nayna Jain (4):
-  certs: export load_certificate_list() to be used outside certs/
-  integrity: make integrity_keyring_from_id() non-static
-  Revert "certs: move scripts/extract-cert to certs/"
-  integrity: support including firmware ".platform" keys at build time
-
- MAINTAINERS                                   |  1 +
- certs/.gitignore                              |  1 -
- certs/Makefile                                | 18 ++++++---------
- certs/blacklist.c                             |  1 -
- certs/common.c                                |  2 +-
- certs/common.h                                |  9 --------
- certs/system_keyring.c                        |  1 -
- include/keys/system_keyring.h                 |  6 +++++
- scripts/.gitignore                            |  1 +
- scripts/Makefile                              | 12 ++++++++--
- {certs => scripts}/extract-cert.c             |  2 +-
- scripts/remove-stale-files                    |  2 --
- security/integrity/Kconfig                    | 10 ++++++++
- security/integrity/Makefile                   | 15 +++++++++++-
- security/integrity/digsig.c                   |  2 +-
- security/integrity/integrity.h                |  9 ++++++++
- .../integrity/platform_certs/platform_cert.S  | 23 +++++++++++++++++++
- .../platform_certs/platform_keyring.c         | 23 +++++++++++++++++++
- 18 files changed, 107 insertions(+), 31 deletions(-)
- delete mode 100644 certs/common.h
- rename {certs => scripts}/extract-cert.c (98%)
- create mode 100644 security/integrity/platform_certs/platform_cert.S
 
 
-base-commit: fb5abce6b2bb5cb3d628aaa63fa821da8c4600f9
+On 12/03/22 2:33 am, Nayna Jain wrote:
+> Some firmware support secure boot by embedding static keys to verify the
+> Linux kernel during boot. However, these firmware do not expose an
+> interface for the kernel to load firmware keys onto the ".platform"
+> keyring, preventing the kernel from verifying the kexec kernel image
+> signature.
+> 
+> This patchset exports load_certificate_list() and defines a new function
+> load_builtin_platform_cert() to load compiled in certificates onto the
+> ".platform" keyring.
+> 
+> Changelog:
+> v12:
+> * Replace Patch 3/4 with reverting of the commit as suggested by
+> Masahiro Yamada.
+> 
+
+Tested the following four patches ov v12 with and with out setting 
+CONFIG_INTEGRITY_PLATFORM_KEYS
+
+Tested-by: Nageswara R Sastry <rnsastry@linux.ibm.com>
+
+
+1. With CONFIG_INTEGRITY_PLATFORM_KEYS set to a key
+
+# grep pem .config
+CONFIG_INTEGRITY_PLATFORM_KEYS="certs/kernel.pem"
+CONFIG_MODULE_SIG_KEY="certs/signing_key.pem"
+CONFIG_SYSTEM_TRUSTED_KEYS="certs/rhel.pem"
+
+# grep 
+"CONFIG_INTEGRITY_PLATFORM_KEYS\|INTEGRITY_PLATFORM_KEYRING\|SYSTEM_REVOCATION_LIST" 
+.config
+CONFIG_INTEGRITY_PLATFORM_KEYRING=y
+CONFIG_INTEGRITY_PLATFORM_KEYS="certs/kernel.pem"
+# CONFIG_SYSTEM_REVOCATION_LIST is not set
+
+# cat /proc/keys | grep platform
+0a7a11a9 I------     1 perm 1f0b0000     0     0 keyring   .platform: 1
+
+# keyctl show %keyring:.platform
+Keyring
+  175772073 ---lswrv      0     0  keyring: .platform
+  519271447 ---lswrv      0     0   \_ asymmetric: IBM Corporation: 
+Guest Secure Boot Imprint Kernel Signing Key: 
+a0cf9069c30875320cb10a77325d4fa7012f8d12
+
+
+2. With out CONFIG_INTEGRITY_PLATFORM_KEYS set, leaving empty
+
+# grep pem .config
+CONFIG_MODULE_SIG_KEY="certs/signing_key.pem"
+CONFIG_SYSTEM_TRUSTED_KEYS="certs/rhel.pem"
+
+# grep 
+"CONFIG_INTEGRITY_PLATFORM_KEYS\|INTEGRITY_PLATFORM_KEYRING\|SYSTEM_REVOCATION_LIST" 
+.config
+CONFIG_INTEGRITY_PLATFORM_KEYRING=y
+CONFIG_INTEGRITY_PLATFORM_KEYS=""
+# CONFIG_SYSTEM_REVOCATION_LIST is not set
+
+# cat /proc/keys | grep platform
+39c749b9 I------     1 perm 1f0b0000     0     0 keyring   .platform: empty
+
+# keyctl show %keyring:.platform
+Keyring
+  969361849 ---lswrv      0     0  keyring: .platform
+
+
+
+> 
+> base-commit: fb5abce6b2bb5cb3d628aaa63fa821da8c4600f9
+
 -- 
-2.34.1
+Thanks and Regards
+R.Nageswara Sastry
