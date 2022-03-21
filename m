@@ -2,61 +2,122 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C79BBC433EF
-	for <keyrings@archiver.kernel.org>; Mon, 21 Mar 2022 17:45:11 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 93B00C433F5
+	for <keyrings@archiver.kernel.org>; Mon, 21 Mar 2022 18:24:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1347990AbiCURqf (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 21 Mar 2022 13:46:35 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48658 "EHLO
+        id S1352131AbiCUSZh (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 21 Mar 2022 14:25:37 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40746 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1350138AbiCURqe (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 21 Mar 2022 13:46:34 -0400
-Received: from smtp-42ab.mail.infomaniak.ch (smtp-42ab.mail.infomaniak.ch [IPv6:2001:1600:3:17::42ab])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E3CC53B28F
-        for <keyrings@vger.kernel.org>; Mon, 21 Mar 2022 10:45:08 -0700 (PDT)
-Received: from smtp-3-0001.mail.infomaniak.ch (unknown [10.4.36.108])
-        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4KMhpV2Q0WzMptYB;
-        Mon, 21 Mar 2022 18:45:06 +0100 (CET)
-Received: from localhost (unknown [23.97.221.149])
-        by smtp-3-0001.mail.infomaniak.ch (Postfix) with ESMTPA id 4KMhpT4slkzlhMBQ;
-        Mon, 21 Mar 2022 18:45:05 +0100 (CET)
-From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
+        with ESMTP id S1351581AbiCUSZf (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 21 Mar 2022 14:25:35 -0400
+Received: from mail-ed1-x52b.google.com (mail-ed1-x52b.google.com [IPv6:2a00:1450:4864:20::52b])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 027B320F66
+        for <keyrings@vger.kernel.org>; Mon, 21 Mar 2022 11:24:07 -0700 (PDT)
+Received: by mail-ed1-x52b.google.com with SMTP id r23so18968744edb.0
+        for <keyrings@vger.kernel.org>; Mon, 21 Mar 2022 11:24:06 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=paul-moore-com.20210112.gappssmtp.com; s=20210112;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc:content-transfer-encoding;
+        bh=Znlv0HuHzVHaeUAmdIRV55nsLLlzSzHPvRIX7fedcUo=;
+        b=dZCkQITWm7aAaXjcdC9aaJGWOSDwwhmiHMzz4T9vFTAIrBgplBxfZm25g+walJOkE/
+         s/1+FK3Q8iyr12mvERqN/SQqQAx8+ypB1IxkVGIV+lbjLfch6NahK1lz9WUKIGbWGR+O
+         E8IS8fJy3WHAEZa0+eSiOxCHHFxFvaGzoT6eqWf2r56tqqoqrFu3VkO5TgA3xK9qS83K
+         w2IIw1WGHDs8sRYaMoc2DFd1XNRIWbdYPKvYXJv0nfEchin0hxv2AgKt5z2XBcK6yq7K
+         HzJG2S05OOtbPXSquUIJ7TEcM50PtjqiTEyoJkHNlHnL/pml7b0fEo0Pch55ynrJWRjB
+         DxzA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc:content-transfer-encoding;
+        bh=Znlv0HuHzVHaeUAmdIRV55nsLLlzSzHPvRIX7fedcUo=;
+        b=qRW4bDkPMroFjFhCZ9leSquCEvIHzD6PaNtxnG+YsKHnST16ECe1QTEgXEuQ82FqTY
+         gA2vZQbvd7gZd+Lziql96IhXpaetwl0AJpil2gitmcDsSYTzO3ey5saPC8fh4sbJbcTK
+         sGlKHrqRW8buZ+GVJLn/1wAyYd2of684axoqCl/GaP3K8JGXf9geQeW0wAcsTboNZ8Ug
+         hIjvdUdy7k70mURY/Ayqs4XhuTz9SeDCfykRxoytf7tW57VU7EauI0x9DuplN0Q84wZe
+         XRutswHaUJM21qMMRK2HWucLFEz8dM2N4CZAPFuZDKdQhz2Q4i5Lm0a31R7bQRTfaBxY
+         aocQ==
+X-Gm-Message-State: AOAM531L2YRMy5GAAZbGV1asmk56AFnKcttZkvEv/NoJd45MxZe5rqnE
+        jlI/UcdebBTLXt6Po1HyxMr9RnWyBB8mYag7volK
+X-Google-Smtp-Source: ABdhPJxssqPmh+qHcCzxF3xsED5nNaiei08foUJkKVXI+HTgBGne1+hBjJb9fvtjCFtPaT8nVral3z+eTHU4RmFkNkk=
+X-Received: by 2002:a05:6402:42d4:b0:412:c26b:789 with SMTP id
+ i20-20020a05640242d400b00412c26b0789mr24724801edc.232.1647887045389; Mon, 21
+ Mar 2022 11:24:05 -0700 (PDT)
+MIME-Version: 1.0
+References: <20220321174548.510516-1-mic@digikod.net> <20220321174548.510516-2-mic@digikod.net>
+In-Reply-To: <20220321174548.510516-2-mic@digikod.net>
+From:   Paul Moore <paul@paul-moore.com>
+Date:   Mon, 21 Mar 2022 14:23:54 -0400
+Message-ID: <CAHC9VhR+Ss5VAUHLutTvyS8g+agZy7d0YGcu_9dV1LBx_8ifNQ@mail.gmail.com>
+Subject: Re: [PATCH v1 1/1] certs: Explain the rational to call panic()
+To:     =?UTF-8?B?TWlja2HDq2wgU2FsYcO8bg==?= <mic@digikod.net>
+Cc:     Jarkko Sakkinen <jarkko@kernel.org>,
         David Howells <dhowells@redhat.com>,
         "David S . Miller" <davem@davemloft.net>,
         David Woodhouse <dwmw2@infradead.org>,
         Eric Snowberg <eric.snowberg@oracle.com>,
-        Paul Moore <paul@paul-moore.com>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v1 0/1] Explain panic() calls for keyring initialization
-Date:   Mon, 21 Mar 2022 18:45:47 +0100
-Message-Id: <20220321174548.510516-1-mic@digikod.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?TWlja2HDq2wgU2FsYcO8bg==?= <mic@linux.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-As suggested by Jarkko and explained by Paul, let's document the panic()
-calls from the blacklist keyring initialization.  This series applies on
-top of commit 50c486fe3108 ("certs: Allow root user to append signed hashes to the
-blacklist keyring").  This can smoothly be rebased on top of Jarkko's
-next branch.
+On Mon, Mar 21, 2022 at 1:45 PM Micka=C3=ABl Sala=C3=BCn <mic@digikod.net> =
+wrote:
+>
+> From: Micka=C3=ABl Sala=C3=BCn <mic@linux.microsoft.com>
+>
+> The blacklist_init() function calls panic() for memory allocation
+> errors.  This change documents the reason why we don't return -ENODEV.
+>
+> Suggested-by: Paul Moore <paul@paul-moore.com> [1]
+> Requested-by: Jarkko Sakkinen <jarkko@kernel.org> [1]
+> Link: https://lore.kernel.org/r/YjeW2r6Wv55Du0bJ@iki.fi [1]
+> Signed-off-by: Micka=C3=ABl Sala=C3=BCn <mic@linux.microsoft.com>
+> Link: https://lore.kernel.org/r/20220321174548.510516-2-mic@digikod.net
+> ---
+>  certs/blacklist.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
 
-[1] https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git/commit/?id=50c486fe310890c134b5cb36cf9a4135475a6074
+I would suggest changing the second sentence as shown below, but
+otherwise it looks good to me.
 
-Regards,
+Reviewed-by: Paul Moore <paul@paul-moore.com>
 
-Mickaël Salaün (1):
-  certs: Explain the rational to call panic()
+> diff --git a/certs/blacklist.c b/certs/blacklist.c
+> index 486ce0dd8e9c..ac26bcf9b9a5 100644
+> --- a/certs/blacklist.c
+> +++ b/certs/blacklist.c
+> @@ -307,6 +307,14 @@ static int restrict_link_for_blacklist(struct key *d=
+est_keyring,
+>
+>  /*
+>   * Initialise the blacklist
+> + *
+> + * The blacklist_init() function is registered as an initcall via
+> + * device_initcall().  As a result the functionality doesn't load and th=
+e
 
- certs/blacklist.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+"As a result if the blacklist_init() function fails for any reason the
+kernel continues to execute."
 
+> + * kernel continues on executing.  While cleanly returning -ENODEV could=
+ be
+> + * acceptable for some non-critical kernel parts, if the blacklist keyri=
+ng
+> + * fails to load it defeats the certificate/key based deny list for sign=
+ed
+> + * modules.  If a critical piece of security functionality that users ex=
+pect to
+> + * be present fails to initialize, panic()ing is likely the right thing =
+to do.
+>   */
+>  static int __init blacklist_init(void)
+>  {
 
-base-commit: 50c486fe310890c134b5cb36cf9a4135475a6074
--- 
-2.35.1
-
+--
+paul-moore.com
