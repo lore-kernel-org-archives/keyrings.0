@@ -2,228 +2,81 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AB825C433F5
-	for <keyrings@archiver.kernel.org>; Fri, 25 Mar 2022 19:47:55 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0D2CEC433F5
+	for <keyrings@archiver.kernel.org>; Sun, 27 Mar 2022 06:36:12 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231599AbiCYTt1 convert rfc822-to-8bit (ORCPT
-        <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 25 Mar 2022 15:49:27 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35432 "EHLO
+        id S230007AbiC0Ghq (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 27 Mar 2022 02:37:46 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33216 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231657AbiCYTtK (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 25 Mar 2022 15:49:10 -0400
-Received: from mxout03.lancloud.ru (mxout03.lancloud.ru [45.84.86.113])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A33E92296DA;
-        Fri, 25 Mar 2022 12:33:01 -0700 (PDT)
-Received: from LanCloud
-DKIM-Filter: OpenDKIM Filter v2.11.0 mxout03.lancloud.ru 3F1DA20A097D
-Received: from LanCloud
-Received: from LanCloud
-Received: from LanCloud
-Received: from LanCloud
-From:   Denis Glazkov <d.glazkov@omp.ru>
-CC:     Denis Glazkov <d.glazkov@omp.ru>,
-        David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-        <linux-security-module@vger.kernel.org>
-Subject: [PATCH v2] KEYS: Improve error handling in the script
-Thread-Topic: [PATCH v2] KEYS: Improve error handling in the script
-Thread-Index: AQHYQHRhOXnmlwunc06tlBqeYDNOag==
-Date:   Fri, 25 Mar 2022 18:16:01 +0000
-Message-ID: <20220325181550.278067-1-d.glazkov@omp.ru>
-Accept-Language: ru-RU, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.11.212]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+        with ESMTP id S229485AbiC0Ghp (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 27 Mar 2022 02:37:45 -0400
+Received: from desiato.infradead.org (desiato.infradead.org [IPv6:2001:8b0:10b:1:d65d:64ff:fe57:4e05])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7E7373CFC3;
+        Sat, 26 Mar 2022 23:36:07 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=desiato.20200630; h=Content-Transfer-Encoding:Content-Type
+        :In-Reply-To:From:References:Cc:To:Subject:MIME-Version:Date:Message-ID:
+        Sender:Reply-To:Content-ID:Content-Description;
+        bh=d3KR8Rc1AINo2B0ZxpxbVflKal9A0i+al9XwlVMQf3o=; b=lK+UVv7psfLbi4Im3IoW2Sol5P
+        NoY7DmHxcEFGg9K3QDtqIMJISBPhy8xMwSDNt4zmqO20Ekt99GgCABz6oTBh3LTKLR5GPv7wHDLau
+        rnDJNeR4woSz98h43jSLziTB7UuWDzEzKzTNXMuitH++eMVyshozrh6T/86O4UKiQCndhFqGdSh2F
+        tUqwxt4UbuGpmpa62OqOuUevh+tutlsi1x20+UHchk1mc6jL9Vre70/JnQJgSQSw74326xoWT2b6w
+        FblmaIYThU2TjnJ3EljSwRP1+Uga97CioOIfY7tGtTnHUal48hI3sLZP/hBgSPavoWP3aONzLyLBQ
+        4qVPykwQ==;
+Received: from [2601:1c0:6280:3f0::aa0b]
+        by desiato.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1nYMVQ-004zWY-Iv; Sun, 27 Mar 2022 06:36:05 +0000
+Message-ID: <129d2cd4-729a-8b7f-a536-fae6b8758cec@infradead.org>
+Date:   Sat, 26 Mar 2022 23:35:58 -0700
 MIME-Version: 1.0
-To:     unlisted-recipients:; (no To-header on input)
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101
+ Thunderbird/91.7.0
+Subject: Re: [PATCH] keys: remove __user annotation from function prototype
+Content-Language: en-US
+To:     linux-kernel@vger.kernel.org
+Cc:     Jann Horn <jannh@google.com>, David Howells <dhowells@redhat.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
+References: <20220122201516.13547-1-rdunlap@infradead.org>
+From:   Randy Dunlap <rdunlap@infradead.org>
+In-Reply-To: <20220122201516.13547-1-rdunlap@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Using the `exit` function for error handling entails
-a number of problems:
+ping.
 
-- not a closed file;
-- unreleased memory allocated for the certificate;
-- non-deleted mapping to vmlinux file.
+On 1/22/22 12:15, Randy Dunlap wrote:
+> Remove a missed __user annotation from the prototype for
+> keyring_read(). This cures a sparse warning when it complains about
+> the difference in the prototype and the function definition.
+> 
+> security/keys/keyring.c:481:13: sparse:    long static [signed] [toplevel] keyring_read( ... )
+> security/keys/keyring.c:81:13: sparse:    long static [addressable] [signed] [toplevel] keyring_read( ... )
+> 
+> Fixes: 796e46f9e2cb ("keys: Remove outdated __user annotations").
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Jann Horn <jannh@google.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Jarkko Sakkinen <jarkko@kernel.org>
+> Cc: keyrings@vger.kernel.org
+> ---
+>  security/keys/keyring.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-next-20220121.orig/security/keys/keyring.c
+> +++ linux-next-20220121/security/keys/keyring.c
+> @@ -79,7 +79,7 @@ static void keyring_revoke(struct key *k
+>  static void keyring_destroy(struct key *keyring);
+>  static void keyring_describe(const struct key *keyring, struct seq_file *m);
+>  static long keyring_read(const struct key *keyring,
+> -			 char __user *buffer, size_t buflen);
+> +			 char *buffer, size_t buflen);
+>  
+>  struct key_type key_type_keyring = {
+>  	.name		= "keyring",
 
-This patch fixes the listed issues.
-
-Signed-off-by: Denis Glazkov <d.glazkov@omp.ru>
-
----
-Changes in version 2:
-- refactored error handling, instead of fixing a single `read_file` function;
-- changed the patch subject.
-
-Version 1 was there:
-- https://lore.kernel.org/all/20220303081428.12979-1-d.glazkov@omp.ru/
-
- scripts/insert-sys-cert.c | 51 +++++++++++++++++++++++++--------------
- 1 file changed, 33 insertions(+), 18 deletions(-)
-
-diff --git a/scripts/insert-sys-cert.c b/scripts/insert-sys-cert.c
-index 8902836c2342..8046682188f3 100644
---- a/scripts/insert-sys-cert.c
-+++ b/scripts/insert-sys-cert.c
-@@ -101,7 +101,7 @@ static void get_symbol_from_map(Elf_Ehdr *hdr, FILE *f, char *name,
- 	s->offset = 0;
- 	if (fseek(f, 0, SEEK_SET) != 0) {
- 		perror("File seek failed");
--		exit(EXIT_FAILURE);
-+		return;
- 	}
- 	while (fgets(l, LINE_SIZE, f)) {
- 		p = strchr(l, '\n');
-@@ -251,6 +251,7 @@ static char *read_file(char *file_name, int *size)
- 	if (read(fd, buf, *size) != *size) {
- 		perror("File read failed");
- 		close(fd);
-+		free(buf);
- 		return NULL;
- 	}
- 	close(fd);
-@@ -277,14 +278,15 @@ int main(int argc, char **argv)
- 	char *cert_file = NULL;
- 	int vmlinux_size;
- 	int cert_size;
--	Elf_Ehdr *hdr;
--	char *cert;
--	FILE *system_map;
-+	Elf_Ehdr *hdr = NULL;
-+	char *cert = NULL;
-+	FILE *system_map = NULL;
- 	unsigned long *lsize;
- 	int *used;
- 	int opt;
- 	Elf_Shdr *symtab = NULL;
- 	struct sym cert_sym, lsize_sym, used_sym;
-+	int ret = EXIT_FAILURE;
- 
- 	while ((opt = getopt(argc, argv, "b:c:s:")) != -1) {
- 		switch (opt) {
-@@ -304,20 +306,20 @@ int main(int argc, char **argv)
- 
- 	if (!vmlinux_file || !cert_file) {
- 		print_usage(argv[0]);
--		exit(EXIT_FAILURE);
-+		goto finish;
- 	}
- 
- 	cert = read_file(cert_file, &cert_size);
- 	if (!cert)
--		exit(EXIT_FAILURE);
-+		goto finish;
- 
- 	hdr = map_file(vmlinux_file, &vmlinux_size);
- 	if (!hdr)
--		exit(EXIT_FAILURE);
-+		goto finish;
- 
- 	if (vmlinux_size < sizeof(*hdr)) {
- 		err("Invalid ELF file.\n");
--		exit(EXIT_FAILURE);
-+		goto finish;
- 	}
- 
- 	if ((hdr->e_ident[EI_MAG0] != ELFMAG0) ||
-@@ -325,22 +327,22 @@ int main(int argc, char **argv)
- 	    (hdr->e_ident[EI_MAG2] != ELFMAG2) ||
- 	    (hdr->e_ident[EI_MAG3] != ELFMAG3)) {
- 		err("Invalid ELF magic.\n");
--		exit(EXIT_FAILURE);
-+		goto finish;
- 	}
- 
- 	if (hdr->e_ident[EI_CLASS] != CURRENT_ELFCLASS) {
- 		err("ELF class mismatch.\n");
--		exit(EXIT_FAILURE);
-+		goto finish;
- 	}
- 
- 	if (hdr->e_ident[EI_DATA] != endianness()) {
- 		err("ELF endian mismatch.\n");
--		exit(EXIT_FAILURE);
-+		goto finish;
- 	}
- 
- 	if (hdr->e_shoff > vmlinux_size) {
- 		err("Could not find section header.\n");
--		exit(EXIT_FAILURE);
-+		goto finish;
- 	}
- 
- 	symtab = get_symbol_table(hdr);
-@@ -349,13 +351,13 @@ int main(int argc, char **argv)
- 		if (!system_map_file) {
- 			err("Please provide a System.map file.\n");
- 			print_usage(argv[0]);
--			exit(EXIT_FAILURE);
-+			goto finish;
- 		}
- 
- 		system_map = fopen(system_map_file, "r");
- 		if (!system_map) {
- 			perror(system_map_file);
--			exit(EXIT_FAILURE);
-+			goto finish;
- 		}
- 		get_symbol_from_map(hdr, system_map, CERT_SYM, &cert_sym);
- 		get_symbol_from_map(hdr, system_map, USED_SYM, &used_sym);
-@@ -371,7 +373,7 @@ int main(int argc, char **argv)
- 	}
- 
- 	if (!cert_sym.offset || !lsize_sym.offset || !used_sym.offset)
--		exit(EXIT_FAILURE);
-+		goto finish;
- 
- 	print_sym(hdr, &cert_sym);
- 	print_sym(hdr, &used_sym);
-@@ -382,14 +384,16 @@ int main(int argc, char **argv)
- 
- 	if (cert_sym.size < cert_size) {
- 		err("Certificate is larger than the reserved area!\n");
--		exit(EXIT_FAILURE);
-+		goto finish;
- 	}
- 
-+	ret = EXIT_SUCCESS;
-+
- 	/* If the existing cert is the same, don't overwrite */
- 	if (cert_size == *used &&
- 	    strncmp(cert_sym.content, cert, cert_size) == 0) {
- 		warn("Certificate was already inserted.\n");
--		exit(EXIT_SUCCESS);
-+		goto finish;
- 	}
- 
- 	if (*used > 0)
-@@ -406,5 +410,16 @@ int main(int argc, char **argv)
- 						cert_sym.address);
- 	info("Used %d bytes out of %d bytes reserved.\n", *used,
- 						 cert_sym.size);
--	exit(EXIT_SUCCESS);
-+
-+finish:
-+	if (cert != NULL)
-+		free(cert);
-+
-+	if (hdr != NULL)
-+		munmap(hdr, vmlinux_size);
-+
-+	if (system_map != NULL)
-+		fclose(system_map);
-+
-+	return ret;
- }
 -- 
-2.25.1
+~Randy
