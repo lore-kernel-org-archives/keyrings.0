@@ -2,82 +2,79 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4E274C433EF
-	for <keyrings@archiver.kernel.org>; Wed, 30 Mar 2022 15:37:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B161AC433F5
+	for <keyrings@archiver.kernel.org>; Thu, 31 Mar 2022 12:56:20 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S242747AbiC3PjJ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 30 Mar 2022 11:39:09 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34968 "EHLO
+        id S236384AbiCaM6G (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 31 Mar 2022 08:58:06 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44560 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S238687AbiC3PjI (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 30 Mar 2022 11:39:08 -0400
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTP id E90E9326E9
-        for <keyrings@vger.kernel.org>; Wed, 30 Mar 2022 08:37:21 -0700 (PDT)
+        with ESMTP id S236479AbiCaM6C (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 31 Mar 2022 08:58:02 -0400
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTP id F020D2128DF
+        for <keyrings@vger.kernel.org>; Thu, 31 Mar 2022 05:56:13 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1648654640;
+        s=mimecast20190719; t=1648731372;
         h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
          to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=hHrmC24Jo3CTM6YvkvlpfQVskDBFgAZarL5vBmkT/1w=;
-        b=gOQ5rK2u4/d3iCSXV9ZyuLjPrKAyQA9Iap0vCwZ9704cMDNgMLMOWvkxzwPCcQajwxDHWw
-        fkAr1G+/4HO5epnrrvYYLzxgUmWr8Oq3G5I8RNZaOysn4BIG7oMDggoG3D1Fb0A48K76AJ
-        2/LuwnKPwG0Bj/uXk3NIltPx6cdZl1A=
-Received: from mimecast-mx02.redhat.com (mx3-rdu2.redhat.com
- [66.187.233.73]) by relay.mimecast.com with ESMTP with STARTTLS
+        bh=v5Mnqs3Bznl24t2qlJcxuDZWOB6J1u0XCG3i9ntUXvk=;
+        b=eKQKaLf5LWgJ24tyI6lQe9ZrcxA07bCEtNgKr9+kODDPnQ7z2AUdo0KfW0z5SgsMmFuhUm
+        spACpeWq9GypEU/KUdx4xfHxFMzFrf9n+N1GJVp1ANPDgRbtgOa+t19xt5e/Dqno9xhQuv
+        NMq0iVRKcC2WiqT+OetFdLrepQ0LQzU=
+Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
+ [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
  (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- us-mta-53-RRlkUzyIPVKePa_Ax9wclg-1; Wed, 30 Mar 2022 11:37:17 -0400
-X-MC-Unique: RRlkUzyIPVKePa_Ax9wclg-1
+ us-mta-632-uknW2jpbOmGLSUJ6dizTRg-1; Thu, 31 Mar 2022 08:56:08 -0400
+X-MC-Unique: uknW2jpbOmGLSUJ6dizTRg-1
 Received: from smtp.corp.redhat.com (int-mx08.intmail.prod.int.rdu2.redhat.com [10.11.54.8])
         (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 9F8241C0514D;
-        Wed, 30 Mar 2022 15:37:16 +0000 (UTC)
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id DE54880346F;
+        Thu, 31 Mar 2022 12:56:07 +0000 (UTC)
 Received: from warthog.procyon.org.uk (unknown [10.33.36.19])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id EABD7C202C6;
-        Wed, 30 Mar 2022 15:37:14 +0000 (UTC)
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 1623DC15D42;
+        Thu, 31 Mar 2022 12:56:06 +0000 (UTC)
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
         Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
         Kingdom.
         Registered in England and Wales under Company Registration No. 3798903
 From:   David Howells <dhowells@redhat.com>
-In-Reply-To: <20220303125627.93930-1-d.glazkov@omp.ru>
-References: <20220303125627.93930-1-d.glazkov@omp.ru> <20220303081428.12979-1-d.glazkov@omp.ru>
-To:     Denis Glazkov <d.glazkov@omp.ru>
-Cc:     dhowells@redhat.com, "jarkko@kernel.org" <jarkko@kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-        <linux-security-module@vger.kernel.org>,
-        "mkayaalp@linux.vnet.ibm.com" <mkayaalp@linux.vnet.ibm.com>,
-        "serge@hallyn.com" <serge@hallyn.com>,
-        "zohar@linux.vnet.ibm.com" <zohar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] KEYS: fix memory leaks when reading certificate
+In-Reply-To: <20220317021249.31655-1-yang.lee@linux.alibaba.com>
+References: <20220317021249.31655-1-yang.lee@linux.alibaba.com>
+To:     Yang Li <yang.lee@linux.alibaba.com>
+Cc:     dhowells@redhat.com, dwmw2@infradead.org, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Abaci Robot <abaci@linux.alibaba.com>
+Subject: Re: [PATCH -next] certs: Fix some kernel-doc comments
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2996112.1648654634.1@warthog.procyon.org.uk>
-Date:   Wed, 30 Mar 2022 16:37:14 +0100
-Message-ID: <2996113.1648654634@warthog.procyon.org.uk>
+Content-ID: <3118063.1648731366.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: quoted-printable
+Date:   Thu, 31 Mar 2022 13:56:06 +0100
+Message-ID: <3118064.1648731366@warthog.procyon.org.uk>
 X-Scanned-By: MIMEDefang 2.85 on 10.11.54.8
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Denis Glazkov <d.glazkov@omp.ru> wrote:
+Yang Li <yang.lee@linux.alibaba.com> wrote:
 
-> The `exit()` function usage produce possible memory leaks. This
-> patch removes the use of the `exit()` function and adds memory
-> free in case of a negative scenarios.
+>  /**
+> - * Allocate a struct key_restriction for the "builtin and secondary tru=
+st"
+> - * keyring. Only for use in system_trusted_keyring_init().
+> + * get_builtin_and_secondary_restriction - Allocate a struct key_restri=
+ction
+> + * for the "builtin and secondary trust" keyring. Only for use in
+> + * system_trusted_keyring_init().
+>   */
+>  static __init struct key_restriction *get_builtin_and_secondary_restric=
+tion(void)
 
-?
-
-Barring a kernel bug, there should be no memory leaks from exit().  _exit() is
-the ultimate process cleanup tool.  Calling free() won't necessarily return
-the memory allocated by malloc() to the kernel.
-
-Unless you have a good reason to actually tear down everything, just print a
-message and call exit on error in little helpers like this.
+Better to just turn the "/**" into "/*" for this one.  It's not a function
+that should necessarily appear in API docs.
 
 David
 
