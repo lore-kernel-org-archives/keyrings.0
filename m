@@ -2,275 +2,143 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8863CC433FE
-	for <keyrings@archiver.kernel.org>; Thu, 31 Mar 2022 21:58:50 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7AD5AC433EF
+	for <keyrings@archiver.kernel.org>; Fri,  1 Apr 2022 12:57:08 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S238929AbiCaWAg (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 31 Mar 2022 18:00:36 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51892 "EHLO
+        id S243238AbiDAM64 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 1 Apr 2022 08:58:56 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52530 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S242174AbiCaWAf (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 31 Mar 2022 18:00:35 -0400
-Received: from mail-yb1-xb30.google.com (mail-yb1-xb30.google.com [IPv6:2607:f8b0:4864:20::b30])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3A99FBC9F
-        for <keyrings@vger.kernel.org>; Thu, 31 Mar 2022 14:58:45 -0700 (PDT)
-Received: by mail-yb1-xb30.google.com with SMTP id e203so1736956ybc.12
-        for <keyrings@vger.kernel.org>; Thu, 31 Mar 2022 14:58:45 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20210112;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc;
-        bh=WoI8mM1NJCZkfQML5mKIT2Rv7qzNK940Kv5GbOWpC7s=;
-        b=qWc+DBm1ELA/StZvYKoVa1g47edClJWfqb5tZZ6Ae4Jf0pUHOX5PjFoxR0s0efjbKK
-         eGMWkGwMB5yGyNbmEt8FIbs9b9M/0CLcW/D67kUHokCzL0kR4WT5XGa0YXxpaX+aJyNb
-         vca3Q01+u8vDpmURlclG/PmX8+ZI85mi12LjzfALqa2e9c0+2kWzoutwSLZxQoLusxIg
-         Gs79cuEaHA9sy9wUMoUadkloYhM/+4ErjnW/eD9W7G2VzijmjVO8xZtqoudspOJirrvJ
-         21mlzqmh0MkRscp27WroNgI3G8MNJKBcgWZF/H2zl6jJ9cumpSr2wviv3Hh3LULt6Ntc
-         l7rg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc;
-        bh=WoI8mM1NJCZkfQML5mKIT2Rv7qzNK940Kv5GbOWpC7s=;
-        b=rAaDX2xPM89AGUhXIH7aYOljh2QNX8jVdL863pTC3RmqtLugpL2fFNgUz14IEj/Kt/
-         glZUSeFkLOo0ZhUrJH8MC1KCwVDJnqTJLzPICYMnxYvGt8VCY/X77nYjxEHVQb+6KBkE
-         X05z/zhT1bBO7FTmytg1+QinvTca89CX+xk7f2pli/rOPBLaM91z/9MBVRKVmY+rGUoW
-         XV6iQFygwaag0W3Af8iIfcZ9G7Jg/KCOXctXUU0zQup7CP7kfXa/EpLZJSQOsyYhrvqH
-         CiGyiHyMAZDP/Rvj3gnZkzUu4QEFXLPXVEpxQrOMh4Hjv6+OMfpc4luBRLi0Cj4tDQDD
-         0D9A==
-X-Gm-Message-State: AOAM533V2Y/8Myo1keLfOp7SVAmMbcwLWmN7kogj2tCzNLa3fuK03HUb
-        iOMlg/4hATNft/6FmnFSE1GCO7JahzkzKWsf6JwhPw==
-X-Google-Smtp-Source: ABdhPJzI/jXc4QND6SsniUS/XE90fBCnaNZ/1hb6OnbRI7HvlBO/bqypC2EiSkt35ljHpjeBGpzAuHTgAfSay9aJtFA=
-X-Received: by 2002:a05:6902:528:b0:63c:d888:1da2 with SMTP id
- y8-20020a056902052800b0063cd8881da2mr6043829ybs.614.1648763924228; Thu, 31
- Mar 2022 14:58:44 -0700 (PDT)
+        with ESMTP id S237846AbiDAM6z (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 1 Apr 2022 08:58:55 -0400
+Received: from NAM11-CO1-obe.outbound.protection.outlook.com (mail-co1nam11on2080.outbound.protection.outlook.com [40.107.220.80])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1307627680D;
+        Fri,  1 Apr 2022 05:57:06 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
+ b=WauzdSEYunVkg7WKvuYfi/gZ1qE42kuS8/wAdSvfu+G6OeXBCQWc1ocJFy6euztl/dUjZYfEFHwiqv2d5NWeEZ6bA6WnB3BVL5KV4kp7WDXt7veyi00Fqpg+LsOOfoqOVy23PDLHq5FzkKA8QJuLA2pHvQf0mgO9F3fnDVInWTps7xBAn7oqQAkOQuS6JryqMNuG/fbbEHOGPw1rOM6EF8KU4PJtNirAVkgRtZ8JnXk+PdwPWI0pVn0SDuBMxQvQfi2UIHBI8BbQJcRZBupDRzmZhw9fVB+PqCaw7fkfJoKcy/LOxOukOxGd5Wwx1nFjKftsiLULj7r2lO5f2XPWHQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector9901;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=XIl/l+pCDm37kyPGkK+osXC9OCTBfKcMxCRu2wtkNuQ=;
+ b=Oln4ScyMlXKO6ihfW4TeVXTFjFDqShyJeLBm3Xkv6uMYZtTZVtoydSSo/pjnm4M+trYWwQVsIqSh5vvV6K7c8koqPpAZbGhD4jHIFUeUZOHC8nnhew4n547VTFpQnNTV7nujv8kNnYYPLmPprwN/Kb5NTv2pYQ1zFgv+x9eXIirsPG65sPpzAseDIRvKtTdBaFAkSvxXONhDAoX161xspRJ+AcLCX/rurtyKXWc0zrTKw3NU7Rh6H0d8yuL3A+k8/9Akf9p2cQ/pfWhZ36j6e8o6U121GxXkiIOpbtsZ44ijtxHy9CFO2zJHOTK32tz+OKhYfaS8OtYEIWT5WXEyoQ==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=ddn.com; dmarc=pass action=none header.from=ddn.com; dkim=pass
+ header.d=ddn.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ddn.com; s=selector2;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=XIl/l+pCDm37kyPGkK+osXC9OCTBfKcMxCRu2wtkNuQ=;
+ b=jnNqISWhSHR5q81VvkNTtFS4xojoG+6/G/ZmurJPt7gwgRtjbpdiHIfLHrAAJL7m6bhSkM/soaRX4A8xiQ7cp2z4KFPCE428uPKNLdFXUmvJCZVAJZUgI3yD7W0l0vFMbON33uWHHVEpi5MO13Al+4BeznbnUg2AgC3GJEW5y7c=
+Authentication-Results: dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=ddn.com;
+Received: from DM5PR1901MB2037.namprd19.prod.outlook.com (2603:10b6:4:aa::29)
+ by MW4PR19MB5630.namprd19.prod.outlook.com (2603:10b6:303:189::12) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.5123.25; Fri, 1 Apr
+ 2022 12:57:04 +0000
+Received: from DM5PR1901MB2037.namprd19.prod.outlook.com
+ ([fe80::7c8f:fda5:16fa:a104]) by DM5PR1901MB2037.namprd19.prod.outlook.com
+ ([fe80::7c8f:fda5:16fa:a104%4]) with mapi id 15.20.5123.021; Fri, 1 Apr 2022
+ 12:57:04 +0000
+Message-ID: <484841f1-85fa-06b8-5697-ade829e3fff3@ddn.com>
+Date:   Fri, 1 Apr 2022 14:56:58 +0200
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101
+ Thunderbird/91.7.0
+Subject: Re: [PATCH] fix certs compilation / export is_key_on_revocation_list
+Content-Language: en-US
+From:   Bernd Schubert <bschubert@ddn.com>
+To:     David Howells <dhowells@redhat.com>,
+        "\"David Woodhouse" <dwmw2@infradead.org>,
+        keyrings@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+References: <ce5bc8c0-2c6d-2a22-1ad3-357254686366@ddn.com>
+ <e92ef2ea-bb1c-8a8d-2e25-c784a784b995@ddn.com>
+ <ca485dfa-58e7-6a09-97b0-dbf7cde7a7e2@ddn.com>
+In-Reply-To: <ca485dfa-58e7-6a09-97b0-dbf7cde7a7e2@ddn.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: PR3PR09CA0018.eurprd09.prod.outlook.com
+ (2603:10a6:102:b7::23) To DM5PR1901MB2037.namprd19.prod.outlook.com
+ (2603:10b6:4:aa::29)
 MIME-Version: 1.0
-References: <20220306223016.2239094-1-ctshao@google.com> <CAKwvOdnmtRYnSx3VvG=PEnzpzWa8f=0bn1xDymjER5EShS2tmw@mail.gmail.com>
- <YiaMJCHOOuujHwiK@google.com> <CAK7LNAS-=Fne6fyiqzQ6DwNLOdF-HAY9Libn10uyV9GmQQMUKQ@mail.gmail.com>
- <YjFQvhv7I6w8xjbK@google.com> <CAK7LNATmPXs6f-Oe4XmfcZSRPsCsuexSebA=4-jyNsMYHu9cag@mail.gmail.com>
- <CAKwvOd=D22k53yXFC=E=VkJotn6q-AYCu5QsaFPmH_v+fWGVwA@mail.gmail.com> <YjovutS5McV8A8z4@google.com>
-In-Reply-To: <YjovutS5McV8A8z4@google.com>
-From:   Chun-Tse Shao <ctshao@google.com>
-Date:   Thu, 31 Mar 2022 14:58:33 -0700
-Message-ID: <CAJpZYjXxFBz-d5qCbHLcdbPsqMJ569_91NDcsuRZ02g9QpiQBw@mail.gmail.com>
-Subject: Re: [PATCH v4] config: Allow kernel installation packaging to
- override pkg-config
-To:     Nick Desaulniers <ndesaulniers@google.com>,
-        Masahiro Yamada <masahiroy@kernel.org>
-Cc:     Steven Rostedt <rostedt@goodmis.org>,
-        Nicolas Schier <nicolas@fjasle.eu>,
-        Rob Herring <robh+dt@kernel.org>,
-        Michal Marek <michal.lkml@markovi.net>,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        keyrings@vger.kernel.org, DTML <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
+X-MS-PublicTrafficType: Email
+X-MS-Office365-Filtering-Correlation-Id: 4cc1075a-47b8-432a-fb37-08da13df1ec2
+X-MS-TrafficTypeDiagnostic: MW4PR19MB5630:EE_
+X-Microsoft-Antispam-PRVS: <MW4PR19MB56300B889A6F4A996FA03F95B5E09@MW4PR19MB5630.namprd19.prod.outlook.com>
+X-MS-Exchange-SenderADCheck: 1
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam: BCL:0;
+X-Microsoft-Antispam-Message-Info: MfzZflh5RPIuPgWoeWjJPMjvGaZOCT48jF/pEqCkv968vQa8lyKT13GTyXAfRxgbidboRx4jKNLruU2oGOj5Vid8eCHNgJX/6rvcMSpasrlNcvv9gnWtXvYeTt9CwztpXOhASJdfSC54JFWQkF+nDUB3Lz/YiGIGY2qk4FgEP0peM5mzqe8JHkrPD/m/lDjxTGZ8T3EF8WWETXgXhdX69u9MCAIdkhXrNybhF6fNAk3ZdsX0OcVorXk2uiD+plS7NG1vnPoGUXZtwsoTqpelK9MB9PhtShgZFhZmg5xX68uSFHGIC+qvWNbq+R2M4f643YazOcN+32McY1H7RlSSGMRoyWjXVmxrudn28jFAT9df9UXkLRXYSPzaLmcRAjiSVgCD96L62ZwQtZ6UOWL9kZaEmBWAUqzdchFPPxAWVauywupjuOLO4IfoDcftT1Cs8/gfXCpgyCYrVL41k3ljBsnZmMcoUEVkYI3LrLozBVvx1XGclwog3xzi/RTzkjnlkLjYpgxeFLEvjqpas+qDA/Mqzhv486i53Q86CeNWix//vAVFagHzgl91VSkmFkfXYtz8UKwjFy6DR8430YMxSwXkowD5vYBupsA23k2F+uf78ze++MIM8bpSezx01OZqZbxXz14008Ndw/n+Dn6jU/bpJjcIFgRQDknVw7/D8D4Yo79mLH7nUj/oTf63Un4XogIvrhI7lyckK9KIm89VKQOKSjR2n22P33nVKYHaDTs=
+X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:DM5PR1901MB2037.namprd19.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230001)(4636009)(366004)(508600001)(8936002)(86362001)(38100700002)(31696002)(6486002)(316002)(110136005)(6666004)(6506007)(8676002)(5660300002)(6512007)(66556008)(66476007)(66946007)(53546011)(2906002)(36756003)(2616005)(4744005)(31686004)(186003)(43740500002)(45980500001);DIR:OUT;SFP:1101;
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 2
+X-MS-Exchange-AntiSpam-MessageData-0: =?utf-8?B?Q0lMWDJ5bUsvTGVxbi9FRDc3WkVSMW0rMTVKZktzSHJ1YUU5NlFrM3BNMVhz?=
+ =?utf-8?B?UW1ZalVES09XcGp3T3BPU2hXcjF6ME4ycUk0SzlyaGticnp5KzhhSkVOeTVw?=
+ =?utf-8?B?UkdFWUdXOVNFalFNQlJZN2JSRk9wVXpFSjFrT1dEQkdhNUlkRFI3eFNQZ3Qw?=
+ =?utf-8?B?SzRjV1FpYjJkOUJQV2U3WndiVmI2ZzBIN3YzRVd1SFV5dTA1eW9KUDFGUFdt?=
+ =?utf-8?B?OXZkZWtSZkloa0k4a1pLQTlSVkVVbG9ZbVVJc01BTm1nclhQZTRNU0ptSzRy?=
+ =?utf-8?B?alJLd3g5ZExLazdFdVgrTjRoN0xKL01icU43R0JHa3BNMFNaVkhJVmM5Ky9E?=
+ =?utf-8?B?MWFmN2dzZFhKb1h0VTZkZXNQSW5aYXQ4cmltREFyUktPQW1tOTd0ckpXNzBV?=
+ =?utf-8?B?QzRwTXMyUnNrR1NNcmNTd3BGbjVEdG83OGoyR1lNVEdkYS93MVY0L3M5L2VM?=
+ =?utf-8?B?bmJuWnBSeDI0QUViVHVYTU5HOGNrTUU0SXJtMFZEMFkrSW9kT2tseTRtWnhj?=
+ =?utf-8?B?ckk2dFFqSFJzaG52WjcyOFJlaEJuOWZpd1p2dm9mdGxSV1hGMnlseURobGd0?=
+ =?utf-8?B?ckFGM0RIdzM2dG1yY2QwR3BjV2x2OFhSWWxUVHkrWi9oWFFmTmt3NU5Xb1VO?=
+ =?utf-8?B?Wjd6ejZMTUJMK0JadlVyZm9aN1QwcUdySm9MdUJ2eTJ3Z1hEZFJJT3Z0L0Yr?=
+ =?utf-8?B?ZFJrTnY0bkR3c21LSUtQNVErWkVuamNCbU1tbWVaMURVYTJNMnZvcEVRUGFp?=
+ =?utf-8?B?Z05XOFhQQjcvYnlia21hTnBtNEdxQklja0J3YmtvMUlwM0hJOVY2N090dHU1?=
+ =?utf-8?B?UGwvbWkrK1FPZTlldFBNY2gvUE83S3NrWHJpWldyZkZSQ2tmbjFqZUhWYmJo?=
+ =?utf-8?B?dDdIUTN4WCtEa2d0azc4bnhLRktzcy9mL3piSGRZQXZBUC96d1dyY2ZoTUg2?=
+ =?utf-8?B?UEg2NmxKOWZobzI5UTNMY3o0RHEvbGJxOGgxbHVKWnI5Zzh0a28yWkxVU3VU?=
+ =?utf-8?B?Z0tCTVJkL1p5SHphZXBsQURCdjQ3NGVnWmI2TWhQdmZ5MDlBVEhPY3RteHZi?=
+ =?utf-8?B?V3N6ZHVhbkx5VHN2TDF3S1h1YWdJLzUxcXZlaW8vKy9tcG9hVXc4eDVZWXd5?=
+ =?utf-8?B?aCtNdGNNTFdNVVBWTkN6d2M2RlBWZTNWT3NkS3FkSjhSVHgwM1BOeWFqajhB?=
+ =?utf-8?B?dlEwb3dWQWQrQlB4TGJkc2FrSlorYjJMVFZpNUdIRG4xYWhwZDRHTC9iVThB?=
+ =?utf-8?B?dURBTm8rQVN5cEE1dGRScmV3WXVnTGh4SzhvcnFycnJJMitEN01JT0JFeU5a?=
+ =?utf-8?B?Y0JTMVNrd3dBMEYyOXVWWWlsZkdsZmpqQXliWTN1d0xpWmwxT2FsZVZTNnVX?=
+ =?utf-8?B?N0M5NEt0OHY1azU1SDVwY0FNZHl1dlpWd3UvczNHSkxSYnBJcEYxRHVKZXFa?=
+ =?utf-8?B?dGF3Wk01N2RWamhUd1ZGLzYvN3FER01sZGQ1aHlmQTZRdEdCYVhITVpyeFlL?=
+ =?utf-8?B?a0dBQWRjZ0RTd2dia0hEbC82UEFqcTZxbHRqdVp1VlM5c09Rd3JZQ3QxVGc4?=
+ =?utf-8?B?K3QyTW1zeHdiRW9LMVNpRDNLWDJGV24zeldxMVcyT2wwWG4zUENVQXhBOTh5?=
+ =?utf-8?B?RFVpbzQ2SHcrcTlNYU53eUJycEFjTFRsNHlOU3dGTmpxTGxWUXoyY2VDRFNw?=
+ =?utf-8?B?Vi9zQXBWYW1FU214MDltd29WOE5Ra3ZZcHpsVE5SM2hkMG83cmpGcWxDaDNN?=
+ =?utf-8?B?RG9ZNFFZNWdNSVRseTdJSGphM3N0VllNb2JqNXNzOE9RVHB3eHhZSlNaYkor?=
+ =?utf-8?B?b29BQklyOFIzN3JWcVB0NlhKNUwzc2tEWUh3b3E2WFRDdG5BMEQ0NFFXYmUy?=
+ =?utf-8?B?UG9JbDl2RFBSeU1penQzK1N6T0xHU3l6Z3J0d2tZb2hTUThKVlFJdVBRN1p4?=
+ =?utf-8?B?N2V5R1pjS1p1aFpqTmpKeFIxRmJqYUFiaE55OW15QlVoQlpmREhoZUo0NStz?=
+ =?utf-8?B?dEhGbDZwbHhYYXdRTUMvSndlZU9QczNqWno4ckFISFlkZFFOMndqN0hqM0Vq?=
+ =?utf-8?B?dEhzVHRuQnpxY1c0YnlEb1phZ3h5OHY4UXdSMm0xNlVRRy9HQ2Jnalo2MjFN?=
+ =?utf-8?B?TzhiSjZSWlI5WHFVRGNkRW1oRE9KWGhaV0ZwdXpScHpzQVptQkYyQm5SR3Rn?=
+ =?utf-8?B?ZG5kN1ZUM3BlVHJaUElsLzgvajhHeVR2WjhlRitKRzIyK2FWWSs3NDFyN0Q5?=
+ =?utf-8?B?OW1JR21WYjVvcnlEeFVGTEoyejhlRTMrYUZBSXNBQjRHelppOGtBdnhRcE9C?=
+ =?utf-8?B?RHJTUmpwY0dZWGc2dVhBOTcwMlBDaFRoMERlcitNRFVPTlNKNGg1SUhuQ0Y5?=
+ =?utf-8?Q?648XzxtRcq4xJuoyRcR2a+fTS8mFuC58PESB7KjGTWRg6?=
+X-MS-Exchange-AntiSpam-MessageData-1: vIL7cMyUJwDHZg==
+X-OriginatorOrg: ddn.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 4cc1075a-47b8-432a-fb37-08da13df1ec2
+X-MS-Exchange-CrossTenant-AuthSource: DM5PR1901MB2037.namprd19.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 01 Apr 2022 12:57:04.6700
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 753b6e26-6fd3-43e6-8248-3f1735d59bb4
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: RXuOHxBjQp+tU4B91Ptb2P9FvC/DnRp0JxLHlAm4EejO91i8iF7W7vuFoynAu75cYFFSx3MJn+3sdBdVQyZ2lQ==
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: MW4PR19MB5630
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, Mar 22, 2022 at 1:21 PM Chun-Tse Shao <ctshao@google.com> wrote:
->
-> On Tue, Mar 22, 2022 at 10:19:14AM -0700, Nick Desaulniers wrote:
-> > On Tue, Mar 22, 2022 at 12:44 AM Masahiro Yamada <masahiroy@kernel.org> wrote:
-> > >
-> > > On Wed, Mar 16, 2022 at 11:51 AM Chun-Tse Shao <ctshao@google.com> wrote:
-> > > >
-> > > > Tue, Mar 08, 2022 at 01:01:45PM +0900, Masahiro Yamada wrote:
-> > > > > On Tue, Mar 8, 2022 at 7:50 AM Chun-Tse Shao <ctshao@google.com> wrote:
-> > > > > >
-> > > > > > On Mon, Mar 07, 2022 at 10:17:17AM -0800, Nick Desaulniers wrote:
-> > > > > > > On Sun, Mar 6, 2022 at 2:39 PM Chun-Tse Shao <ctshao@google.com> wrote:
-> > > > > > > >
-> > > > > > > > Add HOSTPKG_CONFIG to allow tooling that builds the kernel to override
-> > > > > > > > what pkg-config and parameters are used.
-> > > > > > >
-> > > > > > > Sorry, kind a late thought here for v4, but we don't seem to prefix
-> > > > > > > many other host side tools with HOST_, i.e. LEX, YACC, AWK, PERL,
-> > > > > > > PYTHON3, etc.  Maybe just having the variable identifier be simply
-> > > > > > > PKGCONFIG rather than HOSTPKG_CONFIG then put it at the end of the
-> > > > > > > list in the top level Makefile after ZSTD (i.e. the list of host
-> > > > > > > tools)?  There's HOST_ prefixes when there's more than one tool
-> > > > > > > involved (i.e. host compiler vs target compiler), but I suspect
-> > > > > > > there's no such distinction for the existing uses of pkg-config?
-> > > > > > >
-> > > > > > Thanks for your suggestion, Nick! Yes I think it makes sense with PKGCONFIG
-> > > > > > instead of HOSTPKG_CONFIG since there is only one tool involved. I will
-> > > > > > work on it and submit a new patch.
-> > > > > >
-> > > > >
-> > > > > Please hold on.
-> > > > >
-> > > > > I was also wondering what to do with the "HOST" prefix.
-> > > > >
-> > > > > Libraries are usually arch-dependent.
-> > > > > (in other words, pkg-config should return different library paths
-> > > > > for $(CC) and $(HOSTCC) )
-> > > > >
-> > > > > You already understood this, so you added "HOST" prefix.
-> > > > >
-> > > > >
-> > > > > Please let me take time for further discussion.
-> > > > > I will come back to this when I get some time.
-> > > > >
-> > > > >
-> > > >
-> > > > Hi Mashiro,
-> > > >
-> > > > I was wondering if you were able to look more into this.
-> > > >
-> > > > Thank you!
-> > > >
-> > > > -CT
-> > > >
-> > > > > In the meantime,
-> > > > >   a8a5cd8b472ca20e5b8fa649c43b3756867322f8
-> > > > > as reference info if you have not seen it.
-> > > > >
-> > > > >
-> > > > > How many distros support something like
-> > > > > "aarch64-linux-gnu-pkg-config"  ?
-> > > > >
-> > > > > Ubuntu 18.04 and 20.04 seem to support it.
-> > > > > I do not know for others.
-> > > > >
-> > > > >
-> > > > >
-> > > > >
-> > >
-> > >
-> > >
-> > > Sorry for the delay.
-> > > I am OK with the idea of allowing users to override the pkg-config command,
-> > > but I tend to take time before making a decision.
-> > >
-> > >
-> > >
-> > >
-> > > Does anybody have any insight / thoughts about the following points?
-> > >
-> > >
-> > >
-> > >
-> > >
-> > >
-> > > [Q1]   with/without "HOST" prefix
-> > >
-> > >
-> > > Apparently, "pkg-config" should return different libs/cflags
-> > > for $(CC) and $(HOSTCC).
-> > >
-> > > I think the non-prefixed macro name "PKG_CONFIG" should be
-> > > reserved for $(CC)  (building for the target system).
-> >
-> > Ok. I retract my comment on v4 about removing the HOST prefix then.
-> >
-> > >
-> > > "HOSTPKG_CONFIG" looks unbalanced
-> > > due to the underscore.
-> > >
-> > > Perhaps, "HOST_PKG_CONFIG" might be better?
-> >
-> > I'm fine with HOSTPKG_CONFIG (what's in v4); follows the style of
-> > HOSTCC and HOSTCXX.
-> >
->
-> Agree, it should follow the style of HOSTCC/HOSTCXX.
->
-> > >
-> > >
-> > >
-> > >
-> > > [Q2]    "pkg-config" vs "pkgconf"
-> > >
-> > > The traditional pkg-config implementation [1] is not actively
-> > > maintained these days.
-> > > The last commit was more than one year ago.
-> > >
-> > > The alternative one 'pkgconf' [2] is more active.
-> > >
-> > > In fact, Fedora already switched to 'pkgconf' [3].
-> > > Now 'pkg-config' is just a wrapper of 'pkgconf'.
-> > > Many distributions already support pkgconf.
-> > >
-> > >
-> > > I considered the shorter macro name "HOSTPKGCONF" and
-> > >
-> > >    HOSTPKGCONF  = pkgconf
-> > >
-> > > but I am not sure if this is the right decision.
-> > > Maybe we should stick to "PKG_CONFIG" / "HOST_PKG_CONFIG"
-> > > for the macro names.
-> > >
-> > >
-> > >   [1]  https://gitlab.freedesktop.org/pkg-config/pkg-config.git
-> > >   [2]  https://github.com/pkgconf/pkgconf.git
-> > >   [3]  https://fedoraproject.org/wiki/Changes/pkgconf_as_system_pkg-config_implementation
-> >
-> > If the folks sending this are working on CrOS, better find what's in
-> > their build system. Chun-Tse?
-> >
-> > (I feel like I'm behind the times again, like when `apt-get install`
-> > became old news in favor of `apt install`...)
-> >
->
-> In Cros we only support pkg-config, and that is the reason we would like
-> to make this change in upstream.
->
-> > >
-> > >
-> > >
-> > >
-> > >
-> > > [Q3] What is the trend of handling cross-compile by pkg-config (or pkgconf).
-> > >
-> > >
-> > > By default, pkg-config returns the libs/cflags for native builds.
-> > >
-> > > For cross builds, the search paths for the *.pc files must be changed
-> > > via the "PKG_CONFIG_LIBDIR" environment variable.
-> > >
-> > > To ease this, some distributions provide  <triplet>-pkg-config
-> > > (for example,   aarch64-linux-gnu-pkg-config).
-> > > This became the nationale for tools/build/feature/Makefile defining:
-> > >
-> > >    PKG_CONFIG ?= $(CROSS_COMPILE)pkg-config
-> > >
-> > > But, this wrapper shell script is not always available.
-> > > I do not know how to do it with the LLVM tool suite.
-> > > I am not quite sure if this is the global solution.
-> > >
-> > >
-> > > These days, pkgconf supports another way, .personality file [4]
-> > > to specify the .pc search paths for cross builds.
-> > >
-> > > Is it reasonable to use an option to distinguish native / cross builds
-> > > and use the same macro   "PKG_CONFIG = pkg-config" everywhere ?
-> > >
-> > >
-> > > [4] http://manpages.ubuntu.com/manpages/focal/en/man5/pkgconf-personality.5.html
-> >
-> > I'm not sure, but do we need to cross that bridge for this patch if
-> > it's just adding support for the HOST? No cross pkg-config necessary,
-> > yet. (Famous last words).
->
-> Agree with Nick.
->
-> Thanks,
-> CT
-> > --
-> > Thanks,
-> > ~Nick Desaulniers
 
-Hi Masahiro,
 
-I was wondering if you have any suggestions and thoughts.
+On 3/29/22 12:09, Bernd Schubert wrote:
+> ping
+> 
+> On 3/2/22 21:19, Bernd Schubert wrote:
+>> Sorry for the spam, besides that pasting the patch somehow did not 
+>> work (I cannot apply it myself), I had also a typo in David W.'s mail. 
+>> I hope that attaching the patch is fine.
 
-Thank you!
+Actually not needed anymore with released v5.17. Looks like there was 
+another fix for it.
 
--CT
+
+Thanks,
+Bernd
