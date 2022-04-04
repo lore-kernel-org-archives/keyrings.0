@@ -2,112 +2,62 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 94EE8C433F5
-	for <keyrings@archiver.kernel.org>; Sun,  3 Apr 2022 08:05:48 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B5D54C433F5
+	for <keyrings@archiver.kernel.org>; Mon,  4 Apr 2022 07:56:57 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S240712AbiDCIHi (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sun, 3 Apr 2022 04:07:38 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39832 "EHLO
+        id S237757AbiDDH6u (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 4 Apr 2022 03:58:50 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57366 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235720AbiDCIHh (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sun, 3 Apr 2022 04:07:37 -0400
-Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1700637AB5;
-        Sun,  3 Apr 2022 01:05:44 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by ams.source.kernel.org (Postfix) with ESMTPS id B3636B80AC3;
-        Sun,  3 Apr 2022 08:05:42 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id F1D52C340F3;
-        Sun,  3 Apr 2022 08:05:40 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1648973141;
-        bh=opLcU29acddtyzVufVbpjteyPfDjI2D8KSG2MV5cu5E=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=itvPRJ+VsbzbyFqRiaYrWg4A/np9jYWjHGsUZkd7IZ1bFsDvbIaqgV/6ZYJh09DHr
-         RKIIdttb6Zs3cS9BHYUy2REpwnJlaOxpK+QtNLTA7zgivUGx3B+tqpoBJHhyFBR/Bs
-         7AeWRX4HyXdLXoKhupHVFPTC+hwE0dX5ZSkslS2cMcgNjGhEdLBkFeEE98JxkNItIl
-         K/nDVyxJgiHVXljkdpOIvNi4OMcEbNiDOANdRcSRJmyzox/OKLDI+qHYvlDevKIaMc
-         PBU7FhdbZU6j7cONoag7C9SHZxjzY5A2G1bcvjSRTGanHnQsCFQtEoeSwtijirtzWK
-         ni6ogFRjzI0og==
-Date:   Sun, 3 Apr 2022 11:06:51 +0300
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     Michal Orzel <michalorzel.eng@gmail.com>,
-        David Howells <dhowells@redhat.com>
-Cc:     James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Nathan Chancellor <nathan@kernel.org>,
-        Nick Desaulniers <ndesaulniers@google.com>,
-        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, llvm@lists.linux.dev
-Subject: Re: [PATCH 3/5] keys: Remove redundant assignments
-Message-ID: <YklVm5HRM789++rp@kernel.org>
-References: <20220331173358.40939-1-michalorzel.eng@gmail.com>
- <20220331173358.40939-3-michalorzel.eng@gmail.com>
+        with ESMTP id S233822AbiDDH6u (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 4 Apr 2022 03:58:50 -0400
+X-Greylist: delayed 500 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Mon, 04 Apr 2022 00:56:53 PDT
+Received: from mail.bizcall.pl (mail.bizcall.pl [192.71.213.112])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F2B863B00B
+        for <keyrings@vger.kernel.org>; Mon,  4 Apr 2022 00:56:53 -0700 (PDT)
+Received: by mail.bizcall.pl (Postfix, from userid 1001)
+        id DDD80412DD; Mon,  4 Apr 2022 09:48:11 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=bizcall.pl; s=mail;
+        t=1649058510; bh=L7rZPDqncV/PGNK3vBL4eFyhOA8rMHMu3jCfxnl4mEc=;
+        h=Date:From:To:Subject:From;
+        b=Va64DrIielsTPmGp/y2AdRYi8i1BCmjDf+TkMVAgMI/f2bpHXvkY7/Up/tpn3Aq0k
+         nDDRzaWxi48DC3GAsBwEEvrCV2QHylq8myKo6zUbdpr9vFQ95QPiTOOwQbI7N7Ht0j
+         L/D3Bq4NTSQvwEVsgjihVU0yR+dV2OI/mJSJvKKDsj+2YntQ9hUShLgnZiSAWQrI5c
+         UIY5tpjm81NjSjJfqrIqVIfmDv+vQy9PFHxdV8UYm/jWGTnBiMheC8iSELPYcUFRjY
+         dfrZORy/4xh2ojj24/1fmAwhwAhSxzc0jd5lduwuizOXfC4gERfFjBotZXV1ez4G6R
+         ibV+wJH/+NOqw==
+Received: by mail.bizcall.pl for <keyrings@vger.kernel.org>; Mon,  4 Apr 2022 07:47:55 GMT
+Message-ID: <20220404084501-0.1.1u.5cuf.0.56k997ks67@bizcall.pl>
+Date:   Mon,  4 Apr 2022 07:47:55 GMT
+From:   "Marek Onufrowicz" <marek.onufrowicz@bizcall.pl>
+To:     <keyrings@vger.kernel.org>
+Subject: Prezentacja
+X-Mailer: mail.bizcall.pl
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20220331173358.40939-3-michalorzel.eng@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, Mar 31, 2022 at 07:33:56PM +0200, Michal Orzel wrote:
-> Get rid of redundant assignments which end up in values not being
-> read either because they are overwritten or the function ends.
-> 
-> Reported by clang-tidy [deadcode.DeadStores]
-> 
-> Signed-off-by: Michal Orzel <michalorzel.eng@gmail.com>
-> ---
->  security/keys/process_keys.c | 1 -
->  security/keys/request_key.c  | 6 ++----
->  2 files changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-> index b5d5333ab330..8bdd6410f79a 100644
-> --- a/security/keys/process_keys.c
-> +++ b/security/keys/process_keys.c
-> @@ -92,7 +92,6 @@ int look_up_user_keyrings(struct key **_user_keyring,
->  		return PTR_ERR(reg_keyring);
->  
->  	down_write(&user_ns->keyring_sem);
-> -	ret = 0;
->  
->  	/* Get the user keyring.  Note that there may be one in existence
->  	 * already as it may have been pinned by a session, but the user_struct
-> diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-> index 2da4404276f0..ad29023c9518 100644
-> --- a/security/keys/request_key.c
-> +++ b/security/keys/request_key.c
-> @@ -116,7 +116,7 @@ static int call_sbin_request_key(struct key *authkey, void *aux)
->  {
->  	static char const request_key[] = "/sbin/request-key";
->  	struct request_key_auth *rka = get_request_key_auth(authkey);
-> -	const struct cred *cred = current_cred();
-> +	const struct cred *cred;
->  	key_serial_t prkey, sskey;
->  	struct key *key = rka->target_key, *keyring, *session, *user_session;
->  	char *argv[9], *envp[3], uid_str[12], gid_str[12];
-> @@ -506,9 +506,7 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
->  			kdebug("cons failed");
->  			goto construction_failed;
->  		}
-> -	} else if (ret == -EINPROGRESS) {
-> -		ret = 0;
-> -	} else {
-> +	} else if (ret != -EINPROGRESS) {
->  		goto error_put_dest_keyring;
->  	}
->  
-> -- 
-> 2.25.1
-> 
+Dzie=C5=84 dobry!
+
+Czy m=C3=B3g=C5=82bym przedstawi=C4=87 rozwi=C4=85zanie, kt=C3=B3re umo=C5=
+=BCliwia monitoring ka=C5=BCdego auta w czasie rzeczywistym w tym jego po=
+zycj=C4=99, zu=C5=BCycie paliwa i przebieg?
+
+Dodatkowo nasze narz=C4=99dzie minimalizuje koszty utrzymania samochod=C3=
+=B3w, skraca czas przejazd=C3=B3w, a tak=C5=BCe tworzenie planu tras czy =
+dostaw.
+
+Z naszej wiedzy i do=C5=9Bwiadczenia korzysta ju=C5=BC ponad 49 tys. Klie=
+nt=C3=B3w. Monitorujemy 809 000 pojazd=C3=B3w na ca=C5=82ym =C5=9Bwiecie,=
+ co jest nasz=C4=85 najlepsz=C4=85 wizyt=C3=B3wk=C4=85.
+
+Bardzo prosz=C4=99 o e-maila zwrotnego, je=C5=9Bli mogliby=C5=9Bmy wsp=C3=
+=B3lnie om=C3=B3wi=C4=87 potencja=C5=82 wykorzystania takiego rozwi=C4=85=
+zania w Pa=C5=84stwa firmie.
 
 
-Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
-
-David: can you pick this?
-
-BR, Jarkko
+Pozdrawiam,
+Marek Onufrowicz
