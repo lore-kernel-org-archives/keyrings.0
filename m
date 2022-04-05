@@ -2,32 +2,32 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id ACD6EC433F5
-	for <keyrings@archiver.kernel.org>; Tue,  5 Apr 2022 07:54:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D8A44C43217
+	for <keyrings@archiver.kernel.org>; Tue,  5 Apr 2022 09:13:56 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232599AbiDEH4E (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 5 Apr 2022 03:56:04 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53022 "EHLO
+        id S1343930AbiDEJPt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 5 Apr 2022 05:15:49 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52156 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232608AbiDEHy6 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 5 Apr 2022 03:54:58 -0400
-Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2573136140;
-        Tue,  5 Apr 2022 00:50:27 -0700 (PDT)
+        with ESMTP id S244704AbiDEIwe (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 5 Apr 2022 04:52:34 -0400
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 25E7D18E24;
+        Tue,  5 Apr 2022 01:42:22 -0700 (PDT)
 Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by ams.source.kernel.org (Postfix) with ESMTPS id D0B38B81BB9;
-        Tue,  5 Apr 2022 07:50:25 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 164B6C341CA;
-        Tue,  5 Apr 2022 07:50:24 +0000 (UTC)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id B174B609D0;
+        Tue,  5 Apr 2022 08:42:21 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 9B576C385A1;
+        Tue,  5 Apr 2022 08:42:20 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=linuxfoundation.org;
-        s=korg; t=1649145024;
+        s=korg; t=1649148141;
         bh=YQar6ezHZkPY8X6SYpKiX/qtDQj2Nb/lf+/JJVypKo8=;
         h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=JT3dA0rzIdO6OVmmodVtxoTLe+KnqOV/cDU9kxd4zi9pMJ1rspyFHgRl8DAZiGoIT
-         zyGLJYh3YTgDsmdv2g8liBb1BhqHxIKHBgjkD6xpnpp0yavHCzayGKZanCZYikydLP
-         Ay+XwAAFMC2pCgf8Wo3Eh2l5EFUbwIjIBxqyfJ9g=
+        b=ruQKorjoV32pU39DqmwNgMmTSWyTIew6GNyb5YXkNdhOMPzG+HkcfhR7LfiWR9dZE
+         iF34rM5Egm5c+mApDleQUXP7EM6wjRzcWuiMFZqyO+E7xJVMM5GGGsQtKNesRitkJV
+         4W0FnMbcA9b3jT+mOMhZk8D8D/YVtKQqXHeMSP6s=
 From:   Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To:     linux-kernel@vger.kernel.org
 Cc:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -42,12 +42,12 @@ Cc:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
         linux-security-module@vger.kernel.org,
         Sasha Levin <sashal@kernel.org>
-Subject: [PATCH 5.17 0255/1126] KEYS: trusted: Avoid calling null function trusted_key_exit
-Date:   Tue,  5 Apr 2022 09:16:42 +0200
-Message-Id: <20220405070415.095208501@linuxfoundation.org>
+Subject: [PATCH 5.16 0248/1017] KEYS: trusted: Avoid calling null function trusted_key_exit
+Date:   Tue,  5 Apr 2022 09:19:21 +0200
+Message-Id: <20220405070401.621647117@linuxfoundation.org>
 X-Mailer: git-send-email 2.35.1
-In-Reply-To: <20220405070407.513532867@linuxfoundation.org>
-References: <20220405070407.513532867@linuxfoundation.org>
+In-Reply-To: <20220405070354.155796697@linuxfoundation.org>
+References: <20220405070354.155796697@linuxfoundation.org>
 User-Agent: quilt/0.66
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
