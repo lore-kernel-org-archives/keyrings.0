@@ -2,121 +2,132 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7F6D4C433EF
-	for <keyrings@archiver.kernel.org>; Thu,  7 Apr 2022 01:05:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E8665C433F5
+	for <keyrings@archiver.kernel.org>; Fri,  8 Apr 2022 07:11:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233024AbiDGBHO (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 6 Apr 2022 21:07:14 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38830 "EHLO
+        id S229437AbiDHHN1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 8 Apr 2022 03:13:27 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57806 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230047AbiDGBHK (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 6 Apr 2022 21:07:10 -0400
-Received: from mga18.intel.com (mga18.intel.com [134.134.136.126])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BC23CBE1A;
-        Wed,  6 Apr 2022 18:05:07 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
-  t=1649293507; x=1680829507;
-  h=date:from:to:cc:subject:message-id:references:
-   mime-version:in-reply-to;
-  bh=myer2bVBJAzVTcO8FK/Itx5etIcCeXikEzZUTZdKYyQ=;
-  b=CRTGINvpegqE3Ct4eATioeXgEOoVjVJ/SiNTNo7WZNxYuIBo20K4WiLN
-   B3hN51N6MQrB51lHpSK3EnWDVlHQxCM+xHvN7bY2ezStPZkj92VOJjyK5
-   DKjQaWZFIRHMb+OCBrLkSLMuL4zAqpwYK69p5PxH7qHjfepzFy8nSuLgP
-   cR0rKvkNhTVmxTGl/Fsr1Qeuhoa+QNHN+YG+HwX7FDQoFLCmx4QVZyupD
-   AqtRwO+UBAjDsbzs5a9heCZ3HmbV+eG7PNeaxOViv73EJshe0yghbz+J4
-   DPf8+CW98RMXb+v6aF8cQmGBFJ7AXcYYTWuWnUsAyCPz+w1TOS4pOueG8
-   Q==;
-X-IronPort-AV: E=McAfee;i="6200,9189,10309"; a="243330976"
-X-IronPort-AV: E=Sophos;i="5.90,241,1643702400"; 
-   d="scan'208";a="243330976"
-Received: from fmsmga008.fm.intel.com ([10.253.24.58])
-  by orsmga106.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 06 Apr 2022 18:05:07 -0700
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.90,241,1643702400"; 
-   d="scan'208";a="609119120"
-Received: from lkp-server02.sh.intel.com (HELO a44fdfb70b94) ([10.239.97.151])
-  by fmsmga008.fm.intel.com with ESMTP; 06 Apr 2022 18:05:02 -0700
-Received: from kbuild by a44fdfb70b94 with local (Exim 4.95)
-        (envelope-from <lkp@intel.com>)
-        id 1ncGa6-0004ur-5a;
-        Thu, 07 Apr 2022 01:05:02 +0000
-Date:   Thu, 7 Apr 2022 09:04:25 +0800
-From:   kernel test robot <lkp@intel.com>
-To:     Eric Snowberg <eric.snowberg@oracle.com>, dhowells@redhat.com,
-        dwmw2@infradead.org, jarkko@kernel.org, zohar@linux.ibm.com,
-        linux-integrity@vger.kernel.org
-Cc:     kbuild-all@lists.01.org, herbert@gondor.apana.org.au,
-        davem@davemloft.net, dmitry.kasatkin@gmail.com, jmorris@namei.org,
-        serge@hallyn.com, roberto.sassu@huawei.com,
-        nramas@linux.microsoft.com, eric.snowberg@oracle.com,
-        pvorel@suse.cz, tiwai@suse.de, keyrings@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 6/7] KEYS: X.509: Flag Intermediate CA certs as built in
-Message-ID: <202204070929.nFQNU3B8-lkp@intel.com>
-References: <20220406015337.4000739-7-eric.snowberg@oracle.com>
+        with ESMTP id S229446AbiDHHN0 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 8 Apr 2022 03:13:26 -0400
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTP id BBC3A208C35
+        for <keyrings@vger.kernel.org>; Fri,  8 Apr 2022 00:11:22 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1649401881;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         in-reply-to:in-reply-to:references:references;
+        bh=EIdT20lZyuxUif4lmdeJV2YtVVAT8aoGpkU+KSrIRGM=;
+        b=aDxf4f0l4kagvWAtoOvj6R5Pwu21cI2UVD/PGyX6UPhfOAPcZ2vA7eyQocMK2fM6rhF6ph
+        p5+ZgxJaKu2VdrayS+eYNbCl6GXvwlZfNuoGmxuLpigKII09PgcMe1PJfQJBI0ZoOzkQi8
+        9UIxVwCgY0BpkMiGSidgzaOWK7K/5Y0=
+Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
+ [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-571-3p8lm4GcNhaDsIB05JZDhg-1; Fri, 08 Apr 2022 03:11:18 -0400
+X-MC-Unique: 3p8lm4GcNhaDsIB05JZDhg-1
+Received: from smtp.corp.redhat.com (int-mx10.intmail.prod.int.rdu2.redhat.com [10.11.54.10])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 44251805F68;
+        Fri,  8 Apr 2022 07:11:17 +0000 (UTC)
+Received: from localhost (ovpn-12-202.pek2.redhat.com [10.72.12.202])
+        by smtp.corp.redhat.com (Postfix) with ESMTPS id 00E57403179;
+        Fri,  8 Apr 2022 07:11:16 +0000 (UTC)
+Date:   Fri, 8 Apr 2022 15:11:08 +0800
+From:   Baoquan He <bhe@redhat.com>
+To:     Michal Suchanek <msuchanek@suse.de>, Coiby Xu <coxu@redhat.com>
+Cc:     Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will@kernel.org>,
+        Heiko Carstens <hca@linux.ibm.com>,
+        Vasily Gorbik <gor@linux.ibm.com>,
+        Alexander Gordeev <agordeev@linux.ibm.com>,
+        Christian Borntraeger <borntraeger@linux.ibm.com>,
+        Sven Schnelle <svens@linux.ibm.com>,
+        Philipp Rudo <prudo@redhat.com>,
+        Alexander Egorenkov <egorenar@linux.ibm.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        James Morse <james.morse@arm.com>,
+        Dave Young <dyoung@redhat.com>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, kexec@lists.infradead.org,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 1/4] Fix arm64 kexec forbidding kernels signed with keys
+ in the secondary keyring to boot
+Message-ID: <Yk/eFBCqBTu4eZf2@MiWiFi-R3L-srv>
+References: <cover.1644953683.git.msuchanek@suse.de>
+ <83b3583f35c50c609739a8d857d14e8410293373.1644953683.git.msuchanek@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20220406015337.4000739-7-eric.snowberg@oracle.com>
-User-Agent: Mutt/1.10.1 (2018-07-13)
+In-Reply-To: <83b3583f35c50c609739a8d857d14e8410293373.1644953683.git.msuchanek@suse.de>
+X-Scanned-By: MIMEDefang 2.85 on 10.11.54.10
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi Eric,
+Hi,
 
-Thank you for the patch! Perhaps something to improve:
+On 02/15/22 at 08:39pm, Michal Suchanek wrote:
+> commit d3bfe84129f6 ("certs: Add a secondary system keyring that can be added to dynamically")
+> split of .system_keyring into .builtin_trusted_keys and
+> .secondary_trusted_keys broke kexec, thereby preventing kernels signed by
+> keys which are now in the secondary keyring from being kexec'd.
+> 
+> Fix this by passing VERIFY_USE_SECONDARY_KEYRING to
+> verify_pefile_signature().
+> 
+> Cherry-picked from
+> commit ea93102f3224 ("Fix kexec forbidding kernels signed with keys in the secondary keyring to boot")
 
-[auto build test WARNING on 3123109284176b1532874591f7c81f3837bbdc17]
+This line may need a line feed?
 
-url:    https://github.com/intel-lab-lkp/linux/commits/Eric-Snowberg/Add-CA-enforcement-keyring-restrictions/20220407-003209
-base:   3123109284176b1532874591f7c81f3837bbdc17
-config: um-i386_defconfig (https://download.01.org/0day-ci/archive/20220407/202204070929.nFQNU3B8-lkp@intel.com/config)
-compiler: gcc-11 (Debian 11.2.0-19) 11.2.0
-reproduce (this is a W=1 build):
-        # https://github.com/intel-lab-lkp/linux/commit/b0858df3dd6d627f8fa75cc973f55516372a5c98
-        git remote add linux-review https://github.com/intel-lab-lkp/linux
-        git fetch --no-tags linux-review Eric-Snowberg/Add-CA-enforcement-keyring-restrictions/20220407-003209
-        git checkout b0858df3dd6d627f8fa75cc973f55516372a5c98
-        # save the config file to linux build tree
-        mkdir build_dir
-        make W=1 O=build_dir ARCH=um SUBARCH=i386 SHELL=/bin/bash
+The patch 1~3 looks good to me. Coiby encountered the same issue
+on arm64, and has posted a patch series to fix that and there's clean up
+and code adjustment.
 
-If you fix the issue, kindly add following tag as appropriate
-Reported-by: kernel test robot <lkp@intel.com>
+https://lore.kernel.org/all/20220401013118.348084-1-coxu@redhat.com/T/#u
 
-All warnings (new ones prefixed by >>):
+Hi Coiby,
 
-   In file included from fs/file_table.c:28:
->> include/linux/ima.h:189:56: warning: 'union key_payload' declared inside parameter list will not be visible outside of this definition or declaration
-     189 |                                            const union key_payload *payload,
-         |                                                        ^~~~~~~~~~~
->> include/linux/ima.h:188:57: warning: 'struct key_type' declared inside parameter list will not be visible outside of this definition or declaration
-     188 |                                            const struct key_type *type,
-         |                                                         ^~~~~~~~
+Maybe you can check this patchset, and consider how to integrate your
+patches based on this patch 1~/3?
 
+For this patch itself, ack.
 
-vim +189 include/linux/ima.h
+Acked-by: Baoquan He <bhe@redhat.com>
 
-   179	
-   180	#ifdef CONFIG_ASYMMETRIC_KEY_TYPE
-   181	#ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
-   182	#define ima_validate_builtin_rot restrict_link_by_rot_builtin_and_secondary_trusted
-   183	#else
-   184	#define ima_validate_builtin_rot restrict_link_by_rot_builtin_trusted
-   185	#endif
-   186	#else
-   187	static inline int ima_validate_builtin_rot(struct key *dest_keyring,
- > 188						   const struct key_type *type,
- > 189						   const union key_payload *payload,
-   190						   struct key *unused){
-   191		return -EPERM;
-   192	}
-   193	#endif
-   194	
+> 
+> Fixes: 732b7b93d849 ("arm64: kexec_file: add kernel signature verification support")
+> Cc: kexec@lists.infradead.org
+> Cc: keyrings@vger.kernel.org
+> Cc: linux-security-module@vger.kernel.org
+> Cc: stable@kernel.org
+> Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+> ---
+>  arch/arm64/kernel/kexec_image.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm64/kernel/kexec_image.c b/arch/arm64/kernel/kexec_image.c
+> index 9ec34690e255..1fbf2ee7c005 100644
+> --- a/arch/arm64/kernel/kexec_image.c
+> +++ b/arch/arm64/kernel/kexec_image.c
+> @@ -133,7 +133,8 @@ static void *image_load(struct kimage *image,
+>  #ifdef CONFIG_KEXEC_IMAGE_VERIFY_SIG
+>  static int image_verify_sig(const char *kernel, unsigned long kernel_len)
+>  {
+> -	return verify_pefile_signature(kernel, kernel_len, NULL,
+> +	return verify_pefile_signature(kernel, kernel_len,
+> +				       VERIFY_USE_SECONDARY_KEYRING,
+>  				       VERIFYING_KEXEC_PE_SIGNATURE);
+>  }
+>  #endif
+> -- 
+> 2.31.1
+> 
 
--- 
-0-DAY CI Kernel Test Service
-https://01.org/lkp
