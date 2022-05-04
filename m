@@ -2,354 +2,190 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 84B3CC433FE
-	for <keyrings@archiver.kernel.org>; Wed,  4 May 2022 19:58:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7BFC5C433FE
+	for <keyrings@archiver.kernel.org>; Wed,  4 May 2022 23:33:01 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1377828AbiEDUCI (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 4 May 2022 16:02:08 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35058 "EHLO
+        id S1353937AbiEDXfy (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 4 May 2022 19:35:54 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41520 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1377823AbiEDUBz (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 4 May 2022 16:01:55 -0400
-Received: from mail-ej1-x629.google.com (mail-ej1-x629.google.com [IPv6:2a00:1450:4864:20::629])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 966184EDC4
-        for <keyrings@vger.kernel.org>; Wed,  4 May 2022 12:58:15 -0700 (PDT)
-Received: by mail-ej1-x629.google.com with SMTP id n10so4916295ejk.5
-        for <keyrings@vger.kernel.org>; Wed, 04 May 2022 12:58:15 -0700 (PDT)
+        with ESMTP id S231783AbiEDXYx (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 4 May 2022 19:24:53 -0400
+Received: from mail-pj1-x1034.google.com (mail-pj1-x1034.google.com [IPv6:2607:f8b0:4864:20::1034])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 02F744D9EE
+        for <keyrings@vger.kernel.org>; Wed,  4 May 2022 16:21:15 -0700 (PDT)
+Received: by mail-pj1-x1034.google.com with SMTP id w5-20020a17090aaf8500b001d74c754128so6502452pjq.0
+        for <keyrings@vger.kernel.org>; Wed, 04 May 2022 16:21:14 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20210112;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc;
-        bh=y+sByE56HbVf5kRX6gGxIKl4lkDcQYxYxjANal7cqo4=;
-        b=Fisf8qNfLenDK0j792maHiYPMMvmyhGB9B3J/xS9stoAM/UZoSn3s9eWa4z58SqqtN
-         zwNzc/F7jGucn3q+uOerwwvhkYcHR8WadSDg35wFqZ6iJOtuV3DgeIHYCsICPjn3FRC5
-         ijS3ruVDVcid8vwK6Aeyu8cvVWuqX4vHHcMprgjz8mGjIqaTTVh5y7xE1A9w5vPgc3/M
-         9OL1YFUN+X3Smqy7ONv67Xs9IxNQQJThHBH0mRzDjCqw6Y6Boyru+xViNBlwab5eTP66
-         Ql7OyvNLc8tFoVxvf1pFaiO/JKRt9GNoTAQHusID9bvyAzw/qXdqG5nBEcpTVWJq8YZ4
-         Z1Jg==
+        d=chromium.org; s=google;
+        h=from:to:cc:subject:date:message-id:mime-version
+         :content-transfer-encoding;
+        bh=f0BxOsiS7N+HTfWR68wbuI5GyHjxWUqAQAvHwIwW+yE=;
+        b=R5D0DOFVkQco+OK496uEyWM8qRT/qEDa61ADRf8s0rAJeF034c8CBOcJkI9DhSK99P
+         T9KGcuzycnvXcJPNISrJKPRM0NBDojZJdo/30qDInqLY8l2tGI62dZHO/kSe2d29NFi9
+         K7Vu8cNCpHGLqj5AbbquXriJVZ5gqG2e3HHcg=
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc;
-        bh=y+sByE56HbVf5kRX6gGxIKl4lkDcQYxYxjANal7cqo4=;
-        b=Jy5IsxTkEJLL3HUuNHdx15GuX7/TeYtd9L95aM7Ve4NxJ7+7b3QaVvUhFr32yNQLus
-         00CC4SdpDakEZpDTHNnu/6vrcr4vaRXdzKEOeN1coPu3QSHGZ2LFsbw3yTAfjkk6QXO+
-         uqrfxTia/wCNLhZfA2sAqVGV11H3DrA6sxw2sMI8jjHtKfE4e3xi19dKK2RHYzFZEQ+u
-         bEXPQoolgBqvhn8g63OvwsaidyukjpbveBEit8iq0X15OMiScjzmaHTJ8JioO7D6YiIU
-         jvBlgQ/ZbH1vT3DBp1qZzBSXs0jeY3G8Nl3yJMiNWf6jsrxXOMqEZ+KKXglJyCf+I8ns
-         Y2fQ==
-X-Gm-Message-State: AOAM533D+QQZhCTpue/4ivcXv49AxGkkyKmx/5EYunFI2jKfcHkr6D33
-        0SFAQCZRspCG5CVyId5b9swGdMkaBuEyz+W5Nvo34Q==
-X-Google-Smtp-Source: ABdhPJyNqylHJlc3dOLmSwn3LLwT4ktliGhTIZtJUbCp6p9cyFNeSQSMHaaSeuuF72ZsBGrGa7DMKOVMS/2gIc+sdec=
-X-Received: by 2002:a17:907:9726:b0:6f4:c0e:40ce with SMTP id
- jg38-20020a170907972600b006f40c0e40cemr21300141ejc.170.1651694293700; Wed, 04
- May 2022 12:58:13 -0700 (PDT)
-MIME-Version: 1.0
-References: <20220504014440.3697851-1-keescook@chromium.org> <20220504014440.3697851-4-keescook@chromium.org>
-In-Reply-To: <20220504014440.3697851-4-keescook@chromium.org>
-From:   Daniel Latypov <dlatypov@google.com>
-Date:   Wed, 4 May 2022 14:58:02 -0500
-Message-ID: <CAGS_qxrPauYtkrfB37ne9bOXJR2JQc4=jaJP5tGN4mnha7mANg@mail.gmail.com>
-Subject: Re: [PATCH 03/32] flex_array: Add Kunit tests
-To:     Kees Cook <keescook@chromium.org>
-Cc:     "Gustavo A . R . Silva" <gustavoars@kernel.org>,
-        David Gow <davidgow@google.com>, kunit-dev@googlegroups.com,
-        Alexei Starovoitov <ast@kernel.org>,
-        alsa-devel@alsa-project.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Gabbasov <andrew_gabbasov@mentor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Gross <agross@kernel.org>,
-        Andy Lavr <andy.lavr@gmail.com>,
-        Arend van Spriel <aspriel@gmail.com>,
-        Baowen Zheng <baowen.zheng@corigine.com>,
-        Bjorn Andersson <bjorn.andersson@linaro.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Bradley Grove <linuxdrivers@attotech.com>,
-        brcm80211-dev-list.pdl@broadcom.com,
-        Christian Brauner <brauner@kernel.org>,
-        =?UTF-8?Q?Christian_G=C3=B6ttsche?= <cgzones@googlemail.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Chris Zankel <chris@zankel.net>,
-        Cong Wang <cong.wang@bytedance.com>,
-        Daniel Axtens <dja@axtens.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dan Williams <dan.j.williams@intel.com>,
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:mime-version
+         :content-transfer-encoding;
+        bh=f0BxOsiS7N+HTfWR68wbuI5GyHjxWUqAQAvHwIwW+yE=;
+        b=o7JO9rA1FKDN0DJZL6e0EgPNSPoSZnKYGTY1taYsT8CGg7G+1q+FU3C3swky8hyRBr
+         K3ipOPjCdtSf49oJuS9l2KmOR+aV74Ti/cbb3edFP3b3ThYuaXZk0QuTI9Nf7W+XErlO
+         RRwg/sS7TNiALO1g101qwxxhjB5BQTZqn/7/ojRZp6+uNaJ2YohV1krJ87a2+KPl3clo
+         4Kmx9esSA0RwlqIjClv01+8nIYTAZc+EmoYsB6kqjAvKW5UUtUS0Tp37/ljuYTT6EvDX
+         dSqg5Woy+nqn7uzL5bAQ/tsyhw8RmiCu2mIlbSYjVw3DqaJN6f/lO2K0TDYIXxt3YIa1
+         avWQ==
+X-Gm-Message-State: AOAM532BNVzLqis+FSA5UEkpmsxOtl1K76cBt7LCX4SXIqo0F3mTkvWx
+        jBw9Z0rBLmvSwmYQCy8k3bUe+Q==
+X-Google-Smtp-Source: ABdhPJz4iqQo29US5gcPdIjO5OrbAwRmVDtwaNJJOfTh1rXJxFOpVW3YvogErA3bWiWXuRJJXotSlg==
+X-Received: by 2002:a17:90b:4b83:b0:1dc:5073:b704 with SMTP id lr3-20020a17090b4b8300b001dc5073b704mr2397627pjb.94.1651706474455;
+        Wed, 04 May 2022 16:21:14 -0700 (PDT)
+Received: from evgreen-glaptop.lan ([98.47.98.87])
+        by smtp.gmail.com with ESMTPSA id q12-20020a170902f78c00b0015e8d4eb2d6sm1901pln.288.2022.05.04.16.21.12
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Wed, 04 May 2022 16:21:14 -0700 (PDT)
+From:   Evan Green <evgreen@chromium.org>
+To:     linux-kernel@vger.kernel.org
+Cc:     Matthew Garrett <mgarrett@aurora.tech>, dlunev@google.com,
+        zohar@linux.ibm.com, jejb@linux.ibm.com,
+        linux-integrity@vger.kernel.org, corbet@lwn.net, rjw@rjwysocki.net,
+        gwendal@chromium.org, jarkko@kernel.org, linux-pm@vger.kernel.org,
+        Evan Green <evgreen@chromium.org>,
         David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dennis Dalessandro <dennis.dalessandro@cornelisnetworks.com>,
-        devicetree@vger.kernel.org, Dexuan Cui <decui@microsoft.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Eli Cohen <elic@nvidia.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Eugeniu Rosca <erosca@de.adit-jv.com>,
-        Felipe Balbi <balbi@kernel.org>,
-        Francis Laniel <laniel_francis@privacyrequired.com>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Franky Lin <franky.lin@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gregory Greenman <gregory.greenman@intel.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hante Meuleman <hante.meuleman@broadcom.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Hulk Robot <hulkci@huawei.com>,
-        Jakub Kicinski <kuba@kernel.org>,
-        "James E.J. Bottomley" <jejb@linux.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Jason Gunthorpe <jgg@ziepe.ca>, Jens Axboe <axboe@kernel.dk>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        John Keeping <john@metanate.com>,
-        Juergen Gross <jgross@suse.com>, Kalle Valo <kvalo@kernel.org>,
-        Keith Packard <keithp@keithp.com>, keyrings@vger.kernel.org,
-        Kuniyuki Iwashima <kuniyu@amazon.co.jp>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Lee Jones <lee.jones@linaro.org>,
-        Leon Romanovsky <leon@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux1394-devel@lists.sourceforge.net,
-        linux-afs@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-hardening@vger.kernel.org, linux-hyperv@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-rdma@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-xtensa@linux-xtensa.org, llvm@lists.linux.dev,
-        Loic Poulain <loic.poulain@linaro.org>,
-        Louis Peens <louis.peens@corigine.com>,
-        Luca Coelho <luciano.coelho@intel.com>,
-        Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-        Marc Dionne <marc.dionne@auristor.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Mark Brown <broonie@kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        Muchun Song <songmuchun@bytedance.com>,
-        Nathan Chancellor <nathan@kernel.org>, netdev@vger.kernel.org,
-        Nick Desaulniers <ndesaulniers@google.com>,
-        =?UTF-8?B?TnVubyBTw6E=?= <nuno.sa@analog.com>,
-        Paolo Abeni <pabeni@redhat.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Rich Felker <dalias@aerifal.cx>,
-        Rob Herring <robh+dt@kernel.org>,
-        Russell King <linux@armlinux.org.uk>, selinux@vger.kernel.org,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        SHA-cyfmac-dev-list@infineon.com,
-        Simon Horman <simon.horman@corigine.com>,
-        Stefano Stabellini <sstabellini@kernel.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Stephen Hemminger <sthemmin@microsoft.com>,
-        Stephen Smalley <stephen.smalley.work@gmail.com>,
-        Tadeusz Struk <tadeusz.struk@linaro.org>,
-        Takashi Iwai <tiwai@suse.com>, Tom Rix <trix@redhat.com>,
-        Udipto Goswami <quic_ugoswami@quicinc.com>,
-        Vincenzo Frascino <vincenzo.frascino@arm.com>,
-        wcn36xx@lists.infradead.org, Wei Liu <wei.liu@kernel.org>,
-        xen-devel@lists.xenproject.org,
-        Xiu Jianfeng <xiujianfeng@huawei.com>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
+        Hao Wu <hao.wu@rubrik.com>, James Morris <jmorris@namei.org>,
+        Jason Gunthorpe <jgg@ziepe.ca>,
+        Len Brown <len.brown@intel.com>,
+        Matthew Garrett <matthewgarrett@google.com>,
+        Pavel Machek <pavel@ucw.cz>, Peter Huewe <peterhuewe@gmx.de>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, axelj <axelj@axis.com>,
+        keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH 00/10] Encrypted Hibernation
+Date:   Wed,  4 May 2022 16:20:52 -0700
+Message-Id: <20220504232102.469959-1-evgreen@chromium.org>
+X-Mailer: git-send-email 2.31.0
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, May 3, 2022 at 8:47 PM Kees Cook <keescook@chromium.org> wrote:
-> +#define COMPARE_STRUCTS(STRUCT_A, STRUCT_B)    do {                    \
-> +       STRUCT_A *ptr_A;                                                \
-> +       STRUCT_B *ptr_B;                                                \
-> +       int rc;                                                         \
-> +       size_t size_A, size_B;                                          \
-> +                                                                       \
-> +       /* matching types for flex array elements and count */          \
-> +       KUNIT_EXPECT_EQ(test, sizeof(*ptr_A), sizeof(*ptr_B));          \
-> +       KUNIT_EXPECT_TRUE(test, __same_type(*ptr_A->data,               \
-> +               *ptr_B->__flex_array_elements));                        \
+We are exploring enabling hibernation in some new scenarios. However,
+our security team has a few requirements, listed below:
+1. The hibernate image must be encrypted with protection derived from
+   both the platform (eg TPM) and user authentication data (eg
+   password).
+2. Hibernation must not be a vector by which a malicious userspace can
+   escalate to the kernel.
 
-Leaving some minor suggestions to go along with David's comments.
+Requirement #1 can be achieved solely with uswsusp, however requirement
+2 necessitates mechanisms in the kernel to guarantee integrity of the
+hibernate image. The kernel needs a way to authenticate that it generated
+the hibernate image being loaded, and that the image has not been tampered
+with. Adding support for in-kernel AEAD encryption with a TPM-sealed key
+allows us to achieve both requirements with a single computation pass.
 
-Should we make these KUNIT_ASSERT_.* instead?
-I assume if we have a type-mismatch, then we should bail out instead
-of continuing to produce more error messages.
+Matthew Garrett published a series [1] that aligns closely with this
+goal. His series utilized the fact that PCR23 is a resettable PCR that
+can be blocked from access by usermode. The TPM can create a sealed key
+tied to PCR23 in two ways. First, the TPM can attest to the value of
+PCR23 when the key was created, which the kernel can use on resume to
+verify that the kernel must have created the key (since it is the only
+one capable of modifying PCR23). It can also create a policy that enforces
+PCR23 be set to a specific value as a condition of unsealing the key,
+preventing usermode from unsealing the key by talking directly to the
+TPM.
 
-> +       KUNIT_EXPECT_TRUE(test, __same_type(ptr_A->datalen,             \
-> +               ptr_B->__flex_array_elements_count));                   \
-> +       KUNIT_EXPECT_EQ(test, sizeof(*ptr_A->data),                     \
-> +                             sizeof(*ptr_B->__flex_array_elements));   \
-> +       KUNIT_EXPECT_EQ(test, offsetof(typeof(*ptr_A), data),           \
-> +                             offsetof(typeof(*ptr_B),                  \
-> +                                      __flex_array_elements));         \
-> +       KUNIT_EXPECT_EQ(test, offsetof(typeof(*ptr_A), datalen),        \
-> +                             offsetof(typeof(*ptr_B),                  \
-> +                                      __flex_array_elements_count));   \
-> +                                                                       \
-> +       /* struct_size() vs __fas_bytes() */                            \
-> +       size_A = struct_size(ptr_A, data, 13);                          \
-> +       rc = __fas_bytes(ptr_B, __flex_array_elements,                  \
-> +                        __flex_array_elements_count, 13, &size_B);     \
-> +       KUNIT_EXPECT_EQ(test, rc, 0);                                   \
+This series adopts that primitive as a foundation, tweaking and building
+on it a bit. Where Matthew's series used the TPM-backed key to encrypt a
+hash of the image, this series uses the key directly as a gcm(aes)
+encryption key, which the kernel uses to encrypt and decrypt the
+hibernate image in chunks of 16 pages. This provides both encryption and
+integrity, which turns out to be a noticeable performance improvement over
+separate passes for encryption and hashing.
 
-Hmm, what do you think about inlining the call/dropping rc?
+The series also introduces the concept of mixing user key material into
+the encryption key. This allows usermode to introduce key material
+based on unspecified external authentication data (in our case derived
+from something like the user password or PIN), without requiring
+usermode to do a separate encryption pass.
 
-i.e. something like
-KUNIT_EXPECT_EQ(test, 0, __fas_bytes(ptr_B, __flex_array_elements, \
-                        __flex_array_elements_count, 13, &size_B));
+Matthew also documented issues his series had [2] related to generating
+fake images by booting alternate kernels without the PCR23 limiting.
+With access to PCR23 on the same machine, usermode can create fake
+hibernate images that are indistinguishable to the new kernel from
+genuine ones. His post outlines a solution that involves adding more
+PCRs into the creation data and policy, with some gyrations to make this
+work well on a standard PC.
 
-That would give a slightly clearer error message on failure.
-Otherwise the user only really gets a line number to try and start to
-understand what went wrong.
+Our approach would be similar: on our machines PCR 0 indicates whether
+the system is booted in secure/verified mode or developer mode. By
+adding PCR0 to the policy, we can reject hibernate images made in
+developer mode while in verified mode (or vice versa).
 
-> +
-> +#define CHECK_COPY(ptr)                do {                                            \
-> +       typeof(*(ptr)) *_cc_dst = (ptr);                                        \
-> +       KUNIT_EXPECT_EQ(test, _cc_dst->induce_padding, 0);                      \
-> +       memcpy(&padding, &_cc_dst->induce_padding + sizeof(_cc_dst->induce_padding), \
-> +              sizeof(padding));                                                \
-> +       /* Padding should be zero too. */                                       \
-> +       KUNIT_EXPECT_EQ(test, padding, 0);                                      \
-> +       KUNIT_EXPECT_EQ(test, src->count, _cc_dst->count);                      \
+Additionally, mixing in the user authentication data limits both
+data exfiltration attacks (eg a stolen laptop) and forged hibernation
+image attacks to attackers that already know the authentication data (eg
+user's password). This, combined with our relatively sealed userspace
+(dm-verity on the rootfs), and some judicious clearing of the hibernate
+image (such as across an OS update) further reduce the risk of an online
+attack. The remaining attack space of a forgery from someone with
+physical access to the device and knowledge of the authentication data
+is out of scope for us, given that flipping to developer mode or
+reflashing RO firmware trivially achieves the same thing.
 
-This also seems like a good place to use ASSERT instead of EXPECT.
+A couple of patches still need to be written on top of this series. The
+generalized functionality to OR in additional PCRs via Kconfig (like PCR
+0 or 5) still needs to be added. We'll also need a patch that disallows
+unencrypted forms of resume from hibernation, to fully close the door
+to malicious userspace. However, I wanted to get this series out first
+and get reactions from upstream before continuing to add to it.
+
+[1] https://patchwork.kernel.org/project/linux-pm/cover/20210220013255.1083202-1-matthewgarrett@google.com/
+[2] https://mjg59.dreamwidth.org/58077.html
 
 
-> +       KUNIT_EXPECT_EQ(test, _cc_dst->count, TEST_TARGET);                     \
-> +       for (i = 0; i < _cc_dst->count - 1; i++) {                              \
-> +               /* 'A' is 0x41, and here repeated in a u32. */                  \
-> +               KUNIT_EXPECT_EQ(test, _cc_dst->flex[i], 0x41414141);            \
-> +       }                                                                       \
-> +       /* Last item should be different. */                                    \
-> +       KUNIT_EXPECT_EQ(test, _cc_dst->flex[_cc_dst->count - 1], 0x14141414);   \
-> +} while (0)
-> +
-> +/* Test copying from one flexible array struct into another. */
-> +static void flex_cpy_test(struct kunit *test)
-> +{
-> +#define TEST_BOUNDS    13
-> +#define TEST_TARGET    12
-> +#define TEST_SMALL     10
-> +       struct flex_cpy_obj *src, *dst;
-> +       unsigned long padding;
-> +       int i, rc;
-> +
-> +       /* Prepare open-coded source. */
-> +       src = kzalloc(struct_size(src, flex, TEST_BOUNDS), GFP_KERNEL);
+Evan Green (6):
+  security: keys: trusted: Verify creation data
+  PM: hibernate: Add kernel-based encryption
+  PM: hibernate: Use TPM-backed keys to encrypt image
+  PM: hibernate: Mix user key in encrypted hibernate
+  PM: hibernate: Verify the digest encryption key
+  PM: hibernate: seal the encryption key with a PCR policy
 
-Looks like we could use kunit_kzalloc() here and avoid needing the
-manual call to kfree?
-This also holds for the other test cases where they don't have early
-calls to kfree().
+Matthew Garrett (4):
+  tpm: Add support for in-kernel resetting of PCRs
+  tpm: Allow PCR 23 to be restricted to kernel-only use
+  security: keys: trusted: Parse out individual components of the key
+    blob
+  security: keys: trusted: Allow storage of PCR values in creation data
 
-Doing so would also let you use KUNIT_ASSERT's without fear of leaking
-these allocations.
+ Documentation/power/userland-swsusp.rst       |    8 +
+ .../security/keys/trusted-encrypted.rst       |    4 +
+ drivers/char/tpm/Kconfig                      |   10 +
+ drivers/char/tpm/tpm-dev-common.c             |    8 +
+ drivers/char/tpm/tpm-interface.c              |   28 +
+ drivers/char/tpm/tpm.h                        |   23 +
+ drivers/char/tpm/tpm1-cmd.c                   |   69 ++
+ drivers/char/tpm/tpm2-cmd.c                   |   58 +
+ drivers/char/tpm/tpm2-space.c                 |    2 +-
+ include/keys/trusted-type.h                   |    9 +
+ include/linux/tpm.h                           |   12 +
+ include/uapi/linux/suspend_ioctls.h           |   28 +-
+ kernel/power/Kconfig                          |   15 +
+ kernel/power/Makefile                         |    1 +
+ kernel/power/power.h                          |    1 +
+ kernel/power/snapenc.c                        | 1076 +++++++++++++++++
+ kernel/power/snapshot.c                       |    5 +
+ kernel/power/user.c                           |   44 +-
+ kernel/power/user.h                           |  114 ++
+ security/keys/trusted-keys/trusted_tpm1.c     |    9 +
+ security/keys/trusted-keys/trusted_tpm2.c     |  164 ++-
+ 21 files changed, 1670 insertions(+), 18 deletions(-)
+ create mode 100644 kernel/power/snapenc.c
+ create mode 100644 kernel/power/user.h
 
-> +       src->count = TEST_BOUNDS;
-> +       memset(src->flex, 'A', flex_array_size(src, flex, TEST_BOUNDS));
-> +       src->flex[src->count - 2] = 0x14141414;
-> +       src->flex[src->count - 1] = 0x24242424;
-> +
-> +       /* Prepare open-coded destination, alloc only. */
-> +       dst = kzalloc(struct_size(src, flex, TEST_BOUNDS), GFP_KERNEL);
-> +       /* Pre-fill with 0xFE marker. */
-> +       memset(dst, 0xFE, struct_size(src, flex, TEST_BOUNDS));
-> +       /* Pretend we're 1 element smaller. */
-> +       dst->count = TEST_TARGET;
-> +
-> +       /* Pretend to match the target destination size. */
-> +       src->count = TEST_TARGET;
-> +
-> +       rc = flex_cpy(dst, src);
-> +       KUNIT_EXPECT_EQ(test, rc, 0);
-> +       CHECK_COPY(dst);
-> +       /* Item past last copied item is unchanged from initial memset. */
-> +       KUNIT_EXPECT_EQ(test, dst->flex[dst->count], 0xFEFEFEFE);
-> +
-> +       /* Now trip overflow, and verify we didn't clobber beyond end. */
-> +       src->count = TEST_BOUNDS;
-> +       rc = flex_cpy(dst, src);
-> +       KUNIT_EXPECT_EQ(test, rc, -E2BIG);
-> +       /* Item past last copied item is unchanged from initial memset. */
-> +       KUNIT_EXPECT_EQ(test, dst->flex[dst->count], 0xFEFEFEFE);
-> +
-> +       /* Reset destination contents. */
-> +       memset(dst, 0xFD, struct_size(src, flex, TEST_BOUNDS));
-> +       dst->count = TEST_TARGET;
-> +
-> +       /* Copy less than max. */
-> +       src->count = TEST_SMALL;
-> +       rc = flex_cpy(dst, src);
-> +       KUNIT_EXPECT_EQ(test, rc, 0);
-> +       /* Verify count was adjusted. */
-> +       KUNIT_EXPECT_EQ(test, dst->count, TEST_SMALL);
+-- 
+2.31.0
 
-Just an FYI, macros get evaluated before the expect macros can stringify them.
-So the error message would look something like
-  Expected dest->count == 10
-     but dest->count = 9
-
-Not a big concern, but just noting that "TEST_SMALL" won't be visible at all.
-Could opt for
-
-KUNIT_EXPECT_EQ_MSG(test, dst->count, TEST_SMALL, "my custom extra message");
-
-if you think it'd be usable to make the test more grokkable.
-
-> +       /* Verify element beyond src size was wiped. */
-> +       KUNIT_EXPECT_EQ(test, dst->flex[TEST_SMALL], 0);
-> +       /* Verify element beyond original dst size was untouched. */
-> +       KUNIT_EXPECT_EQ(test, dst->flex[TEST_TARGET], 0xFDFDFDFD);
-> +
-> +       kfree(dst);
-> +       kfree(src);
-> +#undef TEST_BOUNDS
-> +#undef TEST_TARGET
-> +#undef TEST_SMALL
-> +}
-> +
-> +static void flex_dup_test(struct kunit *test)
-> +{
-> +#define TEST_TARGET    12
-> +       struct flex_cpy_obj *src, *dst = NULL, **null = NULL;
-> +       struct flex_dup_obj *encap = NULL;
-> +       unsigned long padding;
-> +       int i, rc;
-> +
-> +       /* Prepare open-coded source. */
-> +       src = kzalloc(struct_size(src, flex, TEST_TARGET), GFP_KERNEL);
-> +       src->count = TEST_TARGET;
-> +       memset(src->flex, 'A', flex_array_size(src, flex, TEST_TARGET));
-> +       src->flex[src->count - 1] = 0x14141414;
-> +
-> +       /* Reject NULL @alloc. */
-> +       rc = flex_dup(null, src, GFP_KERNEL);
-> +       KUNIT_EXPECT_EQ(test, rc, -EINVAL);
-> +
-> +       /* Check good copy. */
-> +       rc = flex_dup(&dst, src, GFP_KERNEL);
-> +       KUNIT_EXPECT_EQ(test, rc, 0);
-> +       KUNIT_ASSERT_TRUE(test, dst != NULL);
-> +       CHECK_COPY(dst);
-> +
-> +       /* Reject non-NULL *@alloc. */
-> +       rc = flex_dup(&dst, src, GFP_KERNEL);
-> +       KUNIT_EXPECT_EQ(test, rc, -EINVAL);
-> +
-> +       kfree(dst);
-> +
-> +       /* Check good encap copy. */
-> +       rc = __flex_dup(&encap, .fas, src, GFP_KERNEL);
-> +       KUNIT_EXPECT_EQ(test, rc, 0);
-> +       KUNIT_ASSERT_TRUE(test, dst != NULL);
-
-FYI, there's a new KUNIT_ASSERT_NOT_NULL() macro in the
--kselftest/kunit branch,
-https://patchwork.kernel.org/project/linux-kselftest/patch/20220211164246.410079-1-ribalda@chromium.org/
-
-But that's not planned for inclusion into mainline until 5.19, so
-leaving this as-is is better for now.
