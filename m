@@ -2,231 +2,190 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3B775C433FE
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2A048C433EF
 	for <keyrings@archiver.kernel.org>; Wed,  4 May 2022 23:34:14 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233730AbiEDXhr (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 4 May 2022 19:37:47 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44564 "EHLO
+        id S231783AbiEDXhq (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 4 May 2022 19:37:46 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41930 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1383742AbiEDXHY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 4 May 2022 19:07:24 -0400
-Received: from mail-wm1-x329.google.com (mail-wm1-x329.google.com [IPv6:2a00:1450:4864:20::329])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5C7C65A08A
-        for <keyrings@vger.kernel.org>; Wed,  4 May 2022 15:59:10 -0700 (PDT)
-Received: by mail-wm1-x329.google.com with SMTP id n126-20020a1c2784000000b0038e8af3e788so1670515wmn.1
-        for <keyrings@vger.kernel.org>; Wed, 04 May 2022 15:59:10 -0700 (PDT)
+        with ESMTP id S1383888AbiEDXZQ (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 4 May 2022 19:25:16 -0400
+Received: from mail-pj1-x102a.google.com (mail-pj1-x102a.google.com [IPv6:2607:f8b0:4864:20::102a])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 812CB4ECCE
+        for <keyrings@vger.kernel.org>; Wed,  4 May 2022 16:21:39 -0700 (PDT)
+Received: by mail-pj1-x102a.google.com with SMTP id j8-20020a17090a060800b001cd4fb60dccso2567938pjj.2
+        for <keyrings@vger.kernel.org>; Wed, 04 May 2022 16:21:39 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore-com.20210112.gappssmtp.com; s=20210112;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc:content-transfer-encoding;
-        bh=qfWwXZWPvxEE3w1uLnkzPlrx6nJaZSmQ1gbsC3kCZlI=;
-        b=fMehx6+pldeupaypGl5lGMLh8Blc5Pb964suvnwujkOTfmhEds0USznV5iIpAmDMiQ
-         3bX5ovLiBcm+P+Qjkm7S30sNoAIneyphU/3HUmg8FgNya3x4Ys+vGWu+B9CwMsbZwixV
-         5hhw5d61RXfF0ZuA9a19yWLWnmsownsAlvxGOq/bh+zf+KCchfsYUSjN3DbkCogRNiil
-         4sZMBBy0wN3DJWJ3HV3y9RTPrsOy6eZO4wbIVzlw9cfeY3DYzhWrMs9JJuoIK2/rWVPl
-         SzHF6XACCrgzPRUtq8fL5afcNflV6Vriy9o5VdAvBNuxRLNvKxX70jkd0hURqNp4X2R8
-         1xwg==
+        d=chromium.org; s=google;
+        h=from:to:cc:subject:date:message-id:in-reply-to:references
+         :mime-version:content-transfer-encoding;
+        bh=NCPgvpZcA0uAt4aHPP7BYpOEKu3u65fsur79lcM7RCY=;
+        b=Zs2UVopnaRBcMqzeWwdu3RMSHFGCRemyVLw1Wiq1qURH8sHjtfDVQfZbSeFcEHO3yo
+         3A1MC5oNYk09WmKFCtVeexkI58hzjqDiFLj3wo1aQ2A7txkNgN7GmMK0k3LRqjZKN7OW
+         Ejffr5D3JC4siZtEiGZt/YgD+39nWwRmq2VxY=
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc:content-transfer-encoding;
-        bh=qfWwXZWPvxEE3w1uLnkzPlrx6nJaZSmQ1gbsC3kCZlI=;
-        b=xsphzffC8wW6ebRdvFzSd/af5Brmmu25zQRpVFge2UBs1RoKlV5A5cdYhom2cmAn6y
-         IDnpspiZQWIcc5DRLjwhqIqV7Lrh4LGE8/MEMQI9EhS2E7APPpwjc1/CHw1Gm9wuDVVy
-         Xlbec2NksiPyXEvLmrKgUYNuxuDKPWqwcLwE0QeT0+APOmNUKbes4RBjizfqIg9pdrvW
-         zM3pdHwLu3UmDm0dPWJh77J92suTYAK8JrytWGx+mFS7VbgNDePaghXdJH+FmjURCpAd
-         kYEP1JnfugqWZLwNLeGKT2JcMJJ2snknVroY+7tOGu6KDl53VodxNzm+UWqiil1vjj0H
-         KcmQ==
-X-Gm-Message-State: AOAM531Mc7m5uvRk4XnVVDOruBvLlHhAccUeUagGkkmLasATsyokzn1N
-        CLaJFxR1dH+dwHpByTx59+/fnoJkkrTBImQb3QfY
-X-Google-Smtp-Source: ABdhPJzn8kCki7g2xrksVPCE2X0dMoSQ5GNrlnQWJqU+8a/RnZE5ShgkUyQvDBvdRa4kG7oifCsX28YouBnWU5DkxR0=
-X-Received: by 2002:a05:600c:4fc9:b0:394:4317:1aa4 with SMTP id
- o9-20020a05600c4fc900b0039443171aa4mr1477643wmq.179.1651705059031; Wed, 04
- May 2022 15:57:39 -0700 (PDT)
-MIME-Version: 1.0
-References: <20220504014440.3697851-1-keescook@chromium.org> <20220504014440.3697851-29-keescook@chromium.org>
-In-Reply-To: <20220504014440.3697851-29-keescook@chromium.org>
-From:   Paul Moore <paul@paul-moore.com>
-Date:   Wed, 4 May 2022 18:57:28 -0400
-Message-ID: <CAHC9VhT5Y=ENiSyb=S-NVbGX63sLOv4nVuR_GS-yww6tiz0wYA@mail.gmail.com>
-Subject: Re: [PATCH 28/32] selinux: Use mem_to_flex_dup() with xfrm and sidtab
-To:     Kees Cook <keescook@chromium.org>
-Cc:     "Gustavo A . R . Silva" <gustavoars@kernel.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Smalley <stephen.smalley.work@gmail.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Nick Desaulniers <ndesaulniers@google.com>,
-        Xiu Jianfeng <xiujianfeng@huawei.com>,
-        =?UTF-8?Q?Christian_G=C3=B6ttsche?= <cgzones@googlemail.com>,
-        netdev@vger.kernel.org, selinux@vger.kernel.org,
-        Alexei Starovoitov <ast@kernel.org>,
-        alsa-devel@alsa-project.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Gabbasov <andrew_gabbasov@mentor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Gross <agross@kernel.org>,
-        Andy Lavr <andy.lavr@gmail.com>,
-        Arend van Spriel <aspriel@gmail.com>,
-        Baowen Zheng <baowen.zheng@corigine.com>,
-        Bjorn Andersson <bjorn.andersson@linaro.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Bradley Grove <linuxdrivers@attotech.com>,
-        brcm80211-dev-list.pdl@broadcom.com,
-        Christian Brauner <brauner@kernel.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Chris Zankel <chris@zankel.net>,
-        Cong Wang <cong.wang@bytedance.com>,
-        Daniel Axtens <dja@axtens.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dan Williams <dan.j.williams@intel.com>,
-        David Gow <davidgow@google.com>,
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+         :references:mime-version:content-transfer-encoding;
+        bh=NCPgvpZcA0uAt4aHPP7BYpOEKu3u65fsur79lcM7RCY=;
+        b=Uf/7GAVXZK5oDsPZ/OcnuWTJItlZkSyIArpHeUsJZ3zSnMOkOcCTnF2zbBJqt4IwKS
+         NMJ4oQ/DsZfeuxpgAr6ls0j5lEN3ud9DsEnJu6MKyc1tAsL2NvLPhWuZ06wvOtwvrtWb
+         iGPj37VgFYPpghpNp4naicneSBoEwKC1HkxbzS7tq5aI2tU4iNxOVQsQO1qtbBy18rpB
+         DMFXR615WM/Mmw0+KKy+FMMR8xrYpCWrYRL94xiKrV3FNaVXbgcuRiJotZZ5oqCSaHZd
+         gD2e22WA0vgAXR2gSsOyptMtaXCDV3dL6dh7dQJs5bBwShDm16aUrVcEaeVorZqDuYL6
+         GPmw==
+X-Gm-Message-State: AOAM531HJiLFgReiRxcZ9u8lESTfgKQp7DthMoG1hFMZq8gB81N1oGRd
+        ZGISCkL1y5ewJQjdpv8dSQatWg==
+X-Google-Smtp-Source: ABdhPJx2TPK/nouqDF1yYzVVWJk+thRPtu2hPJrJDWbQ1tzdLDmA68Nrl8oQvHeptfCEiB4Lsu9xWQ==
+X-Received: by 2002:a17:903:2d0:b0:14d:8a8d:cb1 with SMTP id s16-20020a17090302d000b0014d8a8d0cb1mr24121633plk.50.1651706499061;
+        Wed, 04 May 2022 16:21:39 -0700 (PDT)
+Received: from evgreen-glaptop.lan ([98.47.98.87])
+        by smtp.gmail.com with ESMTPSA id q12-20020a170902f78c00b0015e8d4eb2d6sm1901pln.288.2022.05.04.16.21.37
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Wed, 04 May 2022 16:21:38 -0700 (PDT)
+From:   Evan Green <evgreen@chromium.org>
+To:     linux-kernel@vger.kernel.org
+Cc:     Matthew Garrett <mgarrett@aurora.tech>, dlunev@google.com,
+        zohar@linux.ibm.com, jejb@linux.ibm.com,
+        linux-integrity@vger.kernel.org, corbet@lwn.net, rjw@rjwysocki.net,
+        gwendal@chromium.org, jarkko@kernel.org, linux-pm@vger.kernel.org,
+        Evan Green <evgreen@chromium.org>,
         David Howells <dhowells@redhat.com>,
-        Dennis Dalessandro <dennis.dalessandro@cornelisnetworks.com>,
-        devicetree@vger.kernel.org, Dexuan Cui <decui@microsoft.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Eli Cohen <elic@nvidia.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Eugeniu Rosca <erosca@de.adit-jv.com>,
-        Felipe Balbi <balbi@kernel.org>,
-        Francis Laniel <laniel_francis@privacyrequired.com>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Franky Lin <franky.lin@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gregory Greenman <gregory.greenman@intel.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hante Meuleman <hante.meuleman@broadcom.com>,
-        Hulk Robot <hulkci@huawei.com>,
-        Jakub Kicinski <kuba@kernel.org>,
-        "James E.J. Bottomley" <jejb@linux.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Jason Gunthorpe <jgg@ziepe.ca>, Jens Axboe <axboe@kernel.dk>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        John Keeping <john@metanate.com>,
-        Juergen Gross <jgross@suse.com>, Kalle Valo <kvalo@kernel.org>,
-        Keith Packard <keithp@keithp.com>, keyrings@vger.kernel.org,
-        kunit-dev@googlegroups.com,
-        Kuniyuki Iwashima <kuniyu@amazon.co.jp>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Lee Jones <lee.jones@linaro.org>,
-        Leon Romanovsky <leon@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux1394-devel@lists.sourceforge.net,
-        linux-afs@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-hardening@vger.kernel.org, linux-hyperv@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-rdma@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-xtensa@linux-xtensa.org, llvm@lists.linux.dev,
-        Loic Poulain <loic.poulain@linaro.org>,
-        Louis Peens <louis.peens@corigine.com>,
-        Luca Coelho <luciano.coelho@intel.com>,
-        Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-        Marc Dionne <marc.dionne@auristor.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Mark Brown <broonie@kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        Muchun Song <songmuchun@bytedance.com>,
-        Nathan Chancellor <nathan@kernel.org>,
-        =?UTF-8?B?TnVubyBTw6E=?= <nuno.sa@analog.com>,
-        Paolo Abeni <pabeni@redhat.com>,
-        Rich Felker <dalias@aerifal.cx>,
-        Rob Herring <robh+dt@kernel.org>,
-        Russell King <linux@armlinux.org.uk>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        SHA-cyfmac-dev-list@infineon.com,
-        Simon Horman <simon.horman@corigine.com>,
-        Stefano Stabellini <sstabellini@kernel.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Stephen Hemminger <sthemmin@microsoft.com>,
-        Tadeusz Struk <tadeusz.struk@linaro.org>,
-        Takashi Iwai <tiwai@suse.com>, Tom Rix <trix@redhat.com>,
-        Udipto Goswami <quic_ugoswami@quicinc.com>,
-        Vincenzo Frascino <vincenzo.frascino@arm.com>,
-        wcn36xx@lists.infradead.org, Wei Liu <wei.liu@kernel.org>,
-        xen-devel@lists.xenproject.org,
-        Yang Yingliang <yangyingliang@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+        Hao Wu <hao.wu@rubrik.com>, James Morris <jmorris@namei.org>,
+        Matthew Garrett <matthewgarrett@google.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, axelj <axelj@axis.com>,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH 05/10] security: keys: trusted: Verify creation data
+Date:   Wed,  4 May 2022 16:20:57 -0700
+Message-Id: <20220504161439.5.I6cdb522cb5ea28fcd1e35b4cd92cbd067f99269a@changeid>
+X-Mailer: git-send-email 2.31.0
+In-Reply-To: <20220504232102.469959-1-evgreen@chromium.org>
+References: <20220504232102.469959-1-evgreen@chromium.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, May 3, 2022 at 9:57 PM Kees Cook <keescook@chromium.org> wrote:
->
-> As part of the work to perform bounds checking on all memcpy() uses,
-> replace the open-coded a deserialization of bytes out of memory into a
-> trailing flexible array by using a flex_array.h helper to perform the
-> allocation, bounds checking, and copying:
->
->     struct xfrm_sec_ctx
->     struct sidtab_str_cache
->
-> Cc: Steffen Klassert <steffen.klassert@secunet.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Paul Moore <paul@paul-moore.com>
-> Cc: Stephen Smalley <stephen.smalley.work@gmail.com>
-> Cc: Eric Paris <eparis@parisplace.org>
-> Cc: Nick Desaulniers <ndesaulniers@google.com>
-> Cc: Xiu Jianfeng <xiujianfeng@huawei.com>
-> Cc: "Christian G=C3=B6ttsche" <cgzones@googlemail.com>
-> Cc: netdev@vger.kernel.org
-> Cc: selinux@vger.kernel.org
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  include/uapi/linux/xfrm.h    | 4 ++--
->  security/selinux/ss/sidtab.c | 9 +++------
->  security/selinux/xfrm.c      | 7 ++-----
->  3 files changed, 7 insertions(+), 13 deletions(-)
->
-> diff --git a/include/uapi/linux/xfrm.h b/include/uapi/linux/xfrm.h
-> index 65e13a099b1a..4a6fa2beff6a 100644
-> --- a/include/uapi/linux/xfrm.h
-> +++ b/include/uapi/linux/xfrm.h
-> @@ -31,9 +31,9 @@ struct xfrm_id {
->  struct xfrm_sec_ctx {
->         __u8    ctx_doi;
->         __u8    ctx_alg;
-> -       __u16   ctx_len;
-> +       __DECLARE_FLEX_ARRAY_ELEMENTS_COUNT(__u16, ctx_len);
->         __u32   ctx_sid;
-> -       char    ctx_str[0];
-> +       __DECLARE_FLEX_ARRAY_ELEMENTS(char, ctx_str);
->  };
+If a loaded key contains creation data, ask the TPM to verify that
+creation data. This allows users like encrypted hibernate to know that
+the loaded and parsed creation data has not been tampered with.
 
-While I like the idea of this in principle, I'd like to hear about the
-testing you've done on these patches.  A previous flex array
-conversion in the audit uapi headers ended up causing a problem with
-GCC12 and SWIG; while it was a SWIG problem and not a kernel header
-problem that was thin consolation for those with broken builds.
+Partially-sourced-from: Matthew Garrett <mjg59@google.com>
+Signed-off-by: Evan Green <evgreen@chromium.org>
 
-> diff --git a/security/selinux/ss/sidtab.c b/security/selinux/ss/sidtab.c
-> index a54b8652bfb5..a9d434e8cff7 100644
-> --- a/security/selinux/ss/sidtab.c
-> +++ b/security/selinux/ss/sidtab.c
-> @@ -23,8 +23,8 @@ struct sidtab_str_cache {
->         struct rcu_head rcu_member;
->         struct list_head lru_member;
->         struct sidtab_entry *parent;
-> -       u32 len;
-> -       char str[];
-> +       DECLARE_FLEX_ARRAY_ELEMENTS_COUNT(u32, len);
-> +       DECLARE_FLEX_ARRAY_ELEMENTS(char, str);
->  };
->
->  #define index_to_sid(index) ((index) + SECINITSID_NUM + 1)
+---
+Source material for this change is at:
+https://patchwork.kernel.org/project/linux-pm/patch/20210220013255.1083202-9-matthewgarrett@google.com/
 
---=20
-paul-moore.com
+ include/linux/tpm.h                       |  1 +
+ security/keys/trusted-keys/trusted_tpm2.c | 72 ++++++++++++++++++++++-
+ 2 files changed, 72 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 8320cbac6f4009..438f8bc0a50582 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -224,6 +224,7 @@ enum tpm2_command_codes {
+ 	TPM2_CC_SELF_TEST	        = 0x0143,
+ 	TPM2_CC_STARTUP		        = 0x0144,
+ 	TPM2_CC_SHUTDOWN	        = 0x0145,
++	TPM2_CC_CERTIFYCREATION	        = 0x014A,
+ 	TPM2_CC_NV_READ                 = 0x014E,
+ 	TPM2_CC_CREATE		        = 0x0153,
+ 	TPM2_CC_LOAD		        = 0x0157,
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index b7ddb78e644d17..6db30a5fc320c0 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -600,6 +600,69 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	return rc;
+ }
+ 
++/**
++ * tpm2_certify_creation() - execute a TPM2_CertifyCreation command
++ *
++ * @chip: TPM chip to use
++ * @payload: the key data in clear and encrypted form
++ * @blob_handle: the loaded TPM handle of the key
++ *
++ * Return: 0 on success
++ *         -EINVAL on tpm error status
++ *         < 0 error from tpm_send or tpm_buf_init
++ */
++static int tpm2_certify_creation(struct tpm_chip *chip,
++				 struct trusted_key_payload *payload,
++				 u32 blob_handle)
++{
++	struct tpm_header *head;
++	struct tpm_buf buf;
++	int rc;
++
++	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_CERTIFYCREATION);
++	if (rc)
++		return rc;
++
++	/* Use TPM_RH_NULL for signHandle */
++	tpm_buf_append_u32(&buf, 0x40000007);
++
++	/* Object handle */
++	tpm_buf_append_u32(&buf, blob_handle);
++
++	/* Auth */
++	tpm_buf_append_u32(&buf, 9);
++	tpm_buf_append_u32(&buf, TPM2_RS_PW);
++	tpm_buf_append_u16(&buf, 0);
++	tpm_buf_append_u8(&buf, 0);
++	tpm_buf_append_u16(&buf, 0);
++
++	/* Qualifying data */
++	tpm_buf_append_u16(&buf, 0);
++
++	/* Creation data hash */
++	tpm_buf_append_u16(&buf, payload->creation_hash_len);
++	tpm_buf_append(&buf, payload->creation_hash,
++		       payload->creation_hash_len);
++
++	/* signature scheme */
++	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
++
++	/* creation ticket */
++	tpm_buf_append(&buf, payload->tk, payload->tk_len);
++
++	rc = tpm_transmit_cmd(chip, &buf, 6, "certifying creation data");
++	if (rc)
++		goto out;
++
++	head = (struct tpm_header *)buf.data;
++
++	if (head->return_code != 0)
++		rc = -EINVAL;
++out:
++	tpm_buf_destroy(&buf);
++	return rc;
++}
++
+ /**
+  * tpm2_unseal_trusted() - unseal the payload of a trusted key
+  *
+@@ -625,8 +688,15 @@ int tpm2_unseal_trusted(struct tpm_chip *chip,
+ 		goto out;
+ 
+ 	rc = tpm2_unseal_cmd(chip, payload, options, blob_handle);
+-	tpm2_flush_context(chip, blob_handle);
++	if (rc)
++		goto flush;
++
++	if (payload->creation_len)
++		rc = tpm2_certify_creation(chip, payload, blob_handle);
+ 
++
++flush:
++	tpm2_flush_context(chip, blob_handle);
+ out:
+ 	tpm_put_ops(chip);
+ 
+-- 
+2.31.0
+
