@@ -2,64 +2,59 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6CC85C43217
-	for <keyrings@archiver.kernel.org>; Wed,  4 May 2022 01:51:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E34E1C433EF
+	for <keyrings@archiver.kernel.org>; Wed,  4 May 2022 01:51:38 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231220AbiEDBzC (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 3 May 2022 21:55:02 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57062 "EHLO
+        id S1343741AbiEDBzJ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 3 May 2022 21:55:09 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:56942 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1343773AbiEDByM (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 3 May 2022 21:54:12 -0400
-Received: from mail-pg1-x532.google.com (mail-pg1-x532.google.com [IPv6:2607:f8b0:4864:20::532])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 85E6A45052
-        for <keyrings@vger.kernel.org>; Tue,  3 May 2022 18:48:50 -0700 (PDT)
-Received: by mail-pg1-x532.google.com with SMTP id k14so43376pga.0
-        for <keyrings@vger.kernel.org>; Tue, 03 May 2022 18:48:50 -0700 (PDT)
+        with ESMTP id S1343818AbiEDByQ (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 3 May 2022 21:54:16 -0400
+Received: from mail-pg1-x52f.google.com (mail-pg1-x52f.google.com [IPv6:2607:f8b0:4864:20::52f])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2799A3134D
+        for <keyrings@vger.kernel.org>; Tue,  3 May 2022 18:48:56 -0700 (PDT)
+Received: by mail-pg1-x52f.google.com with SMTP id g3so22067pgg.3
+        for <keyrings@vger.kernel.org>; Tue, 03 May 2022 18:48:56 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=chromium.org; s=google;
         h=from:to:cc:subject:date:message-id:in-reply-to:references
          :mime-version:content-transfer-encoding;
-        bh=dWvrJlxp0hfwq/rpuMGCsTJMwzo7GNCIoJATWYPCVJE=;
-        b=OW0yn3aPFgkfwn8L35EyIBf488Ir3oPRdcuBBy8HPNsH5M0x5CXqSqshhOTKtpKq5L
-         QF/xhc9eykoWhvFmZW6nwgo8tyY5Hha7nsaQ+7vI7aAIrUuE+pM/MYF4FAAKrs9ERjRM
-         nEcriHnnehj4N7XQ40GlCVy2op0vzdnIn84H4=
+        bh=tt+uE/qYWOs3CEanZOjmvMoORa5i/xMNqAO3DwAd5m4=;
+        b=YmT1lNTRttmLRyn/WOgpT0DAFWD3BvjkOIsApwxFa4B3Com0bh2yQqIJO66Wiak8Tt
+         rwU+QSbZtL4swuVhrV8kkivMWLyJT9AqfxXpJ4Lm9ZibQLMBbHjNrpcN7FDNu1QRPCS+
+         uiBQnyfLBZT2SNnaE6twmHxSxmZ2FlIbgcsF8=
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
          :references:mime-version:content-transfer-encoding;
-        bh=dWvrJlxp0hfwq/rpuMGCsTJMwzo7GNCIoJATWYPCVJE=;
-        b=LAvrs28+JhF7cXHpp+ucof6Qo1f5ZakLzwNrGSdrR0E22RQJYjq/dzHczrT64/HrTH
-         WiEmc+VXDYCi3vWeU4qhGBkf2b+oagRAePEn04LxA+TutaoKjt1Q6RpjHHoZOfcnufQ7
-         2tvs5t7CeyglegCTGE0oGa4nIfpewqvXo+Qz5ViDj5BSyeb58Ejo8v9nG6Ar+g2rYLlg
-         TMOPlyL/nN+1X9EugFFVlctsd+lHNm0ufwv30PW7CoCwaXFzQzXIw/CVDz9lICLOwD+y
-         CWzMHz0hzJG2mxAD01BfhlSucr9pJko41VPBr8/26oMJUQryhgG4R7FvoU8avflHiLb2
-         HkNw==
-X-Gm-Message-State: AOAM532YL8V6x/eqRgzZPDewo3IN1xovzMInXkHRKCh9zPOc49+cxqqh
-        MuYGh3T5rGD9Iv4Dy/dQU4P/Mg==
-X-Google-Smtp-Source: ABdhPJzOaa5v3jlqumCDj5Itb35H5nm0wuuZNJDbIPaJqouQiWes+awOwCXnf4apYBS42dQvscreqA==
-X-Received: by 2002:a65:6216:0:b0:39d:5e6c:7578 with SMTP id d22-20020a656216000000b0039d5e6c7578mr15924526pgv.114.1651628868778;
-        Tue, 03 May 2022 18:47:48 -0700 (PDT)
-Received: from www.outflux.net (smtp.outflux.net. [198.145.64.163])
-        by smtp.gmail.com with ESMTPSA id s5-20020a17090aa10500b001d287fd3f79sm1950057pjp.46.2022.05.03.18.47.43
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        bh=tt+uE/qYWOs3CEanZOjmvMoORa5i/xMNqAO3DwAd5m4=;
+        b=5Bq9ZXqqMGIhB9QIDu6ORKZNmrAL4g+jw+8G5NfMGqklqD29IR7wgAkORd/sOfl4TG
+         jommHDbupYE+ojBAvWfifFY6p9o10B8Kmmmbb7TLCrIT9etWydh2aADl6NICjrpXOlIT
+         j01ljvhdau5Qi3Lz7vSfVY4J5u43hojUP1h+ln+PxXQ7IyagZbhAkXDlrKsBSpTiNyE+
+         hWkPe+Joh0uLWDdqNCwP461QU57TI7LyEfUa5SLMtN6R5aCIt+Qs2zFJ2MsTCFIqjbOp
+         IQ5XZec3RpXksElUgrCxroOwvFgyP+YUfgujUmNFktd9Lih+J3HiumZ6Ssgm/m9c3ONU
+         T2tQ==
+X-Gm-Message-State: AOAM532TN3f5HZPzjKsvrzwF1opKSXc+JSAEA73HIfwTgk7EGLTRIABV
+        KNh8J7QypYHMwC2Kl2jpx0fU6A==
+X-Google-Smtp-Source: ABdhPJyaDNAFsbp7ZFwZAoK9Xc4UX4Pztt8PjVEG/vpKdBDmGO/KaYu31SJFp8S1HaJxz30qr/Lnug==
+X-Received: by 2002:a05:6a00:1c5c:b0:505:7469:134a with SMTP id s28-20020a056a001c5c00b005057469134amr19088479pfw.16.1651628867093;
         Tue, 03 May 2022 18:47:47 -0700 (PDT)
+Received: from www.outflux.net (smtp.outflux.net. [198.145.64.163])
+        by smtp.gmail.com with ESMTPSA id q26-20020a63505a000000b003aa8b87feb5sm13939242pgl.0.2022.05.03.18.47.41
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 03 May 2022 18:47:44 -0700 (PDT)
 From:   Kees Cook <keescook@chromium.org>
 To:     "Gustavo A . R . Silva" <gustavoars@kernel.org>
-Cc:     Kees Cook <keescook@chromium.org>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Stephen Hemminger <sthemmin@microsoft.com>,
-        Wei Liu <wei.liu@kernel.org>, Dexuan Cui <decui@microsoft.com>,
-        linux-hyperv@vger.kernel.org, Alexei Starovoitov <ast@kernel.org>,
+Cc:     Kees Cook <keescook@chromium.org>, Andy Gross <agross@kernel.org>,
+        Bjorn Andersson <bjorn.andersson@linaro.org>,
+        linux-arm-msm@vger.kernel.org, Alexei Starovoitov <ast@kernel.org>,
         alsa-devel@alsa-project.org, Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Gabbasov <andrew_gabbasov@mentor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andy Gross <agross@kernel.org>,
         Andy Lavr <andy.lavr@gmail.com>,
         Arend van Spriel <aspriel@gmail.com>,
         Baowen Zheng <baowen.zheng@corigine.com>,
-        Bjorn Andersson <bjorn.andersson@linaro.org>,
         Boris Ostrovsky <boris.ostrovsky@oracle.com>,
         Bradley Grove <linuxdrivers@attotech.com>,
         brcm80211-dev-list.pdl@broadcom.com,
@@ -75,7 +70,7 @@ Cc:     Kees Cook <keescook@chromium.org>,
         David Howells <dhowells@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Dennis Dalessandro <dennis.dalessandro@cornelisnetworks.com>,
-        devicetree@vger.kernel.org,
+        devicetree@vger.kernel.org, Dexuan Cui <decui@microsoft.com>,
         Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
         Eli Cohen <elic@nvidia.com>,
         Eric Dumazet <edumazet@google.com>,
@@ -88,6 +83,7 @@ Cc:     Kees Cook <keescook@chromium.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Gregory Greenman <gregory.greenman@intel.com>,
         Guenter Roeck <linux@roeck-us.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
         Hante Meuleman <hante.meuleman@broadcom.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
         Hulk Robot <hulkci@huawei.com>,
@@ -105,6 +101,7 @@ Cc:     Kees Cook <keescook@chromium.org>,
         Keith Packard <keithp@keithp.com>, keyrings@vger.kernel.org,
         kunit-dev@googlegroups.com,
         Kuniyuki Iwashima <kuniyu@amazon.co.jp>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
         Lars-Peter Clausen <lars@metafoo.de>,
         Lee Jones <lee.jones@linaro.org>,
         Leon Romanovsky <leon@kernel.org>,
@@ -112,8 +109,8 @@ Cc:     Kees Cook <keescook@chromium.org>,
         linux1394-devel@lists.sourceforge.net,
         linux-afs@lists.infradead.org,
         linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-hardening@vger.kernel.org, linux-integrity@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-hardening@vger.kernel.org,
+        linux-hyperv@vger.kernel.org, linux-integrity@vger.kernel.org,
         linux-rdma@vger.kernel.org, linux-scsi@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-wireless@vger.kernel.org, linux-xtensa@linux-xtensa.org,
@@ -142,22 +139,24 @@ Cc:     Kees Cook <keescook@chromium.org>,
         Stefano Stabellini <sstabellini@kernel.org>,
         Stefan Richter <stefanr@s5r6.in-berlin.de>,
         Steffen Klassert <steffen.klassert@secunet.com>,
+        Stephen Hemminger <sthemmin@microsoft.com>,
         Stephen Smalley <stephen.smalley.work@gmail.com>,
         Tadeusz Struk <tadeusz.struk@linaro.org>,
         Takashi Iwai <tiwai@suse.com>, Tom Rix <trix@redhat.com>,
         Udipto Goswami <quic_ugoswami@quicinc.com>,
         Vincenzo Frascino <vincenzo.frascino@arm.com>,
-        wcn36xx@lists.infradead.org, xen-devel@lists.xenproject.org,
+        wcn36xx@lists.infradead.org, Wei Liu <wei.liu@kernel.org>,
+        xen-devel@lists.xenproject.org,
         Xiu Jianfeng <xiujianfeng@huawei.com>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 25/32] Drivers: hv: utils: Use mem_to_flex_dup() with struct cn_msg
-Date:   Tue,  3 May 2022 18:44:34 -0700
-Message-Id: <20220504014440.3697851-26-keescook@chromium.org>
+Subject: [PATCH 21/32] soc: qcom: apr: Use mem_to_flex_dup() with struct apr_rx_buf
+Date:   Tue,  3 May 2022 18:44:30 -0700
+Message-Id: <20220504014440.3697851-22-keescook@chromium.org>
 X-Mailer: git-send-email 2.32.0
 In-Reply-To: <20220504014440.3697851-1-keescook@chromium.org>
 References: <20220504014440.3697851-1-keescook@chromium.org>
 MIME-Version: 1.0
-X-Developer-Signature: v=1; a=openpgp-sha256; l=2219; h=from:subject; bh=dgFYdMqTm4tBMA+d8KWXYde/YMvArhgtiTydpKgqF6s=; b=owEBbQKS/ZANAwAKAYly9N/cbcAmAcsmYgBicdqGpwfENVCD78xIrOKs07wFk+8+2VNIIqaIzTy/ MQg5zx6JAjMEAAEKAB0WIQSlw/aPIp3WD3I+bhOJcvTf3G3AJgUCYnHahgAKCRCJcvTf3G3AJlkID/ 9xYgI2yUTmOqWGUHwjPg6PRpPwUj6yqPTnvHBjZmeB6GcMkb/J1qYZ0We4QMX2FKo8/RxUIZmkpsBI ghlT5pXLwU+EL9vLRAtiKFcmM6HmLrpDOA+H7c/+3yz3nLeExs5il9FvDhAWsAneG2E6lymkjrtZwB PmGHZ1SbLjt7dlHn9zzeTTcBLGvqVG+t1HbL1yM0qT9sxR33bwrS1/XY/VbQ9ZBwXv5G1ci/UQYTn+ IxWJQyTz1WY3n4gGJIy12AX3Gg0SC3bdx9m5pnqgXmSvY3uw+gAkf+Jq+ITd7t+YW8zrXaiMMGPmhC +dn4j7Pvv4hNJ6R/d9/lrj8cAs53cQUbwW3e/7yRsiZb37BKs643K8RW97bKNemjiBUk2NngqjWaOl FzxBm7iGLEjOq989XZeJNEB+MQLecqtGjX+/LxzzzpvAKeMi9bXDiSJAfPG2yxB7wzIUCmUUxW3kKq 5ITIvocBuuqbJzokzh+M+VX/4LsefOVBxhkljlxxgFvwnLhsXHSrMa9c7vd07TAikSiJ0Vi6xYDuv0 m4TiF4oEz1DuG0oiUI9BpM7VSTL+S8V/5GoKv/V+vcO7lhrDKhfS7G8kPKHplhyqNqe7RD2pCIVyOI ++T7/zqpV+vaRd4iu+z+vgmLDrCZcODKGwvjXW2ZeAEW8baladN7FbwkDLDA==
+X-Developer-Signature: v=1; a=openpgp-sha256; l=1693; h=from:subject; bh=f797ezn2sQWsQcALbTjtcz0/uVJxqqsdCbEE9J5EL4c=; b=owEBbQKS/ZANAwAKAYly9N/cbcAmAcsmYgBicdqFcya5M1Ba7xKOXe16qG7jIlVI8ph+ibFXwwOp nrqS7nGJAjMEAAEKAB0WIQSlw/aPIp3WD3I+bhOJcvTf3G3AJgUCYnHahQAKCRCJcvTf3G3AJhB6D/ 4mAanYpWDhhzP0wFox6ZgqAP9umNDzMV7dRX4Y08wPvedXkTuo/N0jclu6EdK/Bs4KaQilIZSFkLno xsM8xXSf4UqStJoT27N7DzjgnXKUJuyB5HZu1PfC+8PJ3QEnqiU5wE/l/2KdIJiAa7Xrj82dQB2cOe f9cgwxVbs3UnZy77Wv+k8FP5dMShK5yfzH0kpSd88R+/mDgZ6PLzi6zr8ZQiGCGdehQ7yp7ahiIA+i aAsDm3/+QhB0XaYdbqgAm2IAn+ouEdBPFgeXFzXqJwdi8AEfwBoByO06B8F23M3UCLdd6ZTRuaYeVQ kIZhzXstlVWDB9mIUnTP7dpfIY0lC+xzWyCLtZeT4bAvCwQB9CAAEWnSx7qfxwfOCYH1OjKUWJ+Xo4 5bWdci/vlaLQLD13TFP2X8QMY+seDM4SmnQAjgo5eITKrQ8RREz044kssPiR5qrnynNMOFWoNryxir 5TxsUJqEcElCuxyYstu2GZWqRpIeTKHVnaCu6XWtUkfQXhXikks9R9eVs6gSl+qIiVvgsVs7Tv/R9N rFtDfCJB155p3+TaJfCxSA/1e92fAlkjvrq+Ar3n/Jqs+/JGlPFT7Zy0qsgxzMjclrsboCWAvbLZZ2 OSexYpHjEn8jykFiHVbn1z48UtV3JdplNzCir+Gph+mH4axRJfHc0k7gYzyA==
 X-Developer-Key: i=keescook@chromium.org; a=openpgp; fpr=A5C3F68F229DD60F723E6E138972F4DFDC6DC026
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
@@ -169,61 +168,53 @@ replace the open-coded a deserialization of bytes out of memory into a
 trailing flexible array by using a flex_array.h helper to perform the
 allocation, bounds checking, and copying.
 
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Stephen Hemminger <sthemmin@microsoft.com>
-Cc: Wei Liu <wei.liu@kernel.org>
-Cc: Dexuan Cui <decui@microsoft.com>
-Cc: linux-hyperv@vger.kernel.org
+Cc: Andy Gross <agross@kernel.org>
+Cc: Bjorn Andersson <bjorn.andersson@linaro.org>
+Cc: linux-arm-msm@vger.kernel.org
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/hv/hv_utils_transport.c | 7 ++-----
- include/uapi/linux/connector.h  | 4 ++--
- 2 files changed, 4 insertions(+), 7 deletions(-)
+ drivers/soc/qcom/apr.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hv/hv_utils_transport.c b/drivers/hv/hv_utils_transport.c
-index 832885198643..43b4f8893cc0 100644
---- a/drivers/hv/hv_utils_transport.c
-+++ b/drivers/hv/hv_utils_transport.c
-@@ -217,20 +217,17 @@ static void hvt_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- int hvutil_transport_send(struct hvutil_transport *hvt, void *msg, int len,
- 			  void (*on_read_cb)(void))
- {
--	struct cn_msg *cn_msg;
-+	struct cn_msg *cn_msg = NULL;
- 	int ret = 0;
+diff --git a/drivers/soc/qcom/apr.c b/drivers/soc/qcom/apr.c
+index 3caabd873322..6cf6f6df276e 100644
+--- a/drivers/soc/qcom/apr.c
++++ b/drivers/soc/qcom/apr.c
+@@ -40,8 +40,8 @@ struct packet_router {
  
- 	if (hvt->mode == HVUTIL_TRANSPORT_INIT ||
- 	    hvt->mode == HVUTIL_TRANSPORT_DESTROY) {
- 		return -EINVAL;
- 	} else if (hvt->mode == HVUTIL_TRANSPORT_NETLINK) {
--		cn_msg = kzalloc(sizeof(*cn_msg) + len, GFP_ATOMIC);
--		if (!cn_msg)
-+		if (mem_to_flex_dup(&cn_msg, msg, len, GFP_ATOMIC))
- 			return -ENOMEM;
- 		cn_msg->id.idx = hvt->cn_id.idx;
- 		cn_msg->id.val = hvt->cn_id.val;
--		cn_msg->len = len;
--		memcpy(cn_msg->data, msg, len);
- 		ret = cn_netlink_send(cn_msg, 0, 0, GFP_ATOMIC);
- 		kfree(cn_msg);
- 		/*
-diff --git a/include/uapi/linux/connector.h b/include/uapi/linux/connector.h
-index 3738936149a2..b85bbe753dae 100644
---- a/include/uapi/linux/connector.h
-+++ b/include/uapi/linux/connector.h
-@@ -73,9 +73,9 @@ struct cn_msg {
- 	__u32 seq;
- 	__u32 ack;
- 
--	__u16 len;		/* Length of the following data */
-+	__DECLARE_FLEX_ARRAY_ELEMENTS_COUNT(__u16, len);
- 	__u16 flags;
--	__u8 data[0];
-+	__DECLARE_FLEX_ARRAY_ELEMENTS(__u8, data);
+ struct apr_rx_buf {
+ 	struct list_head node;
+-	int len;
+-	uint8_t buf[];
++	DECLARE_FLEX_ARRAY_ELEMENTS_COUNT(int, len);
++	DECLARE_FLEX_ARRAY_ELEMENTS(uint8_t, buf);
  };
  
- #endif /* _UAPI__CONNECTOR_H */
+ /**
+@@ -162,7 +162,7 @@ static int apr_callback(struct rpmsg_device *rpdev, void *buf,
+ 				  int len, void *priv, u32 addr)
+ {
+ 	struct packet_router *apr = dev_get_drvdata(&rpdev->dev);
+-	struct apr_rx_buf *abuf;
++	struct apr_rx_buf *abuf = NULL;
+ 	unsigned long flags;
+ 
+ 	if (len <= APR_HDR_SIZE) {
+@@ -171,13 +171,9 @@ static int apr_callback(struct rpmsg_device *rpdev, void *buf,
+ 		return -EINVAL;
+ 	}
+ 
+-	abuf = kzalloc(sizeof(*abuf) + len, GFP_ATOMIC);
+-	if (!abuf)
++	if (mem_to_flex_dup(&abuf, buf, len, GFP_ATOMIC))
+ 		return -ENOMEM;
+ 
+-	abuf->len = len;
+-	memcpy(abuf->buf, buf, len);
+-
+ 	spin_lock_irqsave(&apr->rx_lock, flags);
+ 	list_add_tail(&abuf->node, &apr->rx_list);
+ 	spin_unlock_irqrestore(&apr->rx_lock, flags);
 -- 
 2.32.0
 
