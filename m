@@ -2,69 +2,136 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6457CC433EF
-	for <keyrings@archiver.kernel.org>; Fri,  6 May 2022 16:09:11 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 24F10C433EF
+	for <keyrings@archiver.kernel.org>; Sat,  7 May 2022 19:24:49 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1443602AbiEFQMv convert rfc822-to-8bit (ORCPT
-        <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 6 May 2022 12:12:51 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44540 "EHLO
+        id S1358673AbiEGT2e (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 7 May 2022 15:28:34 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40884 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1443647AbiEFQMn (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 6 May 2022 12:12:43 -0400
-Received: from jabberwock.ucw.cz (jabberwock.ucw.cz [46.255.230.98])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EEE4A6FA2E;
-        Fri,  6 May 2022 09:08:12 -0700 (PDT)
-Received: by jabberwock.ucw.cz (Postfix, from userid 1017)
-        id CF2A51C0BA6; Fri,  6 May 2022 18:08:09 +0200 (CEST)
-Date:   Fri, 6 May 2022 18:08:08 +0200
-From:   Pavel Machek <pavel@ucw.cz>
-To:     Evan Green <evgreen@chromium.org>
-Cc:     linux-kernel@vger.kernel.org,
-        Matthew Garrett <mgarrett@aurora.tech>, dlunev@google.com,
-        zohar@linux.ibm.com, jejb@linux.ibm.com,
-        linux-integrity@vger.kernel.org, corbet@lwn.net, rjw@rjwysocki.net,
-        gwendal@chromium.org, jarkko@kernel.org, linux-pm@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Hao Wu <hao.wu@rubrik.com>, James Morris <jmorris@namei.org>,
-        Jason Gunthorpe <jgg@ziepe.ca>,
-        Len Brown <len.brown@intel.com>,
-        Matthew Garrett <matthewgarrett@google.com>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        "Rafael J. Wysocki" <rafael@kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, axelj <axelj@axis.com>,
-        keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
+        with ESMTP id S231754AbiEGT2d (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 7 May 2022 15:28:33 -0400
+Received: from sin.source.kernel.org (sin.source.kernel.org [145.40.73.55])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DC8B7193F8;
+        Sat,  7 May 2022 12:24:45 -0700 (PDT)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by sin.source.kernel.org (Postfix) with ESMTPS id 494D4CE0B8E;
+        Sat,  7 May 2022 19:24:44 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 012C8C385A5;
+        Sat,  7 May 2022 19:24:41 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1651951482;
+        bh=MyfTcFDU6ZdDemzDXz07p3GqM6JlaSU35muvBx+cqsA=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=nWa5DFGSnHM+5qK1Nz9q8zyDg/AOASCQqnvJ0DnomLwFqMBGsfWD4eNeKL/rCg1nQ
+         EAxoVoCdfC5PO27eZDd65kbixnFzkbauOLmcNodfPZbmJODG5WHub4CKwjK72WqsK6
+         wu2DiGRWmhYqAMz+waY7xpBzGk3I3x4sGM+T53TxtWKzcSy4Wbzy+xOXyCmlDjVg4k
+         bZI69rB9yME650ZZYxdYz3DehxpM+Xoobjwd7Fw7V9a/vuwOyop0cB780iDUKRWfiv
+         rsiJirftMUIYfEmAHlpFPiAqeQq/rRWKpGFhKGgBgL5DlNytyK3XrX19/ROQKmvX94
+         TfZCxf1m/Qo/g==
+Date:   Sat, 7 May 2022 22:26:16 +0300
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Ahmad Fatoum <a.fatoum@pengutronix.de>
+Cc:     James Bottomley <jejb@linux.ibm.com>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>, kernel@pengutronix.de,
+        Pankaj Gupta <pankaj.gupta@nxp.com>,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Horia =?utf-8?Q?Geant=C4=83?= <horia.geanta@nxp.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Biggers <ebiggers@kernel.org>,
+        Jan Luebbe <j.luebbe@pengutronix.de>,
+        David Gstir <david@sigma-star.at>,
+        Richard Weinberger <richard@nod.at>,
+        Franck LENORMAND <franck.lenormand@nxp.com>,
+        Matthias Schiffer <matthias.schiffer@ew.tq-group.com>,
+        Michael Walle <michael@walle.cc>,
+        Sumit Garg <sumit.garg@linaro.org>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 00/10] Encrypted Hibernation
-Message-ID: <20220506160807.GA1060@bug>
-References: <20220504232102.469959-1-evgreen@chromium.org>
+Subject: Re: [PATCH v9 7/7] MAINTAINERS: add KEYS-TRUSTED-CAAM
+Message-ID: <YnbH2Fgn/JFOU3Rf@iki.fi>
+References: <20220506062553.1068296-1-a.fatoum@pengutronix.de>
+ <20220506062553.1068296-8-a.fatoum@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20220504232102.469959-1-evgreen@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20220506062553.1068296-8-a.fatoum@pengutronix.de>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi!
+On Fri, May 06, 2022 at 08:25:53AM +0200, Ahmad Fatoum wrote:
+> Create a maintainer entry for CAAM trusted keys in the Linux keyring.
+> 
+> Reviewed-by: Pankaj Gupta <pankaj.gupta@nxp.com>
+> Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
+> ---
+> v8 -> v9:
+>   - rewrite commit message (Jarkko)
+> v7 -> v8:
+>   - add Pankaj's Reviewed-by
+> v6 -> v7:
+>   - split off as separate patch (Jarkko)
+> 
+> To: Jarkko Sakkinen <jarkko@kernel.org>
+> To: James Bottomley <jejb@linux.ibm.com>
+> To: Mimi Zohar <zohar@linux.ibm.com>
+> To: David Howells <dhowells@redhat.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+> Cc: "Horia Geantă" <horia.geanta@nxp.com>
+> Cc: Pankaj Gupta <pankaj.gupta@nxp.com>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Eric Biggers <ebiggers@kernel.org>
+> Cc: Jan Luebbe <j.luebbe@pengutronix.de>
+> Cc: David Gstir <david@sigma-star.at>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: Franck LENORMAND <franck.lenormand@nxp.com>
+> Cc: Matthias Schiffer <matthias.schiffer@ew.tq-group.com>
+> Cc: Michael Walle <michael@walle.cc>
+> Cc: Sumit Garg <sumit.garg@linaro.org>
+> Cc: keyrings@vger.kernel.org
+> Cc: linux-crypto@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-integrity@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-security-module@vger.kernel.org
+> ---
+>  MAINTAINERS | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 5e8c2f611766..e58e6fc3016d 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -10855,6 +10855,15 @@ S:	Supported
+>  F:	include/keys/trusted_tee.h
+>  F:	security/keys/trusted-keys/trusted_tee.c
+>  
+> +KEYS-TRUSTED-CAAM
+> +M:	Ahmad Fatoum <a.fatoum@pengutronix.de>
+> +R:	Pengutronix Kernel Team <kernel@pengutronix.de>
+> +L:	linux-integrity@vger.kernel.org
+> +L:	keyrings@vger.kernel.org
+> +S:	Maintained
+> +F:	include/keys/trusted_caam.h
+> +F:	security/keys/trusted-keys/trusted_caam.c
+> +
+>  KEYS/KEYRINGS
+>  M:	David Howells <dhowells@redhat.com>
+>  M:	Jarkko Sakkinen <jarkko@kernel.org>
+> -- 
+> 2.30.2
+> 
 
-> We are exploring enabling hibernation in some new scenarios. However,
-> our security team has a few requirements, listed below:
-> 1. The hibernate image must be encrypted with protection derived from
->    both the platform (eg TPM) and user authentication data (eg
->    password).
-> 2. Hibernation must not be a vector by which a malicious userspace can
->    escalate to the kernel.
+Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Can you (or your security team) explain why requirement 2. is needed?
-
-On normal systems, trusted userspace handles kernel upgrades (for example), 
-so it can escalate to kernel priviledges.
-
-Best regards,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+BR, Jarkko
