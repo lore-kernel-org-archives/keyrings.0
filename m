@@ -2,182 +2,135 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 664FAC433FE
-	for <keyrings@archiver.kernel.org>; Thu, 12 May 2022 21:48:33 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 195E6C433F5
+	for <keyrings@archiver.kernel.org>; Fri, 13 May 2022 14:57:55 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1358971AbiELVsb (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 12 May 2022 17:48:31 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53772 "EHLO
+        id S1344531AbiEMO5x (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 13 May 2022 10:57:53 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53512 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1358922AbiELVsI (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 12 May 2022 17:48:08 -0400
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTP id E04B427EB89
-        for <keyrings@vger.kernel.org>; Thu, 12 May 2022 14:47:52 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1652392071;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-         in-reply-to:in-reply-to:references:references;
-        bh=YWzVrdFw3n8EH2Ce8k4daz33bBf83epcMdzHAJNT8tE=;
-        b=PJ+AYPyj8pLd2Z53EbADYFV5StVYRn6S6jED85CI2KX0LlZFLoUwWpJgqxLVR1cCp1TA7w
-        Ee+yFuIUie++p0yEbE/jlRz3u/BKcr+QXYIEz+i/gmydFs8giFyA8SPefd+tYPxjE25Y4f
-        XVAG82zZg9XBaQNlBcyJxcIQAVNriuI=
-Received: from mimecast-mx02.redhat.com (mx3-rdu2.redhat.com
- [66.187.233.73]) by relay.mimecast.com with ESMTP with STARTTLS
- (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- us-mta-617-E2haYQIaNmW7kVC3uepXEg-1; Thu, 12 May 2022 17:47:46 -0400
-X-MC-Unique: E2haYQIaNmW7kVC3uepXEg-1
-Received: from smtp.corp.redhat.com (int-mx02.intmail.prod.int.rdu2.redhat.com [10.11.54.2])
-        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id DD7EB383328C;
-        Thu, 12 May 2022 21:47:45 +0000 (UTC)
-Received: from warthog.procyon.org.uk (unknown [10.33.37.67])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id A13B84010E23;
-        Thu, 12 May 2022 21:47:31 +0000 (UTC)
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-        Kingdom.
-        Registered in England and Wales under Company Registration No. 3798903
-From:   David Howells <dhowells@redhat.com>
-In-Reply-To: <20220504014440.3697851-1-keescook@chromium.org>
-References: <20220504014440.3697851-1-keescook@chromium.org>
-To:     Kees Cook <keescook@chromium.org>
-Cc:     Alexei Starovoitov <ast@kernel.org>, alsa-devel@alsa-project.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Gabbasov <andrew_gabbasov@mentor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Gross <agross@kernel.org>,
-        Andy Lavr <andy.lavr@gmail.com>,
-        Arend van Spriel <aspriel@gmail.com>,
-        Baowen Zheng <baowen.zheng@corigine.com>,
-        Bjorn Andersson <bjorn.andersson@linaro.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Bradley Grove <linuxdrivers@attotech.com>,
-        brcm80211-dev-list.pdl@broadcom.com,
-        Christian Brauner <brauner@kernel.org>,
-        Christian =?utf-8?Q?G=C3=B6ttsche?= <cgzones@googlemail.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Chris Zankel <chris@zankel.net>,
-        Cong Wang <cong.wang@bytedance.com>,
-        Daniel Axtens <dja@axtens.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dan Williams <dan.j.williams@intel.com>,
-        David Gow <davidgow@google.com>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dennis Dalessandro <dennis.dalessandro@cornelisnetworks.com>,
-        devicetree@vger.kernel.org, Dexuan Cui <decui@microsoft.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Eli Cohen <elic@nvidia.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Eugeniu Rosca <erosca@de.adit-jv.com>,
-        Felipe Balbi <balbi@kernel.org>,
-        Francis Laniel <laniel_francis@privacyrequired.com>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Franky Lin <franky.lin@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gregory Greenman <gregory.greenman@intel.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hante Meuleman <hante.meuleman@broadcom.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Hulk Robot <hulkci@huawei.com>,
-        Jakub Kicinski <kuba@kernel.org>,
-        "James E.J. Bottomley" <jejb@linux.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Jason Gunthorpe <jgg@ziepe.ca>, Jens Axboe <axboe@kernel.dk>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        John Keeping <john@metanate.com>,
-        Juergen Gross <jgross@suse.com>, Kalle Valo <kvalo@kernel.org>,
-        Keith Packard <keithp@keithp.com>, keyrings@vger.kernel.org,
-        kunit-dev@googlegroups.com,
-        Kuniyuki Iwashima <kuniyu@amazon.co.jp>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Lee Jones <lee.jones@linaro.org>,
-        Leon Romanovsky <leon@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux1394-devel@lists.sourceforge.net,
-        linux-afs@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-hardening@vger.kernel.org, linux-hyperv@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-rdma@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-xtensa@linux-xtensa.org, llvm@lists.linux.dev,
-        Loic Poulain <loic.poulain@linaro.org>,
-        Louis Peens <louis.peens@corigine.com>,
-        Luca Coelho <luciano.coelho@intel.com>,
-        Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-        Marc Dionne <marc.dionne@auristor.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Mark Brown <broonie@kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Max Filippov <jcmvbkbc@gmail.com>,
+        with ESMTP id S234215AbiEMO5x (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 13 May 2022 10:57:53 -0400
+Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2F65B17054
+        for <keyrings@vger.kernel.org>; Fri, 13 May 2022 07:57:52 -0700 (PDT)
+Received: from drehscheibe.grey.stw.pengutronix.de ([2a0a:edc0:0:c01:1d::a2])
+        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
+        (Exim 4.92)
+        (envelope-from <afa@pengutronix.de>)
+        id 1npWjS-0002Mr-Bq; Fri, 13 May 2022 16:57:30 +0200
+Received: from [2a0a:edc0:0:1101:1d::ac] (helo=dude04.red.stw.pengutronix.de)
+        by drehscheibe.grey.stw.pengutronix.de with esmtp (Exim 4.94.2)
+        (envelope-from <afa@pengutronix.de>)
+        id 1npWjR-0026HA-OE; Fri, 13 May 2022 16:57:28 +0200
+Received: from afa by dude04.red.stw.pengutronix.de with local (Exim 4.94.2)
+        (envelope-from <afa@pengutronix.de>)
+        id 1npWjP-008jDE-8r; Fri, 13 May 2022 16:57:27 +0200
+From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
+To:     Jarkko Sakkinen <jarkko@kernel.org>,
+        James Bottomley <jejb@linux.ibm.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
-        Muchun Song <songmuchun@bytedance.com>,
-        Nathan Chancellor <nathan@kernel.org>, netdev@vger.kernel.org,
-        Nick Desaulniers <ndesaulniers@google.com>,
-        Nuno =?utf-8?Q?S=C3=A1?= <nuno.sa@analog.com>,
-        Paolo Abeni <pabeni@redhat.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Rich Felker <dalias@aerifal.cx>,
-        Rob Herring <robh+dt@kernel.org>,
-        Russell King <linux@armlinux.org.uk>, selinux@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Cc:     kernel@pengutronix.de, Pankaj Gupta <pankaj.gupta@nxp.com>,
+        Ahmad Fatoum <a.fatoum@pengutronix.de>,
+        James Morris <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        SHA-cyfmac-dev-list@infineon.com,
-        Simon Horman <simon.horman@corigine.com>,
-        Stefano Stabellini <sstabellini@kernel.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Stephen Hemminger <sthemmin@microsoft.com>,
-        Stephen Smalley <stephen.smalley.work@gmail.com>,
-        Tadeusz Struk <tadeusz.struk@linaro.org>,
-        Takashi Iwai <tiwai@suse.com>, Tom Rix <trix@redhat.com>,
-        Udipto Goswami <quic_ugoswami@quicinc.com>,
-        Vincenzo Frascino <vincenzo.frascino@arm.com>,
-        wcn36xx@lists.infradead.org, Wei Liu <wei.liu@kernel.org>,
-        xen-devel@lists.xenproject.org,
-        Xiu Jianfeng <xiujianfeng@huawei.com>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: Re: [PATCH 00/32] Introduce flexible array struct memcpy() helpers
+        =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Biggers <ebiggers@kernel.org>,
+        Jan Luebbe <j.luebbe@pengutronix.de>,
+        David Gstir <david@sigma-star.at>,
+        Richard Weinberger <richard@nod.at>,
+        Franck LENORMAND <franck.lenormand@nxp.com>,
+        Matthias Schiffer <matthias.schiffer@ew.tq-group.com>,
+        Michael Walle <michael@walle.cc>,
+        John Ernberg <john.ernberg@actia.se>,
+        Sumit Garg <sumit.garg@linaro.org>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH v10 7/7] MAINTAINERS: add KEYS-TRUSTED-CAAM
+Date:   Fri, 13 May 2022 16:57:05 +0200
+Message-Id: <20220513145705.2080323-8-a.fatoum@pengutronix.de>
+X-Mailer: git-send-email 2.30.2
+In-Reply-To: <20220513145705.2080323-1-a.fatoum@pengutronix.de>
+References: <20220513145705.2080323-1-a.fatoum@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-Date:   Thu, 12 May 2022 22:47:31 +0100
-Message-ID: <899235.1652392051@warthog.procyon.org.uk>
-X-Scanned-By: MIMEDefang 2.84 on 10.11.54.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2a0a:edc0:0:c01:1d::a2
+X-SA-Exim-Mail-From: afa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+Create a maintainer entry for CAAM trusted keys in the Linux keyring.
 
-Kees Cook <keescook@chromium.org> wrote:
+Reviewed-by: Pankaj Gupta <pankaj.gupta@nxp.com>
+Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
+---
+v9 -> v10:
+  - add Jarkko's Acked-by
+v8 -> v9:
+  - rewrite commit message (Jarkko)
+v7 -> v8:
+  - add Pankaj's Reviewed-by
+v6 -> v7:
+  - split off as separate patch (Jarkko)
 
-> I'm happy to also point out that the conversions (patches 5+) are actually
-> a net reduction in lines of code:
->  49 files changed, 154 insertions(+), 244 deletions(-)
+To: Jarkko Sakkinen <jarkko@kernel.org>
+To: James Bottomley <jejb@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Horia Geantă" <horia.geanta@nxp.com>
+Cc: Pankaj Gupta <pankaj.gupta@nxp.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Biggers <ebiggers@kernel.org>
+Cc: Jan Luebbe <j.luebbe@pengutronix.de>
+Cc: David Gstir <david@sigma-star.at>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Franck LENORMAND <franck.lenormand@nxp.com>
+Cc: Matthias Schiffer <matthias.schiffer@ew.tq-group.com>
+Cc: Michael Walle <michael@walle.cc>
+Cc: John Ernberg <john.ernberg@actia.se>
+Cc: Sumit Garg <sumit.garg@linaro.org>
+Cc: keyrings@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+---
+ MAINTAINERS | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-That doesn't mean that it's actually code that's clearer to read.  I would say
-that it's actually less clear.  In a bunch of places, you've done something
-like:
-
--	e = kmalloc(...);
--	if (!e)
-+	if (__mem_to_flex_dup(&e, ...))
-
-The problem is that, to me at least, it looks like:
-
--	e = kmalloc(...);
--	if (kmalloc failed)
-+	if (__mem_to_flex_dup(&e, ...) succeeded)
-
-David
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e8c52d0192a6..4a56129bd7d2 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -10856,6 +10856,15 @@ S:	Supported
+ F:	include/keys/trusted_tee.h
+ F:	security/keys/trusted-keys/trusted_tee.c
+ 
++KEYS-TRUSTED-CAAM
++M:	Ahmad Fatoum <a.fatoum@pengutronix.de>
++R:	Pengutronix Kernel Team <kernel@pengutronix.de>
++L:	linux-integrity@vger.kernel.org
++L:	keyrings@vger.kernel.org
++S:	Maintained
++F:	include/keys/trusted_caam.h
++F:	security/keys/trusted-keys/trusted_caam.c
++
+ KEYS/KEYRINGS
+ M:	David Howells <dhowells@redhat.com>
+ M:	Jarkko Sakkinen <jarkko@kernel.org>
+-- 
+2.30.2
 
