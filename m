@@ -2,296 +2,134 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E141FC433F5
-	for <keyrings@archiver.kernel.org>; Fri, 13 May 2022 14:59:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B5F1EC433F5
+	for <keyrings@archiver.kernel.org>; Fri, 13 May 2022 15:25:20 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1381667AbiEMO7L (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 13 May 2022 10:59:11 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55570 "EHLO
+        id S1381133AbiEMPZU (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 13 May 2022 11:25:20 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51050 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1381664AbiEMO6r (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 13 May 2022 10:58:47 -0400
-Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1C36E3E5FF
-        for <keyrings@vger.kernel.org>; Fri, 13 May 2022 07:58:17 -0700 (PDT)
-Received: from drehscheibe.grey.stw.pengutronix.de ([2a0a:edc0:0:c01:1d::a2])
-        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
-        (Exim 4.92)
-        (envelope-from <afa@pengutronix.de>)
-        id 1npWjS-0002Ms-Bj; Fri, 13 May 2022 16:57:30 +0200
-Received: from [2a0a:edc0:0:1101:1d::ac] (helo=dude04.red.stw.pengutronix.de)
-        by drehscheibe.grey.stw.pengutronix.de with esmtp (Exim 4.94.2)
-        (envelope-from <afa@pengutronix.de>)
-        id 1npWjR-0026HF-RO; Fri, 13 May 2022 16:57:28 +0200
-Received: from afa by dude04.red.stw.pengutronix.de with local (Exim 4.94.2)
-        (envelope-from <afa@pengutronix.de>)
-        id 1npWjP-008jCp-2D; Fri, 13 May 2022 16:57:27 +0200
-From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
-To:     James Bottomley <jejb@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        David Howells <dhowells@redhat.com>
-Cc:     kernel@pengutronix.de, Sumit Garg <sumit.garg@linaro.org>,
-        Pankaj Gupta <pankaj.gupta@nxp.com>,
-        David Gstir <david@sigma-star.at>,
-        Michael Walle <michael@walle.cc>,
-        John Ernberg <john.ernberg@actia.se>,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jan Luebbe <j.luebbe@pengutronix.de>,
-        Eric Biggers <ebiggers@kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        Franck LENORMAND <franck.lenormand@nxp.com>,
-        Matthias Schiffer <matthias.schiffer@ew.tq-group.com>,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v10 2/7] KEYS: trusted: allow use of kernel RNG for key material
-Date:   Fri, 13 May 2022 16:57:00 +0200
-Message-Id: <20220513145705.2080323-3-a.fatoum@pengutronix.de>
-X-Mailer: git-send-email 2.30.2
-In-Reply-To: <20220513145705.2080323-1-a.fatoum@pengutronix.de>
-References: <20220513145705.2080323-1-a.fatoum@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2a0a:edc0:0:c01:1d::a2
-X-SA-Exim-Mail-From: afa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
+        with ESMTP id S233504AbiEMPZT (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 13 May 2022 11:25:19 -0400
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A7C46E0CD;
+        Fri, 13 May 2022 08:25:18 -0700 (PDT)
+Received: from pps.filterd (m0098399.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.17.1.5/8.17.1.5) with ESMTP id 24DFBouj023613;
+        Fri, 13 May 2022 15:24:54 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
+ from : to : cc : date : in-reply-to : references : content-type :
+ mime-version : content-transfer-encoding; s=pp1;
+ bh=Rs/HrYaFsVOG7pHzpWHMzkvZ8QnbJVdvVi9OpbPAeQ8=;
+ b=XquKzgjsrizj4CfhcryNFVGqew5wyyd7HPiDR9cLxA/QDQCBSyzQ3d4A+o5zkXiaJAUX
+ uYdgcRXvAXKhfn14LipL3IDS6QPy1nl0ZpHRDmTYSdxaIsp+oDlqKWhgnTlhW0H0VegT
+ 6f0XP/GtHdx6033jI2pf54HAI+TZSN4C3+345s1KBUw6ygzjiQtQ9G12DROr/KIURWcp
+ D8q/7hu9aO6VxzekJS98QeVeeVOaIr4tucAriBBjecxgt93rSWsQKCL+HGFo3ASZMOGY
+ TW1XRuw2FsM1iiOi/3UQZqTFaiytFNegAdnmqbnOuPgqG7yextuGnwf6US7V4/aJuhsp DA== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3g1srpr8pk-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 13 May 2022 15:24:54 +0000
+Received: from m0098399.ppops.net (m0098399.ppops.net [127.0.0.1])
+        by pps.reinject (8.17.1.5/8.17.1.5) with ESMTP id 24DFFQbg008263;
+        Fri, 13 May 2022 15:24:53 GMT
+Received: from ppma06ams.nl.ibm.com (66.31.33a9.ip4.static.sl-reverse.com [169.51.49.102])
+        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3g1srpr8nk-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 13 May 2022 15:24:53 +0000
+Received: from pps.filterd (ppma06ams.nl.ibm.com [127.0.0.1])
+        by ppma06ams.nl.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 24DFOp4I014120;
+        Fri, 13 May 2022 15:24:51 GMT
+Received: from b06avi18878370.portsmouth.uk.ibm.com (b06avi18878370.portsmouth.uk.ibm.com [9.149.26.194])
+        by ppma06ams.nl.ibm.com with ESMTP id 3fyrkk4r9r-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 13 May 2022 15:24:50 +0000
+Received: from d06av23.portsmouth.uk.ibm.com (d06av23.portsmouth.uk.ibm.com [9.149.105.59])
+        by b06avi18878370.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 24DFOOJ914549438
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Fri, 13 May 2022 15:24:24 GMT
+Received: from d06av23.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 96179A4053;
+        Fri, 13 May 2022 15:24:48 +0000 (GMT)
+Received: from d06av23.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 2D701A404D;
+        Fri, 13 May 2022 15:24:46 +0000 (GMT)
+Received: from sig-9-65-91-25.ibm.com (unknown [9.65.91.25])
+        by d06av23.portsmouth.uk.ibm.com (Postfix) with ESMTP;
+        Fri, 13 May 2022 15:24:46 +0000 (GMT)
+Message-ID: <06062b288d675dc060f33041e9b2009c151698e6.camel@linux.ibm.com>
+Subject: Re: [PATCH v7] efi: Do not import certificates from UEFI Secure
+ Boot for T2 Macs
+From:   Mimi Zohar <zohar@linux.ibm.com>
+To:     Aditya Garg <gargaditya08@live.com>,
+        "jarkko@kernel.org" <jarkko@kernel.org>,
+        "dmitry.kasatkin@gmail.com" <dmitry.kasatkin@gmail.com>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "serge@hallyn.com" <serge@hallyn.com>,
+        "ast@kernel.org" <ast@kernel.org>,
+        "daniel@iogearbox.net" <daniel@iogearbox.net>,
+        "andrii@kernel.org" <andrii@kernel.org>,
+        "kafai@fb.com" <kafai@fb.com>,
+        "songliubraving@fb.com" <songliubraving@fb.com>,
+        "yhs@fb.com" <yhs@fb.com>,
+        "john.fastabend@gmail.com" <john.fastabend@gmail.com>,
+        "kpsingh@kernel.org" <kpsingh@kernel.org>
+Cc:     "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>,
+        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+        <linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "bpf@vger.kernel.org" <bpf@vger.kernel.org>,
+        Orlando Chamberlain <redecorating@protonmail.com>,
+        "admin@kodeit.net" <admin@kodeit.net>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Date:   Fri, 13 May 2022 11:24:45 -0400
+In-Reply-To: <958B8D22-F11E-4B5D-9F44-6F0626DBCB63@live.com>
+References: <652C3E9E-CB97-4C70-A961-74AF8AEF9E39@live.com>
+         <94DD0D83-8FDE-4A61-AAF0-09A0175A0D0D@live.com>
+         <590ED76A-EE91-4ED1-B524-BC23419C051E@live.com>
+         <E9C28706-2546-40BF-B32C-66A047BE9EFB@live.com>
+         <02125722-91FC-43D3-B63C-1B789C2DA8C3@live.com>
+         <958B8D22-F11E-4B5D-9F44-6F0626DBCB63@live.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.28.5 (3.28.5-18.el8) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-GUID: nSTyBu9TLw378bJvOtb7YdyATbWM_IHn
+X-Proofpoint-ORIG-GUID: cEKFVC3VVbEMtznL2Syom3um3gN35hor
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.205,Aquarius:18.0.858,Hydra:6.0.486,FMLib:17.11.64.514
+ definitions=2022-05-13_04,2022-05-13_01,2022-02-23_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 priorityscore=1501 mlxscore=0
+ suspectscore=0 bulkscore=0 adultscore=0 spamscore=0 clxscore=1011
+ phishscore=0 mlxlogscore=793 impostorscore=0 malwarescore=0
+ lowpriorityscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2202240000 definitions=main-2205130067
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-The two existing trusted key sources don't make use of the kernel RNG,
-but instead let the hardware doing the sealing/unsealing also
-generate the random key material. However, both users and future
-backends may want to place less trust into the quality of the trust
-source's random number generator and instead reuse the kernel entropy
-pool, which can be seeded from multiple entropy sources.
+Hi Aditya,
 
-Make this possible by adding a new trusted.rng parameter,
-that will force use of the kernel RNG. In its absence, it's up
-to the trust source to decide, which random numbers to use,
-maintaining the existing behavior.
+On Fri, 2022-04-15 at 17:02 +0000, Aditya Garg wrote:
+> From: Aditya Garg <gargaditya08@live.com>
+> 
+> On Apple T2 Macs, when Linux attempts to read the db and dbx efi variables
+> at early boot to load UEFI Secure Boot certificates, a page fault occurs
+> in Apple firmware code and EFI runtime services are disabled with the
+> following logs:
 
-Suggested-by: Jarkko Sakkinen <jarkko@kernel.org>
-Acked-by: Sumit Garg <sumit.garg@linaro.org>
-Acked-by: Pankaj Gupta <pankaj.gupta@nxp.com>
-Reviewed-by: David Gstir <david@sigma-star.at>
-Reviewed-by: Pankaj Gupta <pankaj.gupta@nxp.com>
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
-Tested-by: Pankaj Gupta <pankaj.gupta@nxp.com>
-Tested-by: Michael Walle <michael@walle.cc> # on ls1028a (non-E and E)
-Tested-by: John Ernberg <john.ernberg@actia.se> # iMX8QXP
-Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
----
-v9 -> v10:
-  - added Michael's and John's Tested-by
-v8 -> v9:
-  - No changes
-v7 -> v8:
-  - add Pankaj's Tested-by
-v6 -> v7:
-  - No changes
-v5 -> v6:
-  - Squash with follow-up patch enabling trust sources to use
-    kernel RNG if they don't define their own .get_random
-  - Collected Jarkko's Reviewed-by
-v4 -> v5:
-  - Changed trusted.kernel_rng bool option into a string trusted.rng option
-    (Jarkko)
-  - Typo fix in commit message (Jarkko)
-v3 -> v4:
-  - Collected Acked-by's, Reviewed-by's and Tested-by
-v2 -> v3:
-  - No change
-v1 -> v2:
- - Allow users to force use of kernel RNG (Jarkko)
+Are there directions for installing Linux on a Mac with Apple firmware
+code?  Are you dual booting Linux and Mac, or just Linux?  While in
+secure boot mode, without being able to read the keys to verify the
+kernel image signature, the signature verification should fail.
 
-To: James Bottomley <jejb@linux.ibm.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-To: Mimi Zohar <zohar@linux.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Horia Geantă" <horia.geanta@nxp.com>
-Cc: Pankaj Gupta <pankaj.gupta@nxp.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jan Luebbe <j.luebbe@pengutronix.de>
-Cc: Eric Biggers <ebiggers@kernel.org>
-Cc: David Gstir <david@sigma-star.at>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Franck LENORMAND <franck.lenormand@nxp.com>
-Cc: Sumit Garg <sumit.garg@linaro.org>
-Cc: Matthias Schiffer <matthias.schiffer@ew.tq-group.com>
-Cc: Michael Walle <michael@walle.cc>
-Cc: John Ernberg <john.ernberg@actia.se>
-Cc: keyrings@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org
-Cc: linux-integrity@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
----
- .../admin-guide/kernel-parameters.txt         | 10 ++++++
- .../security/keys/trusted-encrypted.rst       | 20 ++++++-----
- include/keys/trusted-type.h                   |  2 +-
- security/keys/trusted-keys/trusted_core.c     | 35 ++++++++++++++++++-
- 4 files changed, 57 insertions(+), 10 deletions(-)
+Has anyone else tested this patch?
 
-diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
-index 3f1cc5e317ed..4deed1908a75 100644
---- a/Documentation/admin-guide/kernel-parameters.txt
-+++ b/Documentation/admin-guide/kernel-parameters.txt
-@@ -5963,6 +5963,16 @@
- 			first trust source as a backend which is initialized
- 			successfully during iteration.
- 
-+	trusted.rng=	[KEYS]
-+			Format: <string>
-+			The RNG used to generate key material for trusted keys.
-+			Can be one of:
-+			- "kernel"
-+			- the same value as trusted.source: "tpm" or "tee"
-+			- "default"
-+			If not specified, "default" is used. In this case,
-+			the RNG's choice is left to each individual trust source.
-+
- 	tsc=		Disable clocksource stability checks for TSC.
- 			Format: <string>
- 			[x86] reliable: mark tsc clocksource as reliable, this
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index f614dad7de12..2fe6fd1a2bbd 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -87,22 +87,26 @@ Key Generation
- Trusted Keys
- ------------
- 
--New keys are created from random numbers generated in the trust source. They
--are encrypted/decrypted using a child key in the storage key hierarchy.
--Encryption and decryption of the child key must be protected by a strong
--access control policy within the trust source.
-+New keys are created from random numbers. They are encrypted/decrypted using
-+a child key in the storage key hierarchy. Encryption and decryption of the
-+child key must be protected by a strong access control policy within the
-+trust source. The random number generator in use differs according to the
-+selected trust source:
- 
--  *  TPM (hardware device) based RNG
-+  *  TPM: hardware device based RNG
- 
--     Strength of random numbers may vary from one device manufacturer to
--     another.
-+     Keys are generated within the TPM. Strength of random numbers may vary
-+     from one device manufacturer to another.
- 
--  *  TEE (OP-TEE based on Arm TrustZone) based RNG
-+  *  TEE: OP-TEE based on Arm TrustZone based RNG
- 
-      RNG is customizable as per platform needs. It can either be direct output
-      from platform specific hardware RNG or a software based Fortuna CSPRNG
-      which can be seeded via multiple entropy sources.
- 
-+Users may override this by specifying ``trusted.rng=kernel`` on the kernel
-+command-line to override the used RNG with the kernel's random number pool.
-+
- Encrypted Keys
- --------------
- 
-diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
-index d89fa2579ac0..4eb64548a74f 100644
---- a/include/keys/trusted-type.h
-+++ b/include/keys/trusted-type.h
-@@ -64,7 +64,7 @@ struct trusted_key_ops {
- 	/* Unseal a key. */
- 	int (*unseal)(struct trusted_key_payload *p, char *datablob);
- 
--	/* Get a randomized key. */
-+	/* Optional: Get a randomized key. */
- 	int (*get_random)(unsigned char *key, size_t key_len);
- 
- 	/* Exit key interface. */
-diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
-index 7cdbd16aed30..9235fb7d0ec9 100644
---- a/security/keys/trusted-keys/trusted_core.c
-+++ b/security/keys/trusted-keys/trusted_core.c
-@@ -16,12 +16,17 @@
- #include <linux/key-type.h>
- #include <linux/module.h>
- #include <linux/parser.h>
-+#include <linux/random.h>
- #include <linux/rcupdate.h>
- #include <linux/slab.h>
- #include <linux/static_call.h>
- #include <linux/string.h>
- #include <linux/uaccess.h>
- 
-+static char *trusted_rng = "default";
-+module_param_named(rng, trusted_rng, charp, 0);
-+MODULE_PARM_DESC(rng, "Select trusted key RNG");
-+
- static char *trusted_key_source;
- module_param_named(source, trusted_key_source, charp, 0);
- MODULE_PARM_DESC(source, "Select trusted keys source (tpm or tee)");
-@@ -312,8 +317,14 @@ struct key_type key_type_trusted = {
- };
- EXPORT_SYMBOL_GPL(key_type_trusted);
- 
-+static int kernel_get_random(unsigned char *key, size_t key_len)
-+{
-+	return get_random_bytes_wait(key, key_len) ?: key_len;
-+}
-+
- static int __init init_trusted(void)
- {
-+	int (*get_random)(unsigned char *key, size_t key_len);
- 	int i, ret = 0;
- 
- 	for (i = 0; i < ARRAY_SIZE(trusted_key_sources); i++) {
-@@ -322,6 +333,28 @@ static int __init init_trusted(void)
- 			    strlen(trusted_key_sources[i].name)))
- 			continue;
- 
-+		/*
-+		 * We always support trusted.rng="kernel" and "default" as
-+		 * well as trusted.rng=$trusted.source if the trust source
-+		 * defines its own get_random callback.
-+		 */
-+		get_random = trusted_key_sources[i].ops->get_random;
-+		if (trusted_rng && strcmp(trusted_rng, "default")) {
-+			if (!strcmp(trusted_rng, "kernel")) {
-+				get_random = kernel_get_random;
-+			} else if (strcmp(trusted_rng, trusted_key_sources[i].name) ||
-+				   !get_random) {
-+				pr_warn("Unsupported RNG. Supported: kernel");
-+				if (get_random)
-+					pr_cont(", %s", trusted_key_sources[i].name);
-+				pr_cont(", default\n");
-+				return -EINVAL;
-+			}
-+		}
-+
-+		if (!get_random)
-+			get_random = kernel_get_random;
-+
- 		static_call_update(trusted_key_init,
- 				   trusted_key_sources[i].ops->init);
- 		static_call_update(trusted_key_seal,
-@@ -329,7 +362,7 @@ static int __init init_trusted(void)
- 		static_call_update(trusted_key_unseal,
- 				   trusted_key_sources[i].ops->unseal);
- 		static_call_update(trusted_key_get_random,
--				   trusted_key_sources[i].ops->get_random);
-+				   get_random);
- 		static_call_update(trusted_key_exit,
- 				   trusted_key_sources[i].ops->exit);
- 		migratable = trusted_key_sources[i].ops->migratable;
--- 
-2.30.2
+thanks,
+
+Mimi
+
 
