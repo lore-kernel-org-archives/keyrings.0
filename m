@@ -2,34 +2,69 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id F0FE0C4167B
-	for <keyrings@archiver.kernel.org>; Tue, 17 May 2022 18:21:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 61EF4C433EF
+	for <keyrings@archiver.kernel.org>; Tue, 17 May 2022 18:22:14 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1352004AbiEQSV2 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 17 May 2022 14:21:28 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49118 "EHLO
+        id S1352035AbiEQSWM (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 17 May 2022 14:22:12 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53548 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1352049AbiEQSVH (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 17 May 2022 14:21:07 -0400
-Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C1BDD11836
-        for <keyrings@vger.kernel.org>; Tue, 17 May 2022 11:21:04 -0700 (PDT)
-Received: from ptz.office.stw.pengutronix.de ([2a0a:edc0:0:900:1d::77] helo=[127.0.0.1])
-        by metis.ext.pengutronix.de with esmtp (Exim 4.92)
-        (envelope-from <a.fatoum@pengutronix.de>)
-        id 1nr1oL-0004tm-Pf; Tue, 17 May 2022 20:20:45 +0200
-Message-ID: <53d39f27-e245-d9d3-12a2-755b4863b40d@pengutronix.de>
-Date:   Tue, 17 May 2022 20:20:36 +0200
-MIME-Version: 1.0
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101
- Thunderbird/91.8.0
+        with ESMTP id S233638AbiEQSWJ (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 17 May 2022 14:22:09 -0400
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 772BD1D336;
+        Tue, 17 May 2022 11:22:08 -0700 (PDT)
+Received: from pps.filterd (m0098399.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.17.1.5/8.17.1.5) with ESMTP id 24HICMSK013805;
+        Tue, 17 May 2022 18:21:18 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
+ from : to : cc : date : in-reply-to : references : content-type :
+ content-transfer-encoding : mime-version; s=pp1;
+ bh=yV5FjTW6aOdLLJ5GfzekGQ47jfBqvFOoSil7rFJpN1k=;
+ b=SOwhDpLuF1BISd+/zK9p7zWBqsOwgKdz5TX/sa7P5C6Pe+XSOpOdzkykE2znVlGb4ZgP
+ PIAHkjTz1RJB/zaAflVOtJrG9cREgwVgQfOgeRgG5IexoIIXdiKAZRTAx5SLsPKfVZH4
+ 47zq/I5OMXDuBuNeJ/BrkgZKjEBgetwyHTgcUSCvmgXmHyzJodG6NYQ5/fK3nlDusn3U
+ 1GpE8/xe4fFbS8nXFDh5MQ4wz0jKgyB75B5dzBhFgjl6JsfjT2U/XrMyDyAxlbiw7Qim
+ sw1h+z3aRvhwpepr1DZKKrCVOmp7FDPrqm/k0denfvKaAy8w5zhx50xjSrM25fyjV+nl Eg== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3g4gs7r65e-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 17 May 2022 18:21:18 +0000
+Received: from m0098399.ppops.net (m0098399.ppops.net [127.0.0.1])
+        by pps.reinject (8.17.1.5/8.17.1.5) with ESMTP id 24HIF3Z2023921;
+        Tue, 17 May 2022 18:21:17 GMT
+Received: from ppma02fra.de.ibm.com (47.49.7a9f.ip4.static.sl-reverse.com [159.122.73.71])
+        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3g4gs7r64n-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 17 May 2022 18:21:17 +0000
+Received: from pps.filterd (ppma02fra.de.ibm.com [127.0.0.1])
+        by ppma02fra.de.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 24HI8hRo028569;
+        Tue, 17 May 2022 18:21:14 GMT
+Received: from b06avi18878370.portsmouth.uk.ibm.com (b06avi18878370.portsmouth.uk.ibm.com [9.149.26.194])
+        by ppma02fra.de.ibm.com with ESMTP id 3g2428kqc4-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 17 May 2022 18:21:14 +0000
+Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
+        by b06avi18878370.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 24HIKdlw33292696
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Tue, 17 May 2022 18:20:39 GMT
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 760B74C04A;
+        Tue, 17 May 2022 18:21:12 +0000 (GMT)
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 650FB4C046;
+        Tue, 17 May 2022 18:21:09 +0000 (GMT)
+Received: from sig-9-65-95-105.ibm.com (unknown [9.65.95.105])
+        by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
+        Tue, 17 May 2022 18:21:09 +0000 (GMT)
+Message-ID: <4fe5564e860eb3093a88528ba1d30364d57723e0.camel@linux.ibm.com>
 Subject: Re: [PATCH v10 2/7] KEYS: trusted: allow use of kernel RNG for key
  material
-Content-Language: en-US
-To:     Jarkko Sakkinen <jarkko@kernel.org>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Cc:     James Bottomley <jejb@linux.ibm.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
+From:   Mimi Zohar <zohar@linux.ibm.com>
+To:     "Jason A. Donenfeld" <Jason@zx2c4.com>
+Cc:     Ahmad Fatoum <a.fatoum@pengutronix.de>,
+        James Bottomley <jejb@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
         David Howells <dhowells@redhat.com>, kernel@pengutronix.de,
         Sumit Garg <sumit.garg@linaro.org>,
         Pankaj Gupta <pankaj.gupta@nxp.com>,
@@ -38,7 +73,7 @@ Cc:     James Bottomley <jejb@linux.ibm.com>,
         John Ernberg <john.ernberg@actia.se>,
         James Morris <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        =?UTF-8?Q?Horia_Geant=c4=83?= <horia.geanta@nxp.com>,
+        Horia =?UTF-8?Q?Geant=C4=83?= <horia.geanta@nxp.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
         "David S. Miller" <davem@davemloft.net>,
         Jan Luebbe <j.luebbe@pengutronix.de>,
@@ -48,68 +83,67 @@ Cc:     James Bottomley <jejb@linux.ibm.com>,
         Matthias Schiffer <matthias.schiffer@ew.tq-group.com>,
         keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
         linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
+        linux-security-module@vger.kernel.org,
+        Pascal Van Leeuwen <pvanleeuwen@verimatrix.com>
+Date:   Tue, 17 May 2022 14:21:08 -0400
+In-Reply-To: <YoPdfjswwA2wKinr@zx2c4.com>
 References: <20220513145705.2080323-1-a.fatoum@pengutronix.de>
- <20220513145705.2080323-3-a.fatoum@pengutronix.de>
- <YoPa7C8xs8lgKtwv@zx2c4.com>
- <0e8da958a222e5c1dccaaf1600b08bdb8705b48e.camel@kernel.org>
-From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
-In-Reply-To: <0e8da958a222e5c1dccaaf1600b08bdb8705b48e.camel@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2a0a:edc0:0:900:1d::77
-X-SA-Exim-Mail-From: a.fatoum@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
+         <20220513145705.2080323-3-a.fatoum@pengutronix.de>
+         <1c6a5ce2564c29a06eca255072a379351a5fc026.camel@linux.ibm.com>
+         <YoPdfjswwA2wKinr@zx2c4.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.28.5 (3.28.5-18.el8) 
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: snNeX5_3_uw2TD-aDKNeaE6XMCoy0svW
+X-Proofpoint-GUID: msDQgd47JUtzKxF1GBXOPQcnot1uj5Xy
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-UnRewURL: 0 URL was un-rewritten
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.205,Aquarius:18.0.874,Hydra:6.0.486,FMLib:17.11.64.514
+ definitions=2022-05-17_03,2022-05-17_02,2022-02-23_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxscore=0 spamscore=0
+ priorityscore=1501 clxscore=1011 phishscore=0 adultscore=0 malwarescore=0
+ lowpriorityscore=0 impostorscore=0 suspectscore=0 bulkscore=0
+ mlxlogscore=877 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2202240000 definitions=main-2205170107
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hello Jarkko,
+On Tue, 2022-05-17 at 19:38 +0200, Jason A. Donenfeld wrote:
+> On Tue, May 17, 2022 at 11:52:55AM -0400, Mimi Zohar wrote:
+> > On Fri, 2022-05-13 at 16:57 +0200, Ahmad Fatoum wrote:
+> > >  static int __init init_trusted(void)
+> > >  {
+> > > +       int (*get_random)(unsigned char *key, size_t key_len);
+> > >         int i, ret = 0;
+> > >  
+> > >         for (i = 0; i < ARRAY_SIZE(trusted_key_sources); i++) {
+> > > @@ -322,6 +333,28 @@ static int __init init_trusted(void)
+> > >                             strlen(trusted_key_sources[i].name)))
+> > >                         continue;
+> > >  
+> > > +               /*
+> > > +                * We always support trusted.rng="kernel" and "default" as
+> > > +                * well as trusted.rng=$trusted.source if the trust source
+> > > +                * defines its own get_random callback.
+> > > +                */
+> >  
+> > While TEE trusted keys support was upstreamed, there was a lot of
+> > discussion about using kernel RNG.  One of the concerns was lack of or
+> > insuffiencent entropy during early boot on embedded devices.  This
+> > concern needs to be clearly documented in both Documentation/admin-
+> > guide/kernel-parameters.txt and Documentation/security/keys/trusted-
+> > encrypted.rst.
+> 
+> Sounds like FUD. Use `get_random_bytes_wait()`, and you'll be fine.
 
-On 17.05.22 20:10, Jarkko Sakkinen wrote:
-> On Tue, 2022-05-17 at 19:27 +0200, Jason A. Donenfeld wrote:
->> On Fri, May 13, 2022 at 04:57:00PM +0200, Ahmad Fatoum wrote:
->>> +       trusted.rng=    [KEYS]
->>> +                       Format: <string>
->>> +                       The RNG used to generate key material for trusted keys.
->>> +                       Can be one of:
->>> +                       - "kernel"
->>> +                       - the same value as trusted.source: "tpm" or "tee"
->>> +                       - "default"
->>> +                       If not specified, "default" is used. In this case,
->>> +                       the RNG's choice is left to each individual trust source.
->>> +
->>
->> As a general mechanism, I object to this. The kernel's RNG must be
->> trusted in the first place for key material. That's the whole point of
->> it.
-> 
-> I would relax this  a bit: kernel's RNG must be implicitly must be
-> trusted. If the parameter is used, you make an explicit choice that
-> you are aware of the trust.
-> 
-> If this was opt-out parameter, instead of opt-in, I would get your
-> argument.
-> 
->> However, it sounds like you're not proposing a general mechanism, but
->> just something particular to this "trusted keys" business. In that case,
->> this should be a module flag, and thus not documented here, but rather
->> some place namespaced to your trusted keys stuff. "trusted_keys.preferred_rng={whatever}"
-> 
-> However, I think this a good proposal. Let's make it a module parameter
-> instead.
+As per the original discussion, there's also certification requirements
+[1].
 
-It's already a module parameter.
+Mimi
 
-> 
->> Jason
-> 
-> BR, Jarkko
+[1] https://lkml.org/lkml/2019/10/9/53
 
 
--- 
-Pengutronix e.K.                           |                             |
-Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
-31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
