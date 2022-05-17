@@ -2,42 +2,44 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 04478C433EF
-	for <keyrings@archiver.kernel.org>; Tue, 17 May 2022 18:13:35 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D2DABC4332F
+	for <keyrings@archiver.kernel.org>; Tue, 17 May 2022 18:21:28 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1352111AbiEQSNd (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 17 May 2022 14:13:33 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34022 "EHLO
+        id S1344587AbiEQSV1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 17 May 2022 14:21:27 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48856 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1352028AbiEQSNX (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 17 May 2022 14:13:23 -0400
-Received: from sin.source.kernel.org (sin.source.kernel.org [145.40.73.55])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C55AF51329;
-        Tue, 17 May 2022 11:12:36 -0700 (PDT)
+        with ESMTP id S1352029AbiEQSVB (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 17 May 2022 14:21:01 -0400
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A449CEE2F;
+        Tue, 17 May 2022 11:21:00 -0700 (PDT)
 Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by sin.source.kernel.org (Postfix) with ESMTPS id B4372CE1B8B;
-        Tue, 17 May 2022 18:12:34 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 7D8B1C34100;
-        Tue, 17 May 2022 18:12:32 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1652811153;
-        bh=p7jmOET1fg/asHsIyFWI9moVO8ao+wZmw/Hn3Cysut8=;
-        h=Subject:From:To:Cc:Date:In-Reply-To:References:From;
-        b=sZr50USaCN4pVIx4i6btT6YLqq+PnmiI1/cxIPefMD6VbsfxIpC4mI0mwv4nVDQdj
-         J210APDwuC0nGAy78Q3/aHExJfXhP+sF/dTrCmkfCkdA5COSMQLs86Uzz/UpO9BZiE
-         unA5mJRQVuH19mtBdbCe7yc9RahmXZw3FcZyGKOiTsrRET/SRQT1/TcgjCEOTajTe5
-         4uvuWW3HKJwGvtpG4H+3hBWgXvBRukmPm1y0qs/7PucLSriU22O8q49fqyonsr3NE1
-         2t1O8zQCIqBzr+zVblb5BAdkqahmB2S1KNWrLXSTIzmFHdY+O3ePwApR+jqGSqbi1Y
-         jm/AZXabctd0A==
-Message-ID: <0e8da958a222e5c1dccaaf1600b08bdb8705b48e.camel@kernel.org>
-Subject: Re: [PATCH v10 2/7] KEYS: trusted: allow use of kernel RNG for key
- material
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     "Jason A. Donenfeld" <Jason@zx2c4.com>,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>
-Cc:     James Bottomley <jejb@linux.ibm.com>,
+        by dfw.source.kernel.org (Postfix) with ESMTPS id 1F57061572;
+        Tue, 17 May 2022 18:21:00 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id F1A66C34100;
+        Tue, 17 May 2022 18:20:56 +0000 (UTC)
+Authentication-Results: smtp.kernel.org;
+        dkim=pass (1024-bit key) header.d=zx2c4.com header.i=@zx2c4.com header.b="ZuGFcQ7H"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=zx2c4.com; s=20210105;
+        t=1652811655;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=wrNAXMhJ8mMt1s0emycVPYEmjWKKVUxh1cIx7NgNQRA=;
+        b=ZuGFcQ7HqjJE6N/4FKfja7HhkUhhKfJLBlFfarWuglq47CTKhYlOtPcM+KWWz8Ryujubva
+        V75Gu2dAXANAViWkoeVd3kc+sQQf2Xv/XnwGClh3Qy+tdOxPgLV4CFLnV52WR/D3o/ATOk
+        vh2lzem+aoZbYLqk3DGEeg1gYcgYcYM=
+Received: by mail.zx2c4.com (ZX2C4 Mail Server) with ESMTPSA id daf36959 (TLSv1.3:AEAD-AES256-GCM-SHA384:256:NO);
+        Tue, 17 May 2022 18:20:55 +0000 (UTC)
+Date:   Tue, 17 May 2022 20:20:49 +0200
+From:   "Jason A. Donenfeld" <Jason@zx2c4.com>
+To:     Jarkko Sakkinen <jarkko@kernel.org>
+Cc:     Ahmad Fatoum <a.fatoum@pengutronix.de>,
+        James Bottomley <jejb@linux.ibm.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
         David Howells <dhowells@redhat.com>, kernel@pengutronix.de,
         Sumit Garg <sumit.garg@linaro.org>,
@@ -47,7 +49,7 @@ Cc:     James Bottomley <jejb@linux.ibm.com>,
         John Ernberg <john.ernberg@actia.se>,
         James Morris <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        Horia =?UTF-8?Q?Geant=C4=83?= <horia.geanta@nxp.com>,
+        Horia =?utf-8?Q?Geant=C4=83?= <horia.geanta@nxp.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
         "David S. Miller" <davem@davemloft.net>,
         Jan Luebbe <j.luebbe@pengutronix.de>,
@@ -58,47 +60,51 @@ Cc:     James Bottomley <jejb@linux.ibm.com>,
         keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
         linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org
-Date:   Tue, 17 May 2022 21:10:57 +0300
-In-Reply-To: <YoPa7C8xs8lgKtwv@zx2c4.com>
+Subject: Re: [PATCH v10 2/7] KEYS: trusted: allow use of kernel RNG for key
+ material
+Message-ID: <YoPngQEY3az9J+AB@zx2c4.com>
 References: <20220513145705.2080323-1-a.fatoum@pengutronix.de>
-         <20220513145705.2080323-3-a.fatoum@pengutronix.de>
-         <YoPa7C8xs8lgKtwv@zx2c4.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: base64
-User-Agent: Evolution 3.44.1 
+ <20220513145705.2080323-3-a.fatoum@pengutronix.de>
+ <YoPa7C8xs8lgKtwv@zx2c4.com>
+ <0e8da958a222e5c1dccaaf1600b08bdb8705b48e.camel@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0e8da958a222e5c1dccaaf1600b08bdb8705b48e.camel@kernel.org>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-T24gVHVlLCAyMDIyLTA1LTE3IGF0IDE5OjI3ICswMjAwLCBKYXNvbiBBLiBEb25lbmZlbGQgd3Jv
-dGU6Cj4gT24gRnJpLCBNYXkgMTMsIDIwMjIgYXQgMDQ6NTc6MDBQTSArMDIwMCwgQWhtYWQgRmF0
-b3VtIHdyb3RlOgo+ID4gK8KgwqDCoMKgwqDCoMKgdHJ1c3RlZC5ybmc9wqDCoMKgwqBbS0VZU10K
-PiA+ICvCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgRm9ybWF0
-OiA8c3RyaW5nPgo+ID4gK8KgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDC
-oMKgwqBUaGUgUk5HIHVzZWQgdG8gZ2VuZXJhdGUga2V5IG1hdGVyaWFsIGZvciB0cnVzdGVkIGtl
-eXMuCj4gPiArwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoENh
-biBiZSBvbmUgb2Y6Cj4gPiArwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDC
-oMKgwqDCoC0gImtlcm5lbCIKPiA+ICvCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKg
-wqDCoMKgwqDCoMKgLSB0aGUgc2FtZSB2YWx1ZSBhcyB0cnVzdGVkLnNvdXJjZTogInRwbSIgb3Ig
-InRlZSIKPiA+ICvCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKg
-LSAiZGVmYXVsdCIKPiA+ICvCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKg
-wqDCoMKgSWYgbm90IHNwZWNpZmllZCwgImRlZmF1bHQiIGlzIHVzZWQuIEluIHRoaXMgY2FzZSwK
-PiA+ICvCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgwqDCoMKgdGhlIFJO
-RydzIGNob2ljZSBpcyBsZWZ0IHRvIGVhY2ggaW5kaXZpZHVhbCB0cnVzdCBzb3VyY2UuCj4gPiAr
-Cj4gCj4gQXMgYSBnZW5lcmFsIG1lY2hhbmlzbSwgSSBvYmplY3QgdG8gdGhpcy4gVGhlIGtlcm5l
-bCdzIFJORyBtdXN0IGJlCj4gdHJ1c3RlZCBpbiB0aGUgZmlyc3QgcGxhY2UgZm9yIGtleSBtYXRl
-cmlhbC4gVGhhdCdzIHRoZSB3aG9sZSBwb2ludCBvZgo+IGl0LgoKSSB3b3VsZCByZWxheCB0aGlz
-ICBhIGJpdDoga2VybmVsJ3MgUk5HIG11c3QgYmUgaW1wbGljaXRseSBtdXN0IGJlCnRydXN0ZWQu
-IElmIHRoZSBwYXJhbWV0ZXIgaXMgdXNlZCwgeW91IG1ha2UgYW4gZXhwbGljaXQgY2hvaWNlIHRo
-YXQKeW91IGFyZSBhd2FyZSBvZiB0aGUgdHJ1c3QuCgpJZiB0aGlzIHdhcyBvcHQtb3V0IHBhcmFt
-ZXRlciwgaW5zdGVhZCBvZiBvcHQtaW4sIEkgd291bGQgZ2V0IHlvdXIKYXJndW1lbnQuCgo+IEhv
-d2V2ZXIsIGl0IHNvdW5kcyBsaWtlIHlvdSdyZSBub3QgcHJvcG9zaW5nIGEgZ2VuZXJhbCBtZWNo
-YW5pc20sIGJ1dAo+IGp1c3Qgc29tZXRoaW5nIHBhcnRpY3VsYXIgdG8gdGhpcyAidHJ1c3RlZCBr
-ZXlzIiBidXNpbmVzcy4gSW4gdGhhdCBjYXNlLAo+IHRoaXMgc2hvdWxkIGJlIGEgbW9kdWxlIGZs
-YWcsIGFuZCB0aHVzIG5vdCBkb2N1bWVudGVkIGhlcmUsIGJ1dCByYXRoZXIKPiBzb21lIHBsYWNl
-IG5hbWVzcGFjZWQgdG8geW91ciB0cnVzdGVkIGtleXMgc3R1ZmYuICJ0cnVzdGVkX2tleXMucHJl
-ZmVycmVkX3JuZz17d2hhdGV2ZXJ9IgoKSG93ZXZlciwgSSB0aGluayB0aGlzIGEgZ29vZCBwcm9w
-b3NhbC4gTGV0J3MgbWFrZSBpdCBhIG1vZHVsZSBwYXJhbWV0ZXIKaW5zdGVhZC4KCj4gSmFzb24K
-CkJSLCBKYXJra28K
+Hi Jarkko,
 
+
+On Tue, May 17, 2022 at 09:10:57PM +0300, Jarkko Sakkinen wrote:
+> On Tue, 2022-05-17 at 19:27 +0200, Jason A. Donenfeld wrote:
+> > On Fri, May 13, 2022 at 04:57:00PM +0200, Ahmad Fatoum wrote:
+> > > +       trusted.rng=    [KEYS]
+> > > +                       Format: <string>
+> > > +                       The RNG used to generate key material for trusted keys.
+> > > +                       Can be one of:
+> > > +                       - "kernel"
+> > > +                       - the same value as trusted.source: "tpm" or "tee"
+> > > +                       - "default"
+> > > +                       If not specified, "default" is used. In this case,
+> > > +                       the RNG's choice is left to each individual trust source.
+> > > +
+> > 
+> > As a general mechanism, I object to this. The kernel's RNG must be
+> > trusted in the first place for key material. That's the whole point of
+> > it.
+> 
+> I would relax this  a bit: kernel's RNG must be implicitly must be
+
+Sorry, I didn't mean to seem unrelaxed. What I meant was that as a
+general mechanism, it doesn't make sense, but it isn't a general
+mechanism, it's a particular one for trusted_keys, which led me to
+question why it seemed to have such a general name like "trusted.rng".
+Ahmad pointed out that the trusted prefix actually isn't general. It's
+what trusted_keys compiles its module as. So just a misunderstanding. It
+appears to be a module param after all. Sorry for the noise!
+
+Jason
