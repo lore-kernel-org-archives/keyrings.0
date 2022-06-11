@@ -2,86 +2,119 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4A608CCA47E
-	for <keyrings@archiver.kernel.org>; Sat, 11 Jun 2022 17:23:48 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 76D55C43334
+	for <keyrings@archiver.kernel.org>; Sat, 11 Jun 2022 17:30:31 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S238343AbiFKRXp (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sat, 11 Jun 2022 13:23:45 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45652 "EHLO
+        id S229473AbiFKRab (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 11 Jun 2022 13:30:31 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44248 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S236066AbiFKRXn (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sat, 11 Jun 2022 13:23:43 -0400
-Received: from conuserg-09.nifty.com (conuserg-09.nifty.com [210.131.2.76])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 23C963CFD3;
-        Sat, 11 Jun 2022 10:23:38 -0700 (PDT)
-Received: from grover.sesame (133-32-177-133.west.xps.vectant.ne.jp [133.32.177.133]) (authenticated)
-        by conuserg-09.nifty.com with ESMTP id 25BHMhjN022692;
-        Sun, 12 Jun 2022 02:22:43 +0900
-DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-09.nifty.com 25BHMhjN022692
+        with ESMTP id S229552AbiFKRaa (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 11 Jun 2022 13:30:30 -0400
+Received: from conssluserg-04.nifty.com (conssluserg-04.nifty.com [210.131.2.83])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4C7D317AAB;
+        Sat, 11 Jun 2022 10:30:25 -0700 (PDT)
+Received: from mail-wr1-f49.google.com (mail-wr1-f49.google.com [209.85.221.49]) (authenticated)
+        by conssluserg-04.nifty.com with ESMTP id 25BHU9e9000538;
+        Sun, 12 Jun 2022 02:30:10 +0900
+DKIM-Filter: OpenDKIM Filter v2.10.3 conssluserg-04.nifty.com 25BHU9e9000538
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
-        s=dec2015msa; t=1654968163;
-        bh=nuJ9fX78Hn2THkCVuIttIKmGkLM6Dk/qRQ+cuZnHrm8=;
-        h=From:To:Cc:Subject:Date:From;
-        b=1RE3Uu54helDOf0cj2T9yhUCVy3XiBs+UO77ut4ySI4SO64ULrIRVOQ+HkNGmm+uG
-         kzsxdHqrhl22d2von3RncQU0ZzcKSNLrCDLmZM7rAW8pEflxjxp3JiS7Cpe0kaGeed
-         0mUwg2Z48gF2IdKpl9KZIAhMD0idS/YF5lI1dtPgIFMX+sNn+gWcHHW31bxchV5t0i
-         KwTYeaTUJzcxIwK33X3u8Vg25ev0WrKZd/vZgw5Oy78R3pWrnyu5jQGB0cnE8s1KFC
-         Z0bf1v6DqPtoFyl799xXm5JqwRM0PTRqyPpcnna8HMYTqf5rbCKc5MFUNHkPzCtYjR
-         3FuFK5+b/4x+A==
-X-Nifty-SrcIP: [133.32.177.133]
-From:   Masahiro Yamada <masahiroy@kernel.org>
-To:     linux-kbuild@vger.kernel.org
-Cc:     David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        =?UTF-8?q?Micka=8F=AB=B3l=20Sala=8F=AB=E4n?= 
-        <mic@linux.microsoft.com>, Masahiro Yamada <masahiroy@kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] certs/blacklist_hashes.c: fix const confusion in certs blacklist
-Date:   Sun, 12 Jun 2022 02:22:30 +0900
-Message-Id: <20220611172233.1494073-1-masahiroy@kernel.org>
-X-Mailer: git-send-email 2.32.0
+        s=dec2015msa; t=1654968610;
+        bh=OSACDTzwM3nmDx5T3K9VpI7ucvHxYTzvbUngRQkLr+Y=;
+        h=References:In-Reply-To:From:Date:Subject:To:Cc:From;
+        b=TomygkbFlEnETUNK56J/VTJtdffuMsuPj8R/S5mjXn9ys966unGmeQpZ7SkIaFg6t
+         Y/kghcEfgqRC5UpAyZwgmjcNiPwddcuyjUPsim8J+JWK5Ea2/4l3ng1IOPceiZpsbV
+         HlWhPYG/JWBPCJMFoKAVQqqKxBjKaJwjzxE8TjUKu3dIeMBL12/KgfXFaoxqom4XJG
+         IMvmwWA74dFIJOPQ7sbECa4jwjBIoNa21cPi2Ka4U5lSNWZRXtfZzs+Sq6y4EKtYCX
+         JGrHcww7fgGvJdOgB8WoU71nxWsxbORLzYGl2Ad5TS6EXzyNMlzHhTGQv+2LRRpvHj
+         zCqOw7FC4LrAQ==
+X-Nifty-SrcIP: [209.85.221.49]
+Received: by mail-wr1-f49.google.com with SMTP id m24so2246292wrb.10;
+        Sat, 11 Jun 2022 10:30:09 -0700 (PDT)
+X-Gm-Message-State: AOAM5328zT8wuqXjVq9EPKrXKNaDAC58r4seERJ3hj0Em8Vbt1JLTBbk
+        CddWuJOtFmzooZp7V1eupj15OUqxtLG9piDbzjc=
+X-Google-Smtp-Source: ABdhPJxFQ4VR0rikIrQmnyzW5yFwMBQ21UyA+EWB6Z3mCZwhT0pwLKVeOIT4MNgfpM1Ic97A6mYaSh3bwWNFqX/h6fY=
+X-Received: by 2002:a5d:584f:0:b0:219:e106:3e02 with SMTP id
+ i15-20020a5d584f000000b00219e1063e02mr11475842wrf.461.1654968608246; Sat, 11
+ Jun 2022 10:30:08 -0700 (PDT)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+References: <165451871967.1941436.17828809503267245815.stgit@warthog.procyon.org.uk>
+ <CAK7LNAS-0kQOvt=7TNn0osf9JO5hZhSp9PaFFBsSx++2Pevc9g@mail.gmail.com>
+ <22a067fe-795f-d3ae-fac6-7baa75393349@digikod.net> <75918f49-5670-766a-09a2-f29aef95f2ca@digikod.net>
+In-Reply-To: <75918f49-5670-766a-09a2-f29aef95f2ca@digikod.net>
+From:   Masahiro Yamada <masahiroy@kernel.org>
+Date:   Sun, 12 Jun 2022 02:29:31 +0900
+X-Gmail-Original-Message-ID: <CAK7LNARZLL=EA61-j+x8YjujW6U1RKZtL8+qhi1hgFhma5vbzA@mail.gmail.com>
+Message-ID: <CAK7LNARZLL=EA61-j+x8YjujW6U1RKZtL8+qhi1hgFhma5vbzA@mail.gmail.com>
+Subject: Re: [PATCH] certs: Convert spaces in certs/Makefile to a tab
+To:     =?UTF-8?B?TWlja2HDq2wgU2FsYcO8bg==?= <mic@digikod.net>
+Cc:     David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This file fails to compile as follows:
+On Fri, Jun 10, 2022 at 2:17 AM Micka=C3=ABl Sala=C3=BCn <mic@digikod.net> =
+wrote:
+>
+>
+>
+> On 09/06/2022 19:12, Micka=C3=ABl Sala=C3=BCn wrote:
+> >
+> > On 06/06/2022 18:49, Masahiro Yamada wrote:
+> >> On Mon, Jun 6, 2022 at 9:32 PM David Howells <dhowells@redhat.com> wro=
+te:
+> >>>
+> >>> There's a rule in certs/Makefile for which the command begins with ei=
+ght
+> >>> spaces.  This results in:
+> >>>
+> >>>          ../certs/Makefile:21: FORCE prerequisite is missing
+> >>>          ../certs/Makefile:21: *** missing separator.  Stop.
+> >>>
+> >>> Fix this by turning the spaces into a tab.
+> >>>
+> >>> Fixes: addf466389d9 ("certs: Check that builtin blacklist hashes are
+> >>> valid")
+> >>> Signed-off-by: David Howells <dhowells@redhat.com>
+> >>> cc: Micka=C3=ABl Sala=C3=BCn <mic@linux.microsoft.com>
+> >>> cc: Jarkko Sakkinen <jarkko@kernel.org>
+> >>> cc: keyrings@vger.kernel.org
+> >>
+> >>
+> >> Not only 8-space indentation, but also:
+> >>
+> >>    - config_filename does not exist
+> >>    - $(SYSTEM_BLACKLIST_HASH_LIST_SRCPREFIX) is always empty
+> >>    - $(SYSTEM_BLACKLIST_HASH_LIST_FILENAME) is always empty
+> >
+> > These are imported helpers (not only used for this hash list BTW), henc=
+e
+> > not defined in this Makefile.
+>
+> Well, they were defined in scripts/Kbuild.include but they are gone
+> since your commit b8c96a6b466c ("certs: simplify $(srctree)/ handling
+> and remove config_filename macro").
+>
+> I guess it just happens during the merge. We need to fix that.
 
-  CC      certs/blacklist_hashes.o
-certs/blacklist_hashes.c:4:1: error: ignoring attribute ‘section (".init.data")’ because it conflicts with previous ‘section (".init.rodata")’ [-Werror=attributes]
-    4 | const char __initdata *const blacklist_hashes[] = {
-      | ^~~~~
-In file included from certs/blacklist_hashes.c:2:
-certs/blacklist.h:5:38: note: previous declaration here
-    5 | extern const char __initconst *const blacklist_hashes[];
-      |                                      ^~~~~~~~~~~~~~~~
+Today, I took a closer look at it.
+I volunteered to fix the build issues with some refactoring.
 
-Apply the same fix as commit 2be04df5668d ("certs/blacklist_nohashes.c:
-fix const confusion in certs blacklist").
+https://lore.kernel.org/keyrings/20220611172233.1494073-1-masahiroy@kernel.=
+org/T/#t
 
-Fixes: 734114f8782f ("KEYS: Add a system blacklist keyring")
-Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
----
 
- certs/blacklist_hashes.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/certs/blacklist_hashes.c b/certs/blacklist_hashes.c
-index 344892337be0..d5961aa3d338 100644
---- a/certs/blacklist_hashes.c
-+++ b/certs/blacklist_hashes.c
-@@ -1,7 +1,7 @@
- // SPDX-License-Identifier: GPL-2.0
- #include "blacklist.h"
- 
--const char __initdata *const blacklist_hashes[] = {
-+const char __initconst *const blacklist_hashes[] = {
- #include CONFIG_SYSTEM_BLACKLIST_HASH_LIST
- 	, NULL
- };
--- 
-2.32.0
 
+
+
+
+--=20
+Best Regards
+Masahiro Yamada
