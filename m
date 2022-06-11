@@ -2,108 +2,94 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 869E0C433EF
-	for <keyrings@archiver.kernel.org>; Fri, 10 Jun 2022 18:36:50 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 15535C43334
+	for <keyrings@archiver.kernel.org>; Sat, 11 Jun 2022 17:23:45 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1350469AbiFJSgt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 10 Jun 2022 14:36:49 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43514 "EHLO
+        id S238287AbiFKRXo (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 11 Jun 2022 13:23:44 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45650 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1350387AbiFJSgR (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 10 Jun 2022 14:36:17 -0400
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTP id D3D5F403DA
-        for <keyrings@vger.kernel.org>; Fri, 10 Jun 2022 11:36:01 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1654886160;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding;
-        bh=1vmTWMZvDmE1FO6rs2zTYe37OspeJHlTiBA08DM86zY=;
-        b=G2+AuxqKTy57hjDCg9sP2KLjVb2QBktASVcge/Vmcp+PYO4y0jOrsLgkxWy9l9M0UOKRcu
-        TQmMq68ZQLDEBWL/PJxMovf+pEO8fbJd+vvBrGIfrCWc3N3LruHKqydPto1nce5jcHcufm
-        9jNQ9/rT+1JRy7HFZMl1utueaXX19aE=
-Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
- [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
- (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- us-mta-27-wA5lDc8MNm2qOJza1114VQ-1; Fri, 10 Jun 2022 14:35:57 -0400
-X-MC-Unique: wA5lDc8MNm2qOJza1114VQ-1
-Received: from smtp.corp.redhat.com (int-mx03.intmail.prod.int.rdu2.redhat.com [10.11.54.3])
-        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 1780218A0711;
-        Fri, 10 Jun 2022 18:35:57 +0000 (UTC)
-Received: from warthog.procyon.org.uk (unknown [10.33.36.62])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 073A61121314;
-        Fri, 10 Jun 2022 18:35:55 +0000 (UTC)
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-        Kingdom.
-        Registered in England and Wales under Company Registration No. 3798903
-From:   David Howells <dhowells@redhat.com>
-To:     torvalds@linux-foundation.org
-cc:     dhowells@redhat.com,
-        =?utf-8?Q?Micka=C3=ABl_Sala=C3=BCn?= <mic@linux.microsoft.com>,
+        with ESMTP id S238181AbiFKRXn (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 11 Jun 2022 13:23:43 -0400
+Received: from conuserg-09.nifty.com (conuserg-09.nifty.com [210.131.2.76])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C317B3CFC9;
+        Sat, 11 Jun 2022 10:23:37 -0700 (PDT)
+Received: from grover.sesame (133-32-177-133.west.xps.vectant.ne.jp [133.32.177.133]) (authenticated)
+        by conuserg-09.nifty.com with ESMTP id 25BHMhjP022692;
+        Sun, 12 Jun 2022 02:22:45 +0900
+DKIM-Filter: OpenDKIM Filter v2.10.3 conuserg-09.nifty.com 25BHMhjP022692
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
+        s=dec2015msa; t=1654968165;
+        bh=MMlWHI79ZXLVfVOPspFzx7WO3YALeI7+en73nS8lFyY=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=BPPzm9G0e6v8UIo5UGvWV0+CS09mXXIW3BFcw18fSZLEkOet4hu6efpdPrCVjuOWb
+         I2CJb4QtmLSyESS+JDvVKxbDWuhE1Zbejlb6XpWGX0e/FGzVUU+RhEylEtIVu9hI9G
+         Sux8kMsCqnJ+Z2lQHhnmBJjiBbaqwaRlYUH5SmP1mZv3stMcrG/bXRvNxNu9kmkJ4L
+         VhE6vEpva8xUzxhrMLQZI+6qDiLomI4r1XkR5XTZo8rjakxevx3rBFskiMw+mf45o3
+         Njb+uypw1Pk1fqynv+6cNh1GqX7/AK0dvTB4zmiG1JUyiyn6x1i1BtvIdm+kcfIT55
+         3RaI0LCqLS0xw==
+X-Nifty-SrcIP: [133.32.177.133]
+From:   Masahiro Yamada <masahiroy@kernel.org>
+To:     linux-kbuild@vger.kernel.org
+Cc:     David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>,
-        Masahiro Yamada <masahiroy@kernel.org>,
-        keyrings@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] certs: Convert spaces in certs/Makefile to a tab
+        =?UTF-8?q?Micka=8F=AB=B3l=20Sala=8F=AB=E4n?= 
+        <mic@linux.microsoft.com>, Masahiro Yamada <masahiroy@kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] certs: move scripts/check-blacklist-hashes.awk to certs/
+Date:   Sun, 12 Jun 2022 02:22:32 +0900
+Message-Id: <20220611172233.1494073-3-masahiroy@kernel.org>
+X-Mailer: git-send-email 2.32.0
+In-Reply-To: <20220611172233.1494073-1-masahiroy@kernel.org>
+References: <20220611172233.1494073-1-masahiroy@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date:   Fri, 10 Jun 2022 19:35:55 +0100
-Message-ID: <662080.1654886155@warthog.procyon.org.uk>
-X-Scanned-By: MIMEDefang 2.78 on 10.11.54.3
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+This script is only used in certs/Makefile, so certs/ is a better
+home for it.
 
-Hi Linus,
-
-Can you apply this please?  It fixes a build error that can crop up
-occasionally due to a Makefile error.
-
-Thanks,
-David
+Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
 ---
-certs: Convert spaces in certs/Makefile to a tab
 
-There's a rule in certs/Makefile for which the command begins with eight
-spaces.  This results in:
+ MAINTAINERS                                   | 1 -
+ certs/Makefile                                | 2 +-
+ {scripts => certs}/check-blacklist-hashes.awk | 0
+ 3 files changed, 1 insertion(+), 2 deletions(-)
+ rename {scripts => certs}/check-blacklist-hashes.awk (100%)
 
-        ../certs/Makefile:21: FORCE prerequisite is missing
-        ../certs/Makefile:21: *** missing separator.  Stop.
-
-Fix this by turning the spaces into a tab.
-
-Fixes: addf466389d9 ("certs: Check that builtin blacklist hashes are valid")
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
-Reviewed-by: Micka=C3=ABl Sala=C3=BCn <mic@linux.microsoft.com>
-cc: keyrings@vger.kernel.org
-Link: https://lore.kernel.org/r/486b1b80-9932-aab6-138d-434c541c934a@digiko=
-d.net/ # v1
----
- certs/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 1fc9ead83d2a..7c2a7c304824 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4627,7 +4627,6 @@ L:	keyrings@vger.kernel.org
+ S:	Maintained
+ F:	Documentation/admin-guide/module-signing.rst
+ F:	certs/
+-F:	scripts/check-blacklist-hashes.awk
+ F:	scripts/sign-file.c
+ F:	tools/certs/
+ 
 diff --git a/certs/Makefile b/certs/Makefile
-index bb904f90f139..cb1a9da3fc58 100644
+index a8d628fd5f7b..df7aaeafd19c 100644
 --- a/certs/Makefile
 +++ b/certs/Makefile
-@@ -18,7 +18,7 @@ CFLAGS_blacklist_hashes.o +=3D -I$(srctree)
-=20
- targets +=3D blacklist_hashes_checked
- $(obj)/blacklist_hashes_checked: $(SYSTEM_BLACKLIST_HASH_LIST_SRCPREFIX)$(=
-SYSTEM_BLACKLIST_HASH_LIST_FILENAME) scripts/check-blacklist-hashes.awk FOR=
-CE
--       $(call if_changed,check_blacklist_hashes,$(SYSTEM_BLACKLIST_HASH_LI=
-ST_SRCPREFIX)$(CONFIG_SYSTEM_BLACKLIST_HASH_LIST))
-+	$(call if_changed,check_blacklist_hashes,$(SYSTEM_BLACKLIST_HASH_LIST_SRC=
-PREFIX)$(CONFIG_SYSTEM_BLACKLIST_HASH_LIST))
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) +=3D blacklist_hashes.o
- else
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) +=3D blacklist_nohashes.o
+@@ -13,7 +13,7 @@ CFLAGS_blacklist_hashes.o := -I $(obj)
+ 
+ quiet_cmd_check_and_copy_blacklist_hash_list = GEN     $@
+       cmd_check_and_copy_blacklist_hash_list = \
+-	$(AWK) -f $(srctree)/scripts/check-blacklist-hashes.awk $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) >&2; \
++	$(AWK) -f $(srctree)/$(src)/check-blacklist-hashes.awk $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) >&2; \
+ 	cat $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) > $@
+ 
+ $(obj)/blacklist_hash_list: $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) FORCE
+diff --git a/scripts/check-blacklist-hashes.awk b/certs/check-blacklist-hashes.awk
+similarity index 100%
+rename from scripts/check-blacklist-hashes.awk
+rename to certs/check-blacklist-hashes.awk
+-- 
+2.32.0
 
