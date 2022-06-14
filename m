@@ -2,127 +2,134 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BAD1AC433EF
-	for <keyrings@archiver.kernel.org>; Tue, 14 Jun 2022 04:44:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 06EB2CCA47A
+	for <keyrings@archiver.kernel.org>; Tue, 14 Jun 2022 14:15:48 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231327AbiFNEoj (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 14 Jun 2022 00:44:39 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57280 "EHLO
+        id S238758AbiFNOPq (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 14 Jun 2022 10:15:46 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58814 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229611AbiFNEoi (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 14 Jun 2022 00:44:38 -0400
-Received: from out01.mta.xmission.com (out01.mta.xmission.com [166.70.13.231])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 032D52E9E4;
-        Mon, 13 Jun 2022 21:44:37 -0700 (PDT)
-Received: from in02.mta.xmission.com ([166.70.13.52]:60056)
-        by out01.mta.xmission.com with esmtps  (TLS1.3) tls TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
-        (Exim 4.93)
-        (envelope-from <ebiederm@xmission.com>)
-        id 1o0yPs-002t3o-D4; Mon, 13 Jun 2022 22:44:36 -0600
-Received: from ip68-227-174-4.om.om.cox.net ([68.227.174.4]:40374 helo=email.froward.int.ebiederm.org.xmission.com)
-        by in02.mta.xmission.com with esmtpsa  (TLS1.3) tls TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
-        (Exim 4.93)
-        (envelope-from <ebiederm@xmission.com>)
-        id 1o0yPr-008Y07-9H; Mon, 13 Jun 2022 22:44:36 -0600
-From:   "Eric W. Biederman" <ebiederm@xmission.com>
-To:     Frederick Lawler <fred@cloudflare.com>
-Cc:     linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-cachefs@redhat.com, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, linux-unionfs@vger.kernel.org,
-        linux-security-module@vger.kernel.org, netdev@vger.kernel.org,
-        keyrings@vger.kernel.org, selinux@vger.kernel.org,
-        serge@hallyn.com, amir73il@gmail.com, kernel-team@cloudflare.com,
-        Jeff Moyer <jmoyer@redhat.com>,
-        Paul Moore <paul@paul-moore.com>
-References: <20220608150942.776446-1-fred@cloudflare.com>
-        <87tu8oze94.fsf@email.froward.int.ebiederm.org>
-        <e1b62234-9b8a-e7c2-2946-5ef9f6f23a08@cloudflare.com>
-Date:   Mon, 13 Jun 2022 23:44:28 -0500
-In-Reply-To: <e1b62234-9b8a-e7c2-2946-5ef9f6f23a08@cloudflare.com> (Frederick
-        Lawler's message of "Mon, 13 Jun 2022 15:52:38 -0500")
-Message-ID: <87y1xzyhub.fsf@email.froward.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/27.1 (gnu/linux)
+        with ESMTP id S242945AbiFNOPl (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 14 Jun 2022 10:15:41 -0400
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTP id 41BC033EBD
+        for <keyrings@vger.kernel.org>; Tue, 14 Jun 2022 07:15:37 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1655216136;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=JctC2m2+QZN18u2MNb2HvFmHLpXv366LEOSyUu6TasQ=;
+        b=M3GXrptyuKRUdJpRU/N1NFU9WXWxWYIoL32WYZNkB/sN6L684XYKxytcjZ72TtaL0ha2Qn
+        LJHZp5p4eFzpkQH2RJ6DDFtRcBAkTHE9T6FqiyoNexhNShHL0cbbeqRkWBcRFdbsbk4oQr
+        UXagOpYHSDkl0IGJuRQHIohdg4SmDEM=
+Received: from mail-qt1-f199.google.com (mail-qt1-f199.google.com
+ [209.85.160.199]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-349-ELXoaGM_NGuE17KO3Z-ipQ-1; Tue, 14 Jun 2022 10:15:34 -0400
+X-MC-Unique: ELXoaGM_NGuE17KO3Z-ipQ-1
+Received: by mail-qt1-f199.google.com with SMTP id u24-20020a05622a199800b0030500f8e1bcso6651308qtc.16
+        for <keyrings@vger.kernel.org>; Tue, 14 Jun 2022 07:15:34 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:message-id:subject:from:to:cc:date:in-reply-to
+         :references:organization:content-transfer-encoding:user-agent
+         :mime-version;
+        bh=JctC2m2+QZN18u2MNb2HvFmHLpXv366LEOSyUu6TasQ=;
+        b=xBpGYHDS4OoFyxfOMI82enLKf7jeJiWt3raWUIL+xUHx4YTvX8K6yXUvKzKwcvKKOj
+         dLw6vMCDT5R+FMK5ecsTNDgRW+tPFPY7J1UHniqKsCTPeUa1xP9nIvwrlFFXblyJMmpt
+         5+945kGLd6JtUn9+5RbCkoY5NVshq6SENCfSaQ8/6szimIFCORLUnEiQ0qVrHT+VlUjk
+         0ighpxfuRlJrUjlU8pKS5B6QIqAtGL/t9wsjZreCHrKTEzjKSlQ7BXfV6H1oA15RMOOS
+         /hVICUPq5mqtiVC2KBED5Cuf79/UjXfYZYjWgmbjRs1LA2mtuXDaWb4Osm+BwHuygjp/
+         mUrA==
+X-Gm-Message-State: AJIora8P8bRQE+M4XGdSFQmyC5L3j/f0tEIFdnwovd2CWC3WAVqU/ofm
+        E6eKWrDj2QvmiPNPQBoV2ox8YykZ06ERCRBcs6yjBPR6zqd6KXNYdtkuNXOm+NILFQRlQfKwfpw
+        DF2pWbNBubVQTiN+/6dw=
+X-Received: by 2002:ad4:5c4a:0:b0:464:5920:7c1a with SMTP id a10-20020ad45c4a000000b0046459207c1amr3579676qva.58.1655216133913;
+        Tue, 14 Jun 2022 07:15:33 -0700 (PDT)
+X-Google-Smtp-Source: AGRyM1sUmVYfieNEUEGblxVDH6VoXBlZfAPSf7IbUAfA0HBAtNoDeIhDejnqioeqYTK2ssE5LXtTUg==
+X-Received: by 2002:ad4:5c4a:0:b0:464:5920:7c1a with SMTP id a10-20020ad45c4a000000b0046459207c1amr3579632qva.58.1655216133401;
+        Tue, 14 Jun 2022 07:15:33 -0700 (PDT)
+Received: from m8.users.ipa.redhat.com ([93.56.163.49])
+        by smtp.gmail.com with ESMTPSA id h20-20020a05620a245400b006a32bf19502sm9394754qkn.60.2022.06.14.07.15.31
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 14 Jun 2022 07:15:32 -0700 (PDT)
+Message-ID: <831c7380f7d89fd8fb3a3043cf3b3d01001ae0be.camel@redhat.com>
+Subject: Re: [PATCH 0/2] certs: Add FIPS self-test for signature verification
+From:   Simo Sorce <simo@redhat.com>
+To:     David Howells <dhowells@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Cc:     Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Date:   Tue, 14 Jun 2022 10:15:24 -0400
+In-Reply-To: <165515741424.1554877.9363755381201121213.stgit@warthog.procyon.org.uk>
+References: <165515741424.1554877.9363755381201121213.stgit@warthog.procyon.org.uk>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.44.2 (3.44.2-1.fc36) 
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=1o0yPr-008Y07-9H;;;mid=<87y1xzyhub.fsf@email.froward.int.ebiederm.org>;;;hst=in02.mta.xmission.com;;;ip=68.227.174.4;;;frm=ebiederm@xmission.com;;;spf=softfail
-X-XM-AID: U2FsdGVkX1+prA+7T4gv0KWu4+rCykKSU9Ye39R87hA=
-X-SA-Exim-Connect-IP: 68.227.174.4
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-Subject: Re: [PATCH v3] cred: Propagate security_prepare_creds() error code
-X-SA-Exim-Version: 4.2.1 (built Sat, 08 Feb 2020 21:53:50 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Frederick Lawler <fred@cloudflare.com> writes:
+On Mon, 2022-06-13 at 22:56 +0100, David Howells wrote:
+> Hi Herbert,
+>=20
+> If you could look over this pair of patches?  The second patch adds a sim=
+ple
+> selftest to allow the signature verification code so that it can be FIPS
+> compliant.  The first moves load_certificate_list() to the asymmetric key=
+ code
+> to make this easier and renames it.
+>=20
+> I generated the test data myself, but I'm open to using some standard tes=
+t
+> data if you know of some; we don't want too much, however, as it's
+> incompressible.  Also, it has avoid blacklist checks on the keys it is us=
+ing,
+> lest the UEFI blacklist cause the selftest to fail.
+>=20
+> The patches can be found on the following branch:
+>=20
+> 	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/lo=
+g/?h=3Dkeys-fixes
+>=20
+> David
+> ---
+> David Howells (2):
+>       certs: Move load_certificate_list() to be with the asymmetric keys =
+code
+>       certs: Add FIPS selftests
+>=20
+>=20
+>  certs/Makefile                           |   4 +-
+>  certs/blacklist.c                        |   8 +-
+>  certs/common.c                           |  57 ------
+>  certs/common.h                           |   9 -
+>  certs/system_keyring.c                   |   6 +-
+>  crypto/asymmetric_keys/Kconfig           |  10 +
+>  crypto/asymmetric_keys/Makefile          |   2 +
+>  crypto/asymmetric_keys/selftest.c        | 224 +++++++++++++++++++++++
+>  crypto/asymmetric_keys/x509_loader.c     |  57 ++++++
+>  crypto/asymmetric_keys/x509_parser.h     |   9 +
+>  crypto/asymmetric_keys/x509_public_key.c |   8 +-
+>  include/keys/asymmetric-type.h           |   3 +
+>  12 files changed, 321 insertions(+), 76 deletions(-)
+>  delete mode 100644 certs/common.c
+>  delete mode 100644 certs/common.h
+>  create mode 100644 crypto/asymmetric_keys/selftest.c
+>  create mode 100644 crypto/asymmetric_keys/x509_loader.c
+>=20
+>=20
 
-> Hi Eric,
->
-> On 6/13/22 12:04 PM, Eric W. Biederman wrote:
->> Frederick Lawler <fred@cloudflare.com> writes:
->> 
->>> While experimenting with the security_prepare_creds() LSM hook, we
->>> noticed that our EPERM error code was not propagated up the callstack.
->>> Instead ENOMEM is always returned.  As a result, some tools may send a
->>> confusing error message to the user:
->>>
->>> $ unshare -rU
->>> unshare: unshare failed: Cannot allocate memory
->>>
->>> A user would think that the system didn't have enough memory, when
->>> instead the action was denied.
->>>
->>> This problem occurs because prepare_creds() and prepare_kernel_cred()
->>> return NULL when security_prepare_creds() returns an error code. Later,
->>> functions calling prepare_creds() and prepare_kernel_cred() return
->>> ENOMEM because they assume that a NULL meant there was no memory
->>> allocated.
->>>
->>> Fix this by propagating an error code from security_prepare_creds() up
->>> the callstack.
->> Why would it make sense for security_prepare_creds to return an error
->> code other than ENOMEM?
->>  > That seems a bit of a violation of what that function is supposed to do
->>
->
-> The API allows LSM authors to decide what error code is returned from the
-> cred_prepare hook. security_task_alloc() is a similar hook, and has its return
-> code propagated.
+Reviewed-by: Simo Sorce <simo@redhat.com>
 
-It is not an api.  It is an implementation detail of the linux kernel.
-It is a set of convenient functions that do a job.
-
-The general rule is we don't support cases without an in-tree user.  I
-don't see an in-tree user.
-
-> I'm proposing we follow security_task_allocs() pattern, and add visibility for
-> failure cases in prepare_creds().
-
-I am asking why we would want to.  Especially as it is not an API, and I
-don't see any good reason for anything but an -ENOMEM failure to be
-supported.
-
-Without an in-tree user that cares it is probably better to go the
-opposite direction and remove the possibility of return anything but
-memory allocation failure.  That will make it clearer to implementors
-that a general error code is not supported and this is not a location
-to implement policy, this is only a hook to allocate state for the LSM.
-
->> I have probably missed a very interesting discussion where that was
->> mentioned but I don't see link to the discussion or anything explaining
->> why we want to do that in this change.
->> 
->
-> AFAIK, this is the start of the discussion.
-
-You were on v3 and had an out of tree piece of code so I assumed someone
-had at least thought about why you want to implement policy in a piece
-of code whose only purpose is to allocate memory to store state.
-
-Eric
+--=20
+Simo Sorce
+RHEL Crypto Team
+Red Hat, Inc
 
 
 
