@@ -2,199 +2,121 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5A84DC43334
-	for <keyrings@archiver.kernel.org>; Sat, 18 Jun 2022 22:13:42 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C9E32C433EF
+	for <keyrings@archiver.kernel.org>; Tue, 21 Jun 2022 15:20:30 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231599AbiFRWNl (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sat, 18 Jun 2022 18:13:41 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34814 "EHLO
+        id S1352632AbiFUPU3 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 21 Jun 2022 11:20:29 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58488 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231506AbiFRWNd (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sat, 18 Jun 2022 18:13:33 -0400
-Received: from conssluserg-03.nifty.com (conssluserg-03.nifty.com [210.131.2.82])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AA083265E;
-        Sat, 18 Jun 2022 15:13:30 -0700 (PDT)
-Received: from mail-wr1-f50.google.com (mail-wr1-f50.google.com [209.85.221.50]) (authenticated)
-        by conssluserg-03.nifty.com with ESMTP id 25IMD8iG007387;
-        Sun, 19 Jun 2022 07:13:09 +0900
-DKIM-Filter: OpenDKIM Filter v2.10.3 conssluserg-03.nifty.com 25IMD8iG007387
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nifty.com;
-        s=dec2015msa; t=1655590389;
-        bh=7jwbvyrhQLV+4aegmk22DRd9SYJoD6/Ana8x4b/1QLk=;
-        h=References:In-Reply-To:From:Date:Subject:To:Cc:From;
-        b=HMFT5yD4HPzN0/ok5qxydwtXHQ/zhALcx64F9y1ip3MY6bbwMhcN7cQZ7CNF9HYQp
-         od4k1EOCwEwtaYVr8vDt/jOKNXuujz4L2xAIz7rI8Cu+fHoC/86KZCa0YgO3F4iHWu
-         gt88uw2M1ibhIDrgPZlwHHNrx7BG6/iLMDcfhB13MjRX+t7Nq+WyHFL4TpnoYhvqKN
-         zLanyNywu11ddt+7IAuOb3DlNOi1E35e58XzTFcjzGek1DxCWghlBRruFIMtBS5rsm
-         b7139uVNXxh9zUjilp1WZAbXrwyCx3lb10aGD8HYcQMlp+MNQAExP0lmIpWhtSN7up
-         yy3tnTkOPmK5A==
-X-Nifty-SrcIP: [209.85.221.50]
-Received: by mail-wr1-f50.google.com with SMTP id g4so9839701wrh.11;
-        Sat, 18 Jun 2022 15:13:09 -0700 (PDT)
-X-Gm-Message-State: AJIora/S/9tmwtuJxPrjPXuWdl+K0GETTbwicPs3OWPAuFgvA6818z91
-        qa0mQ57gX3XHgFZVgVtHKWPSnoxVAI0lB/gQReQ=
-X-Google-Smtp-Source: AGRyM1sML4k/551cdhdkCWZlW1l3J3kC8wOqKO/VYoNqgy7eljBeD2d9mRgOZD6mP5Qa9NRBtiZhiYtiGyCKEx6860c=
-X-Received: by 2002:a5d:5e92:0:b0:21a:278c:b901 with SMTP id
- ck18-20020a5d5e92000000b0021a278cb901mr15492125wrb.461.1655590387823; Sat, 18
- Jun 2022 15:13:07 -0700 (PDT)
-MIME-Version: 1.0
-References: <20220611172233.1494073-1-masahiroy@kernel.org>
- <20220611172233.1494073-2-masahiroy@kernel.org> <58a20890-557e-f31c-ed59-7e256445a26c@digikod.net>
- <YqopiZgC8vNSKYPt@iki.fi>
-In-Reply-To: <YqopiZgC8vNSKYPt@iki.fi>
-From:   Masahiro Yamada <masahiroy@kernel.org>
-Date:   Sun, 19 Jun 2022 07:12:31 +0900
-X-Gmail-Original-Message-ID: <CAK7LNARSYSupt1nL_JS2prLunRpOhMRG_pPhHfto7+K+QDVp2Q@mail.gmail.com>
-Message-ID: <CAK7LNARSYSupt1nL_JS2prLunRpOhMRG_pPhHfto7+K+QDVp2Q@mail.gmail.com>
-Subject: Re: [PATCH 2/4] certs: fix and refactor CONFIG_SYSTEM_BLACKLIST_HASH_LIST
- build
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     =?UTF-8?B?TWlja2HDq2wgU2FsYcO8bg==?= <mic@digikod.net>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        keyrings@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Eric Snowberg <eric.snowberg@oracle.com>,
+        with ESMTP id S1352653AbiFUPUW (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 21 Jun 2022 11:20:22 -0400
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTP id 528C520198
+        for <keyrings@vger.kernel.org>; Tue, 21 Jun 2022 08:20:18 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1655824817;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding;
+        bh=m/qf6ov0omQZSA34pET1sX3jxVcqup+wfHTRPaQS72Q=;
+        b=AxEbiWMzJwT5HusztAkdT3IGQ6SF1LRkaQQ4q8OlqQzBwPrV6NDH/kbbBgR13npAIduP+e
+        ePXOW9t9s32Zdv40kxAveLiYbZ4Gh77rs7CZK95Dxd4Pe9ojtMjc+NYO2z/TUWbOHPqS/w
+        MXd34Eh3GhVkBJs8EizMli8QZQz9gOY=
+Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
+ [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-551-cVIuGa09MXOM8jx5kmBEiA-1; Tue, 21 Jun 2022 11:20:12 -0400
+X-MC-Unique: cVIuGa09MXOM8jx5kmBEiA-1
+Received: from smtp.corp.redhat.com (int-mx09.intmail.prod.int.rdu2.redhat.com [10.11.54.9])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id B196C101E9B0;
+        Tue, 21 Jun 2022 15:20:11 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.33.36.62])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 9C833492C3B;
+        Tue, 21 Jun 2022 15:20:10 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+To:     torvalds@linux-foundation.org
+cc:     dhowells@redhat.com, simo@redhat.com,
         Herbert Xu <herbert@gondor.apana.org.au>,
-        Tyler Hicks <tyhicks@linux.microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
+        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] certs: Make signature verification FIPS compliant
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <1276150.1655824809.1@warthog.procyon.org.uk>
 Content-Transfer-Encoding: quoted-printable
+Date:   Tue, 21 Jun 2022 16:20:09 +0100
+Message-ID: <1276151.1655824809@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 2.85 on 10.11.54.9
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, Jun 16, 2022 at 3:51 AM Jarkko Sakkinen <jarkko@kernel.org> wrote:
->
-> On Mon, Jun 13, 2022 at 02:34:36PM +0200, Micka=C3=ABl Sala=C3=BCn wrote:
-> >
-> >
-> > On 11/06/2022 19:22, Masahiro Yamada wrote:
-> > > Commit addf466389d9 ("certs: Check that builtin blacklist hashes are
-> > > valid") was applied 8 months after the submission.
-> > >
-> > > In the meantime, the base code had been removed by commit b8c96a6b466=
-c
-> > > ("certs: simplify $(srctree)/ handling and remove config_filename
-> > > macro").
-> > >
-> > > Fix the Makefile.
-> > >
-> > > Create a local copy of $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST). It is
-> > > included from certs/blacklist_hashes.c and also works as a timestamp.
-> > >
-> > > Send error messages from check-blacklist-hashes.awk to stderr instead
-> > > of stdout.
-> > >
-> > > Fixes: addf466389d9 ("certs: Check that builtin blacklist hashes are =
-valid")
-> > > Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
-> >
-> > Reviewed-by: Micka=C3=ABl Sala=C3=BCn <mic@linux.microsoft.com>
-> >
-> > As a side note, it may let an orphan certs/blacklist_hashes_checked fil=
-e but
-> > we can't really do something about that and it's OK.
-> >
-> > Thanks!
-> >
-> > > ---
-> > >
-> > >   certs/.gitignore         |  2 +-
-> > >   certs/Makefile           | 20 ++++++++++----------
-> > >   certs/blacklist_hashes.c |  2 +-
-> > >   3 files changed, 12 insertions(+), 12 deletions(-)
-> > >
-> > > diff --git a/certs/.gitignore b/certs/.gitignore
-> > > index 56637aceaf81..cec5465f31c1 100644
-> > > --- a/certs/.gitignore
-> > > +++ b/certs/.gitignore
-> > > @@ -1,5 +1,5 @@
-> > >   # SPDX-License-Identifier: GPL-2.0-only
-> > > -/blacklist_hashes_checked
-> > > +/blacklist_hash_list
-> > >   /extract-cert
-> > >   /x509_certificate_list
-> > >   /x509_revocation_list
-> > > diff --git a/certs/Makefile b/certs/Makefile
-> > > index cb1a9da3fc58..a8d628fd5f7b 100644
-> > > --- a/certs/Makefile
-> > > +++ b/certs/Makefile
-> > > @@ -7,22 +7,22 @@ obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) +=3D system_ke=
-yring.o system_certificates.o c
-> > >   obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) +=3D blacklist.o common.o
-> > >   obj-$(CONFIG_SYSTEM_REVOCATION_LIST) +=3D revocation_certificates.o
-> > >   ifneq ($(CONFIG_SYSTEM_BLACKLIST_HASH_LIST),)
-> > > -quiet_cmd_check_blacklist_hashes =3D CHECK   $(patsubst "%",%,$(2))
-> > > -      cmd_check_blacklist_hashes =3D $(AWK) -f $(srctree)/scripts/ch=
-eck-blacklist-hashes.awk $(2); touch $@
-> > > -$(eval $(call config_filename,SYSTEM_BLACKLIST_HASH_LIST))
-> > > +$(obj)/blacklist_hashes.o: $(obj)/blacklist_hash_list
-> > > +CFLAGS_blacklist_hashes.o :=3D -I $(obj)
-> > > -$(obj)/blacklist_hashes.o: $(obj)/blacklist_hashes_checked
-> > > +quiet_cmd_check_and_copy_blacklist_hash_list =3D GEN     $@
-> > > +      cmd_check_and_copy_blacklist_hash_list =3D \
-> > > +   $(AWK) -f $(srctree)/scripts/check-blacklist-hashes.awk $(CONFIG_=
-SYSTEM_BLACKLIST_HASH_LIST) >&2; \
-> > > +   cat $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) > $@
-> > > -CFLAGS_blacklist_hashes.o +=3D -I$(srctree)
-> > > -
-> > > -targets +=3D blacklist_hashes_checked
-> > > -$(obj)/blacklist_hashes_checked: $(SYSTEM_BLACKLIST_HASH_LIST_SRCPRE=
-FIX)$(SYSTEM_BLACKLIST_HASH_LIST_FILENAME) scripts/check-blacklist-hashes.a=
-wk FORCE
-> > > -   $(call if_changed,check_blacklist_hashes,$(SYSTEM_BLACKLIST_HASH_=
-LIST_SRCPREFIX)$(CONFIG_SYSTEM_BLACKLIST_HASH_LIST))
-> > > +$(obj)/blacklist_hash_list: $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) FOR=
-CE
-> > > +   $(call if_changed,check_and_copy_blacklist_hash_list)
-> > >   obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) +=3D blacklist_hashes.o
-> > >   else
-> > >   obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) +=3D blacklist_nohashes.o
-> > >   endif
-> > > +targets +=3D blacklist_hash_list
-> > >   quiet_cmd_extract_certs  =3D CERT    $@
-> > >         cmd_extract_certs  =3D $(obj)/extract-cert $(extract-cert-in)=
- $@
-> > > @@ -33,7 +33,7 @@ $(obj)/system_certificates.o: $(obj)/x509_certifica=
-te_list
-> > >   $(obj)/x509_certificate_list: $(CONFIG_SYSTEM_TRUSTED_KEYS) $(obj)/=
-extract-cert FORCE
-> > >     $(call if_changed,extract_certs)
-> > > -targets +=3D x509_certificate_list blacklist_hashes_checked
-> > > +targets +=3D x509_certificate_list
-> > >   # If module signing is requested, say by allyesconfig, but a key ha=
-s not been
-> > >   # supplied, then one will need to be generated to make sure the bui=
-ld does not
-> > > diff --git a/certs/blacklist_hashes.c b/certs/blacklist_hashes.c
-> > > index d5961aa3d338..86d66fe11348 100644
-> > > --- a/certs/blacklist_hashes.c
-> > > +++ b/certs/blacklist_hashes.c
-> > > @@ -2,6 +2,6 @@
-> > >   #include "blacklist.h"
-> > >   const char __initconst *const blacklist_hashes[] =3D {
-> > > -#include CONFIG_SYSTEM_BLACKLIST_HASH_LIST
-> > > +#include "blacklist_hash_list"
-> > >     , NULL
-> > >   };
->
-> I'll make a PR for 1/4 and 2/4 so that they get into 5.19.
->
-> BR, Jarkko
+Hi Linus,
 
+Can you pull this please?  The signature checking code, as used by module
+signing, kexec, etc., is non-FIPS compliant as there is no selftest.  For =
+a
+kernel to be FIPS-compliant, signature checking would have to be tested
+before being used, and the box would need to panic if it's not available
+(probably reasonable as simply disabling signature checking would prevent
+you from loading any driver modules).
 
-Thank you!
+Deal with this by adding a minimal test.
 
-What shall we do for 3/4 and 4/4?
+This is split into two patches: the first moves load_certificate_list() to
+the same place as the X.509 code to make it more accessible internally; th=
+e
+second adds a selftest.
 
-Do you have a plan to queue them up for the next MW?
+David
 
-Or, shall I apply them to my kbuild tree with your reivewed-by?
+Link: https://lore.kernel.org/r/165515741424.1554877.9363755381201121213.s=
+tgit@warthog.procyon.org.uk/
+---
+The following changes since commit b13baccc3850ca8b8cccbf8ed9912dbaa0fdf7f=
+3:
 
+  Linux 5.19-rc2 (2022-06-12 16:11:37 -0700)
 
+are available in the Git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags=
+/certs-20220621
 
---=20
-Best Regards
-Masahiro Yamada
+for you to fetch changes up to 3cde3174eb910513d32a9ec8a9b95ea59be833df:
+
+  certs: Add FIPS selftests (2022-06-21 16:05:12 +0100)
+
+----------------------------------------------------------------
+Certs changes
+
+----------------------------------------------------------------
+David Howells (2):
+      certs: Move load_certificate_list() to be with the asymmetric keys c=
+ode
+      certs: Add FIPS selftests
+
+ certs/Makefile                                     |   4 +-
+ certs/blacklist.c                                  |   8 +-
+ certs/common.h                                     |   9 -
+ certs/system_keyring.c                             |   6 +-
+ crypto/asymmetric_keys/Kconfig                     |  10 +
+ crypto/asymmetric_keys/Makefile                    |   2 +
+ crypto/asymmetric_keys/selftest.c                  | 224 ++++++++++++++++=
++++++
+ .../asymmetric_keys/x509_loader.c                  |   8 +-
+ crypto/asymmetric_keys/x509_parser.h               |   9 +
+ crypto/asymmetric_keys/x509_public_key.c           |   8 +-
+ include/keys/asymmetric-type.h                     |   3 +
+ 11 files changed, 268 insertions(+), 23 deletions(-)
+ delete mode 100644 certs/common.h
+ create mode 100644 crypto/asymmetric_keys/selftest.c
+ rename certs/common.c =3D> crypto/asymmetric_keys/x509_loader.c (87%)
+
