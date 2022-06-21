@@ -2,121 +2,85 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C9E32C433EF
-	for <keyrings@archiver.kernel.org>; Tue, 21 Jun 2022 15:20:30 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 597EBC433EF
+	for <keyrings@archiver.kernel.org>; Tue, 21 Jun 2022 16:38:57 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1352632AbiFUPU3 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 21 Jun 2022 11:20:29 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58488 "EHLO
+        id S1350436AbiFUQi4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 21 Jun 2022 12:38:56 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52128 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1352653AbiFUPUW (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 21 Jun 2022 11:20:22 -0400
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTP id 528C520198
-        for <keyrings@vger.kernel.org>; Tue, 21 Jun 2022 08:20:18 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1655824817;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding;
-        bh=m/qf6ov0omQZSA34pET1sX3jxVcqup+wfHTRPaQS72Q=;
-        b=AxEbiWMzJwT5HusztAkdT3IGQ6SF1LRkaQQ4q8OlqQzBwPrV6NDH/kbbBgR13npAIduP+e
-        ePXOW9t9s32Zdv40kxAveLiYbZ4Gh77rs7CZK95Dxd4Pe9ojtMjc+NYO2z/TUWbOHPqS/w
-        MXd34Eh3GhVkBJs8EizMli8QZQz9gOY=
-Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
- [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
- (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- us-mta-551-cVIuGa09MXOM8jx5kmBEiA-1; Tue, 21 Jun 2022 11:20:12 -0400
-X-MC-Unique: cVIuGa09MXOM8jx5kmBEiA-1
-Received: from smtp.corp.redhat.com (int-mx09.intmail.prod.int.rdu2.redhat.com [10.11.54.9])
-        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id B196C101E9B0;
-        Tue, 21 Jun 2022 15:20:11 +0000 (UTC)
-Received: from warthog.procyon.org.uk (unknown [10.33.36.62])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 9C833492C3B;
-        Tue, 21 Jun 2022 15:20:10 +0000 (UTC)
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-        Kingdom.
-        Registered in England and Wales under Company Registration No. 3798903
-From:   David Howells <dhowells@redhat.com>
-To:     torvalds@linux-foundation.org
-cc:     dhowells@redhat.com, simo@redhat.com,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] certs: Make signature verification FIPS compliant
+        with ESMTP id S230177AbiFUQiz (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 21 Jun 2022 12:38:55 -0400
+Received: from frasgout.his.huawei.com (frasgout.his.huawei.com [185.176.79.56])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8B71C1929E;
+        Tue, 21 Jun 2022 09:38:53 -0700 (PDT)
+Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.201])
+        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4LSBz80lLDz6801q;
+        Wed, 22 Jun 2022 00:38:28 +0800 (CST)
+Received: from roberto-ThinkStation-P620.huawei.com (10.204.63.22) by
+ fraeml714-chm.china.huawei.com (10.206.15.33) with Microsoft SMTP Server
+ (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
+ 15.1.2375.24; Tue, 21 Jun 2022 18:38:50 +0200
+From:   Roberto Sassu <roberto.sassu@huawei.com>
+To:     <ast@kernel.org>, <daniel@iogearbox.net>, <andrii@kernel.org>,
+        <kpsingh@kernel.org>, <john.fastabend@gmail.com>,
+        <songliubraving@fb.com>, <kafai@fb.com>, <yhs@fb.com>
+CC:     <dhowells@redhat.com>, <keyrings@vger.kernel.org>,
+        <bpf@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kselftest@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Roberto Sassu <roberto.sassu@huawei.com>,
+        Joanne Koong <joannelkoong@gmail.com>
+Subject: [PATCH v5 1/5] bpf: Export bpf_dynptr_get_size()
+Date:   Tue, 21 Jun 2022 18:37:53 +0200
+Message-ID: <20220621163757.760304-2-roberto.sassu@huawei.com>
+X-Mailer: git-send-email 2.25.1
+In-Reply-To: <20220621163757.760304-1-roberto.sassu@huawei.com>
+References: <20220621163757.760304-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <1276150.1655824809.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: quoted-printable
-Date:   Tue, 21 Jun 2022 16:20:09 +0100
-Message-ID: <1276151.1655824809@warthog.procyon.org.uk>
-X-Scanned-By: MIMEDefang 2.85 on 10.11.54.9
+Content-Transfer-Encoding: 7BIT
+Content-Type:   text/plain; charset=US-ASCII
+X-Originating-IP: [10.204.63.22]
+X-ClientProxiedBy: lhreml754-chm.china.huawei.com (10.201.108.204) To
+ fraeml714-chm.china.huawei.com (10.206.15.33)
+X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi Linus,
+Export bpf_dynptr_get_size(), so that kernel code dealing with eBPF dynamic
+pointers can obtain the real size of data carried by this data structure.
 
-Can you pull this please?  The signature checking code, as used by module
-signing, kexec, etc., is non-FIPS compliant as there is no selftest.  For =
-a
-kernel to be FIPS-compliant, signature checking would have to be tested
-before being used, and the box would need to panic if it's not available
-(probably reasonable as simply disabling signature checking would prevent
-you from loading any driver modules).
-
-Deal with this by adding a minimal test.
-
-This is split into two patches: the first moves load_certificate_list() to
-the same place as the X.509 code to make it more accessible internally; th=
-e
-second adds a selftest.
-
-David
-
-Link: https://lore.kernel.org/r/165515741424.1554877.9363755381201121213.s=
-tgit@warthog.procyon.org.uk/
+Reviewed-by: Joanne Koong <joannelkoong@gmail.com>
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
-The following changes since commit b13baccc3850ca8b8cccbf8ed9912dbaa0fdf7f=
-3:
+ include/linux/bpf.h  | 1 +
+ kernel/bpf/helpers.c | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-  Linux 5.19-rc2 (2022-06-12 16:11:37 -0700)
-
-are available in the Git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags=
-/certs-20220621
-
-for you to fetch changes up to 3cde3174eb910513d32a9ec8a9b95ea59be833df:
-
-  certs: Add FIPS selftests (2022-06-21 16:05:12 +0100)
-
-----------------------------------------------------------------
-Certs changes
-
-----------------------------------------------------------------
-David Howells (2):
-      certs: Move load_certificate_list() to be with the asymmetric keys c=
-ode
-      certs: Add FIPS selftests
-
- certs/Makefile                                     |   4 +-
- certs/blacklist.c                                  |   8 +-
- certs/common.h                                     |   9 -
- certs/system_keyring.c                             |   6 +-
- crypto/asymmetric_keys/Kconfig                     |  10 +
- crypto/asymmetric_keys/Makefile                    |   2 +
- crypto/asymmetric_keys/selftest.c                  | 224 ++++++++++++++++=
-+++++
- .../asymmetric_keys/x509_loader.c                  |   8 +-
- crypto/asymmetric_keys/x509_parser.h               |   9 +
- crypto/asymmetric_keys/x509_public_key.c           |   8 +-
- include/keys/asymmetric-type.h                     |   3 +
- 11 files changed, 268 insertions(+), 23 deletions(-)
- delete mode 100644 certs/common.h
- create mode 100644 crypto/asymmetric_keys/selftest.c
- rename certs/common.c =3D> crypto/asymmetric_keys/x509_loader.c (87%)
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+index d05e1495a06e..3ec0f167e9d7 100644
+--- a/include/linux/bpf.h
++++ b/include/linux/bpf.h
+@@ -2521,5 +2521,6 @@ void bpf_dynptr_init(struct bpf_dynptr_kern *ptr, void *data,
+ 		     enum bpf_dynptr_type type, u32 offset, u32 size);
+ void bpf_dynptr_set_null(struct bpf_dynptr_kern *ptr);
+ int bpf_dynptr_check_size(u32 size);
++u32 bpf_dynptr_get_size(struct bpf_dynptr_kern *ptr);
+ 
+ #endif /* _LINUX_BPF_H */
+diff --git a/kernel/bpf/helpers.c b/kernel/bpf/helpers.c
+index a1c84d256f83..3f5ff8dbd3cb 100644
+--- a/kernel/bpf/helpers.c
++++ b/kernel/bpf/helpers.c
+@@ -1430,7 +1430,7 @@ static void bpf_dynptr_set_type(struct bpf_dynptr_kern *ptr, enum bpf_dynptr_typ
+ 	ptr->size |= type << DYNPTR_TYPE_SHIFT;
+ }
+ 
+-static u32 bpf_dynptr_get_size(struct bpf_dynptr_kern *ptr)
++u32 bpf_dynptr_get_size(struct bpf_dynptr_kern *ptr)
+ {
+ 	return ptr->size & DYNPTR_SIZE_MASK;
+ }
+-- 
+2.25.1
 
