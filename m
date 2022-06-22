@@ -2,130 +2,111 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 11BACCCA47D
-	for <keyrings@archiver.kernel.org>; Wed, 22 Jun 2022 09:54:35 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7C418C43334
+	for <keyrings@archiver.kernel.org>; Wed, 22 Jun 2022 18:16:49 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1350428AbiFVJyd (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 22 Jun 2022 05:54:33 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48020 "EHLO
+        id S1377506AbiFVSQs (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 22 Jun 2022 14:16:48 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43258 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1352645AbiFVJyX (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 22 Jun 2022 05:54:23 -0400
-Received: from frasgout.his.huawei.com (frasgout.his.huawei.com [185.176.79.56])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 88BDB3A5DD;
-        Wed, 22 Jun 2022 02:54:21 -0700 (PDT)
-Received: from fraeml713-chm.china.huawei.com (unknown [172.18.147.207])
-        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4LSdxs0C8dz689t8;
-        Wed, 22 Jun 2022 17:53:53 +0800 (CST)
-Received: from fraeml714-chm.china.huawei.com (10.206.15.33) by
- fraeml713-chm.china.huawei.com (10.206.15.32) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2375.24; Wed, 22 Jun 2022 11:54:18 +0200
-Received: from fraeml714-chm.china.huawei.com ([10.206.15.33]) by
- fraeml714-chm.china.huawei.com ([10.206.15.33]) with mapi id 15.01.2375.024;
- Wed, 22 Jun 2022 11:54:18 +0200
-From:   Roberto Sassu <roberto.sassu@huawei.com>
-To:     John Fastabend <john.fastabend@gmail.com>,
-        "ast@kernel.org" <ast@kernel.org>,
+        with ESMTP id S1359064AbiFVSQr (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 22 Jun 2022 14:16:47 -0400
+Received: from mail-ej1-x62b.google.com (mail-ej1-x62b.google.com [IPv6:2a00:1450:4864:20::62b])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EB2BB3D1DE;
+        Wed, 22 Jun 2022 11:16:46 -0700 (PDT)
+Received: by mail-ej1-x62b.google.com with SMTP id g26so14615921ejb.5;
+        Wed, 22 Jun 2022 11:16:46 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20210112;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc;
+        bh=jL28EuTE/B/IiDSFOCkATLCzsdUidgMrBdVWQUFs7cc=;
+        b=LO1pKYM/vuhd0Wi83BGq4mfQH8lRhD+ISzAR2tgKxQJ+kxQb6pjkhbr3A/qmFvVWnu
+         0r6Oo9NFm22z16iwHGOw7u05VmdQ+S6lAYhBGsD19N9ERNFJqa26wX41UTMFl+iDiLbW
+         FJWQHOvWHWH+NE9BvDGOmXlrDrMR0Sj1sisqBAEjicoQvmf/NpXH3hotAsnWYpteM54w
+         vR9YYH4h5ROLR+CZbcYrUYpGyI90zCwFZHg2PLLizGh6p6WSwrcm/iLnO03Aikfq29Bn
+         PUyghERuf/1VxsLw2S4PJwZCM6mcXot8RHrO5eCTgJ9BpuJPpzXsrs9TcoXMhu3UDTpJ
+         GGfg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc;
+        bh=jL28EuTE/B/IiDSFOCkATLCzsdUidgMrBdVWQUFs7cc=;
+        b=MUf27+kynOHU/8MU3kueQE7iJbSzNuLpkzRZZ8ZdEKH4mSPGS4BBW/m5n02qm5YsE+
+         LWgJKKo9Eh+gbv0mBK8EM8fkzgCh3L3+XV2bmhOCAvzPlGsFVzb7pi5dtcFCKpQXj9xB
+         0bhR4p98vwrrcn1DgJI80HlupHCHMkD5SaMjtn9Nm9kxzsMkWd+ITLrNwvJ91iOxrmrH
+         3UPplPTlu3ZVnryTAr4eVhim/w/pfg5qJK8tPXCRuCNc0YV6qmQN2DVpkbZSXIAzj2UC
+         DgabaTwRS37Ofw6jYrfUHGTGFJv1/6tRlLWwl8k8NXQ9oyQ25+WJ2a0654dHIpZ8el6b
+         4SUA==
+X-Gm-Message-State: AJIora+fRxvTd22ysaJTfkA3iocA4bFeR6DsG3i2T5BrDZrGaeO/CA1V
+        KV1ULuZNUnPmZF0TZJd8uktpakiaUBEeZPaToD4=
+X-Google-Smtp-Source: AGRyM1s2NQm5CtCjmV7w3PBB0JZBDufY6KUaCPSrMmnyss4GCO9gDFw/1aEM8lRPQyVLq8qHdlkDsM822R3dbfMN4eA=
+X-Received: by 2002:a17:906:5189:b0:722:dc81:222a with SMTP id
+ y9-20020a170906518900b00722dc81222amr4375356ejk.502.1655921805322; Wed, 22
+ Jun 2022 11:16:45 -0700 (PDT)
+MIME-Version: 1.0
+References: <20220621163757.760304-1-roberto.sassu@huawei.com>
+ <20220621163757.760304-6-roberto.sassu@huawei.com> <20220621223135.puwe3m55yznaevm5@macbook-pro-3.dhcp.thefacebook.com>
+ <76c319d5ad1e4ac69ae5d3f71e9d62f7@huawei.com>
+In-Reply-To: <76c319d5ad1e4ac69ae5d3f71e9d62f7@huawei.com>
+From:   Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Date:   Wed, 22 Jun 2022 11:16:33 -0700
+Message-ID: <CAADnVQLLMOfXOchNqcTOR9_-ReXrTmNjMf40HD_ZtN+BO3J3fw@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] selftests/bpf: Add test for bpf_verify_pkcs7_signature()
+ helper
+To:     Roberto Sassu <roberto.sassu@huawei.com>
+Cc:     "ast@kernel.org" <ast@kernel.org>,
         "daniel@iogearbox.net" <daniel@iogearbox.net>,
         "andrii@kernel.org" <andrii@kernel.org>,
         "kpsingh@kernel.org" <kpsingh@kernel.org>,
+        "john.fastabend@gmail.com" <john.fastabend@gmail.com>,
         "songliubraving@fb.com" <songliubraving@fb.com>,
-        "kafai@fb.com" <kafai@fb.com>, "yhs@fb.com" <yhs@fb.com>
-CC:     "dhowells@redhat.com" <dhowells@redhat.com>,
+        "kafai@fb.com" <kafai@fb.com>, "yhs@fb.com" <yhs@fb.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
         "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
         "bpf@vger.kernel.org" <bpf@vger.kernel.org>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kselftest@vger.kernel.org" <linux-kselftest@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel test robot" <lkp@intel.com>
-Subject: RE: [PATCH v5 3/5] bpf: Add bpf_verify_pkcs7_signature() helper
-Thread-Topic: [PATCH v5 3/5] bpf: Add bpf_verify_pkcs7_signature() helper
-Thread-Index: AQHYhY1kCHhKSR2HMUKh5v3j7X869a1aT6EAgADgkDA=
-Date:   Wed, 22 Jun 2022 09:54:18 +0000
-Message-ID: <03b67c7a6161428c9ff8a5dde0450402@huawei.com>
-References: <20220621163757.760304-1-roberto.sassu@huawei.com>
- <20220621163757.760304-4-roberto.sassu@huawei.com>
- <62b245e22effa_1627420871@john.notmuch>
-In-Reply-To: <62b245e22effa_1627420871@john.notmuch>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.221.98.153]
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-PiBGcm9tOiBKb2huIEZhc3RhYmVuZCBbbWFpbHRvOmpvaG4uZmFzdGFiZW5kQGdtYWlsLmNvbV0N
-Cj4gU2VudDogV2VkbmVzZGF5LCBKdW5lIDIyLCAyMDIyIDEyOjI4IEFNDQo+IFJvYmVydG8gU2Fz
-c3Ugd3JvdGU6DQo+ID4gQWRkIHRoZSBicGZfdmVyaWZ5X3BrY3M3X3NpZ25hdHVyZSgpIGhlbHBl
-ciwgdG8gZ2l2ZSBlQlBGIHNlY3VyaXR5IG1vZHVsZXMNCj4gPiB0aGUgYWJpbGl0eSB0byBjaGVj
-ayB0aGUgdmFsaWRpdHkgb2YgYSBzaWduYXR1cmUgYWdhaW5zdCBzdXBwbGllZCBkYXRhLCBieQ0K
-PiA+IHVzaW5nIHVzZXItcHJvdmlkZWQgb3Igc3lzdGVtLXByb3ZpZGVkIGtleXMgYXMgdHJ1c3Qg
-YW5jaG9yLg0KPiA+DQo+ID4gVGhlIG5ldyBoZWxwZXIgbWFrZXMgaXQgcG9zc2libGUgdG8gZW5m
-b3JjZSBtYW5kYXRvcnkgcG9saWNpZXMsIGFzIGVCUEYNCj4gPiBwcm9ncmFtcyBtaWdodCBiZSBh
-bGxvd2VkIHRvIG1ha2Ugc2VjdXJpdHkgZGVjaXNpb25zIG9ubHkgYmFzZWQgb24gZGF0YQ0KPiA+
-IHNvdXJjZXMgdGhlIHN5c3RlbSBhZG1pbmlzdHJhdG9yIGFwcHJvdmVzLg0KPiA+DQo+ID4gVGhl
-IGNhbGxlciBzaG91bGQgcHJvdmlkZSBib3RoIHRoZSBkYXRhIHRvIGJlIHZlcmlmaWVkIGFuZCB0
-aGUgc2lnbmF0dXJlIGFzDQo+ID4gZUJQRiBkeW5hbWljIHBvaW50ZXJzICh0byBtaW5pbWl6ZSB0
-aGUgbnVtYmVyIG9mIHBhcmFtZXRlcnMpLg0KPiA+DQo+ID4gVGhlIGNhbGxlciBzaG91bGQgYWxz
-byBwcm92aWRlIGEga2V5cmluZyBwb2ludGVyIG9idGFpbmVkIHdpdGgNCj4gPiBicGZfbG9va3Vw
-X3VzZXJfa2V5KCkgb3IsIGFsdGVybmF0aXZlbHksIGEga2V5cmluZyBJRCB3aXRoIHZhbHVlcyBk
-ZWZpbmVkDQo+ID4gaW4gdmVyaWZpY2F0aW9uLmguIFdoaWxlIHRoZSBmaXJzdCBjaG9pY2UgZ2l2
-ZXMgdXNlcnMgbW9yZSBmbGV4aWJpbGl0eSwgdGhlDQo+ID4gc2Vjb25kIG9mZmVycyBiZXR0ZXIg
-c2VjdXJpdHkgZ3VhcmFudGVlcywgYXMgdGhlIGtleXJpbmcgc2VsZWN0aW9uIHdpbGwgbm90DQo+
-ID4gZGVwZW5kIG9uIHBvc3NpYmx5IHVudHJ1c3RlZCB1c2VyIHNwYWNlIGJ1dCBvbiB0aGUga2Vy
-bmVsIGl0c2VsZi4NCj4gPg0KPiA+IERlZmluZWQga2V5cmluZyBJRHMgYXJlOiAwIGZvciB0aGUg
-cHJpbWFyeSBrZXlyaW5nIChpbW11dGFibGUga2V5cmluZyBvZg0KPiA+IHN5c3RlbSBrZXlzKTsg
-MSBmb3IgYm90aCB0aGUgcHJpbWFyeSBhbmQgc2Vjb25kYXJ5IGtleXJpbmcgKHdoZXJlIGtleXMg
-Y2FuDQo+ID4gYmUgYWRkZWQgb25seSBpZiB0aGV5IGFyZSB2b3VjaGVkIGZvciBieSBleGlzdGlu
-ZyBrZXlzIGluIHRob3NlIGtleXJpbmdzKTsNCj4gPiAyIGZvciB0aGUgcGxhdGZvcm0ga2V5cmlu
-ZyAocHJpbWFyaWx5IHVzZWQgYnkgdGhlIGludGVncml0eSBzdWJzeXN0ZW0gdG8NCj4gPiB2ZXJp
-ZnkgYSBrZXhlYydlZCBrZXJuZWQgaW1hZ2UgYW5kLCBwb3NzaWJseSwgdGhlIGluaXRyYW1mcyBz
-aWduYXR1cmUpLg0KPiA+DQo+ID4gTm90ZTogc2luY2UgdGhlIGtleXJpbmcgSUQgYXNzaWdubWVu
-dCBpcyB1bmRlcnN0b29kIG9ubHkgYnkNCj4gPiB2ZXJpZnlfcGtjczdfc2lnbmF0dXJlKCksIGl0
-IG11c3QgYmUgcGFzc2VkIGRpcmVjdGx5IHRvIHRoZSBjb3JyZXNwb25kaW5nDQo+ID4gaGVscGVy
-LCByYXRoZXIgdGhhbiB0byBhIHNlcGFyYXRlIG5ldyBoZWxwZXIgcmV0dXJuaW5nIGEgc3RydWN0
-IGtleSBwb2ludGVyDQo+ID4gd2l0aCB0aGUga2V5cmluZyBJRCBhcyBhIHBvaW50ZXIgdmFsdWUu
-IElmIHN1Y2ggcG9pbnRlciBpcyBwYXNzZWQgdG8gYW55DQo+ID4gb3RoZXIgaGVscGVyIHdoaWNo
-IGRvZXMgbm90IGNoZWNrIGl0cyB2YWxpZGl0eSwgYW4gaWxsZWdhbCBtZW1vcnkgYWNjZXNzDQo+
-ID4gY291bGQgb2NjdXIuDQo+ID4NCj4gPiBTaWduZWQtb2ZmLWJ5OiBSb2JlcnRvIFNhc3N1IDxy
-b2JlcnRvLnNhc3N1QGh1YXdlaS5jb20+DQo+ID4gUmVwb3J0ZWQtYnk6IGtlcm5lbCB0ZXN0IHJv
-Ym90IDxsa3BAaW50ZWwuY29tPiAoY2FzdCB3YXJuaW5nKQ0KPiA+IC0tLQ0KPiA+ICBpbmNsdWRl
-L3VhcGkvbGludXgvYnBmLmggICAgICAgfCAxNyArKysrKysrKysrKysrKysNCj4gPiAga2VybmVs
-L2JwZi9icGZfbHNtLmMgICAgICAgICAgIHwgMzkgKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKw0KPiA+ICB0b29scy9pbmNsdWRlL3VhcGkvbGludXgvYnBmLmggfCAxNyArKysrKysr
-KysrKysrKysNCj4gPiAgMyBmaWxlcyBjaGFuZ2VkLCA3MyBpbnNlcnRpb25zKCspDQo+ID4NCj4g
-PiBkaWZmIC0tZ2l0IGEvaW5jbHVkZS91YXBpL2xpbnV4L2JwZi5oIGIvaW5jbHVkZS91YXBpL2xp
-bnV4L2JwZi5oDQo+ID4gaW5kZXggN2JiY2YyY2QxMDVkLi41MjRiZWQ0ZDcxNzAgMTAwNjQ0DQo+
-ID4gLS0tIGEvaW5jbHVkZS91YXBpL2xpbnV4L2JwZi5oDQo+ID4gKysrIGIvaW5jbHVkZS91YXBp
-L2xpbnV4L2JwZi5oDQo+ID4gQEAgLTUzMzksNiArNTMzOSwyMiBAQCB1bmlvbiBicGZfYXR0ciB7
-DQo+ID4gICAqCQlicGZfbG9va3VwX3VzZXJfa2V5KCkgaGVscGVyLg0KPiA+ICAgKglSZXR1cm4N
-Cj4gPiAgICoJCTANCj4gPiArICoNCj4gPiArICogbG9uZyBicGZfdmVyaWZ5X3BrY3M3X3NpZ25h
-dHVyZShzdHJ1Y3QgYnBmX2R5bnB0ciAqZGF0YV9wdHIsIHN0cnVjdA0KPiBicGZfZHlucHRyICpz
-aWdfcHRyLCBzdHJ1Y3Qga2V5ICp0cnVzdGVkX2tleXMsIHVuc2lnbmVkIGxvbmcga2V5cmluZ19p
-ZCkNCj4gPiArICoJRGVzY3JpcHRpb24NCj4gPiArICoJCVZlcmlmeSB0aGUgUEtDUyM3IHNpZ25h
-dHVyZSAqc2lnKiBhZ2FpbnN0IHRoZSBzdXBwbGllZCAqZGF0YSoNCj4gPiArICoJCXdpdGgga2V5
-cyBpbiAqdHJ1c3RlZF9rZXlzKiBvciBpbiBhIGtleXJpbmcgd2l0aCBJRA0KPiA+ICsgKgkJKmtl
-eXJpbmdfaWQqLg0KPiANCj4gV291bGQgYmUgbmljZSB0byBnaXZlIHByZWNlZGVuY2UgaGVyZSBz
-byB0aGF0IGl0cyBvYnZpb3VzIG9yZGVyIGJldHdlZW4NCj4gdHJ1c3RlZF9rZXlzIGFuZCBrZXly
-aW5nX2lkLg0KDQpEaWQgeW91IG1lYW4gdG8gYWRkIGF0IHRoZSBlbmQgb2YgdGhlIHNlbnRlbmNl
-Og0KDQpvciBpbiBhIGtleXJpbmcgd2l0aCBJRCAqa2V5cmluZ19pZCosIGlmICp0cnVzdGVkX2tl
-eXMqIGlzIE5VTEwuDQoNClRoYW5rcw0KDQpSb2JlcnRvDQoNCkhVQVdFSSBURUNITk9MT0dJRVMg
-RHVlc3NlbGRvcmYgR21iSCwgSFJCIDU2MDYzDQpNYW5hZ2luZyBEaXJlY3RvcjogTGkgUGVuZywg
-WWFuZyBYaSwgTGkgSGUNCg0KPiA+ICsgKg0KPiA+ICsgKgkJKmtleXJpbmdfaWQqIGNhbiBoYXZl
-IHRoZSBmb2xsb3dpbmcgdmFsdWVzIGRlZmluZWQgaW4NCj4gPiArICoJCXZlcmlmaWNhdGlvbi5o
-OiAwIGZvciB0aGUgcHJpbWFyeSBrZXlyaW5nIChpbW11dGFibGUga2V5cmluZyBvZg0KPiA+ICsg
-KgkJc3lzdGVtIGtleXMpOyAxIGZvciBib3RoIHRoZSBwcmltYXJ5IGFuZCBzZWNvbmRhcnkga2V5
-cmluZw0KPiA+ICsgKgkJKHdoZXJlIGtleXMgY2FuIGJlIGFkZGVkIG9ubHkgaWYgdGhleSBhcmUg
-dm91Y2hlZCBmb3IgYnkNCj4gPiArICoJCWV4aXN0aW5nIGtleXMgaW4gdGhvc2Uga2V5cmluZ3Mp
-OyAyIGZvciB0aGUgcGxhdGZvcm0ga2V5cmluZw0KPiA+ICsgKgkJKHByaW1hcmlseSB1c2VkIGJ5
-IHRoZSBpbnRlZ3JpdHkgc3Vic3lzdGVtIHRvIHZlcmlmeSBhIGtleGVjJ2VkDQo+ID4gKyAqCQlr
-ZXJuZWQgaW1hZ2UgYW5kLCBwb3NzaWJseSwgdGhlIGluaXRyYW1mcyBzaWduYXR1cmUpLg0KPiA+
-ICsgKglSZXR1cm4NCj4gPiArICoJCTAgb24gc3VjY2VzcywgYSBuZWdhdGl2ZSB2YWx1ZSBvbiBl
-cnJvci4NCj4gPiAgICovDQo=
+On Wed, Jun 22, 2022 at 12:06 AM Roberto Sassu <roberto.sassu@huawei.com> wrote:
+>
+> > From: Alexei Starovoitov [mailto:alexei.starovoitov@gmail.com]
+> > Sent: Wednesday, June 22, 2022 12:32 AM
+> > On Tue, Jun 21, 2022 at 06:37:57PM +0200, Roberto Sassu wrote:
+> > > +   if (child_pid == 0) {
+> > > +           snprintf(path, sizeof(path), "%s/signing_key.pem", tmp_dir);
+> > > +
+> > > +           return execlp("./sign-file", "./sign-file", "-d", "sha256",
+> > > +                         path, path, data_template, NULL);
+> >
+> > Did you miss my earlier reply requesting not to do this module_signature append
+> > and use signature directly?
+>
+> I didn't miss. sign-file is producing the raw PKCS#7 signature here (-d).
+>
+> I'm doing something slightly different, to test the keyring ID part.
+> I'm retrieving an existing kernel module (actually this does not work
+> in the CI), parsing it to extract the raw signature, and passing it to the
+> eBPF program for verification.
+
+We don't have signed modules in CI.
+When you make changes like this you have to explain that in the commit log.
+
+> Since the kernel module is signed with a key in the built-in keyring,
+> passing 1 or 0 as ID should work.
+>
+> Roberto
+>
+> (sorry, I have to keep the email signature by German law)
+
+I don't believe that's the case since plenty of people
+work from Germany and regularly contribute patches without
+such banners.
+
+> HUAWEI TECHNOLOGIES Duesseldorf GmbH, HRB 56063
+> Managing Director: Li Peng, Yang Xi, Li He
