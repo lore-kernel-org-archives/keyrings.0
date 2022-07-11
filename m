@@ -2,103 +2,79 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8F3B4C433EF
-	for <keyrings@archiver.kernel.org>; Fri,  8 Jul 2022 12:12:51 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id EDFB9C433EF
+	for <keyrings@archiver.kernel.org>; Mon, 11 Jul 2022 00:10:12 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S238126AbiGHMMv (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 8 Jul 2022 08:12:51 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40132 "EHLO
+        id S229495AbiGKAKL (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 10 Jul 2022 20:10:11 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:56562 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S238236AbiGHMMb (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 8 Jul 2022 08:12:31 -0400
-Received: from frasgout.his.huawei.com (frasgout.his.huawei.com [185.176.79.56])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 92E9C9CE16;
-        Fri,  8 Jul 2022 05:12:28 -0700 (PDT)
-Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.200])
-        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4LfXC54ys4z67bmq;
-        Fri,  8 Jul 2022 20:09:37 +0800 (CST)
-Received: from fraeml714-chm.china.huawei.com (10.206.15.33) by
- fraeml714-chm.china.huawei.com (10.206.15.33) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2375.24; Fri, 8 Jul 2022 14:12:26 +0200
-Received: from fraeml714-chm.china.huawei.com ([10.206.15.33]) by
- fraeml714-chm.china.huawei.com ([10.206.15.33]) with mapi id 15.01.2375.024;
- Fri, 8 Jul 2022 14:12:26 +0200
-From:   Roberto Sassu <roberto.sassu@huawei.com>
-To:     "dhowells@redhat.com" <dhowells@redhat.com>
-CC:     "ast@kernel.org" <ast@kernel.org>,
-        "andrii@kernel.org" <andrii@kernel.org>,
-        "john.fastabend@gmail.com" <john.fastabend@gmail.com>,
-        "songliubraving@fb.com" <songliubraving@fb.com>,
-        "kafai@fb.com" <kafai@fb.com>, "yhs@fb.com" <yhs@fb.com>,
-        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "bpf@vger.kernel.org" <bpf@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kselftest@vger.kernel.org" <linux-kselftest@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-        <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KP Singh <kpsingh@kernel.org>,
-        "Daniel Borkmann" <daniel@iogearbox.net>
-Subject: RE: [PATCH v6 4/5] bpf: Add bpf_verify_pkcs7_signature() helper
-Thread-Topic: [PATCH v6 4/5] bpf: Add bpf_verify_pkcs7_signature() helper
-Thread-Index: AQHYiuqGDtlDO2qp4UmZ/vpVUoStkK1xbJmAgACCGICAANf/YIABpDPw
-Date:   Fri, 8 Jul 2022 12:12:25 +0000
-Message-ID: <2be48d62b0c141799f0c54cbe63f6dc3@huawei.com>
-References: <20220628122750.1895107-1-roberto.sassu@huawei.com>
- <20220628122750.1895107-5-roberto.sassu@huawei.com>
- <903b1b6c-b0fd-d624-a24b-5983d8d661b7@iogearbox.net>
- <CACYkzJ4iR=FurW2UZdgycTdu54kNoFrw4uvmDrpTd3xuvpvVTw@mail.gmail.com>
- <52aa81c8037640a7935cdfd6f363a07d@huawei.com>
-In-Reply-To: <52aa81c8037640a7935cdfd6f363a07d@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.221.98.153]
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+        with ESMTP id S229476AbiGKAKL (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 10 Jul 2022 20:10:11 -0400
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B7EEB15714;
+        Sun, 10 Jul 2022 17:10:10 -0700 (PDT)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id 45AB260FCB;
+        Mon, 11 Jul 2022 00:10:10 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 50A55C3411E;
+        Mon, 11 Jul 2022 00:10:09 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1657498209;
+        bh=+F9YL090Ob/Y03kL/DzycGK6iSAWPTVALwZmsSBa0S4=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=BwliBKCdFJSZZPg3Lct3qOjaBKwqkHQXx7OhyJFcUK9T+61zNjEHmh++cDUWXK+0Y
+         Ua5i5K6N13sG5ErdRIe0oZkYD6H8WHQzWtmgMkhqPxxITt067a3MlD7WkSjQjxcLNN
+         vKerkDmaRAt9GNyDn2eBdiCAaSYsnr5AK9WV1BBkn7Mkm3f6RLvITjlbTFy7IMltPo
+         PTM/Qu6oAVKiSSlsN672iEQ0L1zXlnTaXe0Aa6Ubrw851uNFG9sNPB72ztTo7dvncb
+         5xpoSl7BDerFeOesEPMP/OA7W37G811KTnvHzm/nYKVyPlLBuRCdXXBqSkql7fRdFL
+         1a/IdDu52mDFw==
+Date:   Mon, 11 Jul 2022 03:10:04 +0300
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Li zeming <zeming@nfschina.com>
+Cc:     dhowells@redhat.com, jmorris@namei.org, serge@hallyn.com,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@nfschina.com
+Subject: Re: [PATCH] keys/keyctl: Fix typo in string
+Message-ID: <YstqXEPmPV2YUfWN@kernel.org>
+References: <20220704025248.3695-1-zeming@nfschina.com>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20220704025248.3695-1-zeming@nfschina.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-PiBGcm9tOiBSb2JlcnRvIFNhc3N1IFttYWlsdG86cm9iZXJ0by5zYXNzdUBodWF3ZWkuY29tXQ0K
-PiBTZW50OiBUaHVyc2RheSwgSnVseSA3LCAyMDIyIDE6MDEgUE0NCj4gPiBGcm9tOiBLUCBTaW5n
-aCBbbWFpbHRvOmtwc2luZ2hAa2VybmVsLm9yZ10NCj4gPiBTZW50OiBUaHVyc2RheSwgSnVseSA3
-LCAyMDIyIDE6NDkgQU0NCj4gPiBPbiBXZWQsIEp1bCA2LCAyMDIyIGF0IDY6MDQgUE0gRGFuaWVs
-IEJvcmttYW5uIDxkYW5pZWxAaW9nZWFyYm94Lm5ldD4NCj4gPiB3cm90ZToNCg0KWy4uLl0NCg0K
-PiA+ID4gbml0OiB3aGVuIGJvdGggdHJ1c3RlZF9rZXlyaW5nX3NlcmlhbCBhbmQgdHJ1c3RlZF9r
-ZXlyaW5nX2lkIGFyZSBwYXNzZWQgdG8NCj4gdGhlDQo+ID4gPiBoZWxwZXIsIHRoZW4gdGhpcyBz
-aG91bGQgYmUgcmVqZWN0ZWQgYXMgaW52YWxpZCBhcmd1bWVudD8gKEtpbmQgb2YgZmVlbHMgYSBi
-aXQNCj4gPiA+IGxpa2Ugd2UncmUgY3JhbW1pbmcgdHdvIHRoaW5ncyBpbiBvbmUgaGVscGVyLi4g
-S1AsIHRob3VnaHRzPyA6KSkNCj4gPg0KPiA+IEVJTlZBTCB3aGVuIGJvdGggYXJlIHBhc3NlZCBz
-ZWVtcyByZWFzb25hYmxlLiBUaGUgc2lnbmF0dXJlIChwdW4/KSBvZiB0aGUNCj4gPiBkb2VzIHNl
-ZW0gdG8gZ2V0IGJsb2F0ZWQsIGJ1dCBJIGFtIG5vdCBzdXJlIGlmIGl0J3Mgd29ydGggYWRkaW5n
-IHR3bw0KPiA+IGhlbHBlcnMgaGVyZS4NCj4gDQo+IE9rIGZvciBFSU5WQUwuIFNob3VsZCBJIGNo
-YW5nZSB0aGUgdHJ1c3RlZF9rZXlyaW5nX2lkIHR5cGUgdG8gc2lnbmVkLA0KPiBhbmQgdXNlIC0x
-IHdoZW4gaXQgc2hvdWxkIG5vdCBiZSBzcGVjaWZpZWQ/DQoNCkkgc3RpbGwgaGF2ZSB0aGUgaW1w
-cmVzc2lvbiB0aGF0IGEgaGVscGVyIGZvciBsb29rdXBfdXNlcl9rZXkoKSBpcyB0aGUNCnByZWZl
-cnJlZCBzb2x1dGlvbiwgZGVzcGl0ZSB0aGUgYWNjZXNzIGNvbnRyb2wgY29uY2Vybi4NCg0KRGF2
-aWQsIG1heSBhc2sgaWYgdGhpcyBpcyB0aGUgY29ycmVjdCB3YXkgdG8gdXNlIHRoZSBrZXkgc3Vi
-c3lzdGVtDQpBUEkgd2hlbiBwZXJtaXNzaW9uIGNoZWNrIGlzIGRlZmVycmVkPyBrZXlfcGVybWlz
-c2lvbigpIGlzIGN1cnJlbnRseQ0Kbm90IGRlZmluZWQgb3V0c2lkZSB0aGUga2V5IHN1YnN5c3Rl
-bS4NCg0KVGhlIGZpcnN0IHRocmVlIGZ1bmN0aW9ucyB3aWxsIGJlIGV4cG9zZWQgYnkgdGhlIGtl
-cm5lbCB0byBlQlBGIHByb2dyYW1zDQphbmQgY2FuIGJlIGNhbGxlZCBhdCBhbnkgdGltZS4gYnBm
-XzxrZXlfaGVscGVyPiBpcyBhIGdlbmVyaWMgaGVscGVyDQpkZWFsaW5nIHdpdGggYSBrZXkuDQoN
-CkJQRl9DQUxMXzIoYnBmX2xvb2t1cF91c2VyX2tleSwgdTMyLCBzZXJpYWwsIHVuc2lnbmVkIGxv
-bmcsIGZsYWdzKQ0Kew0KLi4uDQogICAgICAgIGtleV9yZWYgPSBsb29rdXBfdXNlcl9rZXkoc2Vy
-aWFsLCBmbGFncywgS0VZX0RFRkVSX1BFUk1fQ0hFQ0spOw0KLi4uDQogICAgICAgIHJldHVybiAo
-dW5zaWduZWQgbG9uZylrZXlfcmVmX3RvX3B0cihrZXlfcmVmKTsNCn0NCg0KQlBGX0NBTExfWChi
-cGZfPGtleV9oZWxwZXI+LCBzdHJ1Y3Qga2V5LCAqa2V5LCAuLi4pDQp7DQogICAgICAgIHJldCA9
-IGtleV9yZWFkX3N0YXRlKGtleSk7DQouLi4NCiAgICAgICAgcmV0ID0ga2V5X3ZhbGlkYXRlKGtl
-eSk7DQouLi4NCiAgICAgICAgcmV0ID0ga2V5X3Blcm1pc3Npb24oa2V5X3JlZiwgPGtleSBoZWxw
-ZXItc3BlY2lmaWMgcGVybWlzc2lvbj4pOw0KLi4uDQp9DQoNCkJQRl9DQUxMXzEoYnBmX2tleV9w
-dXQsIHN0cnVjdCBrZXkgKiwga2V5KQ0Kew0KICAgICAgICBrZXlfcHV0KGtleSk7DQogICAgICAg
-IHJldHVybiAwOw0KfQ0KDQpBbiBlQlBGIHByb2dyYW0gd291bGQgZG8gZm9yIGV4YW1wbGU6DQoN
-ClNFQygibHNtLnMvYnBmIikNCmludCBCUEZfUFJPRyhicGYsIGludCBjbWQsIHVuaW9uIGJwZl9h
-dHRyICphdHRyLCB1bnNpZ25lZCBpbnQgc2l6ZSkNCnsNCiAgICAgICAgc3RydWN0IGtleSAqa2V5
-Ow0KLi4uDQogICAgICAgIGtleSA9IGJwZl9sb29rdXBfdXNlcl9rZXkoc2VyaWFsLCBmbGFncyk7
-DQouLi4NCiAgICAgICAgcmV0ID0gYnBmX2tleV9oZWxwZXIoa2V5LCAuLi4pOw0KLi4uDQogICAg
-ICAgIGtleV9wdXQoa2V5KTsNCn0NCg0KVGhhbmtzDQoNClJvYmVydG8NCg==
+On Mon, Jul 04, 2022 at 10:52:48AM +0800, Li zeming wrote:
+> Remove the repeated ',' from string
+> 
+> Signed-off-by: Li zeming <zeming@nfschina.com>
+> ---
+>  security/keys/keyctl.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index 96a92a645216..2be09642dd13 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -1175,7 +1175,7 @@ static long keyctl_instantiate_key_common(key_serial_t id,
+>  	void *payload;
+>  	long ret;
+>  
+> -	kenter("%d,,%zu,%d", id, plen, ringid);
+> +	kenter("%d,%zu,%d", id, plen, ringid);
+>  
+>  	if (!plen)
+>  		from = NULL;
+> -- 
+> 2.18.2
+> 
+
+Please, add
+
+Fixes: d84f4f992cbd ("CRED: Inaugurate COW credentials")
+
+BR, Jarkko
