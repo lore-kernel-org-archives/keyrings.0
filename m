@@ -2,143 +2,63 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BAF43CCA47B
-	for <keyrings@archiver.kernel.org>; Thu, 14 Jul 2022 13:41:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4FE5CC43334
+	for <keyrings@archiver.kernel.org>; Fri, 15 Jul 2022 09:19:01 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S239853AbiGNNlQ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 14 Jul 2022 09:41:16 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38652 "EHLO
+        id S231582AbiGOJTA (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 15 Jul 2022 05:19:00 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37498 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S239848AbiGNNlP (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 14 Jul 2022 09:41:15 -0400
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTP id 5366161710
-        for <keyrings@vger.kernel.org>; Thu, 14 Jul 2022 06:41:14 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1657806073;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=nYaKoPGAE5GuTNjUTcyk/8OnPeCKT4Q4LTaKkZkFBRE=;
-        b=bIjdCRvaEHpvC5V7fDMVWmEdF1lKnkta1MK0UaJms4JQxNCB6rDBRNmF37ASUDZQRqqng6
-        8f67QWCo8AT96fOkShT84uZKOx5wBzSXXQXhmZvldpt2bleIA+pFzHNQCIesF2864eDwIV
-        MzwWLjz+I0ncGxP4b0yWYby8Qsp2vgY=
-Received: from mail-pj1-f72.google.com (mail-pj1-f72.google.com
- [209.85.216.72]) by relay.mimecast.com with ESMTP with STARTTLS
- (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- us-mta-59-RTOIGKQUP2-mRpqNBgvKQg-1; Thu, 14 Jul 2022 09:41:03 -0400
-X-MC-Unique: RTOIGKQUP2-mRpqNBgvKQg-1
-Received: by mail-pj1-f72.google.com with SMTP id rm8-20020a17090b3ec800b001f07b25d636so1398009pjb.1
-        for <keyrings@vger.kernel.org>; Thu, 14 Jul 2022 06:41:03 -0700 (PDT)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
-         :references:mime-version:content-transfer-encoding;
-        bh=nYaKoPGAE5GuTNjUTcyk/8OnPeCKT4Q4LTaKkZkFBRE=;
-        b=p/FolUgdF7lO9W6rIWHL2GSf5X99sL5swfSsmItJmMtVL5kinNzoiQvc5wqydxwXu9
-         +c4BNdMeejmLUBUDPYlYkRm2XMPDN/98Ulim2ljvMqiK38JZZEAOlwR7Uft/84Ncyt04
-         eFc6bJLZ7lqJzCZrsWPZC8Ih1lX6948oMpNO6TF1W6soytHorh6bopKCdkuhSN1tWpbu
-         McJthoURZEfLHkY0UCgE078NRL462uLWmsarHLbyR79izfptczucGGNz2QhnLXhuEz5H
-         hMkPLejP55X/Hlf7HNDHCq3nSUut8WlxfkF7u5oSFAWA1WTYhRGX22wkxTMSDNiByhpc
-         X1vQ==
-X-Gm-Message-State: AJIora80K0AdvLIzHLkoKYwlGp4AoVDMTtXvsW1TmP657PwK2RLnTyfj
-        sz4DXf9+kNKdYa6AtlrnZHTLUsTbVHxyR3Y5PnyLSpKfC3672cszagsvpNAmfa7D2GkSAE5QteZ
-        RfqBkA7wFmgxeKDTvutM=
-X-Received: by 2002:a17:90b:3c07:b0:1f0:eab4:79e4 with SMTP id pb7-20020a17090b3c0700b001f0eab479e4mr1116950pjb.186.1657806062496;
-        Thu, 14 Jul 2022 06:41:02 -0700 (PDT)
-X-Google-Smtp-Source: AGRyM1sPB4AJHTz7fd94myeXuSf8getkOgYveQhJicFIsXMd+oF8xCeEgRFuBRRxo5JHCdTOoHv9uw==
-X-Received: by 2002:a17:90b:3c07:b0:1f0:eab4:79e4 with SMTP id pb7-20020a17090b3c0700b001f0eab479e4mr1116928pjb.186.1657806062264;
-        Thu, 14 Jul 2022 06:41:02 -0700 (PDT)
-Received: from localhost ([209.132.188.80])
-        by smtp.gmail.com with ESMTPSA id j31-20020a63fc1f000000b00419ab8f8d2csm1342551pgi.20.2022.07.14.06.41.01
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 14 Jul 2022 06:41:01 -0700 (PDT)
-From:   Coiby Xu <coxu@redhat.com>
-To:     kexec@lists.infradead.org, linux-integrity@vger.kernel.org
-Cc:     Mimi Zohar <zohar@linux.ibm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Michal Suchanek <msuchanek@suse.de>,
-        Baoquan He <bhe@redhat.com>, Dave Young <dyoung@redhat.com>,
-        Will Deacon <will@kernel.org>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        Chun-Yi Lee <jlee@suse.com>, stable@vger.kernel.org,
-        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        James Morse <james.morse@arm.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v10 3/4] arm64: kexec_file: use more system keyrings to verify kernel image signature
-Date:   Thu, 14 Jul 2022 21:40:26 +0800
-Message-Id: <20220714134027.394370-4-coxu@redhat.com>
-X-Mailer: git-send-email 2.35.3
-In-Reply-To: <20220714134027.394370-1-coxu@redhat.com>
-References: <20220714134027.394370-1-coxu@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        with ESMTP id S231653AbiGOJS4 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 15 Jul 2022 05:18:56 -0400
+Received: from mail.nfschina.com (unknown [IPv6:2400:dd01:100f:2:72e2:84ff:fe10:5f45])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTP id EA0EE15FFD;
+        Fri, 15 Jul 2022 02:18:49 -0700 (PDT)
+Received: from localhost (unknown [127.0.0.1])
+        by mail.nfschina.com (Postfix) with ESMTP id CA52C1E80D19;
+        Fri, 15 Jul 2022 17:15:16 +0800 (CST)
+X-Virus-Scanned: amavisd-new at test.com
+Received: from mail.nfschina.com ([127.0.0.1])
+        by localhost (mail.nfschina.com [127.0.0.1]) (amavisd-new, port 10024)
+        with ESMTP id J2h_zqWIEWNU; Fri, 15 Jul 2022 17:15:14 +0800 (CST)
+Received: from localhost.localdomain.localdomain (unknown [219.141.250.2])
+        (Authenticated sender: xupengfei@nfschina.com)
+        by mail.nfschina.com (Postfix) with ESMTPA id 1BDF21E80D11;
+        Fri, 15 Jul 2022 17:15:14 +0800 (CST)
+From:   XU pengfei <xupengfei@nfschina.com>
+To:     dhowells@redhat.com, jarkko@kernel.org, jmorris@namei.org,
+        serge@hallyn.com
+Cc:     keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kernel@nfschina.com,
+        XU pengfei <xupengfei@nfschina.com>
+Subject: [PATCH 1/1] keys/keyrings: Fix typo in string
+Date:   Fri, 15 Jul 2022 17:18:42 +0800
+Message-Id: <20220715091842.4419-1-xupengfei@nfschina.com>
+X-Mailer: git-send-email 2.18.2
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Currently, when loading a kernel image via the kexec_file_load() system
-call, arm64 can only use the .builtin_trusted_keys keyring to verify
-a signature whereas x86 can use three more keyrings i.e.
-.secondary_trusted_keys, .machine and .platform keyrings. For example,
-one resulting problem is kexec'ing a kernel image  would be rejected
-with the error "Lockdown: kexec: kexec of unsigned images is restricted;
-see man kernel_lockdown.7".
+Remove the repeated ',' from string
 
-This patch set enables arm64 to make use of the same keyrings as x86 to
-verify the signature kexec'ed kernel image.
-
-Fixes: 732b7b93d849 ("arm64: kexec_file: add kernel signature verification support")
-Cc: stable@vger.kernel.org # 105e10e2cf1c: kexec_file: drop weak attribute from functions
-Cc: stable@vger.kernel.org # 34d5960af253: kexec: clean up arch_kexec_kernel_verify_sig
-Cc: stable@vger.kernel.org # 83b7bb2d49ae: kexec, KEYS: make the code in bzImage64_verify_sig generic
-Acked-by: Baoquan He <bhe@redhat.com>
-Cc: kexec@lists.infradead.org
-Cc: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
-Co-developed-by: Michal Suchanek <msuchanek@suse.de>
-Signed-off-by: Michal Suchanek <msuchanek@suse.de>
-Acked-by: Will Deacon <will@kernel.org>
-Signed-off-by: Coiby Xu <coxu@redhat.com>
+Signed-off-by: XU pengfei <xupengfei@nfschina.com>
 ---
- arch/arm64/kernel/kexec_image.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ security/keys/request_key.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm64/kernel/kexec_image.c b/arch/arm64/kernel/kexec_image.c
-index 9ec34690e255..5ed6a585f21f 100644
---- a/arch/arm64/kernel/kexec_image.c
-+++ b/arch/arm64/kernel/kexec_image.c
-@@ -14,7 +14,6 @@
- #include <linux/kexec.h>
- #include <linux/pe.h>
- #include <linux/string.h>
--#include <linux/verification.h>
- #include <asm/byteorder.h>
- #include <asm/cpufeature.h>
- #include <asm/image.h>
-@@ -130,18 +129,10 @@ static void *image_load(struct kimage *image,
- 	return NULL;
- }
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 2da4404276f0..190608719f3d 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -375,7 +375,7 @@ static int construct_alloc_key(struct keyring_search_context *ctx,
+ 	key_ref_t key_ref;
+ 	int ret;
  
--#ifdef CONFIG_KEXEC_IMAGE_VERIFY_SIG
--static int image_verify_sig(const char *kernel, unsigned long kernel_len)
--{
--	return verify_pefile_signature(kernel, kernel_len, NULL,
--				       VERIFYING_KEXEC_PE_SIGNATURE);
--}
--#endif
--
- const struct kexec_file_ops kexec_image_ops = {
- 	.probe = image_probe,
- 	.load = image_load,
- #ifdef CONFIG_KEXEC_IMAGE_VERIFY_SIG
--	.verify_sig = image_verify_sig,
-+	.verify_sig = kexec_kernel_verify_pe_sig,
- #endif
- };
+-	kenter("%s,%s,,,",
++	kenter("%s,%s",
+ 	       ctx->index_key.type->name, ctx->index_key.description);
+ 
+ 	*_key = NULL;
 -- 
-2.35.3
+2.18.2
 
