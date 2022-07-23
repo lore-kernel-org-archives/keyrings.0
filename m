@@ -2,65 +2,87 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 11C11C433EF
-	for <keyrings@archiver.kernel.org>; Sat, 23 Jul 2022 14:05:23 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E048EC433EF
+	for <keyrings@archiver.kernel.org>; Sat, 23 Jul 2022 14:07:09 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S235220AbiGWOFV (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sat, 23 Jul 2022 10:05:21 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42478 "EHLO
+        id S233797AbiGWOHI (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 23 Jul 2022 10:07:08 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43506 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S237328AbiGWOFV (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sat, 23 Jul 2022 10:05:21 -0400
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EE8EB1056E;
-        Sat, 23 Jul 2022 07:05:19 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 8951B614B5;
-        Sat, 23 Jul 2022 14:05:19 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 6AB10C341C0;
-        Sat, 23 Jul 2022 14:05:18 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=linuxfoundation.org;
-        s=korg; t=1658585119;
-        bh=2g5s13C+IFBQd9xKYRDH27YjqkKmXT8LzRfCOLtta2w=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=d3v6kDUyyoOc2RLrQEdcJh8KRxU32gs+RlKKkJNJwfOPCw15HDLg7JGAjZEBwurps
-         b8J9KVbEGG17e9nIMXn8ePxKwEV4ltEUozC2FWRSXaaij1DESR8mv0o9sWx6ab0Gnu
-         zM+H7htPngHmRGV50lkndYupXy/GGXV4nilXaVnI=
-Date:   Sat, 23 Jul 2022 16:05:16 +0200
-From:   Greg KH <gregkh@linuxfoundation.org>
-To:     Siddh Raman Pant <code@siddh.me>
-Cc:     David Howells <dhowells@redhat.com>,
+        with ESMTP id S232496AbiGWOHI (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 23 Jul 2022 10:07:08 -0400
+X-Greylist: delayed 913 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Sat, 23 Jul 2022 07:07:07 PDT
+Received: from sender-of-o53.zoho.in (sender-of-o53.zoho.in [103.117.158.53])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 507E6B1F1
+        for <keyrings@vger.kernel.org>; Sat, 23 Jul 2022 07:07:06 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1658584264; cv=none; 
+        d=zohomail.in; s=zohoarc; 
+        b=XYU1zZnXuqFX5/HEudi9MdMxktvd9itAU+I2kePgDtCgp6Li1x8deFEeTSo4eTQS1AbaC/ivef2pbxmOYDcr2MTZ3t4RpyknGzLsXwEhNuVnyM40iFlvYFHv1s6A4JVc97EEyhqomPGugRHf6mFMnY8vj2Z+pRvpg+t8RZgiH00=
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=zohomail.in; s=zohoarc; 
+        t=1658584264; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:MIME-Version:Message-ID:Subject:To; 
+        bh=kk/+ZMIM3QEokLR9dNDr3dm8l5WXXAEPykmzd3WKeh8=; 
+        b=bBmfhYES5zT2HidO8HpjBfslnBmO60DtgLqOtOH5Sz+OLgjxOhtn2KH1Uz8/eFMCpaI5O6vHw+spAgfOU1gCxzta9YMbvk6j9CBjTZqDm1BkKRuOV9X+zPxixdBv4ljsbHaOpjPz5HMLN2uqV6ievgrMCFjHYvCafKDwNv099Dg=
+ARC-Authentication-Results: i=1; mx.zohomail.in;
+        dkim=pass  header.i=siddh.me;
+        spf=pass  smtp.mailfrom=code@siddh.me;
+        dmarc=pass header.from=<code@siddh.me>
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1658584264;
+        s=zmail; d=siddh.me; i=code@siddh.me;
+        h=From:From:To:To:Cc:Cc:Message-ID:Subject:Subject:Date:Date:MIME-Version:Content-Transfer-Encoding:Content-Type:Message-Id:Reply-To;
+        bh=kk/+ZMIM3QEokLR9dNDr3dm8l5WXXAEPykmzd3WKeh8=;
+        b=C5Kc0g6QcesPZacQeSWUfVye11w85Epm+2OhT0JWxQuKAC0qiYGDe5rM2GegGr6F
+        0GncE33rxOJHfMEfbX9lJ/wGrkzBNGaBREdPQmq4uoF7icdrgn8A0XmbYG4yKWadTN6
+        O7VluijrgjArt2qZmswtFWS1t01hw+BtIxp4wY6s=
+Received: from localhost.localdomain (43.250.158.127 [43.250.158.127]) by mx.zoho.in
+        with SMTPS id 1658584262744848.2252468169082; Sat, 23 Jul 2022 19:21:02 +0530 (IST)
+From:   Siddh Raman Pant <code@siddh.me>
+To:     David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>,
         James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Cc:     keyrings <keyrings@vger.kernel.org>,
         linux-security-modules <linux-security-module@vger.kernel.org>,
-        keyrings <keyrings@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
         linux-kernel-mentees 
-        <linux-kernel-mentees@lists.linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] keys/keyctl: Use kfree_rcu instead of kfree
-Message-ID: <YtwAHGISvlgXgXZM@kroah.com>
-References: <20220723135035.199188-1-code@siddh.me>
+        <linux-kernel-mentees@lists.linuxfoundation.org>
+Message-ID: <20220723135035.199188-1-code@siddh.me>
+Subject: [PATCH] keys/keyctl: Use kfree_rcu instead of kfree
+Date:   Sat, 23 Jul 2022 19:20:35 +0530
+X-Mailer: git-send-email 2.35.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20220723135035.199188-1-code@siddh.me>
+Content-Transfer-Encoding: quoted-printable
+X-ZohoMailClient: External
+Content-Type: text/plain; charset=utf8
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sat, Jul 23, 2022 at 07:20:35PM +0530, Siddh Raman Pant via Linux-kernel-mentees wrote:
-> In keyctl_watch_key, use kfree_rcu() for freeing watch and wlist
-> as they support RCU and have an rcu_head in the struct definition.
+In keyctl_watch_key, use kfree_rcu() for freeing watch and wlist
+as they support RCU and have an rcu_head in the struct definition.
 
-That does not explain why this change is needed.  What problem does this
-solve?  Why use RCU if you don't have to?  What functionality did you
-just change in this commit and why?
+Signed-off-by: Siddh Raman Pant <code@siddh.me>
+---
+ security/keys/keyctl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-And how was this tested?
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 96a92a645216..087fbc141cfd 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1832,9 +1832,9 @@ long keyctl_watch_key(key_serial_t id, int watch_queu=
+e_fd, int watch_id)
+ =09}
+=20
+ err_watch:
+-=09kfree(watch);
++=09kfree_rcu(watch, rcu);
+ err_wlist:
+-=09kfree(wlist);
++=09kfree_rcu(wlist, rcu);
+ err_wqueue:
+ =09put_watch_queue(wqueue);
+ err_key:
+--=20
+2.35.1
 
-thanks,
 
-greg k-h
