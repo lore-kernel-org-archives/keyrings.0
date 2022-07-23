@@ -2,87 +2,85 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E048EC433EF
-	for <keyrings@archiver.kernel.org>; Sat, 23 Jul 2022 14:07:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AD1D9C433EF
+	for <keyrings@archiver.kernel.org>; Sat, 23 Jul 2022 14:36:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233797AbiGWOHI (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sat, 23 Jul 2022 10:07:08 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43506 "EHLO
+        id S238215AbiGWOgJ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 23 Jul 2022 10:36:09 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39928 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232496AbiGWOHI (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sat, 23 Jul 2022 10:07:08 -0400
-X-Greylist: delayed 913 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Sat, 23 Jul 2022 07:07:07 PDT
+        with ESMTP id S238214AbiGWOgJ (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 23 Jul 2022 10:36:09 -0400
 Received: from sender-of-o53.zoho.in (sender-of-o53.zoho.in [103.117.158.53])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 507E6B1F1
-        for <keyrings@vger.kernel.org>; Sat, 23 Jul 2022 07:07:06 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1658584264; cv=none; 
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 22F4EDF44;
+        Sat, 23 Jul 2022 07:36:06 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1658586938; cv=none; 
         d=zohomail.in; s=zohoarc; 
-        b=XYU1zZnXuqFX5/HEudi9MdMxktvd9itAU+I2kePgDtCgp6Li1x8deFEeTSo4eTQS1AbaC/ivef2pbxmOYDcr2MTZ3t4RpyknGzLsXwEhNuVnyM40iFlvYFHv1s6A4JVc97EEyhqomPGugRHf6mFMnY8vj2Z+pRvpg+t8RZgiH00=
+        b=P14KMg7Zc246bVkhisdefrW6lxfNpldYDDzSVYqK0RNGk9phCJMo14SjMus4YHD71M+5L2KIkmKCotIBvpC75T1AV0i/xtcICFJGXTWecTOBXJJ1dF/pG8KgRV7i1n/G/MOCTYB3TdJ09BvyjejLMcRnvVEubEF7XMSqSBdlUvc=
 ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=zohomail.in; s=zohoarc; 
-        t=1658584264; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:MIME-Version:Message-ID:Subject:To; 
-        bh=kk/+ZMIM3QEokLR9dNDr3dm8l5WXXAEPykmzd3WKeh8=; 
-        b=bBmfhYES5zT2HidO8HpjBfslnBmO60DtgLqOtOH5Sz+OLgjxOhtn2KH1Uz8/eFMCpaI5O6vHw+spAgfOU1gCxzta9YMbvk6j9CBjTZqDm1BkKRuOV9X+zPxixdBv4ljsbHaOpjPz5HMLN2uqV6ievgrMCFjHYvCafKDwNv099Dg=
+        t=1658586938; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:In-Reply-To:MIME-Version:Message-ID:References:Subject:To; 
+        bh=+F8VEZ1Z9Pj1QEwW5vQk6MFoPQK/TpHHEams4IFBR5o=; 
+        b=FxX9ttl/jntH3qcSUk2myZJl+keN4fVeE4RmdRYUXjqmBShsPp5xdWWBJO8yV7vMbAQuVqi7IPRVCQSdDEspii/9GPc30fxqNgmvcYD6QR4ZtlanEvi32HmoflggMi5YW4yZpa1aKalHoe4nLyMSQbg9FqmEws7cx0Q9V+2qtSA=
 ARC-Authentication-Results: i=1; mx.zohomail.in;
         dkim=pass  header.i=siddh.me;
         spf=pass  smtp.mailfrom=code@siddh.me;
         dmarc=pass header.from=<code@siddh.me>
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1658584264;
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1658586938;
         s=zmail; d=siddh.me; i=code@siddh.me;
-        h=From:From:To:To:Cc:Cc:Message-ID:Subject:Subject:Date:Date:MIME-Version:Content-Transfer-Encoding:Content-Type:Message-Id:Reply-To;
-        bh=kk/+ZMIM3QEokLR9dNDr3dm8l5WXXAEPykmzd3WKeh8=;
-        b=C5Kc0g6QcesPZacQeSWUfVye11w85Epm+2OhT0JWxQuKAC0qiYGDe5rM2GegGr6F
-        0GncE33rxOJHfMEfbX9lJ/wGrkzBNGaBREdPQmq4uoF7icdrgn8A0XmbYG4yKWadTN6
-        O7VluijrgjArt2qZmswtFWS1t01hw+BtIxp4wY6s=
-Received: from localhost.localdomain (43.250.158.127 [43.250.158.127]) by mx.zoho.in
-        with SMTPS id 1658584262744848.2252468169082; Sat, 23 Jul 2022 19:21:02 +0530 (IST)
+        h=Date:Date:From:From:To:To:Cc:Cc:Message-ID:In-Reply-To:References:Subject:Subject:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id:Reply-To;
+        bh=+F8VEZ1Z9Pj1QEwW5vQk6MFoPQK/TpHHEams4IFBR5o=;
+        b=KbKtqbecy0QVLwF36Avuvq0fq3nBQzaO+KqXMun669P08qJxDt7fvskseBUZ4R7t
+        cTs6071CJGosVhZvQ8XdOnOXoaVh2LQncYcURGrR/WZQY3cuz8PAOwLIH98iv85dnFb
+        VFUYNXf4lA5olE3VDQVY+gjJ0JHKYPDTkaOu+WPU=
+Received: from mail.zoho.in by mx.zoho.in
+        with SMTP id 165858692779635.69655596083135; Sat, 23 Jul 2022 20:05:27 +0530 (IST)
+Date:   Sat, 23 Jul 2022 20:05:27 +0530
 From:   Siddh Raman Pant <code@siddh.me>
-To:     David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Cc:     keyrings <keyrings@vger.kernel.org>,
-        linux-security-modules <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-kernel-mentees 
-        <linux-kernel-mentees@lists.linuxfoundation.org>
-Message-ID: <20220723135035.199188-1-code@siddh.me>
-Subject: [PATCH] keys/keyctl: Use kfree_rcu instead of kfree
-Date:   Sat, 23 Jul 2022 19:20:35 +0530
-X-Mailer: git-send-email 2.35.1
+To:     "Greg KH" <gregkh@linuxfoundation.org>
+Cc:     "David Howells" <dhowells@redhat.com>,
+        "Jarkko Sakkinen" <jarkko@kernel.org>,
+        "James Morris" <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "linux-security-modules" <linux-security-module@vger.kernel.org>,
+        "keyrings" <keyrings@vger.kernel.org>,
+        "linux-kernel-mentees" 
+        <linux-kernel-mentees@lists.linuxfoundation.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Message-ID: <1822b7c129a.14411444236159.6380883938307880248@siddh.me>
+In-Reply-To: <YtwAHGISvlgXgXZM@kroah.com>
+References: <20220723135035.199188-1-code@siddh.me> <YtwAHGISvlgXgXZM@kroah.com>
+Subject: Re: [PATCH] keys/keyctl: Use kfree_rcu instead of kfree
 MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-X-ZohoMailClient: External
-Content-Type: text/plain; charset=utf8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Importance: Medium
+User-Agent: Zoho Mail
+X-Mailer: Zoho Mail
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-In keyctl_watch_key, use kfree_rcu() for freeing watch and wlist
-as they support RCU and have an rcu_head in the struct definition.
+On Sat, 23 Jul 2022 19:35:16 +0530  Greg KH <gregkh@linuxfoundation.org> wrote:
+> That does not explain why this change is needed.  What problem does this
+> solve?  Why use RCU if you don't have to?  What functionality did you
+> just change in this commit and why?
 
-Signed-off-by: Siddh Raman Pant <code@siddh.me>
----
- security/keys/keyctl.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+We can avoid a race condition wherein some process tries to access them while
+they are being freed. For instance, the comment on `watch_queue_clear()` also
+states that:
+        /*
+         * Remove all the watches that are contributory to a queue.  This has the
+         * potential to race with removal of the watches by the destruction of the
+         * objects being watched or with the distribution of notifications.
+         */
+And an RCU read critical section is initiated in that function, so we should
+use kfree_rcu() to not unintentionally free it while it is in the critical
+section.
 
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 96a92a645216..087fbc141cfd 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1832,9 +1832,9 @@ long keyctl_watch_key(key_serial_t id, int watch_queu=
-e_fd, int watch_id)
- =09}
-=20
- err_watch:
--=09kfree(watch);
-+=09kfree_rcu(watch, rcu);
- err_wlist:
--=09kfree(wlist);
-+=09kfree_rcu(wlist, rcu);
- err_wqueue:
- =09put_watch_queue(wqueue);
- err_key:
---=20
-2.35.1
+> And how was this tested?
 
+It compiles locally for me, and I used syzbot on this along with testing the
+other `watch_queue_clear` patch, which generated no errors.
 
+Thanks,
+Siddh
