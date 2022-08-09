@@ -2,91 +2,46 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 184AFC25B0D
-	for <keyrings@archiver.kernel.org>; Tue,  9 Aug 2022 13:46:48 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 45F31C19F2D
+	for <keyrings@archiver.kernel.org>; Tue,  9 Aug 2022 13:48:00 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S244316AbiHINqq (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Aug 2022 09:46:46 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54150 "EHLO
+        id S244278AbiHINr7 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Aug 2022 09:47:59 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55444 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S244278AbiHINqp (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Aug 2022 09:46:45 -0400
-Received: from frasgout.his.huawei.com (frasgout.his.huawei.com [185.176.79.56])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DC29E15A09;
-        Tue,  9 Aug 2022 06:46:43 -0700 (PDT)
-Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.226])
-        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4M2DrH5qCjz688fv;
-        Tue,  9 Aug 2022 21:46:39 +0800 (CST)
-Received: from roberto-ThinkStation-P620.huawei.com (10.204.63.22) by
- fraeml714-chm.china.huawei.com (10.206.15.33) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2375.24; Tue, 9 Aug 2022 15:46:40 +0200
-From:   Roberto Sassu <roberto.sassu@huawei.com>
-To:     <ast@kernel.org>, <daniel@iogearbox.net>, <andrii@kernel.org>,
-        <martin.lau@linux.dev>, <song@kernel.org>, <yhs@fb.com>,
-        <john.fastabend@gmail.com>, <kpsingh@kernel.org>, <sdf@google.com>,
-        <haoluo@google.com>, <jolsa@kernel.org>, <corbet@lwn.net>,
-        <dhowells@redhat.com>, <jarkko@kernel.org>, <rostedt@goodmis.org>,
-        <mingo@redhat.com>, <paul@paul-moore.com>, <jmorris@namei.org>,
-        <serge@hallyn.com>, <shuah@kernel.org>
-CC:     <bpf@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <keyrings@vger.kernel.org>,
-        <linux-security-module@vger.kernel.org>,
-        <linux-kselftest@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roberto Sassu <roberto.sassu@huawei.com>,
-        Joanne Koong <joannelkoong@gmail.com>
-Subject: [PATCH v9 04/10] bpf: Export bpf_dynptr_get_size()
-Date:   Tue, 9 Aug 2022 15:45:57 +0200
-Message-ID: <20220809134603.1769279-5-roberto.sassu@huawei.com>
-X-Mailer: git-send-email 2.25.1
-In-Reply-To: <20220809134603.1769279-1-roberto.sassu@huawei.com>
-References: <20220809134603.1769279-1-roberto.sassu@huawei.com>
+        with ESMTP id S244488AbiHINrm (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Aug 2022 09:47:42 -0400
+X-Greylist: delayed 3770 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Tue, 09 Aug 2022 06:47:20 PDT
+Received: from vps669692.ovh.net (63.ip-51-75-18.eu [51.75.18.63])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 50E0D1B7A3
+        for <keyrings@vger.kernel.org>; Tue,  9 Aug 2022 06:47:20 -0700 (PDT)
+Received: from www-data by vps669692.ovh.net with local (Exim 4.89)
+        (envelope-from <www-data@serval.fr>)
+        id 1oLOax-0001Jx-JX
+        for keyrings@vger.kernel.org; Tue, 09 Aug 2022 14:44:27 +0200
+To:     keyrings@vger.kernel.org
+Subject: Votre demande : Der Preisverfall von Bitcoin macht Sie zum Millionar
+X-PHP-Originating-Script: 1001:class-phpmailer.php
+Date:   Tue, 9 Aug 2022 12:44:27 +0000
+From:   Serval <no-reply@serval.fr>
+Message-ID: <9583c28fb3e9305dd890184ace6fc7c4@www.serval.fr>
+X-Priority: 3
+X-Mailer: PHPMailer 5.2.10 (https://github.com/PHPMailer/PHPMailer/)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Type:   text/plain; charset=US-ASCII
-X-Originating-IP: [10.204.63.22]
-X-ClientProxiedBy: lhrpeml500006.china.huawei.com (7.191.161.198) To
- fraeml714-chm.china.huawei.com (10.206.15.33)
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Export bpf_dynptr_get_size(), so that kernel code dealing with eBPF dynamic
-pointers can obtain the real size of data carried by this data structure.
+Votre demande a bien été transmise. Nous vous recontacterons dans les plus brefs délais.
 
-Reviewed-by: Joanne Koong <joannelkoong@gmail.com>
-Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
----
- include/linux/bpf.h  | 1 +
- kernel/bpf/helpers.c | 2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Sujet : Der Preisverfall von Bitcoin macht Sie zum Millionar
+Corps du message :
+Der Ruckgang der Kryptowahrung macht Sie zum Millionar https://telegra.ph/Deutschland-hat-eine-neue-Einnahmequelle-von-803228-Euro-pro-Woche-08-07
 
-diff --git a/include/linux/bpf.h b/include/linux/bpf.h
-index 20c26aed7896..0d56c23cc504 100644
---- a/include/linux/bpf.h
-+++ b/include/linux/bpf.h
-@@ -2562,6 +2562,7 @@ void bpf_dynptr_init(struct bpf_dynptr_kern *ptr, void *data,
- 		     enum bpf_dynptr_type type, u32 offset, u32 size);
- void bpf_dynptr_set_null(struct bpf_dynptr_kern *ptr);
- int bpf_dynptr_check_size(u32 size);
-+u32 bpf_dynptr_get_size(struct bpf_dynptr_kern *ptr);
- 
- #ifdef CONFIG_BPF_LSM
- void bpf_cgroup_atype_get(u32 attach_btf_id, int cgroup_atype);
-diff --git a/kernel/bpf/helpers.c b/kernel/bpf/helpers.c
-index 1f961f9982d2..5dbb90ec34b0 100644
---- a/kernel/bpf/helpers.c
-+++ b/kernel/bpf/helpers.c
-@@ -1430,7 +1430,7 @@ static void bpf_dynptr_set_type(struct bpf_dynptr_kern *ptr, enum bpf_dynptr_typ
- 	ptr->size |= type << DYNPTR_TYPE_SHIFT;
- }
- 
--static u32 bpf_dynptr_get_size(struct bpf_dynptr_kern *ptr)
-+u32 bpf_dynptr_get_size(struct bpf_dynptr_kern *ptr)
- {
- 	return ptr->size & DYNPTR_SIZE_MASK;
- }
--- 
-2.25.1
+
+SERVAL
+--
+Cet email a été généré automatiquement, merci de ne pas y répondre
 
