@@ -2,233 +2,104 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 76BFEC25B0F
-	for <keyrings@archiver.kernel.org>; Tue,  9 Aug 2022 13:49:42 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D7A9AC19F2D
+	for <keyrings@archiver.kernel.org>; Tue,  9 Aug 2022 16:20:21 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S244517AbiHINtl (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Aug 2022 09:49:41 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55728 "EHLO
+        id S244955AbiHIQUT (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Aug 2022 12:20:19 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39666 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S244359AbiHINsD (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Aug 2022 09:48:03 -0400
-Received: from frasgout.his.huawei.com (frasgout.his.huawei.com [185.176.79.56])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 40975DEA3;
-        Tue,  9 Aug 2022 06:48:02 -0700 (PDT)
-Received: from fraeml714-chm.china.huawei.com (unknown [172.18.147.201])
-        by frasgout.his.huawei.com (SkyGuard) with ESMTP id 4M2Dsp1JT7z67NYP;
-        Tue,  9 Aug 2022 21:47:58 +0800 (CST)
-Received: from roberto-ThinkStation-P620.huawei.com (10.204.63.22) by
- fraeml714-chm.china.huawei.com (10.206.15.33) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2375.24; Tue, 9 Aug 2022 15:47:59 +0200
-From:   Roberto Sassu <roberto.sassu@huawei.com>
-To:     <ast@kernel.org>, <daniel@iogearbox.net>, <andrii@kernel.org>,
-        <martin.lau@linux.dev>, <song@kernel.org>, <yhs@fb.com>,
-        <john.fastabend@gmail.com>, <kpsingh@kernel.org>, <sdf@google.com>,
-        <haoluo@google.com>, <jolsa@kernel.org>, <corbet@lwn.net>,
-        <dhowells@redhat.com>, <jarkko@kernel.org>, <rostedt@goodmis.org>,
-        <mingo@redhat.com>, <paul@paul-moore.com>, <jmorris@namei.org>,
-        <serge@hallyn.com>, <shuah@kernel.org>
-CC:     <bpf@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <keyrings@vger.kernel.org>,
-        <linux-security-module@vger.kernel.org>,
-        <linux-kselftest@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roberto Sassu <roberto.sassu@huawei.com>
-Subject: [PATCH v9 08/10] selftests/bpf: Add verifier tests for bpf_lookup_*_key() and bpf_key_put()
-Date:   Tue, 9 Aug 2022 15:46:01 +0200
-Message-ID: <20220809134603.1769279-9-roberto.sassu@huawei.com>
-X-Mailer: git-send-email 2.25.1
-In-Reply-To: <20220809134603.1769279-1-roberto.sassu@huawei.com>
-References: <20220809134603.1769279-1-roberto.sassu@huawei.com>
+        with ESMTP id S244942AbiHIQUS (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Aug 2022 12:20:18 -0400
+Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F2813DCB;
+        Tue,  9 Aug 2022 09:20:16 -0700 (PDT)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by ams.source.kernel.org (Postfix) with ESMTPS id A0008B81627;
+        Tue,  9 Aug 2022 16:20:15 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPS id 5148CC433D6;
+        Tue,  9 Aug 2022 16:20:14 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1660062014;
+        bh=pH94ZgNSPsft0KMGKgNtAAy5I1z5p+RQ7sS2YK/gSFA=;
+        h=Subject:From:Date:References:In-Reply-To:To:Cc:From;
+        b=KzaIq/DjAPWWMODx0NABsh615wiKrLh3RKkH1WfZpnARD84xYVrv2HCtf+SNjD7tx
+         OJ03GVvaQjO1E9TZ5PMAhlhG4SIkummt3jUGCPyxynksYTlamx3y/BSraS8+09CuX/
+         ywBaMi7L/xRaKm3lpN//DKdEuLhbz6p34ZTAk1i4ZHARb6DSOSXhlA+lFoH+olJ0aq
+         tOf9OEQS6eQZFaDgZBQS65RW9bwIAjAuA8pLMEN0iIrWPiNTglaXsMWXXEveanGbTG
+         C1xjhCiJ1Dcaw/kmR2O+qqDU7YSV5TU8hbg2FtDoRJMYpIZR0hMI8sUNAtNR5xYstN
+         i1ti62C1lp60w==
+Received: from aws-us-west-2-korg-oddjob-1.ci.codeaurora.org (localhost.localdomain [127.0.0.1])
+        by aws-us-west-2-korg-oddjob-1.ci.codeaurora.org (Postfix) with ESMTP id 35F78C43140;
+        Tue,  9 Aug 2022 16:20:14 +0000 (UTC)
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Type:   text/plain; charset=US-ASCII
-X-Originating-IP: [10.204.63.22]
-X-ClientProxiedBy: lhrpeml500006.china.huawei.com (7.191.161.198) To
- fraeml714-chm.china.huawei.com (10.206.15.33)
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v9 00/10] bpf: Add kfuncs for PKCS#7 signature verification
+From:   patchwork-bot+netdevbpf@kernel.org
+Message-Id: <166006201421.29142.5957999549167447991.git-patchwork-notify@kernel.org>
+Date:   Tue, 09 Aug 2022 16:20:14 +0000
+References: <20220809134603.1769279-1-roberto.sassu@huawei.com>
+In-Reply-To: <20220809134603.1769279-1-roberto.sassu@huawei.com>
+To:     Roberto Sassu <roberto.sassu@huawei.com>
+Cc:     ast@kernel.org, daniel@iogearbox.net, andrii@kernel.org,
+        martin.lau@linux.dev, song@kernel.org, yhs@fb.com,
+        john.fastabend@gmail.com, kpsingh@kernel.org, sdf@google.com,
+        haoluo@google.com, jolsa@kernel.org, corbet@lwn.net,
+        dhowells@redhat.com, jarkko@kernel.org, rostedt@goodmis.org,
+        mingo@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+        serge@hallyn.com, shuah@kernel.org, bpf@vger.kernel.org,
+        linux-doc@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        linux-kselftest@vger.kernel.org, linux-kernel@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Add verifier tests for bpf_lookup_*_key() and bpf_key_put(), to ensure that
-acquired key references stored in the bpf_key structure are released, that
-a non-NULL bpf_key pointer is passed to bpf_key_put(), and that key
-references are not leaked.
+Hello:
 
-Also, slightly modify test_verifier.c, to find the BTF ID of the attach
-point for the LSM program type (currently, it is done only for TRACING).
+This series was applied to bpf/bpf-next.git (master)
+by Alexei Starovoitov <ast@kernel.org>:
 
-Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
----
- tools/testing/selftests/bpf/test_verifier.c   |   3 +-
- .../selftests/bpf/verifier/ref_tracking.c     | 139 ++++++++++++++++++
- 2 files changed, 141 insertions(+), 1 deletion(-)
+On Tue, 9 Aug 2022 15:45:53 +0200 you wrote:
+> One of the desirable features in security is the ability to restrict import
+> of data to a given system based on data authenticity. If data import can be
+> restricted, it would be possible to enforce a system-wide policy based on
+> the signing keys the system owner trusts.
+> 
+> This feature is widely used in the kernel. For example, if the restriction
+> is enabled, kernel modules can be plugged in only if they are signed with a
+> key whose public part is in the primary or secondary keyring.
+> 
+> [...]
 
-diff --git a/tools/testing/selftests/bpf/test_verifier.c b/tools/testing/selftests/bpf/test_verifier.c
-index f9d553fbf68a..2dbcbf363c18 100644
---- a/tools/testing/selftests/bpf/test_verifier.c
-+++ b/tools/testing/selftests/bpf/test_verifier.c
-@@ -1498,7 +1498,8 @@ static void do_test_single(struct bpf_test *test, bool unpriv,
- 		opts.log_level = DEFAULT_LIBBPF_LOG_LEVEL;
- 	opts.prog_flags = pflags;
- 
--	if (prog_type == BPF_PROG_TYPE_TRACING && test->kfunc) {
-+	if ((prog_type == BPF_PROG_TYPE_TRACING ||
-+	     prog_type == BPF_PROG_TYPE_LSM) && test->kfunc) {
- 		int attach_btf_id;
- 
- 		attach_btf_id = libbpf_find_vmlinux_btf_id(test->kfunc,
-diff --git a/tools/testing/selftests/bpf/verifier/ref_tracking.c b/tools/testing/selftests/bpf/verifier/ref_tracking.c
-index 57a83d763ec1..f18ce867271f 100644
---- a/tools/testing/selftests/bpf/verifier/ref_tracking.c
-+++ b/tools/testing/selftests/bpf/verifier/ref_tracking.c
-@@ -84,6 +84,145 @@
- 	.errstr = "Unreleased reference",
- 	.result = REJECT,
- },
-+{
-+	"reference tracking: acquire/release user key reference",
-+	.insns = {
-+	BPF_MOV64_IMM(BPF_REG_1, -3),
-+	BPF_MOV64_IMM(BPF_REG_2, 0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
-+	BPF_MOV64_REG(BPF_REG_1, BPF_REG_0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_MOV64_IMM(BPF_REG_0, 0),
-+	BPF_EXIT_INSN(),
-+	},
-+	.prog_type = BPF_PROG_TYPE_LSM,
-+	.kfunc = "bpf",
-+	.expected_attach_type = BPF_LSM_MAC,
-+	.flags = BPF_F_SLEEPABLE,
-+	.fixup_kfunc_btf_id = {
-+		{ "bpf_lookup_user_key", 2 },
-+		{ "bpf_key_put", 5 },
-+	},
-+	.result = ACCEPT,
-+},
-+{
-+	"reference tracking: acquire/release system key reference",
-+	.insns = {
-+	BPF_MOV64_IMM(BPF_REG_1, 1),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
-+	BPF_MOV64_REG(BPF_REG_1, BPF_REG_0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_MOV64_IMM(BPF_REG_0, 0),
-+	BPF_EXIT_INSN(),
-+	},
-+	.prog_type = BPF_PROG_TYPE_LSM,
-+	.kfunc = "bpf",
-+	.expected_attach_type = BPF_LSM_MAC,
-+	.flags = BPF_F_SLEEPABLE,
-+	.fixup_kfunc_btf_id = {
-+		{ "bpf_lookup_system_key", 1 },
-+		{ "bpf_key_put", 4 },
-+	},
-+	.result = ACCEPT,
-+},
-+{
-+	"reference tracking: release user key reference without check",
-+	.insns = {
-+	BPF_MOV64_IMM(BPF_REG_1, -3),
-+	BPF_MOV64_IMM(BPF_REG_2, 0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_MOV64_REG(BPF_REG_1, BPF_REG_0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_MOV64_IMM(BPF_REG_0, 0),
-+	BPF_EXIT_INSN(),
-+	},
-+	.prog_type = BPF_PROG_TYPE_LSM,
-+	.kfunc = "bpf",
-+	.expected_attach_type = BPF_LSM_MAC,
-+	.flags = BPF_F_SLEEPABLE,
-+	.errstr = "arg#0 pointer type STRUCT bpf_key must point to scalar, or struct with scalar",
-+	.fixup_kfunc_btf_id = {
-+		{ "bpf_lookup_user_key", 2 },
-+		{ "bpf_key_put", 4 },
-+	},
-+	.result = REJECT,
-+},
-+{
-+	"reference tracking: release system key reference without check",
-+	.insns = {
-+	BPF_MOV64_IMM(BPF_REG_1, 1),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_MOV64_REG(BPF_REG_1, BPF_REG_0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_MOV64_IMM(BPF_REG_0, 0),
-+	BPF_EXIT_INSN(),
-+	},
-+	.prog_type = BPF_PROG_TYPE_LSM,
-+	.kfunc = "bpf",
-+	.expected_attach_type = BPF_LSM_MAC,
-+	.flags = BPF_F_SLEEPABLE,
-+	.errstr = "arg#0 pointer type STRUCT bpf_key must point to scalar, or struct with scalar",
-+	.fixup_kfunc_btf_id = {
-+		{ "bpf_lookup_system_key", 1 },
-+		{ "bpf_key_put", 3 },
-+	},
-+	.result = REJECT,
-+},
-+{
-+	"reference tracking: release with NULL key pointer",
-+	.insns = {
-+	BPF_MOV64_IMM(BPF_REG_1, 0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_MOV64_IMM(BPF_REG_0, 0),
-+	BPF_EXIT_INSN(),
-+	},
-+	.prog_type = BPF_PROG_TYPE_LSM,
-+	.kfunc = "bpf",
-+	.expected_attach_type = BPF_LSM_MAC,
-+	.flags = BPF_F_SLEEPABLE,
-+	.errstr = "arg#0 pointer type STRUCT bpf_key must point to scalar, or struct with scalar",
-+	.fixup_kfunc_btf_id = {
-+		{ "bpf_key_put", 1 },
-+	},
-+	.result = REJECT,
-+},
-+{
-+	"reference tracking: leak potential reference to user key",
-+	.insns = {
-+	BPF_MOV64_IMM(BPF_REG_1, -3),
-+	BPF_MOV64_IMM(BPF_REG_2, 0),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_EXIT_INSN(),
-+	},
-+	.prog_type = BPF_PROG_TYPE_LSM,
-+	.kfunc = "bpf",
-+	.expected_attach_type = BPF_LSM_MAC,
-+	.flags = BPF_F_SLEEPABLE,
-+	.errstr = "Unreleased reference",
-+	.fixup_kfunc_btf_id = {
-+		{ "bpf_lookup_user_key", 2 },
-+	},
-+	.result = REJECT,
-+},
-+{
-+	"reference tracking: leak potential reference to system key",
-+	.insns = {
-+	BPF_MOV64_IMM(BPF_REG_1, 1),
-+	BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, BPF_PSEUDO_KFUNC_CALL, 0, 0),
-+	BPF_EXIT_INSN(),
-+	},
-+	.prog_type = BPF_PROG_TYPE_LSM,
-+	.kfunc = "bpf",
-+	.expected_attach_type = BPF_LSM_MAC,
-+	.flags = BPF_F_SLEEPABLE,
-+	.errstr = "Unreleased reference",
-+	.fixup_kfunc_btf_id = {
-+		{ "bpf_lookup_system_key", 1 },
-+	},
-+	.result = REJECT,
-+},
- {
- 	"reference tracking: release reference without check",
- 	.insns = {
+Here is the summary with links:
+  - [v9,01/10] btf: Add a new kfunc flag which allows to mark a function to be sleepable
+    https://git.kernel.org/bpf/bpf-next/c/fa96b24204af
+  - [v9,02/10] bpf: Allow kfuncs to be used in LSM programs
+    (no matching commit)
+  - [v9,03/10] btf: Handle dynamic pointer parameter in kfuncs
+    (no matching commit)
+  - [v9,04/10] bpf: Export bpf_dynptr_get_size()
+    (no matching commit)
+  - [v9,05/10] KEYS: Move KEY_LOOKUP_ to include/linux/key.h
+    (no matching commit)
+  - [v9,06/10] bpf: Add bpf_lookup_*_key() and bpf_key_put() kfuncs
+    (no matching commit)
+  - [v9,07/10] bpf: Add bpf_verify_pkcs7_signature() kfunc
+    (no matching commit)
+  - [v9,08/10] selftests/bpf: Add verifier tests for bpf_lookup_*_key() and bpf_key_put()
+    (no matching commit)
+  - [v9,09/10] selftests/bpf: Add additional tests for bpf_lookup_*_key()
+    (no matching commit)
+  - [v9,10/10] selftests/bpf: Add test for bpf_verify_pkcs7_signature() kfunc
+    (no matching commit)
+
+You are awesome, thank you!
 -- 
-2.25.1
+Deet-doot-dot, I am a bot.
+https://korg.docs.kernel.org/patchwork/pwbot.html
+
 
