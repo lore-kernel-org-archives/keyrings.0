@@ -2,28 +2,28 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 09600C25B08
-	for <keyrings@archiver.kernel.org>; Tue,  9 Aug 2022 22:13:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 5ED6BC3F6B0
+	for <keyrings@archiver.kernel.org>; Tue,  9 Aug 2022 22:29:48 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229893AbiHIWNP (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Aug 2022 18:13:15 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35130 "EHLO
+        id S229672AbiHIW3r (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Aug 2022 18:29:47 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50996 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230005AbiHIWMz (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Aug 2022 18:12:55 -0400
+        with ESMTP id S229445AbiHIW3p (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Aug 2022 18:29:45 -0400
 Received: from www62.your-server.de (www62.your-server.de [213.133.104.62])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 43693275C7;
-        Tue,  9 Aug 2022 15:09:13 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CC88B61DAA;
+        Tue,  9 Aug 2022 15:29:44 -0700 (PDT)
 Received: from sslproxy05.your-server.de ([78.46.172.2])
         by www62.your-server.de with esmtpsa (TLSv1.3:TLS_AES_256_GCM_SHA384:256)
         (Exim 4.92.3)
         (envelope-from <daniel@iogearbox.net>)
-        id 1oLXPC-0007Lb-LF; Wed, 10 Aug 2022 00:08:54 +0200
+        id 1oLXj7-0000cV-RM; Wed, 10 Aug 2022 00:29:29 +0200
 Received: from [85.1.206.226] (helo=linux.home)
         by sslproxy05.your-server.de with esmtpsa (TLSv1.3:TLS_AES_256_GCM_SHA384:256)
         (Exim 4.92)
         (envelope-from <daniel@iogearbox.net>)
-        id 1oLXPB-000OdW-V3; Wed, 10 Aug 2022 00:08:53 +0200
+        id 1oLXj7-000JS6-3F; Wed, 10 Aug 2022 00:29:29 +0200
 Subject: Re: [PATCH v9 03/10] btf: Handle dynamic pointer parameter in kfuncs
 To:     Roberto Sassu <roberto.sassu@huawei.com>, ast@kernel.org,
         andrii@kernel.org, martin.lau@linux.dev, song@kernel.org,
@@ -39,15 +39,15 @@ Cc:     bpf@vger.kernel.org, linux-doc@vger.kernel.org,
 References: <20220809134603.1769279-1-roberto.sassu@huawei.com>
  <20220809134603.1769279-4-roberto.sassu@huawei.com>
 From:   Daniel Borkmann <daniel@iogearbox.net>
-Message-ID: <8fe84489-be78-142e-90fe-a76c7d61100d@iogearbox.net>
-Date:   Wed, 10 Aug 2022 00:08:53 +0200
+Message-ID: <6fca828f-9117-2a1a-b386-6167fc3384aa@iogearbox.net>
+Date:   Wed, 10 Aug 2022 00:29:28 +0200
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101
  Thunderbird/60.7.2
 MIME-Version: 1.0
 In-Reply-To: <20220809134603.1769279-4-roberto.sassu@huawei.com>
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Language: en-US
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: daniel@iogearbox.net
 X-Virus-Scanned: Clear (ClamAV 0.103.6/26622/Tue Aug  9 09:53:52 2022)
 Precedence: bulk
@@ -55,31 +55,7 @@ List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
 On 8/9/22 3:45 PM, Roberto Sassu wrote:
-> Allow the bpf_dynptr_kern parameter to be specified in kfuncs. Also, ensure
-> that the dynamic pointer is valid and initialized.
-> 
-> Cc: Joanne Koong <joannelkoong@gmail.com>
-> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> ---
->   include/linux/bpf_verifier.h |  3 +++
->   kernel/bpf/btf.c             | 17 +++++++++++++++++
->   kernel/bpf/verifier.c        |  4 ++--
->   3 files changed, 22 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/bpf_verifier.h b/include/linux/bpf_verifier.h
-> index 2e3bad8640dc..55876fbdbae2 100644
-> --- a/include/linux/bpf_verifier.h
-> +++ b/include/linux/bpf_verifier.h
-> @@ -560,6 +560,9 @@ int check_kfunc_mem_size_reg(struct bpf_verifier_env *env, struct bpf_reg_state
->   			     u32 regno);
->   int check_mem_reg(struct bpf_verifier_env *env, struct bpf_reg_state *reg,
->   		   u32 regno, u32 mem_size);
-> +bool is_dynptr_reg_valid_init(struct bpf_verifier_env *env,
-> +			      struct bpf_reg_state *reg,
-> +			      enum bpf_arg_type arg_type);
->   
->   /* this lives here instead of in bpf.h because it needs to dereference tgt_prog */
->   static inline u64 bpf_trampoline_compute_key(const struct bpf_prog *tgt_prog,
+[...]
 > diff --git a/kernel/bpf/btf.c b/kernel/bpf/btf.c
 > index 67dfc728fbf8..17cca396c89f 100644
 > --- a/kernel/bpf/btf.c
@@ -90,52 +66,41 @@ On 8/9/22 3:45 PM, Roberto Sassu wrote:
 >   				bool arg_mem_size = i + 1 < nargs && is_kfunc_arg_mem_size(btf, &args[i + 1], &regs[regno + 1]);
 > +				bool arg_dynptr = btf_type_is_struct(ref_t) &&
 > +						  !strcmp(ref_tname, "bpf_dynptr_kern");
+>   
+>   				/* Permit pointer to mem, but only when argument
+>   				 * type is pointer to scalar, or struct composed
+> @@ -6372,6 +6374,7 @@ static int btf_check_func_arg_match(struct bpf_verifier_env *env,
+>   				 */
+>   				if (!btf_type_is_scalar(ref_t) &&
+>   				    !__btf_type_is_scalar_struct(log, btf, ref_t, 0) &&
+> +				    !arg_dynptr &&
+>   				    (arg_mem_size ? !btf_type_is_void(ref_t) : 1)) {
+>   					bpf_log(log,
+>   						"arg#%d pointer type %s %s must point to %sscalar, or struct with scalar\n",
+> @@ -6379,6 +6382,20 @@ static int btf_check_func_arg_match(struct bpf_verifier_env *env,
+>   					return -EINVAL;
+>   				}
+>   
+> +				/* Assume initialized dynptr. */
 
-For the strcmp(), could we add some BUILD_BUG_ON() if "bpf_dynptr_kern" ever
-gets renamed? I played a bit with the below compile-tested toy example. If we
-rename foo_bar into something else, we then get:
+This comment is a bit misleading, too, given we don't assume but enforce it. I'd probably
+just fold this into above one where we permit pointer to mem given the test there gets
+extended anyway, so the comment should be in line with the tests.
 
-   [...]
-   CC      net/core/dev.o
-   In file included from <command-line>:
-   net/core/dev.c: In function ‘net_dev_init’:
-   net/core/dev.c:11376:25: error: invalid application of ‘sizeof’ to incomplete type ‘struct foo_bar’
-   11376 |  ({ BUILD_BUG_ON(sizeof(struct x) < 0); \
-         |                         ^~~~~~
-   [...]
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 716df64fcfa5..a2ed271f7ded 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -11368,16 +11368,30 @@ static struct pernet_operations __net_initdata default_device_ops = {
-   *
-   */
-
-+struct foo_bar {
-+       int a;
-+};
-+
-+#define stringify_struct(x)                    \
-+       ({ BUILD_BUG_ON(sizeof(struct x) < 0);  \
-+       __stringify(x); })
-+
-  /*
-   *       This is called single threaded during boot, so no need
-   *       to take the rtnl semaphore.
-   */
-  static int __init net_dev_init(void)
-  {
-+       const char *ref_tname = "abc";
-         int i, rc = -ENOMEM;
-
-         BUG_ON(!dev_boot_phase);
-
-+       printk("%s\n", stringify_struct(foo_bar));
-+
-+       if (!strcmp(ref_tname, stringify_struct(foo_bar)))
-+               goto out;
-+
-         if (dev_proc_init())
-                 goto out;
+> +				if (arg_dynptr) {
+> +					if (!is_dynptr_reg_valid_init(env, reg,
+> +							ARG_PTR_TO_DYNPTR)) {
+> +						bpf_log(log,
+> +							"arg#%d pointer type %s %s must be initialized\n",
+> +							i, btf_type_str(ref_t),
+> +							ref_tname);
+> +						return -EINVAL;
+> +					}
+> +
+> +					continue;
+> +				}
+> +
+>   				/* Check for mem, len pair */
+>   				if (arg_mem_size) {
+>   					if (check_kfunc_mem_size_reg(env, &regs[regno + 1], regno + 1)) {
 
