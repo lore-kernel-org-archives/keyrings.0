@@ -2,215 +2,159 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9A6EDC32773
-	for <keyrings@archiver.kernel.org>; Thu, 18 Aug 2022 14:31:10 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A752AC3F6B0
+	for <keyrings@archiver.kernel.org>; Thu, 18 Aug 2022 15:50:55 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S245509AbiHRObK (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 18 Aug 2022 10:31:10 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53260 "EHLO
+        id S1344329AbiHRPux (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 18 Aug 2022 11:50:53 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48286 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S245296AbiHRObH (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 18 Aug 2022 10:31:07 -0400
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0763CB9FAD;
-        Thu, 18 Aug 2022 07:31:05 -0700 (PDT)
-Received: from pps.filterd (m0187473.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.17.1.5/8.17.1.5) with ESMTP id 27IEMRiC011807;
-        Thu, 18 Aug 2022 14:30:53 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=q+xuCAT8Dq2xaBP3fkQXIIwvZvm8PlLRevWJ8ZGNlhU=;
- b=YSw3eVUV2zGsknzQVm6j3m1EOBW3g0I1pYbtvyiUcaXbKVk64IwOj2dhhBNkWB/hNabs
- JI6mhM24Ja6+FSofiNltD9nWBMsjmukrQeBcgs4y5SyHgmrxw988qJji6CmrcaRZdzra
- 4N6xL6Ze6xpV+agY6e9s/PMhqztJ2nqOwJMIG5gHOIoQS4ktHISBsBXY4dbDmzVp5Skp
- olrHdB9qXvpsoCvXXDikrLbD5gzrttRb6SWHFOLmIqe4yZyjlwytp0pdFhTB1p/IaBH0
- b2uuyBUyuHNrElX01JXRDaHt1/kKAFOdOLAbAfMuRtucWuLXPXm3Q3cUu/k3DawwVmNU 8Q== 
-Received: from ppma02wdc.us.ibm.com (aa.5b.37a9.ip4.static.sl-reverse.com [169.55.91.170])
-        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3j1q4e08mm-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 18 Aug 2022 14:30:52 +0000
-Received: from pps.filterd (ppma02wdc.us.ibm.com [127.0.0.1])
-        by ppma02wdc.us.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 27IEK2og030461;
-        Thu, 18 Aug 2022 14:30:51 GMT
-Received: from b03cxnp08027.gho.boulder.ibm.com (b03cxnp08027.gho.boulder.ibm.com [9.17.130.19])
-        by ppma02wdc.us.ibm.com with ESMTP id 3hx3ka79p7-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 18 Aug 2022 14:30:51 +0000
-Received: from b03ledav004.gho.boulder.ibm.com (b03ledav004.gho.boulder.ibm.com [9.17.130.235])
-        by b03cxnp08027.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 27IEUoTf34013680
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Thu, 18 Aug 2022 14:30:50 GMT
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 8EA0D7805C;
-        Thu, 18 Aug 2022 14:30:50 +0000 (GMT)
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 648877805E;
-        Thu, 18 Aug 2022 14:30:49 +0000 (GMT)
-Received: from rhel-laptop.ibm.com.com (unknown [9.160.121.241])
-        by b03ledav004.gho.boulder.ibm.com (Postfix) with ESMTP;
-        Thu, 18 Aug 2022 14:30:49 +0000 (GMT)
-From:   gjoyce@linux.vnet.ibm.com
-To:     linux-block@vger.kernel.org
-Cc:     linuxppc-dev@lists.ozlabs.org, jonathan.derrick@linux.dev,
-        brking@linux.vnet.ibm.com, msuchanek@suse.de, mpe@ellerman.id.au,
-        nayna@linux.ibm.com, axboe@kernel.dk, akpm@linux-foundation.org,
-        gjoyce@linux.vnet.ibm.com, linux-efi@vger.kernel.org,
-        keyrings@vger.kernel.org
-Subject: [PATCH v2 1/3 RESEND] block: sed-opal: Implement IOC_OPAL_DISCOVERY
-Date:   Thu, 18 Aug 2022 09:30:43 -0500
-Message-Id: <20220818143045.680972-2-gjoyce@linux.vnet.ibm.com>
-X-Mailer: git-send-email 2.31.1
-In-Reply-To: <20220818143045.680972-1-gjoyce@linux.vnet.ibm.com>
-References: <20220818143045.680972-1-gjoyce@linux.vnet.ibm.com>
+        with ESMTP id S1344439AbiHRPue (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 18 Aug 2022 11:50:34 -0400
+X-Greylist: delayed 298 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Thu, 18 Aug 2022 08:50:31 PDT
+Received: from frasgout12.his.huawei.com (frasgout12.his.huawei.com [14.137.139.154])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2452D647E9;
+        Thu, 18 Aug 2022 08:50:30 -0700 (PDT)
+Received: from mail02.huawei.com (unknown [172.18.147.229])
+        by frasgout12.his.huawei.com (SkyGuard) with ESMTP id 4M7pj521R2z9v7Ys;
+        Thu, 18 Aug 2022 23:29:45 +0800 (CST)
+Received: from huaweicloud.com (unknown [10.204.63.22])
+        by APP2 (Coremail) with SMTP id GxC2BwB3MhqAW_5ilLIyAA--.42520S4;
+        Thu, 18 Aug 2022 16:32:52 +0100 (CET)
+From:   roberto.sassu@huaweicloud.com
+To:     ast@kernel.org, daniel@iogearbox.net, andrii@kernel.org,
+        martin.lau@linux.dev, song@kernel.org, yhs@fb.com,
+        john.fastabend@gmail.com, kpsingh@kernel.org, sdf@google.com,
+        haoluo@google.com, jolsa@kernel.org, mykolal@fb.com,
+        corbet@lwn.net, dhowells@redhat.com, jarkko@kernel.org,
+        rostedt@goodmis.org, mingo@redhat.com, paul@paul-moore.com,
+        jmorris@namei.org, serge@hallyn.com, shuah@kernel.org
+Cc:     bpf@vger.kernel.org, linux-doc@vger.kernel.org,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kselftest@vger.kernel.org, linux-kernel@vger.kernel.org,
+        deso@posteo.net, Roberto Sassu <roberto.sassu@huawei.com>
+Subject: [PATCH v12 07/10] selftests/bpf: Compile kernel with everything as built-in
+Date:   Thu, 18 Aug 2022 17:29:26 +0200
+Message-Id: <20220818152929.402605-8-roberto.sassu@huaweicloud.com>
+X-Mailer: git-send-email 2.25.1
+In-Reply-To: <20220818152929.402605-1-roberto.sassu@huaweicloud.com>
+References: <20220818152929.402605-1-roberto.sassu@huaweicloud.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: meLidihwLuwr4vO9zvPF2C_7j2Jkg1sB
-X-Proofpoint-ORIG-GUID: meLidihwLuwr4vO9zvPF2C_7j2Jkg1sB
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.205,Aquarius:18.0.895,Hydra:6.0.517,FMLib:17.11.122.1
- definitions=2022-08-18_12,2022-08-18_01,2022-06-22_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 impostorscore=0 spamscore=0
- clxscore=1015 suspectscore=0 priorityscore=1501 mlxscore=0 adultscore=0
- malwarescore=0 phishscore=0 bulkscore=0 mlxlogscore=999 lowpriorityscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2207270000
- definitions=main-2208180050
+X-CM-TRANSID: GxC2BwB3MhqAW_5ilLIyAA--.42520S4
+X-Coremail-Antispam: 1UD129KBjvJXoWxJF1fGry3urWDWw4fJrW5KFg_yoW5Xw45pw
+        n3A3y8JFWrtF1YyrW7CrWDGFZ5t3ZrXFW7G3W7Jr15uw18Jw4kJr18KFWUGrWDXa9rZr4r
+        AF97KF13AF1UJ37anT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+        9KBjDU0xBIdaVrnRJUUUPFb4IE77IF4wAFF20E14v26rWj6s0DM7CY07I20VC2zVCF04k2
+        6cxKx2IYs7xG6r1j6r18M7CIcVAFz4kK6r1j6r18M28IrcIa0xkI8VA2jI8067AKxVWUXw
+        A2048vs2IY020Ec7CjxVAFwI0_Xr0E3s1l8cAvFVAK0II2c7xJM28CjxkF64kEwVA0rcxS
+        w2x7M28EF7xvwVC0I7IYx2IY67AKxVWUCVW8JwA2z4x0Y4vE2Ix0cI8IcVCY1x0267AKxV
+        W8Jr0_Cr1UM28EF7xvwVC2z280aVAFwI0_Gr0_Cr1l84ACjcxK6I8E87Iv6xkF7I0E14v2
+        6r4UJVWxJr1le2I262IYc4CY6c8Ij28IcVAaY2xG8wAqx4xG64xvF2IEw4CE5I8CrVC2j2
+        WlYx0E2Ix0cI8IcVAFwI0_JrI_JrylYx0Ex4A2jsIE14v26r4j6F4UMcvjeVCFs4IE7xkE
+        bVWUJVW8JwACjcxG0xvY0x0EwIxGrwACI402YVCY1x02628vn2kIc2xKxwAKzVCY07xG64
+        k0F24l42xK82IYc2Ij64vIr41l4I8I3I0E4IkC6x0Yz7v_Jr0_Gr1lx2IqxVAqx4xG67AK
+        xVWUJVWUGwC20s026x8GjcxK67AKxVWUGVWUWwC2zVAF1VAY17CE14v26r4a6rW5MIIYrx
+        kI7VAKI48JMIIF0xvE2Ix0cI8IcVAFwI0_JFI_Gr1lIxAIcVC0I7IYx2IY6xkF7I0E14v2
+        6r4UJVWxJr1lIxAIcVCF04k26cxKx2IYs7xG6r1j6r1xMIIF0xvEx4A2jsIE14v26r4j6F
+        4UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Gr1j6F4UJbIYCTnIWIevJa73UjIFyTuYvjxUwPEf
+        UUUUU
+X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAgAIBF1jj34XKgABs9
+X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Greg Joyce <gjoyce@linux.vnet.ibm.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
 
-Add IOC_OPAL_DISCOVERY ioctl to return raw discovery data to a SED Opal
-application. This allows the application to display drive capabilities
-and state.
+Since the eBPF CI does not support kernel modules, change the kernel config
+to compile everything as built-in.
 
-Signed-off-by: Greg Joyce <gjoyce@linux.vnet.ibm.com>
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
- block/sed-opal.c              | 38 ++++++++++++++++++++++++++++++++---
- include/linux/sed-opal.h      |  1 +
- include/uapi/linux/sed-opal.h |  6 ++++++
- 3 files changed, 42 insertions(+), 3 deletions(-)
+ tools/testing/selftests/bpf/config        | 26 +++++++++++------------
+ tools/testing/selftests/bpf/config.x86_64 |  2 +-
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/block/sed-opal.c b/block/sed-opal.c
-index 9700197000f2..e4d8fbdc9dad 100644
---- a/block/sed-opal.c
-+++ b/block/sed-opal.c
-@@ -426,8 +426,12 @@ static int execute_steps(struct opal_dev *dev,
- 	return error;
- }
- 
--static int opal_discovery0_end(struct opal_dev *dev)
-+static int opal_discovery0_end(struct opal_dev *dev, void *data)
- {
-+	struct opal_discovery *discv_out = data; /* may be NULL */
-+	u8 __user *buf_out;
-+	u64 len_out;
-+
- 	bool found_com_id = false, supported = true, single_user = false;
- 	const struct d0_header *hdr = (struct d0_header *)dev->resp;
- 	const u8 *epos = dev->resp, *cpos = dev->resp;
-@@ -443,6 +447,15 @@ static int opal_discovery0_end(struct opal_dev *dev)
- 		return -EFAULT;
- 	}
- 
-+	if (discv_out) {
-+		buf_out = (u8 __user *)(uintptr_t)discv_out->data;
-+		len_out = min_t(u64, discv_out->size, hlen);
-+		if (buf_out && copy_to_user(buf_out, dev->resp, len_out))
-+			return -EFAULT;
-+
-+		discv_out->size = hlen; /* actual size of data */
-+	}
-+
- 	epos += hlen; /* end of buffer */
- 	cpos += sizeof(*hdr); /* current position on buffer */
- 
-@@ -517,13 +530,13 @@ static int opal_discovery0(struct opal_dev *dev, void *data)
- 	if (ret)
- 		return ret;
- 
--	return opal_discovery0_end(dev);
-+	return opal_discovery0_end(dev, data);
- }
- 
- static int opal_discovery0_step(struct opal_dev *dev)
- {
- 	const struct opal_step discovery0_step = {
--		opal_discovery0,
-+		opal_discovery0, NULL
- 	};
- 
- 	return execute_step(dev, &discovery0_step, 0);
-@@ -2179,6 +2192,22 @@ static int opal_secure_erase_locking_range(struct opal_dev *dev,
- 	return ret;
- }
- 
-+static int opal_get_discv(struct opal_dev *dev, struct opal_discovery *discv)
-+{
-+	const struct opal_step discovery0_step = {
-+		opal_discovery0, discv
-+	};
-+	int ret = 0;
-+
-+	mutex_lock(&dev->dev_lock);
-+	setup_opal_dev(dev);
-+	ret = execute_step(dev, &discovery0_step, 0);
-+	mutex_unlock(&dev->dev_lock);
-+	if (ret)
-+		return ret;
-+	return discv->size; /* modified to actual length of data */
-+}
-+
- static int opal_erase_locking_range(struct opal_dev *dev,
- 				    struct opal_session_info *opal_session)
- {
-@@ -2685,6 +2714,9 @@ int sed_ioctl(struct opal_dev *dev, unsigned int cmd, void __user *arg)
- 	case IOC_OPAL_GENERIC_TABLE_RW:
- 		ret = opal_generic_read_write_table(dev, p);
- 		break;
-+	case IOC_OPAL_DISCOVERY:
-+		ret = opal_get_discv(dev, p);
-+		break;
- 	default:
- 		break;
- 	}
-diff --git a/include/linux/sed-opal.h b/include/linux/sed-opal.h
-index 1ac0d712a9c3..9197b7a628f2 100644
---- a/include/linux/sed-opal.h
-+++ b/include/linux/sed-opal.h
-@@ -43,6 +43,7 @@ static inline bool is_sed_ioctl(unsigned int cmd)
- 	case IOC_OPAL_MBR_DONE:
- 	case IOC_OPAL_WRITE_SHADOW_MBR:
- 	case IOC_OPAL_GENERIC_TABLE_RW:
-+	case IOC_OPAL_DISCOVERY:
- 		return true;
- 	}
- 	return false;
-diff --git a/include/uapi/linux/sed-opal.h b/include/uapi/linux/sed-opal.h
-index 6f5af1a84213..89dd108b426f 100644
---- a/include/uapi/linux/sed-opal.h
-+++ b/include/uapi/linux/sed-opal.h
-@@ -132,6 +132,11 @@ struct opal_read_write_table {
- 	__u64 priv;
- };
- 
-+struct opal_discovery {
-+	__u64 data;
-+	__u64 size;
-+};
-+
- #define IOC_OPAL_SAVE		    _IOW('p', 220, struct opal_lock_unlock)
- #define IOC_OPAL_LOCK_UNLOCK	    _IOW('p', 221, struct opal_lock_unlock)
- #define IOC_OPAL_TAKE_OWNERSHIP	    _IOW('p', 222, struct opal_key)
-@@ -148,5 +153,6 @@ struct opal_read_write_table {
- #define IOC_OPAL_MBR_DONE           _IOW('p', 233, struct opal_mbr_done)
- #define IOC_OPAL_WRITE_SHADOW_MBR   _IOW('p', 234, struct opal_shadow_mbr)
- #define IOC_OPAL_GENERIC_TABLE_RW   _IOW('p', 235, struct opal_read_write_table)
-+#define IOC_OPAL_DISCOVERY          _IOW('p', 236, struct opal_discovery)
- 
- #endif /* _UAPI_SED_OPAL_H */
+diff --git a/tools/testing/selftests/bpf/config b/tools/testing/selftests/bpf/config
+index 3fc46f9cfb22..0fdd11e6b742 100644
+--- a/tools/testing/selftests/bpf/config
++++ b/tools/testing/selftests/bpf/config
+@@ -7,9 +7,9 @@ CONFIG_BPF_LSM=y
+ CONFIG_BPF_STREAM_PARSER=y
+ CONFIG_BPF_SYSCALL=y
+ CONFIG_CGROUP_BPF=y
+-CONFIG_CRYPTO_HMAC=m
+-CONFIG_CRYPTO_SHA256=m
+-CONFIG_CRYPTO_USER_API_HASH=m
++CONFIG_CRYPTO_HMAC=y
++CONFIG_CRYPTO_SHA256=y
++CONFIG_CRYPTO_USER_API_HASH=y
+ CONFIG_DYNAMIC_FTRACE=y
+ CONFIG_FPROBE=y
+ CONFIG_FTRACE_SYSCALLS=y
+@@ -24,30 +24,30 @@ CONFIG_IP_NF_FILTER=y
+ CONFIG_IP_NF_RAW=y
+ CONFIG_IP_NF_TARGET_SYNPROXY=y
+ CONFIG_IPV6=y
+-CONFIG_IPV6_FOU=m
+-CONFIG_IPV6_FOU_TUNNEL=m
++CONFIG_IPV6_FOU=y
++CONFIG_IPV6_FOU_TUNNEL=y
+ CONFIG_IPV6_GRE=y
+ CONFIG_IPV6_SEG6_BPF=y
+-CONFIG_IPV6_SIT=m
++CONFIG_IPV6_SIT=y
+ CONFIG_IPV6_TUNNEL=y
+ CONFIG_LIRC=y
+ CONFIG_LWTUNNEL=y
+ CONFIG_MPLS=y
+-CONFIG_MPLS_IPTUNNEL=m
+-CONFIG_MPLS_ROUTING=m
++CONFIG_MPLS_IPTUNNEL=y
++CONFIG_MPLS_ROUTING=y
+ CONFIG_MPTCP=y
+ CONFIG_NET_CLS_ACT=y
+ CONFIG_NET_CLS_BPF=y
+-CONFIG_NET_CLS_FLOWER=m
+-CONFIG_NET_FOU=m
++CONFIG_NET_CLS_FLOWER=y
++CONFIG_NET_FOU=y
+ CONFIG_NET_FOU_IP_TUNNELS=y
+ CONFIG_NET_IPGRE=y
+ CONFIG_NET_IPGRE_DEMUX=y
+ CONFIG_NET_IPIP=y
+-CONFIG_NET_MPLS_GSO=m
++CONFIG_NET_MPLS_GSO=y
+ CONFIG_NET_SCH_INGRESS=y
+ CONFIG_NET_SCHED=y
+-CONFIG_NETDEVSIM=m
++CONFIG_NETDEVSIM=y
+ CONFIG_NETFILTER=y
+ CONFIG_NETFILTER_SYNPROXY=y
+ CONFIG_NETFILTER_XT_CONNMARK=y
+@@ -60,7 +60,7 @@ CONFIG_NF_DEFRAG_IPV6=y
+ CONFIG_RC_CORE=y
+ CONFIG_SECURITY=y
+ CONFIG_SECURITYFS=y
+-CONFIG_TEST_BPF=m
++CONFIG_TEST_BPF=y
+ CONFIG_USERFAULTFD=y
+ CONFIG_VXLAN=y
+ CONFIG_XDP_SOCKETS=y
+diff --git a/tools/testing/selftests/bpf/config.x86_64 b/tools/testing/selftests/bpf/config.x86_64
+index f0859a1d37ab..ce70c9509204 100644
+--- a/tools/testing/selftests/bpf/config.x86_64
++++ b/tools/testing/selftests/bpf/config.x86_64
+@@ -47,7 +47,7 @@ CONFIG_CPU_IDLE_GOV_LADDER=y
+ CONFIG_CPUSETS=y
+ CONFIG_CRC_T10DIF=y
+ CONFIG_CRYPTO_BLAKE2B=y
+-CONFIG_CRYPTO_DEV_VIRTIO=m
++CONFIG_CRYPTO_DEV_VIRTIO=y
+ CONFIG_CRYPTO_SEQIV=y
+ CONFIG_CRYPTO_XXHASH=y
+ CONFIG_DCB=y
 -- 
-2.27.0
+2.25.1
 
