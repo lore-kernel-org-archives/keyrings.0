@@ -2,180 +2,101 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4F541C6FA8B
-	for <keyrings@archiver.kernel.org>; Thu, 15 Sep 2022 16:12:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 68CACC6FA8B
+	for <keyrings@archiver.kernel.org>; Sat, 17 Sep 2022 09:16:42 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229908AbiIOQMI (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 15 Sep 2022 12:12:08 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34896 "EHLO
+        id S229548AbiIQJQk (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 17 Sep 2022 05:16:40 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35576 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229872AbiIOQMH (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 15 Sep 2022 12:12:07 -0400
-Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BDB1E915D8
-        for <keyrings@vger.kernel.org>; Thu, 15 Sep 2022 09:12:05 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by ams.source.kernel.org (Postfix) with ESMTPS id 7662AB82152
-        for <keyrings@vger.kernel.org>; Thu, 15 Sep 2022 16:12:04 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 2E6F4C433C1
-        for <keyrings@vger.kernel.org>; Thu, 15 Sep 2022 16:12:03 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1663258323;
-        bh=biii+7n43gDq9XV3lLWEwCgiBUcjGdS9pCCJ+UVSt80=;
-        h=References:In-Reply-To:From:Date:Subject:To:Cc:From;
-        b=XD60SOBgjmqG2oE/hYFdoVR/0o9EqUozlXe2HtAuCRzaStarFf8z/YDdABs3Q1Utf
-         8jfXldXFUyy6syrxYUcjYHYL1mZXQsrS3GRRcCNsWeBwQ5jsVG3gX0iZBzWRo7whTy
-         Slcc+9a3Y/Q5kRflAZB23mYWDRktGAiKJxRxVihqcJEyjjo6H2l9i/H5PCbec12NSt
-         Er+zMu9vwqZAwy5AfnXQNEDcFtfzOovBS6tAehYkYNiBMi05FZv5RpUMykkRoMAS4B
-         V1jvalmzh0SH9DwhfQyWUv2dqbg3YB8Wp6Iz0y476MmivxD2t9cDcDjgpOgQIPjFEH
-         tbpNB1W2HLICA==
-Received: by mail-lf1-f44.google.com with SMTP id j16so4107909lfg.1
-        for <keyrings@vger.kernel.org>; Thu, 15 Sep 2022 09:12:03 -0700 (PDT)
-X-Gm-Message-State: ACrzQf01eH9JhWsBuBm7rHLhleorRnvRGSIBPEvZbjTby+bOqKmXD83N
-        NfS/xGoXTmQpaMDMFOotEMlZDSrFR0oci3tqMmXAIw==
-X-Google-Smtp-Source: AMsMyM6A+1amQaBgdn6PNz6+7XLx4sQcOmwWWgNA8pV7010ZefQzIPoOFXBCHMTh3iKNuMgzYaiNCa6qWPB+3IVAEF8=
-X-Received: by 2002:a17:906:9bd3:b0:778:c8e0:fcee with SMTP id
- de19-20020a1709069bd300b00778c8e0fceemr471268ejc.275.1663258310370; Thu, 15
- Sep 2022 09:11:50 -0700 (PDT)
-MIME-Version: 1.0
-References: <20220909120736.1027040-1-roberto.sassu@huaweicloud.com> <20220909120736.1027040-12-roberto.sassu@huaweicloud.com>
-In-Reply-To: <20220909120736.1027040-12-roberto.sassu@huaweicloud.com>
-From:   KP Singh <kpsingh@kernel.org>
-Date:   Thu, 15 Sep 2022 17:11:39 +0100
-X-Gmail-Original-Message-ID: <CACYkzJ7uraUdmGV9gMmTZs1OMb_3Q2DttoaxU-irmrXFudOweQ@mail.gmail.com>
-Message-ID: <CACYkzJ7uraUdmGV9gMmTZs1OMb_3Q2DttoaxU-irmrXFudOweQ@mail.gmail.com>
-Subject: Re: [PATCH v17 11/12] selftests/bpf: Add test for bpf_verify_pkcs7_signature()
- kfunc
-To:     Roberto Sassu <roberto.sassu@huaweicloud.com>
-Cc:     ast@kernel.org, daniel@iogearbox.net, andrii@kernel.org,
-        martin.lau@linux.dev, song@kernel.org, yhs@fb.com,
-        john.fastabend@gmail.com, sdf@google.com, haoluo@google.com,
-        jolsa@kernel.org, mykolal@fb.com, dhowells@redhat.com,
-        jarkko@kernel.org, rostedt@goodmis.org, mingo@redhat.com,
+        with ESMTP id S229517AbiIQJQj (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 17 Sep 2022 05:16:39 -0400
+Received: from mail-0301.mail-europe.com (mail-0301.mail-europe.com [188.165.51.139])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3740645F64;
+        Sat, 17 Sep 2022 02:16:37 -0700 (PDT)
+Date:   Sat, 17 Sep 2022 09:16:20 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=protonmail.com;
+        s=protonmail3; t=1663406192; x=1663665392;
+        bh=WtH1XiJMuAo2t7Ag08kalVAzbnlWzm46SLxhU7NTyU4=;
+        h=Date:To:From:Cc:Subject:Message-ID:Feedback-ID:From:To:Cc:Date:
+         Subject:Reply-To:Feedback-ID:Message-ID;
+        b=wrMZSanWm0KJNnm3ykOCdOL3myVpKchYhLarOh+NsiXJB3cNn0XiZL2PXDM6LtgBL
+         3apqAbQLnHqEh+eoVn63MLzOc906v+d+cUbfJ7xjwtZPIpLDp0VA5MAShrxzjReeR5
+         M7EvduAsjV/qy4vIacG6Y4U/isHOKKOzBg/bah+2GmOqPNKtrznVv1st9g2xOZEqkV
+         XUeyh6D0dktGbx7x+5AFx72NVxUZP4NlfAo2XDtrCaycemsJPpqV6rVhIEdjUd7wzp
+         0MAp+ypX4PO1Rlcbi6BYF02vair4YktlZi5QGPL6Pye/WVA25lTRB3xEw+Nwd0/b0a
+         sZMpKhkpZNHrw==
+To:     linux-kernel@vger.kernel.org
+From:   Orlando Chamberlain <redecorating@protonmail.com>
+Cc:     jarkko@kernel.org, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com,
         paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
-        shuah@kernel.org, bpf@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        linux-kselftest@vger.kernel.org, linux-kernel@vger.kernel.org,
-        deso@posteo.net, memxor@gmail.com,
-        Roberto Sassu <roberto.sassu@huawei.com>,
-        Joanne Koong <joannelkoong@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+        gargaditya08@live.com, linux-integrity@vger.kernel.org,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Orlando Chamberlain <redecorating@protonmail.com>,
+        stable@vger.kernel.org, Samuel Jiang <chyishian.jiang@gmail.com>
+Subject: [PATCHv2 1/1] efi: Correct Macmini DMI match in uefi cert quirk
+Message-ID: <20220917091532.3607-1-redecorating@protonmail.com>
+Feedback-ID: 28131841:user:proton
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Fri, Sep 9, 2022 at 1:10 PM Roberto Sassu
-<roberto.sassu@huaweicloud.com> wrote:
->
-> From: Roberto Sassu <roberto.sassu@huawei.com>
->
+It turns out Apple doesn't capitalise the "mini" in "Macmini" in DMI, which
+is inconsistent with other model line names.
 
-[...]
+Correct the capitalisation of Macmini in the quirk for skipping loading
+platform certs on T2 Macs.
 
-> +}
-> diff --git a/tools/testing/selftests/bpf/progs/test_verify_pkcs7_sig.c b/tools/testing/selftests/bpf/progs/test_verify_pkcs7_sig.c
-> new file mode 100644
-> index 000000000000..4ceab545d99a
-> --- /dev/null
-> +++ b/tools/testing/selftests/bpf/progs/test_verify_pkcs7_sig.c
-> @@ -0,0 +1,100 @@
-> +// SPDX-License-Identifier: GPL-2.0
-> +
-> +/*
-> + * Copyright (C) 2022 Huawei Technologies Duesseldorf GmbH
-> + *
-> + * Author: Roberto Sassu <roberto.sassu@huawei.com>
-> + */
-> +
-> +#include "vmlinux.h"
-> +#include <errno.h>
-> +#include <bpf/bpf_helpers.h>
-> +#include <bpf/bpf_tracing.h>
-> +
-> +#define MAX_DATA_SIZE (1024 * 1024)
-> +#define MAX_SIG_SIZE 1024
-> +
-> +typedef __u8 u8;
-> +typedef __u16 u16;
-> +typedef __u32 u32;
-> +typedef __u64 u64;
+Currently users get:
 
-I think you can avoid this and just use u32 and u64 directly.
+------------[ cut here ]------------
+[Firmware Bug]: Page fault caused by firmware at PA: 0xffffa30640054000
+WARNING: CPU: 1 PID: 8 at arch/x86/platform/efi/quirks.c:735 efi_crash_grac=
+efully_on_page_fault+0x55/0xe0
+Modules linked in:
+CPU: 1 PID: 8 Comm: kworker/u12:0 Not tainted 5.18.14-arch1-2-t2 #1 4535eb3=
+fc40fd08edab32a509fbf4c9bc52d111e
+Hardware name: Apple Inc. Macmini8,1/Mac-7BA5B2DFE22DDD8C, BIOS 1731.120.10=
+.0.0 (iBridge: 19.16.15071.0.0,0) 04/24/2022
+Workqueue: efi_rts_wq efi_call_rts
+...
+---[ end trace 0000000000000000 ]---
+efi: Froze efi_rts_wq and disabled EFI Runtime Services
+integrity: Couldn't get size: 0x8000000000000015
+integrity: MODSIGN: Couldn't get UEFI db list
+efi: EFI Runtime Services are disabled!
+integrity: Couldn't get size: 0x8000000000000015
+integrity: Couldn't get UEFI dbx list
 
-> +
-> +struct bpf_dynptr {
-> +       __u64 :64;
-> +       __u64 :64;
-> +} __attribute__((aligned(8)));
-> +
+Fixes: 155ca952c7ca ("efi: Do not import certificates from UEFI Secure Boot=
+ for T2 Macs")
+Cc: stable@vger.kernel.org
+Cc: Aditya Garg <gargaditya08@live.com>
+Tested-by: Samuel Jiang <chyishian.jiang@gmail.com>
+Signed-off-by: Orlando Chamberlain <redecorating@protonmail.com>
+---
+v1->v2: Clarified in commit message that this is for a dmi match string
+ security/integrity/platform_certs/load_uefi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I think you are doing this because including the uapi headers causes
-type conflicts.
-This does happen quite often. What do other folks think about doing
-something like
+diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integ=
+rity/platform_certs/load_uefi.c
+index 093894a640dc..b78753d27d8e 100644
+--- a/security/integrity/platform_certs/load_uefi.c
++++ b/security/integrity/platform_certs/load_uefi.c
+@@ -31,7 +31,7 @@ static const struct dmi_system_id uefi_skip_cert[] =3D {
+ =09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir8,1") },
+ =09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir8,2") },
+ =09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir9,1") },
+-=09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacMini8,1") },
++=09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "Macmini8,1") },
+ =09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacPro7,1") },
+ =09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMac20,1") },
+ =09{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMac20,2") },
+--=20
+2.37.1
 
-#define DYNPTR(x) ((void *)x)
 
-It seems like this will be an issue anytime we use the helpers with
-vmlinux.h and users
-will always have to define this type in their tests.
-
-- KP
-
-> +extern struct bpf_key *bpf_lookup_user_key(__u32 serial, __u64 flags) __ksym;
-> +extern struct bpf_key *bpf_lookup_system_key(__u64 id) __ksym;
-> +extern void bpf_key_put(struct bpf_key *key) __ksym;
-> +extern int bpf_verify_pkcs7_signature(struct bpf_dynptr *data_ptr,
-> +                                     struct bpf_dynptr *sig_ptr,
-> +                                     struct bpf_key *trusted_keyring) __ksym;
-> +
-> +u32 monitored_pid;
-> +u32 user_keyring_serial;
-> +u64 system_keyring_id;
-> +
-> +struct data {
-> +       u8 data[MAX_DATA_SIZE];
-> +       u32 data_len;
-> +       u8 sig[MAX_SIG_SIZE];
-> +       u32 sig_len;
-> +};
-> +
-> +struct {
-> +       __uint(type, BPF_MAP_TYPE_ARRAY);
-> +       __uint(max_entries, 1);
-> +       __type(key, __u32);
-> +       __type(value, struct data);
-> +} data_input SEC(".maps");
-> +
-> +char _license[] SEC("license") = "GPL";
-> +
-> +SEC("lsm.s/bpf")
-> +int BPF_PROG(bpf, int cmd, union bpf_attr *attr, unsigned int size)
-> +{
-> +       struct bpf_dynptr data_ptr, sig_ptr;
-> +       struct data *data_val;
-> +       struct bpf_key *trusted_keyring;
-> +       u32 pid;
-> +       u64 value;
-> +       int ret, zero = 0;
-> +
-> +       pid = bpf_get_current_pid_tgid() >> 32;
-> +       if (pid != monitored_pid)
-> +               return 0;
-> +
-> +       data_val = bpf_map_lookup_elem(&data_input, &zero);
-> +       if (!data_val)
-> +               return 0;
-> +
-> +       bpf_probe_read(&value, sizeof(value), &attr->value);
-> +
-> +       bpf_copy_from_user(data_val, sizeof(struct data),
->
-
-[...]
-
-> --
-> 2.25.1
->
