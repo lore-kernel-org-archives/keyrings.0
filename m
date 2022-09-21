@@ -2,89 +2,155 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6C736ECAAD8
-	for <keyrings@archiver.kernel.org>; Wed, 21 Sep 2022 07:24:27 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6DAC4C6FA8E
+	for <keyrings@archiver.kernel.org>; Wed, 21 Sep 2022 09:29:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229917AbiIUHY0 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 21 Sep 2022 03:24:26 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40692 "EHLO
+        id S231629AbiIUJ3N (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 21 Sep 2022 05:29:13 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49260 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229804AbiIUHY0 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 21 Sep 2022 03:24:26 -0400
-Received: from mail.steuer-voss.de (mail.steuer-voss.de [85.183.69.95])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id ACA5B7CB48;
-        Wed, 21 Sep 2022 00:24:22 -0700 (PDT)
-X-Virus-Scanned: Debian amavisd-new at mail.steuer-voss.de
-Received: by mail.steuer-voss.de (Postfix, from userid 1000)
-        id 92390E74F; Wed, 21 Sep 2022 09:24:18 +0200 (CEST)
-Received: from localhost (localhost [127.0.0.1])
-        by mail.steuer-voss.de (Postfix) with ESMTP id 8F854E737;
-        Wed, 21 Sep 2022 09:24:18 +0200 (CEST)
-Date:   Wed, 21 Sep 2022 09:24:18 +0200 (CEST)
-From:   Nikolaus Voss <nv@vosn.de>
-To:     Mimi Zohar <zohar@linux.ibm.com>
-cc:     David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yael Tzur <yaelt@google.com>
-Subject: Re: [PATCH] KEYS: encrypted: fix key instantiation with user-provided
- data
-In-Reply-To: <2ee1e3e68d847001c4bf856d980a553e52de5023.camel@linux.ibm.com>
-Message-ID: <439012d8-dd4-7fd2-3788-49cf72faa99@vosn.de>
-References: <20220919072317.E41421357@mail.steuer-voss.de>  <53730789a41358673b1715dd650706e9ffcb1199.camel@linux.ibm.com>  <35fd816-d755-967-5712-b5496875ac7a@vosn.de> <2ee1e3e68d847001c4bf856d980a553e52de5023.camel@linux.ibm.com>
+        with ESMTP id S231561AbiIUJ3K (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 21 Sep 2022 05:29:10 -0400
+Received: from sender-of-o50.zoho.in (sender-of-o50.zoho.in [103.117.158.50])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 29AA090812;
+        Wed, 21 Sep 2022 02:29:02 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1663752500; cv=none; 
+        d=zohomail.in; s=zohoarc; 
+        b=EPpE5etSbCWRHx7VL58v3RguS9JcjYax953uaqhCOGM3TmFqZZNRlbV1KzvMN9eLEHOuzkeEFjNMKEZZoDcIdM1CiNGmyWNv3kXuwJmTZXMDgmM5TeVl9NVSkPGEzQSsVGNUXezte/uJgp/7m6oBjdzgNsGadjCG2AZnWyaxCck=
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=zohomail.in; s=zohoarc; 
+        t=1663752500; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:In-Reply-To:MIME-Version:Message-ID:References:Subject:To; 
+        bh=CciC0JA+1Sl6P741HLOLO7oPE18KzPzTWUnJ9g4NcCY=; 
+        b=H7j3yCSbSttrHfHz4KQAH461cXec2S+c/VhWxChElq3GVeuCnE/oORqnGs6neGXS3nTZHVci2shHYNHcdegiuQ1U2VhIGg+wzG4jaTSUy1S+ok4VD+2LDLBakBmfAnl1dugvRa/xckoqnYLihqVFnO73d7kWr0ZHjt1g1WMri3s=
+ARC-Authentication-Results: i=1; mx.zohomail.in;
+        dkim=pass  header.i=siddh.me;
+        spf=pass  smtp.mailfrom=code@siddh.me;
+        dmarc=pass header.from=<code@siddh.me>
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1663752500;
+        s=zmail; d=siddh.me; i=code@siddh.me;
+        h=From:From:To:To:Cc:Cc:Message-ID:Subject:Subject:Date:Date:In-Reply-To:References:MIME-Version:Content-Transfer-Encoding:Content-Type:Message-Id:Reply-To;
+        bh=CciC0JA+1Sl6P741HLOLO7oPE18KzPzTWUnJ9g4NcCY=;
+        b=khov1wpZorLIEV38rMkMhDZwXiuc1sdZwnAvShUzkRz0gIpQeAU8Y6nqQFkr35In
+        Ufz0TfxAPVM+dpRCq+7du2j6jHLrPgyZd805lfSHaORk4mw2inJMfBUrTuex1Aok6Ih
+        izU+ZYPCNwRvrp1PjU4WDoU+JlwoTZwspRLJg8u4=
+Received: from localhost.localdomain (103.240.204.191 [103.240.204.191]) by mx.zoho.in
+        with SMTPS id 1663752499206919.1466534874487; Wed, 21 Sep 2022 14:58:19 +0530 (IST)
+From:   Siddh Raman Pant <code@siddh.me>
+To:     Mauro Carvalho Chehab <mchehab@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        "Fabio M. De Francesco" <fmdefrancesco@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Christophe JAILLET <christophe.jaillet@wanadoo.fr>,
+        Eric Biggers <ebiggers@kernel.org>
+Cc:     keyrings <keyrings@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-kernel-mentees 
+        <linux-kernel-mentees@lists.linuxfoundation.org>
+Message-ID: <21ea7a96018db8f140d7c68ca75665064361ad1b.1663750794.git.code@siddh.me>
+Subject: [RESEND PATCH v2 2/2] kernel/watch_queue: NULL the dangling *pipe, and use it for clear check
+Date:   Wed, 21 Sep 2022 14:57:46 +0530
+X-Mailer: git-send-email 2.35.1
+In-Reply-To: <cover.1663750794.git.code@siddh.me>
+References: <cover.1663750794.git.code@siddh.me>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: quoted-printable
+X-ZohoMailClient: External
+Content-Type: text/plain; charset=utf8
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, 20 Sep 2022, Mimi Zohar wrote:
-> On Tue, 2022-09-20 at 18:23 +0200, Nikolaus Voss wrote:
->> On Tue, 20 Sep 2022, Mimi Zohar wrote:
->>> On Fri, 2022-09-16 at 07:45 +0200, Nikolaus Voss wrote:
->>>> Commit cd3bc044af48 ("KEYS: encrypted: Instantiate key with user-provided
->>>> decrypted data") added key instantiation with user provided decrypted data.
->>>> The user data is hex-ascii-encoded but was just memcpy'ed to the binary buffer.
->>>> Fix this to use hex2bin instead.
->>>
->>> Thanks, Nikolaus.  We iterated a number of times over what would be the
->>> safest userspace input.  One of the last changes was that the key data
->>> should be hex-ascii-encoded.  Unfortunately, the LTP
->>> testcases/kernel/syscalls/keyctl09.c example isn't hex-ascii-encoded
->>> and the example in Documentation/security/keys/trusted-encrypted.rst
->>> just cat's a file.  Both expect the length to be the length of the
->>> userspace provided data.   With this patch, when hex2bin() fails, there
->>> is no explanation.
->>
->> That's true. But it's true for all occurrences of hex2bin() in this file.
->> I could pr_err() an explanation, improve the trusted-encrypted.rst example
->> and respin the patch. Should I, or do you have another suggestion?
->
->> I wasn't aware of keyctl09.c, but quickly looking into it, the user data
->> _is_ hex-ascii-encoded, only the length is "wrong": Imho, the specified
->> length should be the binary length as this is consistent with key-length
->> specs in other cases (e.g. when loading the key from a blob).
->> keyctl09.c could be easy to fix, if only the length is modified. Should
->> I propose a patch? What is the correct/appropriate workflow there?
->
-> I'm concerned that this change breaks existing encrypted keys created
-> with user-provided data.  Otherwise I'm fine with your suggestion.
+NULL the dangling pipe reference while clearing watch_queue.
 
-Ok, but this change does not touch the hex-ascii format of encrypted key 
-blobs?
+If not done, a reference to a freed pipe remains in the watch_queue,
+as this function is called before freeing a pipe in free_pipe_info()
+(see line 834 of fs/pipe.c).
 
->
-> The LTP example decrypted data length is 32, but the minimum decrypted
-> data size is  20.  So it's a bit more than just changing the LTP
-> decrypted data size.   The modified LTP test should work on kernels
-> with and without this patch.
+The sole use of wqueue->defunct is for checking if the watch queue has
+been cleared, but wqueue->pipe is also NULLed while clearing.
 
-So this would mean OR-ing old and new variant for the test?
+Thus, wqueue->defunct is superfluous, as wqueue->pipe can be checked
+for NULL. Hence, the former can be removed.
 
-The current implementation of the test will fail anyway as the key size is 
-below the minimum of 20 and thus should have failed before.
+Signed-off-by: Siddh Raman Pant <code@siddh.me>
+---
+ include/linux/watch_queue.h |  4 +---
+ kernel/watch_queue.c        | 12 ++++++------
+ 2 files changed, 7 insertions(+), 9 deletions(-)
 
-Niko
+diff --git a/include/linux/watch_queue.h b/include/linux/watch_queue.h
+index 7f8b1f15634b..d72ad82a4435 100644
+--- a/include/linux/watch_queue.h
++++ b/include/linux/watch_queue.h
+@@ -55,7 +55,7 @@ struct watch_filter {
+  *
+  * @rcu: RCU head
+  * @filter: Filter to use on watches
+- * @pipe: The pipe we're using as a buffer
++ * @pipe: The pipe we're using as a buffer, NULL when queue is cleared/clo=
+sed
+  * @watches: Contributory watches
+  * @notes: Preallocated notifications
+  * @notes_bitmap: Allocation bitmap for notes
+@@ -63,7 +63,6 @@ struct watch_filter {
+  * @lock: To serialize accesses and removes
+  * @nr_notes: Number of notes
+  * @nr_pages: Number of pages in notes[]
+- * @defunct: True when queues closed
+  */
+ struct watch_queue {
+ =09struct rcu_head=09=09rcu;
+@@ -76,7 +75,6 @@ struct watch_queue {
+ =09spinlock_t=09=09lock;
+ =09unsigned int=09=09nr_notes;
+ =09unsigned int=09=09nr_pages;
+-=09bool=09=09=09defunct;
+ };
+=20
+ /**
+diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
+index a6f9bdd956c3..a70ddfd622ee 100644
+--- a/kernel/watch_queue.c
++++ b/kernel/watch_queue.c
+@@ -43,7 +43,7 @@ MODULE_LICENSE("GPL");
+ static inline bool lock_wqueue(struct watch_queue *wqueue)
+ {
+ =09spin_lock_bh(&wqueue->lock);
+-=09if (unlikely(wqueue->defunct)) {
++=09if (unlikely(!wqueue->pipe)) {
+ =09=09spin_unlock_bh(&wqueue->lock);
+ =09=09return false;
+ =09}
+@@ -105,9 +105,6 @@ static bool post_one_notification(struct watch_queue *w=
+queue,
+ =09unsigned int head, tail, mask, note, offset, len;
+ =09bool done =3D false;
+=20
+-=09if (!pipe)
+-=09=09return false;
+-
+ =09spin_lock_irq(&pipe->rd_wait.lock);
+=20
+ =09mask =3D pipe->ring_size - 1;
+@@ -603,8 +600,11 @@ void watch_queue_clear(struct watch_queue *wqueue)
+ =09rcu_read_lock();
+ =09spin_lock_bh(&wqueue->lock);
+=20
+-=09/* Prevent new notifications from being stored. */
+-=09wqueue->defunct =3D true;
++=09/*
++=09 * This pipe will get freed by the caller free_pipe_info().
++=09 * Removing this reference also prevents new notifications.
++=09 */
++=09wqueue->pipe =3D NULL;
+=20
+ =09while (!hlist_empty(&wqueue->watches)) {
+ =09=09watch =3D hlist_entry(wqueue->watches.first, struct watch, queue_nod=
+e);
+--=20
+2.35.1
+
+
