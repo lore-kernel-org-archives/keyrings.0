@@ -2,110 +2,108 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id F0673C6FA8B
-	for <keyrings@archiver.kernel.org>; Wed, 21 Sep 2022 18:09:12 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3B3C3ECAAD8
+	for <keyrings@archiver.kernel.org>; Thu, 22 Sep 2022 01:10:24 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230101AbiIUSJM (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 21 Sep 2022 14:09:12 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40782 "EHLO
+        id S229678AbiIVBKX (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 21 Sep 2022 21:10:23 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53294 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230282AbiIUSJK (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 21 Sep 2022 14:09:10 -0400
-Received: from mail-qk1-x72f.google.com (mail-qk1-x72f.google.com [IPv6:2607:f8b0:4864:20::72f])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9E8D19E6AE
-        for <keyrings@vger.kernel.org>; Wed, 21 Sep 2022 11:09:07 -0700 (PDT)
-Received: by mail-qk1-x72f.google.com with SMTP id k12so4544013qkj.8
-        for <keyrings@vger.kernel.org>; Wed, 21 Sep 2022 11:09:07 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=ziepe.ca; s=google;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:from:to:cc:subject:date;
-        bh=2KAjKe3iq+QwXIwjpYW0v2WCVk5payTUoCJDsQmbzI8=;
-        b=fHDduti3CxdhlR7cTOA3bHhFjSsFgLzHd7cyUqMp7cDXRqkMCXpLOCc22ysE/u6Kh2
-         HIGYwvhJxEZfTaOngML/3hnx0h432B4fP7654sKJhbc5rtbz36iNUhGVxIJi+7ZkpwJK
-         Hjm/3CgbuCWlweV9iNYNfgs81GLrkku0T+vBnkfB6J2jO02uzYEZ3hQ0SfGKaqtZL6v1
-         TyJGu1wof5Q41gchlf9KraJgvFxDWjGIzqspgvV9PCaNgCxTeXJuBXQlqrVf41ZO3v41
-         l0igml8T46Gi/I4N/N2ciB7wX2RNoBfMYAPi5C86mv/+8zmytwTakT45ZHsr8oD2zbaV
-         YSuw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:x-gm-message-state:from:to:cc:subject:date;
-        bh=2KAjKe3iq+QwXIwjpYW0v2WCVk5payTUoCJDsQmbzI8=;
-        b=cSMxNVTFfJlp7qLvTOier8BM6X4uNm8wq7UDEPQ2j6umEvmC4ouV4e7j6d4fQG+VWF
-         bdUOSvuu4VDCiwPPjvQxr7A287TU5XAUA7Rs3cEomE0XNr+Lqez2JHbSZYb4tcPKpAvU
-         009+QEH1hsui7Rya+M3lqavLfjtE1r/+1r/WlQKKMuKvZ2PnM0+YoYVR+rh/W3yVAg50
-         8Sn3Jmd347BmDSwUceJ3yOf3tr4E1cMF/ISQzB3SeITBBtpII+2NC37pJbypwFdgwh4/
-         oA93q6kKgAH/bff3TZPH02+uj6+kh/eV40ObVA9MyUbHW5wh5tBpl9Kzm3LMTq0LYZFh
-         xuxw==
-X-Gm-Message-State: ACrzQf2B2ycgOQKAhr3aTdTMgD6tbTuCn4izmOkim1EQkt9pN+dJP9un
-        IRAvJErQnjZ9cMo5vCQJRrnsVA==
-X-Google-Smtp-Source: AMsMyM4UCVkUuJlIWCzIoLcjoOrjvEbZNm7U4braBDAIgp5TxPj0szTxk92o8GSPD6WK1CcXL2nSfg==
-X-Received: by 2002:ae9:eb04:0:b0:6cb:d287:d6d4 with SMTP id b4-20020ae9eb04000000b006cbd287d6d4mr20476883qkg.310.1663783746781;
-        Wed, 21 Sep 2022 11:09:06 -0700 (PDT)
-Received: from ziepe.ca (hlfxns017vw-142-162-113-129.dhcp-dynamic.fibreop.ns.bellaliant.net. [142.162.113.129])
-        by smtp.gmail.com with ESMTPSA id o10-20020ac841ca000000b00339163a06fcsm2075049qtm.6.2022.09.21.11.09.05
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 21 Sep 2022 11:09:05 -0700 (PDT)
-Received: from jgg by wakko with local (Exim 4.95)
-        (envelope-from <jgg@ziepe.ca>)
-        id 1ob49g-001Gq7-T9;
-        Wed, 21 Sep 2022 15:09:04 -0300
-Date:   Wed, 21 Sep 2022 15:09:04 -0300
-From:   Jason Gunthorpe <jgg@ziepe.ca>
-To:     Pavel Machek <pavel@ucw.cz>
-Cc:     Evan Green <evgreen@chromium.org>, linux-kernel@vger.kernel.org,
-        gwendal@chromium.org, Eric Biggers <ebiggers@kernel.org>,
-        Matthew Garrett <mgarrett@aurora.tech>, jarkko@kernel.org,
-        zohar@linux.ibm.com, linux-integrity@vger.kernel.org,
-        apronin@chromium.org, dlunev@google.com, rjw@rjwysocki.net,
-        linux-pm@vger.kernel.org, corbet@lwn.net, jejb@linux.ibm.com,
-        David Howells <dhowells@redhat.com>,
-        Hao Wu <hao.wu@rubrik.com>, James Morris <jmorris@namei.org>,
-        Len Brown <len.brown@intel.com>,
-        Matthew Garrett <matthewgarrett@google.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        "Rafael J. Wysocki" <rafael@kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, axelj <axelj@axis.com>,
-        keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] Encrypted Hibernation
-Message-ID: <YytTQPOlAC58Bk7W@ziepe.ca>
-References: <20220823222526.1524851-1-evgreen@chromium.org>
- <20220920084648.GA17087@duo.ucw.cz>
+        with ESMTP id S229523AbiIVBKW (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 21 Sep 2022 21:10:22 -0400
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4B0D8DFD0;
+        Wed, 21 Sep 2022 18:10:21 -0700 (PDT)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id BE15B63343;
+        Thu, 22 Sep 2022 01:10:20 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPS id 11191C433D7;
+        Thu, 22 Sep 2022 01:10:20 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1663809020;
+        bh=JQYpUNVHmmWqqXAXWDbpfQz1G7DdV3xIEvXth+vs+eE=;
+        h=Subject:From:Date:References:In-Reply-To:To:Cc:From;
+        b=c0PJHJkL4zQlong+cLZwqtdSIVI1lzbtkLA2s3IdFJOKBUq2IL6fozJFi4bAp9yQI
+         2qBAluRvsHqdjKJOPdnM14aGcMdp+0EifvqIQ4bG4w/gHxuxmmmRiC8wR4TXn8qv12
+         BiXIYJ4+/47tqw0RsBTBktnTbDqtJdBS7A8ew/GDFOJwEhYkv2lmsgVVaPmqWrxUlE
+         KJoe/CFeVri62F4CZHA6ei5JhDZf35duMIEQgqi15k0ZATIf6VZZt+9x3q3+YpDcLE
+         MJzIo+cqgNfmTWz7+NAbjU1UlpnbLSIK1t0DD96PXhQf9IvYeAuwscpkkCHbFJe9JZ
+         nSSdkyw676YnA==
+Received: from aws-us-west-2-korg-oddjob-1.ci.codeaurora.org (localhost.localdomain [127.0.0.1])
+        by aws-us-west-2-korg-oddjob-1.ci.codeaurora.org (Postfix) with ESMTP id E3658E21ECF;
+        Thu, 22 Sep 2022 01:10:19 +0000 (UTC)
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20220920084648.GA17087@duo.ucw.cz>
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v18 00/13] bpf: Add kfuncs for PKCS#7 signature verification
+From:   patchwork-bot+netdevbpf@kernel.org
+Message-Id: <166380901992.22214.9738927038585872619.git-patchwork-notify@kernel.org>
+Date:   Thu, 22 Sep 2022 01:10:19 +0000
+References: <20220920075951.929132-1-roberto.sassu@huaweicloud.com>
+In-Reply-To: <20220920075951.929132-1-roberto.sassu@huaweicloud.com>
+To:     Roberto Sassu <roberto.sassu@huaweicloud.com>
+Cc:     ast@kernel.org, daniel@iogearbox.net, andrii@kernel.org,
+        martin.lau@linux.dev, song@kernel.org, yhs@fb.com,
+        john.fastabend@gmail.com, kpsingh@kernel.org, sdf@google.com,
+        haoluo@google.com, jolsa@kernel.org, mykolal@fb.com,
+        dhowells@redhat.com, jarkko@kernel.org, rostedt@goodmis.org,
+        mingo@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+        serge@hallyn.com, shuah@kernel.org, bpf@vger.kernel.org,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kselftest@vger.kernel.org, linux-kernel@vger.kernel.org,
+        deso@posteo.net, memxor@gmail.com, roberto.sassu@huawei.com
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, Sep 20, 2022 at 10:46:48AM +0200, Pavel Machek wrote:
-> Hi!
+Hello:
+
+This series was applied to bpf/bpf-next.git (master)
+by Alexei Starovoitov <ast@kernel.org>:
+
+On Tue, 20 Sep 2022 09:59:38 +0200 you wrote:
+> From: Roberto Sassu <roberto.sassu@huawei.com>
 > 
-> > We are exploring enabling hibernation in some new scenarios. However,
-> > our security team has a few requirements, listed below:
-> > 1. The hibernate image must be encrypted with protection derived from
-> >    both the platform (eg TPM) and user authentication data (eg
-> >    password).
-> > 2. Hibernation must not be a vector by which a malicious userspace can
-> >    escalate to the kernel.
+> One of the desirable features in security is the ability to restrict import
+> of data to a given system based on data authenticity. If data import can be
+> restricted, it would be possible to enforce a system-wide policy based on
+> the signing keys the system owner trusts.
 > 
-> Why is #2 reasonable requirement?
+> [...]
 
-These days with kernel lockdown we don't allow userspace to enter the
-kernel
+Here is the summary with links:
+  - [v18,01/13] bpf: Allow kfuncs to be used in LSM programs
+    https://git.kernel.org/bpf/bpf-next/c/d15bf1501c75
+  - [v18,02/13] btf: Export bpf_dynptr definition
+    https://git.kernel.org/bpf/bpf-next/c/00f146413ccb
+  - [v18,03/13] bpf: Move dynptr type check to is_dynptr_type_expected()
+    https://git.kernel.org/bpf/bpf-next/c/e9e315b4a5de
+  - [v18,04/13] btf: Allow dynamic pointer parameters in kfuncs
+    https://git.kernel.org/bpf/bpf-next/c/b8d31762a0ae
+  - [v18,05/13] bpf: Export bpf_dynptr_get_size()
+    https://git.kernel.org/bpf/bpf-next/c/51df48657185
+  - [v18,06/13] KEYS: Move KEY_LOOKUP_ to include/linux/key.h and define KEY_LOOKUP_ALL
+    https://git.kernel.org/bpf/bpf-next/c/90fd8f26edd4
+  - [v18,07/13] bpf: Add bpf_lookup_*_key() and bpf_key_put() kfuncs
+    https://git.kernel.org/bpf/bpf-next/c/f3cf4134c5c6
+  - [v18,08/13] bpf: Add bpf_verify_pkcs7_signature() kfunc
+    https://git.kernel.org/bpf/bpf-next/c/865b0566d8f1
+  - [v18,09/13] selftests/bpf: Compile kernel with everything as built-in
+    https://git.kernel.org/bpf/bpf-next/c/94fd7420faa0
+  - [v18,10/13] selftests/bpf: Add verifier tests for bpf_lookup_*_key() and bpf_key_put()
+    https://git.kernel.org/bpf/bpf-next/c/7c036ed9e006
+  - [v18,11/13] selftests/bpf: Add additional tests for bpf_lookup_*_key()
+    https://git.kernel.org/bpf/bpf-next/c/ecce368d6e6d
+  - [v18,12/13] selftests/bpf: Add test for bpf_verify_pkcs7_signature() kfunc
+    https://git.kernel.org/bpf/bpf-next/c/fc97590668ae
+  - [v18,13/13] selftests/bpf: Add tests for dynamic pointers parameters in kfuncs
+    https://git.kernel.org/bpf/bpf-next/c/b94fa9f9dcf9
 
-> We normally allow userspace with appropriate permissions to update the
-> kernel, for example.
+You are awesome, thank you!
+-- 
+Deet-doot-dot, I am a bot.
+https://korg.docs.kernel.org/patchwork/pwbot.html
 
-And in a lockdown secure boot environment only a signed kernel can be
-booted in the first place.
-
-A series like this is effectively carrying the secure boot trust
-across the hibernation
-
-Jason
 
