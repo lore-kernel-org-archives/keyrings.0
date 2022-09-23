@@ -2,122 +2,270 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4828EC04A95
-	for <keyrings@archiver.kernel.org>; Fri, 23 Sep 2022 19:16:57 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C22D1C07E9D
+	for <keyrings@archiver.kernel.org>; Fri, 23 Sep 2022 22:24:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231844AbiIWTQ4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 23 Sep 2022 15:16:56 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34498 "EHLO
+        id S232178AbiIWWYQ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 23 Sep 2022 18:24:16 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58790 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229520AbiIWTQz (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 23 Sep 2022 15:16:55 -0400
-Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.220.29])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5A1C412C687;
-        Fri, 23 Sep 2022 12:16:54 -0700 (PDT)
-Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-        by smtp-out2.suse.de (Postfix) with ESMTP id D7BDD1F88F;
-        Fri, 23 Sep 2022 19:16:52 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1663960612; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         in-reply-to:in-reply-to:references:references;
-        bh=M7ZPOnaCl1bvAhxAcIcfHQhBd3XlM8j/v3z+xwYqH9Y=;
-        b=RxICWe9ShUOJ30yrxK1Sg337ibKGDWiBuCCfxe3PxnQDXehTnWoUAxFGm5efJJElnCRWYC
-        T/EEFnwjXDbp1a3EUY+qRjBlZgJmh01Kq/w3WmKQrPle99zuvPSp1ZWQvpmJBRW3Md/Gh+
-        hUMW16JhjAIT9slsMZQE8GgUslBWn+U=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1663960612;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         in-reply-to:in-reply-to:references:references;
-        bh=M7ZPOnaCl1bvAhxAcIcfHQhBd3XlM8j/v3z+xwYqH9Y=;
-        b=3o5yz8IUMFuZYyHXKnE++yxz0+3AfWIuGDj2UVpRZKJG7D+gcy2qYgZToe/bEoYUVe37Df
-        Pa8q+QubOpYRpICg==
-Received: from kitsune.suse.cz (kitsune.suse.cz [10.100.12.127])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by relay2.suse.de (Postfix) with ESMTPS id 841FF2C15C;
-        Fri, 23 Sep 2022 19:16:51 +0000 (UTC)
-Date:   Fri, 23 Sep 2022 21:16:50 +0200
-From:   Michal =?iso-8859-1?Q?Such=E1nek?= <msuchanek@suse.de>
-To:     Mimi Zohar <zohar@linux.ibm.com>
-Cc:     linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Heiko Carstens <hca@linux.ibm.com>,
-        Vasily Gorbik <gor@linux.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Alexander Gordeev <agordeev@linux.ibm.com>,
-        Sven Schnelle <svens@linux.ibm.com>,
-        Philipp Rudo <prudo@redhat.com>,
-        Sasha Levin <sashal@kernel.org>, Baoquan He <bhe@redhat.com>,
-        Alexander Egorenkov <egorenar@linux.ibm.com>,
-        "open list:S390" <linux-s390@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will@kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "maintainer:X86 ARCHITECTURE (32-BIT AND 64-BIT)" <x86@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "moderated list:ARM64 PORT (AARCH64 ARCHITECTURE)" 
-        <linux-arm-kernel@lists.infradead.org>,
-        "open list:LINUX FOR POWERPC (32-BIT AND 64-BIT)" 
-        <linuxppc-dev@lists.ozlabs.org>,
-        "open list:KEXEC" <kexec@lists.infradead.org>,
-        Coiby Xu <coxu@redhat.com>, keyrings@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        James Morse <james.morse@arm.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: Re: [PATCH 5.15 0/6] arm64: kexec_file: use more system keyrings to
- verify kernel image signature + dependencies
-Message-ID: <20220923191650.GX28810@kitsune.suse.cz>
-References: <cover.1663951201.git.msuchanek@suse.de>
- <67337b60a4d3cae00794d3cfd0e5add9899f18b7.camel@linux.ibm.com>
+        with ESMTP id S232347AbiIWWYM (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 23 Sep 2022 18:24:12 -0400
+Received: from mail-lf1-x133.google.com (mail-lf1-x133.google.com [IPv6:2a00:1450:4864:20::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C51D814AD46
+        for <keyrings@vger.kernel.org>; Fri, 23 Sep 2022 15:24:07 -0700 (PDT)
+Received: by mail-lf1-x133.google.com with SMTP id 10so2347489lfy.5
+        for <keyrings@vger.kernel.org>; Fri, 23 Sep 2022 15:24:07 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=chromium.org; s=google;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:from:to:cc:subject:date;
+        bh=oD2UyGyhLaodAMVLZEM0pp92bLbq6IPWrm+arkJI44c=;
+        b=KLocQXZ9DAdhHIGaOzUHK3AoWBRuJqZ6NDAlqDCSh0w1AeBIA0VvwphQmlYYNBWYQR
+         HBvqEgSCK7w+ZHX+RZxD2EQiRjL2H7fhfuVKyTqmKZVDHAHCO499/Ro5Ryz4ubIyjxSK
+         RzPiwmWQdKYQlYqmVnnrEb1gc27Oue3Qo/Z6U=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:x-gm-message-state:from:to:cc
+         :subject:date;
+        bh=oD2UyGyhLaodAMVLZEM0pp92bLbq6IPWrm+arkJI44c=;
+        b=HWpQ4REa7mY3hVhkDGf+rzkbXYDkJKcCTTUXEVFdbxwHG4FtkDRIwPM9MCT1Jjr9KN
+         smvQE5K4P1TEgx7vErTgNDNqrBnkfPOo2I2/33btaodMxlszYufdSMNsDLn0C4KhzzL2
+         vTznMu2Ib3n3kLB3HgtZOuvIAJFQWEBap0XmgsTLwZwKKe6kIFGv5lqt0biOkWR3vdXh
+         okF92ROF+x3rmEYdVek5Vy4HH4VqlJ4OM/IHkxbw0LGM/MBjJltVdg06V7IznKduME01
+         g2z7ahLQnuABYmdgcTUzKQtXnifOV2v7bzXaqXu8FImOZyMEfu+AuY39rBBTR3/nHhjE
+         dpsw==
+X-Gm-Message-State: ACrzQf3kWKKsvTVxb30E8ry0ERMkW27Eg5UiOxd0zWtMTE+CYGfY+7kf
+        nZetndQpE6u8Cm5Krb5cEZfDOzy70oLJEg==
+X-Google-Smtp-Source: AMsMyM4uotczCpBk3mU/sOo3srdBOkcxmG/6Yqtz9gZHx9Tjwl626EBze6uoyILQ+R5mBV8SpAcwkA==
+X-Received: by 2002:a05:6512:10d6:b0:49a:1fc0:cc62 with SMTP id k22-20020a05651210d600b0049a1fc0cc62mr4396062lfg.138.1663971845839;
+        Fri, 23 Sep 2022 15:24:05 -0700 (PDT)
+Received: from mail-lf1-f49.google.com (mail-lf1-f49.google.com. [209.85.167.49])
+        by smtp.gmail.com with ESMTPSA id by40-20020a05651c1a2800b00261e3856abcsm1503554ljb.102.2022.09.23.15.24.05
+        for <keyrings@vger.kernel.org>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Fri, 23 Sep 2022 15:24:05 -0700 (PDT)
+Received: by mail-lf1-f49.google.com with SMTP id w8so2292402lft.12
+        for <keyrings@vger.kernel.org>; Fri, 23 Sep 2022 15:24:05 -0700 (PDT)
+X-Received: by 2002:a5d:5c08:0:b0:228:e139:43f3 with SMTP id
+ cc8-20020a5d5c08000000b00228e13943f3mr6607580wrb.396.1663971834264; Fri, 23
+ Sep 2022 15:23:54 -0700 (PDT)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <67337b60a4d3cae00794d3cfd0e5add9899f18b7.camel@linux.ibm.com>
-User-Agent: Mutt/1.10.1 (2018-07-13)
+References: <20220823222526.1524851-1-evgreen@chromium.org>
+ <20220823152108.v2.5.I6cdb522cb5ea28fcd1e35b4cd92cbd067f99269a@changeid> <202209201605.505F96D@keescook>
+In-Reply-To: <202209201605.505F96D@keescook>
+From:   Evan Green <evgreen@chromium.org>
+Date:   Fri, 23 Sep 2022 15:23:17 -0700
+X-Gmail-Original-Message-ID: <CAE=gft6wO0Hv+dgQG_xcPdQTCQxtBeJNo94hqivdO8rxvXjbbg@mail.gmail.com>
+Message-ID: <CAE=gft6wO0Hv+dgQG_xcPdQTCQxtBeJNo94hqivdO8rxvXjbbg@mail.gmail.com>
+Subject: Re: [PATCH v2 05/10] security: keys: trusted: Verify creation data
+To:     Kees Cook <keescook@chromium.org>
+Cc:     LKML <linux-kernel@vger.kernel.org>,
+        Gwendal Grignou <gwendal@chromium.org>,
+        Eric Biggers <ebiggers@kernel.org>,
+        Matthew Garrett <mgarrett@aurora.tech>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        linux-integrity@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        apronin@chromium.org, Daniil Lunev <dlunev@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM <linux-pm@vger.kernel.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        "James E.J. Bottomley" <jejb@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Hao Wu <hao.wu@rubrik.com>, James Morris <jmorris@namei.org>,
+        Matthew Garrett <matthewgarrett@google.com>,
+        Paul Moore <paul@paul-moore.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, axelj <axelj@axis.com>,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hello,
+On Tue, Sep 20, 2022 at 4:07 PM Kees Cook <keescook@chromium.org> wrote:
+>
+> On Tue, Aug 23, 2022 at 03:25:21PM -0700, Evan Green wrote:
+> > If a loaded key contains creation data, ask the TPM to verify that
+> > creation data. This allows users like encrypted hibernate to know that
+> > the loaded and parsed creation data has not been tampered with.
+> >
+> > Partially-sourced-from: Matthew Garrett <mjg59@google.com>
+> > Signed-off-by: Evan Green <evgreen@chromium.org>
+> >
+> > ---
+> > Source material for this change is at:
+> > https://patchwork.kernel.org/project/linux-pm/patch/20210220013255.1083=
+202-9-matthewgarrett@google.com/
+> >
+> > Changes in v2:
+> >  - Adjust hash len by 2 due to new ASN.1 storage, and add underflow
+> >    check.
+> >
+> >  include/linux/tpm.h                       |  1 +
+> >  security/keys/trusted-keys/trusted_tpm2.c | 77 ++++++++++++++++++++++-
+> >  2 files changed, 77 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+> > index 8320cbac6f4009..438f8bc0a50582 100644
+> > --- a/include/linux/tpm.h
+> > +++ b/include/linux/tpm.h
+> > @@ -224,6 +224,7 @@ enum tpm2_command_codes {
+> >       TPM2_CC_SELF_TEST               =3D 0x0143,
+> >       TPM2_CC_STARTUP                 =3D 0x0144,
+> >       TPM2_CC_SHUTDOWN                =3D 0x0145,
+> > +     TPM2_CC_CERTIFYCREATION         =3D 0x014A,
+> >       TPM2_CC_NV_READ                 =3D 0x014E,
+> >       TPM2_CC_CREATE                  =3D 0x0153,
+> >       TPM2_CC_LOAD                    =3D 0x0157,
+> > diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/=
+trusted-keys/trusted_tpm2.c
+> > index 1d1470b880ca01..f81c6578c7f783 100644
+> > --- a/security/keys/trusted-keys/trusted_tpm2.c
+> > +++ b/security/keys/trusted-keys/trusted_tpm2.c
+> > @@ -691,6 +691,74 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+> >       return rc;
+> >  }
+> >
+> > +/**
+> > + * tpm2_certify_creation() - execute a TPM2_CertifyCreation command
+> > + *
+> > + * @chip: TPM chip to use
+> > + * @payload: the key data in clear and encrypted form
+> > + * @blob_handle: the loaded TPM handle of the key
+> > + *
+> > + * Return: 0 on success
+> > + *         -EINVAL on tpm error status
+> > + *         < 0 error from tpm_send or tpm_buf_init
+> > + */
+> > +static int tpm2_certify_creation(struct tpm_chip *chip,
+> > +                              struct trusted_key_payload *payload,
+> > +                              u32 blob_handle)
+> > +{
+> > +     struct tpm_header *head;
+> > +     struct tpm_buf buf;
+> > +     int rc;
+> > +
+> > +     rc =3D tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_CERTIFYCREATI=
+ON);
+> > +     if (rc)
+> > +             return rc;
+> > +
+> > +     /* Use TPM_RH_NULL for signHandle */
+> > +     tpm_buf_append_u32(&buf, 0x40000007);
+> > +
+> > +     /* Object handle */
+> > +     tpm_buf_append_u32(&buf, blob_handle);
+> > +
+> > +     /* Auth */
+> > +     tpm_buf_append_u32(&buf, 9);
+> > +     tpm_buf_append_u32(&buf, TPM2_RS_PW);
+> > +     tpm_buf_append_u16(&buf, 0);
+> > +     tpm_buf_append_u8(&buf, 0);
+> > +     tpm_buf_append_u16(&buf, 0);
+> > +
+> > +     /* Qualifying data */
+> > +     tpm_buf_append_u16(&buf, 0);
+> > +
+> > +     /* Creation data hash */
+> > +     if (payload->creation_hash_len < 2) {
+> > +             rc =3D -EINVAL;
+> > +             goto out;
+> > +     }
+> > +
+> > +     tpm_buf_append_u16(&buf, payload->creation_hash_len - 2);
+> > +     tpm_buf_append(&buf, payload->creation_hash + 2,
+> > +                    payload->creation_hash_len - 2);
+> > +
+> > +     /* signature scheme */
+> > +     tpm_buf_append_u16(&buf, TPM_ALG_NULL);
+> > +
+> > +     /* creation ticket */
+> > +     tpm_buf_append(&buf, payload->tk, payload->tk_len);
+> > +
+> > +     rc =3D tpm_transmit_cmd(chip, &buf, 6, "certifying creation data"=
+);
+> > +     if (rc)
+> > +             goto out;
+> > +
+> > +     head =3D (struct tpm_header *)buf.data;
+> > +
+> > +     if (head->return_code !=3D 0)
+> > +             rc =3D -EINVAL;
+>
+> Do you have a reference to this TPM command spec? I have a dim memory of
+> some of these commands having success/failure listed separately from
+> other things in the reply. Is that true here? (i.e. is the return_code
+> only about "yes I replied" and there is a missing "but the answer is no"
+> check?)
 
-On Fri, Sep 23, 2022 at 03:03:36PM -0400, Mimi Zohar wrote:
-> On Fri, 2022-09-23 at 19:10 +0200, Michal Suchanek wrote:
-> > Hello,
-> > 
-> > this is backport of commit 0d519cadf751
-> > ("arm64: kexec_file: use more system keyrings to verify kernel image signature")
-> > to table 5.15 tree including the preparatory patches.
-> > 
-> > Some patches needed minor adjustment for context.
-> 
-> In general when backporting this patch set, there should be a
-> dependency on backporting these commits as well.  In this instance for
-> linux-5.15.y, they've already been backported.
-> 
-> 543ce63b664e ("lockdown: Fix kexec lockdown bypass with ima policy")
-> af16df54b89d ("ima: force signature verification when CONFIG_KEXEC_SIG is configured")
+Here's the link to the volumes:
+https://trustedcomputinggroup.org/resource/tpm-library-specification/
 
-Thanks for bringing these up. It might be in general useful to backport
-these fixes as well.
+The description for TPM2_CertifyCreation in part 3 says this:
+```
+This command is used to prove the association between an object and
+its creation data. The TPM will
+validate that the ticket was produced by the TPM and that the ticket
+validates the association between a
+loaded public area and the provided hash of the creation data (creationHash=
+).
+NOTE 1 See 18.1 for description of how the signing scheme is selected.
+The TPM will create a test ticket using the Name associated with
+objectHandle and creationHash as:
+HMAC(proof, (TPM_ST_CREATION || objectHandle=E2=86=92Name || creationHash))=
+ (4)
+This ticket is then compared to creation ticket. If the tickets are
+not the same, the TPM shall return
+TPM_RC_TICKET.
+If the ticket is valid, then the TPM will create a TPMS_ATTEST
+structure and place creationHash of the
+command in the creationHash field of the structure. The Name
+associated with objectHandle will be
+included in the attestation data that is then signed using the key
+associated with signHandle.
+```
 
-However, this patchset does one very specific thing: it lifts the x86
-kexec_file signature verification to arch-independent and uses it on
-arm64 to unify all features (and any existing warts) between EFI
-architectures.
+So my aim there was to check responseCode in the response, and as long
+as it's success and not RC_TICKET I should be ok. Though I see now
+from other examples I should have used
+(be32_to_cpu(header->return_code) !=3D TPM2_RC_SUCCESS). I will change
+that.
 
-So unless I am missing something the fixes you pointed out are
-completely independent of this.
 
-Thanks
-
-Michal
+>
+> > +out:
+> > +     tpm_buf_destroy(&buf);
+> > +     return rc;
+> > +}
+> > +
+> >  /**
+> >   * tpm2_unseal_trusted() - unseal the payload of a trusted key
+> >   *
+> > @@ -716,8 +784,15 @@ int tpm2_unseal_trusted(struct tpm_chip *chip,
+> >               goto out;
+> >
+> >       rc =3D tpm2_unseal_cmd(chip, payload, options, blob_handle);
+> > -     tpm2_flush_context(chip, blob_handle);
+> > +     if (rc)
+> > +             goto flush;
+> > +
+> > +     if (payload->creation_len)
+> > +             rc =3D tpm2_certify_creation(chip, payload, blob_handle);
+> >
+> > +
+> > +flush:
+> > +     tpm2_flush_context(chip, blob_handle);
+> >  out:
+> >       tpm_put_ops(chip);
+> >
+> > --
+> > 2.31.0
+> >
+>
+> Otherwise looks good to me. :)
+>
+> --
+> Kees Cook
