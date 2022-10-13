@@ -2,21 +2,21 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A7794C433FE
-	for <keyrings@archiver.kernel.org>; Thu, 13 Oct 2022 06:36:56 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4DEBAC4332F
+	for <keyrings@archiver.kernel.org>; Thu, 13 Oct 2022 06:43:16 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229540AbiJMGgz (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 13 Oct 2022 02:36:55 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48652 "EHLO
+        id S229484AbiJMGnP (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 13 Oct 2022 02:43:15 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34000 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229507AbiJMGgz (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 13 Oct 2022 02:36:55 -0400
+        with ESMTP id S229459AbiJMGnO (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 13 Oct 2022 02:43:14 -0400
 Received: from mail.steuer-voss.de (mail.steuer-voss.de [85.183.69.95])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 970D5110B0B;
-        Wed, 12 Oct 2022 23:36:52 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AB49BDCAC4;
+        Wed, 12 Oct 2022 23:43:12 -0700 (PDT)
 X-Virus-Scanned: Debian amavisd-new at mail.steuer-voss.de
 Received: by mail.steuer-voss.de (Postfix, from userid 1000)
-        id 182681CCF; Thu, 13 Oct 2022 08:36:46 +0200 (CEST)
+        id 857011E25; Thu, 13 Oct 2022 08:43:08 +0200 (CEST)
 From:   Nikolaus Voss <nv@vosn.de>
 To:     Mimi Zohar <zohar@linux.ibm.com>,
         David Howells <dhowells@redhat.com>,
@@ -26,10 +26,10 @@ To:     Mimi Zohar <zohar@linux.ibm.com>,
         Cyril Hrubis <chrubis@suse.cz>, Petr Vorel <pvorel@suse.cz>
 Cc:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date:   Thu, 13 Oct 2022 08:31:39 +0200
-Subject: [PATCH v3] KEYS: encrypted: fix key instantiation with user-provided
+Date:   Thu, 13 Oct 2022 08:39:58 +0200
+Subject: [PATCH v4] KEYS: encrypted: fix key instantiation with user-provided
  data
-Message-Id: <20221013063646.182681CCF@mail.steuer-voss.de>
+Message-Id: <20221013064308.857011E25@mail.steuer-voss.de>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
@@ -57,16 +57,17 @@ fixed (see link below).
 
 Fixes: cd3bc044af48 ("KEYS: encrypted: Instantiate key with user-provided decrypted data")
 Cc: stable <stable@kernel.org>
-Link: https://lists.linux.it/pipermail/ltp/2022-October/031060.html
+Link: https://lore.kernel.org/ltp/20221006081709.92303897@mail.steuer-voss.de/
 Signed-off-by: Nikolaus Voss <nikolaus.voss@haag-streit.com>
 ---
 Changes
 =======
+v4: - fixed link
 v3: - use generated random key in example, reformat commit message
 v2: - clarify commit message, add example to recover old/broken keys
     - improve example in Documentation/security/keys/trusted-encrypted.rst
     - add link to ltp patch
----
+
  Documentation/security/keys/trusted-encrypted.rst | 3 ++-
  security/keys/encrypted-keys/encrypted.c          | 6 +++---
  2 files changed, 5 insertions(+), 4 deletions(-)
