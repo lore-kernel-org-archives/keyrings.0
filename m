@@ -2,54 +2,107 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B4634C4332F
-	for <keyrings@archiver.kernel.org>; Mon,  7 Nov 2022 09:16:55 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B7319C4332F
+	for <keyrings@archiver.kernel.org>; Mon,  7 Nov 2022 13:18:56 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231393AbiKGJQw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 7 Nov 2022 04:16:52 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43470 "EHLO
+        id S232197AbiKGNSz (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 7 Nov 2022 08:18:55 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54106 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231715AbiKGJQj (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 7 Nov 2022 04:16:39 -0500
-Received: from mail.ettrick.pl (mail.ettrick.pl [141.94.21.111])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A5197167F2
-        for <keyrings@vger.kernel.org>; Mon,  7 Nov 2022 01:16:35 -0800 (PST)
-Received: by mail.ettrick.pl (Postfix, from userid 1002)
-        id 8FC95A5D6A; Mon,  7 Nov 2022 09:16:01 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ettrick.pl; s=mail;
-        t=1667812590; bh=ChRcLNpIfKnVgp03/tSyWuRw1tWSTk/OEiEnuZMWs58=;
-        h=Date:From:To:Subject:From;
-        b=Hu3gI2l8MznGNCikd0A13iJSL9TF/HsLA8AKDnhqswZu9pzfBnMQN5Np0qRTF+xhe
-         rRIT+HOn4qgHteR5C5JWaHMFO76lJt63UOdbYK4V3Cf/TWbLNAdzfvYsEt3BRhcqjE
-         Q6xDCc69fOtH9U/i1WirdcwsOhWUhjzZaE6ROMwf/XNZWXmnfORSr1+Ho3lopKn0Z9
-         s9vThMuYaCWLawk64BcJJkvhFtbDtRyfOpw5TB4oEMICXWC4Axqfec7Yp9j5dmNwOe
-         J1Ts9wtBW97wL5EgWCGZqkhc0uSykZu0yHX9Kx1yVYBaeLhb/KHDr8z3SHjWZuGYza
-         Q9nJZQGYr9xig==
-Received: by mail.ettrick.pl for <keyrings@vger.kernel.org>; Mon,  7 Nov 2022 09:15:11 GMT
-Message-ID: <20221107074500-0.1.6u.1p94h.0.v76m8s8b85@ettrick.pl>
-Date:   Mon,  7 Nov 2022 09:15:11 GMT
-From:   "Norbert Karecki" <norbert.karecki@ettrick.pl>
-To:     <keyrings@vger.kernel.org>
-Subject: Wycena paneli fotowoltaicznych
-X-Mailer: mail.ettrick.pl
+        with ESMTP id S232310AbiKGNSw (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 7 Nov 2022 08:18:52 -0500
+X-Greylist: delayed 390 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Mon, 07 Nov 2022 05:18:47 PST
+Received: from smtp-bc09.mail.infomaniak.ch (smtp-bc09.mail.infomaniak.ch [45.157.188.9])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C00651C41E
+        for <keyrings@vger.kernel.org>; Mon,  7 Nov 2022 05:18:47 -0800 (PST)
+Received: from smtp-3-0000.mail.infomaniak.ch (unknown [10.4.36.107])
+        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4N5Wq32j5GzMpqsG;
+        Mon,  7 Nov 2022 14:12:15 +0100 (CET)
+Received: from ns3096276.ip-94-23-54.eu (unknown [23.97.221.149])
+        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4N5Wq22b21zy8;
+        Mon,  7 Nov 2022 14:12:14 +0100 (CET)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=digikod.net;
+        s=20191114; t=1667826735;
+        bh=ogv1+vns4rwJNA++R69lZzH0fX4ZziizzJbx9zelCzc=;
+        h=Date:Subject:To:Cc:References:From:In-Reply-To:From;
+        b=VbS4/VdMRvoiR4R/DPzce5YO/bNFNZ2z4S3DvPuY3yq5aLOvKr4ga49L49OpXrxF8
+         SCh2qAdjw/LIP0uwiy26PdwUl/sse2AzMLyQZOdbuETSYDW4GWHDkrF4EBMrsE+Qth
+         SQLgClXpRnQoDDyf7XUwtW5GZWHwFPEfYAP63O/s=
+Message-ID: <3b997266-067c-975c-911a-da146fe9033a@digikod.net>
+Date:   Mon, 7 Nov 2022 14:12:13 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+User-Agent: 
+Subject: Re: [PATCH] certs: Prevent spurious errors on repeated blacklisting
+Content-Language: en-US
+To:     =?UTF-8?Q?Thomas_Wei=c3=9fschuh?= <linux@weissschuh.net>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>
+Cc:     keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Pearson <markpearson@lenovo.com>,
+        Eric Snowberg <eric.snowberg@oracle.com>,
+        linux-integrity@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+References: <20221104014704.3469-1-linux@weissschuh.net>
+From:   =?UTF-8?Q?Micka=c3=abl_Sala=c3=bcn?= <mic@digikod.net>
+In-Reply-To: <20221104014704.3469-1-linux@weissschuh.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Dzie=C5=84 dobry,
+This is a follow-up of 
+https://lore.kernel.org/r/c8c65713-5cda-43ad-8018-20f2e32e4432@t-8ch.de
 
-dostrzegam mo=C5=BCliwo=C5=9B=C4=87 wsp=C3=B3=C5=82pracy z Pa=C5=84stwa f=
-irm=C4=85.
-
-=C5=9Awiadczymy kompleksow=C4=85 obs=C5=82ug=C4=99 inwestycji w fotowolta=
-ik=C4=99, kt=C3=B3ra obni=C5=BCa koszty energii elektrycznej nawet o 90%.
-
-Czy s=C4=85 Pa=C5=84stwo zainteresowani weryfikacj=C4=85 wst=C4=99pnych p=
-ropozycji?
+Added Jarkko, Mark Pearson, Eric Snowberg and more ML in Cc.
 
 
-Pozdrawiam,
-Norbert Karecki
+On 04/11/2022 02:47, Thomas Weißschuh wrote:
+> When the blacklist keyring was changed to allow updates from the root
+> user it gained an ->update() function that disallows all updates.
+> When the a hash is blacklisted multiple times from the builtin or
+> firmware-provided blacklist this spams prominent logs during boot:
+> 
+> [    0.890814] blacklist: Problem blacklisting hash (-13)
+> 
+> As all these repeated calls to mark_raw_hash_blacklisted() would create
+> the same keyring entry again anyways these errors can be safely ignored.
+
+These errors can indeed be safely ignored, however they highlight issues 
+with some firmware vendors not checking nor optimizing their blocked 
+hashes. This raises security concerns, and it should be fixed by 
+firmware vendors.
+
+> 
+> Fixes: 6364d106e041 ("certs: Allow root user to append signed hashes to the blacklist keyring")
+> Signed-off-by: Thomas Weißschuh <linux@weissschuh.net>
+> ---
+>   certs/blacklist.c | 4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/certs/blacklist.c b/certs/blacklist.c
+> index 41f10601cc72..5f7f2882ced7 100644
+> --- a/certs/blacklist.c
+> +++ b/certs/blacklist.c
+> @@ -191,7 +191,9 @@ static int mark_raw_hash_blacklisted(const char *hash)
+>   				   BLACKLIST_KEY_PERM,
+>   				   KEY_ALLOC_NOT_IN_QUOTA |
+>   				   KEY_ALLOC_BUILT_IN);
+> -	if (IS_ERR(key)) {
+> +
+> +	/* Blacklisting the same hash twice fails but would be idempotent */
+> +	if (IS_ERR(key) && PTR_ERR(key) != -EACCES) {
+
+We should not hide EACCES errors. This logs issues, which is correct for 
+duplicate hashes, and can help firmware vendors to fix their database. 
+I'd really like to see a different log message instead: change the 
+duplicate entry error code from EACCES to EEXIST, and call pr_warn for 
+this specific case.
+
+
+>   		pr_err("Problem blacklisting hash (%ld)\n", PTR_ERR(key));
+>   		return PTR_ERR(key);
+>   	}
+> 
+> base-commit: ee6050c8af96bba2f81e8b0793a1fc2f998fcd20
