@@ -2,132 +2,72 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6DBBAC433FE
-	for <keyrings@archiver.kernel.org>; Wed,  9 Nov 2022 01:24:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A3DF0C4332F
+	for <keyrings@archiver.kernel.org>; Wed,  9 Nov 2022 02:50:35 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230018AbiKIBYR (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 8 Nov 2022 20:24:17 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57988 "EHLO
+        id S229913AbiKICuf (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 8 Nov 2022 21:50:35 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41798 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229973AbiKIBYO (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Nov 2022 20:24:14 -0500
-Received: from mail-qt1-x82a.google.com (mail-qt1-x82a.google.com [IPv6:2607:f8b0:4864:20::82a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E6B0460376;
-        Tue,  8 Nov 2022 17:24:11 -0800 (PST)
-Received: by mail-qt1-x82a.google.com with SMTP id h21so9696731qtu.2;
-        Tue, 08 Nov 2022 17:24:11 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20210112;
-        h=content-transfer-encoding:in-reply-to:from:references:cc:to
-         :content-language:subject:user-agent:mime-version:date:message-id
-         :from:to:cc:subject:date:message-id:reply-to;
-        bh=S3bArshq2eyg3hLMepiT1bgGKeZeMxvntrLUq44wF0Y=;
-        b=CTX/cYJBdS03SBZmJa1BZmatkKUgloDzEz81wgxZuFYk7QTdCDZiALT2SFN8kMQZQv
-         NP/ogMs+va3hc67H7wov5KOm1QdOvcSMmyOeWEPZmFs0z1EE/hJE4HSWQzeafjKEtfcz
-         5GLt6Z0vG6YUelx9DZZnIzyS59PTm+WRpLHJrL5EQlikL2Iy1WdRt3AmonyPKoKGYqYI
-         EBmn4cmhZyq1CCNqWTBWnIe/F7l1fDrSegnr68O6OSBG/+BXjT5+Jayz5roUSEKZ3A4z
-         4C7AErUdJ9ZPs38hRw+zygss8LAcyj6Jn2IiXOW2hbtBODsywrSP1jXw0IN2rJPEIMD4
-         Remg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=content-transfer-encoding:in-reply-to:from:references:cc:to
-         :content-language:subject:user-agent:mime-version:date:message-id
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
-        bh=S3bArshq2eyg3hLMepiT1bgGKeZeMxvntrLUq44wF0Y=;
-        b=sSYO7n8vn4omFEktwLaw5OwHsx6uzEIpXxphpyVNf3LNz2I2r2QXuBJYvzpJpfcQc3
-         nw1BBSKo4eO3PugzBOS0GUKI1jhDan6Nv7RbBIzcaV65cteBjx8vKfOTGYfwGsMbrISr
-         fJwKcpWfUNcbBaWTDfgiJFTgkhdRwOvqUAZK/oP3uEsbxdQqKbq1GjZhRr06Yoyacoml
-         ImUm+PUH76QN59MCRxDlz2RuvtuwzMC90nfQjlEIR30DeRm6D8anvEvDWCRkr4NCNe+l
-         X3CN3AQqMHZf8uAxHWgZ5H1XADUCnQZ2d6XeXxYGl7q/MxtknSlMAoNx5jqwDJ0P1N6+
-         MNnQ==
-X-Gm-Message-State: ACrzQf0Oh5k8QuZH7OAAIqa2/JVdcBERlBuNE3lgp5eg8hnxNWbY43P7
-        3HGURvc6WFCIpZz5HCjpsg8=
-X-Google-Smtp-Source: AMsMyM4/pwPWwiLUI5cR0ax3Di1wr+MJtrxOcKP6v6JXvZerf1yzWyN93OY9xiRWwaU/ETpL9UZD3g==
-X-Received: by 2002:ac8:48d0:0:b0:3a5:1ed8:4a46 with SMTP id l16-20020ac848d0000000b003a51ed84a46mr41423317qtr.407.1667957051016;
-        Tue, 08 Nov 2022 17:24:11 -0800 (PST)
-Received: from [192.168.86.38] (c-75-69-97-7.hsd1.nh.comcast.net. [75.69.97.7])
-        by smtp.gmail.com with ESMTPSA id s3-20020a05620a29c300b006fa4ac86bfbsm10377337qkp.55.2022.11.08.17.24.09
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Tue, 08 Nov 2022 17:24:10 -0800 (PST)
-Message-ID: <faa10c58-268f-ddc8-b86c-02c903e29f8a@gmail.com>
-Date:   Tue, 8 Nov 2022 20:24:08 -0500
+        with ESMTP id S229667AbiKICue (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Nov 2022 21:50:34 -0500
+Received: from todd.t-8ch.de (todd.t-8ch.de [159.69.126.157])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AFC381F61A;
+        Tue,  8 Nov 2022 18:50:32 -0800 (PST)
+From:   =?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <linux@weissschuh.net>
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=weissschuh.net;
+        s=mail; t=1667962230;
+        bh=COwXzoOJifc0kBYkrsDthoC7PqTOtSdi1o8MWvrZGvg=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=RFw/Vm2E83YIgHtWCxE5pbYZhS4CloQ/BWpqQZOVwojSlxti2713CWbtT7DfN5yex
+         g+GGsYBsuKhOCeD7QxLbnztD1C/IDyi5+pGFTD9AtpIONjJbQEGJyO1z11FSBTMNjk
+         uEi8dEEMGzSajlt2uIl9vEakOIORMif0rUAKe1AA=
+To:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     =?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <linux@weissschuh.net>,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Pearson <markpearson@lenovo.com>,
+        linux-integrity@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH v2 1/3] certs: log more information on blacklist error
+Date:   Wed,  9 Nov 2022 03:50:17 +0100
+Message-Id: <20221109025019.1855-2-linux@weissschuh.net>
+X-Mailer: git-send-email 2.38.1
+In-Reply-To: <20221109025019.1855-1-linux@weissschuh.net>
+References: <20221109025019.1855-1-linux@weissschuh.net>
 MIME-Version: 1.0
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0)
- Gecko/20100101 Thunderbird/102.2.1
-Subject: Re: [PATCH 0/7] Add CA enforcement keyring restrictions
-Content-Language: en-US
-To:     Coiby Xu <coxu@redhat.com>, eric.snowberg@oracle.com
-Cc:     davem@davemloft.net, dhowells@redhat.com,
-        dmitry.kasatkin@gmail.com, dwmw2@infradead.org,
-        herbert@gondor.apana.org.au, jarkko@kernel.org, jmorris@namei.org,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, nramas@linux.microsoft.com,
-        pvorel@suse.cz, roberto.sassu@huawei.com, serge@hallyn.com,
-        tiwai@suse.de, zohar@linux.ibm.com, erpalmer@linux.ibm.com
-References: <20221104132035.rmavewmeo6ceyjou@Rk>
-From:   Elaine Palmer <erpalmerny@gmail.com>
-In-Reply-To: <20221104132035.rmavewmeo6ceyjou@Rk>
 Content-Type: text/plain; charset=UTF-8
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1667962214; l=781; s=20211113; h=from:subject; bh=COwXzoOJifc0kBYkrsDthoC7PqTOtSdi1o8MWvrZGvg=; b=9x5DbFNV4IeM4Iy0DtoCRUoozHmclKCE+cEgSF4HGqidC0TEXqxiB6lTgA07FCcRuKVcFFgwwsn5 B8EN0PttAwXE0P3l+2gc7DGNn+b1Zq+W6/XVyg0ViLI7WWqXymfn
+X-Developer-Key: i=linux@weissschuh.net; a=ed25519; pk=9LP6KM4vD/8CwHW7nouRBhWLyQLcK1MkP6aTZbzUlj4=
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+Without this information these logs are not actionable.
 
+Fixes: 6364d106e041 ("certs: Allow root user to append signed hashes to the blacklist keyring")
+Signed-off-by: Thomas Weißschuh <linux@weissschuh.net>
+---
+ certs/blacklist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On 2022/11/04 9:20 AM, Coiby Xu wrote:
-> Hi Eric,
->
-> I wonder if there is any update on this work? I would be glad to do
-> anything that may be helpful including testing a new version of code.
->
-Hi Coiby,
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index 41f10601cc72..6e260c4b6a19 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -192,7 +192,7 @@ static int mark_raw_hash_blacklisted(const char *hash)
+ 				   KEY_ALLOC_NOT_IN_QUOTA |
+ 				   KEY_ALLOC_BUILT_IN);
+ 	if (IS_ERR(key)) {
+-		pr_err("Problem blacklisting hash (%ld)\n", PTR_ERR(key));
++		pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
+ 		return PTR_ERR(key);
+ 	}
+ 	return 0;
+-- 
+2.38.1
 
-Yes, this discussion got stuck when we couldn't agree on one of the
-following options:
-
-(A) Filter which keys from MOK (or a management system) are loaded
-    onto the .machine keyring. Specifically, load only keys with
-    CA+keyCertSign attributes.
-
-(B) Load all keys from MOK (or a management system) onto the
-    .machine keyring. Then, subsequently filter those to restrict
-    which ones can be loaded onto the .ima keyring specifically.
-
-The objection to (A) was that distros would have to go through
-two steps instead of one to load keys. The one-step method of
-loading keys was supported by an out-of-tree patch and then by
-the addition of the .machine keyring.
-
-The objection to (B) was that, because the .machine keyring is now
-linked to the .secondary keyring, it expands the scope of what the
-kernel has trusted in the past. The effect is that keys in MOK
-have the same broad scope as keys previously restricted to
-.builtin and .secondary. It doesn't affect just IMA, but the rest
-of the kernel as well.
-
-I would suggest that we can get unstuck by considering:
-
-(C) Defining a systemd (or dracut module) to load keys onto the
-    .secondary keyring
-
-(D) Using a configuration option to specify what types of
-    .machine keys should be allowed to pass through to the
-    .secondary keyring.
-   
-    The distro could choose (A) by allowing only
-    CA+keyCertSign keys.
-
-    The distro could choose (B) by allowing any kind
-    of key.
-
-We all seemed to agree that enforcing key usage should be
-implemented and that a useful future effort is to add policies
-to keys and keyrings, like, "This key can only be used for
-verifying kernel modules."
-
-I hope we can come to an agreement so work can proceed and IMA
-can be re-enabled.
-
--Elaine Palmer
