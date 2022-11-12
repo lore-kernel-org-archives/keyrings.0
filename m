@@ -2,38 +2,39 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5B03AC4332F
-	for <keyrings@archiver.kernel.org>; Sat, 12 Nov 2022 10:47:26 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 941FBC433FE
+	for <keyrings@archiver.kernel.org>; Sat, 12 Nov 2022 10:48:58 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230383AbiKLKrY (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sat, 12 Nov 2022 05:47:24 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54330 "EHLO
+        id S234854AbiKLKs5 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 12 Nov 2022 05:48:57 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55076 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S234787AbiKLKrW (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sat, 12 Nov 2022 05:47:22 -0500
+        with ESMTP id S234802AbiKLKsz (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 12 Nov 2022 05:48:55 -0500
+X-Greylist: delayed 94 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Sat, 12 Nov 2022 02:48:53 PST
 Received: from sender-of-o50.zoho.in (sender-of-o50.zoho.in [103.117.158.50])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D5806167FC;
-        Sat, 12 Nov 2022 02:47:19 -0800 (PST)
-ARC-Seal: i=1; a=rsa-sha256; t=1668249073; cv=none; 
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EDA0E1704A;
+        Sat, 12 Nov 2022 02:48:52 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1668249051; cv=none; 
         d=zohomail.in; s=zohoarc; 
-        b=WvjIxDY9DG6YuzcAwCxhgC+1QeN+Or0Glx//RDKFYJtEKRoUf7s8ly6xpRvOkbm4JCKwyvfi36jQ9RxZGpsamB1ePt4gIVxsbGfTg3Yzoa9Vsl5IVaZjroRHh4b8gNZ6DiQDkakwI4asbsZtm2Tcgaf65o+nt1ADLspU7xnX8aQ=
+        b=LFqAfRynvUXCUpErtnOL6NDnj4CYj8iUanwK1DI2pR+ycJNXJzAwqaHIZmzZOgUIt02nNaJBMnJmhKGlIruks6xnjLYgWeI0U4bgegcQS0Or9DXN0OOsU+fJ6BR29aBMM7qz/NUICVDPdVbsW5J5hNoQ4dphep8ZwHCZ/uLWJIQ=
 ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=zohomail.in; s=zohoarc; 
-        t=1668249073; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:In-Reply-To:MIME-Version:Message-ID:References:Subject:To; 
-        bh=CciC0JA+1Sl6P741HLOLO7oPE18KzPzTWUnJ9g4NcCY=; 
-        b=degMBSnd9mGkKSPgdaapCdnzUPijGJ/a4MH85DcCllqX8o8cQ7EUSMFVg9m+rqFcL741P6czQkys9PXclLmJvjWnjpb4YTFGsJsBqMm3Cjy6FVgykzkQGl+i+APFF6LZHe8Frz9chLNlQlV4aSdB1t9LIhn4igYi90O7buSdj6s=
+        t=1668249051; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:MIME-Version:Message-ID:Subject:To; 
+        bh=BCGeylOFJYtUpHot+ky277Ye6xqHBGluvEQQ9Xbj6Mg=; 
+        b=KNmJaKaRXLHJy2ps9hY+5dEQrg7iBmOw45HEscaazRCJAfFomGO/z3zFitv7w/OjVJjJ+W051G3AAH3Lp+rabtrQ2INaCv0/gHYL6kWKDmHOsy0Ted8tGhIMGA7fplxTjmw4YnAdviF6+UyCjf4Aiavc6a7Nuk/esNNph2AO7Wc=
 ARC-Authentication-Results: i=1; mx.zohomail.in;
         dkim=pass  header.i=siddh.me;
         spf=pass  smtp.mailfrom=code@siddh.me;
         dmarc=pass header.from=<code@siddh.me>
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1668249073;
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1668249051;
         s=zmail; d=siddh.me; i=code@siddh.me;
-        h=From:From:To:To:Cc:Cc:Message-ID:Subject:Subject:Date:Date:In-Reply-To:References:MIME-Version:Content-Transfer-Encoding:Content-Type:Message-Id:Reply-To;
-        bh=CciC0JA+1Sl6P741HLOLO7oPE18KzPzTWUnJ9g4NcCY=;
-        b=KeYri2bDEYsjQ5ROrUNLIT/BtrfEBjYg5D/Aot2N09fxzzzUpkethOo9sk1RFEvl
-        y3KvB3tbeR+0Q8wdSe5EcX2+0D5TxFJX4wsOz0MK6aAPHU8MS/tJzI5zx9afafbQBfw
-        hI5vrRMIzBt/na673W7ByHSPaQoNAXhD6lCgS4hg=
+        h=From:From:To:To:Cc:Cc:Message-ID:Subject:Subject:Date:Date:MIME-Version:Content-Transfer-Encoding:Content-Type:Message-Id:Reply-To;
+        bh=BCGeylOFJYtUpHot+ky277Ye6xqHBGluvEQQ9Xbj6Mg=;
+        b=PozslzT7pVPO2qvIFATO1I96o2g8GSKMsxdghJMy8CfbfKGTpVvE6px9WGHEOunY
+        HVzWfULbawSa5IR8qvhULazw3+TmhelCBIQbApNmSWHqGS3X9VbMmUiD7zzA8gBozNo
+        3SaZNtO27VhwOcopImrs34fC1d/Kje44T4HTcxTE=
 Received: from kampyooter.. (110.226.30.173 [110.226.30.173]) by mx.zoho.in
-        with SMTPS id 1668249072566411.90214034857365; Sat, 12 Nov 2022 16:01:12 +0530 (IST)
+        with SMTPS id 166824904951082.6955736246938; Sat, 12 Nov 2022 16:00:49 +0530 (IST)
 From:   Siddh Raman Pant <code@siddh.me>
 To:     Mauro Carvalho Chehab <mchehab@kernel.org>,
         Randy Dunlap <rdunlap@infradead.org>,
@@ -47,12 +48,10 @@ Cc:     keyrings <keyrings@vger.kernel.org>,
         linux-security-module <linux-security-module@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Message-ID: <21ea7a96018db8f140d7c68ca75665064361ad1b.1668248462.git.code@siddh.me>
-Subject: [RESEND PATCH v2 2/2] kernel/watch_queue: NULL the dangling *pipe, and use it for clear check
-Date:   Sat, 12 Nov 2022 16:00:41 +0530
+Message-ID: <cover.1668248462.git.code@siddh.me>
+Subject: [RESEND PATCH v2 0/2] watch_queue: Clean up some code
+Date:   Sat, 12 Nov 2022 16:00:39 +0530
 X-Mailer: git-send-email 2.35.1
-In-Reply-To: <cover.1668248462.git.code@siddh.me>
-References: <cover.1668248462.git.code@siddh.me>
 MIME-Version: 1.0
 Content-Transfer-Encoding: quoted-printable
 X-ZohoMailClient: External
@@ -61,93 +60,37 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-NULL the dangling pipe reference while clearing watch_queue.
+There is a dangling reference to pipe in a watch_queue after clearing it.
+Thus, NULL that pointer while clearing.
 
-If not done, a reference to a freed pipe remains in the watch_queue,
-as this function is called before freeing a pipe in free_pipe_info()
-(see line 834 of fs/pipe.c).
+This change renders wqueue->defunct superfluous, as the latter is only used
+to check if watch_queue is cleared. With this change, the pipe is NULLed
+while clearing, so we can just check if the pipe is NULL.
 
-The sole use of wqueue->defunct is for checking if the watch queue has
-been cleared, but wqueue->pipe is also NULLed while clearing.
+Extending comment for watch_queue->pipe in the definition of watch_queue
+made the comment conventionally too long (it was already past 80 chars),
+so I have changed the struct annotations to be kerneldoc-styled, so that
+I can extend the comment mentioning that the pipe is NULL when watch_queue
+is cleared. In the process, I have also hopefully improved documentation
+by documenting things which weren't documented before.
 
-Thus, wqueue->defunct is superfluous, as wqueue->pipe can be checked
-for NULL. Hence, the former can be removed.
+Changes in v2:
+- Merged the NULLing and removing defunct patches.
+- Removed READ_ONCE barrier in lock_wqueue().
+- Improved and fixed errors in struct docs.
+- Better commit messages.
 
-Signed-off-by: Siddh Raman Pant <code@siddh.me>
----
- include/linux/watch_queue.h |  4 +---
- kernel/watch_queue.c        | 12 ++++++------
- 2 files changed, 7 insertions(+), 9 deletions(-)
+Original date of posting patch: 6 Aug 2022
 
-diff --git a/include/linux/watch_queue.h b/include/linux/watch_queue.h
-index 7f8b1f15634b..d72ad82a4435 100644
---- a/include/linux/watch_queue.h
-+++ b/include/linux/watch_queue.h
-@@ -55,7 +55,7 @@ struct watch_filter {
-  *
-  * @rcu: RCU head
-  * @filter: Filter to use on watches
-- * @pipe: The pipe we're using as a buffer
-+ * @pipe: The pipe we're using as a buffer, NULL when queue is cleared/clo=
-sed
-  * @watches: Contributory watches
-  * @notes: Preallocated notifications
-  * @notes_bitmap: Allocation bitmap for notes
-@@ -63,7 +63,6 @@ struct watch_filter {
-  * @lock: To serialize accesses and removes
-  * @nr_notes: Number of notes
-  * @nr_pages: Number of pages in notes[]
-- * @defunct: True when queues closed
-  */
- struct watch_queue {
- =09struct rcu_head=09=09rcu;
-@@ -76,7 +75,6 @@ struct watch_queue {
- =09spinlock_t=09=09lock;
- =09unsigned int=09=09nr_notes;
- =09unsigned int=09=09nr_pages;
--=09bool=09=09=09defunct;
- };
-=20
- /**
-diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
-index a6f9bdd956c3..a70ddfd622ee 100644
---- a/kernel/watch_queue.c
-+++ b/kernel/watch_queue.c
-@@ -43,7 +43,7 @@ MODULE_LICENSE("GPL");
- static inline bool lock_wqueue(struct watch_queue *wqueue)
- {
- =09spin_lock_bh(&wqueue->lock);
--=09if (unlikely(wqueue->defunct)) {
-+=09if (unlikely(!wqueue->pipe)) {
- =09=09spin_unlock_bh(&wqueue->lock);
- =09=09return false;
- =09}
-@@ -105,9 +105,6 @@ static bool post_one_notification(struct watch_queue *w=
-queue,
- =09unsigned int head, tail, mask, note, offset, len;
- =09bool done =3D false;
-=20
--=09if (!pipe)
--=09=09return false;
--
- =09spin_lock_irq(&pipe->rd_wait.lock);
-=20
- =09mask =3D pipe->ring_size - 1;
-@@ -603,8 +600,11 @@ void watch_queue_clear(struct watch_queue *wqueue)
- =09rcu_read_lock();
- =09spin_lock_bh(&wqueue->lock);
-=20
--=09/* Prevent new notifications from being stored. */
--=09wqueue->defunct =3D true;
-+=09/*
-+=09 * This pipe will get freed by the caller free_pipe_info().
-+=09 * Removing this reference also prevents new notifications.
-+=09 */
-+=09wqueue->pipe =3D NULL;
-=20
- =09while (!hlist_empty(&wqueue->watches)) {
- =09=09watch =3D hlist_entry(wqueue->watches.first, struct watch, queue_nod=
-e);
+Siddh Raman Pant (2):
+  include/linux/watch_queue: Improve documentation
+  kernel/watch_queue: NULL the dangling *pipe, and use it for clear
+    check
+
+ include/linux/watch_queue.h | 100 ++++++++++++++++++++++++++----------
+ kernel/watch_queue.c        |  12 ++---
+ 2 files changed, 79 insertions(+), 33 deletions(-)
+
 --=20
 2.35.1
 
