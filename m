@@ -2,143 +2,98 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D29A1C4332F
-	for <keyrings@archiver.kernel.org>; Wed, 16 Nov 2022 23:44:44 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 400DDC4332F
+	for <keyrings@archiver.kernel.org>; Fri, 18 Nov 2022 04:05:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229446AbiKPXoo (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 16 Nov 2022 18:44:44 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38620 "EHLO
+        id S241100AbiKREFM (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 17 Nov 2022 23:05:12 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54896 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232117AbiKPXol (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 16 Nov 2022 18:44:41 -0500
-Received: from mx0a-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C02162FB;
-        Wed, 16 Nov 2022 15:44:40 -0800 (PST)
-Received: from pps.filterd (m0098419.ppops.net [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 2AGNgMTD018883;
-        Wed, 16 Nov 2022 23:44:24 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
- from : reply-to : to : cc : date : in-reply-to : references : content-type
- : mime-version : content-transfer-encoding; s=pp1;
- bh=J1gnzsf/D1YTJY8T2+5NQLgeCtaYrxMGyExgYqnS8Wg=;
- b=C41DMRDD5aHvopRQA7Xc7BtxHDLvZO/6OXZMKnUQ5KQi1Bzz/OKsMo2qrglSffZOVCVr
- ZZgnR5EtEg8Q4yzOjiCcGH+iLlmRokr1+rs0HhRkgPQaimZaEsW2Uy9YAGb9KnmBnveh
- BPYtqLX1Hh2V/z4itIqhMME3k7H02jUyR5rmaSIz+djK6WB/zXsM3NLUDtNvkYgtOrsw
- 3v3lxYlmZegfFX/39R+AVsGulYi0/VMSDQ1PF1/eJxzCenTEhKSoyHVf/pju6fdBJRkt
- rjPKTSHe90fhbVgNgV+qcpjCOvmEXVpFXHCZU+CGUKtMP+Pz7WfMZpU81xpPqhjOSTGe qg== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (PPS) with ESMTPS id 3kw9s7010n-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Wed, 16 Nov 2022 23:44:23 +0000
-Received: from m0098419.ppops.net (m0098419.ppops.net [127.0.0.1])
-        by pps.reinject (8.17.1.5/8.17.1.5) with ESMTP id 2AGNgWF8019113;
-        Wed, 16 Nov 2022 23:44:22 GMT
-Received: from ppma03dal.us.ibm.com (b.bd.3ea9.ip4.static.sl-reverse.com [169.62.189.11])
-        by mx0b-001b2d01.pphosted.com (PPS) with ESMTPS id 3kw9s7010g-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Wed, 16 Nov 2022 23:44:22 +0000
-Received: from pps.filterd (ppma03dal.us.ibm.com [127.0.0.1])
-        by ppma03dal.us.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 2AGNZJHV020230;
-        Wed, 16 Nov 2022 23:44:22 GMT
-Received: from b03cxnp07027.gho.boulder.ibm.com (b03cxnp07027.gho.boulder.ibm.com [9.17.130.14])
-        by ppma03dal.us.ibm.com with ESMTP id 3kt34a4ymw-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Wed, 16 Nov 2022 23:44:22 +0000
-Received: from smtpav02.dal12v.mail.ibm.com ([9.208.128.128])
-        by b03cxnp07027.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 2AGNiK7941681590
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Wed, 16 Nov 2022 23:44:21 GMT
-Received: from smtpav02.dal12v.mail.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id A6EC95805A;
-        Wed, 16 Nov 2022 23:44:20 +0000 (GMT)
-Received: from smtpav02.dal12v.mail.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 5577858051;
-        Wed, 16 Nov 2022 23:44:19 +0000 (GMT)
-Received: from sig-9-65-207-159.ibm.com (unknown [9.65.207.159])
-        by smtpav02.dal12v.mail.ibm.com (Postfix) with ESMTP;
-        Wed, 16 Nov 2022 23:44:19 +0000 (GMT)
-Message-ID: <c24c0f7c81ff24d791974ff7945e710b489b7e01.camel@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/3] powerpc/pseries: PLPKS SED Opal keystore support
-From:   Greg Joyce <gjoyce@linux.vnet.ibm.com>
-Reply-To: gjoyce@linux.vnet.ibm.com
-To:     "Elliott, Robert (Servers)" <elliott@hpe.com>,
-        "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
-Cc:     "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "jonathan.derrick@linux.dev" <jonathan.derrick@linux.dev>,
-        "brking@linux.vnet.ibm.com" <brking@linux.vnet.ibm.com>,
-        "msuchanek@suse.de" <msuchanek@suse.de>,
-        "mpe@ellerman.id.au" <mpe@ellerman.id.au>,
-        "nayna@linux.ibm.com" <nayna@linux.ibm.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "jarkko@kernel.org" <jarkko@kernel.org>
-Date:   Wed, 16 Nov 2022 17:44:18 -0600
-In-Reply-To: <MW5PR84MB1842689FD13382CAFCC260D8AB5F9@MW5PR84MB1842.NAMPRD84.PROD.OUTLOOK.COM>
-References: <20220819223138.1457091-1-gjoyce@linux.vnet.ibm.com>
-         <20220819223138.1457091-3-gjoyce@linux.vnet.ibm.com>
-         <MW5PR84MB1842689FD13382CAFCC260D8AB5F9@MW5PR84MB1842.NAMPRD84.PROD.OUTLOOK.COM>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.28.5 (3.28.5-18.el8) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-ORIG-GUID: JgbknSy7aXhV73SxJYXrtnAvcD7UjiHr
-X-Proofpoint-GUID: nGERouHv7XWg6rQBOqOkw7vipn-DPvyA
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.219,Aquarius:18.0.895,Hydra:6.0.545,FMLib:17.11.122.1
- definitions=2022-11-16_03,2022-11-16_01,2022-06-22_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 malwarescore=0 clxscore=1011
- mlxlogscore=999 spamscore=0 suspectscore=0 bulkscore=0 phishscore=0
- priorityscore=1501 impostorscore=0 adultscore=0 lowpriorityscore=0
- mlxscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2210170000 definitions=main-2211160161
+        with ESMTP id S240875AbiKREEW (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 17 Nov 2022 23:04:22 -0500
+Received: from todd.t-8ch.de (todd.t-8ch.de [159.69.126.157])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0C3E963EF;
+        Thu, 17 Nov 2022 20:04:15 -0800 (PST)
+From:   =?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <linux@weissschuh.net>
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=weissschuh.net;
+        s=mail; t=1668744245;
+        bh=Ra7zlnQZv+5EzK/Di0o9djZFSiuiekY1TijxrLS1Kd0=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=Svfd8uOkMbffoYX8Te7hh+Xoiiy90lNcCSkrL2osEx5X9YIAi/ydZ/tAYH20IL1uS
+         jHYUEAlOSSeJM9J97nyuEaCdA5zlZiwDPMUUmuX2O8INJZUqUqqEFmkNb3KSdf3QUl
+         GtX5XaEU5d9aw6IdSEDICm1ohum0fZdkoU5X9oPE=
+To:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     =?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <linux@weissschuh.net>,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Pearson <markpearson@lenovo.com>,
+        linux-integrity@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH v3 3/3] certs: don't try to update blacklist keys
+Date:   Fri, 18 Nov 2022 05:03:43 +0100
+Message-Id: <20221118040343.2958-4-linux@weissschuh.net>
+X-Mailer: git-send-email 2.38.1
+In-Reply-To: <20221118040343.2958-1-linux@weissschuh.net>
+References: <20221118040343.2958-1-linux@weissschuh.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1668744218; l=1646; i=linux@weissschuh.net; s=20211113; h=from:subject; bh=Ra7zlnQZv+5EzK/Di0o9djZFSiuiekY1TijxrLS1Kd0=; b=euq+Tl37jfAGfQqWEwou2v6H2ZJ/i3UBFQTNVxYuhrCTL+aTWP8IJh6g2+DHhxHMnGpq6zbHgDRr y0u+dCx7BwHjtmfv1ae2GaImiBQH0JxTi21872zx2ey96SFH67Eh
+X-Developer-Key: i=linux@weissschuh.net; a=ed25519; pk=9LP6KM4vD/8CwHW7nouRBhWLyQLcK1MkP6aTZbzUlj4=
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Fri, 2022-10-07 at 19:09 +0000, Elliott, Robert (Servers) wrote:
-> > -----Original Message-----
-> > From: gjoyce@linux.vnet.ibm.com <gjoyce@linux.vnet.ibm.com>
-> > Sent: Friday, August 19, 2022 5:32 PM
-> > To: linux-block@vger.kernel.org
-> > Cc: linuxppc-dev@lists.ozlabs.org; jonathan.derrick@linux.dev;
-> > brking@linux.vnet.ibm.com; msuchanek@suse.de; mpe@ellerman.id.au;
-> > nayna@linux.ibm.com; axboe@kernel.dk; akpm@linux-foundation.org;
-> > gjoyce@linux.vnet.ibm.com; linux-efi@vger.kernel.org;
-> > keyrings@vger.kernel.org; dhowells@redhat.com; jarkko@kernel.org
-> > Subject: [PATCH v4 2/3] powerpc/pseries: PLPKS SED Opal keystore
-> > support
-> > 
-> > +++ b/arch/powerpc/platforms/pseries/plpks_sed_ops.c
-> ...
-> > +struct plpks_sed_object_data {
-> > +	u_char version;
-> > +	u_char pad1[7];
-> > +	u_long authority;
-> > +	u_long range;
-> > +	u_int  key_len;
-> > +	u_char key[32];
-> > +};
-> ...
-> > +/*
-> > + * Read the SED Opal key from PLPKS given the label
-> > + */
-> > +int sed_read_key(char *keyname, char *key, u_int *keylen)
-> > +{
-> ...
-> > +	*keylen = be32_to_cpu(data->key_len);
-> > +
-> > +	if (var.data) {
-> > +		memcpy(key, var.data + offset, var.datalen - offset);
-> > +		key[*keylen] = '\0';
-> 
-> Is there a guarantee that key_len is always < sizeof key, or
-> does that need to be checked in more places?
+When the same key is blacklisted repeatedly logging at pr_err() level is
+excessive as no functionality is impaired.
+When these duplicates are provided by buggy firmware there is nothing
+the enduser can do to fix the situation.
+Instead of spamming the bootlog with errors we use a warning that can
+still be seen by OEMs when testing their firmware.
 
-Changed keylen paramter to be the maximum size that it copied. This 
-will help avoid buffer overwrite.
+Link: https://lore.kernel.org/all/c8c65713-5cda-43ad-8018-20f2e32e4432@t-8ch.de/
+Link: https://lore.kernel.org/all/20221104014704.3469-1-linux@weissschuh.net/
+Signed-off-by: Thomas Weißschuh <linux@weissschuh.net>
+---
+ certs/blacklist.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index 6e260c4b6a19..675dd7a8f07a 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -183,16 +183,19 @@ static int mark_raw_hash_blacklisted(const char *hash)
+ {
+ 	key_ref_t key;
+ 
+-	key = key_create_or_update(make_key_ref(blacklist_keyring, true),
+-				   "blacklist",
+-				   hash,
+-				   NULL,
+-				   0,
+-				   BLACKLIST_KEY_PERM,
+-				   KEY_ALLOC_NOT_IN_QUOTA |
+-				   KEY_ALLOC_BUILT_IN);
++	key = key_create(make_key_ref(blacklist_keyring, true),
++			 "blacklist",
++			 hash,
++			 NULL,
++			 0,
++			 BLACKLIST_KEY_PERM,
++			 KEY_ALLOC_NOT_IN_QUOTA |
++			 KEY_ALLOC_BUILT_IN);
+ 	if (IS_ERR(key)) {
+-		pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
++		if (PTR_ERR(key) == -EEXIST)
++			pr_warn("Duplicate blacklisted hash %s\n", hash);
++		else
++			pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
+ 		return PTR_ERR(key);
+ 	}
+ 	return 0;
+-- 
+2.38.1
 
