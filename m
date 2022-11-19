@@ -2,78 +2,68 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 834C5C433FE
-	for <keyrings@archiver.kernel.org>; Fri, 18 Nov 2022 04:05:51 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0C88DC4332F
+	for <keyrings@archiver.kernel.org>; Sat, 19 Nov 2022 05:20:28 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234902AbiKREFt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 17 Nov 2022 23:05:49 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54410 "EHLO
+        id S231664AbiKSFU1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 19 Nov 2022 00:20:27 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46494 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235178AbiKREE7 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 17 Nov 2022 23:04:59 -0500
-Received: from todd.t-8ch.de (todd.t-8ch.de [159.69.126.157])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 39E4598241;
-        Thu, 17 Nov 2022 20:04:41 -0800 (PST)
-From:   =?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <linux@weissschuh.net>
-DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=weissschuh.net;
-        s=mail; t=1668744275;
-        bh=P/SxYrzIDdEyGtP2C7/8aV4gnstE9Djts92CSEamDqg=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=LGhsJnfLe8kJSopHA7/MaHb4q5Q8CqAWSKTSOkQQE9L/WlUY2AaPzncPaEJsdc/0G
-         LFynYr1APxAyOrYQxvJKeqg2Y9dciSqUq15c0yGo/QEk28P2VXX/EJxngwSMBATS+0
-         +jmug/2mV1tZC4mAKwoRLS8YuZjCDrRRQm9VSezo=
-To:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Eric Snowberg <eric.snowberg@oracle.com>
-Cc:     =?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <linux@weissschuh.net>,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Pearson <markpearson@lenovo.com>,
-        linux-integrity@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v3 1/3] certs: log hash value on blacklist error
-Date:   Fri, 18 Nov 2022 05:03:41 +0100
-Message-Id: <20221118040343.2958-2-linux@weissschuh.net>
-X-Mailer: git-send-email 2.38.1
-In-Reply-To: <20221118040343.2958-1-linux@weissschuh.net>
-References: <20221118040343.2958-1-linux@weissschuh.net>
+        with ESMTP id S229592AbiKSFUZ (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sat, 19 Nov 2022 00:20:25 -0500
+Received: from szxga03-in.huawei.com (szxga03-in.huawei.com [45.249.212.189])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2C11C8DA78;
+        Fri, 18 Nov 2022 21:20:25 -0800 (PST)
+Received: from canpemm500009.china.huawei.com (unknown [172.30.72.55])
+        by szxga03-in.huawei.com (SkyGuard) with ESMTP id 4NDhjM6ZM4zFqPy;
+        Sat, 19 Nov 2022 13:17:11 +0800 (CST)
+Received: from [10.67.109.51] (10.67.109.51) by canpemm500009.china.huawei.com
+ (7.192.105.203) with Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id 15.1.2375.31; Sat, 19 Nov
+ 2022 13:20:23 +0800
+Message-ID: <225f716c-83af-2534-0c58-20b6d28acdc1@huawei.com>
+Date:   Sat, 19 Nov 2022 13:20:23 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1668744217; l=1006; i=linux@weissschuh.net; s=20211113; h=from:subject; bh=P/SxYrzIDdEyGtP2C7/8aV4gnstE9Djts92CSEamDqg=; b=wAaNSCu5g8hAafN2wCdcLQkehdyg+hECJ2kV43YgMZiDa+w0E7D8Jpy4P/iIuBZvrEBflMpL7Y9L ZSI0/RSAB4PmKBJpq/2dgHHR9Ia9MwKDzHfd9EUajCiWN6brQCAG
-X-Developer-Key: i=linux@weissschuh.net; a=ed25519; pk=9LP6KM4vD/8CwHW7nouRBhWLyQLcK1MkP6aTZbzUlj4=
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101
+ Thunderbird/91.3.2
+Subject: Re: [PATCH] KEYS: asymmetric: Fix build errors as symbol undefined
+To:     <dhowells@redhat.com>, <herbert@gondor.apana.org.au>,
+        <davem@davemloft.net>, <David.Woodhouse@intel.com>
+CC:     <keyrings@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <weiyongjun1@huawei.com>,
+        <yusongping@huawei.com>
+References: <20221115100512.20147-1-hucool.lihua@huawei.com>
+From:   "Lihua (lihua, ran)" <hucool.lihua@huawei.com>
+In-Reply-To: <20221115100512.20147-1-hucool.lihua@huawei.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.67.109.51]
+X-ClientProxiedBy: dggems705-chm.china.huawei.com (10.3.19.182) To
+ canpemm500009.china.huawei.com (7.192.105.203)
+X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Without this information these logs are not actionable.
+ping
 
-For example on duplicate blacklisted hashes reported by the system
-firmware users should be able to report the erroneous hashes to their
-system vendors.
-
-While we are at it use the dedicated format string for ERR_PTR.
-
-Fixes: 6364d106e041 ("certs: Allow root user to append signed hashes to the blacklist keyring")
-Signed-off-by: Thomas Weißschuh <linux@weissschuh.net>
----
- certs/blacklist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index 41f10601cc72..6e260c4b6a19 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -192,7 +192,7 @@ static int mark_raw_hash_blacklisted(const char *hash)
- 				   KEY_ALLOC_NOT_IN_QUOTA |
- 				   KEY_ALLOC_BUILT_IN);
- 	if (IS_ERR(key)) {
--		pr_err("Problem blacklisting hash (%ld)\n", PTR_ERR(key));
-+		pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
- 		return PTR_ERR(key);
- 	}
- 	return 0;
--- 
-2.38.1
-
+在 2022/11/15 18:05, Li Hua 写道:
+> pkcs7_supply_detached_data is called by x509_key_parser module, but not exported:
+>      ERROR: modpost: "pkcs7_supply_detached_data" [crypto/asymmetric_keys/x509_key_parser.ko] undefined!
+> 
+> Fixes: cfc411e7fff3 ("Move certificate handling to its own directory")
+> Signed-off-by: Li Hua <hucool.lihua@huawei.com>
+> ---
+>   crypto/asymmetric_keys/pkcs7_verify.c | 1 +
+>   1 file changed, 1 insertion(+)
+> 
+> diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+> index f6321c785714..4fa769c4bcdb 100644
+> --- a/crypto/asymmetric_keys/pkcs7_verify.c
+> +++ b/crypto/asymmetric_keys/pkcs7_verify.c
+> @@ -485,3 +485,4 @@ int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
+>   	pkcs7->data_len = datalen;
+>   	return 0;
+>   }
+> +EXPORT_SYMBOL_GPL(pkcs7_supply_detached_data);
+> 
