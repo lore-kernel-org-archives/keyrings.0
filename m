@@ -2,89 +2,98 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 03620C352A1
-	for <keyrings@archiver.kernel.org>; Thu, 24 Nov 2022 14:01:23 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A1D3EC4332F
+	for <keyrings@archiver.kernel.org>; Mon, 28 Nov 2022 01:12:03 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230260AbiKXOBV (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 24 Nov 2022 09:01:21 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50270 "EHLO
+        id S229575AbiK1BMC (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 27 Nov 2022 20:12:02 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34252 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230232AbiKXOAl (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 24 Nov 2022 09:00:41 -0500
-Received: from mail-wr1-x429.google.com (mail-wr1-x429.google.com [IPv6:2a00:1450:4864:20::429])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3AF9F14E6FF
-        for <keyrings@vger.kernel.org>; Thu, 24 Nov 2022 05:58:38 -0800 (PST)
-Received: by mail-wr1-x429.google.com with SMTP id bs21so2603120wrb.4
-        for <keyrings@vger.kernel.org>; Thu, 24 Nov 2022 05:58:38 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=cloudflare.com; s=google;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=eK2HhZFuYKBw9Q1i1G+ZYdrg12Uwlkokjhvoi/Q+HPY=;
-        b=D38n3pCWpXzjlzIFepFNOLyjuVk4JHdwHucQrpGgyIhDtSuhyieBCotwNYGLKhcsLH
-         WxDDyNkTx2URYWVCTOtt4E1mJGwMhjgeBkw6SpOjbmPg6AN5/NLb2LFYBM47AnH6o6ED
-         30mkG80aQOc2DLEBNgXILz/pS5ZcIa8CS5Pvk=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
-         :subject:date:message-id:reply-to;
-        bh=eK2HhZFuYKBw9Q1i1G+ZYdrg12Uwlkokjhvoi/Q+HPY=;
-        b=sy5Zri8OqtXd8YCxegxfmJp50gAw7juw9ksPdbTVlT3vOjB57JtKCt6824puQNxeb7
-         58sVK2a2UU/tg+adMnTReSR6kRfmju4ebylgwsupx15eow3xMvlovOH/K+ZJ7qi8z7m4
-         /k4P5GpUQUHMuQanY5undxxyhQdIWIcrh9BHTWNTctwM4n8aXZ3zQe3qrpdZz7eIbI22
-         Jx6c90vjcwGrZMgslTLEVY9hf+hYePmYjwMCy01DA9rDxaxIeWbdCfUW0Ohm3sAGUsGT
-         r2F8EfuyeKnozz0En31wSrIwXUZWE1T3SLpd8WCR2TyODaDLoy6DgwVTqwLP69H0Dr08
-         kdzg==
-X-Gm-Message-State: ANoB5pnlR7WbOgbvHmFGwGzZ63Eqev/+APzuxMd8NZnOY5hA/vIDv44N
-        XL5J9m+MiMeWTm/Yi42/xojTbA==
-X-Google-Smtp-Source: AA0mqf5sc5D8WHrub5ZtPIWUF7UHcLatkb1hu6n9mgvJRIQQ9In22C2OQPul1kbFM8wIG+G3AZNcNA==
-X-Received: by 2002:adf:e5c4:0:b0:236:9701:97d2 with SMTP id a4-20020adfe5c4000000b00236970197d2mr13893227wrn.185.1669298316053;
-        Thu, 24 Nov 2022 05:58:36 -0800 (PST)
-Received: from localhost.localdomain ([2a09:bac1:28c0:140::15:1b6])
-        by smtp.gmail.com with ESMTPSA id n14-20020a5d660e000000b00241bee11825sm1371440wru.103.2022.11.24.05.58.35
-        (version=TLS1_3 cipher=TLS_CHACHA20_POLY1305_SHA256 bits=256/256);
-        Thu, 24 Nov 2022 05:58:35 -0800 (PST)
-From:   Ignat Korchagin <ignat@cloudflare.com>
-To:     Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S . Miller" <davem@davemloft.net>,
-        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        keyrings@vger.kernel.org
-Cc:     kernel-team@cloudflare.com, lei he <helei.sig11@bytedance.com>
-Subject: [RESEND PATCH v2 4/4] crypto: remove unused field in pkcs8_parse_context
-Date:   Thu, 24 Nov 2022 13:58:12 +0000
-Message-Id: <20221124135812.26999-5-ignat@cloudflare.com>
-X-Mailer: git-send-email 2.37.1 (Apple Git-137.1)
-In-Reply-To: <20221124135812.26999-1-ignat@cloudflare.com>
-References: <20221124135812.26999-1-ignat@cloudflare.com>
+        with ESMTP id S229504AbiK1BMB (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 27 Nov 2022 20:12:01 -0500
+Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B29DDDE97;
+        Sun, 27 Nov 2022 17:12:00 -0800 (PST)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by ams.source.kernel.org (Postfix) with ESMTPS id 6A956B80C7E;
+        Mon, 28 Nov 2022 01:11:59 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id C94C9C433D6;
+        Mon, 28 Nov 2022 01:11:57 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1669597918;
+        bh=3fPkgOheoZmcDFjDgG6fQpiUasBlp2sBUqz1jQvqnhI=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=BUNbPlqeWIqVhKA5td9kEkPFInYFIHg0m89OhQcWBwdhZb4121VmMlvkJ/gA9W+Nu
+         Ygkvux1VAZaYUBYxEc8SIbIVptg6HE1FW/fa8y1FkrTncBnCkDQa6BY9aT97Xwu9AL
+         SDpwpRftypKGUH+jdWjd6j+Su12q+fU/o8uu4jBEJTnLKn+BfDYv/up/kXRfWrCPGQ
+         udTqhICUBKv/E49TqjJz1t7ubId/B1VAZhbRN4igi0Ou6m+AxO6iNiN/AHCA1Dh1yw
+         IbAQ0ELoo/oCxEZXDJnwIRj2A1yKH6pCzXZVDO6qovZHmCl/VSJCfV0PPVXfckfdFj
+         6zgvKBg5dMbFQ==
+Date:   Mon, 28 Nov 2022 03:11:53 +0200
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Thomas =?iso-8859-1?Q?Wei=DFschuh?= <linux@weissschuh.net>
+Cc:     =?iso-8859-1?Q?Micka=EBl_Sala=FCn?= <mic@digikod.net>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Eric Snowberg <eric.snowberg@oracle.com>,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Pearson <markpearson@lenovo.com>,
+        linux-integrity@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] certs: log hash value on blacklist error
+Message-ID: <Y4QK2cmptp4vpRj/@kernel.org>
+References: <20221118040343.2958-1-linux@weissschuh.net>
+ <20221118040343.2958-2-linux@weissschuh.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20221118040343.2958-2-linux@weissschuh.net>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: lei he <helei.sig11@bytedance.com>
+"Make blacklisted hash available in klog"
 
-remove unused field 'algo_oid' in pkcs8_parse_context
+On Fri, Nov 18, 2022 at 05:03:41AM +0100, Thomas Weiﬂschuh wrote:
+> Without this information these logs are not actionable.
 
-Signed-off-by: lei he <helei.sig11@bytedance.com>
----
- crypto/asymmetric_keys/pkcs8_parser.c | 1 -
- 1 file changed, 1 deletion(-)
+Without blacklisted hash?
 
-diff --git a/crypto/asymmetric_keys/pkcs8_parser.c b/crypto/asymmetric_keys/pkcs8_parser.c
-index e507c635ead5..f81317234331 100644
---- a/crypto/asymmetric_keys/pkcs8_parser.c
-+++ b/crypto/asymmetric_keys/pkcs8_parser.c
-@@ -21,7 +21,6 @@ struct pkcs8_parse_context {
- 	struct public_key *pub;
- 	unsigned long	data;			/* Start of data */
- 	enum OID	last_oid;		/* Last OID encountered */
--	enum OID	algo_oid;		/* Algorithm OID */
- 	u32		key_size;
- 	const void	*key;
- 	const void	*algo_param;
--- 
-2.30.2
+> For example on duplicate blacklisted hashes reported by the system
+> firmware users should be able to report the erroneous hashes to their
+> system vendors.
+> 
+> While we are at it use the dedicated format string for ERR_PTR.
 
+Lacks the beef so saying "while we are at it" makes no sense.
+
+> Fixes: 6364d106e041 ("certs: Allow root user to append signed hashes to the blacklist keyring")
+
+Why does this count as a bug?
+
+> Signed-off-by: Thomas Weiﬂschuh <linux@weissschuh.net>
+> ---
+>  certs/blacklist.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/certs/blacklist.c b/certs/blacklist.c
+> index 41f10601cc72..6e260c4b6a19 100644
+> --- a/certs/blacklist.c
+> +++ b/certs/blacklist.c
+> @@ -192,7 +192,7 @@ static int mark_raw_hash_blacklisted(const char *hash)
+>  				   KEY_ALLOC_NOT_IN_QUOTA |
+>  				   KEY_ALLOC_BUILT_IN);
+>  	if (IS_ERR(key)) {
+> -		pr_err("Problem blacklisting hash (%ld)\n", PTR_ERR(key));
+> +		pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
+>  		return PTR_ERR(key);
+>  	}
+>  	return 0;
+> -- 
+> 2.38.1
+> 
+
+BR, Jarkko
