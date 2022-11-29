@@ -2,106 +2,129 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5C002C433FE
-	for <keyrings@archiver.kernel.org>; Mon, 28 Nov 2022 10:38:26 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id BF471C433FE
+	for <keyrings@archiver.kernel.org>; Tue, 29 Nov 2022 23:25:28 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230330AbiK1KiY (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 28 Nov 2022 05:38:24 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35680 "EHLO
+        id S229529AbiK2XZ1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 29 Nov 2022 18:25:27 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55958 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230479AbiK1KiD (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 28 Nov 2022 05:38:03 -0500
-Received: from sender-of-o50.zoho.in (sender-of-o50.zoho.in [103.117.158.50])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B017313FA8;
-        Mon, 28 Nov 2022 02:37:28 -0800 (PST)
-ARC-Seal: i=1; a=rsa-sha256; t=1669631807; cv=none; 
-        d=zohomail.in; s=zohoarc; 
-        b=f7Vkrq9jkn0HdgdrF+Wh4ncq+GGSsebcyRYBNsqcYTHRclUJfK6GZePbRmQDC0pmLvF4cIbYkjB0tjmOqAjT9DuNtyXkv/v0BL2whbqlr60zcCG6YUti8RD9JBSyPwKA7OrvVudPVnUUzC1+RRdVg3I7NG9b2jZll5jPewQ9nn4=
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=zohomail.in; s=zohoarc; 
-        t=1669631807; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:In-Reply-To:MIME-Version:Message-ID:References:Subject:To; 
-        bh=tnLz2qpKPI3vYwMGy9lOfRIw4je11ytpVT+lhHW/+Qg=; 
-        b=MVkIZcWesgBR1eRTLS74wg54CR+GOa4tXB5fkrfalio75ubmQPbOPgSq0R7/dtlLXFGMmkSamKwP/onRlzpthjsZsufD7VSDUI7lqlM70QQjLmw7DWXAHrQUJrF+QtKnyB0IHAKnVn3OS7RwWXRZ3VJb9dmEkVWyTb/SqdRdS+k=
-ARC-Authentication-Results: i=1; mx.zohomail.in;
-        dkim=pass  header.i=siddh.me;
-        spf=pass  smtp.mailfrom=code@siddh.me;
-        dmarc=pass header.from=<code@siddh.me>
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1669631807;
-        s=zmail; d=siddh.me; i=code@siddh.me;
-        h=Message-ID:Date:Date:MIME-Version:Subject:Subject:From:From:To:To:Cc:Cc:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:Message-Id:Reply-To;
-        bh=tnLz2qpKPI3vYwMGy9lOfRIw4je11ytpVT+lhHW/+Qg=;
-        b=tfokIDKX5BgrbyGBN6WgA9XNMY5994pwLNdGxOGtdG6KNNb8kRC1PN5mtsFbg+ep
-        nybrNGyYVe+LUU3ElQbK8TKlTx6LgXYMgz2E0ljqcqyTt/RPpizIfmXlWhJUseqV8Ng
-        eXUHnFJeGQ+6Jgmmla5h2oyEhsqCgTWrfczIBaTw=
-Received: from [192.168.1.9] (106.201.114.188 [106.201.114.188]) by mx.zoho.in
-        with SMTPS id 1669631805587181.18913226273196; Mon, 28 Nov 2022 16:06:45 +0530 (IST)
-Message-ID: <6a22e287-9d90-85a9-f5e6-49e600bf0d80@siddh.me>
-Date:   Mon, 28 Nov 2022 16:06:44 +0530
+        with ESMTP id S229449AbiK2XZ0 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 29 Nov 2022 18:25:26 -0500
+Received: from mx0a-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 53B876DFE9;
+        Tue, 29 Nov 2022 15:25:26 -0800 (PST)
+Received: from pps.filterd (m0098420.ppops.net [127.0.0.1])
+        by mx0b-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 2ATMDkts025447;
+        Tue, 29 Nov 2022 23:25:11 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
+ : date : message-id : mime-version : content-transfer-encoding; s=pp1;
+ bh=WboJhXA+3D0c9oX9kVjsq7SefegsZAj6UY8UwbC3AS8=;
+ b=sddN2ZVgoQDZcRKAqTochzc7gZDx0pH9rSsWgYey1Wp+Au390zXYqv6ggIGMhzrtfILj
+ HdmuFaxr6/InuhhaHjpgEmXrkx42q8I/3uPrCo4v5qwBFTnzsPRt7FpxZ8fNXs4eVRKN
+ TVWAFSw1M0QlumvaDUXzDl3Cl3VdwmUq3KgFYix3bc7xIF9oKnvUZbtoK0YVW48uz2y5
+ Y7rFeNub74u4IqO0oTvvZVJT5FRdn3s1NBodq1HD7cJWu22SndW9OjL82zkAIZWwqLcR
+ eipLoNShPg6O9taZQ8JfJjnFE0DBYlr7A2LNTXm0RK64JXl0Vwf6L3M5iGe7Wv7kLrKI 6Q== 
+Received: from ppma03wdc.us.ibm.com (ba.79.3fa9.ip4.static.sl-reverse.com [169.63.121.186])
+        by mx0b-001b2d01.pphosted.com (PPS) with ESMTPS id 3m5tpahgx0-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 29 Nov 2022 23:25:11 +0000
+Received: from pps.filterd (ppma03wdc.us.ibm.com [127.0.0.1])
+        by ppma03wdc.us.ibm.com (8.16.1.2/8.16.1.2) with SMTP id 2ATNLQbx019689;
+        Tue, 29 Nov 2022 23:25:11 GMT
+Received: from b03cxnp07028.gho.boulder.ibm.com (b03cxnp07028.gho.boulder.ibm.com [9.17.130.15])
+        by ppma03wdc.us.ibm.com with ESMTP id 3m3ae9g5b6-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Tue, 29 Nov 2022 23:25:11 +0000
+Received: from smtpav03.dal12v.mail.ibm.com ([9.208.128.129])
+        by b03cxnp07028.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 2ATNPCaG45744742
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Tue, 29 Nov 2022 23:25:12 GMT
+Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id D92355803F;
+        Tue, 29 Nov 2022 23:25:09 +0000 (GMT)
+Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id BA33658060;
+        Tue, 29 Nov 2022 23:25:08 +0000 (GMT)
+Received: from rhel-laptop.ibm.com.com (unknown [9.160.99.100])
+        by smtpav03.dal12v.mail.ibm.com (Postfix) with ESMTP;
+        Tue, 29 Nov 2022 23:25:08 +0000 (GMT)
+From:   gjoyce@linux.vnet.ibm.com
+To:     linux-block@vger.kernel.org
+Cc:     linuxppc-dev@lists.ozlabs.org, jonathan.derrick@linux.dev,
+        brking@linux.vnet.ibm.com, msuchanek@suse.de, mpe@ellerman.id.au,
+        nayna@linux.ibm.com, axboe@kernel.dk, akpm@linux-foundation.org,
+        gjoyce@linux.vnet.ibm.com, keyrings@vger.kernel.org
+Subject: [PATCH v3 0/3] sed-opal: keyrings, discovery, revert, key store
+Date:   Tue, 29 Nov 2022 17:25:03 -0600
+Message-Id: <20221129232506.3735672-1-gjoyce@linux.vnet.ibm.com>
+X-Mailer: git-send-email 2.31.1
 MIME-Version: 1.0
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101
- Thunderbird/102.5.0
-Subject: Re: [RESEND PATCH v2 0/2] watch_queue: Clean up some code
-From:   Siddh Raman Pant <code@siddh.me>
-To:     Mauro Carvalho Chehab <mchehab@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        "Fabio M. De Francesco" <fmdefrancesco@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Christophe JAILLET <christophe.jaillet@wanadoo.fr>,
-        Eric Biggers <ebiggers@kernel.org>
-Cc:     linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        keyrings <keyrings@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-References: <cover.1668248462.git.code@siddh.me>
-Content-Language: en-US, en-GB, hi-IN
-In-Reply-To: <cover.1668248462.git.code@siddh.me>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-ZohoMailClient: External
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-GUID: hpgfMOaHUaxc0efIFlizZvSnGXKQX7yq
+X-Proofpoint-ORIG-GUID: hpgfMOaHUaxc0efIFlizZvSnGXKQX7yq
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.219,Aquarius:18.0.895,Hydra:6.0.545,FMLib:17.11.122.1
+ definitions=2022-11-29_13,2022-11-29_01,2022-06-22_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 priorityscore=1501
+ suspectscore=0 mlxlogscore=999 mlxscore=0 phishscore=0 lowpriorityscore=0
+ clxscore=1015 impostorscore=0 malwarescore=0 spamscore=0 adultscore=0
+ bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2210170000 definitions=main-2211290138
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sat, 12 Nov 2022 16:00:39 +0530, Siddh Raman Pant wrote:
-> There is a dangling reference to pipe in a watch_queue after clearing it.
-> Thus, NULL that pointer while clearing.
-> 
-> This change renders wqueue->defunct superfluous, as the latter is only used
-> to check if watch_queue is cleared. With this change, the pipe is NULLed
-> while clearing, so we can just check if the pipe is NULL.
-> 
-> Extending comment for watch_queue->pipe in the definition of watch_queue
-> made the comment conventionally too long (it was already past 80 chars),
-> so I have changed the struct annotations to be kerneldoc-styled, so that
-> I can extend the comment mentioning that the pipe is NULL when watch_queue
-> is cleared. In the process, I have also hopefully improved documentation
-> by documenting things which weren't documented before.
-> 
-> Changes in v2:
-> - Merged the NULLing and removing defunct patches.
-> - Removed READ_ONCE barrier in lock_wqueue().
-> - Improved and fixed errors in struct docs.
-> - Better commit messages.
-> 
-> Original date of posting patch: 6 Aug 2022
-> 
-> Siddh Raman Pant (2):
->   include/linux/watch_queue: Improve documentation
->   kernel/watch_queue: NULL the dangling *pipe, and use it for clear
->     check
-> 
->  include/linux/watch_queue.h | 100 ++++++++++++++++++++++++++----------
->  kernel/watch_queue.c        |  12 ++---
->  2 files changed, 79 insertions(+), 33 deletions(-)
-> 
+From: Greg Joyce <gjoyce@linux.vnet.ibm.com>
 
-Hi,
+TCG SED Opal is a specification from The Trusted Computing Group
+that allows self encrypting storage devices (SED) to be locked at
+power on and require an authentication key to unlock the drive.
 
-Please review the quoted patches, which can be found on:
-https://lore.kernel.org/all/cover.1668248462.git.code@siddh.me/
+The current SED Opal implementation in the block driver
+requires that authentication keys be provided in an ioctl
+so that they can be presented to the underlying SED
+capable drive. Currently, the key is typically entered by
+a user with an application like sedutil or sedcli. While
+this process works, it does not lend itself to automation
+like unlock by a udev rule.
 
-Please let me know if any changes are required.
+The SED block driver has been extended so it can alternatively
+obtain a key from a sed-opal kernel keyring. The SED ioctls
+will indicate the source of the key, either directly in the
+ioctl data or from the keyring.
 
-Thanks,
-Siddh
+Two new SED ioctls have also been added. These are:
+  1) IOC_OPAL_REVERT_LSP to revert LSP state
+  2) IOC_OPAL_DISCOVERY to discover drive capabilities/state
+
+change log:
+	- rebase to 6.x
+	- added latest reviews
+        - removed platform functions for persistent key storage
+        - replaced key update logic with key_create_or_update()
+        - minor bracing and padding changes
+        - add error returns
+        - opal_key structure is application provided but kernel
+          verified
+        - added brief description of TCG SED Opal
+
+
+Greg Joyce (3):
+  block: sed-opal: Implement IOC_OPAL_DISCOVERY
+  block: sed-opal: Implement IOC_OPAL_REVERT_LSP
+  block: sed-opal: keyring support for SED keys
+
+ block/Kconfig                 |   1 +
+ block/opal_proto.h            |   4 +
+ block/sed-opal.c              | 252 +++++++++++++++++++++++++++++++++-
+ include/linux/sed-opal.h      |   5 +
+ include/uapi/linux/sed-opal.h |  25 +++-
+ 5 files changed, 281 insertions(+), 6 deletions(-)
+
+Signed-off-by: Greg Joyce <gjoyce@linux.vnet.ibm.com>
+base-commit: 59d0d52c30d4991ac4b329f049cc37118e00f5b0
+-- 
+gjoyce@linux.vnet.ibm.com
+
