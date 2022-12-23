@@ -2,177 +2,67 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 10D21C4167B
-	for <keyrings@archiver.kernel.org>; Thu, 22 Dec 2022 16:25:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7A85EC4167B
+	for <keyrings@archiver.kernel.org>; Fri, 23 Dec 2022 06:25:47 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S235355AbiLVQZw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 22 Dec 2022 11:25:52 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45166 "EHLO
+        id S229506AbiLWGZp (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 23 Dec 2022 01:25:45 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42636 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235285AbiLVQZt (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 22 Dec 2022 11:25:49 -0500
-Received: from ams.source.kernel.org (ams.source.kernel.org [145.40.68.75])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DC0F3BE2A;
-        Thu, 22 Dec 2022 08:25:47 -0800 (PST)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by ams.source.kernel.org (Postfix) with ESMTPS id 96262B803F2;
-        Thu, 22 Dec 2022 16:25:46 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 61422C433EF;
-        Thu, 22 Dec 2022 16:25:42 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1671726345;
-        bh=I1QQ3wj0EZ2LVmZ8RlrxP6BvTX3HOQCzJhPb1JK3S5Y=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=aBvV5hjgmYtdnsRh/a6xDn8u4JdX5WJaAgikE/hwoGibLaiBICdjG89ctJI1/f8bi
-         ep42tSDdAVcnj6ahLM8Kpf9reEuhobVNB2PxBNIqGbrVZRa+GSAKcZOU4jygQL9m4x
-         XKaFPvG/r7anSl75C0i8wWTg6CvZSJyFfdK5AoTKDh70xsZjc2wh/ZvY30x2QxklEI
-         8bbmSrhXUa2KMOUDOdIKHPjxk4byrn1GiOx22dhx6kDKOxEl8q2jbpJHppy5VDYF4j
-         lCD/S2QHGr9+Ih7rzONuTUaGO7KYxYCWsd3TeJgcFaV2yJTK6wT62N8lpgH4JR5r/o
-         YclT7GIzx1o0g==
-From:   Masahiro Yamada <masahiroy@kernel.org>
-To:     linux-kbuild@vger.kernel.org
-Cc:     linux-kernel@vger.kernel.org,
-        Masahiro Yamada <masahiroy@kernel.org>,
-        Christophe Leroy <christophe.leroy@csgroup.eu>,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Liam Howlett <liam.howlett@oracle.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Nicholas Piggin <npiggin@gmail.com>,
-        Zeng Heng <zengheng4@huawei.com>, keyrings@vger.kernel.org,
-        linux-doc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 3/5] kbuild: do not print extra logs for V=2
-Date:   Fri, 23 Dec 2022 01:25:33 +0900
-Message-Id: <20221222162535.1578462-3-masahiroy@kernel.org>
-X-Mailer: git-send-email 2.34.1
-In-Reply-To: <20221222162535.1578462-1-masahiroy@kernel.org>
-References: <20221222162535.1578462-1-masahiroy@kernel.org>
+        with ESMTP id S229483AbiLWGZo (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 23 Dec 2022 01:25:44 -0500
+Received: from formenos.hmeau.com (helcar.hmeau.com [216.24.177.18])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9BA04E5;
+        Thu, 22 Dec 2022 22:25:41 -0800 (PST)
+Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
+        by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
+        id 1p8bUa-009jLe-9h; Fri, 23 Dec 2022 14:25:17 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Fri, 23 Dec 2022 14:25:16 +0800
+Date:   Fri, 23 Dec 2022 14:25:16 +0800
+From:   Herbert Xu <herbert@gondor.apana.org.au>
+To:     Eric Biggers <ebiggers@kernel.org>
+Cc:     Roberto Sassu <roberto.sassu@huaweicloud.com>, dhowells@redhat.com,
+        davem@davemloft.net, zohar@linux.ibm.com,
+        dmitry.kasatkin@gmail.com, paul@paul-moore.com, jmorris@namei.org,
+        serge@hallyn.com, linux-integrity@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roberto Sassu <roberto.sassu@huawei.com>,
+        Tadeusz Struk <tadeusz.struk@intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [v2 PATCH] lib/mpi: Fix buffer overrun when SG is too long
+Message-ID: <Y6VJzBcN3LvY5j60@gondor.apana.org.au>
+References: <20221209150633.1033556-1-roberto.sassu@huaweicloud.com>
+ <Y5OGr59A9wo86rYY@sol.localdomain>
+ <fa8a307541735ec9258353d8ccb75c20bb22aafe.camel@huaweicloud.com>
+ <Y5bxJ5UZNPzxwtoy@gondor.apana.org.au>
+ <0f80852578436dbba7a0fce03d86c3fa2d38c571.camel@huaweicloud.com>
+ <Y6FjQPZiJYTEG1zI@gondor.apana.org.au>
+ <a04e6458-6814-97fc-f03a-617809e2e6ce@huaweicloud.com>
+ <Y6IbWA5aZeBnn4n2@gmail.com>
+ <Y6Kthn+rIUnCEJWz@gondor.apana.org.au>
+ <Y6NySck5p/DXhSUJ@sol.localdomain>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Y6NySck5p/DXhSUJ@sol.localdomain>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Some scripts increase the verbose level when V=1, but others when
-not V=0.
+On Wed, Dec 21, 2022 at 12:53:29PM -0800, Eric Biggers wrote:
+>
+> That's fine, I guess.  One quirk of the above approach is that if the last
+> needed element of the scatterlist has a lot of extra pages, this will iterate
+> through all those extra pages, processing 0 bytes from each.  It could just stop
+> when done.  I suppose it's not worth worrying about that case, though.
 
-I think the former is correct because V=2 is not a log level but
-a switch to print the reason for rebuilding.
+Ideally this should be handled in the sg_miter interface, IOW,
+it should allow us to cap the SG list at a certain number of bytes
+as opposed to a certain number of entries.
 
-Signed-off-by: Masahiro Yamada <masahiroy@kernel.org>
----
-
- Documentation/Makefile                 | 2 +-
- arch/powerpc/kernel/prom_init_check.sh | 9 ++++-----
- certs/extract-cert.c                   | 9 ++++++---
- scripts/asn1_compiler.c                | 4 ++--
- scripts/kernel-doc                     | 4 ++--
- 5 files changed, 15 insertions(+), 13 deletions(-)
-
-diff --git a/Documentation/Makefile b/Documentation/Makefile
-index bb73dcb5ed05..023fa658a0a8 100644
---- a/Documentation/Makefile
-+++ b/Documentation/Makefile
-@@ -28,7 +28,7 @@ BUILDDIR      = $(obj)/output
- PDFLATEX      = xelatex
- LATEXOPTS     = -interaction=batchmode -no-shell-escape
- 
--ifeq ($(KBUILD_VERBOSE),0)
-+ifeq ($(findstring 1, $(KBUILD_VERBOSE)),)
- SPHINXOPTS    += "-q"
- endif
- 
-diff --git a/arch/powerpc/kernel/prom_init_check.sh b/arch/powerpc/kernel/prom_init_check.sh
-index 311890d71c4c..5a319863f289 100644
---- a/arch/powerpc/kernel/prom_init_check.sh
-+++ b/arch/powerpc/kernel/prom_init_check.sh
-@@ -51,11 +51,10 @@ do
- 	# a leading . on the name, so strip it off here.
- 	UNDEF="${UNDEF#.}"
- 
--	if [ $KBUILD_VERBOSE ]; then
--		if [ $KBUILD_VERBOSE -ne 0 ]; then
--			echo "Checking prom_init.o symbol '$UNDEF'"
--		fi
--	fi
-+	case "$KBUILD_VERBOSE" in
-+	*1*)
-+		echo "Checking prom_init.o symbol '$UNDEF'" ;;
-+	esac
- 
- 	OK=0
- 	for WHITE in $WHITELIST
-diff --git a/certs/extract-cert.c b/certs/extract-cert.c
-index 8c1fb9a70d66..d3a0ff2867c0 100644
---- a/certs/extract-cert.c
-+++ b/certs/extract-cert.c
-@@ -78,7 +78,7 @@ static void drain_openssl_errors(void)
- static const char *key_pass;
- static BIO *wb;
- static char *cert_dst;
--static int kbuild_verbose;
-+static bool verbose;
- 
- static void write_cert(X509 *x509)
- {
-@@ -90,19 +90,22 @@ static void write_cert(X509 *x509)
- 	}
- 	X509_NAME_oneline(X509_get_subject_name(x509), buf, sizeof(buf));
- 	ERR(!i2d_X509_bio(wb, x509), "%s", cert_dst);
--	if (kbuild_verbose)
-+	if (verbose)
- 		fprintf(stderr, "Extracted cert: %s\n", buf);
- }
- 
- int main(int argc, char **argv)
- {
- 	char *cert_src;
-+	char *kbuild_verbose;
- 
- 	OpenSSL_add_all_algorithms();
- 	ERR_load_crypto_strings();
- 	ERR_clear_error();
- 
--	kbuild_verbose = atoi(getenv("KBUILD_VERBOSE")?:"0");
-+	kbuild_verbose = getenv("KBUILD_VERBOSE");
-+	if (kbuild_verbose && strchr(kbuild_verbose, '1'))
-+		verbose = true;
- 
-         key_pass = getenv("KBUILD_SIGN_PIN");
- 
-diff --git a/scripts/asn1_compiler.c b/scripts/asn1_compiler.c
-index 71d4a7c87900..7b6756a8c15d 100644
---- a/scripts/asn1_compiler.c
-+++ b/scripts/asn1_compiler.c
-@@ -567,8 +567,8 @@ int main(int argc, char **argv)
- 	int fd;
- 
- 	kbuild_verbose = getenv("KBUILD_VERBOSE");
--	if (kbuild_verbose)
--		verbose_opt = atoi(kbuild_verbose);
-+	if (kbuild_verbose && strchr(kbuild_verbose, '1'))
-+		verbose_opt = true;
- 
- 	while (argc > 4) {
- 		if (strcmp(argv[1], "-v") == 0)
-diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-index 54b0893cae66..8ad0a7d68d9a 100755
---- a/scripts/kernel-doc
-+++ b/scripts/kernel-doc
-@@ -175,8 +175,8 @@ my $declaration_start_line;
- my ($type, $declaration_name, $return_type);
- my ($newsection, $newcontents, $prototype, $brcount, %source_map);
- 
--if (defined($ENV{'KBUILD_VERBOSE'})) {
--	$verbose = "$ENV{'KBUILD_VERBOSE'}";
-+if (defined($ENV{'KBUILD_VERBOSE'}) && $ENV{'KBUILD_VERBOSE'} =~ '1') {
-+	$verbose = 1;
- }
- 
- if (defined($ENV{'KCFLAGS'})) {
+Cheers,
 -- 
-2.34.1
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
