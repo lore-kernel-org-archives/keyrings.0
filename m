@@ -2,103 +2,153 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 98B35C63797
-	for <keyrings@archiver.kernel.org>; Fri,  6 Jan 2023 21:22:20 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4AA04C53210
+	for <keyrings@archiver.kernel.org>; Sun,  8 Jan 2023 10:52:48 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S236697AbjAFVVt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 6 Jan 2023 16:21:49 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:56582 "EHLO
+        id S232985AbjAHKwr (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 8 Jan 2023 05:52:47 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40260 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S236897AbjAFVVD (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 6 Jan 2023 16:21:03 -0500
-Received: from mail-pg1-x532.google.com (mail-pg1-x532.google.com [IPv6:2607:f8b0:4864:20::532])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BBF91872A7
-        for <keyrings@vger.kernel.org>; Fri,  6 Jan 2023 13:20:27 -0800 (PST)
-Received: by mail-pg1-x532.google.com with SMTP id 7so2008899pga.1
-        for <keyrings@vger.kernel.org>; Fri, 06 Jan 2023 13:20:27 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google;
-        h=cc:to:subject:message-id:date:from:in-reply-to:references
-         :mime-version:from:to:cc:subject:date:message-id:reply-to;
-        bh=D735tsLCLRgwW3YDOAiPa/WNPif3+zSkF8bjSdhwvpU=;
-        b=LCpXDGuAzkW6sAhl68OaEbDsXqglF6dU/jW/kfKBzhHs+z1qhbx2IEp58dm/R1oBrX
-         UiQjvIqDD6EnIF3WQXUqc/MAlDD5VHHdo65X6GQVp1xZbjUy1WN5QYHpPpnhDYV+R2ss
-         0pBmHYifxggc1sm7qYLxBvPfqyHnMLdTV0MtUM6hbXcYyFfk35bDyoZ/97bYaK+NsyZO
-         Zh1JFd/wSIlDzliZkD/7fmJPLjCiPe9m5rd12pkBjc5eQkmy/+LEtOQSG6eLYU0gl/m7
-         G5DrMTOLLTuGVHXBOz8r9FKjLE1tHHQlQvs9nkuxpXNMUYtGpkpQ3UPdApPYcJcqMrOW
-         XCow==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=cc:to:subject:message-id:date:from:in-reply-to:references
-         :mime-version:x-gm-message-state:from:to:cc:subject:date:message-id
-         :reply-to;
-        bh=D735tsLCLRgwW3YDOAiPa/WNPif3+zSkF8bjSdhwvpU=;
-        b=W5+txadysysYk4ovcymeFioSqY4MVaHf5t/5EUdnsv12pTh99BM+HC8YTUKdc1k2oh
-         sgziVRReIfWW5LLY9Vxl8Kd/Z8ZLr57jaGqpIkAxuTKuCg5lAY816GgKLRJ9E9VmofSX
-         HFayp+reFRbgCOJIYiJJcyrV6XRBIJnHp5AjH+yfjUwz2N+6a4VOTfXqYDTdhln2zQzd
-         JRAJCvK7I4fNtvknZr9z2NMBX4D//z9X8vpRBnq7DQjiPM/WGITJckCOGj9ohSqplfmZ
-         0aXjlUp+3OWSjQd+9Kwo+oiiLy62WB+bHrJv2Avoe5TnT+vzv/Fmq6kHdbdmV3s1Pqa8
-         JDFw==
-X-Gm-Message-State: AFqh2krXJrO4ePuCJ/ahB1o/T/H3JWb3NBaR9OqT3EaZGRnrIJPcORX8
-        7h6WSUOGQo95CsHy1tYNST5WQd2bmn/9aOc2eGib
-X-Google-Smtp-Source: AMrXdXtBMlS9ssXipRSFnItDt9FgTwfSPmT0zlLXAUJLFwl6FtCHAqOxyXkHSoqChwk5HYucgzsgf7dZo879AqIAl3g=
-X-Received: by 2002:a63:4e5d:0:b0:478:42f:5a3d with SMTP id
- o29-20020a634e5d000000b00478042f5a3dmr3486392pgl.3.1673040027275; Fri, 06 Jan
- 2023 13:20:27 -0800 (PST)
+        with ESMTP id S231454AbjAHKwq (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 8 Jan 2023 05:52:46 -0500
+Received: from sender-of-o50.zoho.in (sender-of-o50.zoho.in [103.117.158.50])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6D85C13E26;
+        Sun,  8 Jan 2023 02:52:43 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1673174207; cv=none; 
+        d=zohomail.in; s=zohoarc; 
+        b=QbZrTUpSmkOYv7vjHClErIi+mibauz+HcRYC/sNwC102L6vBR7Iq5X2+77N6rRkPvB9Coo03qoiNIYbgZUvLdPOF24KFsZuqWfOthzPU+omDMpzRmJQjugzGc4uGa7B9WDTY8pBJ7Yc4Q7o2yrg1+u+8QZP0YfiQAmHEXXpTyCY=
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=zohomail.in; s=zohoarc; 
+        t=1673174207; h=Content-Type:Content-Transfer-Encoding:Cc:Date:From:In-Reply-To:MIME-Version:Message-ID:References:Subject:To; 
+        bh=+jigenlUh+9Y3CbE3GiZGHYIBoFAXIN6GyyVO/YTVrc=; 
+        b=V0vjWOsbpi5xmCzh2i6OxFh14YCdxkOx6qNi/ktu59JzvmPve0VdmxVJjolIhX0n69W9NTXm+GfANKvnAfb1MJ7UZxvPgr08ij01bpOjFg5qcCMHFffrmWPB1KjjpNllx4XHzl9uMpRFSdJ7fS1RTMKkBZ975s5zZsVpeywC2ZQ=
+ARC-Authentication-Results: i=1; mx.zohomail.in;
+        dkim=pass  header.i=siddh.me;
+        spf=pass  smtp.mailfrom=code@siddh.me;
+        dmarc=pass header.from=<code@siddh.me>
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1673174207;
+        s=zmail; d=siddh.me; i=code@siddh.me;
+        h=From:From:To:To:Cc:Cc:Message-ID:Subject:Subject:Date:Date:In-Reply-To:References:MIME-Version:Content-Transfer-Encoding:Content-Type:Message-Id:Reply-To;
+        bh=+jigenlUh+9Y3CbE3GiZGHYIBoFAXIN6GyyVO/YTVrc=;
+        b=hwfg/lH5Z7JO4CQq4K81aOEinouUIe9huOOIGpGNr62JtVh8nPKB+ZslVGThEjoJ
+        4RlZsaGGB5zQe2tZPxerFxq8bgwzOIrkxA669FZU8CPV/GSVQG8LEpubq8OPwcl17ei
+        K1IcSijCT/hmSwzW6UFvfWumU/NbFH0YJgWHhNxU=
+Received: from kampyooter.. (110.226.31.37 [110.226.31.37]) by mx.zoho.in
+        with SMTPS id 167317420635758.71149531098649; Sun, 8 Jan 2023 16:06:46 +0530 (IST)
+From:   Siddh Raman Pant <code@siddh.me>
+To:     Mauro Carvalho Chehab <mchehab@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        "Fabio M. De Francesco" <fmdefrancesco@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Christophe JAILLET <christophe.jaillet@wanadoo.fr>,
+        Eric Biggers <ebiggers@kernel.org>
+Cc:     keyrings <keyrings@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Message-ID: <f2eb717a205279633ca75b4d9790ad3eb5084a70.1673173920.git.code@siddh.me>
+Subject: [PATCH v3 2/2] kernel/watch_queue: NULL the dangling *pipe, and use it for clear check
+Date:   Sun,  8 Jan 2023 16:06:32 +0530
+X-Mailer: git-send-email 2.39.0
+In-Reply-To: <cover.1673173920.git.code@siddh.me>
+References: <cover.1673173920.git.code@siddh.me>
 MIME-Version: 1.0
-References: <20230102204537.4842-1-rdunlap@infradead.org>
-In-Reply-To: <20230102204537.4842-1-rdunlap@infradead.org>
-From:   Paul Moore <paul@paul-moore.com>
-Date:   Fri, 6 Jan 2023 16:20:16 -0500
-Message-ID: <CAHC9VhTCm36EO0TH1bHO92WSChmWaCzW_uvDaLLg04=UDv5Rqw@mail.gmail.com>
-Subject: Re: [PATCH] KEYS: trusted: tpm2: use correct function name in kernel-doc
-To:     Randy Dunlap <rdunlap@infradead.org>
-Cc:     linux-security-module@vger.kernel.org,
-        James Bottomley <jejb@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+X-ZohoMailClient: External
+Content-Type: text/plain; charset=utf8
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, Jan 2, 2023 at 3:45 PM Randy Dunlap <rdunlap@infradead.org> wrote:
->
-> Correct the function name in the kernel-doc notation to prevent
-> a kernel-doc warning:
->
-> security/keys/trusted-keys/trusted_tpm2.c:203: warning: expecting prototype for tpm_buf_append_auth(). Prototype was for tpm2_buf_append_auth() instead
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: James Bottomley <jejb@linux.ibm.com>
-> Cc: Jarkko Sakkinen <jarkko@kernel.org>
-> Cc: Mimi Zohar <zohar@linux.ibm.com>
-> Cc: linux-integrity@vger.kernel.org
-> Cc: keyrings@vger.kernel.org
-> Cc: Paul Moore <paul@paul-moore.com>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: "Serge E. Hallyn" <serge@hallyn.com>
-> ---
->  security/keys/trusted-keys/trusted_tpm2.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+NULL the dangling pipe reference while clearing watch_queue.
 
-Reviewed-by: Paul Moore <paul@paul-moore.com>
+If not done, a reference to a freed pipe remains in the watch_queue,
+as this function is called before freeing a pipe in free_pipe_info()
+(see line 834 of fs/pipe.c).
 
-> diff -- a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-> --- a/security/keys/trusted-keys/trusted_tpm2.c
-> +++ b/security/keys/trusted-keys/trusted_tpm2.c
-> @@ -186,7 +186,7 @@ int tpm2_key_priv(void *context, size_t
->  }
->
->  /**
-> - * tpm_buf_append_auth() - append TPMS_AUTH_COMMAND to the buffer.
-> + * tpm2_buf_append_auth() - append TPMS_AUTH_COMMAND to the buffer.
->   *
->   * @buf: an allocated tpm_buf instance
->   * @session_handle: session handle
+The sole use of wqueue->defunct is for checking if the watch queue has
+been cleared, but wqueue->pipe is also NULLed while clearing.
 
--- 
-paul-moore.com
+Thus, wqueue->defunct is superfluous, as wqueue->pipe can be checked
+for NULL. Hence, the former can be removed.
+
+Signed-off-by: Siddh Raman Pant <code@siddh.me>
+---
+ include/linux/watch_queue.h |  4 +---
+ kernel/watch_queue.c        | 12 ++++++------
+ 2 files changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/watch_queue.h b/include/linux/watch_queue.h
+index 7f6eea4a33a6..63592c597ec9 100644
+--- a/include/linux/watch_queue.h
++++ b/include/linux/watch_queue.h
+@@ -55,7 +55,7 @@ struct watch_filter {
+  *
+  * @rcu: RCU head
+  * @filter: Filter to use on watches
+- * @pipe: The pipe we're using as a buffer
++ * @pipe: The pipe we're using as a buffer, NULL when queue is cleared/clo=
+sed
+  * @watches: Contributory watches
+  * @notes: Preallocated notifications
+  * @notes_bitmap: Allocation bitmap for notes
+@@ -63,7 +63,6 @@ struct watch_filter {
+  * @lock: To serialize accesses and removes
+  * @nr_notes: Number of notes
+  * @nr_pages: Number of pages in notes[]
+- * @defunct: True when queues closed
+  */
+ struct watch_queue {
+ =09struct rcu_head=09=09rcu;
+@@ -76,7 +75,6 @@ struct watch_queue {
+ =09spinlock_t=09=09lock;
+ =09unsigned int=09=09nr_notes;
+ =09unsigned int=09=09nr_pages;
+-=09bool=09=09=09defunct;
+ };
+=20
+ /**
+diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
+index a6f9bdd956c3..6ead921c15c0 100644
+--- a/kernel/watch_queue.c
++++ b/kernel/watch_queue.c
+@@ -43,7 +43,7 @@ MODULE_LICENSE("GPL");
+ static inline bool lock_wqueue(struct watch_queue *wqueue)
+ {
+ =09spin_lock_bh(&wqueue->lock);
+-=09if (unlikely(wqueue->defunct)) {
++=09if (unlikely(!wqueue->pipe)) {
+ =09=09spin_unlock_bh(&wqueue->lock);
+ =09=09return false;
+ =09}
+@@ -105,9 +105,6 @@ static bool post_one_notification(struct watch_queue *w=
+queue,
+ =09unsigned int head, tail, mask, note, offset, len;
+ =09bool done =3D false;
+=20
+-=09if (!pipe)
+-=09=09return false;
+-
+ =09spin_lock_irq(&pipe->rd_wait.lock);
+=20
+ =09mask =3D pipe->ring_size - 1;
+@@ -603,8 +600,11 @@ void watch_queue_clear(struct watch_queue *wqueue)
+ =09rcu_read_lock();
+ =09spin_lock_bh(&wqueue->lock);
+=20
+-=09/* Prevent new notifications from being stored. */
+-=09wqueue->defunct =3D true;
++=09/*
++=09 * This pipe can be freed by callers like free_pipe_info().
++=09 * Removing this reference also prevents new notifications.
++=09 */
++=09wqueue->pipe =3D NULL;
+=20
+ =09while (!hlist_empty(&wqueue->watches)) {
+ =09=09watch =3D hlist_entry(wqueue->watches.first, struct watch, queue_nod=
+e);
+--=20
+2.39.0
+
+
