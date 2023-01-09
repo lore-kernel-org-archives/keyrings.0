@@ -2,103 +2,258 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 200FFC5479D
-	for <keyrings@archiver.kernel.org>; Mon,  9 Jan 2023 17:56:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 435DEC54EBD
+	for <keyrings@archiver.kernel.org>; Mon,  9 Jan 2023 23:59:58 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237335AbjAIR4u (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 9 Jan 2023 12:56:50 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47882 "EHLO
+        id S234850AbjAIX75 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 9 Jan 2023 18:59:57 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47496 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229648AbjAIR4T (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 9 Jan 2023 12:56:19 -0500
-Received: from mail-wr1-x42d.google.com (mail-wr1-x42d.google.com [IPv6:2a00:1450:4864:20::42d])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 91A3E40C28;
-        Mon,  9 Jan 2023 09:51:59 -0800 (PST)
-Received: by mail-wr1-x42d.google.com with SMTP id h16so9008220wrz.12;
-        Mon, 09 Jan 2023 09:51:59 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20210112;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to;
-        bh=2L4Nx5qVuAviVSz8W0zvvT/84e//kF+LGBMYcQHzhto=;
-        b=OAT6bNAVgnQlY6KivDvwimWCgYQAWlKSZU+FsNS+g1O58an01D5QYUB38PZkGtBBX+
-         HQ0aSoY8+TgnzHpcBM9LJh0ySnmFD4xbmxZqKXUtYE2SOdBDBeyY9/cXu6MgS7hgnTEW
-         3wVOnf02ZgPi8H+N1lG9t7CGSi5jl6JJ7fno+ern+drJQLIxnfOV8ckd9Qxc29Sf5vvQ
-         BuB187f2XcDAmLtcgD6OzUcWuf7AvQwyU+/jxT7/La71KCQWp4zQTIfX8bgNNoNCO3rE
-         gDuHnSHWENE1IY9C15MNUyOmXxsol6MO1dFrBp0P7wF04CbPw+O6jTsXefbKyJq+g/Ev
-         plyQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-message-state:from:to:cc:subject:date:message-id
-         :reply-to;
-        bh=2L4Nx5qVuAviVSz8W0zvvT/84e//kF+LGBMYcQHzhto=;
-        b=3vZol5k0hC2L8yyHn6pfsDQTe1O20ZkfCsWBeFlg/KEXrLfe2KM04YpIhydTpTX5/8
-         JB6/P7Oa16hEsbe/4lTHuQE5U6VHHFaYTo3IsDVLrUxRkCpJk1ZD0AUM9+krn/D9vCrZ
-         dp9KLXHHTNzfOGBAxy9uTcTYTeIcbtas7KtvqgxWtFHqWxFMStNggbkR+fXdHD29XvW3
-         AQDV0iLwxnXYT0BOtMgz1FOkC0f4GTRUtOhfBBaCRyaG5aqr9svWf5xlC+vaJLTGJn/7
-         pkzHairrJo6ZB13mM3OjL8e9NmeJMRF0f2Id8gr9GQPmGLc/sweGQoz//JTid1TAJ8Qs
-         nNOQ==
-X-Gm-Message-State: AFqh2krP5rnJdeO2vcj3u5TL2xk01ioVpFY5rY8GdDAj6aS7aKpbByw2
-        cV5BjXwMisUSA/fVE2WQ0Cc=
-X-Google-Smtp-Source: AMrXdXvUK6A5f5l9Ckn5YqN3cLQ6zLmOpwGjk/W0rs5SIGBpOhiinBNYvloTHGDdkEdfNx2pD/+4fQ==
-X-Received: by 2002:a5d:5269:0:b0:2a6:37a6:a071 with SMTP id l9-20020a5d5269000000b002a637a6a071mr12809819wrc.21.1673286718114;
-        Mon, 09 Jan 2023 09:51:58 -0800 (PST)
-Received: from localhost (cpc154979-craw9-2-0-cust193.16-3.cable.virginm.net. [80.193.200.194])
-        by smtp.gmail.com with ESMTPSA id c18-20020adffb52000000b0025e86026866sm10678421wrs.0.2023.01.09.09.51.57
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 09 Jan 2023 09:51:57 -0800 (PST)
-From:   Colin Ian King <colin.i.king@gmail.com>
-To:     David Howells <dhowells@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S . Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Cc:     kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH][next] pefile: remove the redundant pointer secs
-Date:   Mon,  9 Jan 2023 17:51:56 +0000
-Message-Id: <20230109175156.1572877-1-colin.i.king@gmail.com>
-X-Mailer: git-send-email 2.30.2
+        with ESMTP id S233142AbjAIX74 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 9 Jan 2023 18:59:56 -0500
+Received: from todd.t-8ch.de (todd.t-8ch.de [159.69.126.157])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EBBB417042;
+        Mon,  9 Jan 2023 15:59:54 -0800 (PST)
+From:   =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <linux@weissschuh.net>
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=weissschuh.net;
+        s=mail; t=1673308792;
+        bh=tpnkczSX2FwWlmZTnCPhCbSJEIyoDbZvYiTjIxvF0jk=;
+        h=From:Date:Subject:References:In-Reply-To:To:Cc:From;
+        b=kN1d/2bOP/g/Sp+jL2FuaXmS542fD2wwbTdGM6v/CMAJspf/++H6sNafe0koB8rif
+         XKO01Hh94u2KISkJKp2OKx7XkLGEfuog31tgdeydKGuj/UX9om0pjxiOHCUOxvdbdz
+         mwQcQKs/AfcTEylR2GKr10C6IhgRBgIYrYciSJT4=
+Date:   Mon, 09 Jan 2023 23:59:42 +0000
+Subject: [PATCH RESEND v6 2/3] KEYS: Add new function key_create()
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
+Message-Id: <20221212-keys-blacklist-v6-2-933267a80582@weissschuh.net>
+References: <20221212-keys-blacklist-v6-0-933267a80582@weissschuh.net>
+In-Reply-To: <20221212-keys-blacklist-v6-0-933267a80582@weissschuh.net>
+To:     David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        =?utf-8?q?Micka=C3=ABl_Sala=C3=BCn?= <mic@digikod.net>
+Cc:     keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Paul Menzel <pmenzel@molgen.mpg.de>,
+        Mark Pearson <markpearson@lenovo.com>,
+        =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <linux@weissschuh.net>
+X-Mailer: b4 0.12-dev-3dd91
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1673308789; l=7489;
+ i=linux@weissschuh.net; s=20221212; h=from:subject:message-id;
+ bh=tpnkczSX2FwWlmZTnCPhCbSJEIyoDbZvYiTjIxvF0jk=;
+ b=B8UhbwBCWMsNObT0Eb5Ppp2q1hl9PRVWLVMjWU82TnY02qe0+hTRfSqanG3ePPjQjZOJ9TjsObEi
+ x5dEVqgOCjLDOQ9r331JZLF9idgOsmN7hkVZ8URNosTdJJ+/YECh
+X-Developer-Key: i=linux@weissschuh.net; a=ed25519;
+ pk=KcycQgFPX2wGR5azS7RhpBqedglOZVgRPfdFSPB1LNw=
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-The pointer secs is being assigned a value that is never read. The
-pointer and assignment are redundant, remove them.
+key_create() works like key_create_or_update() but does not allow
+updating an existing key, instead returning ERR_PTR(-EEXIST).
 
-Cleans up clang scan build warning:
-warning: Although the value stored to 'secs' is used in the enclosing
-expression, the value is never actually read from 'secs'
+key_create() will be used by the blacklist keyring which should not
+create duplicate entries or update existing entries.
+Instead a dedicated message with appropriate severity will be logged.
 
-Signed-off-by: Colin Ian King <colin.i.king@gmail.com>
+Signed-off-by: Thomas Weißschuh <linux@weissschuh.net>
 ---
- crypto/asymmetric_keys/verify_pefile.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/key.h |   8 +++
+ security/keys/key.c | 137 ++++++++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 108 insertions(+), 37 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_keys/verify_pefile.c
-index 7553ab18db89..a660e4d68d50 100644
---- a/crypto/asymmetric_keys/verify_pefile.c
-+++ b/crypto/asymmetric_keys/verify_pefile.c
-@@ -28,7 +28,7 @@ static int pefile_parse_binary(const void *pebuf, unsigned int pelen,
- 	const struct pe32plus_opt_hdr *pe64;
- 	const struct data_directory *ddir;
- 	const struct data_dirent *dde;
--	const struct section_header *secs, *sec;
-+	const struct section_header *sec;
- 	size_t cursor, datalen = pelen;
+diff --git a/include/linux/key.h b/include/linux/key.h
+index d27477faf00d..8dc7f7c3088b 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -386,6 +386,14 @@ extern int wait_for_key_construction(struct key *key, bool intr);
  
- 	kenter("");
-@@ -110,7 +110,7 @@ static int pefile_parse_binary(const void *pebuf, unsigned int pelen,
- 	ctx->n_sections = pe->sections;
- 	if (ctx->n_sections > (ctx->header_size - cursor) / sizeof(*sec))
- 		return -ELIBBAD;
--	ctx->secs = secs = pebuf + cursor;
-+	ctx->secs = pebuf + cursor;
+ extern int key_validate(const struct key *key);
  
- 	return 0;
++extern key_ref_t key_create(key_ref_t keyring,
++			    const char *type,
++			    const char *description,
++			    const void *payload,
++			    size_t plen,
++			    key_perm_t perm,
++			    unsigned long flags);
++
+ extern key_ref_t key_create_or_update(key_ref_t keyring,
+ 				      const char *type,
+ 				      const char *description,
+diff --git a/security/keys/key.c b/security/keys/key.c
+index c45afdd1dfbb..5c0c7df833f8 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -788,38 +788,18 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+ 	goto out;
  }
+ 
+-/**
+- * key_create_or_update - Update or create and instantiate a key.
+- * @keyring_ref: A pointer to the destination keyring with possession flag.
+- * @type: The type of key.
+- * @description: The searchable description for the key.
+- * @payload: The data to use to instantiate or update the key.
+- * @plen: The length of @payload.
+- * @perm: The permissions mask for a new key.
+- * @flags: The quota flags for a new key.
+- *
+- * Search the destination keyring for a key of the same description and if one
+- * is found, update it, otherwise create and instantiate a new one and create a
+- * link to it from that keyring.
+- *
+- * If perm is KEY_PERM_UNDEF then an appropriate key permissions mask will be
+- * concocted.
+- *
+- * Returns a pointer to the new key if successful, -ENODEV if the key type
+- * wasn't available, -ENOTDIR if the keyring wasn't a keyring, -EACCES if the
+- * caller isn't permitted to modify the keyring or the LSM did not permit
+- * creation of the key.
+- *
+- * On success, the possession flag from the keyring ref will be tacked on to
+- * the key ref before it is returned.
++/*
++ * Create or potentially update a key. The combined logic behind
++ * key_create_or_update() and key_create()
+  */
+-key_ref_t key_create_or_update(key_ref_t keyring_ref,
+-			       const char *type,
+-			       const char *description,
+-			       const void *payload,
+-			       size_t plen,
+-			       key_perm_t perm,
+-			       unsigned long flags)
++static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
++					const char *type,
++					const char *description,
++					const void *payload,
++					size_t plen,
++					key_perm_t perm,
++					unsigned long flags,
++					bool allow_update)
+ {
+ 	struct keyring_index_key index_key = {
+ 		.description	= description,
+@@ -906,14 +886,23 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		goto error_link_end;
+ 	}
+ 
+-	/* if it's possible to update this type of key, search for an existing
+-	 * key of the same type and description in the destination keyring and
+-	 * update that instead if possible
++	/* if it's requested and possible to update this type of key, search
++	 * for an existing key of the same type and description in the
++	 * destination keyring and update that instead if possible
+ 	 */
+-	if (index_key.type->update) {
++	if (allow_update) {
++		if (index_key.type->update) {
++			key_ref = find_key_to_update(keyring_ref, &index_key);
++			if (key_ref)
++				goto found_matching_key;
++		}
++	} else {
+ 		key_ref = find_key_to_update(keyring_ref, &index_key);
+-		if (key_ref)
+-			goto found_matching_key;
++		if (key_ref) {
++			key_ref_put(key_ref);
++			key_ref = ERR_PTR(-EEXIST);
++			goto error_link_end;
++		}
+ 	}
+ 
+ 	/* if the client doesn't provide, decide on the permissions we want */
+@@ -985,8 +974,82 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 
+ 	goto error_free_prep;
+ }
++
++/**
++ * key_create_or_update - Update or create and instantiate a key.
++ * @keyring_ref: A pointer to the destination keyring with possession flag.
++ * @type: The type of key.
++ * @description: The searchable description for the key.
++ * @payload: The data to use to instantiate or update the key.
++ * @plen: The length of @payload.
++ * @perm: The permissions mask for a new key.
++ * @flags: The quota flags for a new key.
++ *
++ * Search the destination keyring for a key of the same description and if one
++ * is found, update it, otherwise create and instantiate a new one and create a
++ * link to it from that keyring.
++ *
++ * If perm is KEY_PERM_UNDEF then an appropriate key permissions mask will be
++ * concocted.
++ *
++ * Returns a pointer to the new key if successful, -ENODEV if the key type
++ * wasn't available, -ENOTDIR if the keyring wasn't a keyring, -EACCES if the
++ * caller isn't permitted to modify the keyring or the LSM did not permit
++ * creation of the key.
++ *
++ * On success, the possession flag from the keyring ref will be tacked on to
++ * the key ref before it is returned.
++ */
++key_ref_t key_create_or_update(key_ref_t keyring_ref,
++			       const char *type,
++			       const char *description,
++			       const void *payload,
++			       size_t plen,
++			       key_perm_t perm,
++			       unsigned long flags)
++{
++	return __key_create_or_update(keyring_ref, type, description, payload,
++				      plen, perm, flags, true);
++}
+ EXPORT_SYMBOL(key_create_or_update);
+ 
++/**
++ * key_create - Create and instantiate a key.
++ * @keyring_ref: A pointer to the destination keyring with possession flag.
++ * @type: The type of key.
++ * @description: The searchable description for the key.
++ * @payload: The data to use to instantiate or update the key.
++ * @plen: The length of @payload.
++ * @perm: The permissions mask for a new key.
++ * @flags: The quota flags for a new key.
++ *
++ * Create and instantiate a new key and link to it from the destination keyring.
++ *
++ * If perm is KEY_PERM_UNDEF then an appropriate key permissions mask will be
++ * concocted.
++ *
++ * Returns a pointer to the new key if successful, -EEXIST if a key with the
++ * same description already exists, -ENODEV if the key type wasn't available,
++ * -ENOTDIR if the keyring wasn't a keyring, -EACCES if the caller isn't
++ * permitted to modify the keyring or the LSM did not permit creation of the
++ * key.
++ *
++ * On success, the possession flag from the keyring ref will be tacked on to
++ * the key ref before it is returned.
++ */
++key_ref_t key_create(key_ref_t keyring_ref,
++		     const char *type,
++		     const char *description,
++		     const void *payload,
++		     size_t plen,
++		     key_perm_t perm,
++		     unsigned long flags)
++{
++	return __key_create_or_update(keyring_ref, type, description, payload,
++				      plen, perm, flags, false);
++}
++EXPORT_SYMBOL(key_create);
++
+ /**
+  * key_update - Update a key's contents.
+  * @key_ref: The pointer (plus possession flag) to the key.
+
 -- 
-2.30.2
+2.39.0
 
