@@ -2,32 +2,33 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 40D58C67871
-	for <keyrings@archiver.kernel.org>; Tue, 10 Jan 2023 00:00:00 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 341C9C63797
+	for <keyrings@archiver.kernel.org>; Tue, 10 Jan 2023 00:00:03 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S236183AbjAIX75 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 9 Jan 2023 18:59:57 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47500 "EHLO
+        id S237206AbjAJAAA (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 9 Jan 2023 19:00:00 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47502 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S234480AbjAIX75 (ORCPT
+        with ESMTP id S234501AbjAIX75 (ORCPT
         <rfc822;keyrings@vger.kernel.org>); Mon, 9 Jan 2023 18:59:57 -0500
 Received: from todd.t-8ch.de (todd.t-8ch.de [IPv6:2a01:4f8:c010:41de::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3EB3A1D0FC;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3ECEF1D0FE;
         Mon,  9 Jan 2023 15:59:55 -0800 (PST)
 From:   =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <linux@weissschuh.net>
 DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=weissschuh.net;
-        s=mail; t=1673308792;
-        bh=XbsyBGwFNX/+AhMDtn4NosVJq1CKEYv0BSyy10RgWi8=;
+        s=mail; t=1673308791;
+        bh=1Wy0BHk7SYwdUBaE089VQhP0zqUnmzWkZKjn/dXjACA=;
         h=From:Date:Subject:References:In-Reply-To:To:Cc:From;
-        b=JGTxi12A9Q1nheqVStkHBKWzMEVW5z1qpY2qLGO9WHdBjI1WjHsUXawmS/cqTUAJj
-         sVTTiEumgxwmWhWQIVdoGJxINu79EBLWDNLPiq/IH60IS/KvD65sb7andhXJkQJ7ti
-         SzJUtSQ5OZg4S7vRQ4RbExw+/jjLFYwA7qC/y6dg=
-Date:   Mon, 09 Jan 2023 23:59:43 +0000
-Subject: [PATCH RESEND v6 3/3] certs: don't try to update blacklist keys
+        b=bhYuK2oeJY8gviN3HbJr/bo8VBWAmueZts0nHUoGcq3wDBImKh7MFnh3mRZrmDLX+
+         0SMkp+n5/sN1Ia632LjMZfE5fKkV/zMB4MfJ05wQy58ri0JC+j6xtYCUG+SJnjfQp3
+         7qN5m62yuq9QPbpr1ftpjnboqLplCnonAy03Js54=
+Date:   Mon, 09 Jan 2023 23:59:41 +0000
+Subject: [PATCH RESEND v6 1/3] certs: make blacklisted hash available in
+ klog
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-Message-Id: <20221212-keys-blacklist-v6-3-933267a80582@weissschuh.net>
+Message-Id: <20221212-keys-blacklist-v6-1-933267a80582@weissschuh.net>
 References: <20221212-keys-blacklist-v6-0-933267a80582@weissschuh.net>
 In-Reply-To: <20221212-keys-blacklist-v6-0-933267a80582@weissschuh.net>
 To:     David Howells <dhowells@redhat.com>,
@@ -43,63 +44,45 @@ Cc:     keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mark Pearson <markpearson@lenovo.com>,
         =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <linux@weissschuh.net>
 X-Mailer: b4 0.12-dev-3dd91
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1673308789; l=1743;
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1673308789; l=1169;
  i=linux@weissschuh.net; s=20221212; h=from:subject:message-id;
- bh=XbsyBGwFNX/+AhMDtn4NosVJq1CKEYv0BSyy10RgWi8=;
- b=m22y9R8oSOW93S3ubz+AnnJoxZ9hUwAVd6c+F34GIiRUf5++/uFiiniR7WAkiS2gpmI1wx9XxO77
- HypSBqAlAj56LRUxNTvo5JiRklFZoOhzbOwoxmmJ3ckeThurk1TJ
+ bh=1Wy0BHk7SYwdUBaE089VQhP0zqUnmzWkZKjn/dXjACA=;
+ b=c64cfXF9x4RM7Q5bWJbzQNo5OWkOwIZr0wI7+wka2HDRG/48d5yVSzS0LCG0cnzCPOFgUHMulrWd
+ K0BaoTTODZ2RvzZDdadPLf0x0X4UvcdDZDrPF3LICVGlxG1Qv3Gg
 X-Developer-Key: i=linux@weissschuh.net; a=ed25519;
  pk=KcycQgFPX2wGR5azS7RhpBqedglOZVgRPfdFSPB1LNw=
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-When the same key is blacklisted repeatedly logging at pr_err() level is
-excessive as no functionality is impaired.
-When these duplicates are provided by buggy firmware there is nothing
-the user can do to fix the situation.
-Instead of spamming the bootlog with errors we use a warning that can
-still be seen by OEMs when testing their firmware.
+One common situation triggering this log statement are duplicate hashes
+reported by the system firmware.
 
-Link: https://lore.kernel.org/all/c8c65713-5cda-43ad-8018-20f2e32e4432@t-8ch.de/
-Link: https://lore.kernel.org/all/20221104014704.3469-1-linux@weissschuh.net/
+These duplicates should be removed from the firmware.
+
+Without logging the blacklisted hash triggering the issue however the users
+can not report it properly to the firmware vendors and the firmware vendors
+can not easily see which specific hash is duplicated.
+
+While changing the log message also use the dedicated ERR_PTR format
+placeholder for the returned error value.
+
 Signed-off-by: Thomas Weißschuh <linux@weissschuh.net>
-Tested-by: Paul Menzel <pmenzel@molgen.mpg.de>
 Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
- certs/blacklist.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ certs/blacklist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/certs/blacklist.c b/certs/blacklist.c
-index 6e260c4b6a19..675dd7a8f07a 100644
+index 41f10601cc72..6e260c4b6a19 100644
 --- a/certs/blacklist.c
 +++ b/certs/blacklist.c
-@@ -183,16 +183,19 @@ static int mark_raw_hash_blacklisted(const char *hash)
- {
- 	key_ref_t key;
- 
--	key = key_create_or_update(make_key_ref(blacklist_keyring, true),
--				   "blacklist",
--				   hash,
--				   NULL,
--				   0,
--				   BLACKLIST_KEY_PERM,
--				   KEY_ALLOC_NOT_IN_QUOTA |
--				   KEY_ALLOC_BUILT_IN);
-+	key = key_create(make_key_ref(blacklist_keyring, true),
-+			 "blacklist",
-+			 hash,
-+			 NULL,
-+			 0,
-+			 BLACKLIST_KEY_PERM,
-+			 KEY_ALLOC_NOT_IN_QUOTA |
-+			 KEY_ALLOC_BUILT_IN);
+@@ -192,7 +192,7 @@ static int mark_raw_hash_blacklisted(const char *hash)
+ 				   KEY_ALLOC_NOT_IN_QUOTA |
+ 				   KEY_ALLOC_BUILT_IN);
  	if (IS_ERR(key)) {
--		pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
-+		if (PTR_ERR(key) == -EEXIST)
-+			pr_warn("Duplicate blacklisted hash %s\n", hash);
-+		else
-+			pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
+-		pr_err("Problem blacklisting hash (%ld)\n", PTR_ERR(key));
++		pr_err("Problem blacklisting hash %s: %pe\n", hash, key);
  		return PTR_ERR(key);
  	}
  	return 0;
