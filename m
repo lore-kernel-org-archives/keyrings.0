@@ -2,146 +2,103 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A6CDEC678D5
-	for <keyrings@archiver.kernel.org>; Tue, 10 Jan 2023 00:00:01 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 53DB6C54EBC
+	for <keyrings@archiver.kernel.org>; Tue, 10 Jan 2023 14:11:38 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237397AbjAIX76 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 9 Jan 2023 18:59:58 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47498 "EHLO
+        id S238584AbjAJOLh (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 10 Jan 2023 09:11:37 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33724 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230341AbjAIX75 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 9 Jan 2023 18:59:57 -0500
-Received: from todd.t-8ch.de (todd.t-8ch.de [IPv6:2a01:4f8:c010:41de::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3E61E1D0E0;
-        Mon,  9 Jan 2023 15:59:55 -0800 (PST)
-From:   =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <linux@weissschuh.net>
-DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=weissschuh.net;
-        s=mail; t=1673308792;
-        bh=mmA3e+RUDNTDXD6JuByulekojiIyMaEV/XvB6QADix8=;
-        h=From:Subject:Date:To:Cc:From;
-        b=txlJy/B/9B+Dl+jJG85yHSakLOo8lZMYOGegMaezAObZf2AclFQHMOoX2+igjS96x
-         0/74Z7uuLTXz8IcJQC1dC2cLBcUz9wTn43o0fYsIs/OrTQfpjUvOQ/+MRD/OoICkq1
-         xSYo587AlcPmC3sD4st/DvUTLb/vIq1PBqBlPJM8=
-Subject: [PATCH RESEND v6 0/3] certs: Prevent spurious errors on repeated
- blacklisting
-Date:   Mon, 09 Jan 2023 23:59:41 +0000
-Message-Id: <20221212-keys-blacklist-v6-0-933267a80582@weissschuh.net>
+        with ESMTP id S231953AbjAJOLH (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 10 Jan 2023 09:11:07 -0500
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5C81E8D3B1
+        for <keyrings@vger.kernel.org>; Tue, 10 Jan 2023 06:09:41 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1673359780;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         in-reply-to:in-reply-to:references:references;
+        bh=jW0MXg4kTHInb0VV64RAk02+ZJUEz3vvMCLSfMJ7bo0=;
+        b=eDaEeTNysIRqLlOnzSSgdtmaQagY1SqWYVOas915SAinouTf5QrEJZXyW7T4DaxpqAJEcM
+        5sxUj6VL0B9o2NY72hV/L8uWraLpOeosUD5jFam5NqYbrHmG5FIRq9AIhM2Yrwyythl9Ft
+        MTLg8oeJ4gqWhaVh+Kil+N6M3clmQm4=
+Received: from mimecast-mx02.redhat.com (mx3-rdu2.redhat.com
+ [66.187.233.73]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-665-240AZRvcP4uolfqJg_SXKg-1; Tue, 10 Jan 2023 09:09:35 -0500
+X-MC-Unique: 240AZRvcP4uolfqJg_SXKg-1
+Received: from smtp.corp.redhat.com (int-mx06.intmail.prod.int.rdu2.redhat.com [10.11.54.6])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 9A1FE380664A;
+        Tue, 10 Jan 2023 14:09:34 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.33.36.87])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 1A7A82166B26;
+        Tue, 10 Jan 2023 14:09:33 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+In-Reply-To: <97ce37e2fdcfbed29d9467057f0f870359d88b89.1673173920.git.code@siddh.me>
+References: <97ce37e2fdcfbed29d9467057f0f870359d88b89.1673173920.git.code@siddh.me> <cover.1673173920.git.code@siddh.me>
+To:     Siddh Raman Pant <code@siddh.me>
+Cc:     dhowells@redhat.com, Mauro Carvalho Chehab <mchehab@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        "Fabio M. De Francesco" <fmdefrancesco@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Christophe JAILLET <christophe.jaillet@wanadoo.fr>,
+        Eric Biggers <ebiggers@kernel.org>,
+        keyrings <keyrings@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] include/linux/watch_queue: Improve documentation
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-To:     David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Paul Moore <paul@paul-moore.com>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        =?utf-8?q?Micka=C3=ABl_Sala=C3=BCn?= <mic@digikod.net>
-Cc:     keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Paul Menzel <pmenzel@molgen.mpg.de>,
-        Mark Pearson <markpearson@lenovo.com>,
-        =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <linux@weissschuh.net>
-X-Mailer: b4 0.12-dev-3dd91
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1673308789; l=3559;
- i=linux@weissschuh.net; s=20221212; h=from:subject:message-id;
- bh=mmA3e+RUDNTDXD6JuByulekojiIyMaEV/XvB6QADix8=;
- b=lUOjJ/Hfs2+vrugMhO7ez7GCZs4CNMk6jmXo9Sb1ZDtnfFVlOl3fzUEC85KDsUaoPJnNq2Pm6pej
- ee26YhCqAdFD/QS22XmrbURgYcMzuYjoS2kQ9tEMRBrQtpD3RD+t
-X-Developer-Key: i=linux@weissschuh.net; a=ed25519;
- pk=KcycQgFPX2wGR5azS7RhpBqedglOZVgRPfdFSPB1LNw=
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <2121104.1673359772.1@warthog.procyon.org.uk>
+Date:   Tue, 10 Jan 2023 14:09:32 +0000
+Message-ID: <2121105.1673359772@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 3.1 on 10.11.54.6
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-When the blacklist keyring was changed to allow updates from the root
-user it gained an ->update() function that disallows all updates.
-When the a hash is blacklisted multiple times from the builtin or
-firmware-provided blacklist this spams prominent logs during boot:
+Siddh Raman Pant <code@siddh.me> wrote:
 
-[    0.890814] blacklist: Problem blacklisting hash (-13)
+> +/**
+> + * struct watch_type_filter - Filter on watch type
+> + *
+> + * @type: Type of watch_notification
+> + * @subtype_filter: Bitmask of subtypes to filter on
+> + * @info_filter: Filter on watch_notification::info
+> + * @info_mask: Mask of relevant bits in info_filter
+> + */
+>  struct watch_type_filter {
+>  	enum watch_notification_type type;
+> -	__u32		subtype_filter[1];	/* Bitmask of subtypes to filter on */
+> -	__u32		info_filter;		/* Filter on watch_notification::info */
+> -	__u32		info_mask;		/* Mask of relevant bits in info_filter */
+> +	__u32		subtype_filter[1];
+> +	__u32		info_filter;
+> +	__u32		info_mask;
+>  };
 
-This affects the firmware of various vendors. Reported have been at least:
-* Samsung: https://askubuntu.com/questions/1436856/
-* Acer: https://ubuntuforums.org/showthread.php?t=2478840
-* MSI: https://forum.archlabslinux.com/t/blacklist-problem-blacklisting-hash-13-errors-on-boot/6674/7
-* Micro-Star: https://bbs.archlinux.org/viewtopic.php?id=278860
-* Lenovo: https://lore.kernel.org/lkml/c8c65713-5cda-43ad-8018-20f2e32e4432@t-8ch.de/
+Please don't.
 
-Note: In the meantime I lost access to the machine exhibiting the
-problematic behavior. If larger changes are required to this series
-somebody else would have to validate them or take over the series.
+The structure is documented fully here:
 
-Changelog:
+	Documentation/core-api/watch_queue.rst
 
-v1: https://lore.kernel.org/all/20221104014704.3469-1-linux@weissschuh.net/
-v1 -> v2:
- * Improve logging message to include the failed hash
- * Add key_create() function without update semantics
- * Use key_create() from mark_raw_hash_blacklisted() and log specific message
-   on -EEXIST
+See:
 
-v2: https://lore.kernel.org/lkml/20221109025019.1855-1-linux@weissschuh.net/
-v2 -> v3:
- * Clarify commit titles and messages
- * Drop the change to BLACKLIST_KEY_PERM from patch 3, as it was an artifact
-   of some obsolete version of the patch and not needed
+	https://docs.kernel.org/core-api/watch_queue.html#event-filtering
 
-v3: https://lore.kernel.org/lkml/20221118040343.2958-1-linux@weissschuh.net/
-v3 -> v4:
- * Drop Fixes-tag from first patch
- * Flesh out commit descriptions and messages
+The three column approach is much more readable in the code as it doesn't
+separate the descriptions from the things described.  Putting things in
+columns has been around for around 6000 years.
 
-v4: https://lore.kernel.org/r/20221212-keys-blacklist-v4-0-00afeb3137fb@weissschuh.net
-v4 -> v5:
- * Reduce lines needed by function calls in key.c
- * Add Reviewed-by from Jarkko
+David
 
-v5: https://lore.kernel.org/r/20221212-keys-blacklist-v5-0-52e9eb5a8827@weissschuh.net
-v5 -> v6:
- * Correct Jarkkos email in Reviewed-by tags
- * Resend to hopefully reach @kernel.org recipients
-
-Thomas Weißschuh (3):
-  certs: log hash value on blacklist error
-  KEYS: Add key_create()
-  certs: don't try to update blacklist keys
-
- certs/blacklist.c   |  21 ++++---
- include/linux/key.h |   8 +++
- security/keys/key.c | 149 +++++++++++++++++++++++++++++++++-----------
- 3 files changed, 132 insertions(+), 46 deletions(-)
-
---
-2.38.1
-
-To: David Howells <dhowells@redhat.com>
-To: David Woodhouse <dwmw2@infradead.org>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-To: Paul Moore <paul@paul-moore.com>
-To: James Morris <jmorris@namei.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Mickaël Salaün" <mic@digikod.net>
-Cc: keyrings@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
-Cc: Paul Menzel <pmenzel@molgen.mpg.de>
-Signed-off-by: Thomas Weißschuh <linux@weissschuh.net>
-Cc: Mark Pearson <markpearson@lenovo.com>
-
----
-Thomas Weißschuh (3):
-      certs: make blacklisted hash available in klog
-      KEYS: Add new function key_create()
-      certs: don't try to update blacklist keys
-
- certs/blacklist.c   |  21 ++++----
- include/linux/key.h |   8 +++
- security/keys/key.c | 137 ++++++++++++++++++++++++++++++++++++++--------------
- 3 files changed, 120 insertions(+), 46 deletions(-)
----
-base-commit: 512dee0c00ad9e9c7ae9f11fc6743702ea40caff
-change-id: 20221212-keys-blacklist-2c79a64667c9
-
-Best regards,
--- 
-Thomas Weißschuh <linux@weissschuh.net>
