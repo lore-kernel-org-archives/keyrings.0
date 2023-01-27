@@ -2,81 +2,114 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B0CACC27C76
-	for <keyrings@archiver.kernel.org>; Wed, 25 Jan 2023 14:58:21 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1F6F9C636D0
+	for <keyrings@archiver.kernel.org>; Fri, 27 Jan 2023 06:40:31 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234279AbjAYO6V (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 25 Jan 2023 09:58:21 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57916 "EHLO
+        id S232047AbjA0Gk3 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 27 Jan 2023 01:40:29 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39118 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S233235AbjAYO6U (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 25 Jan 2023 09:58:20 -0500
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5ED08568A6
-        for <keyrings@vger.kernel.org>; Wed, 25 Jan 2023 06:57:31 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1674658650;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=rKf/7nDuOwjzGLy8h9pFhivW5tWNbGYYqY0WQilf9uo=;
-        b=OcDh8MMTKfFIDOWbihwqjC5T9NKKpRkKJiQDrQK7CDQWtatHUa+2O9wZ9hvcImC3VOH2Gz
-        BspAhstzk71xaIvUf7fGAeChJ4FmztPBOkAydG0o9aCn35MVfACrFi3LjjNSruNbn0fGDK
-        D52jW5YeWOTf8Hvig5xp504vbvHpMRI=
-Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
- [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
- (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- us-mta-612-9DigMj7fMhywHVhf1_h4Kw-1; Wed, 25 Jan 2023 09:57:26 -0500
-X-MC-Unique: 9DigMj7fMhywHVhf1_h4Kw-1
-Received: from smtp.corp.redhat.com (int-mx10.intmail.prod.int.rdu2.redhat.com [10.11.54.10])
-        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 79C00802BF3;
-        Wed, 25 Jan 2023 14:57:26 +0000 (UTC)
-Received: from warthog.procyon.org.uk (unknown [10.33.36.97])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 87B30492B01;
-        Wed, 25 Jan 2023 14:57:25 +0000 (UTC)
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-        Kingdom.
-        Registered in England and Wales under Company Registration No. 3798903
-From:   David Howells <dhowells@redhat.com>
-In-Reply-To: <CAGypqWx7=ntjEjMJk=qHj+DVKogmOwLWTCgY+3Y4xP-f+KPP6g@mail.gmail.com>
-References: <CAGypqWx7=ntjEjMJk=qHj+DVKogmOwLWTCgY+3Y4xP-f+KPP6g@mail.gmail.com>
-To:     Bharath SM <bharathsm.hsk@gmail.com>
-Cc:     dhowells@redhat.com, jarkko@kernel.org, keyrings@vger.kernel.org,
-        Shyam Prasad N <nspmangalore@gmail.com>,
-        Steve French <smfrench@gmail.com>
-Subject: Re: dns_query from cifs returning EKEYEXPIRED during reconnect operations
+        with ESMTP id S231913AbjA0GkX (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 27 Jan 2023 01:40:23 -0500
+Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:3::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 679E56DFF7;
+        Thu, 26 Jan 2023 22:40:22 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
+        :Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=Ln37KE47BBRyA/eAdZx39q0YL3EdBd4mcLXFNQP5HLU=; b=svL7mF3zSL0l8ZvDWTYz1UXyeH
+        z4k9p1zlUDEFI85bAQeUdYmJ4SOnKmK/ejX0fCMklvB9SVjGajzcFWqJLLa4ZIgvVbKjbco9MRz/i
+        XOekELtQ80Kwc/VUCsdCxgAkK9qLASniMy1C+8snwXxXADJNUKoLPfMoKuXhtlmbiq1GINbWF63u9
+        s9N3Nv72DuLQe675UiDkToFrk33iaJnEJybZh3rbHnkKVvCzj7BKq17bEgs73zOFzqchMM1jERvZv
+        h/Sn3nE3WhbfZOSRlcoi+6b+ePL0d9qjdS2FtJQ6PovP/Fym8G5nVbkJruXGkYcE1e/4iVhEG4P+M
+        6jiICmlQ==;
+Received: from [2601:1c2:d80:3110::9307] (helo=bombadil.infradead.org)
+        by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1pLIPN-00DM0u-V5; Fri, 27 Jan 2023 06:40:22 +0000
+From:   Randy Dunlap <rdunlap@infradead.org>
+To:     linux-kernel@vger.kernel.org
+Cc:     Randy Dunlap <rdunlap@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org
+Subject: [PATCH 25/35] Documentation: security: correct spelling
+Date:   Thu, 26 Jan 2023 22:39:55 -0800
+Message-Id: <20230127064005.1558-26-rdunlap@infradead.org>
+X-Mailer: git-send-email 2.39.1
+In-Reply-To: <20230127064005.1558-1-rdunlap@infradead.org>
+References: <20230127064005.1558-1-rdunlap@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2144379.1674658644.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: quoted-printable
-Date:   Wed, 25 Jan 2023 14:57:24 +0000
-Message-ID: <2144380.1674658644@warthog.procyon.org.uk>
-X-Scanned-By: MIMEDefang 3.1 on 10.11.54.10
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Does the attached fix your problem?
+Correct spelling problems for Documentation/security/ as reported
+by codespell.
 
-David
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: keyrings@vger.kernel.org
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-security-module@vger.kernel.org
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-doc@vger.kernel.org
 ---
-diff --git a/fs/cifs/dns_resolve.c b/fs/cifs/dns_resolve.c
-index 8bf8978bc5d6..c77ac47fb08b 100644
---- a/fs/cifs/dns_resolve.c
-+++ b/fs/cifs/dns_resolve.c
-@@ -66,7 +66,7 @@ dns_resolve_server_name_to_ip(const char *unc, struct so=
-ckaddr *ip_addr, time64_
- =
+ Documentation/security/digsig.rst       |    4 ++--
+ Documentation/security/keys/core.rst    |    2 +-
+ Documentation/security/secrets/coco.rst |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
- 	/* Perform the upcall */
- 	rc =3D dns_query(current->nsproxy->net_ns, NULL, hostname, len,
--		       NULL, &ip, expiry, false);
-+		       NULL, &ip, expiry, true);
- 	if (rc < 0) {
- 		cifs_dbg(FYI, "%s: unable to resolve: %*.*s\n",
- 			 __func__, len, len, hostname);
-
+diff -- a/Documentation/security/digsig.rst b/Documentation/security/digsig.rst
+--- a/Documentation/security/digsig.rst
++++ b/Documentation/security/digsig.rst
+@@ -62,7 +62,7 @@ API currently includes only 1 function::
+ 	* digsig_verify() - digital signature verification with public key
+ 	* @keyring:	keyring to search key in
+ 	* @sig:	digital signature
+-	* @sigen:	length of the signature
++	* @siglen:	length of the signature
+ 	* @data:	data
+ 	* @datalen:	length of the data
+ 	* @return:	0 on success, -EINVAL otherwise
+@@ -82,7 +82,7 @@ The signing and key management utilities
+ to generate signatures, to load keys into the kernel keyring.
+ Keys can be in PEM or converted to the kernel format.
+ When the key is added to the kernel keyring, the keyid defines the name
+-of the key: 5D2B05FC633EE3E8 in the example bellow.
++of the key: 5D2B05FC633EE3E8 in the example below.
+ 
+ Here is example output of the keyctl utility::
+ 
+diff -- a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -869,7 +869,7 @@ The keyctl syscall functions are:
+ 
+ 	 - ``char *hashname`` specifies the NUL terminated string identifying
+ 	   the hash used from the kernel crypto API and applied for the KDF
+-	   operation. The KDF implemenation complies with SP800-56A as well
++	   operation. The KDF implementation complies with SP800-56A as well
+ 	   as with SP800-108 (the counter KDF).
+ 
+ 	 - ``char *otherinfo`` specifies the OtherInfo data as documented in
+diff -- a/Documentation/security/secrets/coco.rst b/Documentation/security/secrets/coco.rst
+--- a/Documentation/security/secrets/coco.rst
++++ b/Documentation/security/secrets/coco.rst
+@@ -34,7 +34,7 @@ be use it for its own purposes.
+ 
+ During the VM's launch, the virtual machine manager may inject a secret to that
+ area.  In AMD SEV and SEV-ES this is performed using the
+-``KVM_SEV_LAUNCH_SECRET`` command (see [sev]_).  The strucutre of the injected
++``KVM_SEV_LAUNCH_SECRET`` command (see [sev]_).  The structure of the injected
+ Guest Owner secret data should be a GUIDed table of secret values; the binary
+ format is described in ``drivers/virt/coco/efi_secret/efi_secret.c`` under
+ "Structure of the EFI secret area".
