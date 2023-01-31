@@ -2,84 +2,107 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 45354C636CC
-	for <keyrings@archiver.kernel.org>; Tue, 31 Jan 2023 08:48:15 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 688B9C636D3
+	for <keyrings@archiver.kernel.org>; Tue, 31 Jan 2023 09:00:32 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229944AbjAaIsO (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 31 Jan 2023 03:48:14 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60866 "EHLO
+        id S231292AbjAaJAb (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 31 Jan 2023 04:00:31 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48482 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230044AbjAaIrw (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 31 Jan 2023 03:47:52 -0500
-Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C363E4DBC1
-        for <keyrings@vger.kernel.org>; Tue, 31 Jan 2023 00:43:38 -0800 (PST)
-Received: from drehscheibe.grey.stw.pengutronix.de ([2a0a:edc0:0:c01:1d::a2])
-        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
-        (Exim 4.92)
-        (envelope-from <jlu@pengutronix.de>)
-        id 1pMmEm-0002o0-1B; Tue, 31 Jan 2023 09:43:32 +0100
-Received: from [2a0a:edc0:0:1101:1d::39] (helo=dude03.red.stw.pengutronix.de)
-        by drehscheibe.grey.stw.pengutronix.de with esmtp (Exim 4.94.2)
-        (envelope-from <jlu@pengutronix.de>)
-        id 1pMmEl-001eKt-Iq; Tue, 31 Jan 2023 09:43:30 +0100
-Received: from jlu by dude03.red.stw.pengutronix.de with local (Exim 4.94.2)
-        (envelope-from <jlu@pengutronix.de>)
-        id 1pMmEj-005vrY-VE; Tue, 31 Jan 2023 09:43:29 +0100
-From:   Jan Luebbe <jlu@pengutronix.de>
-To:     Masahiro Yamada <masahiroy@kernel.org>
-Cc:     Jan Luebbe <jlu@pengutronix.de>,
-        David Howells <dhowells@redhat.com>,
+        with ESMTP id S232501AbjAaJAN (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 31 Jan 2023 04:00:13 -0500
+Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2D30F4B759;
+        Tue, 31 Jan 2023 00:56:22 -0800 (PST)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by ams.source.kernel.org (Postfix) with ESMTPS id 19819B81A56;
+        Tue, 31 Jan 2023 08:54:49 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id C73B7C4339B;
+        Tue, 31 Jan 2023 08:54:47 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1675155287;
+        bh=NTMstEjBKq2RRhSC/QQd9421QayiCvHcV2OsRUI3g6A=;
+        h=References:In-Reply-To:From:Date:Subject:To:Cc:From;
+        b=tLu4pZ/GzDZw9MJaoLdNG4J+9iGfeo7KHyzRXqLWwY7B64iub67WpWES8mcKx6UkL
+         ujzSS5EV0kJ3aC7ILOB+f7YCn+7cn2Gk6Ob6uOgHP0oucYQQ7YNeANMoJsGCT6Xxqu
+         RQGZ45UGjofmYXfswZ8bXwQj69oGIp4Sz6+dAhF6XAHessZvJ2hCGa7MQWr2DpczPn
+         W8+wWBy+HkwmfX9Ld123pE6uA0XZGJ+wFf1MiadTdH/y/0JaLpptdo5iVZbEIBK53f
+         wOxL72N3Y8aibwGtfx+khlwjCEKrxcM4oJr8wVSLEzAq+mfQGW8VojT4ES5v8ozxnw
+         TKc57dZTPV2mA==
+Received: by mail-oi1-f176.google.com with SMTP id j21so3318542oie.4;
+        Tue, 31 Jan 2023 00:54:47 -0800 (PST)
+X-Gm-Message-State: AFqh2koxjjvmMN9RKfq3Vs4KN8oWckzATDpU+hjviVsQjDqD8sONwVUA
+        ZaIdlYXlXDULozMn8zqokQRbncaKC0QSTErl0d4=
+X-Google-Smtp-Source: AMrXdXuYweFo7uPcJ+NWyvWLhoQOsFc8HHaOb+1PwauXJg0REsAY6FLZFYS84zW2oja508SYFVtI+JXMlfzhVomURRw=
+X-Received: by 2002:a05:6808:1786:b0:35e:7c55:b015 with SMTP id
+ bg6-20020a056808178600b0035e7c55b015mr3244852oib.287.1675155287099; Tue, 31
+ Jan 2023 00:54:47 -0800 (PST)
+MIME-Version: 1.0
+References: <20230131084323.1414010-1-jlu@pengutronix.de> <20230131084323.1414010-2-jlu@pengutronix.de>
+In-Reply-To: <20230131084323.1414010-2-jlu@pengutronix.de>
+From:   Masahiro Yamada <masahiroy@kernel.org>
+Date:   Tue, 31 Jan 2023 17:54:10 +0900
+X-Gmail-Original-Message-ID: <CAK7LNAT_-NCpzB7WOKomaBo30Xxt53GCVvxxME7i6eXHr8Fhrw@mail.gmail.com>
+Message-ID: <CAK7LNAT_-NCpzB7WOKomaBo30Xxt53GCVvxxME7i6eXHr8Fhrw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] certs: Fix build error when PKCS#11 URI contains semicolon
+To:     Jan Luebbe <jlu@pengutronix.de>
+Cc:     David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>,
         keyrings@vger.kernel.org, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: [PATCH v2 1/2] certs: Fix build error when PKCS#11 URI contains semicolon
-Date:   Tue, 31 Jan 2023 09:43:22 +0100
-Message-Id: <20230131084323.1414010-2-jlu@pengutronix.de>
-X-Mailer: git-send-email 2.30.2
-In-Reply-To: <20230131084323.1414010-1-jlu@pengutronix.de>
-References: <20230131084323.1414010-1-jlu@pengutronix.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2a0a:edc0:0:c01:1d::a2
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-When CONFIG_MODULE_SIG_KEY is PKCS#11 URI (pkcs11:*) and contains a
-semicolon, signing_key.x509 fails to build:
+On Tue, Jan 31, 2023 at 5:43 PM Jan Luebbe <jlu@pengutronix.de> wrote:
+>
+> When CONFIG_MODULE_SIG_KEY is PKCS#11 URI (pkcs11:*) and contains a
+> semicolon, signing_key.x509 fails to build:
+>
+>   certs/extract-cert pkcs11:token=foo;object=bar;pin-value=1111 certs/signing_key.x509
+>   Usage: extract-cert <source> <dest>
+>
+> Add quotes to the extract-cert argument to avoid splitting by the shell.
+>
+> This approach was suggested by Masahiro Yamada <masahiroy@kernel.org>.
+>
+> Fixes: 129ab0d2d9f3 ("kbuild: do not quote string values in include/config/auto.conf")
+> Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
 
-  certs/extract-cert pkcs11:token=foo;object=bar;pin-value=1111 certs/signing_key.x509
-  Usage: extract-cert <source> <dest>
 
-Add quotes to the extract-cert argument to avoid splitting by the shell.
+Both applied to linux-kbuild/fixes.
+Thanks.
 
-This approach was suggested by Masahiro Yamada <masahiroy@kernel.org>.
 
-Fixes: 129ab0d2d9f3 ("kbuild: do not quote string values in include/config/auto.conf")
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
----
- certs/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/certs/Makefile b/certs/Makefile
-index 9486ed924731..799ad7b9e68a 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -23,8 +23,8 @@ $(obj)/blacklist_hash_list: $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) FORCE
- targets += blacklist_hash_list
- 
- quiet_cmd_extract_certs  = CERT    $@
--      cmd_extract_certs  = $(obj)/extract-cert $(extract-cert-in) $@
--extract-cert-in = $(or $(filter-out $(obj)/extract-cert, $(real-prereqs)),"")
-+      cmd_extract_certs  = $(obj)/extract-cert "$(extract-cert-in)" $@
-+extract-cert-in = $(filter-out $(obj)/extract-cert, $(real-prereqs))
- 
- $(obj)/system_certificates.o: $(obj)/x509_certificate_list
- 
+
+> ---
+>  certs/Makefile | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/certs/Makefile b/certs/Makefile
+> index 9486ed924731..799ad7b9e68a 100644
+> --- a/certs/Makefile
+> +++ b/certs/Makefile
+> @@ -23,8 +23,8 @@ $(obj)/blacklist_hash_list: $(CONFIG_SYSTEM_BLACKLIST_HASH_LIST) FORCE
+>  targets += blacklist_hash_list
+>
+>  quiet_cmd_extract_certs  = CERT    $@
+> -      cmd_extract_certs  = $(obj)/extract-cert $(extract-cert-in) $@
+> -extract-cert-in = $(or $(filter-out $(obj)/extract-cert, $(real-prereqs)),"")
+> +      cmd_extract_certs  = $(obj)/extract-cert "$(extract-cert-in)" $@
+> +extract-cert-in = $(filter-out $(obj)/extract-cert, $(real-prereqs))
+>
+>  $(obj)/system_certificates.o: $(obj)/x509_certificate_list
+>
+> --
+> 2.30.2
+>
+
+
 -- 
-2.30.2
-
+Best Regards
+Masahiro Yamada
