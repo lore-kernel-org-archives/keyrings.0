@@ -2,29 +2,46 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 99D4EC05027
-	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:35:05 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6F414C6379F
+	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 17:30:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229488AbjBFMfE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 6 Feb 2023 07:35:04 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59452 "EHLO
+        id S230020AbjBFRa0 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 6 Feb 2023 12:30:26 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35766 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229651AbjBFMfE (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:35:04 -0500
-Received: from formenos.hmeau.com (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9AC5B2005D
-        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:35:02 -0800 (PST)
-Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
-        by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1pOydw-007zjD-3q; Mon, 06 Feb 2023 18:22:37 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:36 +0800
-From:   "Herbert Xu" <herbert@gondor.apana.org.au>
-Date:   Mon, 06 Feb 2023 18:22:36 +0800
-Subject: [PATCH 12/17] net: macsec: Remove completion function scaffolding
-References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
-To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Alasdair Kergon <agk@redhat.com>,
-        Mike Snitzer <snitzer@kernel.org>, dm-devel@redhat.com,
+        with ESMTP id S230498AbjBFRaP (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 12:30:15 -0500
+Received: from mail-qt1-f174.google.com (mail-qt1-f174.google.com [209.85.160.174])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 374922E0CE
+        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 09:29:09 -0800 (PST)
+Received: by mail-qt1-f174.google.com with SMTP id f10so13685730qtv.1
+        for <keyrings@vger.kernel.org>; Mon, 06 Feb 2023 09:29:09 -0800 (PST)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=in-reply-to:content-disposition:mime-version:references:message-id
+         :subject:cc:to:from:date:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=/FrP9fMYR82jRAmAW0QmGxlvWeMEFDYdTqEQD3Ix7oU=;
+        b=lJ5fMbFCVvhBp0/QyvwxNzM0cai4cfTRomfeCJCPAzi0gG2s1enAncCgW2sVf3uAtW
+         lwAPW2Mf2duMCazsGeMpL05Yp1r8ERcIOx3xYAiBS1vsa9GPzDlGiGzi2gc+ELw3/Oy8
+         2bVz8H+9YnzWjh/o6UpZB6LGaGhS3ZkNDUYXzr7TgSZ4jS+onu/EyxRf1L2zPbfJPDGu
+         BM0Tr424gz7SkxiM+k/VGg6gpDvCXnI629B8lr7GmqSx9swcOTYpJMh0DvYi/G/R/w+Y
+         qS7x16r4XWXSeyMsZpvnFczVMH62n5JlTUnOOK8MM8eDqxrNqYuDZwlYCVLm9d/cakGu
+         lMXA==
+X-Gm-Message-State: AO0yUKVWPLXGU/vZiwWdW/EvZDRb06ZWCVG/7CgoUGZJEVHaOJuZgMBP
+        xsyivsfduQjR2NnegqjwGk7V
+X-Google-Smtp-Source: AK7set88PegyfxPSUhpDYL1wKeHEutu8R092IP6zZRvoiYjEuTLO6pmSpIUQElcD/sBIBkgW1V2HAg==
+X-Received: by 2002:ac8:5f95:0:b0:3ba:266f:103b with SMTP id j21-20020ac85f95000000b003ba266f103bmr38942qta.47.1675704548352;
+        Mon, 06 Feb 2023 09:29:08 -0800 (PST)
+Received: from localhost (pool-68-160-166-30.bstnma.fios.verizon.net. [68.160.166.30])
+        by smtp.gmail.com with ESMTPSA id b5-20020a37b205000000b00719165e9e72sm7647589qkf.91.2023.02.06.09.29.07
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 06 Feb 2023 09:29:07 -0800 (PST)
+Date:   Mon, 6 Feb 2023 12:29:06 -0500
+From:   Mike Snitzer <snitzer@kernel.org>
+To:     Herbert Xu <herbert@gondor.apana.org.au>
+Cc:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
         "David S. Miller" <davem@davemloft.net>,
         Eric Dumazet <edumazet@google.com>,
         Jakub Kicinski <kuba@kernel.org>,
@@ -41,45 +58,26 @@ To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         John Fastabend <john.fastabend@gmail.com>,
         David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Message-Id: <E1pOydw-007zjD-3q@formenos.hmeau.com>
+Subject: Re: [PATCH 1/17] dm: Add scaffolding to change completion function
+ signature
+Message-ID: <Y+E44kb3bJViytuh@redhat.com>
+References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
+ <E1pOydY-007zgU-U2@formenos.hmeau.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1pOydY-007zgU-U2@formenos.hmeau.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch removes the temporary scaffolding now that the comletion
-function signature has been converted.
+On Mon, Feb 06 2023 at  5:22P -0500,
+Herbert Xu <herbert@gondor.apana.org.au> wrote:
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
+> This patch adds temporary scaffolding so that the Crypto API
+> completion function can take a void * instead of crypto_async_request.
+> Once affected users have been converted this can be removed.
+> 
+> Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
- drivers/net/macsec.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/macsec.c b/drivers/net/macsec.c
-index b7d9d487ccd2..becb04123d3e 100644
---- a/drivers/net/macsec.c
-+++ b/drivers/net/macsec.c
-@@ -528,9 +528,9 @@ static void count_tx(struct net_device *dev, int ret, int len)
- 	}
- }
- 
--static void macsec_encrypt_done(crypto_completion_data_t *data, int err)
-+static void macsec_encrypt_done(void *data, int err)
- {
--	struct sk_buff *skb = crypto_get_completion_data(data);
-+	struct sk_buff *skb = data;
- 	struct net_device *dev = skb->dev;
- 	struct macsec_dev *macsec = macsec_priv(dev);
- 	struct macsec_tx_sa *sa = macsec_skb_cb(skb)->tx_sa;
-@@ -835,9 +835,9 @@ static void count_rx(struct net_device *dev, int len)
- 	u64_stats_update_end(&stats->syncp);
- }
- 
--static void macsec_decrypt_done(crypto_completion_data_t *data, int err)
-+static void macsec_decrypt_done(void *data, int err)
- {
--	struct sk_buff *skb = crypto_get_completion_data(data);
-+	struct sk_buff *skb = data;
- 	struct net_device *dev = skb->dev;
- 	struct macsec_dev *macsec = macsec_priv(dev);
- 	struct macsec_rx_sa *rx_sa = macsec_skb_cb(skb)->rx_sa;
+Acked-by: Mike Snitzer <snitzer@kernel.org>
