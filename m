@@ -2,26 +2,24 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 2D2ACC61DA4
-	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C1576C61DA4
+	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:30 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229576AbjBFMeY (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 6 Feb 2023 07:34:24 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59158 "EHLO
+        id S229678AbjBFMea (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 6 Feb 2023 07:34:30 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59174 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229483AbjBFMeY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:24 -0500
+        with ESMTP id S229483AbjBFMe3 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:29 -0500
 Received: from formenos.hmeau.com (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0F91C2004D
-        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:22 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1660C1F93B
+        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:28 -0800 (PST)
 Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
         by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1pOydp-007ziH-Oe; Mon, 06 Feb 2023 18:22:30 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:29 +0800
-From:   "Herbert Xu" <herbert@gondor.apana.org.au>
-Date:   Mon, 06 Feb 2023 18:22:29 +0800
-Subject: [PATCH 9/17] KEYS: DH: Use crypto_wait_req
-References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
+        id 1pOycU-007zew-Vi; Mon, 06 Feb 2023 18:21:08 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:21:06 +0800
+Date:   Mon, 6 Feb 2023 18:21:06 +0800
+From:   Herbert Xu <herbert@gondor.apana.org.au>
 To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Alasdair Kergon <agk@redhat.com>,
         Mike Snitzer <snitzer@kernel.org>, dm-devel@redhat.com,
@@ -41,80 +39,40 @@ To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         John Fastabend <john.fastabend@gmail.com>,
         David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Message-Id: <E1pOydp-007ziH-Oe@formenos.hmeau.com>
+Subject: [PATCH 0/17] crypto: api - Change completion callback argument to
+ void star
+Message-ID: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch replaces the custom crypto completion function with
-crypto_req_done.
+Hi:
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
+The crypto completion function currently takes a pointer to a
+struct crypto_async_request object.  However, in reality the API
+does not allow the use of any part of the object apart from the
+data field.  For example, ahash/shash will create a fake object
+on the stack to pass along a different data field.
 
- security/keys/dh.c |   30 +++++-------------------------
- 1 file changed, 5 insertions(+), 25 deletions(-)
+This leads to potential bugs where the user may try to dereference
+or otherwise use the crypto_async_request object.
 
-diff --git a/security/keys/dh.c b/security/keys/dh.c
-index b339760a31dd..da64c358474b 100644
---- a/security/keys/dh.c
-+++ b/security/keys/dh.c
-@@ -64,22 +64,6 @@ static void dh_free_data(struct dh *dh)
- 	kfree_sensitive(dh->g);
- }
- 
--struct dh_completion {
--	struct completion completion;
--	int err;
--};
--
--static void dh_crypto_done(struct crypto_async_request *req, int err)
--{
--	struct dh_completion *compl = req->data;
--
--	if (err == -EINPROGRESS)
--		return;
--
--	compl->err = err;
--	complete(&compl->completion);
--}
--
- static int kdf_alloc(struct crypto_shash **hash, char *hashname)
- {
- 	struct crypto_shash *tfm;
-@@ -146,7 +130,7 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
- 	struct keyctl_dh_params pcopy;
- 	struct dh dh_inputs;
- 	struct scatterlist outsg;
--	struct dh_completion compl;
-+	DECLARE_CRYPTO_WAIT(compl);
- 	struct crypto_kpp *tfm;
- 	struct kpp_request *req;
- 	uint8_t *secret;
-@@ -266,22 +250,18 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
- 
- 	kpp_request_set_input(req, NULL, 0);
- 	kpp_request_set_output(req, &outsg, outlen);
--	init_completion(&compl.completion);
- 	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				 CRYPTO_TFM_REQ_MAY_SLEEP,
--				 dh_crypto_done, &compl);
-+				 crypto_req_done, &compl);
- 
- 	/*
- 	 * For DH, generate_public_key and generate_shared_secret are
- 	 * the same calculation
- 	 */
- 	ret = crypto_kpp_generate_public_key(req);
--	if (ret == -EINPROGRESS) {
--		wait_for_completion(&compl.completion);
--		ret = compl.err;
--		if (ret)
--			goto out6;
--	}
-+	ret = crypto_wait_req(ret, &compl);
-+	if (ret)
-+		goto out6;
- 
- 	if (kdfcopy) {
- 		/*
+This series changes the completion function to take a void *
+argument instead of crypto_async_request.
+
+This series touches code in a number of different subsystems.
+Most of them are trivial except for tls which was actually buggy
+as it did exactly what was described above.
+
+I'd like to pull all the changes through the crypto tree.  But
+feel free to object if you'd like the relevant patches to go
+through your trees instead and I'll split this up.
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
