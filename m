@@ -2,25 +2,25 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CC65CC05027
-	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2D2ACC61DA4
+	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:25 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229663AbjBFMeR (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 6 Feb 2023 07:34:17 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59140 "EHLO
+        id S229576AbjBFMeY (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 6 Feb 2023 07:34:24 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59158 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229576AbjBFMeQ (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:16 -0500
+        with ESMTP id S229483AbjBFMeY (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:24 -0500
 Received: from formenos.hmeau.com (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A16DB1F93B
-        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:15 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0F91C2004D
+        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:22 -0800 (PST)
 Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
         by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1pOye6-007zks-J4; Mon, 06 Feb 2023 18:22:47 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:46 +0800
+        id 1pOydp-007ziH-Oe; Mon, 06 Feb 2023 18:22:30 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:29 +0800
 From:   "Herbert Xu" <herbert@gondor.apana.org.au>
-Date:   Mon, 06 Feb 2023 18:22:46 +0800
-Subject: [PATCH 17/17] crypto: api - Remove completion function scaffolding
+Date:   Mon, 06 Feb 2023 18:22:29 +0800
+Subject: [PATCH 9/17] KEYS: DH: Use crypto_wait_req
 References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
 To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Alasdair Kergon <agk@redhat.com>,
@@ -41,41 +41,80 @@ To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         John Fastabend <john.fastabend@gmail.com>,
         David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Message-Id: <E1pOye6-007zks-J4@formenos.hmeau.com>
+Message-Id: <E1pOydp-007ziH-Oe@formenos.hmeau.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch removes the temporary scaffolding now that the comletion
-function signature has been converted.
+This patch replaces the custom crypto completion function with
+crypto_req_done.
 
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 ---
 
- include/linux/crypto.h |    6 ------
- 1 file changed, 6 deletions(-)
+ security/keys/dh.c |   30 +++++-------------------------
+ 1 file changed, 5 insertions(+), 25 deletions(-)
 
-diff --git a/include/linux/crypto.h b/include/linux/crypto.h
-index 80f6350fb588..bb1d9b0e1647 100644
---- a/include/linux/crypto.h
-+++ b/include/linux/crypto.h
-@@ -176,7 +176,6 @@ struct crypto_async_request;
- struct crypto_tfm;
- struct crypto_type;
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index b339760a31dd..da64c358474b 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -64,22 +64,6 @@ static void dh_free_data(struct dh *dh)
+ 	kfree_sensitive(dh->g);
+ }
  
--typedef void crypto_completion_data_t;
- typedef void (*crypto_completion_t)(void *req, int err);
- 
- /**
-@@ -596,11 +595,6 @@ struct crypto_wait {
- /*
-  * Async ops completion helper functioons
-  */
--static inline void *crypto_get_completion_data(void *data)
+-struct dh_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+-static void dh_crypto_done(struct crypto_async_request *req, int err)
 -{
--	return data;
+-	struct dh_completion *compl = req->data;
+-
+-	if (err == -EINPROGRESS)
+-		return;
+-
+-	compl->err = err;
+-	complete(&compl->completion);
 -}
 -
- void crypto_req_done(void *req, int err);
+ static int kdf_alloc(struct crypto_shash **hash, char *hashname)
+ {
+ 	struct crypto_shash *tfm;
+@@ -146,7 +130,7 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 	struct keyctl_dh_params pcopy;
+ 	struct dh dh_inputs;
+ 	struct scatterlist outsg;
+-	struct dh_completion compl;
++	DECLARE_CRYPTO_WAIT(compl);
+ 	struct crypto_kpp *tfm;
+ 	struct kpp_request *req;
+ 	uint8_t *secret;
+@@ -266,22 +250,18 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
  
- static inline int crypto_wait_req(int err, struct crypto_wait *wait)
+ 	kpp_request_set_input(req, NULL, 0);
+ 	kpp_request_set_output(req, &outsg, outlen);
+-	init_completion(&compl.completion);
+ 	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				 CRYPTO_TFM_REQ_MAY_SLEEP,
+-				 dh_crypto_done, &compl);
++				 crypto_req_done, &compl);
+ 
+ 	/*
+ 	 * For DH, generate_public_key and generate_shared_secret are
+ 	 * the same calculation
+ 	 */
+ 	ret = crypto_kpp_generate_public_key(req);
+-	if (ret == -EINPROGRESS) {
+-		wait_for_completion(&compl.completion);
+-		ret = compl.err;
+-		if (ret)
+-			goto out6;
+-	}
++	ret = crypto_wait_req(ret, &compl);
++	if (ret)
++		goto out6;
+ 
+ 	if (kdfcopy) {
+ 		/*
