@@ -2,25 +2,25 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A1DB5C05027
-	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:33:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 06E65C05027
+	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:33:36 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229738AbjBFMdZ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 6 Feb 2023 07:33:25 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58642 "EHLO
+        id S229879AbjBFMdf (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 6 Feb 2023 07:33:35 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58666 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229936AbjBFMdY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:33:24 -0500
+        with ESMTP id S229764AbjBFMde (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:33:34 -0500
 Received: from formenos.hmeau.com (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BBDBB1F5C7
-        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:33:20 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E761F1F4B4
+        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:33:28 -0800 (PST)
 Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
         by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1pOydh-007zhJ-B3; Mon, 06 Feb 2023 18:22:22 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:21 +0800
+        id 1pOydy-007zjk-6G; Mon, 06 Feb 2023 18:22:39 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:38 +0800
 From:   "Herbert Xu" <herbert@gondor.apana.org.au>
-Date:   Mon, 06 Feb 2023 18:22:21 +0800
-Subject: [PATCH 5/17] net: ipv4: Add scaffolding to change completion function signature
+Date:   Mon, 06 Feb 2023 18:22:38 +0800
+Subject: [PATCH 13/17] net: ipv4: Remove completion function scaffolding
 References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
 To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Alasdair Kergon <agk@redhat.com>,
@@ -41,37 +41,36 @@ To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         John Fastabend <john.fastabend@gmail.com>,
         David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Message-Id: <E1pOydh-007zhJ-B3@formenos.hmeau.com>
+Message-Id: <E1pOydy-007zjk-6G@formenos.hmeau.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch adds temporary scaffolding so that the Crypto API
-completion function can take a void * instead of crypto_async_request.
-Once affected users have been converted this can be removed.
-    
+This patch removes the temporary scaffolding now that the comletion
+function signature has been converted.
+
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 ---
 
  net/ipv4/ah4.c  |    8 ++++----
- net/ipv4/esp4.c |   20 ++++++++++----------
- 2 files changed, 14 insertions(+), 14 deletions(-)
+ net/ipv4/esp4.c |   16 ++++++++--------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/net/ipv4/ah4.c b/net/ipv4/ah4.c
-index ee4e578c7f20..1fc0231eb1ee 100644
+index 1fc0231eb1ee..015c0f4ec5ba 100644
 --- a/net/ipv4/ah4.c
 +++ b/net/ipv4/ah4.c
 @@ -117,11 +117,11 @@ static int ip_clear_mutable_options(const struct iphdr *iph, __be32 *daddr)
  	return 0;
  }
  
--static void ah_output_done(struct crypto_async_request *base, int err)
-+static void ah_output_done(crypto_completion_data_t *data, int err)
+-static void ah_output_done(crypto_completion_data_t *data, int err)
++static void ah_output_done(void *data, int err)
  {
  	u8 *icv;
  	struct iphdr *iph;
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
+-	struct sk_buff *skb = crypto_get_completion_data(data);
++	struct sk_buff *skb = data;
  	struct xfrm_state *x = skb_dst(skb)->xfrm;
  	struct ah_data *ahp = x->data;
  	struct iphdr *top_iph = ip_hdr(skb);
@@ -79,74 +78,66 @@ index ee4e578c7f20..1fc0231eb1ee 100644
  	return err;
  }
  
--static void ah_input_done(struct crypto_async_request *base, int err)
-+static void ah_input_done(crypto_completion_data_t *data, int err)
+-static void ah_input_done(crypto_completion_data_t *data, int err)
++static void ah_input_done(void *data, int err)
  {
  	u8 *auth_data;
  	u8 *icv;
  	struct iphdr *work_iph;
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
+-	struct sk_buff *skb = crypto_get_completion_data(data);
++	struct sk_buff *skb = data;
  	struct xfrm_state *x = xfrm_input_state(skb);
  	struct ah_data *ahp = x->data;
  	struct ip_auth_hdr *ah = ip_auth_hdr(skb);
 diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
-index 52c8047efedb..8abe07c1ff28 100644
+index 8abe07c1ff28..ba06ed42e428 100644
 --- a/net/ipv4/esp4.c
 +++ b/net/ipv4/esp4.c
 @@ -244,9 +244,9 @@ static int esp_output_tail_tcp(struct xfrm_state *x, struct sk_buff *skb)
  }
  #endif
  
--static void esp_output_done(struct crypto_async_request *base, int err)
-+static void esp_output_done(crypto_completion_data_t *data, int err)
+-static void esp_output_done(crypto_completion_data_t *data, int err)
++static void esp_output_done(void *data, int err)
  {
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
+-	struct sk_buff *skb = crypto_get_completion_data(data);
++	struct sk_buff *skb = data;
  	struct xfrm_offload *xo = xfrm_offload(skb);
  	void *tmp;
  	struct xfrm_state *x;
-@@ -332,12 +332,12 @@ static struct ip_esp_hdr *esp_output_set_extra(struct sk_buff *skb,
+@@ -332,9 +332,9 @@ static struct ip_esp_hdr *esp_output_set_extra(struct sk_buff *skb,
  	return esph;
  }
  
--static void esp_output_done_esn(struct crypto_async_request *base, int err)
-+static void esp_output_done_esn(crypto_completion_data_t *data, int err)
+-static void esp_output_done_esn(crypto_completion_data_t *data, int err)
++static void esp_output_done_esn(void *data, int err)
  {
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
+-	struct sk_buff *skb = crypto_get_completion_data(data);
++	struct sk_buff *skb = data;
  
  	esp_output_restore_header(skb);
--	esp_output_done(base, err);
-+	esp_output_done(data, err);
- }
- 
- static struct ip_esp_hdr *esp_output_udp_encap(struct sk_buff *skb,
+ 	esp_output_done(data, err);
 @@ -830,9 +830,9 @@ int esp_input_done2(struct sk_buff *skb, int err)
  }
  EXPORT_SYMBOL_GPL(esp_input_done2);
  
--static void esp_input_done(struct crypto_async_request *base, int err)
-+static void esp_input_done(crypto_completion_data_t *data, int err)
+-static void esp_input_done(crypto_completion_data_t *data, int err)
++static void esp_input_done(void *data, int err)
  {
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
+-	struct sk_buff *skb = crypto_get_completion_data(data);
++	struct sk_buff *skb = data;
  
  	xfrm_input_resume(skb, esp_input_done2(skb, err));
  }
-@@ -860,12 +860,12 @@ static void esp_input_set_header(struct sk_buff *skb, __be32 *seqhi)
+@@ -860,9 +860,9 @@ static void esp_input_set_header(struct sk_buff *skb, __be32 *seqhi)
  	}
  }
  
--static void esp_input_done_esn(struct crypto_async_request *base, int err)
-+static void esp_input_done_esn(crypto_completion_data_t *data, int err)
+-static void esp_input_done_esn(crypto_completion_data_t *data, int err)
++static void esp_input_done_esn(void *data, int err)
  {
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
+-	struct sk_buff *skb = crypto_get_completion_data(data);
++	struct sk_buff *skb = data;
  
  	esp_input_restore_header(skb);
--	esp_input_done(base, err);
-+	esp_input_done(data, err);
- }
- 
- /*
+ 	esp_input_done(data, err);
