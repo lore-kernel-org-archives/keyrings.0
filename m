@@ -2,25 +2,25 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DE23DC05027
-	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:52 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4CC11C61DA4
+	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:35:00 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229557AbjBFMew (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 6 Feb 2023 07:34:52 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59384 "EHLO
+        id S229619AbjBFMe7 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 6 Feb 2023 07:34:59 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59414 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229488AbjBFMev (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:51 -0500
+        with ESMTP id S229488AbjBFMe6 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:58 -0500
 Received: from formenos.hmeau.com (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DE2831F93B
-        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:49 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4EADB1F93B
+        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:57 -0800 (PST)
 Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
         by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1pOydu-007zio-0W; Mon, 06 Feb 2023 18:22:35 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:34 +0800
+        id 1pOydf-007zgz-7o; Mon, 06 Feb 2023 18:22:20 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:19 +0800
 From:   "Herbert Xu" <herbert@gondor.apana.org.au>
-Date:   Mon, 06 Feb 2023 18:22:34 +0800
-Subject: [PATCH 11/17] dm: Remove completion function scaffolding
+Date:   Mon, 06 Feb 2023 18:22:19 +0800
+Subject: [PATCH 4/17] Bluetooth: Use crypto_wait_req
 References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
 To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Alasdair Kergon <agk@redhat.com>,
@@ -41,59 +41,111 @@ To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         John Fastabend <john.fastabend@gmail.com>,
         David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Message-Id: <E1pOydu-007zio-0W@formenos.hmeau.com>
+Message-Id: <E1pOydf-007zgz-7o@formenos.hmeau.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch removes the temporary scaffolding now that the comletion
-function signature has been converted.
+This patch replaces the custom crypto completion function with
+crypto_req_done.
 
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 ---
 
- drivers/md/dm-crypt.c     |    6 +++---
- drivers/md/dm-integrity.c |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ net/bluetooth/ecdh_helper.c |   37 ++++++-------------------------------
+ 1 file changed, 6 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index 7609fe39ab8c..3aeeb8f2802f 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -1458,7 +1458,7 @@ static int crypt_convert_block_skcipher(struct crypt_config *cc,
- 	return r;
- }
+diff --git a/net/bluetooth/ecdh_helper.c b/net/bluetooth/ecdh_helper.c
+index 989401f116e9..0efc93fdae8a 100644
+--- a/net/bluetooth/ecdh_helper.c
++++ b/net/bluetooth/ecdh_helper.c
+@@ -25,22 +25,6 @@
+ #include <linux/scatterlist.h>
+ #include <crypto/ecdh.h>
  
--static void kcryptd_async_done(crypto_completion_data_t *async_req, int error);
-+static void kcryptd_async_done(void *async_req, int error);
- 
- static int crypt_alloc_req_skcipher(struct crypt_config *cc,
- 				     struct convert_context *ctx)
-@@ -2146,9 +2146,9 @@ static void kcryptd_crypt_read_convert(struct dm_crypt_io *io)
- 	crypt_dec_pending(io);
- }
- 
--static void kcryptd_async_done(crypto_completion_data_t *data, int error)
-+static void kcryptd_async_done(void *data, int error)
+-struct ecdh_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+-static void ecdh_complete(struct crypto_async_request *req, int err)
+-{
+-	struct ecdh_completion *res = req->data;
+-
+-	if (err == -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+ static inline void swap_digits(u64 *in, u64 *out, unsigned int ndigits)
  {
--	struct dm_crypt_request *dmreq = crypto_get_completion_data(data);
-+	struct dm_crypt_request *dmreq = data;
- 	struct convert_context *ctx = dmreq->ctx;
- 	struct dm_crypt_io *io = container_of(ctx, struct dm_crypt_io, ctx);
- 	struct crypt_config *cc = io->cc;
-diff --git a/drivers/md/dm-integrity.c b/drivers/md/dm-integrity.c
-index eefe25ed841e..c58156deb2b1 100644
---- a/drivers/md/dm-integrity.c
-+++ b/drivers/md/dm-integrity.c
-@@ -955,9 +955,9 @@ static void xor_journal(struct dm_integrity_c *ic, bool encrypt, unsigned sectio
- 	async_tx_issue_pending_all();
- }
- 
--static void complete_journal_encrypt(crypto_completion_data_t *data, int err)
-+static void complete_journal_encrypt(void *data, int err)
+ 	int i;
+@@ -60,9 +44,9 @@ static inline void swap_digits(u64 *in, u64 *out, unsigned int ndigits)
+ int compute_ecdh_secret(struct crypto_kpp *tfm, const u8 public_key[64],
+ 			u8 secret[32])
  {
--	struct journal_completion *comp = crypto_get_completion_data(data);
-+	struct journal_completion *comp = data;
- 	if (unlikely(err)) {
- 		if (likely(err == -EINPROGRESS)) {
- 			complete(&comp->ic->crypto_backoff);
++	DECLARE_CRYPTO_WAIT(result);
+ 	struct kpp_request *req;
+ 	u8 *tmp;
+-	struct ecdh_completion result;
+ 	struct scatterlist src, dst;
+ 	int err;
+ 
+@@ -76,8 +60,6 @@ int compute_ecdh_secret(struct crypto_kpp *tfm, const u8 public_key[64],
+ 		goto free_tmp;
+ 	}
+ 
+-	init_completion(&result.completion);
+-
+ 	swap_digits((u64 *)public_key, (u64 *)tmp, 4); /* x */
+ 	swap_digits((u64 *)&public_key[32], (u64 *)&tmp[32], 4); /* y */
+ 
+@@ -86,12 +68,9 @@ int compute_ecdh_secret(struct crypto_kpp *tfm, const u8 public_key[64],
+ 	kpp_request_set_input(req, &src, 64);
+ 	kpp_request_set_output(req, &dst, 32);
+ 	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				 ecdh_complete, &result);
++				 crypto_req_done, &result);
+ 	err = crypto_kpp_compute_shared_secret(req);
+-	if (err == -EINPROGRESS) {
+-		wait_for_completion(&result.completion);
+-		err = result.err;
+-	}
++	err = crypto_wait_req(err, &result);
+ 	if (err < 0) {
+ 		pr_err("alg: ecdh: compute shared secret failed. err %d\n",
+ 		       err);
+@@ -165,9 +144,9 @@ int set_ecdh_privkey(struct crypto_kpp *tfm, const u8 private_key[32])
+  */
+ int generate_ecdh_public_key(struct crypto_kpp *tfm, u8 public_key[64])
+ {
++	DECLARE_CRYPTO_WAIT(result);
+ 	struct kpp_request *req;
+ 	u8 *tmp;
+-	struct ecdh_completion result;
+ 	struct scatterlist dst;
+ 	int err;
+ 
+@@ -181,18 +160,14 @@ int generate_ecdh_public_key(struct crypto_kpp *tfm, u8 public_key[64])
+ 		goto free_tmp;
+ 	}
+ 
+-	init_completion(&result.completion);
+ 	sg_init_one(&dst, tmp, 64);
+ 	kpp_request_set_input(req, NULL, 0);
+ 	kpp_request_set_output(req, &dst, 64);
+ 	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				 ecdh_complete, &result);
++				 crypto_req_done, &result);
+ 
+ 	err = crypto_kpp_generate_public_key(req);
+-	if (err == -EINPROGRESS) {
+-		wait_for_completion(&result.completion);
+-		err = result.err;
+-	}
++	err = crypto_wait_req(err, &result);
+ 	if (err < 0)
+ 		goto free_all;
+ 
