@@ -2,25 +2,25 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A912DC05027
-	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:07 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2657CC05027
+	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230053AbjBFMeH (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 6 Feb 2023 07:34:07 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58980 "EHLO
+        id S229630AbjBFMeM (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 6 Feb 2023 07:34:12 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59106 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229944AbjBFMeF (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:05 -0500
+        with ESMTP id S229889AbjBFMeL (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:11 -0500
 Received: from formenos.hmeau.com (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B9FDD1DBB9
-        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:03 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B53582005D
+        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:09 -0800 (PST)
 Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
         by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1pOye2-007zkJ-CU; Mon, 06 Feb 2023 18:22:43 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:42 +0800
+        id 1pOydl-007zhn-Io; Mon, 06 Feb 2023 18:22:26 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:25 +0800
 From:   "Herbert Xu" <herbert@gondor.apana.org.au>
-Date:   Mon, 06 Feb 2023 18:22:42 +0800
-Subject: [PATCH 15/17] tipc: Remove completion function scaffolding
+Date:   Mon, 06 Feb 2023 18:22:25 +0800
+Subject: [PATCH 7/17] tipc: Add scaffolding to change completion function signature
 References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
 To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Alasdair Kergon <agk@redhat.com>,
@@ -41,14 +41,15 @@ To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         John Fastabend <john.fastabend@gmail.com>,
         David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Message-Id: <E1pOye2-007zkJ-CU@formenos.hmeau.com>
+Message-Id: <E1pOydl-007zhn-Io@formenos.hmeau.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch removes the temporary scaffolding now that the comletion
-function signature has been converted.
-
+This patch adds temporary scaffolding so that the Crypto API
+completion function can take a void * instead of crypto_async_request.
+Once affected users have been converted this can be removed.
+    
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 ---
 
@@ -56,19 +57,19 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/net/tipc/crypto.c b/net/tipc/crypto.c
-index ab356e7a3870..577fa5af33ec 100644
+index d67440de011e..ab356e7a3870 100644
 --- a/net/tipc/crypto.c
 +++ b/net/tipc/crypto.c
 @@ -267,10 +267,10 @@ static int tipc_aead_encrypt(struct tipc_aead *aead, struct sk_buff *skb,
  			     struct tipc_bearer *b,
  			     struct tipc_media_addr *dst,
  			     struct tipc_node *__dnode);
--static void tipc_aead_encrypt_done(crypto_completion_data_t *data, int err);
-+static void tipc_aead_encrypt_done(void *data, int err);
+-static void tipc_aead_encrypt_done(struct crypto_async_request *base, int err);
++static void tipc_aead_encrypt_done(crypto_completion_data_t *data, int err);
  static int tipc_aead_decrypt(struct net *net, struct tipc_aead *aead,
  			     struct sk_buff *skb, struct tipc_bearer *b);
--static void tipc_aead_decrypt_done(crypto_completion_data_t *data, int err);
-+static void tipc_aead_decrypt_done(void *data, int err);
+-static void tipc_aead_decrypt_done(struct crypto_async_request *base, int err);
++static void tipc_aead_decrypt_done(crypto_completion_data_t *data, int err);
  static inline int tipc_ehdr_size(struct tipc_ehdr *ehdr);
  static int tipc_ehdr_build(struct net *net, struct tipc_aead *aead,
  			   u8 tx_key, struct sk_buff *skb,
@@ -76,11 +77,11 @@ index ab356e7a3870..577fa5af33ec 100644
  	return rc;
  }
  
--static void tipc_aead_encrypt_done(crypto_completion_data_t *data, int err)
-+static void tipc_aead_encrypt_done(void *data, int err)
+-static void tipc_aead_encrypt_done(struct crypto_async_request *base, int err)
++static void tipc_aead_encrypt_done(crypto_completion_data_t *data, int err)
  {
--	struct sk_buff *skb = crypto_get_completion_data(data);
-+	struct sk_buff *skb = data;
+-	struct sk_buff *skb = base->data;
++	struct sk_buff *skb = crypto_get_completion_data(data);
  	struct tipc_crypto_tx_ctx *tx_ctx = TIPC_SKB_CB(skb)->crypto_ctx;
  	struct tipc_bearer *b = tx_ctx->bearer;
  	struct tipc_aead *aead = tx_ctx->aead;
@@ -88,11 +89,11 @@ index ab356e7a3870..577fa5af33ec 100644
  	return rc;
  }
  
--static void tipc_aead_decrypt_done(crypto_completion_data_t *data, int err)
-+static void tipc_aead_decrypt_done(void *data, int err)
+-static void tipc_aead_decrypt_done(struct crypto_async_request *base, int err)
++static void tipc_aead_decrypt_done(crypto_completion_data_t *data, int err)
  {
--	struct sk_buff *skb = crypto_get_completion_data(data);
-+	struct sk_buff *skb = data;
+-	struct sk_buff *skb = base->data;
++	struct sk_buff *skb = crypto_get_completion_data(data);
  	struct tipc_crypto_rx_ctx *rx_ctx = TIPC_SKB_CB(skb)->crypto_ctx;
  	struct tipc_bearer *b = rx_ctx->bearer;
  	struct tipc_aead *aead = rx_ctx->aead;
