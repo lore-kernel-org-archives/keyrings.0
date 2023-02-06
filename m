@@ -2,25 +2,25 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5B24EC05027
-	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DE23DC05027
+	for <keyrings@archiver.kernel.org>; Mon,  6 Feb 2023 12:34:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229571AbjBFMeo (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 6 Feb 2023 07:34:44 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59306 "EHLO
+        id S229557AbjBFMew (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 6 Feb 2023 07:34:52 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59384 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229488AbjBFMeo (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:44 -0500
+        with ESMTP id S229488AbjBFMev (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 6 Feb 2023 07:34:51 -0500
 Received: from formenos.hmeau.com (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4E8352194B
-        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:42 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DE2831F93B
+        for <keyrings@vger.kernel.org>; Mon,  6 Feb 2023 04:34:49 -0800 (PST)
 Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
         by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1pOydb-007zgc-0p; Mon, 06 Feb 2023 18:22:16 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:15 +0800
+        id 1pOydu-007zio-0W; Mon, 06 Feb 2023 18:22:35 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 06 Feb 2023 18:22:34 +0800
 From:   "Herbert Xu" <herbert@gondor.apana.org.au>
-Date:   Mon, 06 Feb 2023 18:22:15 +0800
-Subject: [PATCH 2/17] net: macsec: Add scaffolding to change completion function signature
+Date:   Mon, 06 Feb 2023 18:22:34 +0800
+Subject: [PATCH 11/17] dm: Remove completion function scaffolding
 References: <Y+DUkqe1sagWaErA@gondor.apana.org.au>
 To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Alasdair Kergon <agk@redhat.com>,
@@ -41,46 +41,59 @@ To:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         John Fastabend <john.fastabend@gmail.com>,
         David Howells <dhowells@redhat.com>,
         Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Message-Id: <E1pOydb-007zgc-0p@formenos.hmeau.com>
+Message-Id: <E1pOydu-007zio-0W@formenos.hmeau.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch adds temporary scaffolding so that the Crypto API
-completion function can take a void * instead of crypto_async_request.
-Once affected users have been converted this can be removed.
+This patch removes the temporary scaffolding now that the comletion
+function signature has been converted.
 
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 ---
 
- drivers/net/macsec.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/md/dm-crypt.c     |    6 +++---
+ drivers/md/dm-integrity.c |    4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/macsec.c b/drivers/net/macsec.c
-index bf8ac7a3ded7..b7d9d487ccd2 100644
---- a/drivers/net/macsec.c
-+++ b/drivers/net/macsec.c
-@@ -528,9 +528,9 @@ static void count_tx(struct net_device *dev, int ret, int len)
- 	}
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 7609fe39ab8c..3aeeb8f2802f 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -1458,7 +1458,7 @@ static int crypt_convert_block_skcipher(struct crypt_config *cc,
+ 	return r;
  }
  
--static void macsec_encrypt_done(struct crypto_async_request *base, int err)
-+static void macsec_encrypt_done(crypto_completion_data_t *data, int err)
- {
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
- 	struct net_device *dev = skb->dev;
- 	struct macsec_dev *macsec = macsec_priv(dev);
- 	struct macsec_tx_sa *sa = macsec_skb_cb(skb)->tx_sa;
-@@ -835,9 +835,9 @@ static void count_rx(struct net_device *dev, int len)
- 	u64_stats_update_end(&stats->syncp);
+-static void kcryptd_async_done(crypto_completion_data_t *async_req, int error);
++static void kcryptd_async_done(void *async_req, int error);
+ 
+ static int crypt_alloc_req_skcipher(struct crypt_config *cc,
+ 				     struct convert_context *ctx)
+@@ -2146,9 +2146,9 @@ static void kcryptd_crypt_read_convert(struct dm_crypt_io *io)
+ 	crypt_dec_pending(io);
  }
  
--static void macsec_decrypt_done(struct crypto_async_request *base, int err)
-+static void macsec_decrypt_done(crypto_completion_data_t *data, int err)
+-static void kcryptd_async_done(crypto_completion_data_t *data, int error)
++static void kcryptd_async_done(void *data, int error)
  {
--	struct sk_buff *skb = base->data;
-+	struct sk_buff *skb = crypto_get_completion_data(data);
- 	struct net_device *dev = skb->dev;
- 	struct macsec_dev *macsec = macsec_priv(dev);
- 	struct macsec_rx_sa *rx_sa = macsec_skb_cb(skb)->rx_sa;
+-	struct dm_crypt_request *dmreq = crypto_get_completion_data(data);
++	struct dm_crypt_request *dmreq = data;
+ 	struct convert_context *ctx = dmreq->ctx;
+ 	struct dm_crypt_io *io = container_of(ctx, struct dm_crypt_io, ctx);
+ 	struct crypt_config *cc = io->cc;
+diff --git a/drivers/md/dm-integrity.c b/drivers/md/dm-integrity.c
+index eefe25ed841e..c58156deb2b1 100644
+--- a/drivers/md/dm-integrity.c
++++ b/drivers/md/dm-integrity.c
+@@ -955,9 +955,9 @@ static void xor_journal(struct dm_integrity_c *ic, bool encrypt, unsigned sectio
+ 	async_tx_issue_pending_all();
+ }
+ 
+-static void complete_journal_encrypt(crypto_completion_data_t *data, int err)
++static void complete_journal_encrypt(void *data, int err)
+ {
+-	struct journal_completion *comp = crypto_get_completion_data(data);
++	struct journal_completion *comp = data;
+ 	if (unlikely(err)) {
+ 		if (likely(err == -EINPROGRESS)) {
+ 			complete(&comp->ic->crypto_backoff);
