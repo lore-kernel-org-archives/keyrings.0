@@ -2,104 +2,115 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 631EAC05027
-	for <keyrings@archiver.kernel.org>; Thu,  9 Feb 2023 03:00:53 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4BAFCC05027
+	for <keyrings@archiver.kernel.org>; Thu,  9 Feb 2023 07:14:20 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232448AbjBIDAw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 8 Feb 2023 22:00:52 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43604 "EHLO
+        id S229822AbjBIHOS (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 9 Feb 2023 02:14:18 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48776 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231667AbjBIC7G (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 8 Feb 2023 21:59:06 -0500
-Received: from mx0a-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8AAB4EB72;
-        Wed,  8 Feb 2023 18:56:08 -0800 (PST)
-Received: from pps.filterd (m0098420.ppops.net [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 3192iCVY003333;
-        Thu, 9 Feb 2023 02:55:44 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
- from : to : cc : date : in-reply-to : references : content-type :
- mime-version : content-transfer-encoding; s=pp1;
- bh=6GqaCF2clYx4KYRkfiCUo6kp7CQwdPWi9KLZ1tA3amc=;
- b=OkGHdVkM4RbTWEUh0/C8HU8esIlA3IZdDwyDjP3NVEWgnKumpj+PQnhiaKCy+9P3xQTN
- TknGDFIH6u2W9B+bdp+D/P81sjypcLw+cK8oQVDUz+nSO12Q0Fkjy+Ugwc7Y+B4b6ndW
- BS35KPyHfdlQTYwG38C+F7PXU+MAUXtVQrudyIwoIx4o9bXmNRgHO+fbR+zFaclT+EXM
- axGSCkf/DNeMiSdnYW/xZPf1narm5Kmh0MMAyXQGXmvxp7IwjwLRx23b2uB3aHTFjKXF
- noUjbVpEAo0ZYmxVPJu4POihxqbMjCNNM5X6hAiHt231SDs6eTLtkeTImWH0WMZImVwR Kw== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (PPS) with ESMTPS id 3nmra4075v-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 09 Feb 2023 02:55:43 +0000
-Received: from m0098420.ppops.net (m0098420.ppops.net [127.0.0.1])
-        by pps.reinject (8.17.1.5/8.17.1.5) with ESMTP id 3192jBlq006180;
-        Thu, 9 Feb 2023 02:55:43 GMT
-Received: from ppma04wdc.us.ibm.com (1a.90.2fa9.ip4.static.sl-reverse.com [169.47.144.26])
-        by mx0b-001b2d01.pphosted.com (PPS) with ESMTPS id 3nmra4075m-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 09 Feb 2023 02:55:43 +0000
-Received: from pps.filterd (ppma04wdc.us.ibm.com [127.0.0.1])
-        by ppma04wdc.us.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 3190L7c5020140;
-        Thu, 9 Feb 2023 02:55:42 GMT
-Received: from smtprelay07.wdc07v.mail.ibm.com ([9.208.129.116])
-        by ppma04wdc.us.ibm.com (PPS) with ESMTPS id 3nhf07gcqj-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 09 Feb 2023 02:55:42 +0000
-Received: from smtpav02.dal12v.mail.ibm.com (smtpav02.dal12v.mail.ibm.com [10.241.53.101])
-        by smtprelay07.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 3192tenT60883248
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Thu, 9 Feb 2023 02:55:41 GMT
-Received: from smtpav02.dal12v.mail.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id C340E58051;
-        Thu,  9 Feb 2023 02:55:40 +0000 (GMT)
-Received: from smtpav02.dal12v.mail.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 802B65805C;
-        Thu,  9 Feb 2023 02:55:39 +0000 (GMT)
-Received: from li-f45666cc-3089-11b2-a85c-c57d1a57929f.ibm.com (unknown [9.160.12.101])
-        by smtpav02.dal12v.mail.ibm.com (Postfix) with ESMTP;
-        Thu,  9 Feb 2023 02:55:39 +0000 (GMT)
-Message-ID: <8665375962f654b61886f1f3ee1916d336a08fc8.camel@linux.ibm.com>
-Subject: Re: [PATCH v4 5/6] KEYS: CA link restriction
-From:   Mimi Zohar <zohar@linux.ibm.com>
-To:     Eric Snowberg <eric.snowberg@oracle.com>, jarkko@kernel.org,
-        dhowells@redhat.com, dwmw2@infradead.org
-Cc:     herbert@gondor.apana.org.au, davem@davemloft.net,
-        dmitry.kasatkin@gmail.com, paul@paul-moore.com, jmorris@namei.org,
-        serge@hallyn.com, pvorel@suse.cz, tadeusz.struk@intel.com,
-        kanth.ghatraju@oracle.com, konrad.wilk@oracle.com,
-        erpalmer@linux.vnet.ibm.com, coxu@redhat.com,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Date:   Wed, 08 Feb 2023 21:55:37 -0500
-In-Reply-To: <20230207025958.974056-6-eric.snowberg@oracle.com>
-References: <20230207025958.974056-1-eric.snowberg@oracle.com>
-         <20230207025958.974056-6-eric.snowberg@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.28.5 (3.28.5-18.el8) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: U_XQHLUlI-DIADsqsJNio8wABTtutA7e
-X-Proofpoint-ORIG-GUID: r9DQxmyb4MzC_YeTxg8ZA6Vo-4lbash4
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.219,Aquarius:18.0.930,Hydra:6.0.562,FMLib:17.11.122.1
- definitions=2023-02-08_11,2023-02-08_02,2022-06-22_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxlogscore=999
- malwarescore=0 bulkscore=0 spamscore=0 lowpriorityscore=0 mlxscore=0
- clxscore=1015 priorityscore=1501 impostorscore=0 suspectscore=0
- adultscore=0 phishscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2212070000 definitions=main-2302090022
+        with ESMTP id S229758AbjBIHON (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 9 Feb 2023 02:14:13 -0500
+Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:3::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 381303C28;
+        Wed,  8 Feb 2023 23:14:12 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
+        :Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=1UCwqKkdi+iMeKnxe2a0f+agmuR5eX82xtKDbJBG/eQ=; b=uqCYr9QPZeK/DAmoWVOcS1RDUS
+        Jes9PXFPB1yY7BQtSqs6/kYb0MMFUWyAkacZF5AVuDDK8HNHn2ilBmgw4udBOiufuCzP5aYrGg41o
+        Jo434Nad39spPEJckwdOHOZ69rFXrY17CQB+WKhL4C2zBhAOfI89TbvMCF977OjOBCUYQuvOBW0n2
+        zmrVjHy9F5roJy8rayt0RLlR+MKvpYGO6EMuzHz7F84CNoub2EyyjaNnlyodpjwjG7lrLGoUEnGDC
+        eXaOX2fx9bUfHr+KIiNbjSmNIFAVpQX2MR7pgqN48eXyJZ+5MMAY1Nt+5hCRZn4UwDf0jNZ+8hsZz
+        hBfIoJhw==;
+Received: from [2601:1c2:980:9ec0::df2f] (helo=bombadil.infradead.org)
+        by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1pQ18F-000LPt-Pv; Thu, 09 Feb 2023 07:14:11 +0000
+From:   Randy Dunlap <rdunlap@infradead.org>
+To:     linux-kernel@vger.kernel.org
+Cc:     Randy Dunlap <rdunlap@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org
+Subject: [PATCH 17/24] Documentation: security: correct spelling
+Date:   Wed,  8 Feb 2023 23:13:53 -0800
+Message-Id: <20230209071400.31476-18-rdunlap@infradead.org>
+X-Mailer: git-send-email 2.39.1
+In-Reply-To: <20230209071400.31476-1-rdunlap@infradead.org>
+References: <20230209071400.31476-1-rdunlap@infradead.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, 2023-02-06 at 21:59 -0500, Eric Snowberg wrote:
-> Add a new link restriction.  Restrict the addition of keys in a keyring
-> based on the key to be added being a CA.
-> 
-> Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
+Correct spelling problems for Documentation/security/ as reported
+by codespell.
 
-Other than expanding the patch description to mention the keyUsage,
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: keyrings@vger.kernel.org
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-security-module@vger.kernel.org
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-doc@vger.kernel.org
+Reviewed-by: David Howells <dhowells@redhat.com>
+---
+ Documentation/security/digsig.rst       |    4 ++--
+ Documentation/security/keys/core.rst    |    2 +-
+ Documentation/security/secrets/coco.rst |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-
+diff -- a/Documentation/security/digsig.rst b/Documentation/security/digsig.rst
+--- a/Documentation/security/digsig.rst
++++ b/Documentation/security/digsig.rst
+@@ -62,7 +62,7 @@ API currently includes only 1 function::
+ 	* digsig_verify() - digital signature verification with public key
+ 	* @keyring:	keyring to search key in
+ 	* @sig:	digital signature
+-	* @sigen:	length of the signature
++	* @siglen:	length of the signature
+ 	* @data:	data
+ 	* @datalen:	length of the data
+ 	* @return:	0 on success, -EINVAL otherwise
+@@ -82,7 +82,7 @@ The signing and key management utilities
+ to generate signatures, to load keys into the kernel keyring.
+ Keys can be in PEM or converted to the kernel format.
+ When the key is added to the kernel keyring, the keyid defines the name
+-of the key: 5D2B05FC633EE3E8 in the example bellow.
++of the key: 5D2B05FC633EE3E8 in the example below.
+ 
+ Here is example output of the keyctl utility::
+ 
+diff -- a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -869,7 +869,7 @@ The keyctl syscall functions are:
+ 
+ 	 - ``char *hashname`` specifies the NUL terminated string identifying
+ 	   the hash used from the kernel crypto API and applied for the KDF
+-	   operation. The KDF implemenation complies with SP800-56A as well
++	   operation. The KDF implementation complies with SP800-56A as well
+ 	   as with SP800-108 (the counter KDF).
+ 
+ 	 - ``char *otherinfo`` specifies the OtherInfo data as documented in
+diff -- a/Documentation/security/secrets/coco.rst b/Documentation/security/secrets/coco.rst
+--- a/Documentation/security/secrets/coco.rst
++++ b/Documentation/security/secrets/coco.rst
+@@ -34,7 +34,7 @@ be use it for its own purposes.
+ 
+ During the VM's launch, the virtual machine manager may inject a secret to that
+ area.  In AMD SEV and SEV-ES this is performed using the
+-``KVM_SEV_LAUNCH_SECRET`` command (see [sev]_).  The strucutre of the injected
++``KVM_SEV_LAUNCH_SECRET`` command (see [sev]_).  The structure of the injected
+ Guest Owner secret data should be a GUIDed table of secret values; the binary
+ format is described in ``drivers/virt/coco/efi_secret/efi_secret.c`` under
+ "Structure of the EFI secret area".
