@@ -2,207 +2,193 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 55693C05027
-	for <keyrings@archiver.kernel.org>; Fri, 17 Feb 2023 22:43:36 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C28C5C05027
+	for <keyrings@archiver.kernel.org>; Mon, 20 Feb 2023 17:13:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229558AbjBQWnf (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 17 Feb 2023 17:43:35 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37938 "EHLO
+        id S231951AbjBTRNw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 20 Feb 2023 12:13:52 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51614 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229477AbjBQWnf (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 17 Feb 2023 17:43:35 -0500
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B8C0C2CFD1;
-        Fri, 17 Feb 2023 14:43:33 -0800 (PST)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        with ESMTP id S231969AbjBTRNv (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 20 Feb 2023 12:13:51 -0500
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E12B293F8
+        for <keyrings@vger.kernel.org>; Mon, 20 Feb 2023 09:13:06 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1676913186;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=tFPUd7/n+ORLfM5cuIt8QU+zskqen27E7xthslzuino=;
+        b=g0tHpHWF4M2xspH7l9zf5PXpKQBZnS1C5D5mbeO4g1AhIULENEjw/ySK5+oUO+MX8d4r2v
+        4RsT/5CDECVgLVjoCPzoDKX+ki5szg+eWYxOE/aPwvjEVx0DnIW3SDgxt6SB5DWPpGMPQ+
+        SE/xpInSlkOMuzmVicczy2h2985yxLg=
+Received: from mimecast-mx02.redhat.com (mx3-rdu2.redhat.com
+ [66.187.233.73]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-651-ZzcuZTomNpioOSTONC0zHg-1; Mon, 20 Feb 2023 12:13:04 -0500
+X-MC-Unique: ZzcuZTomNpioOSTONC0zHg-1
+Received: from smtp.corp.redhat.com (int-mx07.intmail.prod.int.rdu2.redhat.com [10.11.54.7])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 1A9A961F16;
-        Fri, 17 Feb 2023 22:43:33 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 9A003C433D2;
-        Fri, 17 Feb 2023 22:43:31 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1676673812;
-        bh=dF1vxGSluDkKDQYylwR/rJKbtEexcLDdZz5BYUDeH64=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=Jffx0r86ibAosLYpHZs9n88wFORDbjeBVTESglQTJZp8uWrFLK47mMRPnma6CGHUa
-         HBoyn8mREdgcF/T0cJvxxpL80MjPfsuM+AKiQuiUl/p2XC/kZIJsfA+uYLT6juwOaK
-         SMiiht89zYh01dJiQlNG5hQLn+kO/QIRi6GhM8xEwPn2HiFLlSLtja2r0QjzZPeKlS
-         WZEo78KQjcH0eIrQOpFeLG8W23Fds8nKk3fZaeVcWFV/E/8BjjEE85fSjjTmlGLyjb
-         MCIixd57OAACO+C8T+iHFyO1z7YP9wWSNuN55pUYnBmRNqJcJE805JW6jwXEjLooHR
-         zoAvkb2r1BSog==
-Date:   Sat, 18 Feb 2023 00:43:28 +0200
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        Ard Biesheuvel <ardb@kernel.org>
-Subject: Re: [PATCH 00/12] add integrity and security to TPM2 transactions
-Message-ID: <Y/ADEB6OXtK2lS83@kernel.org>
-References: <20230216201410.15010-1-James.Bottomley@HansenPartnership.com>
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 3AAD529AA2EE
+        for <keyrings@vger.kernel.org>; Mon, 20 Feb 2023 17:13:04 +0000 (UTC)
+Received: from eesha.redhat.com (unknown [10.22.9.38])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 16E6014171B8;
+        Mon, 20 Feb 2023 17:13:04 +0000 (UTC)
+From:   Robbie Harwood <rharwood@redhat.com>
+To:     keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc:     Robbie Harwood <rharwood@redhat.com>
+Subject: [PATCH v2 2/2] asymmetric_keys: log on fatal failures in PE/pkcs7
+Date:   Mon, 20 Feb 2023 12:12:54 -0500
+Message-Id: <20230220171254.592347-3-rharwood@redhat.com>
+In-Reply-To: <20230220171254.592347-1-rharwood@redhat.com>
+References: <20230220171254.592347-1-rharwood@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20230216201410.15010-1-James.Bottomley@HansenPartnership.com>
+Content-Transfer-Encoding: 8bit
+X-Scanned-By: MIMEDefang 3.1 on 10.11.54.7
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, Feb 16, 2023 at 03:13:58PM -0500, James Bottomley wrote:
-> The interest in securing the TPM against interposers, both active and
-> passive has risen to fever pitch with the demonstration of key
-> recovery against windows bitlocker:
-> 
-> https://dolosgroup.io/blog/2021/7/9/from-stolen-laptop-to-inside-the-company-network
-> 
-> And subsequently the same attack being successful against all the
-> Linux TPM based security solutions:
-> 
-> https://www.secura.com/blog/tpm-sniffing-attacks-against-non-bitlocker-targets
-> 
-> The attacks fall into two categories:
-> 
-> 1. Passive Interposers, which sit on the bus and merely observe
-> 2. Active Interposers, which try to manipulate TPM transactions on the
->    bus using man in the middle and packet stealing to create TPM state
->    the interposer owner desires.
-> 
-> Our broadest interposer target is the use of TPM_RS_PW for password
-> authorization which sends the actual password to the TPM without any
-> obfuscation and effectively hands it to any interposer. The way to fix
-> this is to use real sessions for HMAC capabilities to ensure integrity
-> and to use parameter and response encryption to ensure confidentiality
-> of the data flowing over the TPM bus.  HMAC sessions by agreeing a
-> challenge with the TPM and then giving a response which is a HMAC of
-> the password and the challenge, so the application proves knowledge of
-> the password to the TPM without ever transmitting the password itself.
-> Using HMAC sessions when sending commands to the TPM also provides
-> some measure of protection against active interposers, since the
-> interposer can't interfere with or delete a HMAC'd command (because
-> they can't manufacture a response with the correct HMAC).
-> 
-> To protect TPM transactions where there isn't a shared secret
-> (i.e. the command is something like a PCR extension which doesn't
-> involve a TPM object with a password) we have to do a bit more work to
-> set up sessions with a passed in encrypted secret (called a salt) to
-> act in place of the shared secret in the HMAC.  This secret salt is
-> effectively a random number encrypted to a public key of the TPM.  The
-> final piece of the puzzle is using parameter input and response return
-> encryption, so any interposer can't see the data passing from the
-> application to the TPM and vice versa.
-> 
-> The most insidious interposer attack of all is a reset attack: since
-> the interposer has access to the TPM bus, it can assert the TPM reset
-> line any time it wants.  When a TPM resets it mostly comes back in the
-> same state except that all the PCRs are reset to their initial values.
-> Controlling the reset line allows the interposer to change the PCR
-> state after the fact by resetting the TPM and then replaying PCR
-> extends to get the PCRs into a valid state to release secrets, so even
-> if an attack event was recorded, the record is erased.  This reset
-> attack violates the fundamental princible of non-repudiability of TPM
-> logs.  Defeating the reset attack involves tying all TPM operations
-> within the kernel to a property which will change detectably if the
-> TPM is reset.  For that reason, we tie all TPM sessions to the null
-> hierarchy we obtain at start of day and whose seed changes on every
-> reset.  If an active interposer asserts a TPM reset, the new null
-> primary won't match the kernel's stored one and all TPM operations
-> will start failing because of HMAC mismatches in the sessions.  So if
-> the kernel TPM code keeps operating, it guarantees that a reset hasn't
-> occurred.
-> 
-> The final part of the puzzle is that the machine owner must have a
-> fixed idea of the EK of their TPM and should have certified this with
-> the TPM manufacturer.  On every boot, the certified EK public key
-> should be used to do a make credential/activate credential attestation
-> key insertion and then the null key certified with the attestation
-> key.  We can follow a trust on first use model where an OS
-> installation will extract and verify a public EK and save it to a read
-> only file.
-> 
-> This patch series adds a simple API which can ensure the above
-> properties as a layered addition to the existing TPM handling code.
-> This series now includes protections for PCR extend, getting random
-> numbers from the TPM and data sealing and unsealing.  It therefore
-> eliminates all uses of TPM2_RS_PW in the kernel and adds encryption
-> protection to sensitive data flowing into and out of the TPM.  The
-> first four patches add more sophisticated buffer handling to the TPM
-> which is needed to build the more complex encryption and
-> authentication based commands.  Patch 6 adds all the generic
-> cryptography primitives and patches 7-9 use them in critical TPM
-> operations where we want to avoid or detect interposers.  Patch 10
-> exports the name of the null key we used for boot/run time
-> verification and patch 11 documents the security guarantees and
-> expectations.
-> 
-> This was originally sent over four years ago, with the last iteration
-> being:
-> 
-> https://lore.kernel.org/linux-integrity/1568031515.6613.31.camel@HansenPartnership.com/
-> 
-> I'm dusting it off now because various forces at Microsoft and Google
-> via the Open Compute Platform are making a lot of noise about
-> interposers and we in the linux kernel look critically lacking in that
-> regard, particularly for TPM trusted keys.
-> 
-> ---
-> v2 fixes the problems smatch reported and adds more explanation about
-> the code motion in the first few patches
-> v3 rebases the encryption to be against Ard's new library function, the
-> aescfb addition of which appears as patch 1.
-> 
-> James
-> 
-> ---
-> 
-> Ard Biesheuvel (1):
->   crypto: lib - implement library version of AES in CFB mode
-> 
-> James Bottomley (11):
->   tpm: move buffer handling from static inlines to real functions
->   tpm: add buffer handling for TPM2B types
->   tpm: add cursor based buffer functions for response parsing
->   tpm: add buffer function to point to returned parameters
->   tpm: export the context save and load commands
->   tpm: Add full HMAC and encrypt/decrypt session handling code
->   tpm: add hmac checks to tpm2_pcr_extend()
->   tpm: add session encryption protection to tpm2_get_random()
->   KEYS: trusted: Add session encryption protection to the seal/unseal
->     path
->   tpm: add the null key name as a sysfs export
->   Documentation: add tpm-security.rst
-> 
->  Documentation/security/tpm/tpm-security.rst |  216 ++++
->  drivers/char/tpm/Kconfig                    |   13 +
->  drivers/char/tpm/Makefile                   |    2 +
->  drivers/char/tpm/tpm-buf.c                  |  196 ++++
->  drivers/char/tpm/tpm-chip.c                 |    3 +
->  drivers/char/tpm/tpm-sysfs.c                |   18 +
->  drivers/char/tpm/tpm.h                      |   14 +
->  drivers/char/tpm/tpm2-cmd.c                 |   52 +-
->  drivers/char/tpm/tpm2-sessions.c            | 1160 +++++++++++++++++++
->  drivers/char/tpm/tpm2-space.c               |    8 +-
->  include/crypto/aes.h                        |    5 +
->  include/linux/tpm.h                         |  257 ++--
->  lib/crypto/Kconfig                          |    5 +
->  lib/crypto/Makefile                         |    3 +
->  lib/crypto/aescfb.c                         |   75 ++
->  security/keys/trusted-keys/trusted_tpm2.c   |   82 +-
->  16 files changed, 1984 insertions(+), 125 deletions(-)
->  create mode 100644 Documentation/security/tpm/tpm-security.rst
->  create mode 100644 drivers/char/tpm/tpm-buf.c
->  create mode 100644 drivers/char/tpm/tpm2-sessions.c
->  create mode 100644 lib/crypto/aescfb.c
-> 
-> -- 
-> 2.35.3
-> 
+These particular errors can be encountered while trying to kexec when
+secureboot lockdown is in place.  Without this change, even with a
+signed debug build, one still needs to reboot the machine to add the
+appropriate dyndbg parameters (since lockdown blocks debugfs).
 
-Overally looks much better than earlier version! I'll aim to 
-test this next week [*].
+Accordingly, upgrade all pr_debug() before fatal error into pr_warn().
 
-[*] The startup I was in went out of business, meaning that I'm
-ATM independent contributor doing this on my free time until I
-find a new job. That said, I spend 4 hours a day with kernel every
-working day so should not affect much as far reviewing and
-testing goes.
+Signed-off-by: Robbie Harwood <rharwood@redhat.com>
+---
+ crypto/asymmetric_keys/pkcs7_verify.c  | 10 +++++-----
+ crypto/asymmetric_keys/verify_pefile.c | 24 ++++++++++++------------
+ 2 files changed, 17 insertions(+), 17 deletions(-)
 
-BR, Jarkko
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index f6321c785714..3da32813e441 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -79,16 +79,16 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+ 		}
+ 
+ 		if (sinfo->msgdigest_len != sig->digest_size) {
+-			pr_debug("Sig %u: Invalid digest size (%u)\n",
+-				 sinfo->index, sinfo->msgdigest_len);
++			pr_warn("Sig %u: Invalid digest size (%u)\n",
++				sinfo->index, sinfo->msgdigest_len);
+ 			ret = -EBADMSG;
+ 			goto error;
+ 		}
+ 
+ 		if (memcmp(sig->digest, sinfo->msgdigest,
+ 			   sinfo->msgdigest_len) != 0) {
+-			pr_debug("Sig %u: Message digest doesn't match\n",
+-				 sinfo->index);
++			pr_warn("Sig %u: Message digest doesn't match\n",
++				sinfo->index);
+ 			ret = -EKEYREJECTED;
+ 			goto error;
+ 		}
+@@ -478,7 +478,7 @@ int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
+ 			       const void *data, size_t datalen)
+ {
+ 	if (pkcs7->data) {
+-		pr_debug("Data already supplied\n");
++		pr_warn("Data already supplied\n");
+ 		return -EINVAL;
+ 	}
+ 	pkcs7->data = data;
+diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_keys/verify_pefile.c
+index fe1bb374239d..22beaf2213a2 100644
+--- a/crypto/asymmetric_keys/verify_pefile.c
++++ b/crypto/asymmetric_keys/verify_pefile.c
+@@ -74,7 +74,7 @@ static int pefile_parse_binary(const void *pebuf, unsigned int pelen,
+ 		break;
+ 
+ 	default:
+-		pr_debug("Unknown PEOPT magic = %04hx\n", pe32->magic);
++		pr_warn("Unknown PEOPT magic = %04hx\n", pe32->magic);
+ 		return -ELIBBAD;
+ 	}
+ 
+@@ -95,7 +95,7 @@ static int pefile_parse_binary(const void *pebuf, unsigned int pelen,
+ 	ctx->certs_size = ddir->certs.size;
+ 
+ 	if (!ddir->certs.virtual_address || !ddir->certs.size) {
+-		pr_debug("Unsigned PE binary\n");
++		pr_warn("Unsigned PE binary\n");
+ 		return -ENODATA;
+ 	}
+ 
+@@ -127,7 +127,7 @@ static int pefile_strip_sig_wrapper(const void *pebuf,
+ 	unsigned len;
+ 
+ 	if (ctx->sig_len < sizeof(wrapper)) {
+-		pr_debug("Signature wrapper too short\n");
++		pr_warn("Signature wrapper too short\n");
+ 		return -ELIBBAD;
+ 	}
+ 
+@@ -142,16 +142,16 @@ static int pefile_strip_sig_wrapper(const void *pebuf,
+ 	 * rounded up since 0.110.
+ 	 */
+ 	if (wrapper.length > ctx->sig_len) {
+-		pr_debug("Signature wrapper bigger than sig len (%x > %x)\n",
+-			 ctx->sig_len, wrapper.length);
++		pr_warn("Signature wrapper bigger than sig len (%x > %x)\n",
++			ctx->sig_len, wrapper.length);
+ 		return -ELIBBAD;
+ 	}
+ 	if (wrapper.revision != WIN_CERT_REVISION_2_0) {
+-		pr_debug("Signature is not revision 2.0\n");
++		pr_warn("Signature is not revision 2.0\n");
+ 		return -ENOTSUPP;
+ 	}
+ 	if (wrapper.cert_type != WIN_CERT_TYPE_PKCS_SIGNED_DATA) {
+-		pr_debug("Signature certificate type is not PKCS\n");
++		pr_warn("Signature certificate type is not PKCS\n");
+ 		return -ENOTSUPP;
+ 	}
+ 
+@@ -164,7 +164,7 @@ static int pefile_strip_sig_wrapper(const void *pebuf,
+ 	ctx->sig_offset += sizeof(wrapper);
+ 	ctx->sig_len -= sizeof(wrapper);
+ 	if (ctx->sig_len < 4) {
+-		pr_debug("Signature data missing\n");
++		pr_warn("Signature data missing\n");
+ 		return -EKEYREJECTED;
+ 	}
+ 
+@@ -198,7 +198,7 @@ static int pefile_strip_sig_wrapper(const void *pebuf,
+ 		return 0;
+ 	}
+ not_pkcs7:
+-	pr_debug("Signature data not PKCS#7\n");
++	pr_warn("Signature data not PKCS#7\n");
+ 	return -ELIBBAD;
+ }
+ 
+@@ -341,8 +341,8 @@ static int pefile_digest_pe(const void *pebuf, unsigned int pelen,
+ 	digest_size = crypto_shash_digestsize(tfm);
+ 
+ 	if (digest_size != ctx->digest_len) {
+-		pr_debug("Digest size mismatch (%zx != %x)\n",
+-			 digest_size, ctx->digest_len);
++		pr_warn("Digest size mismatch (%zx != %x)\n",
++			digest_size, ctx->digest_len);
+ 		ret = -EBADMSG;
+ 		goto error_no_desc;
+ 	}
+@@ -373,7 +373,7 @@ static int pefile_digest_pe(const void *pebuf, unsigned int pelen,
+ 	 * PKCS#7 certificate.
+ 	 */
+ 	if (memcmp(digest, ctx->digest, ctx->digest_len) != 0) {
+-		pr_debug("Digest mismatch\n");
++		pr_warn("Digest mismatch\n");
+ 		ret = -EKEYREJECTED;
+ 	} else {
+ 		pr_debug("The digests match!\n");
+-- 
+2.39.1
+
