@@ -2,107 +2,130 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EEE9FC64ED6
-	for <keyrings@archiver.kernel.org>; Mon, 27 Feb 2023 08:46:58 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2B005C7EE2D
+	for <keyrings@archiver.kernel.org>; Mon, 27 Feb 2023 08:48:36 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231489AbjB0Iq6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 27 Feb 2023 03:46:58 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36650 "EHLO
+        id S230495AbjB0Ise (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 27 Feb 2023 03:48:34 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36160 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229765AbjB0Iq1 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 27 Feb 2023 03:46:27 -0500
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 31BB21F5E0;
-        Mon, 27 Feb 2023 00:39:48 -0800 (PST)
+        with ESMTP id S229742AbjB0IsH (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 27 Feb 2023 03:48:07 -0500
+Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 51A67252A6;
+        Mon, 27 Feb 2023 00:40:37 -0800 (PST)
 Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 2C26560DB5;
-        Mon, 27 Feb 2023 08:38:02 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3095BC433D2;
-        Mon, 27 Feb 2023 08:38:00 +0000 (UTC)
+        by ams.source.kernel.org (Postfix) with ESMTPS id 1DD33B80BE8;
+        Mon, 27 Feb 2023 08:34:04 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 2BC76C433EF;
+        Mon, 27 Feb 2023 08:34:01 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1677487081;
-        bh=K6zjfpGeRqhj20EF3kr8kZVgDzjn8p9pMMSaDUqqJXw=;
+        s=k20201202; t=1677486842;
+        bh=daN4vxGRyKHsdZInFbqx1YolKOv5AHiq+a5Oe5Jn9Wo=;
         h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=eEmomDMd8U2TDn4kYq/IBjv4qo62DUAKHB8gyc83mJS7wgzH9Uu24HOji1PbXZwUA
-         M9bF4tYeZiD0ctbU30GSSAfBHSjfpgXUhsn6buUYdNmkPTi5Nst/mfsL3Fr3emxeVW
-         BK9kEGWIAByLLuAQVDkmckfVRGegSfCDdGe9Q6BoTSJMIu8bL9+IrfoaiZ5EAJBF3L
-         Qrzh+MVotSgj3VkAdxapHN+KNaBcNeLTPKJ++KzU2+SKAnwnT/7IVSPtzxx3zDuDZa
-         bQke6jWnA81HKGuVIz58KY1gbqqJKQ+hHE3oybVKiA1j8mDurTaZcA60bYNMWF4Sw+
-         rzCt+dp6aaFDg==
-Date:   Mon, 27 Feb 2023 10:37:59 +0200
+        b=DQH+P69bpThkbkW+NT0Sdt+nxbeE+/RtDKCuENW1QCHhHQIPLQVh6Hd7QoXd2eshH
+         SCkOxOyrbotUisEQnX2LZ6Cyb50BO9lnQxmI1UQCKTBZ2BjupWltSAZhIlxekF3Yej
+         5mqp8H1FxwTE/UtwO4YuSHGep9rdyZRzgSx8mO0bdIJML49R5nfz40EmNnwNT/S9Ue
+         jvnQCI2AwOJ/RM6W1bR79JgULY+QHhYONcf0qA987cCNvv0w8i5R1N/LtVGRY+j4zU
+         u33zAf2htQLKzOLzs2LMFtXgotqOLP1s6doV5mTqogx1S7zu3nCPPI+tRSRHxdTRHo
+         SQgtiL1HdDIVg==
+Date:   Mon, 27 Feb 2023 10:34:00 +0200
 From:   Jarkko Sakkinen <jarkko@kernel.org>
 To:     James Bottomley <James.Bottomley@hansenpartnership.com>
 Cc:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
         Ard Biesheuvel <ardb@kernel.org>
-Subject: Re: [PATCH 06/12] tpm: export the context save and load commands
-Message-ID: <Y/xr53SmY3aDZV2D@kernel.org>
+Subject: Re: [PATCH 04/12] tpm: add cursor based buffer functions for
+ response parsing
+Message-ID: <Y/xq+MgLgJequlOk@kernel.org>
 References: <20230216201410.15010-1-James.Bottomley@HansenPartnership.com>
- <20230216201410.15010-7-James.Bottomley@HansenPartnership.com>
+ <20230216201410.15010-5-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20230216201410.15010-7-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20230216201410.15010-5-James.Bottomley@HansenPartnership.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, Feb 16, 2023 at 03:14:04PM -0500, James Bottomley wrote:
-> The TPM2 session HMAC and encryption handling code needs to save and
-> restore a single volatile context for the elliptic curve version of
-> the NULL seed, so export the APIs which do this for internal use.
+On Thu, Feb 16, 2023 at 03:14:02PM -0500, James Bottomley wrote:
+> Once we have encryption and authentication, marshalling and
+> unmarshalling sessions becomes hugely complex.  Add cursor based
+> functions which update the current pointer to make response parsing
+> easier.
+
+You need to properly introduce the concept of cursor based function,
+and how that maps into implementation.
+
+I understand absolutely nothing of the change just by reading the
+commit message, it is pretty much useless peace of text.
+
 > 
 > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-
-These did not need EXPORT_SYMBOL_GPL()?
-
 > ---
->  drivers/char/tpm/tpm.h        | 4 ++++
->  drivers/char/tpm/tpm2-space.c | 8 ++++----
->  2 files changed, 8 insertions(+), 4 deletions(-)
+>  drivers/char/tpm/tpm-buf.c | 29 +++++++++++++++++++++++++++++
+>  include/linux/tpm.h        |  3 +++
+>  2 files changed, 32 insertions(+)
 > 
-> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> index 24ee4e1cc452..a5fe37977103 100644
-> --- a/drivers/char/tpm/tpm.h
-> +++ b/drivers/char/tpm/tpm.h
-> @@ -237,6 +237,10 @@ int tpm2_commit_space(struct tpm_chip *chip, struct tpm_space *space, void *buf,
->  		      size_t *bufsiz);
->  int tpm_devs_add(struct tpm_chip *chip);
->  void tpm_devs_remove(struct tpm_chip *chip);
-> +int tpm2_save_context(struct tpm_chip *chip, u32 handle, u8 *buf,
-> +		      unsigned int buf_size, unsigned int *offset);
-> +int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
-> +		      unsigned int *offset, u32 *handle);
+> diff --git a/drivers/char/tpm/tpm-buf.c b/drivers/char/tpm/tpm-buf.c
+> index 292c6f14f72c..b76158f9bcd0 100644
+> --- a/drivers/char/tpm/tpm-buf.c
+> +++ b/drivers/char/tpm/tpm-buf.c
+> @@ -7,6 +7,8 @@
+>  #include <linux/module.h>
+>  #include <linux/tpm.h>
 >  
->  void tpm_bios_log_setup(struct tpm_chip *chip);
->  void tpm_bios_log_teardown(struct tpm_chip *chip);
-> diff --git a/drivers/char/tpm/tpm2-space.c b/drivers/char/tpm/tpm2-space.c
-> index ffb35f0154c1..d77ee4af9d65 100644
-> --- a/drivers/char/tpm/tpm2-space.c
-> +++ b/drivers/char/tpm/tpm2-space.c
-> @@ -68,8 +68,8 @@ void tpm2_del_space(struct tpm_chip *chip, struct tpm_space *space)
->  	kfree(space->session_buf);
->  }
->  
-> -static int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
-> -			     unsigned int *offset, u32 *handle)
-> +int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
-> +		      unsigned int *offset, u32 *handle)
+> +#include <asm/unaligned.h>
+> +
+>  static int __tpm_buf_init(struct tpm_buf *buf)
 >  {
->  	struct tpm_buf tbuf;
->  	struct tpm2_context *ctx;
-> @@ -119,8 +119,8 @@ static int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
->  	return 0;
+>  	buf->data = (u8 *)__get_free_page(GFP_KERNEL);
+> @@ -154,3 +156,30 @@ void tpm_buf_append_2b(struct tpm_buf *buf, struct tpm_buf *tpm2b)
+>  	tpm_buf_reset_int(tpm2b);
 >  }
+>  EXPORT_SYMBOL_GPL(tpm_buf_append_2b);
+> +
+> +/* functions for unmarshalling data and moving the cursor */
+> +u8 tpm_get_inc_u8(const u8 **ptr)
+> +{
+> +	return *((*ptr)++);
+> +}
+> +EXPORT_SYMBOL_GPL(tpm_get_inc_u8);
+> +
+> +u16 tpm_get_inc_u16(const u8 **ptr)
+> +{
+> +	u16 val;
+> +
+> +	val = get_unaligned_be16(*ptr);
+> +	*ptr += sizeof(val);
+> +	return val;
+> +}
+> +EXPORT_SYMBOL_GPL(tpm_get_inc_u16);
+> +
+> +u32 tpm_get_inc_u32(const u8 **ptr)
+> +{
+> +	u32 val;
+> +
+> +	val = get_unaligned_be32(*ptr);
+> +	*ptr += sizeof(val);
+> +	return val;
+> +}
+> +EXPORT_SYMBOL_GPL(tpm_get_inc_u32);
+> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+> index f2d4dab6d832..f7cff1d114b0 100644
+> --- a/include/linux/tpm.h
+> +++ b/include/linux/tpm.h
+> @@ -335,6 +335,9 @@ void tpm_buf_append_u8(struct tpm_buf *buf, const u8 value);
+>  void tpm_buf_append_u16(struct tpm_buf *buf, const u16 value);
+>  void tpm_buf_append_u32(struct tpm_buf *buf, const u32 value);
+>  void tpm_buf_append_2b(struct tpm_buf *buf, struct tpm_buf *tpm2b);
+> +u8 tpm_get_inc_u8(const u8 **ptr);
+> +u16 tpm_get_inc_u16(const u8 **ptr);
+> +u32 tpm_get_inc_u32(const u8 **ptr);
 >  
-> -static int tpm2_save_context(struct tpm_chip *chip, u32 handle, u8 *buf,
-> -			     unsigned int buf_size, unsigned int *offset)
-> +int tpm2_save_context(struct tpm_chip *chip, u32 handle, u8 *buf,
-> +		      unsigned int buf_size, unsigned int *offset)
->  {
->  	struct tpm_buf tbuf;
->  	unsigned int body_size;
+>  /*
+>   * Check if TPM device is in the firmware upgrade mode.
 > -- 
 > 2.35.3
 > 
