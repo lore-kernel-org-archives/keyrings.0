@@ -2,102 +2,130 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A8C28C7EE2D
-	for <keyrings@archiver.kernel.org>; Mon, 27 Feb 2023 08:57:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C7C43C7EE2D
+	for <keyrings@archiver.kernel.org>; Mon, 27 Feb 2023 09:20:50 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229820AbjB0I5j (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 27 Feb 2023 03:57:39 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51460 "EHLO
+        id S229511AbjB0JUt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 27 Feb 2023 04:20:49 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55308 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229827AbjB0I5N (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 27 Feb 2023 03:57:13 -0500
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 721911CAF8;
-        Mon, 27 Feb 2023 00:48:48 -0800 (PST)
+        with ESMTP id S230008AbjB0JU3 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 27 Feb 2023 04:20:29 -0500
+Received: from ams.source.kernel.org (ams.source.kernel.org [IPv6:2604:1380:4601:e00::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 89A04EC4D;
+        Mon, 27 Feb 2023 01:16:39 -0800 (PST)
 Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id C56E960DBD;
-        Mon, 27 Feb 2023 08:36:36 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 889E3C4339B;
-        Mon, 27 Feb 2023 08:36:35 +0000 (UTC)
+        by ams.source.kernel.org (Postfix) with ESMTPS id 1497DB80CA9;
+        Mon, 27 Feb 2023 09:16:38 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 4DCEDC433EF;
+        Mon, 27 Feb 2023 09:16:36 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1677486996;
-        bh=aPB28of5jnYKF5zuEBrnpPszEjEvVLjOQvY4NhHt17A=;
+        s=k20201202; t=1677489396;
+        bh=JeSjrxe11atYOcINTmnm0R97Nl3rtL1hmhT/XE11G94=;
         h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=JFPqh1Ogm/HoDNRgb3Ysou8wTnAM1OdtalmbxiF6ZRdJqh5a6mWD64zhfMwtM+IEc
-         kEs3UxGlT0/mUrepUR2K+jEIoe18CNoXP7Ifx/IPvYvozltdS1z85c7XY2MqZJ9eOH
-         vbTXET3qAm8HaAWlJwVxANbZXRBqw0ogcFLou+bCejyx3lAY2ND2QHZGsBWE9TOmcw
-         uluDBOccY0x1gNeSckwFZBnZu2mLg+zdPioIZB/NkYIxldNaOO+eV+iuFLTve0feVv
-         lnvxIFaxjw4cYc+lde06ijZZdMrWcCnyI78T4rBmPuq/vI1eEiSA82iRU901kPSj9C
-         WbQvU+/M7o4Uw==
-Date:   Mon, 27 Feb 2023 10:36:33 +0200
+        b=EBpcngk3h3x4zt71ByI7NX3gXVvBHz8tGdVchvnZikqL3VztPe+CDcMluoiREdnTn
+         9d3kKgNylhSxdpaZjt/PEEkl7/c1J72vkkkw1gvWkNvHR2Qgptw/VDPt5ol0QWgqGl
+         1TazthlwOVahoo73VVU/9SWOiC70qnWXKHOYHgYas7nKROyVIPsxG/eaD6wb7DaYEU
+         7D5v1f5SjZLcXuu3g87VfEqRcUOGUzkCU8vik46BB1U86Zti5iMWsuX1vUnHOrLGm5
+         xM2Hfk8UwnEuqB4E4RfGCX+IR/E/D7pXZG5ecYOAy8SsnSkeSXc+uD12MfczO9skIw
+         SYtYq9jSl2eeQ==
+Date:   Mon, 27 Feb 2023 11:16:34 +0200
 From:   Jarkko Sakkinen <jarkko@kernel.org>
 To:     James Bottomley <James.Bottomley@hansenpartnership.com>
 Cc:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
         Ard Biesheuvel <ardb@kernel.org>
-Subject: Re: [PATCH 05/12] tpm: add buffer function to point to returned
- parameters
-Message-ID: <Y/xrkaMnyMbUlrXd@kernel.org>
+Subject: Re: [PATCH 08/12] tpm: add hmac checks to tpm2_pcr_extend()
+Message-ID: <Y/x04S0a5+/eOCjf@kernel.org>
 References: <20230216201410.15010-1-James.Bottomley@HansenPartnership.com>
- <20230216201410.15010-6-James.Bottomley@HansenPartnership.com>
+ <20230216201410.15010-9-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20230216201410.15010-6-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20230216201410.15010-9-James.Bottomley@HansenPartnership.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, Feb 16, 2023 at 03:14:03PM -0500, James Bottomley wrote:
-> Introducing encryption sessions changes where the return parameters
-> are located in the buffer because if a return session is present
-> they're 4 bytes beyond the header with those 4 bytes showing the
-> parameter length.  If there is no return session, then they're in the
-> usual place immediately after the header.  The tpm_buf_parameters()
-> encapsulates this calculation and should be used everywhere
-> &buf.data[TPM_HEADER_SIZE] is used now
+On Thu, Feb 16, 2023 at 03:14:06PM -0500, James Bottomley wrote:
+> We use tpm2_pcr_extend() in trusted keys to extend a PCR to prevent a
+
+"Use tpm2_pcr_extend()"
+
+> key from being re-loaded until the next reboot.  To use this
+> functionality securely, that extend must be protected by a session
+> hmac.
+
+There's no description of action taken. This is only motivation part.
+
 > 
 > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 > ---
->  drivers/char/tpm/tpm-buf.c | 10 ++++++++++
->  include/linux/tpm.h        |  2 ++
->  2 files changed, 12 insertions(+)
+>  drivers/char/tpm/tpm2-cmd.c | 27 ++++++++++-----------------
+>  1 file changed, 10 insertions(+), 17 deletions(-)
 > 
-> diff --git a/drivers/char/tpm/tpm-buf.c b/drivers/char/tpm/tpm-buf.c
-> index b76158f9bcd0..2518b675e866 100644
-> --- a/drivers/char/tpm/tpm-buf.c
-> +++ b/drivers/char/tpm/tpm-buf.c
-> @@ -183,3 +183,13 @@ u32 tpm_get_inc_u32(const u8 **ptr)
->  	return val;
+> diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+> index 056dad3dd5c9..ef038cc71f9c 100644
+> --- a/drivers/char/tpm/tpm2-cmd.c
+> +++ b/drivers/char/tpm/tpm2-cmd.c
+> @@ -216,13 +216,6 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
+>  	return rc;
 >  }
->  EXPORT_SYMBOL_GPL(tpm_get_inc_u32);
-> +
-> +u8 *tpm_buf_parameters(struct tpm_buf *buf)
-
-kdoc
-
-> +{
-> +	int offset = TPM_HEADER_SIZE;
-> +
-> +	if (tpm_buf_tag(buf) == TPM2_ST_SESSIONS)
-> +		offset += 4;
-> +
-> +	return &buf->data[offset];
-> +}
-> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-> index f7cff1d114b0..fa8d1f932c0f 100644
-> --- a/include/linux/tpm.h
-> +++ b/include/linux/tpm.h
-> @@ -339,6 +339,8 @@ u8 tpm_get_inc_u8(const u8 **ptr);
->  u16 tpm_get_inc_u16(const u8 **ptr);
->  u32 tpm_get_inc_u32(const u8 **ptr);
 >  
-> +u8 *tpm_buf_parameters(struct tpm_buf *buf);
-> +
->  /*
->   * Check if TPM device is in the firmware upgrade mode.
->   */
+> -struct tpm2_null_auth_area {
+> -	__be32  handle;
+> -	__be16  nonce_size;
+> -	u8  attributes;
+> -	__be16  auth_size;
+> -} __packed;
+> -
+>  /**
+>   * tpm2_pcr_extend() - extend a PCR value
+>   *
+> @@ -236,24 +229,22 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
+>  		    struct tpm_digest *digests)
+>  {
+>  	struct tpm_buf buf;
+> -	struct tpm2_null_auth_area auth_area;
+>  	int rc;
+>  	int i;
+>  
+> -	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_PCR_EXTEND);
+> +	rc = tpm2_start_auth_session(chip);
+>  	if (rc)
+>  		return rc;
+>  
+> -	tpm_buf_append_u32(&buf, pcr_idx);
+> +	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_PCR_EXTEND);
+> +	if (rc) {
+> +		tpm2_end_auth_session(chip);
+> +		return rc;
+> +	}
+>  
+> -	auth_area.handle = cpu_to_be32(TPM2_RS_PW);
+> -	auth_area.nonce_size = 0;
+> -	auth_area.attributes = 0;
+> -	auth_area.auth_size = 0;
+> +	tpm_buf_append_name(chip, &buf, pcr_idx, NULL);
+> +	tpm_buf_append_hmac_session(chip, &buf, 0, NULL, 0);
+>  
+> -	tpm_buf_append_u32(&buf, sizeof(struct tpm2_null_auth_area));
+> -	tpm_buf_append(&buf, (const unsigned char *)&auth_area,
+> -		       sizeof(auth_area));
+>  	tpm_buf_append_u32(&buf, chip->nr_allocated_banks);
+>  
+>  	for (i = 0; i < chip->nr_allocated_banks; i++) {
+> @@ -262,7 +253,9 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
+>  			       chip->allocated_banks[i].digest_size);
+>  	}
+>  
+> +	tpm_buf_fill_hmac_session(chip, &buf);
+>  	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting extend a PCR value");
+> +	rc = tpm_buf_check_hmac_response(chip, &buf, rc);
+>  
+>  	tpm_buf_destroy(&buf);
+>  
 > -- 
 > 2.35.3
 > 
