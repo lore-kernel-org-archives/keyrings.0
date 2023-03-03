@@ -2,24 +2,24 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 86C9EC87FE4
-	for <keyrings@archiver.kernel.org>; Fri,  3 Mar 2023 18:39:12 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B2FFBC7EE32
+	for <keyrings@archiver.kernel.org>; Fri,  3 Mar 2023 18:39:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231945AbjCCSjI (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 3 Mar 2023 13:39:08 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37942 "EHLO
+        id S231920AbjCCSjG (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 3 Mar 2023 13:39:06 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37274 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231464AbjCCSiq (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 3 Mar 2023 13:38:46 -0500
+        with ESMTP id S231203AbjCCSip (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 3 Mar 2023 13:38:45 -0500
 Received: from frasgout11.his.huawei.com (frasgout11.his.huawei.com [14.137.139.23])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 555C4BDC9;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 38274BDC7;
         Fri,  3 Mar 2023 10:37:59 -0800 (PST)
-Received: from mail02.huawei.com (unknown [172.18.147.227])
-        by frasgout11.his.huawei.com (SkyGuard) with ESMTP id 4PSwy55yv1z9xrt9;
-        Sat,  4 Mar 2023 02:10:53 +0800 (CST)
+Received: from mail02.huawei.com (unknown [172.18.147.229])
+        by frasgout11.his.huawei.com (SkyGuard) with ESMTP id 4PSwyW0Mq8z9xrtQ;
+        Sat,  4 Mar 2023 02:11:15 +0800 (CST)
 Received: from huaweicloud.com (unknown [10.204.63.22])
-        by APP2 (Coremail) with SMTP id GxC2BwBnMVgKOgJk5iFpAQ--.12605S3;
-        Fri, 03 Mar 2023 19:19:13 +0100 (CET)
+        by APP2 (Coremail) with SMTP id GxC2BwBnMVgKOgJk5iFpAQ--.12605S5;
+        Fri, 03 Mar 2023 19:19:34 +0100 (CET)
 From:   Roberto Sassu <roberto.sassu@huaweicloud.com>
 To:     viro@zeniv.linux.org.uk, chuck.lever@oracle.com,
         jlayton@kernel.org, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com,
@@ -32,20 +32,20 @@ Cc:     linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
         selinux@vger.kernel.org, linux-kernel@vger.kernel.org,
         stefanb@linux.ibm.com, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: [PATCH 01/28] ima: Align ima_inode_post_setattr() definition with LSM infrastructure
-Date:   Fri,  3 Mar 2023 19:18:15 +0100
-Message-Id: <20230303181842.1087717-2-roberto.sassu@huaweicloud.com>
+Subject: [PATCH 03/28] ima: Align ima_post_create_tmpfile() definition with LSM infrastructure
+Date:   Fri,  3 Mar 2023 19:18:17 +0100
+Message-Id: <20230303181842.1087717-4-roberto.sassu@huaweicloud.com>
 X-Mailer: git-send-email 2.25.1
 In-Reply-To: <20230303181842.1087717-1-roberto.sassu@huaweicloud.com>
 References: <20230303181842.1087717-1-roberto.sassu@huaweicloud.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-CM-TRANSID: GxC2BwBnMVgKOgJk5iFpAQ--.12605S3
-X-Coremail-Antispam: 1UD129KBjvJXoWxJF1fWrW8tr43KrWrCFyDJrb_yoW5Xr43pa
-        95G3WDK34ruFW0gr95Aay7Z3yF9FyUWFy7W34Fg3yIyFnxKr1IqFs3Kry7Cry5CrW8Krn0
-        qF1jgwn8Cw1ay3DanT9S1TB71UUUUU7qnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+X-CM-TRANSID: GxC2BwBnMVgKOgJk5iFpAQ--.12605S5
+X-Coremail-Antispam: 1UD129KBjvJXoWxJF1fWrWUtrW3tr4DKryDZFb_yoW5Wr45pF
+        s3Kw1UGrZ5Wry7urykJa1UZ34fKrWqqr1UurWfW34vyF1Dtr1SvF1fCr1akFy3JFWrCry2
+        vr45KrZ8Ar1UKaDanT9S1TB71UUUUU7qnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
         9KBjDU0xBIdaVrnRJUUUPIb4IE77IF4wAFF20E14v26rWj6s0DM7CY07I20VC2zVCF04k2
-        6cxKx2IYs7xG6rWj6s0DM7CIcVAFz4kK6r1j6r18M28IrcIa0xkI8VA2jI8067AKxVWUGw
+        6cxKx2IYs7xG6rWj6s0DM7CIcVAFz4kK6r1j6r18M28IrcIa0xkI8VA2jI8067AKxVWUWw
         A2048vs2IY020Ec7CjxVAFwI0_Xr0E3s1l8cAvFVAK0II2c7xJM28CjxkF64kEwVA0rcxS
         w2x7M28EF7xvwVC0I7IYx2IY67AKxVW5JVW7JwA2z4x0Y4vE2Ix0cI8IcVCY1x0267AKxV
         WxJr0_GcWl84ACjcxK6I8E87Iv67AKxVWxJVW8Jr1l84ACjcxK6I8E87Iv6xkF7I0E14v2
@@ -56,9 +56,9 @@ X-Coremail-Antispam: 1UD129KBjvJXoWxJF1fWrW8tr43KrWrCFyDJrb_yoW5Xr43pa
         rVAFwI0_Jr0_Jr4lx2IqxVCjr7xvwVAFwI0_JrI_JrWlx4CE17CEb7AF67AKxVW8ZVWrXw
         CIc40Y0x0EwIxGrwCI42IY6xIIjxv20xvE14v26ryj6F1UMIIF0xvE2Ix0cI8IcVCY1x02
         67AKxVWxJr0_GcWlIxAIcVCF04k26cxKx2IYs7xG6r1j6r1xMIIF0xvEx4A2jsIE14v26r
-        4j6F4UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Cr1j6rxdYxBIdaVFxhVjvjDU0xZFpf9x07j7
-        jjgUUUUU=
-X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAgAFBF1jj4YvdAAAsv
+        4j6F4UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Cr1j6rxdYxBIdaVFxhVjvjDU0xZFpf9x07jz
+        E__UUUUU=
+X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAQAFBF1jj4otVAAAsC
 X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
@@ -66,72 +66,81 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 From: Roberto Sassu <roberto.sassu@huawei.com>
 
-Change ima_inode_post_setattr() definition, so that it can be registered as
-implementation of the inode_post_setattr hook.
+Change ima_post_create_tmpfile() definition, so that it can be registered
+as implementation of the post_create_tmpfile hook.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
- fs/attr.c                             | 2 +-
- include/linux/ima.h                   | 4 ++--
- security/integrity/ima/ima_appraise.c | 3 ++-
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ fs/namei.c                        | 2 +-
+ include/linux/ima.h               | 7 +++++--
+ security/integrity/ima/ima_main.c | 8 ++++++--
+ 3 files changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index aca9ff7aed3..5050ab4cc45 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -485,7 +485,7 @@ int notify_change(struct mnt_idmap *idmap, struct dentry *dentry,
- 
- 	if (!error) {
- 		fsnotify_change(dentry, ia_valid);
--		ima_inode_post_setattr(idmap, dentry);
-+		ima_inode_post_setattr(idmap, dentry, ia_valid);
- 		evm_inode_post_setattr(dentry, ia_valid);
+diff --git a/fs/namei.c b/fs/namei.c
+index b5a1ec29193..57727a1ae38 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3622,7 +3622,7 @@ static int vfs_tmpfile(struct mnt_idmap *idmap,
+ 		inode->i_state |= I_LINKABLE;
+ 		spin_unlock(&inode->i_lock);
  	}
+-	ima_post_create_tmpfile(idmap, inode);
++	ima_post_create_tmpfile(idmap, dir, file_dentry(file), mode);
+ 	return 0;
+ }
  
 diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 86b57757c7b..910a2f11a90 100644
+index 179ce52013b..7535686a403 100644
 --- a/include/linux/ima.h
 +++ b/include/linux/ima.h
-@@ -186,7 +186,7 @@ static inline void ima_post_key_create_or_update(struct key *keyring,
- #ifdef CONFIG_IMA_APPRAISE
- extern bool is_ima_appraise_enabled(void);
- extern void ima_inode_post_setattr(struct mnt_idmap *idmap,
--				   struct dentry *dentry);
-+				   struct dentry *dentry, int ia_valid);
- extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 		       const void *xattr_value, size_t xattr_value_len);
- extern int ima_inode_set_acl(struct mnt_idmap *idmap,
-@@ -206,7 +206,7 @@ static inline bool is_ima_appraise_enabled(void)
+@@ -19,7 +19,8 @@ extern enum hash_algo ima_get_current_hash_algo(void);
+ extern int ima_bprm_check(struct linux_binprm *bprm);
+ extern int ima_file_check(struct file *file, int mask);
+ extern void ima_post_create_tmpfile(struct mnt_idmap *idmap,
+-				    struct inode *inode);
++				    struct inode *dir, struct dentry *dentry,
++				    umode_t mode);
+ extern void ima_file_free(struct file *file);
+ extern int ima_file_mmap(struct file *file, unsigned long reqprot,
+ 			 unsigned long prot, unsigned long flags);
+@@ -69,7 +70,9 @@ static inline int ima_file_check(struct file *file, int mask)
  }
  
- static inline void ima_inode_post_setattr(struct mnt_idmap *idmap,
--					  struct dentry *dentry)
-+					  struct dentry *dentry, int ia_valid)
+ static inline void ima_post_create_tmpfile(struct mnt_idmap *idmap,
+-					   struct inode *inode)
++					   struct inode *dir,
++					   struct dentry *dentry,
++					   umode_t mode)
  {
- 	return;
  }
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 491c1aca0b1..6b032bce4fe 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -627,6 +627,7 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
-  * ima_inode_post_setattr - reflect file metadata changes
-  * @idmap:  idmap of the mount the inode was found from
-  * @dentry: pointer to the affected dentry
-+ * @ia_valid: for the UID and GID status
+ 
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 8941305376b..4a3d0c8bcba 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -659,16 +659,20 @@ EXPORT_SYMBOL_GPL(ima_inode_hash);
+ /**
+  * ima_post_create_tmpfile - mark newly created tmpfile as new
+  * @idmap: idmap of the mount the inode was found from
+- * @inode: inode of the newly created tmpfile
++ * @dir: inode structure of the parent of the new file
++ * @dentry: dentry structure of the new file
++ * @mode: mode of the new file
   *
-  * Changes to a dentry's metadata might result in needing to appraise.
-  *
-@@ -634,7 +635,7 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
-  * to lock the inode's i_mutex.
+  * No measuring, appraising or auditing of newly created tmpfiles is needed.
+  * Skip calling process_measurement(), but indicate which newly, created
+  * tmpfiles are in policy.
   */
- void ima_inode_post_setattr(struct mnt_idmap *idmap,
--			    struct dentry *dentry)
-+			    struct dentry *dentry, int ia_valid)
+ void ima_post_create_tmpfile(struct mnt_idmap *idmap,
+-			     struct inode *inode)
++			     struct inode *dir, struct dentry *dentry,
++			     umode_t mode)
  {
- 	struct inode *inode = d_backing_inode(dentry);
  	struct integrity_iint_cache *iint;
++	struct inode *inode = dentry->d_inode;
+ 	int must_appraise;
+ 
+ 	if (!ima_policy_flag || !S_ISREG(inode->i_mode))
 -- 
 2.25.1
 
