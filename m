@@ -2,24 +2,24 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0B27AC7EE37
-	for <keyrings@archiver.kernel.org>; Fri,  3 Mar 2023 18:39:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AA595C7EE2F
+	for <keyrings@archiver.kernel.org>; Fri,  3 Mar 2023 18:39:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231933AbjCCSjH (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 3 Mar 2023 13:39:07 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37896 "EHLO
+        id S231951AbjCCSjI (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 3 Mar 2023 13:39:08 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38522 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231563AbjCCSiq (ORCPT
+        with ESMTP id S231487AbjCCSiq (ORCPT
         <rfc822;keyrings@vger.kernel.org>); Fri, 3 Mar 2023 13:38:46 -0500
 Received: from frasgout11.his.huawei.com (frasgout11.his.huawei.com [14.137.139.23])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D3BBBCC0F;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D328BCA38;
         Fri,  3 Mar 2023 10:38:00 -0800 (PST)
 Received: from mail02.huawei.com (unknown [172.18.147.227])
-        by frasgout11.his.huawei.com (SkyGuard) with ESMTP id 4PSwzk42zdz9xqx4;
-        Sat,  4 Mar 2023 02:12:18 +0800 (CST)
+        by frasgout11.his.huawei.com (SkyGuard) with ESMTP id 4PSx075ZWlz9xrtW;
+        Sat,  4 Mar 2023 02:12:39 +0800 (CST)
 Received: from huaweicloud.com (unknown [10.204.63.22])
-        by APP2 (Coremail) with SMTP id GxC2BwBnMVgKOgJk5iFpAQ--.12605S11;
-        Fri, 03 Mar 2023 19:20:38 +0100 (CET)
+        by APP2 (Coremail) with SMTP id GxC2BwBnMVgKOgJk5iFpAQ--.12605S13;
+        Fri, 03 Mar 2023 19:20:59 +0100 (CET)
 From:   Roberto Sassu <roberto.sassu@huaweicloud.com>
 To:     viro@zeniv.linux.org.uk, chuck.lever@oracle.com,
         jlayton@kernel.org, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com,
@@ -32,33 +32,33 @@ Cc:     linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
         selinux@vger.kernel.org, linux-kernel@vger.kernel.org,
         stefanb@linux.ibm.com, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: [PATCH 09/28] evm: Align evm_inode_setxattr() definition with LSM infrastructure
-Date:   Fri,  3 Mar 2023 19:18:23 +0100
-Message-Id: <20230303181842.1087717-10-roberto.sassu@huaweicloud.com>
+Subject: [PATCH 11/28] evm: Complete description of evm_inode_setattr()
+Date:   Fri,  3 Mar 2023 19:18:25 +0100
+Message-Id: <20230303181842.1087717-12-roberto.sassu@huaweicloud.com>
 X-Mailer: git-send-email 2.25.1
 In-Reply-To: <20230303181842.1087717-1-roberto.sassu@huaweicloud.com>
 References: <20230303181842.1087717-1-roberto.sassu@huaweicloud.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-CM-TRANSID: GxC2BwBnMVgKOgJk5iFpAQ--.12605S11
-X-Coremail-Antispam: 1UD129KBjvJXoWxJF1fGFW8AF15Kr4kGr13CFg_yoW5Wry7pF
-        s8Ka48Gw1FvFy7urykCa17uanY93yrWryjk3yqg3WFyF9xJr92qFyxKFWjyryrGr48Krn0
-        qanFvrs0yw15X3DanT9S1TB71UUUUU7qnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-        9KBjDU0xBIdaVrnRJUUUPqb4IE77IF4wAFF20E14v26rWj6s0DM7CY07I20VC2zVCF04k2
-        6cxKx2IYs7xG6rWj6s0DM7CIcVAFz4kK6r1j6r18M28IrcIa0xkI8VA2jI8067AKxVWUAV
-        Cq3wA2048vs2IY020Ec7CjxVAFwI0_Xr0E3s1l8cAvFVAK0II2c7xJM28CjxkF64kEwVA0
-        rcxSw2x7M28EF7xvwVC0I7IYx2IY67AKxVW5JVW7JwA2z4x0Y4vE2Ix0cI8IcVCY1x0267
-        AKxVWxJr0_GcWl84ACjcxK6I8E87Iv67AKxVWxJVW8Jr1l84ACjcxK6I8E87Iv6xkF7I0E
-        14v26F4UJVW0owAS0I0E0xvYzxvE52x082IY62kv0487Mc02F40EFcxC0VAKzVAqx4xG6I
-        80ewAv7VC0I7IYx2IY67AKxVWUGVWUXwAv7VC2z280aVAFwI0_Jr0_Gr1lOx8S6xCaFVCj
-        c4AY6r1j6r4UM4x0Y48IcxkI7VAKI48JM4IIrI8v6xkF7I0E8cxan2IY04v7MxkF7I0En4
-        kS14v26r4a6rW5MxAIw28IcxkI7VAKI48JMxC20s026xCaFVCjc4AY6r1j6r4UMI8I3I0E
-        5I8CrVAFwI0_Jr0_Jr4lx2IqxVCjr7xvwVAFwI0_JrI_JrWlx4CE17CEb7AF67AKxVW8ZV
-        WrXwCIc40Y0x0EwIxGrwCI42IY6xIIjxv20xvE14v26ryj6F1UMIIF0xvE2Ix0cI8IcVCY
-        1x0267AKxVWxJr0_GcWlIxAIcVCF04k26cxKx2IYs7xG6r1j6r1xMIIF0xvEx4A2jsIE14
-        v26r4j6F4UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Cr1j6rxdYxBIdaVFxhVjvjDU0xZFpf9x
-        07j7GYLUUUUU=
-X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAQAFBF1jj4otVQABsC
+X-CM-TRANSID: GxC2BwBnMVgKOgJk5iFpAQ--.12605S13
+X-Coremail-Antispam: 1UD129KBjvdXoW7Gw1kJr4ruFW3XFyUWrW7Jwb_yoWkZrcE9F
+        Wvvr48Wr4kXFs3Z34jkF4avrWvgr1rJrn3K347K3srZ345G3Z3XFs7XryfX348XrWUJrWq
+        9asIyryag347WjkaLaAFLSUrUUUUjb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+        9fnUUIcSsGvfJTRUUUbg8YFVCjjxCrM7AC8VAFwI0_Wr0E3s1l1xkIjI8I6I8E6xAIw20E
+        Y4v20xvaj40_Wr0E3s1l1IIY67AEw4v_Jr0_Jr4l82xGYIkIc2x26280x7IE14v26r126s
+        0DM28IrcIa0xkI8VCY1x0267AKxVW5JVCq3wA2ocxC64kIII0Yj41l84x0c7CEw4AK67xG
+        Y2AK021l84ACjcxK6xIIjxv20xvE14v26F1j6w1UM28EF7xvwVC0I7IYx2IY6xkF7I0E14
+        v26F4UJVW0owA2z4x0Y4vEx4A2jsIE14v26F4j6r4UJwA2z4x0Y4vEx4A2jsIEc7CjxVAF
+        wI0_Cr1j6rxdM2AIxVAIcxkEcVAq07x20xvEncxIr21l5I8CrVACY4xI64kE6c02F40Ex7
+        xfMcIj6xIIjxv20xvE14v26r106r15McIj6I8E87Iv67AKxVWUJVW8JwAm72CE4IkC6x0Y
+        z7v_Jr0_Gr1lF7xvr2IYc2Ij64vIr41lFIxGxcIEc7CjxVA2Y2ka0xkIwI1lc7CjxVAaw2
+        AFwI0_GFv_Wryl42xK82IYc2Ij64vIr41l4I8I3I0E4IkC6x0Yz7v_Jr0_Gr1lx2IqxVAq
+        x4xG67AKxVWUJVWUGwC20s026x8GjcxK67AKxVWUGVWUWwC2zVAF1VAY17CE14v26r4a6r
+        W5MIIYrxkI7VAKI48JMIIF0xvE2Ix0cI8IcVAFwI0_Ar0_tr1lIxAIcVC0I7IYx2IY6xkF
+        7I0E14v26F4UJVW0owCI42IY6xAIw20EY4v20xvaj40_Jr0_JF4lIxAIcVC2z280aVAFwI
+        0_Gr0_Cr1lIxAIcVC2z280aVCY1x0267AKxVWxJr0_GcJvcSsGvfC2KfnxnUUI43ZEXa7I
+        U0189tUUUUU==
+X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAQAFBF1jj4otVwAAsB
 X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
@@ -66,72 +66,30 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 From: Roberto Sassu <roberto.sassu@huawei.com>
 
-Change evm_inode_setxattr() definition, so that it can be registered as
-implementation of the inode_setxattr hook.
+Add the description for missing parameters of evm_inode_setattr() to
+avoid the warning arising with W=n compile option.
 
+Fixes: 817b54aa45db ("evm: add evm_inode_setattr to prevent updating an invalid security.evm")
+Fixes: c1632a0f1120 ("fs: port ->setattr() to pass mnt_idmap")
 Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
- include/linux/evm.h               | 4 ++--
- security/integrity/evm/evm_main.c | 3 ++-
- security/security.c               | 2 +-
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ security/integrity/evm/evm_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index b41f98791a7..2f8c5a3983f 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -27,7 +27,7 @@ extern void evm_inode_post_setattr(struct mnt_idmap *idmap,
- 				   struct dentry *dentry, int ia_valid);
- extern int evm_inode_setxattr(struct mnt_idmap *idmap,
- 			      struct dentry *dentry, const char *name,
--			      const void *value, size_t size);
-+			      const void *value, size_t size, int flags);
- extern void evm_inode_post_setxattr(struct dentry *dentry,
- 				    const char *xattr_name,
- 				    const void *xattr_value,
-@@ -105,7 +105,7 @@ static inline void evm_inode_post_setattr(struct mnt_idmap *idmap,
- 
- static inline int evm_inode_setxattr(struct mnt_idmap *idmap,
- 				     struct dentry *dentry, const char *name,
--				     const void *value, size_t size)
-+				     const void *value, size_t size, int flags)
- {
- 	return 0;
- }
 diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 0cb63dfc998..c884534f3b7 100644
+index 1155a58ae87..8b5c472f78b 100644
 --- a/security/integrity/evm/evm_main.c
 +++ b/security/integrity/evm/evm_main.c
-@@ -558,6 +558,7 @@ static int evm_protect_xattr(struct mnt_idmap *idmap,
-  * @xattr_name: pointer to the affected extended attribute name
-  * @xattr_value: pointer to the new extended attribute value
-  * @xattr_value_len: pointer to the new extended attribute value length
-+ * @flags: flags to pass into filesystem operations
-  *
-  * Before allowing the 'security.evm' protected xattr to be updated,
-  * verify the existing value is valid.  As only the kernel should have
-@@ -567,7 +568,7 @@ static int evm_protect_xattr(struct mnt_idmap *idmap,
-  */
- int evm_inode_setxattr(struct mnt_idmap *idmap, struct dentry *dentry,
- 		       const char *xattr_name, const void *xattr_value,
--		       size_t xattr_value_len)
-+		       size_t xattr_value_len, int flags)
- {
- 	const struct evm_ima_xattr_data *xattr_data = xattr_value;
- 
-diff --git a/security/security.c b/security/security.c
-index 29b4bebba5e..dcb98901eb9 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -2224,7 +2224,7 @@ int security_inode_setxattr(struct mnt_idmap *idmap,
- 	ret = ima_inode_setxattr(idmap, dentry, name, value, size, flags);
- 	if (ret)
- 		return ret;
--	return evm_inode_setxattr(idmap, dentry, name, value, size);
-+	return evm_inode_setxattr(idmap, dentry, name, value, size, flags);
- }
+@@ -798,7 +798,9 @@ static int evm_attr_change(struct mnt_idmap *idmap,
  
  /**
+  * evm_inode_setattr - prevent updating an invalid EVM extended attribute
++ * @idmap: idmap of the mount
+  * @dentry: pointer to the affected dentry
++ * @attr: iattr structure containing the new file attributes
+  *
+  * Permit update of file attributes when files have a valid EVM signature,
+  * except in the case of them having an immutable portable signature.
 -- 
 2.25.1
 
