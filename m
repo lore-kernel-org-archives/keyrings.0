@@ -2,56 +2,113 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 58178C76195
-	for <keyrings@archiver.kernel.org>; Mon, 27 Mar 2023 07:33:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id ABC14C761AF
+	for <keyrings@archiver.kernel.org>; Tue, 28 Mar 2023 14:49:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232435AbjC0Hd1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 27 Mar 2023 03:33:27 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35300 "EHLO
+        id S233406AbjC1OtJ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 28 Mar 2023 10:49:09 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41588 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229651AbjC0Hd0 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 27 Mar 2023 03:33:26 -0400
-Received: from mail.lokoho.com (mail.lokoho.com [217.61.105.98])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A2E07DD
-        for <keyrings@vger.kernel.org>; Mon, 27 Mar 2023 00:33:24 -0700 (PDT)
-Received: by mail.lokoho.com (Postfix, from userid 1001)
-        id 77274831E8; Mon, 27 Mar 2023 08:32:04 +0100 (BST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=lokoho.com; s=mail;
-        t=1679902402; bh=Z0N5VlX9/JlryGOL5I747Le9USomZJCRNNGRT3LbbKc=;
-        h=Date:From:To:Subject:From;
-        b=f/7YnZg/GbQZm7CjpGvbEdyjWOXs2h7AtcLn1nu5XGHEq3zNbY4H2g3qnmz+ENINR
-         JDa48XwZnUrO/+G8Brpr9HtV6xXLlLGOV0UheICiEZozhVsxPdip+WpoGPwsryHZQv
-         spdUJVWCZPBk+Mir2qirjnQ8PdBOuEqUuZHh/iG/4zcTX+bkg3cetzvKCj+su66nmr
-         7d4KmG8LeJ7/f1F6m+eoyW0uXAAuVav29aVJNRKcp9Ebhhh0owPKZEaHpaoxCE96qD
-         Suy9Y+knnuFqShZ6fzl6BMWpYFBL9YTIvbBbwi/nvesVuh3VUYymwFuKelZKwHlv9R
-         DFU3CsT5eCgjw==
-Received: by mail.lokoho.com for <keyrings@vger.kernel.org>; Mon, 27 Mar 2023 07:31:04 GMT
-Message-ID: <20230327074501-0.1.4w.1m6fz.0.lz1pb1kd83@lokoho.com>
-Date:   Mon, 27 Mar 2023 07:31:04 GMT
-From:   "Adam Charachuta" <adam.charachuta@lokoho.com>
-To:     <keyrings@vger.kernel.org>
-Subject: =?UTF-8?Q?S=C5=82owa_kluczowe_do_wypozycjonowania?=
-X-Mailer: mail.lokoho.com
+        with ESMTP id S233363AbjC1Osq (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 28 Mar 2023 10:48:46 -0400
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8DD75C155;
+        Tue, 28 Mar 2023 07:48:24 -0700 (PDT)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id C473F61826;
+        Tue, 28 Mar 2023 14:48:23 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id A6054C433EF;
+        Tue, 28 Mar 2023 14:48:22 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=linuxfoundation.org;
+        s=korg; t=1680014903;
+        bh=4Y8/xJhwU7aJXJUzYvMwx8jzSFFEXA9tPwndwM5aX+Q=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=fqIVVzpUm8m4ymi6Elj0QtIKmvFzparOAcowwKp9uAsfxPw8hFuwVrNgPucmCEJHK
+         veXDll+HlwuntJktcxeR/MLXTzNqcjf7G+gftu4bQdMftEmxcLh78IrDY7XmX+RvF3
+         g+3O4nO1kkbtbyFm9EurTHWsWw++W7EAj6seKUzI=
+From:   Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To:     stable@vger.kernel.org
+Cc:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        patches@lists.linux.dev, Bharath SM <bharathsm@microsoft.com>,
+        David Howells <dhowells@redhat.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Shyam Prasad N <nspmangalore@gmail.com>,
+        Steve French <smfrench@gmail.com>, keyrings@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Sasha Levin <sashal@kernel.org>
+Subject: [PATCH 6.2 067/240] keys: Do not cache key in task struct if key is requested from kernel thread
+Date:   Tue, 28 Mar 2023 16:40:30 +0200
+Message-Id: <20230328142622.530564908@linuxfoundation.org>
+X-Mailer: git-send-email 2.40.0
+In-Reply-To: <20230328142619.643313678@linuxfoundation.org>
+References: <20230328142619.643313678@linuxfoundation.org>
+User-Agent: quilt/0.67
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Dzie=C5=84 dobry,
+From: David Howells <dhowells@redhat.com>
 
-zapozna=C5=82em si=C4=99 z Pa=C5=84stwa ofert=C4=85 i z przyjemno=C5=9Bci=
-=C4=85 przyznaj=C4=99, =C5=BCe przyci=C4=85ga uwag=C4=99 i zach=C4=99ca d=
-o dalszych rozm=C3=B3w.=20
+[ Upstream commit 47f9e4c924025c5be87959d3335e66fcbb7f6b5c ]
 
-Pomy=C5=9Bla=C5=82em, =C5=BCe mo=C5=BCe m=C3=B3g=C5=82bym mie=C4=87 sw=C3=
-=B3j wk=C5=82ad w Pa=C5=84stwa rozw=C3=B3j i pom=C3=B3c dotrze=C4=87 z t=C4=
-=85 ofert=C4=85 do wi=C4=99kszego grona odbiorc=C3=B3w. Pozycjonuj=C4=99 =
-strony www, dzi=C4=99ki czemu generuj=C4=85 =C5=9Bwietny ruch w sieci.
+The key which gets cached in task structure from a kernel thread does not
+get invalidated even after expiry.  Due to which, a new key request from
+kernel thread will be served with the cached key if it's present in task
+struct irrespective of the key validity.  The change is to not cache key in
+task_struct when key requested from kernel thread so that kernel thread
+gets a valid key on every key request.
 
-Mo=C5=BCemy porozmawia=C4=87 w najbli=C5=BCszym czasie?
+The problem has been seen with the cifs module doing DNS lookups from a
+kernel thread and the results getting pinned by being attached to that
+kernel thread's cache - and thus not something that can be easily got rid
+of.  The cache would ordinarily be cleared by notify-resume, but kernel
+threads don't do that.
+
+This isn't seen with AFS because AFS is doing request_key() within the
+kernel half of a user thread - which will do notify-resume.
+
+Fixes: 7743c48e54ee ("keys: Cache result of request_key*() temporarily in task_struct")
+Signed-off-by: Bharath SM <bharathsm@microsoft.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+cc: Shyam Prasad N <nspmangalore@gmail.com>
+cc: Steve French <smfrench@gmail.com>
+cc: keyrings@vger.kernel.org
+cc: linux-cifs@vger.kernel.org
+cc: linux-fsdevel@vger.kernel.org
+Link: https://lore.kernel.org/r/CAGypqWw951d=zYRbdgNR4snUDvJhWL=q3=WOyh7HhSJupjz2vA@mail.gmail.com/
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ security/keys/request_key.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 2da4404276f0f..07a0ef2baacd8 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -38,9 +38,12 @@ static void cache_requested_key(struct key *key)
+ #ifdef CONFIG_KEYS_REQUEST_CACHE
+ 	struct task_struct *t = current;
+ 
+-	key_put(t->cached_requested_key);
+-	t->cached_requested_key = key_get(key);
+-	set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
++	/* Do not cache key if it is a kernel thread */
++	if (!(t->flags & PF_KTHREAD)) {
++		key_put(t->cached_requested_key);
++		t->cached_requested_key = key_get(key);
++		set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
++	}
+ #endif
+ }
+ 
+-- 
+2.39.2
 
 
-Pozdrawiam
-Adam Charachuta
+
