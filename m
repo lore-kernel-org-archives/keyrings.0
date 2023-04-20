@@ -2,61 +2,116 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9C962C77B72
-	for <keyrings@archiver.kernel.org>; Thu, 20 Apr 2023 08:00:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 96B95C77B73
+	for <keyrings@archiver.kernel.org>; Thu, 20 Apr 2023 20:20:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229612AbjDTIAY (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 20 Apr 2023 04:00:24 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37284 "EHLO
+        id S232243AbjDTUUx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 20 Apr 2023 16:20:53 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41980 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S234014AbjDTIAX (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 20 Apr 2023 04:00:23 -0400
-Received: from mail.feshiecree.pl (mail.feshiecree.pl [89.40.114.103])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5E79B26BC
-        for <keyrings@vger.kernel.org>; Thu, 20 Apr 2023 01:00:20 -0700 (PDT)
-Received: by mail.feshiecree.pl (Postfix, from userid 1001)
-        id 7040582CD8; Thu, 20 Apr 2023 08:56:52 +0100 (BST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=feshiecree.pl;
-        s=mail; t=1681977447;
-        bh=hFxZwVw4rIL+JwfEOGI47p+fdoVOAeqVswP6NWoHSHQ=;
-        h=Date:From:To:Subject:From;
-        b=kx4YWMkoj+7tXVu/9lJforPCetBGdhyp3AyIQ2md40jPlWHkZeDa9oHiuTIAxN4jY
-         b3w2AcydZMyvNbRrsQkcXkRFnHdh6yms/KhEr1Aec8u6i1HWZw4JUQKOf2oxTo6GMy
-         /q9XpQZaWkkrro11rp/66gfDx3GxDKbsoIBUSemVWTSpOXaQpdn+/7WdIvvoqJl8pN
-         RCIZIz9VM8u7bPeJvxiZe6ePs2Tl2NM0JeV1jv/6ogy42dtkI/PP8W9DKfaDlm3pOt
-         nZIv8EmvMuqv6uan4s8JzAqUhrR3RT6LBlG1cnsGTbdFq/5vFXhckXIkfHQugY5ehJ
-         5ZaTR7RY390FQ==
-Received: by mail.feshiecree.pl for <keyrings@vger.kernel.org>; Thu, 20 Apr 2023 07:56:15 GMT
-Message-ID: <20230420074501-0.1.25.d105.0.9181ai2pti@feshiecree.pl>
-Date:   Thu, 20 Apr 2023 07:56:15 GMT
-From:   "Krystian Wieczorek" <krystian.wieczorek@feshiecree.pl>
-To:     <keyrings@vger.kernel.org>
-Subject: W sprawie samochodu
-X-Mailer: mail.feshiecree.pl
+        with ESMTP id S232119AbjDTUUw (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 20 Apr 2023 16:20:52 -0400
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 96B321FF6
+        for <keyrings@vger.kernel.org>; Thu, 20 Apr 2023 13:20:07 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1682022006;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:mime-version:mime-version:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=KwkENu1/w9CSbhYifjW/+CifPchvjicIQbIAA0wBC68=;
+        b=APVQr2j4fi3CVIVbnIE9TC3J+gSGVz+6CqEGDkBNA+CTDRR/FXCEw5YKBr65xEIWHtAY0e
+        ZVLHuFeGB3vBWa1E1oCtOr8jptzy6eB5+Gx8quDag/Sp8hfo2vi4O9/oni4gAsdkv565rr
+        YqcWjnYDM/Z3TUE9ULY0vCLl9C3bK04=
+Received: from mimecast-mx02.redhat.com (mx3-rdu2.redhat.com
+ [66.187.233.73]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-628-liYMcpHcOqeIcQOtz5SSUw-1; Thu, 20 Apr 2023 16:20:05 -0400
+X-MC-Unique: liYMcpHcOqeIcQOtz5SSUw-1
+Received: from smtp.corp.redhat.com (int-mx08.intmail.prod.int.rdu2.redhat.com [10.11.54.8])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 15877380607A;
+        Thu, 20 Apr 2023 20:20:05 +0000 (UTC)
+Received: from aion.usersys.redhat.com (unknown [10.22.16.241])
+        by smtp.corp.redhat.com (Postfix) with ESMTPS id 0A686C16024;
+        Thu, 20 Apr 2023 20:20:05 +0000 (UTC)
+Received: by aion.usersys.redhat.com (Postfix, from userid 1000)
+        id A1B121A27F8; Thu, 20 Apr 2023 16:20:04 -0400 (EDT)
+From:   Scott Mayhew <smayhew@redhat.com>
+To:     linux-nfs@vger.kernel.org, keyrings@vger.kernel.org
+Subject: [RFC PATCH 3/5] keys: add dest_keyring parameter to request_key_with_auxdata()
+Date:   Thu, 20 Apr 2023 16:20:02 -0400
+Message-Id: <20230420202004.239116-4-smayhew@redhat.com>
+In-Reply-To: <20230420202004.239116-1-smayhew@redhat.com>
+References: <20230420202004.239116-1-smayhew@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Transfer-Encoding: 8bit
+X-Scanned-By: MIMEDefang 3.1 on 10.11.54.8
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Dzie=C5=84 dobry,
+We want to store GSS creds in user keyrings.  Add a dest_keyring
+parameter to request_key_with_auxdata() so we can do that.
 
-chcieliby=C5=9Bmy zapewni=C4=87 Pa=C5=84stwu kompleksowe rozwi=C4=85zania=
-, je=C5=9Bli chodzi o system monitoringu GPS.
+Signed-off-by: Scott Mayhew <smayhew@redhat.com>
+---
+ fs/nfs/nfs4idmap.c          | 2 +-
+ include/linux/key.h         | 3 ++-
+ security/keys/request_key.c | 5 +++--
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
-Precyzyjne monitorowanie pojazd=C3=B3w na mapach cyfrowych, =C5=9Bledzeni=
-e ich parametr=C3=B3w eksploatacyjnych w czasie rzeczywistym oraz kontrol=
-a paliwa to kluczowe funkcjonalno=C5=9Bci naszego systemu.=20
+diff --git a/fs/nfs/nfs4idmap.c b/fs/nfs/nfs4idmap.c
+index 25a7c771cfd8..15d4fc30bf50 100644
+--- a/fs/nfs/nfs4idmap.c
++++ b/fs/nfs/nfs4idmap.c
+@@ -292,7 +292,7 @@ static struct key *nfs_idmap_request_key(const char *name, size_t namelen,
+ 	if (IS_ERR(rkey)) {
+ 		mutex_lock(&idmap->idmap_mutex);
+ 		rkey = request_key_with_auxdata(&key_type_id_resolver_legacy,
+-						desc, NULL, "", 0, idmap);
++						desc, NULL, "", 0, idmap, NULL);
+ 		mutex_unlock(&idmap->idmap_mutex);
+ 	}
+ 	if (!IS_ERR(rkey))
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 6cfc60aca505..009dfd3d27b0 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -333,7 +333,8 @@ extern struct key *request_key_with_auxdata(struct key_type *type,
+ 					    struct key_tag *domain_tag,
+ 					    const void *callout_info,
+ 					    size_t callout_len,
+-					    void *aux);
++					    void *aux,
++					    struct key *dest_keyring);
+ 
+ /**
+  * request_key - Request a key and wait for construction
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 07a0ef2baacd..1424a6fa4c9d 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -735,14 +735,15 @@ struct key *request_key_with_auxdata(struct key_type *type,
+ 				     struct key_tag *domain_tag,
+ 				     const void *callout_info,
+ 				     size_t callout_len,
+-				     void *aux)
++				     void *aux,
++				     struct key *dest_keyring)
+ {
+ 	struct key *key;
+ 	int ret;
+ 
+ 	key = request_key_and_link(type, description, domain_tag,
+ 				   callout_info, callout_len,
+-				   aux, NULL, KEY_ALLOC_IN_QUOTA);
++				   aux, dest_keyring, KEY_ALLOC_IN_QUOTA);
+ 	if (!IS_ERR(key)) {
+ 		ret = wait_for_key_construction(key, false);
+ 		if (ret < 0) {
+-- 
+2.39.2
 
-Organizowanie pracy pracownik=C3=B3w jest dzi=C4=99ki temu prostsze i bar=
-dziej efektywne, a oszcz=C4=99dno=C5=9Bci i optymalizacja w zakresie pono=
-szonych koszt=C3=B3w, maj=C4=85 dla ka=C5=BCdego przedsi=C4=99biorcy ogro=
-mne znaczenie.
-
-Dopasujemy nasz=C4=85 ofert=C4=99 do Pa=C5=84stwa oczekiwa=C5=84 i potrze=
-b organizacji. Czy mogliby=C5=9Bmy porozmawia=C4=87 o naszej propozycji?
-
-
-Pozdrawiam
-Krystian Wieczorek
