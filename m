@@ -2,141 +2,102 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EF205C77B75
-	for <keyrings@archiver.kernel.org>; Wed,  3 May 2023 11:31:44 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E0F18C77B76
+	for <keyrings@archiver.kernel.org>; Fri, 21 Apr 2023 14:36:32 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229763AbjECLbo (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 3 May 2023 07:31:44 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44820 "EHLO
+        id S232705AbjDUOgc (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 21 Apr 2023 10:36:32 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43718 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229643AbjECLbn (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 3 May 2023 07:31:43 -0400
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A8E1846AC;
-        Wed,  3 May 2023 04:31:42 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        with ESMTP id S232248AbjDUOga (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 21 Apr 2023 10:36:30 -0400
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B1F0D10DD
+        for <keyrings@vger.kernel.org>; Fri, 21 Apr 2023 07:35:45 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1682087744;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type;
+        bh=UCQL2D9su8wjwOrs6IuTNGHSeQSL9lst6CDlj1GlHvQ=;
+        b=PKZudY8O6yePEMi7xcs26xcIEvvBWW62N64xsnRuX67eF0RvSam4qgi6X/C9zJ3561pWUv
+        kIsUwIO3E7oiEsRTWCS5X2/ouCiWMcTiO0y/sFbU+Ys2AxD6CocPOArrkHid3wAqXfkkgb
+        RJC+q3sVYwEOLQ9cdh398OrkrOhSmKc=
+Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
+ [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-380-HjtImQA4Nzy9mg_o0W6siw-1; Fri, 21 Apr 2023 10:35:41 -0400
+X-MC-Unique: HjtImQA4Nzy9mg_o0W6siw-1
+Received: from smtp.corp.redhat.com (int-mx03.intmail.prod.int.rdu2.redhat.com [10.11.54.3])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 456D4629F0;
-        Wed,  3 May 2023 11:31:42 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 95071C433EF;
-        Wed,  3 May 2023 11:31:40 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1683113501;
-        bh=hVkxxzmR/MIPMkMSri1hUC8sUGB/8pTVJfJIw2Jacy8=;
-        h=Date:Cc:Subject:From:To:References:In-Reply-To:From;
-        b=o69abGVzEiVUacq5Aro4hDmNcIadhyapwj/N2y/54tSqtaKXpnjo2TYQ8c9z9oM2x
-         Nv7RBahFdupq8S8HmXbV6kRb/aqkuETytEYfz8//i7BIE6pJ75z/IT7Dwjr0qoug33
-         iAk6AtwqjG1x/j9LeTd73d+y9+SR/sPPMNqQ1EbHzcJMY/J5TKfVFEGmjL4SdOsvLC
-         ujsXKKkt7neNrs2MRIy6dtZjf2YVUTj0NvuI6yVpeUv2TvmkWTLXfRgezZbQFVMmPZ
-         szFt23UxiOEbV8rzzYpbak3+NgtS5/NEFwI5V8b+quoZN3rROPEwY+JsHU8254SM5s
-         FZqQEGAteDocQ==
-Mime-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=UTF-8
-Date:   Wed, 03 May 2023 14:31:38 +0300
-Message-Id: <CSCLXUWIMPCG.D6K372YA1HMK@suppilovahvero>
-Cc:     <keyrings@vger.kernel.org>, "Ard Biesheuvel" <ardb@kernel.org>
-Subject: Re: [PATCH v4 06/13] tpm: add buffer function to point to returned
- parameters
-From:   "Jarkko Sakkinen" <jarkko@kernel.org>
-To:     "Stefan Berger" <stefanb@linux.ibm.com>,
-        "James Bottomley" <James.Bottomley@HansenPartnership.com>,
-        <linux-integrity@vger.kernel.org>
-X-Mailer: aerc 0.14.0
-References: <20230403214003.32093-1-James.Bottomley@HansenPartnership.com>
- <20230403214003.32093-7-James.Bottomley@HansenPartnership.com>
- <d5c86f6f-6854-c649-d2a9-8090cc7d74cd@linux.ibm.com>
-In-Reply-To: <d5c86f6f-6854-c649-d2a9-8090cc7d74cd@linux.ibm.com>
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 084BC101A54F;
+        Fri, 21 Apr 2023 14:35:41 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.42.28.158])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 0ACFC1121318;
+        Fri, 21 Apr 2023 14:35:39 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+To:     torvalds@linux-foundation.org
+cc:     dhowells@redhat.com, Ekaterina Orlova <vorobushek.ok@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        James Bottomley <jejb@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: 
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <158286.1682087739.1@warthog.procyon.org.uk>
+Date:   Fri, 21 Apr 2023 15:35:39 +0100
+Message-ID: <158287.1682087739@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 3.1 on 10.11.54.3
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue May 2, 2023 at 5:09 PM EEST, Stefan Berger wrote:
->
->
-> On 4/3/23 17:39, James Bottomley wrote:
-> > Introducing encryption sessions changes where the return parameters
+Hi Linus,
 
-s/Introducing/Introduce/
+Can you apply this, please?  It can probably wait for the merge window if you
+don't want to apply it now as it only affects building the kernel.
 
-Commit messages should always be in the imperative form.
+Thanks,
+David
+---
+From: Ekaterina Orlova <vorobushek.ok@gmail.com>
 
-> > are located in the buffer because if a return session is present
-> > they're 4 bytes beyond the header with those 4 bytes showing the
-> > parameter length.  If there is no return session, then they're in the
-> > usual place immediately after the header.  The tpm_buf_parameters()
-> > encapsulates this calculation and should be used everywhere
-> > &buf.data[TPM_HEADER_SIZE] is used now.
-> >=20
-> > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-> >=20
-> > ---
-> > v4: add kdoc
-> > ---
-> >   drivers/char/tpm/tpm-buf.c | 27 +++++++++++++++++++++++++++
-> >   include/linux/tpm.h        |  2 ++
-> >   2 files changed, 29 insertions(+)
-> >=20
-> > diff --git a/drivers/char/tpm/tpm-buf.c b/drivers/char/tpm/tpm-buf.c
-> > index da0f6e725c3f..d107321bcdff 100644
-> > --- a/drivers/char/tpm/tpm-buf.c
-> > +++ b/drivers/char/tpm/tpm-buf.c
-> > @@ -277,3 +277,30 @@ u32 tpm_get_inc_u32(const u8 **ptr)
-> >   	return val;
-> >   }
-> >   EXPORT_SYMBOL_GPL(tpm_get_inc_u32);
-> > +
-> > +static u16 tpm_buf_tag(struct tpm_buf *buf)
-> > +{
-> > +	struct tpm_header *head =3D (struct tpm_header *)buf->data;
-> > +
-> > +	return be16_to_cpu(head->tag);
-> > +}
-> > +
-> > +/**
-> > + * tpm_buf_parameters - return the parameters area of the tpm_buf
->
-> in a TPM response
->
->
-> > + * @buf: tpm_buf to use
-> > + *
-> > + * Where the parameters are located depends on the tag of a TPM
-> > + * command. Evaluate this and return a pointer to the first byte of
-> > + * the parameters area.
->
-> I would also describe here what the non-obvious 4 bytes are that you are =
-skipping over in case of TPM2_ST_SESSIONS.
->
-> With this:
->
-> Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
->
-> > + *
-> > + * @return: pointer to parameters area
-> > + */
-> > +u8 *tpm_buf_parameters(struct tpm_buf *buf)
-> > +{
-> > +	int offset =3D TPM_HEADER_SIZE;
-> > +
-> > +	if (tpm_buf_tag(buf) =3D=3D TPM2_ST_SESSIONS)
-> > +		offset +=3D 4;
-> > +
-> > +	return &buf->data[offset];
-> > +}
-> > diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-> > index 845eadfed715..d2fea2afd37c 100644
-> > --- a/include/linux/tpm.h
-> > +++ b/include/linux/tpm.h
-> > @@ -340,6 +340,8 @@ u8 tpm_get_inc_u8(const u8 **ptr);
-> >   u16 tpm_get_inc_u16(const u8 **ptr);
-> >   u32 tpm_get_inc_u32(const u8 **ptr);
-> >  =20
-> > +u8 *tpm_buf_parameters(struct tpm_buf *buf);
-> > +
-> >   /*
-> >    * Check if TPM device is in the firmware upgrade mode.
-> >    */
+ASN.1: Fix check for strdup() success
 
-BR, Jarkko
+It seems there is a misprint in the check of strdup() return code
+that can lead to NULL pointer dereference.
+
+Found by Linux Verification Center (linuxtesting.org) with SVACE.
+
+Fixes: 4520c6a49af8 ("X.509: Add simple ASN.1 grammar compiler")
+Signed-off-by: Ekaterina Orlova <vorobushek.ok@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: David Woodhouse <dwmw2@infradead.org>
+cc: James Bottomley <jejb@linux.ibm.com>
+cc: Jarkko Sakkinen <jarkko@kernel.org>
+cc: keyrings@vger.kernel.org
+cc: linux-kbuild@vger.kernel.org
+Link: https://lore.kernel.org/r/20230315172130.140-1-vorobushek.ok@gmail.com/
+---
+ scripts/asn1_compiler.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/asn1_compiler.c b/scripts/asn1_compiler.c
+index 7b6756a8c15d..4c3f645065a4 100644
+--- a/scripts/asn1_compiler.c
++++ b/scripts/asn1_compiler.c
+@@ -625,7 +625,7 @@ int main(int argc, char **argv)
+ 	p = strrchr(argv[1], '/');
+ 	p = p ? p + 1 : argv[1];
+ 	grammar_name = strdup(p);
+-	if (!p) {
++	if (!grammar_name) {
+ 		perror(NULL);
+ 		exit(1);
+ 	}
+
