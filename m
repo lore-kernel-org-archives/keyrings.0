@@ -2,99 +2,66 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 55CD3C7EE22
-	for <keyrings@archiver.kernel.org>; Sat,  6 May 2023 07:45:39 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9B4F0C77B7F
+	for <keyrings@archiver.kernel.org>; Mon,  8 May 2023 08:40:30 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231443AbjEFHph (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sat, 6 May 2023 03:45:37 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49648 "EHLO
+        id S232478AbjEHIk3 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 8 May 2023 04:40:29 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58890 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231419AbjEFHp2 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sat, 6 May 2023 03:45:28 -0400
-Received: from mail-pg1-x52f.google.com (mail-pg1-x52f.google.com [IPv6:2607:f8b0:4864:20::52f])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 216803AAE;
-        Sat,  6 May 2023 00:45:22 -0700 (PDT)
-Received: by mail-pg1-x52f.google.com with SMTP id 41be03b00d2f7-52c759b7d45so2328047a12.3;
-        Sat, 06 May 2023 00:45:22 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20221208; t=1683359121; x=1685951121;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:to:from:date:from:to:cc:subject:date:message-id:reply-to;
-        bh=cR4QBIzm9ikJ2rDEayugYqmQh2EvvMkSbIdL6X+oqsg=;
-        b=NDFMhb8dgFmBZE3tzcTfHyrvdARzyBDs68HVUrFHKNB1OjppTHcturM01pjQGR1lwf
-         /Yyj38mcOgdR7rJvMgtexY8VUeSE9mCjrLHOXK9r+ljtXsToQ1AuwIIohZc/qYXw5lQX
-         AuWzIqHmM99Ek3TBL43g3uK5sVlNrLjjSuGi6E5Av3n/YiQvm1NafwCsxs/Tttjc3MNf
-         kndOlzMpilSI8aWvGjWtCBkxkt2m+9a+4r74hawaf/fn1Q17c3W3ID1fguszSj+BLcZf
-         Ln3qJl6tIKqhxkPKKjAgr2BjL3Jybxttwo/q/4nXrE/J34Rpq9nbqwmZ/QJSIgGx2Ywn
-         LNAw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1683359121; x=1685951121;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:to:from:date:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=cR4QBIzm9ikJ2rDEayugYqmQh2EvvMkSbIdL6X+oqsg=;
-        b=UMeQdd2RlXa69OYerW1xJbZhX7BD4XTGO0FQSCaorB0zHJeDz5HzNETm7XIJsS9JDq
-         HLt3UkxdK4si3MR0HwzXzutdFCORSi+001lf9pVo+CD2dy575D2X7xmQ9R5tcilOz0Q2
-         MF2oSH/JRNpVASKeDj43kAe42RcG1Rkt+qiZlW9qn87chU9UT+vFOs0XEjbZ6UzHN/YW
-         CJRScsHl7+UmGkoQPnROVTFuYtaPbiq878ejA2tjjUPBTVxMo2evEGStTgL4Bb4Hqpl/
-         vcKQPFiWJyzoDCSC0+F6kkFJwYzRCx7WdgnBeg+j/AqeLUBu0oIehI5ktF/z7HWX8+Ks
-         b/Tw==
-X-Gm-Message-State: AC+VfDzGqc71a+3uqXx4fxDzQOA4c7CHbdIDGyBBDL96IyeFGkaG/4/q
-        NKcO1RMNL/nD7echYHQZgPc=
-X-Google-Smtp-Source: ACHHUZ42rj/cGI3yidLvMVSMoh1eSdorzn60Wv53lamvefOOxDdlc+3RCuNWWWGYKa/CqamDoXSI6Q==
-X-Received: by 2002:a17:902:e881:b0:1a6:b140:9d2 with SMTP id w1-20020a170902e88100b001a6b14009d2mr4758930plg.61.1683359121362;
-        Sat, 06 May 2023 00:45:21 -0700 (PDT)
-Received: from debian.me (subs03-180-214-233-66.three.co.id. [180.214.233.66])
-        by smtp.gmail.com with ESMTPSA id j17-20020a170902759100b001ab0672fc1fsm2955359pll.105.2023.05.06.00.45.19
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sat, 06 May 2023 00:45:19 -0700 (PDT)
-Received: by debian.me (Postfix, from userid 1000)
-        id C0A98106286; Sat,  6 May 2023 14:45:15 +0700 (WIB)
-Date:   Sat, 6 May 2023 14:45:15 +0700
-From:   Bagas Sanjaya <bagasdotme@gmail.com>
-To:     Bhaskar Chowdhury <unixbhaskar@gmail.com>, dhowells@redhat.com,
-        jarkko@kernel.org, corbet@lwn.net, keyrings@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]Documentation: Security: Consistent block output by
- removing a misfit line
-Message-ID: <ZFYFi+eS3efdx0jS@debian.me>
-References: <20230506033738.16908-1-unixbhaskar@gmail.com>
+        with ESMTP id S232241AbjEHIk1 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 8 May 2023 04:40:27 -0400
+Received: from mail.camacfoy.pl (mail.camacfoy.pl [195.231.80.120])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 949E019931
+        for <keyrings@vger.kernel.org>; Mon,  8 May 2023 01:40:23 -0700 (PDT)
+Received: by mail.camacfoy.pl (Postfix, from userid 1001)
+        id F3FA7A5527; Mon,  8 May 2023 09:10:45 +0100 (BST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=camacfoy.pl; s=mail;
+        t=1683533457; bh=0DnDcjJl846YrSvLcp0W7cMkWp4Lfhp/OZAq4oBoaY8=;
+        h=Date:From:To:Subject:From;
+        b=Z6DcJTMjN3F1hHsSOvxDf3C4i3AOJXq8o2uA/SdieRTCJA2pKHmTC7C6US1BaMP4F
+         Wd6wpZlFaAqxr/Usp/cHInGU5idA/TytV90oM3mk3UPYA3i+03/Ffc+ez09hofaY1b
+         2WcONv5iKQSu7PgPa2dLh2cc9KttZMv7n7YNUxeDw5pt3Jm28CfXzVjWrsg+0jEzVD
+         WOppgqET0qu3fAZMGATdtEf76teFBDGi3FL7dA/Ku2VGoYcFMqNNnnXgA1M/fUAD++
+         x4e1aLXOk85JxpZFdQfqVpMtbI6lWlJRIGOgtw9f2hcVAUKWOoIGYzUe0IQRfep0Wd
+         agXxUU7aTJbUw==
+Received: by mail.camacfoy.pl for <keyrings@vger.kernel.org>; Mon,  8 May 2023 08:10:39 GMT
+Message-ID: <20230508074503-0.1.8b.et3p.0.oe9d4k1dyb@camacfoy.pl>
+Date:   Mon,  8 May 2023 08:10:39 GMT
+From:   "Krzysztof Maj" <krzysztof.maj@camacfoy.pl>
+To:     <keyrings@vger.kernel.org>
+Subject: biznesowy angielski 
+X-Mailer: mail.camacfoy.pl
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-        protocol="application/pgp-signature"; boundary="rGslkIUOaY9i4+kT"
-Content-Disposition: inline
-In-Reply-To: <20230506033738.16908-1-unixbhaskar@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+Dzie=C5=84 dobry,=20
 
---rGslkIUOaY9i4+kT
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+czy rozwa=C5=BCali Pa=C5=84stwo rozw=C3=B3j kwalifikacji j=C4=99zykowych =
+swoich pracownik=C3=B3w?
 
-On Sat, May 06, 2023 at 09:07:38AM +0530, Bhaskar Chowdhury wrote:
-> -	[root@andromeda root]# cat /proc/key-users
+Opracowali=C5=9Bmy kursy j=C4=99zykowe dla r=C3=B3=C5=BCnych bran=C5=BC, =
+w kt=C3=B3rych koncentrujemy si=C4=99 na podniesieniu poziomu s=C5=82owni=
+ctwa i jako=C5=9Bci komunikacji wykorzystuj=C4=85c autorsk=C4=85 metod=C4=
+=99, stworzon=C4=85 specjalnie dla wymagaj=C4=85cego biznesu.=20
 
-You remove the command line, right? The preceding sentence should be
-adjusted too, e.g. "This file lists the tracking data (including
-quota information and statistics) ... . Example file contents::".
+Niestandardowy kurs on-line, dopasowany do profilu firmy i obszar=C3=B3w =
+=C5=9Bwiadczonych us=C5=82ug, w szybkim czasie przyniesie efekty, kt=C3=B3=
+re zwi=C4=99ksz=C4=85 komfort i jako=C5=9B=C4=87 pracy, rozwijaj=C4=85c m=
+o=C5=BCliwo=C5=9Bci biznesowe.=20
 
-Thanks.
+Zdalne szkolenie j=C4=99zykowe to m.in. zaj=C4=99cia z native speakerami,=
+ kt=C3=B3re w szybkim czasie naucz=C4=85 pracownik=C3=B3w rozmawia=C4=87 =
+za pomoc=C4=85 jasnego i zwi=C4=99z=C5=82ego j=C4=99zyka Business English=
+=2E
 
---=20
-An old man doll... just what I always wanted! - Clara
+Czy m=C3=B3g=C5=82bym przedstawi=C4=87 wi=C4=99cej szczeg=C3=B3=C5=82=C3=B3=
+w i opowiedzie=C4=87 jak dzia=C5=82amy?
 
---rGslkIUOaY9i4+kT
-Content-Type: application/pgp-signature; name="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-
-iHUEABYKAB0WIQSSYQ6Cy7oyFNCHrUH2uYlJVVFOowUCZFYFhAAKCRD2uYlJVVFO
-owlmAQChZDiqGOaRj7Jhi2fE/wNTF/sPW4oXVkaredS4EqlrkAD/aO2lQsDZtyUC
-VzZRSAXUIAnpIg6TLHX6uae7UadMMAg=
-=VC5A
------END PGP SIGNATURE-----
-
---rGslkIUOaY9i4+kT--
+Pozdrawiam
+Krzysztof Maj
