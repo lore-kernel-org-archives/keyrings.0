@@ -2,99 +2,90 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9C752C77B7A
-	for <keyrings@archiver.kernel.org>; Thu, 18 May 2023 04:15:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C50C9C7EE23
+	for <keyrings@archiver.kernel.org>; Thu, 18 May 2023 18:01:08 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229814AbjEREP1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 18 May 2023 00:15:27 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35154 "EHLO
+        id S229611AbjERSBH (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 18 May 2023 14:01:07 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47090 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229719AbjEREPZ (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 18 May 2023 00:15:25 -0400
-Received: from mail-io1-xd33.google.com (mail-io1-xd33.google.com [IPv6:2607:f8b0:4864:20::d33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D51CC35B6;
-        Wed, 17 May 2023 21:15:23 -0700 (PDT)
-Received: by mail-io1-xd33.google.com with SMTP id ca18e2360f4ac-76c5c806fc5so40733839f.1;
-        Wed, 17 May 2023 21:15:23 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20221208; t=1684383323; x=1686975323;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to;
-        bh=spLvCUUdmWNpc0v6hAWkoP4Hs9NQAnjDoSHRo34PPBc=;
-        b=M+fgGI1KsN4uxP7OFN5eldgj9qwPE5yLctGM212bnqZJ66tHDWbnX0VABmANJefd7r
-         jWXEPdNsBtufCxE7OGcj7xNl+cG3qvHM1E5dVYx+jiX0Fgsp8npUOd0YXNeE2cLm4XG2
-         XglIIIA8l7GJuIrrU3pAsQVl9CAJxSrVlogZSQxABj39yx3syuUPlw+Q6A3TomcU1Bzc
-         o24ZOhvNIIEp+oZ/qqK1SKcy6Ip+BTgN55FXWXOrPIOUK0M4T8WF2UxsCHaq5Ns/+DST
-         EOsVNb1kuq4FFmj+JWhXZILXkLcyFHhPJuyRldk9yEPMWd9gM4szHuxWuddeXhStcjDO
-         /CPw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1684383323; x=1686975323;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-message-state:from:to:cc:subject:date:message-id
-         :reply-to;
-        bh=spLvCUUdmWNpc0v6hAWkoP4Hs9NQAnjDoSHRo34PPBc=;
-        b=leTxfcdL0RWxxgaqSb9OaD5AIEPKxmISfFUSTv1cOiIYb2MroDEQSP+k1NHb3ORPpl
-         KjeLYh/NI17Ff5/FbhGRXlxRW98/JHd1pSYcZ1kSOivOKScWKMku86XKL/21WWBTWEvc
-         I7b6V04++kuKB3q0h8R6oHBga2mZUwGltPgSDPYCUNJc3vLln5YRZQ4wPYvlQYjDB41u
-         snSZtUsVJrxb0bDAMhJDTZE2IpNrlmZsAnCaqblPs2r+tbAkGPR4IGgxyj61uwnjAGWL
-         dnGw/feOQqGns08fceObK94cf5q0iAJZf4NFUL4UNoCInvooG2JM+CeFfuRfM/DrmHpj
-         3JeA==
-X-Gm-Message-State: AC+VfDxrVQxRuULO7AyyP7km+mRHlGwF9WBztZX445upsknqoUTmJyrz
-        P5SnNt805jlCUI3OXABGI8M2Hl3+sFsywQ==
-X-Google-Smtp-Source: ACHHUZ683AatBk2T4OWvGqlk312/OLg7GFAvJQQB5cy7mmf4aNJgDdnr+/se0OezGfs/M1idcGe3Fg==
-X-Received: by 2002:a05:6602:cb:b0:760:b591:e651 with SMTP id z11-20020a05660200cb00b00760b591e651mr5738160ioe.13.1684383322979;
-        Wed, 17 May 2023 21:15:22 -0700 (PDT)
-Received: from azeems-kspp.c.googlers.com.com (54.70.188.35.bc.googleusercontent.com. [35.188.70.54])
-        by smtp.gmail.com with ESMTPSA id o9-20020a5eda49000000b0076350d7c4b6sm158948iop.36.2023.05.17.21.15.22
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 17 May 2023 21:15:22 -0700 (PDT)
-From:   Azeem Shaikh <azeemshaikh38@gmail.com>
-To:     David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     linux-hardening@vger.kernel.org,
-        Azeem Shaikh <azeemshaikh38@gmail.com>,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Moore <paul@paul-moore.com>,
-        James Morris <jmorris@namei.org>,
+        with ESMTP id S229473AbjERSBH (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 18 May 2023 14:01:07 -0400
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1EB8EC2;
+        Thu, 18 May 2023 11:01:06 -0700 (PDT)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id A71EA618CE;
+        Thu, 18 May 2023 18:01:05 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3C673C433EF;
+        Thu, 18 May 2023 18:01:03 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1684432865;
+        bh=0OYMpwJ6EzUuC3aHvZQDuVf47QJ3Thv1PltbFZxvepA=;
+        h=Date:Cc:Subject:From:To:References:In-Reply-To:From;
+        b=lLQmNRt+rzBsXt7ej1tIbO1bssi8sQIahnW0k1+kolb8F/EcfNtpRdYGdqg5LSeXR
+         M4PzYIJBwGq2ovl1QJzAA5dxlG850M1bTHDlDMICBU35P15mS8M6NwhGIm6e8Pj4+B
+         d5T5u5NCu3coT+eMikmI+4tzpQ8yLV+6KGdRT6Yk7THDPiup7iS3eZkBsgb+HcHfA4
+         IOxoW16Y0j7FSVf6E4ftQrQPmDPHjaT+p9Dbju7EDz76rT5yi8Vr7mGmKAWf+dTdLN
+         j46DkfkS7PH7yxWhDwyBv6Hhn6netpkEFKg0bQk16w0CGrhqhU+ArBCuHktHimEXFU
+         wz73+fcrEefgg==
+Mime-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=UTF-8
+Date:   Thu, 18 May 2023 21:01:01 +0300
+Message-Id: <CSPLM5P26GZF.2AFQB5S0H5ZJG@suppilovahvero>
+Cc:     <linux-hardening@vger.kernel.org>, <keyrings@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, "Paul Moore" <paul@paul-moore.com>,
+        "James Morris" <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH] KEYS: Replace all non-returning strlcpy with strscpy
-Date:   Thu, 18 May 2023 04:15:13 +0000
-Message-ID: <20230518041513.1669386-1-azeemshaikh38@gmail.com>
-X-Mailer: git-send-email 2.40.1.606.ga4b1b128d6-goog
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] KEYS: Replace all non-returning strlcpy with strscpy
+From:   "Jarkko Sakkinen" <jarkko@kernel.org>
+To:     "Azeem Shaikh" <azeemshaikh38@gmail.com>,
+        "David Howells" <dhowells@redhat.com>
+X-Mailer: aerc 0.14.0
+References: <20230518041513.1669386-1-azeemshaikh38@gmail.com>
+In-Reply-To: <20230518041513.1669386-1-azeemshaikh38@gmail.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-strlcpy() reads the entire source buffer first.
-This read may exceed the destination size limit.
-This is both inefficient and can lead to linear read
-overflows if a source string is not NUL-terminated [1].
-In an effort to remove strlcpy() completely [2], replace
-strlcpy() here with strscpy().
-No return values were used, so direct replacement is safe.
+On Thu May 18, 2023 at 7:15 AM EEST, Azeem Shaikh wrote:
+> strlcpy() reads the entire source buffer first. This read may exceed the =
+destination size limit.
+> This is both inefficient and can lead to linear read
+> overflows if a source string is not NUL-terminated [1].
+> In an effort to remove strlcpy() completely [2], replace
+> strlcpy() here with strscpy().
+> No return values were used, so direct replacement is safe.
+>
+> [1] https://www.kernel.org/doc/html/latest/process/deprecated.html#strlcp=
+y
+> [2] https://github.com/KSPP/linux/issues/89
+>
+> Signed-off-by: Azeem Shaikh <azeemshaikh38@gmail.com>
+> ---
+>  security/keys/request_key_auth.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/security/keys/request_key_auth.c b/security/keys/request_key=
+_auth.c
+> index 41e9735006d0..8f33cd170e42 100644
+> --- a/security/keys/request_key_auth.c
+> +++ b/security/keys/request_key_auth.c
+> @@ -178,7 +178,7 @@ struct key *request_key_auth_new(struct key *target, =
+const char *op,
+>  	if (!rka->callout_info)
+>  		goto error_free_rka;
+>  	rka->callout_len =3D callout_len;
+> -	strlcpy(rka->op, op, sizeof(rka->op));
+> +	strscpy(rka->op, op, sizeof(rka->op));
+> =20
+>  	/* see if the calling process is already servicing the key request of
+>  	 * another process */
 
-[1] https://www.kernel.org/doc/html/latest/process/deprecated.html#strlcpy
-[2] https://github.com/KSPP/linux/issues/89
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Signed-off-by: Azeem Shaikh <azeemshaikh38@gmail.com>
----
- security/keys/request_key_auth.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index 41e9735006d0..8f33cd170e42 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -178,7 +178,7 @@ struct key *request_key_auth_new(struct key *target, const char *op,
- 	if (!rka->callout_info)
- 		goto error_free_rka;
- 	rka->callout_len = callout_len;
--	strlcpy(rka->op, op, sizeof(rka->op));
-+	strscpy(rka->op, op, sizeof(rka->op));
- 
- 	/* see if the calling process is already servicing the key request of
- 	 * another process */
-
+BR, Jarkko
