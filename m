@@ -2,111 +2,124 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9655DC77B7A
-	for <keyrings@archiver.kernel.org>; Thu, 18 May 2023 18:33:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 411C5C77B75
+	for <keyrings@archiver.kernel.org>; Fri, 19 May 2023 21:08:06 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229498AbjERSdM (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 18 May 2023 14:33:12 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59170 "EHLO
+        id S229773AbjESVIF (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 19 May 2023 17:08:05 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42708 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229436AbjERSdM (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 18 May 2023 14:33:12 -0400
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 76EA7E43;
-        Thu, 18 May 2023 11:32:57 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 12D286435A;
-        Thu, 18 May 2023 18:32:57 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 25805C433D2;
-        Thu, 18 May 2023 18:32:54 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1684434776;
-        bh=7euHCdGOjx0kBVuWVRW14MmIjkqImiYgKz8h0vBD0LA=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=Y4MZxPqq+UT7KdC5pSUEdJ4NOzMf6JaIpb73abPYQ5lv+dUoPnFB1CJZzgD5N8uj1
-         rJiT+XkQ6G8MXH77qPLGAGGmIDPz+urLDOXE3eurBEQgp43syzXZ/yK/BRVTeSiBLc
-         9KTuQs08Nih35rtA7p/GvyqlQBuSVjhfZ2k8ACrQU09mJ23xru2D6mvj5HZnwZvqLB
-         bTou09fzKdSPdjd2Wr6QfE7SWfeM3WIT1A3dF6s0lH0SVuaHpr/IhpUb8/7OwhoQd/
-         0USOoK5RnZrnB45UTG5w6/DSIjlgu0i2eJfCb09RPEKoB39iMcDww6wF9UdiuSC9hZ
-         bQ+Iy34yH9Bzw==
-Mime-Version: 1.0
+        with ESMTP id S229658AbjESVIE (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 19 May 2023 17:08:04 -0400
+Received: from mail-yb1-xb2d.google.com (mail-yb1-xb2d.google.com [IPv6:2607:f8b0:4864:20::b2d])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2A5131B3
+        for <keyrings@vger.kernel.org>; Fri, 19 May 2023 14:08:03 -0700 (PDT)
+Received: by mail-yb1-xb2d.google.com with SMTP id 3f1490d57ef6-ba8374001abso5166568276.2
+        for <keyrings@vger.kernel.org>; Fri, 19 May 2023 14:08:03 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=paul-moore.com; s=google; t=1684530482; x=1687122482;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=YNAr0eN3BJd6PClx9Trgynq1tOTvA9sGtw9njPJi4AA=;
+        b=bJFzqPPi7avVdIui/TRooN20CFKx9KYo8TAzWQ29ywDcMmuR5PcGA0guADaiYjNra+
+         OwzR2l3rx31682QPw5fBUNatPj3awLlc3U1rercD9OOS2fxUFHMOEnzAUCgYC/kwy2ts
+         X/oxxrX/RhV0s2zByMqo7QsbkBjS7YAAdXAL0ra3jBIXCB9sSshbo9v6PFErb8fDP5JD
+         6dRPpEHRsoatyufGev5ITqTmXAL8MY4qUUFV7y3dYg3w8HXCGzCa3h23u96UIkIUMWVr
+         GrLMiDfV5xNCvIHDiei26awruRyjpOUaZfz0KaPAYpbPfstpSeDBwlRIXa3cYrGeoO5A
+         xXGA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20221208; t=1684530482; x=1687122482;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=YNAr0eN3BJd6PClx9Trgynq1tOTvA9sGtw9njPJi4AA=;
+        b=KjqXvSXq7BANQlpIDyLsDwdM3RwZYO9Ztd/l4JeTTd09cdEl6hhWdMv10jBHVIAytO
+         sr6Vd23dbu4dL3yigs5b28e7fXgQAhd7PT5QNnBfic0g0dp7kLr7DOMpMfiJWgPoovyi
+         mTTLF/G2zgxbppICluC0wUo7RM8u0KpVojlkYdAmnK27xqH6IfgeJdD9hC1uc4l+KKJR
+         xiXFEfg91BuTS70xHnQrKwObf3TswfKMuz7xAVq2JslRqNkgb6GwccyLbrUnHcVGdI7J
+         LgaA12TvQPTM7Rkhx8XZhRsCnTgTkb01o00y4neEEmt1IYBo1cnYsZuXXc3s/o2X1O3w
+         Bz9A==
+X-Gm-Message-State: AC+VfDzuemNW3U3TMivazi+FNL16s6N1TlWNJPuDv1OwIo/s0QdIC2Yp
+        iNpzyWm68xccDo9E+4QT2H6rGOeplDVgII5ffjhD
+X-Google-Smtp-Source: ACHHUZ6rUZO8aO+ZoLpFa4vGZYtcdoPjtguqDe3esXvg+x5MOcHlbXSr4JeS7AcsSIzX8Kzsg3kr/HozvceYuV5l5P8=
+X-Received: by 2002:a25:d24a:0:b0:ba2:bffc:5f8d with SMTP id
+ j71-20020a25d24a000000b00ba2bffc5f8dmr2924220ybg.29.1684530482287; Fri, 19
+ May 2023 14:08:02 -0700 (PDT)
+MIME-Version: 1.0
+References: <20230511123252.723185-1-cgzones@googlemail.com>
+In-Reply-To: <20230511123252.723185-1-cgzones@googlemail.com>
+From:   Paul Moore <paul@paul-moore.com>
+Date:   Fri, 19 May 2023 17:07:51 -0400
+Message-ID: <CAHC9VhTcso+RTEOkGOCDxyMscznEXrUhp+quDWvATUhEzEOhRQ@mail.gmail.com>
+Subject: Re: [PATCH] security: keys: perform capable check only on privileged operations
+To:     =?UTF-8?Q?Christian_G=C3=B6ttsche?= <cgzones@googlemail.com>
+Cc:     selinux@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=UTF-8
-Date:   Thu, 18 May 2023 21:32:52 +0300
-Message-Id: <CSPMAK0GJFK8.4C6UL9RXL3OX@suppilovahvero>
-From:   "Jarkko Sakkinen" <jarkko@kernel.org>
-To:     <ndesaulniers@google.com>, "David Howells" <dhowells@redhat.com>,
-        "David Woodhouse" <dwmw2@infradead.org>
-Cc:     "Ard Biesheuvel" <ardb@kernel.org>, <keyrings@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] certs: buffer stderr from openssl unless error
-X-Mailer: aerc 0.14.0
-References: <20230517-genkey-v1-1-b887424da4a8@google.com>
-In-Reply-To: <20230517-genkey-v1-1-b887424da4a8@google.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Wed May 17, 2023 at 7:23 PM EEST,  wrote:
-> Running `openssl req` prints a progress meter consisting of `.`, `*`,
-> and `+` characters to stderr which we redirect to stdout. During a build
-> with `make -j`, the output from this command becomes interspersed
-> throughout the rest of the quiet_cmd_* output, messing up the
-> indentation.
+On Thu, May 11, 2023 at 8:33=E2=80=AFAM Christian G=C3=B6ttsche
+<cgzones@googlemail.com> wrote:
 >
-> Suppress the output from this command unless the return code is
-> non-zero. If `openssl req` prints additional information to stderr
-> without setting a non-zero return code, it will be missed.
+> If the current task fails the check for the queried capability via
+> `capable(CAP_SYS_ADMIN)` LSMs like SELinux generate a denial message.
+> Issuing such denial messages unnecessarily can lead to a policy author
+> granting more privileges to a subject than needed to silence them.
 >
-> Suggested-by: Ard Biesheuvel <ardb@kernel.org>
-> Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
+> Reorder CAP_SYS_ADMIN checks after the check whether the operation is
+> actually privileged.
+>
+> Signed-off-by: Christian G=C3=B6ttsche <cgzones@googlemail.com>
 > ---
->  certs/Makefile   | 4 +---
->  certs/gen_key.sh | 7 +++++++
->  2 files changed, 8 insertions(+), 3 deletions(-)
+>  security/keys/keyctl.c | 11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
 >
-> diff --git a/certs/Makefile b/certs/Makefile
-> index 799ad7b9e68a..9b4fee56780d 100644
-> --- a/certs/Makefile
-> +++ b/certs/Makefile
-> @@ -45,9 +45,7 @@ ifeq ($(CONFIG_MODULE_SIG_KEY),certs/signing_key.pem)
->  keytype-$(CONFIG_MODULE_SIG_KEY_TYPE_ECDSA) :=3D -newkey ec -pkeyopt ec_=
-paramgen_curve:secp384r1
-> =20
->  quiet_cmd_gen_key =3D GENKEY  $@
-> -      cmd_gen_key =3D openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG=
-_HASH) -days 36500 \
-> -		-batch -x509 -config $< \
-> -		-outform PEM -out $@ -keyout $@ $(keytype-y) 2>&1
-> +      cmd_gen_key =3D $(srctree)/$(src)/gen_key.sh $(CONFIG_MODULE_SIG_H=
-ASH) $< $@ $(keytype-y)
-> =20
->  $(obj)/signing_key.pem: $(obj)/x509.genkey FORCE
->  	$(call if_changed,gen_key)
-> diff --git a/certs/gen_key.sh b/certs/gen_key.sh
-> new file mode 100755
-> index 000000000000..1de1f22be484
-> --- /dev/null
-> +++ b/certs/gen_key.sh
-> @@ -0,0 +1,7 @@
-> +#!/usr/bin/env bash
-> +# SPDX-License-Identifier: GPL-2.0
-> +OUT=3D$(openssl req -new -nodes -utf8 -"$1" -days 36500 -batch -x509 \
-> +	-config "$2" -outform PEM -out "$3" -keyout "$3" $4 2>&1)
-> +if [[ $? -ne 0 ]]; then
-> +	echo "$OUT"
-> +fi
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index d54f73c558f7..19be69fa4d05 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -980,14 +980,19 @@ long keyctl_chown_key(key_serial_t id, uid_t user, =
+gid_t group)
+>         ret =3D -EACCES;
+>         down_write(&key->sem);
 >
-> ---
-> base-commit: f1fcbaa18b28dec10281551dfe6ed3a3ed80e3d6
-> change-id: 20230517-genkey-24a835572835
+> -       if (!capable(CAP_SYS_ADMIN)) {
+> +       {
+> +               bool is_privileged_op =3D false;
+> +
+>                 /* only the sysadmin can chown a key to some other UID */
+>                 if (user !=3D (uid_t) -1 && !uid_eq(key->uid, uid))
+> -                       goto error_put;
+> +                       is_privileged_op =3D true;
 >
-> Best regards,
-> --=20
-> Nick Desaulniers <ndesaulniers@google.com>
+>                 /* only the sysadmin can set the key's GID to a group oth=
+er
+>                  * than one of those that the current process subscribes =
+to */
+>                 if (group !=3D (gid_t) -1 && !gid_eq(gid, key->gid) && !i=
+n_group_p(gid))
+> +                       is_privileged_op =3D true;
+> +
+> +               if (is_privileged_op && !capable(CAP_SYS_ADMIN))
+>                         goto error_put;
+>         }
 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+Hmm.  Using braces just to create a new scope is a bit hacky; I'll
+admit to using it to quickly create new local variables, but I only do
+so in debug/test situations, not production code.
 
-BR, Jarkko
+What if you move the CAP_SYS_ADMIN check down into the if-conditional
+where the code checks to see if CAP_SYS_ADMIN is needed when changing
+the UID?  It should be possible to structure the CAP_SYS_ADMIN check
+such that it is only executed if needed.  It's a little more
+complicated in the GID case, but I believe it should be doable.
+
+--=20
+paul-moore.com
