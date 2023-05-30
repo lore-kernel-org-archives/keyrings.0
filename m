@@ -2,74 +2,122 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CA559C77B73
-	for <keyrings@archiver.kernel.org>; Tue, 30 May 2023 23:04:48 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9C8FCC77B73
+	for <keyrings@archiver.kernel.org>; Tue, 30 May 2023 23:29:37 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233587AbjE3XEs (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 30 May 2023 19:04:48 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36680 "EHLO
+        id S233637AbjE3X3g (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 30 May 2023 19:29:36 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54928 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S233468AbjE3XEk (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 30 May 2023 19:04:40 -0400
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E50C4EC;
-        Tue, 30 May 2023 16:04:39 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 79C076181B;
-        Tue, 30 May 2023 23:04:39 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 7E8EFC433D2;
-        Tue, 30 May 2023 23:04:38 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1685487878;
-        bh=nmCxxkdcGAW8i+jZq5LyWD2wJfMQHxP2xZqU+KCy38k=;
-        h=Subject:From:To:Cc:Date:In-Reply-To:References:From;
-        b=aZMNEE+LqE57xeVo9wB3CivHR/y/CXj93mgpisrKTuoUs/JouoCFFFAl0+wWHPufv
-         LhZqLhYmQFbYbN5M8AQ134Vqox+12eGT4d8uH/PIw54StrE2/bam4g2aTPDq8sjlaq
-         yPm8zBzcibR5jpdvZ9ZMv25GOUcJgmzRMzeULmDgLSj9JXKRBoxP+G1f99QUzcnicb
-         b0UGYas11v/AaEjGZ+8hLmLvLv2YZsV5lqgKCDcx+pp+Qyttn0ruZtyyeqHn3q1+XY
-         gZWUxc4mvFThSHR8P4Ga4c9RDKZZ7IqA8neKVxyhIeZ1r57z+zF6ezAJXVSgyqpqp0
-         MDmj5ia17/7cQ==
-Message-ID: <fb2f0b6a4202d08857bc08a5507a62d7d9adaf78.camel@kernel.org>
-Subject: Re: [PATCH] security: keys: perform capable check only on
- privileged operations
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     Paul Moore <paul@paul-moore.com>,
-        Christian =?ISO-8859-1?Q?G=F6ttsche?= <cgzones@googlemail.com>
-Cc:     selinux@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date:   Wed, 31 May 2023 02:04:35 +0300
-In-Reply-To: <CAHC9VhSbZ5YheAVec5a=Xht85mNu6wRjeYaoqPGSiHjFP2NN6Q@mail.gmail.com>
-References: <20230511123252.723185-1-cgzones@googlemail.com>
-         <CAHC9VhTcso+RTEOkGOCDxyMscznEXrUhp+quDWvATUhEzEOhRQ@mail.gmail.com>
-         <CAJ2a_DfRGq+Cg_U7+Rsie9Bywxquu9CuMwYUGNv3+Sg9=wt9Og@mail.gmail.com>
-         <CAHC9VhSbZ5YheAVec5a=Xht85mNu6wRjeYaoqPGSiHjFP2NN6Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-User-Agent: Evolution 3.48.1-0ubuntu1 
+        with ESMTP id S233753AbjE3X3e (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 30 May 2023 19:29:34 -0400
+Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:3::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C16D3B2;
+        Tue, 30 May 2023 16:29:33 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Sender:Content-Transfer-Encoding:
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:
+        Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=2DkCxac7yJ7TTpJrbvC4aJ9GEUlIf19GJMG2RCNYbhA=; b=jeHbujSluGut688450mAUhQVVb
+        tyqrByE3iKY/irqUq/PHyN/8gduxh2e1lxNVGDev/KOiX/FxEsmiwhsiXnU9Tln7zxOdOQSt6Aeup
+        DRltTHZbg0wtsi6wwis/abNrnQPjSPNqg/jyYXnAE25Nyt4LzdQQqTFQSg7E4OD+JZuorF/xQIQIF
+        z9NToC59ws913amKocI0bm7nXxKh2UA6Fn296mrCrKj0UcORwXFDgJrxNDXQq6YXephZX7qbke12C
+        s+UqI+nv7LhTxOVvSA8tB1MMjyq4FafNY6DmeR4bA/LIr4lQ770MRMwanHUkoC+k+cYesjVIsDWrU
+        wF3kb9oA==;
+Received: from mcgrof by bombadil.infradead.org with local (Exim 4.96 #2 (Red Hat Linux))
+        id 1q48mB-00FTrm-0z;
+        Tue, 30 May 2023 23:29:15 +0000
+From:   Luis Chamberlain <mcgrof@kernel.org>
+To:     keescook@chromium.org, yzaikin@google.com, dhowells@redhat.com,
+        jarkko@kernel.org, paul@paul-moore.com, jmorris@namei.org,
+        serge@hallyn.com, j.granados@samsung.com, brauner@kernel.org
+Cc:     ebiederm@xmission.com, patches@lists.linux.dev,
+        linux-fsdevel@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Luis Chamberlain <mcgrof@kernel.org>
+Subject: [PATCH 2/2] sysctl: move security keys sysctl registration to its own file
+Date:   Tue, 30 May 2023 16:29:14 -0700
+Message-Id: <20230530232914.3689712-3-mcgrof@kernel.org>
+X-Mailer: git-send-email 2.38.1
+In-Reply-To: <20230530232914.3689712-1-mcgrof@kernel.org>
+References: <20230530232914.3689712-1-mcgrof@kernel.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Sender: Luis Chamberlain <mcgrof@infradead.org>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, 2023-05-25 at 17:25 -0400, Paul Moore wrote:
-> > A minor inconvenience is the number of needed arguments (and the
-> > actual code after inlining should be the same to the inner scope in
-> > the end).
->=20
-> Well, lucky for you, Jarkko and David maintain the keys code, not me,
-> and Jarkko seems to like your patch just fine :)
->=20
-> Jarkko, I assume you'll be taking this via the keys tree?
+The security keys sysctls are already declared on its own file,
+just move the sysctl registration to its own file to help avoid
+merge conflicts on sysctls.c, and help with clearing up sysctl.c
+further.
 
-I just picked it and mirrored to linux-next.
+This creates a small penalty of 23 bytes:
 
-I think it is super important change because it tones down the human
-error (a little bit at least). You could say improves user experience
-kind of I guess :-)
+./scripts/bloat-o-meter vmlinux.1 vmlinux.2
+add/remove: 2/0 grow/shrink: 0/1 up/down: 49/-26 (23)
+Function                                     old     new   delta
+init_security_keys_sysctls                     -      33     +33
+__pfx_init_security_keys_sysctls               -      16     +16
+sysctl_init_bases                             85      59     -26
+Total: Before=21256937, After=21256960, chg +0.00%
 
-BR, Jarkko
+But soon we'll be saving tons of bytes anyway, as we modify the
+sysctl registrations to use ARRAY_SIZE and so we get rid of all the
+empty array elements so let's just clean this up now.
+
+Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
+---
+ include/linux/key.h    | 3 ---
+ kernel/sysctl.c        | 4 ----
+ security/keys/sysctl.c | 7 +++++++
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 8dc7f7c3088b..938d7ecfb495 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -490,9 +490,6 @@ do {									\
+ 	rcu_assign_pointer((KEY)->payload.rcu_data0, (PAYLOAD));	\
+ } while (0)
+ 
+-#ifdef CONFIG_SYSCTL
+-extern struct ctl_table key_sysctls[];
+-#endif
+ /*
+  * the userspace interface
+  */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index caf4a91522a1..48046932d573 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2322,10 +2322,6 @@ static struct ctl_table vm_table[] = {
+ int __init sysctl_init_bases(void)
+ {
+ 	register_sysctl_init("kernel", kern_table);
+-#ifdef CONFIG_KEYS
+-	register_sysctl_init("kernel/keys", key_sysctls);
+-#endif
+-
+ 	register_sysctl_init("vm", vm_table);
+ 
+ 	return 0;
+diff --git a/security/keys/sysctl.c b/security/keys/sysctl.c
+index b46b651b3c4c..b72b82bb20c6 100644
+--- a/security/keys/sysctl.c
++++ b/security/keys/sysctl.c
+@@ -68,3 +68,10 @@ struct ctl_table key_sysctls[] = {
+ #endif
+ 	{ }
+ };
++
++static int __init init_security_keys_sysctls(void)
++{
++	register_sysctl_init("kernel/keys", key_sysctls);
++	return 0;
++}
++early_initcall(init_security_keys_sysctls);
+-- 
+2.39.2
 
