@@ -2,30 +2,54 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7DF17C77B73
-	for <keyrings@archiver.kernel.org>; Mon,  5 Jun 2023 08:49:42 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CEF8DC88C96
+	for <keyrings@archiver.kernel.org>; Mon,  5 Jun 2023 14:48:55 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230102AbjFEItl (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 5 Jun 2023 04:49:41 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38186 "EHLO
+        id S234609AbjFEOsn (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 5 Jun 2023 10:48:43 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35908 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229459AbjFEItk (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 5 Jun 2023 04:49:40 -0400
-Received: from 167-179-156-38.a7b39c.syd.nbn.aussiebb.net (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4C785CD;
-        Mon,  5 Jun 2023 01:49:39 -0700 (PDT)
-Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
-        by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1q65ti-00GsWv-Lb; Mon, 05 Jun 2023 16:49:07 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 05 Jun 2023 16:49:06 +0800
-Date:   Mon, 5 Jun 2023 16:49:06 +0800
-From:   Herbert Xu <herbert@gondor.apana.org.au>
-To:     Linus Torvalds <torvalds@linux-foundation.org>
-Cc:     Roberto Sassu <roberto.sassu@huaweicloud.com>,
-        David Howells <dhowells@redhat.com>,
+        with ESMTP id S232129AbjFEOsi (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 5 Jun 2023 10:48:38 -0400
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1FA20E8
+        for <keyrings@vger.kernel.org>; Mon,  5 Jun 2023 07:47:56 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1685976475;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         in-reply-to:in-reply-to:references:references;
+        bh=GKnTrK6N8fyx8N4wY6ury0F8xx6HRQHrf6vLk5OPOl8=;
+        b=MHvVdRvJbnLsNaBYsaU7p5zu2a2oNui0f1mP7PqpvRDrKIec9yOvni9Nx69lNkJ+Hg3Mej
+        hURYtQ/YOVWXcCcZ9Xc/109fuVgapLGX19gZV/f/0IcGxNkJZp++GDjKjzJnW35Pzm9cJL
+        /Ge7q3YctLT3Gt9/Sktwe0khrXeiNWk=
+Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
+ [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ us-mta-314-3qv7PdMlP5-fXF9d25ZGlg-1; Mon, 05 Jun 2023 10:47:52 -0400
+X-MC-Unique: 3qv7PdMlP5-fXF9d25ZGlg-1
+Received: from smtp.corp.redhat.com (int-mx03.intmail.prod.int.rdu2.redhat.com [10.11.54.3])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx02.redhat.com (Postfix) with ESMTPS id DE563101A55C;
+        Mon,  5 Jun 2023 14:47:50 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.42.28.182])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 5292A1121314;
+        Mon,  5 Jun 2023 14:47:47 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+In-Reply-To: <4d7e38ff5bbc496cb794b50e1c5c83bcd2317e69.camel@huaweicloud.com>
+References: <4d7e38ff5bbc496cb794b50e1c5c83bcd2317e69.camel@huaweicloud.com>
+To:     Roberto Sassu <roberto.sassu@huaweicloud.com>
+Cc:     dhowells@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Eric Biggers <ebiggers@kernel.org>,
-        Stefan Berger <stefanb@linux.ibm.com>, davem@davemloft.net,
+        Stefan Berger <stefanb@linux.ibm.com>,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
         zohar@linux.ibm.com, dmitry.kasatkin@gmail.com,
         paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
         Jarkko Sakkinen <jarkko@kernel.org>,
@@ -34,51 +58,25 @@ Cc:     Roberto Sassu <roberto.sassu@huaweicloud.com>,
         linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
         stable@vger.kernel.org
 Subject: Re: [GIT PULL] Asymmetric keys fix for v6.4-rc5
-Message-ID: <ZH2hgrV6po9dkxi+@gondor.apana.org.au>
-References: <4d7e38ff5bbc496cb794b50e1c5c83bcd2317e69.camel@huaweicloud.com>
- <CAHk-=wj4S0t5RnJQmF_wYwv+oMTKggwdLnrA9D1uMNKq4H4byw@mail.gmail.com>
- <CAHk-=wgCUzRNTg4fC8DF=UFnznK0M=mNUBDcsnLt7D4+HP2_1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHk-=wgCUzRNTg4fC8DF=UFnznK0M=mNUBDcsnLt7D4+HP2_1Q@mail.gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <1727998.1685976466.1@warthog.procyon.org.uk>
+Date:   Mon, 05 Jun 2023 15:47:46 +0100
+Message-ID: <1727999.1685976466@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 3.1 on 10.11.54.3
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Fri, Jun 02, 2023 at 08:02:23PM -0400, Linus Torvalds wrote:
->
-> I absolutely abhor the crypto interfaces. They all seem designed for
-> that "external DMA engine" case that seems so horrendously pointless
-> and slow.  In practice so few of them are that, and we have all those
-> optimized routines for doing it all on the CPU - but have in the
-> meantime wasted all that time and effort into copying everything,
-> turning simple buffers into sg-bufs etc etc. The amount of indirection
-> and "set this state in the state machine" is just nasty, and this
-> seems to all be a prime example of it all. With some of it then
-> randomly going through some kthread too.
+Roberto Sassu <roberto.sassu@huaweicloud.com> wrote:
 
-You're right.  Originally SG lists were used as the majority of
-our input came from network packets, in the form of skb's.  They
-are easily translated into SG lists.  This is still somewhat the
-case for parts of the Crypto API (e.g., skcipher and ahash).
+> Here is a small fix to make an unconditional copy of the buffer passed
+> to crypto operations, to take into account the case of the stack not in
+> the linear mapping area.
 
-However, for akcipher the only user of the underlying API is the
-file in question so I absolutely agree that forcing it to go through
-an SG list is just wrong.
+I wonder if evm_verify_hmac() and other such callers of the signature
+verification service should be placing the data and crypto material in slab
+memory rather than it being on the stack.  But, for the moment:
 
-I'll change the underlying akcipher interface to take pointers
-instead and hide the SG list stuff (along with the copying) inside
-API.
+Acked-by: David Howells <dhowells@redhat.com>
 
-In the mean time feel free to take this patch as it appears to be
-correct and should keep things chugging along while we work on the
-API.
-
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
