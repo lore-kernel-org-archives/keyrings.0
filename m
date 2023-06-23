@@ -2,140 +2,178 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 93BF6EB64D8
-	for <keyrings@archiver.kernel.org>; Thu, 22 Jun 2023 14:45:07 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9CF65C001B0
+	for <keyrings@archiver.kernel.org>; Fri, 23 Jun 2023 15:20:39 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230272AbjFVOpG (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 22 Jun 2023 10:45:06 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49474 "EHLO
+        id S231917AbjFWPUh (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 23 Jun 2023 11:20:37 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38408 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231895AbjFVOoY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 22 Jun 2023 10:44:24 -0400
-Received: from frasgout12.his.huawei.com (unknown [14.137.139.154])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4BEB52708;
-        Thu, 22 Jun 2023 07:44:00 -0700 (PDT)
-Received: from mail02.huawei.com (unknown [172.18.147.227])
-        by frasgout12.his.huawei.com (SkyGuard) with ESMTP id 4Qn2qB6Gy2z9xFr8;
-        Thu, 22 Jun 2023 22:31:02 +0800 (CST)
-Received: from roberto-ThinkStation-P620 (unknown [10.204.63.22])
-        by APP1 (Coremail) with SMTP id LxC2BwDHTQngXZRkeCaRAw--.29682S2;
-        Thu, 22 Jun 2023 15:42:54 +0100 (CET)
-Message-ID: <eb31920bd00e2c921b0aa6ebed8745cb0130b0e1.camel@huaweicloud.com>
-Subject: [QUESTION] Full user space process isolation?
-From:   Roberto Sassu <roberto.sassu@huaweicloud.com>
-To:     Oleg Nesterov <oleg@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        with ESMTP id S232747AbjFWPUb (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 23 Jun 2023 11:20:31 -0400
+Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.220.29])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 238FC10C1;
+        Fri, 23 Jun 2023 08:20:29 -0700 (PDT)
+Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
+        by smtp-out2.suse.de (Postfix) with ESMTP id D24151F45F;
+        Fri, 23 Jun 2023 15:20:27 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.com; s=susede1;
+        t=1687533627; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:content-type:content-type:
+         in-reply-to:in-reply-to:references:references;
+        bh=1mTZQB6E8gpW9xyv3IdX7kwRMApo1npl8Ta69cylcgI=;
+        b=cw+6g9R2o/Umv74/BGjs0HZFU73NXkDTjRhAwElwD9yLjkG2loVWkX98zsq+Jw9f7GWEbv
+        1LhcZAdPyuPlH6OaETf856CLkRN01mJSpFOO8X/jovaGWHnPkt2fDQYbq4M0K8/oavd3Ir
+        XsYDO2FS6i0HJDFn6EWyGK6+OhLducU=
+Received: from suse.cz (pmladek.udp.ovpn2.prg.suse.de [10.100.201.202])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by relay2.suse.de (Postfix) with ESMTPS id 1AE602C141;
+        Fri, 23 Jun 2023 15:20:22 +0000 (UTC)
+Date:   Fri, 23 Jun 2023 17:20:17 +0200
+From:   Petr Mladek <pmladek@suse.com>
+To:     Joel Granados <j.granados@samsung.com>
+Cc:     Jiri Slaby <jirislaby@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        mcgrof@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Dave Hansen <dave.hansen@linux.intel.com>, x86@kernel.org,
+        Theodore Ts'o <tytso@mit.edu>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>,
+        Juergen Gross <jgross@suse.com>,
+        Stefano Stabellini <sstabellini@kernel.org>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christian Brauner <brauner@kernel.org>,
+        Jeff Layton <jlayton@kernel.org>,
+        Chuck Lever <chuck.lever@oracle.com>, Jan Kara <jack@suse.cz>,
+        Kees Cook <keescook@chromium.org>,
+        Iurii Zaikin <yzaikin@google.com>,
+        Alexei Starovoitov <ast@kernel.org>,
+        Daniel Borkmann <daniel@iogearbox.net>,
+        Andrii Nakryiko <andrii@kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <mhiramat@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Will Deacon <will@kernel.org>,
+        Sergey Senozhatsky <senozhatsky@chromium.org>,
+        Juri Lelli <juri.lelli@redhat.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Kravetz <mike.kravetz@oracle.com>,
+        Muchun Song <muchun.song@linux.dev>,
+        Naoya Horiguchi <naoya.horiguchi@nec.com>,
+        "Matthew Wilcox (Oracle)" <willy@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Paul Moore <paul@paul-moore.com>,
         James Morris <jmorris@namei.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        Stephen Smalley <stephen.smalley.work@gmail.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        Kees Cook <keescook@chromium.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        David Howells <dhowells@redhat.com>,
-        LuisChamberlain <mcgrof@kernel.org>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Petr Tesarik <petrtesarik@huaweicloud.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Mladek <pmladek@suse.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
-Cc:     linux-mm@kvack.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-hardening@vger.kernel.org
-Date:   Thu, 22 Jun 2023 16:42:37 +0200
-Content-Type: text/plain; charset="UTF-8"
-User-Agent: Evolution 3.36.5-0ubuntu1 
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        Martin KaFai Lau <martin.lau@linux.dev>,
+        Song Liu <song@kernel.org>, Yonghong Song <yhs@fb.com>,
+        KP Singh <kpsingh@kernel.org>,
+        Stanislav Fomichev <sdf@google.com>,
+        Hao Luo <haoluo@google.com>, Jiri Olsa <jolsa@kernel.org>,
+        Waiman Long <longman@redhat.com>,
+        Boqun Feng <boqun.feng@gmail.com>,
+        John Ogness <john.ogness@linutronix.de>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Ben Segall <bsegall@google.com>, Mel Gorman <mgorman@suse.de>,
+        Daniel Bristot de Oliveira <bristot@redhat.com>,
+        Valentin Schneider <vschneid@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Will Drewry <wad@chromium.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Miaohe Lin <linmiaohe@huawei.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, bpf@vger.kernel.org, kexec@lists.infradead.org,
+        linux-trace-kernel@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 08/11] sysctl: Add size to register_sysctl_init
+Message-ID: <ZJW4MdIvrWjbKtVy@alley>
+References: <20230621091000.424843-1-j.granados@samsung.com>
+ <CGME20230621091037eucas1p188e11d8064526a5a0549217d5a419647@eucas1p1.samsung.com>
+ <20230621091000.424843-9-j.granados@samsung.com>
+ <2023062150-outbound-quiet-2609@gregkh>
+ <20230621131552.pqsordxcjmiopciq@localhost>
+ <fc37eccc-b9b3-d888-6b57-78cd61986a11@kernel.org>
+ <20230622140021.g3odhui75ybwuai5@localhost>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-CM-TRANSID: LxC2BwDHTQngXZRkeCaRAw--.29682S2
-X-Coremail-Antispam: 1UD129KBjvJXoW7tr4xtw1rXFyUGF4UJF13urg_yoW8Zw1fpF
-        9akFZ8GFn5GF429as7Wr48J3yrurZ3Xay3Gr9rKry3X34Y9Fy2yry3t3WrXF1DKrsY9a4j
-        vwsxtrWjya1DZa7anT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-        9KBjDU0xBIdaVrnRJUUUkK14x267AKxVW5JVWrJwAFc2x0x2IEx4CE42xK8VAvwI8IcIk0
-        rVWrJVCq3wAFIxvE14AKwVWUJVWUGwA2ocxC64kIII0Yj41l84x0c7CEw4AK67xGY2AK02
-        1l84ACjcxK6xIIjxv20xvE14v26r1j6r1xM28EF7xvwVC0I7IYx2IY6xkF7I0E14v26r4j
-        6F4UM28EF7xvwVC2z280aVAFwI0_Gr0_Cr1l84ACjcxK6I8E87Iv6xkF7I0E14v26r4j6r
-        4UJwAS0I0E0xvYzxvE52x082IY62kv0487Mc02F40EFcxC0VAKzVAqx4xG6I80ewAv7VC0
-        I7IYx2IY67AKxVWUJVWUGwAv7VC2z280aVAFwI0_Jr0_Gr1lOx8S6xCaFVCjc4AY6r1j6r
-        4UM4x0Y48IcVAKI48JM4x0x7Aq67IIx4CEVc8vx2IErcIFxwACI402YVCY1x02628vn2kI
-        c2xKxwCF04k20xvY0x0EwIxGrwCFx2IqxVCFs4IE7xkEbVWUJVW8JwC20s026c02F40E14
-        v26r1j6r18MI8I3I0E7480Y4vE14v26r106r1rMI8E67AF67kF1VAFwI0_GFv_WrylIxkG
-        c2Ij64vIr41lIxAIcVC0I7IYx2IY67AKxVWUJVWUCwCI42IY6xIIjxv20xvEc7CjxVAFwI
-        0_Gr0_Cr1lIxAIcVCF04k26cxKx2IYs7xG6rW3Jr0E3s1lIxAIcVC2z280aVAFwI0_Jr0_
-        Gr1lIxAIcVC2z280aVCY1x0267AKxVW8JVW8JrUvcSsGvfC2KfnxnUUI43ZEXa7VUbQVy7
-        UUUUU==
-X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAgAQBF1jj4sbAQABs3
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20230622140021.g3odhui75ybwuai5@localhost>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi everyone
+On Thu 2023-06-22 16:00:21, Joel Granados wrote:
+> On Thu, Jun 22, 2023 at 06:21:48AM +0200, Jiri Slaby wrote:
+> > On 21. 06. 23, 15:15, Joel Granados wrote:
+> > > On Wed, Jun 21, 2023 at 12:47:58PM +0200, Greg Kroah-Hartman wrote:
+> > > > On Wed, Jun 21, 2023 at 11:09:57AM +0200, Joel Granados wrote:
+> > > > >   static int __init random_sysctls_init(void)
+> > > > >   {
+> > > > > -	register_sysctl_init("kernel/random", random_table);
+> > > > > +	register_sysctl_init("kernel/random", random_table,
+> > > > > +			     ARRAY_SIZE(random_table));
+> > > > 
+> > > > As mentioned before, why not just do:
+> > > > 
+> > > > #define register_sysctl_init(string, table)	\
+> > > > 	__register_sysctl_init(string, table, ARRAY_SIZE(table);
+> > > Answered you in the original mail where you suggested it.
+> > 
+> > I am curious what that was, do you have a link?
+> of course. I think you will find it here https://lore.kernel.org/all/20230621123816.ufqbob6qthz4hujx@localhost/
 
-I briefly discussed this topic at LSS NA 2023, but I wanted to have an
-opinion from a broader audience.
+Let me to copy the answer here:
 
+<paste>
+I considered this at the outset, but it will not work with callers that
+use a pointer instead of the actual array.
+Additionally, we would not avoid big commits as we would have to go
+looking in all the files where register is called directly or indirectly
+and make sure the logic is sound.
+</paste>
 
-In short:
+For the callers using a pointer. A solution would be to create another
+wrapper which would take the array size, e.g.
 
-I wanted to execute some kernel workloads in a fully isolated user
-space process, started from a binary statically linked with klibc,
-connected to the kernel only through a pipe.
-
-I also wanted that, for the root user, tampering with that process is
-as hard as if the same code runs in kernel space.
-
-I would use the fully isolated process to parse and convert unsupported
-data formats to a supported one, after the kernel verified the
-authenticity of the original format (that already exists and cannot
-change).
-
-Preventing tampering of the process ensures that the conversion goes as
-expected. Also, the integrity of the binary needs to be verified.
-
-
-List of wished data formats:
-
-PGP: verify the authenticity of RPM/DEB/... headers
-RPM/DEB/... headers: extract reference file checksums for
-                    (kernel-based) file integrity check (e.g. with IMA)
-
-
-Alternative #1:
-
-Write the parsers to run in kernel space. That was rejected due to
-security and scalability concerns. If that changed, please let me know.
-
-
-Alternative #2:
-
-Linux distributions could provide what the kernel supports. However,
-from personal experience, the effort seems orders of magnitude higher
-than just writing a tiny component to support the original format. And
-there is no guarantee that all Linux distributions will do it.
+#define register_sysctl_init_limited(string, table, size)	\
+	__register_sysctl_init(string, table, size);
 
 
-Full process isolation could be achieved in this way:
+And ARRAY_SIZE() is defined in include/linux/kernel.h as:
 
-process -> outside: set seccomp strict profile at process creation
-                    so that the process can only read/write/close the
-                    pipe and exit, no other system calls are allowed
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
 
-outside -> process: deny ptrace/kill with the process as target
+It will create a compiler error when either an array[] or *array is
+passed.
 
-Anything else?
+When using this:
 
+1. The compiler will tell us where the other wrapper is needed.
 
-The only risk I see is that a new feature allowing to interact with
-another process is added to the kernel, without the ptrace permission
-being asked.
+2. Some locations might need the @size parameter even when a static
+   array is passed. For example, neigh_sysctl_register() terminates
+   the array early.
 
-With the restrictions above, can we say that the code inside the
-process is as safe (against tampering) to execute as if it runs in
-kernel space?
+   But this will work when __register_sysctl_init() supports
+   both ways.I mean that it will stop either on @size or empty
+   element, as discussed in the other subthread.
 
-Thanks
+   This should be caught when the final "empty" is removed
+   from the particular caller.
 
-Roberto
-
+Best Regards,
+Petr
