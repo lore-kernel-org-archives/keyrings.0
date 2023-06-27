@@ -2,70 +2,56 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 39ABCEB64D7
-	for <keyrings@archiver.kernel.org>; Mon, 26 Jun 2023 10:20:47 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CA9E6EB64D9
+	for <keyrings@archiver.kernel.org>; Tue, 27 Jun 2023 08:06:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229612AbjFZKUq (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 26 Jun 2023 06:20:46 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55602 "EHLO
+        id S230247AbjF0IGV (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 27 Jun 2023 04:06:21 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50544 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229446AbjFZKUp (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 26 Jun 2023 06:20:45 -0400
-Received: from 167-179-156-38.a7b39c.syd.nbn.aussiebb.net (167-179-156-38.a7b39c.syd.nbn.aussiebb.net [167.179.156.38])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C247F1A1;
-        Mon, 26 Jun 2023 03:20:43 -0700 (PDT)
-Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
-        by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1qDjKb-007JR3-QB; Mon, 26 Jun 2023 18:20:26 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 26 Jun 2023 18:20:25 +0800
-Date:   Mon, 26 Jun 2023 18:20:25 +0800
-From:   Herbert Xu <herbert@gondor.apana.org.au>
-To:     kernel test robot <oliver.sang@intel.com>
-Cc:     oe-lkp@lists.linux.dev, lkp@intel.com,
-        linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
-Subject: [PATCH] crypto: akcipher - Set request tfm on sync path
-Message-ID: <ZJlmaarLRYZcs+c3@gondor.apana.org.au>
-References: <202306261421.2ac744fa-oliver.sang@intel.com>
+        with ESMTP id S230195AbjF0IGM (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 27 Jun 2023 04:06:12 -0400
+Received: from mail.lokoho.com (mail.lokoho.com [217.61.105.98])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3CBDCE71
+        for <keyrings@vger.kernel.org>; Tue, 27 Jun 2023 01:06:11 -0700 (PDT)
+Received: by mail.lokoho.com (Postfix, from userid 1001)
+        id 9AA15899CA; Tue, 27 Jun 2023 09:03:41 +0100 (BST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=lokoho.com; s=mail;
+        t=1687853025; bh=Z0N5VlX9/JlryGOL5I747Le9USomZJCRNNGRT3LbbKc=;
+        h=Date:From:To:Subject:From;
+        b=fEQ9qLeFAQZKw0B9AvHFaSFJtHgvrKBhvoHE0sQMr1IBIqKUJAj/yqbma/vx6C3J2
+         9rQ0f3jR2yE5h8BkrNAdM1AEzBsBjeTOvFuFbF2AigYsitpQx/m/hMzCdj+LhWo8Mf
+         hAh6iGE4WoQ0agS3gMRBNK1pOtCHWt/cH+MPkGU3piHrTqGT50mKbAqjeGTWIMZMbD
+         YmfXpmQT4aaLgpVH+7EoHwofe24SKQLwsjkNV2etOWTzRc9cOu4YiHdbOLJRBkYA8X
+         S89p5OOjaRbPGCuGyZxNIy039NB8Mj2oaxwZ7PcWJ9Jkg2WSBz0c1dZCac1MlAv4D1
+         3eJ3G3YzrfbDA==
+Received: by mail.lokoho.com for <keyrings@vger.kernel.org>; Tue, 27 Jun 2023 08:00:59 GMT
+Message-ID: <20230627074503-0.1.6w.2rz5f.0.qaiem0h1p2@lokoho.com>
+Date:   Tue, 27 Jun 2023 08:00:59 GMT
+From:   "Adam Charachuta" <adam.charachuta@lokoho.com>
+To:     <keyrings@vger.kernel.org>
+Subject: =?UTF-8?Q?S=C5=82owa_kluczowe_do_wypozycjonowania?=
+X-Mailer: mail.lokoho.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <202306261421.2ac744fa-oliver.sang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, Jun 26, 2023 at 03:07:01PM +0800, kernel test robot wrote:
->
-> [    7.727242][    T1] cfg80211: Loading compiled-in X.509 certificates for regulatory database
-> [    7.737831][    T1] BUG: kernel NULL pointer dereference, address: 00000010
-> [    7.739122][    T1] #PF: supervisor read access in kernel mode
-> [    7.740125][    T1] #PF: error_code(0x0000) - not-present page
-> [    7.741135][    T1] *pdpt = 0000000000000000 *pde = f000ff53f000ff53
-> [    7.742337][    T1] Oops: 0000 [#1]
-> [    7.742986][    T1] CPU: 0 PID: 1 Comm: swapper Tainted: G S                 6.4.0-rc1-00077-g63ba4d67594a #2
-> [    7.744804][    T1] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.16.2-debian-1.16.2-1 04/01/2014
-> [    7.746660][    T1] EIP: crypto_sig_verify+0x82/0xa4
+Dzie=C5=84 dobry,
 
----8<---
-The request tfm needs to be set.
+zapozna=C5=82em si=C4=99 z Pa=C5=84stwa ofert=C4=85 i z przyjemno=C5=9Bci=
+=C4=85 przyznaj=C4=99, =C5=BCe przyci=C4=85ga uwag=C4=99 i zach=C4=99ca d=
+o dalszych rozm=C3=B3w.=20
 
-Fixes: addde1f2c966 ("crypto: akcipher - Add sync interface without SG lists")
-Reported-by: kernel test robot <oliver.sang@intel.com>
-Closes: https://lore.kernel.org/oe-lkp/202306261421.2ac744fa-oliver.sang@intel.com
+Pomy=C5=9Bla=C5=82em, =C5=BCe mo=C5=BCe m=C3=B3g=C5=82bym mie=C4=87 sw=C3=
+=B3j wk=C5=82ad w Pa=C5=84stwa rozw=C3=B3j i pom=C3=B3c dotrze=C4=87 z t=C4=
+=85 ofert=C4=85 do wi=C4=99kszego grona odbiorc=C3=B3w. Pozycjonuj=C4=99 =
+strony www, dzi=C4=99ki czemu generuj=C4=85 =C5=9Bwietny ruch w sieci.
 
-diff --git a/crypto/akcipher.c b/crypto/akcipher.c
-index 152cfba1346c..8ffd31c44cf6 100644
---- a/crypto/akcipher.c
-+++ b/crypto/akcipher.c
-@@ -207,6 +207,7 @@ int crypto_akcipher_sync_prep(struct crypto_akcipher_sync_data *data)
- 		return -ENOMEM;
- 
- 	data->req = req;
-+	akcipher_request_set_tfm(req, data->tfm);
- 
- 	buf = (u8 *)(req + 1) + reqsize;
- 	data->buf = buf;
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Mo=C5=BCemy porozmawia=C4=87 w najbli=C5=BCszym czasie?
+
+
+Pozdrawiam
+Adam Charachuta
