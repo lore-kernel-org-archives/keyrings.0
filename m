@@ -2,62 +2,79 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 18893EB64D9
-	for <keyrings@archiver.kernel.org>; Mon, 10 Jul 2023 08:20:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 67EB3EB64DA
+	for <keyrings@archiver.kernel.org>; Mon, 10 Jul 2023 19:20:39 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229624AbjGJIUn (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 10 Jul 2023 04:20:43 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42156 "EHLO
+        id S229702AbjGJTUi (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 10 Jul 2023 15:20:38 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39040 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231607AbjGJIUX (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 10 Jul 2023 04:20:23 -0400
-X-Greylist: delayed 579 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Mon, 10 Jul 2023 01:20:22 PDT
-Received: from mail.ipomocprawna.pl (mail.ipomocprawna.pl [94.177.230.50])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 698EEE1
-        for <keyrings@vger.kernel.org>; Mon, 10 Jul 2023 01:20:22 -0700 (PDT)
-Received: by mail.ipomocprawna.pl (Postfix, from userid 1002)
-        id 3BEEF82772; Mon, 10 Jul 2023 10:10:29 +0200 (CEST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ipomocprawna.pl;
-        s=mail; t=1688976633;
-        bh=PSgK39E8Y8uuAuzZgkv3QwpS9h+YIcPQJlHDaGSRl5A=;
-        h=Date:From:To:Subject:From;
-        b=IbQt6CqOPDJyKcabG5N0sSR+9HO5PvTdJH5EkgSUyNdn3i64W9y1IJHgSITsASBRd
-         9zYG967EPr7UQ8o6Wgg5rcqn6GwabWQpVqkvAyYU+8SasdjjdhQzu0fzj0A+NisIwc
-         2bv9eill4ww+Ouln5nMg+kM6sfZZLnzHrIPhHUeazCdWP2GuV4wKhTazpqeMo68PNI
-         2YTrn03Rl/pNFJgRaeuPKlUeRCOYzxueNHNExNRJlPVZ85gTbY6C7Y5cn8m584csc4
-         mP/BDQrebRFGEzLtC1tMICYHOXSVW9qu0KBN+KPn0+lZve3FhA0ayUXT0376FZAuEn
-         DctFAOZbCRLWw==
-Received: by mail.ipomocprawna.pl for <keyrings@vger.kernel.org>; Mon, 10 Jul 2023 08:10:21 GMT
-Message-ID: <20230710084500-0.1.19.3g1d.0.ie4mmdieo8@ipomocprawna.pl>
-Date:   Mon, 10 Jul 2023 08:10:21 GMT
-From:   "Adam Hoksa" <adam.hoksa@ipomocprawna.pl>
-To:     <keyrings@vger.kernel.org>
-Subject: Wsparcie Kancelarii prawno-podatkowe
-X-Mailer: mail.ipomocprawna.pl
-MIME-Version: 1.0
+        with ESMTP id S229562AbjGJTUi (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 10 Jul 2023 15:20:38 -0400
+Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2891595;
+        Mon, 10 Jul 2023 12:20:36 -0700 (PDT)
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature RSA-PSS (2048 bits))
+        (No client certificate requested)
+        by dfw.source.kernel.org (Postfix) with ESMTPS id B67496119A;
+        Mon, 10 Jul 2023 19:20:35 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id A2881C433C7;
+        Mon, 10 Jul 2023 19:20:34 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1689016835;
+        bh=EcUHuJp/TGc/f/VFsCbSWVn6xHI6mjyOOrU3G4PfPY0=;
+        h=Subject:From:To:Cc:Date:In-Reply-To:References:From;
+        b=aD5rQtuEleK3/eOrwnLq4nAqYlTqUNtyzdo2XUL9LLl3LS3d04CvlPlUDu8FvOtXo
+         hxTmxbWQ6Pq0VrcQpLM08ZxZGK8g9iwoif133jCfCoSZKfE03c+WCN52elrf6hpGlE
+         E7++XBt5nBZyKYoliDLlmvjzKd0juyQ/YpeWGoHoAI2CzDjYn3UF1hfJTwbG521CUg
+         G6GwMUhNtwo5f4DwOJqu4YxBF2EXBs+8ul/7uAC/bNIFye32FXPhd+qJegwTcmlruU
+         QqFRnhLjigU6dmcITtd0rQxzI6o4zhXm/neiXE3s/ObyEZQP1e4oRy1/ytyYS/qp6u
+         5O8NXNAoY8NCw==
+Message-ID: <63aff66215d816a899f0d567b64ae82f94ae77be.camel@kernel.org>
+Subject: Re: [PATCH] security: keys: Modify mismatched function name
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Paul Moore <paul@paul-moore.com>,
+        Jiapeng Chong <jiapeng.chong@linux.alibaba.com>
+Cc:     jejb@linux.ibm.com, zohar@linux.ibm.com, dhowells@redhat.com,
+        jmorris@namei.org, serge@hallyn.com,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Abaci Robot <abaci@linux.alibaba.com>
+Date:   Mon, 10 Jul 2023 22:20:31 +0300
+In-Reply-To: <CAHC9VhSUz1zXBTFjaCDMzFCuAY6t3zG4WyXyKWBjNTwjLxZS+Q@mail.gmail.com>
+References: <20230614021825.64333-1-jiapeng.chong@linux.alibaba.com>
+         <CAHC9VhSUz1zXBTFjaCDMzFCuAY6t3zG4WyXyKWBjNTwjLxZS+Q@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.48.1-0ubuntu1 
+MIME-Version: 1.0
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Dzie=C5=84 dobry,
+On Wed, 2023-06-14 at 17:52 -0400, Paul Moore wrote:
+> On Tue, Jun 13, 2023 at 10:18=E2=80=AFPM Jiapeng Chong
+> <jiapeng.chong@linux.alibaba.com> wrote:
+> >=20
+> > No functional modification involved.
+> >=20
+> > security/keys/trusted-keys/trusted_tpm2.c:203: warning: expecting proto=
+type for tpm_buf_append_auth(). Prototype was for tpm2_buf_append_auth() in=
+stead.
+> >=20
+> > Reported-by: Abaci Robot <abaci@linux.alibaba.com>
+> > Closes: https://bugzilla.openanolis.cn/show_bug.cgi?id=3D5524
+> > Signed-off-by: Jiapeng Chong <jiapeng.chong@linux.alibaba.com>
+> > ---
+> >  security/keys/trusted-keys/trusted_tpm2.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> Reviewed-by: Paul Moore <paul@paul-moore.com>
+>=20
 
-chcia=C5=82bym zaprosi=C4=87 Pa=C5=84stwa do rozmowy o wsp=C3=B3=C5=82pra=
-cy z nasz=C4=85 Kancelari=C4=85 Prawn=C4=85.
+Thanks, I'll pick this.
 
-Skuteczna pomoc z zakresu strategii konkurencyjnej, negocjacji um=C3=B3w,=
- czy optymalizacji podatkowej pomo=C5=BCe Pa=C5=84stwu uzyska=C4=87 zysko=
-wniejsze warunki prawno-biznesowe dla prowadzonych operacji.
+BR, Jarkko
 
-Dzi=C4=99ki wieloletniemu do=C5=9Bwiadczeniu w Pa=C5=84stwa bran=C5=BCy o=
-raz efektywnym dzia=C5=82aniom specjalist=C3=B3w nasi Klienci zyskuj=C4=85=
- wymierne korzy=C5=9Bci po zastosowaniu rekomendowanych przez nas rozwi=C4=
-=85za=C5=84.
-
-Z przyjemno=C5=9Bci=C4=85 przedstawi=C4=99, co mo=C5=BCemy dla Pa=C5=84st=
-wa zrobi=C4=87. Mog=C4=99 zadzwoni=C4=87?
-
-
-Pozdrawiam
-Adam Hoksa
