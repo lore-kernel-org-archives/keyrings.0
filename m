@@ -2,162 +2,62 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9C40BEB64DA
-	for <keyrings@archiver.kernel.org>; Fri,  7 Jul 2023 07:04:23 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 18893EB64D9
+	for <keyrings@archiver.kernel.org>; Mon, 10 Jul 2023 08:20:45 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232201AbjGGHEW convert rfc822-to-8bit (ORCPT
-        <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 7 Jul 2023 03:04:22 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49294 "EHLO
+        id S229624AbjGJIUn (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 10 Jul 2023 04:20:43 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42156 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232097AbjGGHEQ (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 7 Jul 2023 03:04:16 -0400
-Received: from frasgout11.his.huawei.com (ecs-14-137-139-23.compute.hwclouds-dns.com [14.137.139.23])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 269401709;
-        Fri,  7 Jul 2023 00:04:13 -0700 (PDT)
-Received: from mail02.huawei.com (unknown [172.18.147.228])
-        by frasgout11.his.huawei.com (SkyGuard) with ESMTP id 4Qy3xy4Zzrz9xqdN;
-        Fri,  7 Jul 2023 14:53:10 +0800 (CST)
-Received: from [127.0.0.1] (unknown [10.204.63.22])
-        by APP1 (Coremail) with SMTP id LxC2BwBHrumsuKdkc9w3BA--.59443S2;
-        Fri, 07 Jul 2023 08:03:29 +0100 (CET)
-Message-ID: <46a2328ab35907970dcd9a7240cd9072abeb66b2.camel@huaweicloud.com>
-Subject: Re: [RFC][PATCH 00/10] KEYS: Introduce user asymmetric keys and
- signatures
-From:   Roberto Sassu <roberto.sassu@huaweicloud.com>
-To:     Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc:     dhowells@redhat.com, dwmw2@infradead.org,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        jarkko@kernel.org, song@kernel.org, jolsa@kernel.org,
-        ast@kernel.org, daniel@iogearbox.net, andrii@kernel.org,
-        martin.lau@linux.dev, yhs@fb.com, john.fastabend@gmail.com,
-        kpsingh@kernel.org, sdf@google.com, haoluo@google.com,
-        rostedt@goodmis.org, mhiramat@kernel.org, mykolal@fb.com,
-        shuah@kernel.org, linux-kernel@vger.kernel.org,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        bpf@vger.kernel.org, linux-trace-kernel@vger.kernel.org,
-        linux-kselftest@vger.kernel.org, pbrobinson@gmail.com,
-        zbyszek@in.waw.pl, zohar@linux.ibm.com,
-        linux-integrity@vger.kernel.org, paul@paul-moore.com,
-        linux-security-module@vger.kernel.org, wiktor@metacode.biz,
-        devel@lists.sequoia-pgp.org, gnupg-devel@gnupg.org,
-        ebiggers@kernel.org, Jason@zx2c4.com, mail@maciej.szmigiero.name,
-        antony@vennard.ch, konstantin@linuxfoundation.org,
-        James.Bottomley@hansenpartnership.com,
-        Roberto Sassu <roberto.sassu@huawei.com>
-Date:   Fri, 07 Jul 2023 09:03:05 +0200
-In-Reply-To: <20230706232709.t6imkh3q234b3dlm@macbook-pro-8.dhcp.thefacebook.com>
-References: <20230706144225.1046544-1-roberto.sassu@huaweicloud.com>
-         <20230706232709.t6imkh3q234b3dlm@macbook-pro-8.dhcp.thefacebook.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-User-Agent: Evolution 3.44.4-0ubuntu1 
+        with ESMTP id S231607AbjGJIUX (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 10 Jul 2023 04:20:23 -0400
+X-Greylist: delayed 579 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Mon, 10 Jul 2023 01:20:22 PDT
+Received: from mail.ipomocprawna.pl (mail.ipomocprawna.pl [94.177.230.50])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 698EEE1
+        for <keyrings@vger.kernel.org>; Mon, 10 Jul 2023 01:20:22 -0700 (PDT)
+Received: by mail.ipomocprawna.pl (Postfix, from userid 1002)
+        id 3BEEF82772; Mon, 10 Jul 2023 10:10:29 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ipomocprawna.pl;
+        s=mail; t=1688976633;
+        bh=PSgK39E8Y8uuAuzZgkv3QwpS9h+YIcPQJlHDaGSRl5A=;
+        h=Date:From:To:Subject:From;
+        b=IbQt6CqOPDJyKcabG5N0sSR+9HO5PvTdJH5EkgSUyNdn3i64W9y1IJHgSITsASBRd
+         9zYG967EPr7UQ8o6Wgg5rcqn6GwabWQpVqkvAyYU+8SasdjjdhQzu0fzj0A+NisIwc
+         2bv9eill4ww+Ouln5nMg+kM6sfZZLnzHrIPhHUeazCdWP2GuV4wKhTazpqeMo68PNI
+         2YTrn03Rl/pNFJgRaeuPKlUeRCOYzxueNHNExNRJlPVZ85gTbY6C7Y5cn8m584csc4
+         mP/BDQrebRFGEzLtC1tMICYHOXSVW9qu0KBN+KPn0+lZve3FhA0ayUXT0376FZAuEn
+         DctFAOZbCRLWw==
+Received: by mail.ipomocprawna.pl for <keyrings@vger.kernel.org>; Mon, 10 Jul 2023 08:10:21 GMT
+Message-ID: <20230710084500-0.1.19.3g1d.0.ie4mmdieo8@ipomocprawna.pl>
+Date:   Mon, 10 Jul 2023 08:10:21 GMT
+From:   "Adam Hoksa" <adam.hoksa@ipomocprawna.pl>
+To:     <keyrings@vger.kernel.org>
+Subject: Wsparcie Kancelarii prawno-podatkowe
+X-Mailer: mail.ipomocprawna.pl
 MIME-Version: 1.0
-X-CM-TRANSID: LxC2BwBHrumsuKdkc9w3BA--.59443S2
-X-Coremail-Antispam: 1UD129KBjvJXoWxArW5Jr48KFWrWw43tw17Awb_yoW5ZFWrpF
-        WrKayrArykJwnxJa4ktw40gayft3y8J3W3KwnxKrWrCwn0gryayr4xKF4rur9akr1kWr10
-        vrZ5A343Gwn5AaDanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-        9KBjDU0xBIdaVrnRJUUUk0b4IE77IF4wAFF20E14v26rWj6s0DM7CY07I20VC2zVCF04k2
-        6cxKx2IYs7xG6rWj6s0DM7CIcVAFz4kK6r1j6r18M28lY4IEw2IIxxk0rwA2F7IY1VAKz4
-        vEj48ve4kI8wA2z4x0Y4vE2Ix0cI8IcVAFwI0_Jr0_JF4l84ACjcxK6xIIjxv20xvEc7Cj
-        xVAFwI0_Gr0_Cr1l84ACjcxK6I8E87Iv67AKxVWUJVW8JwA2z4x0Y4vEx4A2jsIEc7CjxV
-        AFwI0_Gr0_Gr1UM2AIxVAIcxkEcVAq07x20xvEncxIr21l5I8CrVACY4xI64kE6c02F40E
-        x7xfMcIj6xIIjxv20xvE14v26r1j6r18McIj6I8E87Iv67AKxVWUJVW8JwAm72CE4IkC6x
-        0Yz7v_Jr0_Gr1lF7xvr2IY64vIr41lFIxGxcIEc7CjxVA2Y2ka0xkIwI1l42xK82IYc2Ij
-        64vIr41l4I8I3I0E4IkC6x0Yz7v_Jr0_Gr1lx2IqxVAqx4xG67AKxVWUJVWUGwC20s026x
-        8GjcxK67AKxVWUGVWUWwC2zVAF1VAY17CE14v26rWY6r4UJwCIc40Y0x0EwIxGrwCI42IY
-        6xIIjxv20xvE14v26r1j6r1xMIIF0xvE2Ix0cI8IcVCY1x0267AKxVW8JVWxJwCI42IY6x
-        AIw20EY4v20xvaj40_WFyUJVCq3wCI42IY6I8E87Iv67AKxVWUJVW8JwCI42IY6I8E87Iv
-        6xkF7I0E14v26r4j6r4UJbIYCTnIWIevJa73UjIFyTuYvjxUFYFCUUUUU
-X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAQALBF1jj4-hwgAAsT
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, 2023-07-06 at 16:27 -0700, Alexei Starovoitov wrote:
-> On Thu, Jul 06, 2023 at 04:42:13PM +0200, Roberto Sassu wrote:
-> > From: Roberto Sassu <roberto.sassu@huawei.com>
-> > 
-> > Define a new TLV-based format for keys and signatures, aiming to store and
-> > use in the kernel the crypto material from other unsupported formats
-> > (e.g. PGP).
-> > 
-> > TLV fields have been defined to fill the corresponding kernel structures
-> > public_key, public_key_signature and key_preparsed_payload.
-> > 
-> > Keys:
-> >                 struct public_key {     struct key_preparsed_payload {
-> > KEY_PUB       -->  void *key;
-> >                    u32 keylen;         --> prep->payload.data[asym_crypto]
-> > KEY_ALGO      -->  const char *pkey_algo;
-> > KEY_KID0
-> > KEY_KID1                               --> prep->payload.data[asym_key_ids]
-> > KEY_KID2  
-> > KEY_DESC                               --> prep->description
-> > 
-> > 
-> > Signatures:
-> >                 struct public_key_signature {
-> > SIG_S         -->  u8 *s;
-> >                    u32 s_size;
-> > SIG_KEY_ALGO  -->  const char *pkey_algo;
-> > SIG_HASH_ALGO -->  const char *hash_algo;
-> >                    u32 digest_size;
-> > SIG_ENC       -->  const char *encoding;   
-> > SIG_KID0
-> > SIG_KID1      -->  struct asymmetric_key_id *auth_ids[3];
-> > SIG_KID2  
-> > 
-> > 
-> > For keys, since the format conversion has to be done in user space, user
-> > space is assumed to be trusted, in this proposal. Without this assumption,
-> > a malicious conversion tool could make a user load to the kernel a
-> > different key than the one expected.
-> > 
-> > That should not be a particular problem for keys that are embedded in the
-> > kernel image and loaded at boot, since the conversion happens in a trusted
-> > environment such as the building infrastructure of the Linux distribution
-> > vendor.
-> > 
-> > In the other cases, such as enrolling a key through the Machine Owner Key
-> > (MOK) mechanism, the user is responsible to ensure that the crypto material
-> > carried in the original format remains the same after the conversion.
-> > 
-> > For signatures, assuming the strength of the crypto algorithms, altering
-> > the crypto material is simply a Denial-of-Service (DoS), as data can be
-> > validated only with the right signature.
-> > 
-> > 
-> > This patch set also offers the following contributions:
-> > 
-> > - An API similar to the PKCS#7 one, to verify the authenticity of system
-> >   data through user asymmetric keys and signatures
-> > 
-> > - A mechanism to store a keyring blob in the kernel image and to extract
-> >   and load the keys at system boot
-> >   
-> > - eBPF binding, so that data authenticity verification with user asymmetric
-> >   keys and signatures can be carried out also with eBPF programs
-> 
-> Nack to bpf bits.
+Dzie=C5=84 dobry,
 
-Sure, no problem. Will remove them in the next iteration.
+chcia=C5=82bym zaprosi=C4=87 Pa=C5=84stwa do rozmowy o wsp=C3=B3=C5=82pra=
+cy z nasz=C4=85 Kancelari=C4=85 Prawn=C4=85.
 
-> You've convinced us that bpf_verify_pkcs7_signature() is what you need.
-> Yet, 9 month later there are no users of it and you came back with this new
-> bpf_verify_uasym_signature() helper that practically not much different.
-> 
-> Instead of brand new "public key info" format sign your rpms via
-> existing pkcs7 mechanism and verify with bpf_verify_pkcs7_signature().
+Skuteczna pomoc z zakresu strategii konkurencyjnej, negocjacji um=C3=B3w,=
+ czy optymalizacji podatkowej pomo=C5=BCe Pa=C5=84stwu uzyska=C4=87 zysko=
+wniejsze warunki prawno-biznesowe dla prowadzonych operacji.
 
-Asking Linux distribution vendors to execute gpg in their kernel build,
-or asking them to revisit their PKI, rebuild all their packages, and
-adapting all their tools dealing with the current mechanism?
+Dzi=C4=99ki wieloletniemu do=C5=9Bwiadczeniu w Pa=C5=84stwa bran=C5=BCy o=
+raz efektywnym dzia=C5=82aniom specjalist=C3=B3w nasi Klienci zyskuj=C4=85=
+ wymierne korzy=C5=9Bci po zastosowaniu rekomendowanych przez nas rozwi=C4=
+=85za=C5=84.
 
-Which solution do you think it is better?
+Z przyjemno=C5=9Bci=C4=85 przedstawi=C4=99, co mo=C5=BCemy dla Pa=C5=84st=
+wa zrobi=C4=87. Mog=C4=99 zadzwoni=C4=87?
 
-Thanks
 
-Roberto
-
+Pozdrawiam
+Adam Hoksa
