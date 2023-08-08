@@ -2,230 +2,202 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9B934C001B0
-	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 17:52:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 93808C001B0
+	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 18:57:18 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234954AbjHHRwk (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 8 Aug 2023 13:52:40 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34670 "EHLO
+        id S229759AbjHHS5R (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 8 Aug 2023 14:57:17 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53388 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235183AbjHHRwH (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 13:52:07 -0400
-Received: from bedivere.hansenpartnership.com (bedivere.hansenpartnership.com [96.44.175.130])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7CC802896F;
-        Tue,  8 Aug 2023 09:23:17 -0700 (PDT)
+        with ESMTP id S230390AbjHHS4p (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 14:56:45 -0400
+Received: from mgamail.intel.com (mgamail.intel.com [134.134.136.65])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 057E01D076;
+        Tue,  8 Aug 2023 10:15:44 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-        d=hansenpartnership.com; s=20151216; t=1691504369;
-        bh=poyLOOXWBA22ReX6TU4sKLUgi72y6OnbdZ5oyCnzL4w=;
-        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-        b=DR16pcYdRIWTSz9tSKoB+8+8cI9v2i296sL7DLP/vXDTsE7n2n+sH6L9NEAzhEg+Z
-         9fdqA5kv2xfU5UtZc5DmXGPIw1dtYxgBzrC2PHGikamulkPCH/3RCKSz2FDJ9XVJ3X
-         YgenFZ7HXrC9B08S+6DmLYe58merKLH2ghAGqk9Y=
-Received: from localhost (localhost [127.0.0.1])
-        by bedivere.hansenpartnership.com (Postfix) with ESMTP id EA5741281F27;
-        Tue,  8 Aug 2023 10:19:29 -0400 (EDT)
-Received: from bedivere.hansenpartnership.com ([127.0.0.1])
- by localhost (bedivere.hansenpartnership.com [127.0.0.1]) (amavis, port 10024)
- with ESMTP id kqDt_1ATYm6R; Tue,  8 Aug 2023 10:19:29 -0400 (EDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-        d=hansenpartnership.com; s=20151216; t=1691504369;
-        bh=poyLOOXWBA22ReX6TU4sKLUgi72y6OnbdZ5oyCnzL4w=;
-        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-        b=DR16pcYdRIWTSz9tSKoB+8+8cI9v2i296sL7DLP/vXDTsE7n2n+sH6L9NEAzhEg+Z
-         9fdqA5kv2xfU5UtZc5DmXGPIw1dtYxgBzrC2PHGikamulkPCH/3RCKSz2FDJ9XVJ3X
-         YgenFZ7HXrC9B08S+6DmLYe58merKLH2ghAGqk9Y=
-Received: from [IPv6:2601:5c4:4302:c21::a774] (unknown [IPv6:2601:5c4:4302:c21::a774])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange ECDHE (prime256v1) server-signature RSA-PSS (2048 bits) server-digest SHA256)
-        (Client did not present a certificate)
-        by bedivere.hansenpartnership.com (Postfix) with ESMTPSA id 66D3B1281F25;
-        Tue,  8 Aug 2023 10:19:28 -0400 (EDT)
-Message-ID: <c7d6e953a4b36014ea0c7406531b24bb29d6127e.camel@HansenPartnership.com>
-Subject: Re: [PATCH 0/4] keys: Introduce a keys frontend for attestation
- reports
-From:   James Bottomley <James.Bottomley@HansenPartnership.com>
-To:     Dan Williams <dan.j.williams@intel.com>, dhowells@redhat.com
-Cc:     Brijesh Singh <brijesh.singh@amd.com>,
-        Kuppuswamy Sathyanarayanan 
+  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
+  t=1691514946; x=1723050946;
+  h=date:from:to:cc:subject:message-id:references:
+   in-reply-to:mime-version;
+  bh=2vauG+Tm5WOPqr7zJ++yCpHzBMQARl7yEq4Gfbv/45M=;
+  b=YzX62U2Ubl7OqLwG8cuvkY6KGiVyoSWasnj4AMchKY+fQXzRggb/j2+e
+   th3RLKj0BauXcVo1BK0QGyNJIm5koKlbjbzMpPvBI13DMCw4bvErFXQCH
+   UsiHwNsOMiweqgBza/wYikhMLG6+0WLag/Jy/U5vg+uWCwxVC9HFTRLS2
+   64sOEsXGdMbCuID0rLoUtnki7xqj1wsM5GQKJyN6xCsM0nx2BrJ7VF1UA
+   qNm6PAHKuLlpmJHST/LQrBZvyBRAucKg0PW6eDHcoH7b8Qg+gczujT1V4
+   L8L2eYpihh45/00F8jS1L1yqr9vxuMsZM5Z3E+HfNSIsiKeAvzcCTbiz5
+   g==;
+X-IronPort-AV: E=McAfee;i="6600,9927,10795"; a="374575837"
+X-IronPort-AV: E=Sophos;i="6.01,156,1684825200"; 
+   d="scan'208";a="374575837"
+Received: from orsmga004.jf.intel.com ([10.7.209.38])
+  by orsmga103.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 08 Aug 2023 09:43:21 -0700
+X-ExtLoop1: 1
+X-IronPort-AV: E=McAfee;i="6600,9927,10795"; a="855146884"
+X-IronPort-AV: E=Sophos;i="6.01,156,1684825200"; 
+   d="scan'208";a="855146884"
+Received: from fmsmsx601.amr.corp.intel.com ([10.18.126.81])
+  by orsmga004.jf.intel.com with ESMTP; 08 Aug 2023 09:43:21 -0700
+Received: from fmsmsx611.amr.corp.intel.com (10.18.126.91) by
+ fmsmsx601.amr.corp.intel.com (10.18.126.81) with Microsoft SMTP Server
+ (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
+ 15.1.2507.27; Tue, 8 Aug 2023 09:43:20 -0700
+Received: from fmsmsx601.amr.corp.intel.com (10.18.126.81) by
+ fmsmsx611.amr.corp.intel.com (10.18.126.91) with Microsoft SMTP Server
+ (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
+ 15.1.2507.27; Tue, 8 Aug 2023 09:43:20 -0700
+Received: from fmsedg601.ED.cps.intel.com (10.1.192.135) by
+ fmsmsx601.amr.corp.intel.com (10.18.126.81) with Microsoft SMTP Server
+ (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
+ 15.1.2507.27 via Frontend Transport; Tue, 8 Aug 2023 09:43:20 -0700
+Received: from NAM10-BN7-obe.outbound.protection.outlook.com (104.47.70.103)
+ by edgegateway.intel.com (192.55.55.70) with Microsoft SMTP Server
+ (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ 15.1.2507.27; Tue, 8 Aug 2023 09:43:20 -0700
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
+ b=UPHiidA2WjOn4JAlepTKfhg6ipjicyvPKvZdUd/ewUrRsaTtj+oEuEKgg/4JjOPDIoJaTJQsxLou1jZKmL7QUDxVI6qinLzaGkPyCFyO6P68cvUppn/dxnywrpHKgNDXiErzCir1lwQSjWlf7lYjwhDbevEkxLZIKECXw/r0FW3XPhfKh7ktrqVVdPoIx9WFjwQCR6SbhklpQ0y2ihMfn1cvZGmnO9Hu6SHTM+SNU5CRvSHvPj0t7pql+cVofowOKIdOoSxleVLoGU9szQw67dh0r4wXgVRgTHDcmS/yaxjMNETOoYdA8PNlx9g41i5bPoBjJYgWVKZ6PXaiHPl8KQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector9901;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=yfvBpiF0nqzYe5HmmS0jDr5oNtfLCaFgQdDZFPhpDjM=;
+ b=fwQJy7QuUZDBsDJBwjbUJNqQsiCLG5LC3C0Tsf9SZICUxAR5u65AfNNqS4McbjN+PFb2KrXbrmgA/fz9Rs4q3YGivQZUOQuoRqP2h106hqp5ClOi9sVoMDFP3+g7PMLTnnxbWi3JTV0RQ+SN8cu5CaQYDpoI+wHfxo7IOxot9InOkaEGG2IAvx8dW28AIJp0c4vX0LiiB0sGdDLU+IeY7XLSxfx/amvIqUu50cgUa6jKwnm55XzTFOqyAI3zKsdp18SZhRWxU7oLbPbK1+zuVXZS38ytrYymGXEdw/6FPYeM6mqRbX3UM+UAWovAQMTs0l63URfKdaulKM8JNgL+4Q==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=intel.com; dmarc=pass action=none header.from=intel.com;
+ dkim=pass header.d=intel.com; arc=none
+Authentication-Results: dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=intel.com;
+Received: from PH8PR11MB8107.namprd11.prod.outlook.com (2603:10b6:510:256::6)
+ by LV8PR11MB8486.namprd11.prod.outlook.com (2603:10b6:408:1e8::14) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.6652.27; Tue, 8 Aug
+ 2023 16:43:18 +0000
+Received: from PH8PR11MB8107.namprd11.prod.outlook.com
+ ([fe80::4556:2d4e:a29c:3712]) by PH8PR11MB8107.namprd11.prod.outlook.com
+ ([fe80::4556:2d4e:a29c:3712%4]) with mapi id 15.20.6652.026; Tue, 8 Aug 2023
+ 16:43:18 +0000
+Date:   Tue, 8 Aug 2023 09:43:14 -0700
+From:   Dan Williams <dan.j.williams@intel.com>
+To:     Dionna Amalie Glaze <dionnaglaze@google.com>,
+        Dan Williams <dan.j.williams@intel.com>
+CC:     Sathyanarayanan Kuppuswamy 
         <sathyanarayanan.kuppuswamy@linux.intel.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <dhowells@redhat.com>, Brijesh Singh <brijesh.singh@amd.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Tom Lendacky <thomas.lendacky@amd.com>,
-        Dionna Amalie Glaze <dionnaglaze@google.com>,
-        Borislav Petkov <bp@alien8.de>,
+        "Borislav Petkov" <bp@alien8.de>,
         Jarkko Sakkinen <jarkko@kernel.org>,
         Samuel Ortiz <sameo@rivosinc.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-coco@lists.linux.dev, keyrings@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Date:   Tue, 08 Aug 2023 10:19:22 -0400
-In-Reply-To: <64d17f5728fbc_5ea6e2943f@dwillia2-xfh.jf.intel.com.notmuch>
-References: <169057265210.180586.7950140104251236598.stgit@dwillia2-xfh.jf.intel.com>
-         <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.com>
-         <64c5ed6eb4ca1_a88b2942a@dwillia2-xfh.jf.intel.com.notmuch>
-         <c6576d1682b576ba47556478a98f397ed518a177.camel@HansenPartnership.com>
-         <64cdb5f25c56_2138e294f1@dwillia2-xfh.jf.intel.com.notmuch>
-         <1180481830431165d49c5e64b92b81c396ebc9b1.camel@HansenPartnership.com>
-         <64d17f5728fbc_5ea6e2943f@dwillia2-xfh.jf.intel.com.notmuch>
-Content-Type: text/plain; charset="UTF-8"
-User-Agent: Evolution 3.42.4 
+        <linux-coco@lists.linux.dev>, <keyrings@vger.kernel.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] keys: Introduce a keys frontend for attestation
+ reports
+Message-ID: <64d270a2a68ce_5ea6e294f0@dwillia2-xfh.jf.intel.com.notmuch>
+References: <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.com>
+ <64c5ed6eb4ca1_a88b2942a@dwillia2-xfh.jf.intel.com.notmuch>
+ <c6576d1682b576ba47556478a98f397ed518a177.camel@HansenPartnership.com>
+ <64cdb5f25c56_2138e294f1@dwillia2-xfh.jf.intel.com.notmuch>
+ <1180481830431165d49c5e64b92b81c396ebc9b1.camel@HansenPartnership.com>
+ <64d17f5728fbc_5ea6e2943f@dwillia2-xfh.jf.intel.com.notmuch>
+ <c7d6e953a4b36014ea0c7406531b24bb29d6127e.camel@HansenPartnership.com>
+ <2425e00b-defb-c12b-03e5-c3d23b30be01@linux.intel.com>
+ <64d263e44e401_2138e29486@dwillia2-xfh.jf.intel.com.notmuch>
+ <CAAH4kHamob7g_+BRd0JW76cM7_vS=jzXzRjrgCPDxZ29VnzdCQ@mail.gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAAH4kHamob7g_+BRd0JW76cM7_vS=jzXzRjrgCPDxZ29VnzdCQ@mail.gmail.com>
+X-ClientProxiedBy: MW4PR03CA0351.namprd03.prod.outlook.com
+ (2603:10b6:303:dc::26) To PH8PR11MB8107.namprd11.prod.outlook.com
+ (2603:10b6:510:256::6)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: PH8PR11MB8107:EE_|LV8PR11MB8486:EE_
+X-MS-Office365-Filtering-Correlation-Id: 18e90e0d-db4c-4d40-9999-08db982e917f
+X-MS-Exchange-SenderADCheck: 1
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam: BCL:0;
+X-Microsoft-Antispam-Message-Info: YCzmZN9XbeCt+pJFt+iDXg0vkLkD7Kpmho/GNK7c1RbuMub5C8dN0FGK+QkmV70gveB2gBvu+RqCBjTWreLhfgok+3yeMZqeALkErTiYz0Sm3CMC0YGuHXpg4AlE5rUg19X/dpKTQD3SPVgC2rhymDFmIN3rAdZkOUdS/8ZTp08m0j4Yzt0IeUoANyoHo7dcLwnj+BVxk6jVgWS07Asgbw8mJ8cxfAgzJRa1PZ54xq6+2HSSFxw9u+QTR42vdsRxIIPHtJWElpDNehXWxHEVIl7c/b0gDAO3DER0tpavDyOhyO3RbeImHc3P651DwJpAhQ804Nl+JjzRcQ2F0f87zDvNp1vK6D/sRyvTKrhqHj1sxedWFaoWnzOUTqLjmF+JQw0tkVQZINw3ynxgG7iH99kPtl1mCUPSctfNA+UxgJssshLLFOH9yVr6EEJXKza3pYoih41OygOGdgB/cfTqxNeVkW3hrEWtk6f7k2fLWw3NSatCBzLS4ER9wrCCFOtx/PF0uiVmL+lvB2Z+MPG6HGlEydOLdYUMBuXwgFhpY7L2LsZT5U8ax5CmMXD9/6EMr2EWd5zkqLNcqc85lIaoXWcfcQbbZ7GTOn/w5kjfoSE=
+X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:PH8PR11MB8107.namprd11.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230028)(136003)(346002)(376002)(39860400002)(396003)(366004)(186006)(1800799003)(451199021)(26005)(6506007)(9686003)(6486002)(966005)(6512007)(6666004)(478600001)(82960400001)(38100700002)(110136005)(54906003)(66476007)(66556008)(66946007)(4326008)(316002)(41300700001)(8936002)(8676002)(5660300002)(7416002)(2906002)(83380400001)(86362001)(47845007);DIR:OUT;SFP:1102;
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-MessageData-0: =?us-ascii?Q?AHU4fP3tccBKYyRxf51B/Jf0N01xiQgiQH+7k9mEXkUiq5i6mYD5Gx/PwFPF?=
+ =?us-ascii?Q?OOvHH/YS/GFXB9hSBGPGi1XRudYKzwYO//TeQ0JG7/PpPKzEDJ43giWpbXbl?=
+ =?us-ascii?Q?aPvJ4/gXjCsf+LOdsg8C9XTIWkoaRdzTvcZ0g2/6rMa785RXT4Lh7pkB7qkX?=
+ =?us-ascii?Q?QQ335Hvlw1xumvqLrwmvV0irAVaCrCeT0MM+erc3r/FkDEHWyV4TsUMDqraz?=
+ =?us-ascii?Q?pjgke+tRvAyrvMJA+1nYqwrAuW7MCIssX4BeFB96A571nhAEIiwGQx2m4xCU?=
+ =?us-ascii?Q?9UOzU55T+q1FslaECBp7hvjpbqurtGrLBNoS+nDhgHFEhK2OfD58vacHsDuZ?=
+ =?us-ascii?Q?HJC0JdfJ9QHXZjfZ2hJxL5a4tLV51UE9PfC8xCPsg92VxoYqRBG3+zRRZ2QE?=
+ =?us-ascii?Q?2ULo4AoLNPTolf8xm4b3pPJSzm0QoowxFtpsYxU1SoCU7YQ7wRanZBKa6sp0?=
+ =?us-ascii?Q?DKwvlmOwPN4dkbC6lLGdN9vtuFatRNBnWhMxvBHHwTBwHY0tyzDmhU8wIb0/?=
+ =?us-ascii?Q?9+SjXdrePvA0GDsP86t0JBamEK7P8KZoePH6OrRHvNqeDReaCEJRKuQBrsmL?=
+ =?us-ascii?Q?RM+3QRD5mcbs4WQEgpPjxdWws9Ij2SZNSsqZ0RdMlwGe6EloC71jD0CXceVZ?=
+ =?us-ascii?Q?h7tw7iUBlNC85B45La/RBehzdxfRZsdN70UgAxFTTApBPZnM5xXASjzSd3F8?=
+ =?us-ascii?Q?oKMvKap4uhOih53DLEYKE5AgDzDBux698ZRoeY0Nq4PzVpmjzW6hFeausnie?=
+ =?us-ascii?Q?+7o39jwa4SJmWpDn5shnBJCeMgoDDP5W7ynwgMJIwcpUR7nj4bgmndYz9cUI?=
+ =?us-ascii?Q?pVvEy/6S4LGHnD/+6XvAJ2ujC3yqAABqBg0FDKAX5EwNxttZK0LOvBpZgwIl?=
+ =?us-ascii?Q?KXoJ7Pb6+x7sNv8SNvmNQuRW04ZOh/oGqCaZca0tfQkzCHOD3mbAx0cVHdCB?=
+ =?us-ascii?Q?Wpp3iKbkR6i5aFyHenjL8v9Aq4dvS5DO1rSml66STFdQ8iSwWwI/BFF3F1To?=
+ =?us-ascii?Q?Y1zMEQ2uPHFhW/Y2YVfaNVkGpXfnxEAUu5q3UBcbJy2s77NhffDPAymoksK9?=
+ =?us-ascii?Q?Nwk5oj6nVz56h+I+OoahC9GXH9P8gCjBtuHQ+xGs6dSDPu+ud+YHh+tK8jJh?=
+ =?us-ascii?Q?TbXiDug3uF/pF/LPrgTWOtUsrMF/p7f48qX+iJeHJjQQuTljfaQUiIDsUqyV?=
+ =?us-ascii?Q?RddBjjsYHodZ+pVfKz74uXe4PRWXRj6Tb1AIsr/K+bkxoIcJh34CM3fByoTE?=
+ =?us-ascii?Q?fwOj48SIgTXxmumYO90E5j+d7iJKMm1M665LXbhdhImiYVRPgoKhtPZW2Dug?=
+ =?us-ascii?Q?UYLFvfIjzfMC7sH08rjQtRjF+CJErzec7fYfCWM41Ob+gKSP4gvgrfX6olxC?=
+ =?us-ascii?Q?szpjCZdPrrxBCXRztmh1jqyepI+tRezLE4g4ghQnoA4HKSHSzKjcImrbGtva?=
+ =?us-ascii?Q?iNopNRI5gEu6RaR7WfW1IcF5D8S8z4ixjF35Y8iMDXVARLTUQ7C+PammfwJ4?=
+ =?us-ascii?Q?Ro+URVUfISotaxNCkKNXkLEiTNmBzQq5XqXN3FuNosZk62FOj2Bzd74zn7ml?=
+ =?us-ascii?Q?MaLmbvwdxpPjgYvX3kUiwRgG3WyyKecfuJK6YU7hNUILRaHI/5jzK40AIz5y?=
+ =?us-ascii?Q?Ng=3D=3D?=
+X-MS-Exchange-CrossTenant-Network-Message-Id: 18e90e0d-db4c-4d40-9999-08db982e917f
+X-MS-Exchange-CrossTenant-AuthSource: PH8PR11MB8107.namprd11.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Aug 2023 16:43:18.1502
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 46c98d88-e344-4ed4-8496-4ed7712e255d
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: 4/zdkV552gc6U/z0yzVT7csodXZZ6Yoli4Pe9RQhWbO971vO0HtWFt5MpFm8+Iv1gtp2T8k98DFZeZLwqeClwqoNNr39CBXE6CZQ3ONqRWk=
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: LV8PR11MB8486
+X-OriginatorOrg: intel.com
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, 2023-08-07 at 16:33 -0700, Dan Williams wrote:
-> James Bottomley wrote:
-> > On Fri, 2023-08-04 at 19:37 -0700, Dan Williams wrote:
-> > > James Bottomley wrote:
-> > > [..]
-> > > > > This report interface on the other hand just needs a single
-> > > > > ABI to retrieve all these vendor formats (until industry
-> > > > > standardization steps in) and it needs to be flexible (within
-> > > > > reason) for all the TSM-specific options to be conveyed. I do
-> > > > > not trust my ioctl ABI minefield avoidance skills to get that
-> > > > > right. Key blob instantiation feels up to the task.
-> > > > 
-> > > > To repeat: there's nothing keylike about it.
-> > > 
-> > > From that perspective there's nothing keylike about user-keys
-> > > either.
-> > 
-> > Whataboutism may be popular in politics at the moment, but it
-> > shouldn't be a justification for API abuse: Just because you might
-> > be able to argue something else is an abuse of an API doesn't give
-> > you the right to abuse it further.
+Dionna Amalie Glaze wrote:
+> >
+> > At least that was not the level of concurrency I was worried about. The
+> > sysfs approach makes it so that concurrency problem of option-writing vs
+> > report-reading is pushed to userspace.
+> >
 > 
-> That appears to be the disagreement, that the "user" key type is an
-> abuse of the keyctl subsystem. Is that the general consensus that it
-> was added as a mistake that is not be repeated?
-
-I didn't say anything about your assertion, just that you seemed to be
-trying to argue it.  However, if you look at the properties of keys:
-
-https://www.kernel.org/doc/html/v5.0/security/keys/core.html
-
-You'll see that none of them really applies to the case you're trying
-to add.
-
-> Otherwise there is significant amount of thought that has gone into
-> keyctl including quotas, permissions, and instantiation flows.
+> The reason I would advocate against making attestation report
+> collection single-threaded in user space at a machine level is that
+> there are new schemes of attested connections that may become the
+> basis of server handshakes. I think folks are mainly looking at this
+> from the use case of
 > 
+> 1. workload will do large amounts of work on behalf of the VM owner,
+> provided it gets a sealing key released by the VM owner once on boot
+> after proving its code identity
 > 
-> > > Those are just blobs that userspace gets to define how they are
-> > > used and the keyring is just a transport. I also think that this
-> > > interface *is* key-like in that it is used in the flow of
-> > > requesting other key material. The ability to set policy on who
-> > > can request and instantiate these pre-requisite reports can be
-> > > controlled by request-key policy.
-> > 
-> > I thought we agreed back here:
-> > 
-> > https://lore.kernel.org/linux-coco/64c5ed6eb4ca1_a88b2942a@dwillia2-xfh.jf.intel.com.notmuch/
-> > 
-> > That it ended up as "just a transport interface".  Has something
-> > changed that?
+> however I'm thinking of the case of a more user-centric use case that
+> enables service users to challenge for proof of workload identity
 > 
-> This feedback cast doubt on the assumption that attestation reports
-> are infrequently generated:
+> 2. workload is a server that accepts incoming connections that include
+> a hardware attestation challenge. It generates an attestation report
+> that includes the challenge as part of the connection handshake
 > 
-> http://lore.kernel.org/r/CAAH4kHbsFbzL=0gn71qq1-1kL398jiS2rd3as1qUFnLTCB5mHQ@mail.gmail.com
+> This posits the existence of such an advanced user, but high security
+> applications also have users with high expectations. I want the option
+> to be open to empower more users to have access to provable workload
+> provenance, not just the VM owners that are unlocking resources.
 
-Well, I just read attestation would be called more than once at boot. 
-That doesn't necessarily require a concurrent interface.
+I do not see sysfs precluding a use case like that. If the kernel can
+call out to userspace for TLS connection setup [1], then advanced user
+can call out to a daemon for workload provenance setup. Recall that TDX
+will round trip through the quoting enclave for these reports and,
+without measuring, that seems to have the potential to dominate the
+setup time vs the communication to ask a daemon to convey a report.
 
-> Now, the kernel is within its rights to weigh in on that question
-> with an ABI that is awkward for that use case, or it can decide up
-> front that sysfs is not built for transactions.
-
-I thought pretty much everyone agreed sysfs isn't really transactional.
-However, if the frequency of use of this is low enough, CC attestation
-doesn't need to be transactional either.  All you need is the ability
-to look at the inputs and outputs and to specify new ones if required.
-Sysfs works for this provided two entities don't want to supply inputs
-at the same time.
-
-> > [...]
-> > > > Sneaking it in as a one-off is the wrong way to proceed
-> > > > on something like this.
-> > > 
-> > > Where is the sneaking in cc'ing all the relevant maintainers of
-> > > the keyring subsystem and their mailing list? Yes, please add
-> > > others to the cc. 
-> > 
-> > I was thinking more using the term pubkey in the text about
-> > something that is more like a nonce:
-> > 
-> > https://lore.kernel.org/linux-coco/169057265801.180586.10867293237672839356.stgit@dwillia2-xfh.jf.intel.com/
-> > 
-> > That looked to me designed to convince the casual observer that
-> > keys were involved.
-> 
-> Ok, I see where you were going, at the same time I was trusting
-> keyrings@ community to ask about that detail and was unaware of any
-> advocacy against new key types.
-
-I'm not advocating against new key types.  I'm saying what you're
-proposing is simply a data transport layer and, as such, has no
-properties that really make it a key type.
-
-> > > The question for me at this point is whether a new:
-> > > 
-> > >         /dev/tsmX
-> > > 
-> > > ...ABI is worth inventing, or if a key-type is sufficient. To
-> > > Peter's concern, this key-type imposes no restrictions over what
-> > > sevguest already allows. New options are easy to add to the key
-> > > instantiation interface and I expect different vendors are likely
-> > > to develop workalike functionality to keep option proliferation
-> > > to a minimum. Unlike ioctl() there does not need to be as careful
-> > > planning about the binary format of the input payload for per
-> > > vendor options. Just add more tokens to the instantiation
-> > > command-line.
-> > 
-> > I still think this is pretty much an arbitrary transport interface.
-> > The question of how frequently it is used and how transactional it
-> > has to be depend on the use cases (which I think would bear further
-> > examination).  What you mostly want to do is create a transaction
-> > by adding parameters individually, kick it off and then read a set
-> > of results back.  Because the format of the inputs and outputs is
-> > highly specific to the architecture, the kernel shouldn't really be
-> > doing any inspection or modification.  For low volume single
-> > threaded use, this can easily be done by sysfs.  For high volume
-> > multi-threaded use, something like configfs or a generic keyctl
-> > like object transport interface would be more appropriate. 
-> > However, if you think the latter, it should still be proposed as a
-> > new generic kernel to userspace transactional transport mechanism.
-> 
-> Perhaps we can get more detail about the proposed high-volume use
-> case: Dionna, Peter?
-
-Well, that's why I asked for use cases.  I have one which is very low
-volume and single threaded.  I'm not sure what use case you have since
-you never outlined it and I see hints from Red Hat that they worry
-about concurrency.  So it's interface design 101: collect the use cases
-first.
-
-> I think the minimum bar for ABI success here is that options are not
-> added without touching a common file that everyone can agree what the
-> option is, no more drivers/virt/coco/$vendor ABI isolation. If
-> concepts like VMPL and RTMR are going to have cross-vendor workalike
-> functionality one day then the kernel community picks one name for
-> shared concepts. The other criteria for success is that the frontend
-> needs no change when standardization arrives, assuming all vendors
-> get their optionality into that spec definition.
-
-I don't think RTMR would ever be cross vendor.  It's sort of a cut down
-TPM with a limited number of PCRs.  Even Intel seems to be admitting
-this when they justified putting a vTPM into TDX at the OC3 Q and A
-session (no tools currently work with RTMRs and the TPM ecosystem is
-fairly solid, so using a vTPM instead of RTMRs gives us an industry
-standard workflow).
-
-James
-
-
-> keyring lessened my workload with how it can accept ascii token
-> options whereas ioctl() needs more upfront thought.
-
+[1]: https://lore.kernel.org/all/168174169259.9520.1911007910797225963.stgit@91.116.238.104.host.secureserver.net/
