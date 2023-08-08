@@ -2,51 +2,52 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 54722C001B0
-	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 19:01:06 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 23AC9C001B0
+	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 19:25:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232126AbjHHTBF (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 8 Aug 2023 15:01:05 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39718 "EHLO
+        id S232512AbjHHTZP (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 8 Aug 2023 15:25:15 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39268 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232399AbjHHTAq (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 15:00:46 -0400
-Received: from mail-qt1-x831.google.com (mail-qt1-x831.google.com [IPv6:2607:f8b0:4864:20::831])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3C373EB88
-        for <keyrings@vger.kernel.org>; Tue,  8 Aug 2023 10:28:22 -0700 (PDT)
-Received: by mail-qt1-x831.google.com with SMTP id d75a77b69052e-40a47e8e38dso14701cf.1
-        for <keyrings@vger.kernel.org>; Tue, 08 Aug 2023 10:28:22 -0700 (PDT)
+        with ESMTP id S231880AbjHHTZB (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 15:25:01 -0400
+Received: from mail-qt1-x82e.google.com (mail-qt1-x82e.google.com [IPv6:2607:f8b0:4864:20::82e])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AD20183E8
+        for <keyrings@vger.kernel.org>; Tue,  8 Aug 2023 11:49:09 -0700 (PDT)
+Received: by mail-qt1-x82e.google.com with SMTP id d75a77b69052e-4036bd4fff1so50891cf.0
+        for <keyrings@vger.kernel.org>; Tue, 08 Aug 2023 11:49:09 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20221208; t=1691515701; x=1692120501;
+        d=google.com; s=20221208; t=1691520549; x=1692125349;
         h=cc:to:subject:message-id:date:from:in-reply-to:references
          :mime-version:from:to:cc:subject:date:message-id:reply-to;
-        bh=8m2sz5ofN14PKsEKJrI2xSIa/NZXT9WULPoAZ3lB9qU=;
-        b=gwOPrQUq58pYRPV743cnNd80mDDQwF8PRJ17Q2kjD8B7u0ywK3ENl4bcekD6U//BXA
-         zctTGF//ZGCouRHmR9UPk+KyfsO2gBmmVG9AjqQW+PpabrPpoEmWUDvH+M4gUaRuVeFB
-         DLI8sKz5vavKxmJ617OahzfbwmrcPkEqgtqoFmxSvRN13sW0zVOZtnXYbdbXcFWEoZYx
-         FKikqU1BjBaqGKe1YWhQuPX9PJZlAQxN+NZNbxKaDzbSSfopIJKMseqRCRt3ySZKIYgt
-         vZbXa1hBQPXwsBw3ZCCaMwPnzgGOKJFW49QYnCuEwGfWQN8SODFBvVGZ9382gCTWNnOn
-         M5Kw==
+        bh=Zh3g3xzDTV4b/0rT3NYTC0qmjiPKkmxg3PT3HLqCVZY=;
+        b=zRZUveJH1KZRH6tYQ1yGZPSChFIbIeV6NT3uvNZujkhvRKwM95maPvj0D1SzvwSNey
+         T9uvqSCtb3wHomjfs6OYQxd0fYUXIcih9rr3ab2iQvui60Tv5IBJWUlfdVQPmRe160Hv
+         bFt0TYrE1wAnPlywT9LhmIFzigT3OeLia2ZZ0kcnxoUwoMQKwJV77L1wNSAnRe3WjUT1
+         OK3rHZYaeGLFzWk6HRg/Po/gOu0eLZeE/vzNQdgECLRNT44O55w1dKrxxZJNNbR/DHce
+         zKcbndJFc3/KWf7wejr2EgLLdCA3X8t3pndqs5viKGN+KwrtUQ8MP2FLh3C/HbgZsVl6
+         MnHw==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1691515701; x=1692120501;
+        d=1e100.net; s=20221208; t=1691520549; x=1692125349;
         h=cc:to:subject:message-id:date:from:in-reply-to:references
          :mime-version:x-gm-message-state:from:to:cc:subject:date:message-id
          :reply-to;
-        bh=8m2sz5ofN14PKsEKJrI2xSIa/NZXT9WULPoAZ3lB9qU=;
-        b=S3hlhMrdNB7Gqpj49ebHvX7tL0P5bMI//W02XAumy9lQ8caKigC6ds6SyV/9AQLBhL
-         nqGgR3Sk+7COBH5OWEGjvBfWAQ5145IZuS3TDRiE3wu+I7hKI1JGNiQ9VBMqN0L16uZJ
-         lWa5MNqB13SkVya/TKE8XLbI0IhCaGTkkBk8SxeJ2vs53IXxpuKB6D5lfmkX/WAqTsYY
-         3SQCW/Na5ATTw4GkvzRlGPqLRBNEPjYHBD6Cg0RQ+0QZA8HkhoTwdSVRlnq2PjSgyDeu
-         /7n9wFzEqUy/raMnZgCHRdQPC0sW0a1l8Sjkum2a9FJO3iTEQmD0xXEFIBTAUdk3wrX9
-         7y/Q==
-X-Gm-Message-State: AOJu0Yyb7YPxKv24Bbs3buu05zQLE9R060ppCDygI7UucHroZjFSSthH
-        KdVR0x6z+RgadSDs2yR+OqicHUXzQgOJNepY/BU2Vg==
-X-Google-Smtp-Source: AGHT+IFageD8Xz1u57GixYSKm20N8XHO6KbVXPJLL1PT98Mt37GF0ywxR1gnVgeRo2hCqp53F3eJr8SMw+iQeUoSS4k=
-X-Received: by 2002:ac8:5850:0:b0:403:a43d:bd7d with SMTP id
- h16-20020ac85850000000b00403a43dbd7dmr15772qth.4.1691515274187; Tue, 08 Aug
- 2023 10:21:14 -0700 (PDT)
+        bh=Zh3g3xzDTV4b/0rT3NYTC0qmjiPKkmxg3PT3HLqCVZY=;
+        b=dA2CAM39SLkxcj+iquBsn8bV7eyRMhPPi1JSQgI+rrj13uxLUwMBMpshMcMZDi7uBa
+         9RqbRaI68jIjkoCZ2Hj3nXZpi2AtOwylEa0X1CSzOj2JKqa6prUXlC9tAxmOh6NcJB2u
+         ZhnP8WH8fKXgqjZHtPQhfn3XA86nV5ikGgYrLWIiY8INYJSK9Pkyxi3s/I51ZGatBdt/
+         APJnEoO2PzhjGXnbxF8txuh8NXjzQ/7yvl6Vv3Mn0FvOmN/cf0Zy3XDJWrW+jySC7jKR
+         rX0pW4LmY6EG/+n8/IGnQEhF5vwFiPrIkdlR+Xp1dK7Ac//JisjrdQqPkbaj6Y6c/Z8n
+         j4Ew==
+X-Gm-Message-State: AOJu0YxOG1SxZwYpNF9Hs5mxIsyqJPIqFwdBWLoJjKGGmrtF2LDil+tm
+        ACtSituOxEzFvMfhb04rvndZIxzPCWv4CjKfw8sJlQ==
+X-Google-Smtp-Source: AGHT+IHKG1g9UlJ1hPirgjC7AadcpCjA9ieQnjt5my7ufYVULAUOHLkcnYD66My8bA4sXpCr+wJFuOLoENiUje06R8A=
+X-Received: by 2002:a05:622a:106:b0:3fd:ad1b:4e8a with SMTP id
+ u6-20020a05622a010600b003fdad1b4e8amr49679qtw.22.1691520548584; Tue, 08 Aug
+ 2023 11:49:08 -0700 (PDT)
 MIME-Version: 1.0
-References: <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.com>
+References: <169057265210.180586.7950140104251236598.stgit@dwillia2-xfh.jf.intel.com>
+ <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.com>
  <64c5ed6eb4ca1_a88b2942a@dwillia2-xfh.jf.intel.com.notmuch>
  <c6576d1682b576ba47556478a98f397ed518a177.camel@HansenPartnership.com>
  <64cdb5f25c56_2138e294f1@dwillia2-xfh.jf.intel.com.notmuch>
@@ -54,17 +55,17 @@ References: <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.co
  <64d17f5728fbc_5ea6e2943f@dwillia2-xfh.jf.intel.com.notmuch>
  <c7d6e953a4b36014ea0c7406531b24bb29d6127e.camel@HansenPartnership.com>
  <2425e00b-defb-c12b-03e5-c3d23b30be01@linux.intel.com> <64d263e44e401_2138e29486@dwillia2-xfh.jf.intel.com.notmuch>
- <CAAH4kHamob7g_+BRd0JW76cM7_vS=jzXzRjrgCPDxZ29VnzdCQ@mail.gmail.com> <64d270a2a68ce_5ea6e294f0@dwillia2-xfh.jf.intel.com.notmuch>
-In-Reply-To: <64d270a2a68ce_5ea6e294f0@dwillia2-xfh.jf.intel.com.notmuch>
+ <CAAH4kHamob7g_+BRd0JW76cM7_vS=jzXzRjrgCPDxZ29VnzdCQ@mail.gmail.com> <f95d75c513c081d5bb8b5d1fd3b0a5d5e24ab467.camel@HansenPartnership.com>
+In-Reply-To: <f95d75c513c081d5bb8b5d1fd3b0a5d5e24ab467.camel@HansenPartnership.com>
 From:   Dionna Amalie Glaze <dionnaglaze@google.com>
-Date:   Tue, 8 Aug 2023 10:21:02 -0700
-Message-ID: <CAAH4kHYht5s4CkS5Y9+VotPH4WqDrzng0vYy89oq0_U16H_dDA@mail.gmail.com>
+Date:   Tue, 8 Aug 2023 11:48:57 -0700
+Message-ID: <CAAH4kHYJrKPgWXn7+G_sZXoAs8fq2sDEyT-tyECPthdaaoXyDw@mail.gmail.com>
 Subject: Re: [PATCH 0/4] keys: Introduce a keys frontend for attestation reports
-To:     Dan Williams <dan.j.williams@intel.com>
-Cc:     Sathyanarayanan Kuppuswamy 
-        <sathyanarayanan.kuppuswamy@linux.intel.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        dhowells@redhat.com, Brijesh Singh <brijesh.singh@amd.com>,
+To:     James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc:     Dan Williams <dan.j.williams@intel.com>,
+        Sathyanarayanan Kuppuswamy 
+        <sathyanarayanan.kuppuswamy@linux.intel.com>, dhowells@redhat.com,
+        Brijesh Singh <brijesh.singh@amd.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Tom Lendacky <thomas.lendacky@amd.com>,
         Borislav Petkov <bp@alien8.de>,
@@ -79,24 +80,26 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+> Isn't this more runtime attestation?  In which case you wouldn't use
+> the boot report.  I assume someone somewhere is hacking the TPM-TLS
+> protocol to also do RTMRs, but it strikes me we could just use a vTPM
+> and the existing protocols.
 >
-> I do not see sysfs precluding a use case like that. If the kernel can
-> call out to userspace for TLS connection setup [1], then advanced user
-> can call out to a daemon for workload provenance setup. Recall that TDX
-> will round trip through the quoting enclave for these reports and,
-> without measuring, that seems to have the potential to dominate the
-> setup time vs the communication to ask a daemon to convey a report.
+> Even if you don't do anything as complex as TPM-TLS (and continuing
+> runtime attestation), you can still make TLS conditioned on a private
+> key released after a successful boot time attestation.  Since the boot
+> evidence never changes, there's not much point doing it on each
+> connection, so relying on a private key conditioned on boot evidence is
+> just as good.
+>
+> James
 >
 
-It's rather hard to get new daemons approved for container
-distributions since they end up as resource hogs.
-I really don't think it's appropriate to delegate to a daemon to
-single-thread use of a kernel interface when the interface could
-provide functional semantics to begin with.
-
-> [1]: https://lore.kernel.org/all/168174169259.9520.1911007910797225963.stgit@91.116.238.104.host.secureserver.net/
-
-
+The TPM quote will need to be bound to the VM instance, so there will
+still be a hardware attestation in there that incorporates the user's
+challenge.
+Anything less than that is subject to replay attacks, no? Am I missing
+a clever trick?
 
 -- 
 -Dionna Glaze, PhD (she/her)
