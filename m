@@ -2,176 +2,309 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id F1C6DC001B0
-	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 16:47:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 72EA3C001B0
+	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 17:06:47 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232190AbjHHQr1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 8 Aug 2023 12:47:27 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33704 "EHLO
+        id S233721AbjHHRGr (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 8 Aug 2023 13:06:47 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51474 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232490AbjHHQqY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 12:46:24 -0400
-Received: from mgamail.intel.com (mgamail.intel.com [134.134.136.100])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B685559E3;
-        Tue,  8 Aug 2023 08:56:36 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
-  t=1691510196; x=1723046196;
-  h=date:from:to:cc:subject:message-id:references:
-   in-reply-to:mime-version;
-  bh=wIhlzhV0Tzea0huzfQVdpXrn4EwoQTfOjPUX6W8btp8=;
-  b=W0ag+7YGKgPlQwtxtevH9xdKjOODNtpUYEU63Vr4nzo0SbMunjaeF3oO
-   R/rPW7qRjyJaecfPux8HBta1HF03A7Y/fokd3l2JbqNYt0v63SQgXdKjp
-   fOBs9GpXfIPb7r2YhSFbbSkRDsh2ibNFwIjTSyid7X7y58jLxlzB3gywD
-   vKcnuvhdyKC2NTF9PgaAiqAsFhpHBvplZyFD5dHm2T82dZ5Vt33HlXuV0
-   hYB8U5MVePAqtN4aEDAnVy0oliqhKPEDpAB18uDn6JdZY3w71+lwih0FA
-   4YtIrrk5d0I5xMfj+VgKMH6pCz+ozKl9q1fwZRhq+M7VRJf7C6E1R3w4i
-   w==;
-X-IronPort-AV: E=McAfee;i="6600,9927,10795"; a="437184886"
-X-IronPort-AV: E=Sophos;i="6.01,156,1684825200"; 
-   d="scan'208";a="437184886"
-Received: from orsmga002.jf.intel.com ([10.7.209.21])
-  by orsmga105.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 08 Aug 2023 08:14:10 -0700
-X-ExtLoop1: 1
-X-IronPort-AV: E=McAfee;i="6600,9927,10795"; a="731446340"
-X-IronPort-AV: E=Sophos;i="6.01,156,1684825200"; 
-   d="scan'208";a="731446340"
-Received: from fmsmsx602.amr.corp.intel.com ([10.18.126.82])
-  by orsmga002.jf.intel.com with ESMTP; 08 Aug 2023 08:14:09 -0700
-Received: from fmsmsx610.amr.corp.intel.com (10.18.126.90) by
- fmsmsx602.amr.corp.intel.com (10.18.126.82) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2507.27; Tue, 8 Aug 2023 08:14:09 -0700
-Received: from fmsmsx602.amr.corp.intel.com (10.18.126.82) by
- fmsmsx610.amr.corp.intel.com (10.18.126.90) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2507.27; Tue, 8 Aug 2023 08:14:08 -0700
-Received: from fmsedg602.ED.cps.intel.com (10.1.192.136) by
- fmsmsx602.amr.corp.intel.com (10.18.126.82) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.2507.27 via Frontend Transport; Tue, 8 Aug 2023 08:14:08 -0700
-Received: from NAM12-BN8-obe.outbound.protection.outlook.com (104.47.55.172)
- by edgegateway.intel.com (192.55.55.71) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- 15.1.2507.27; Tue, 8 Aug 2023 08:14:08 -0700
-ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
- b=h0N81W7UqthMJUsFYe3vKnTaS669jMMy7r443oXZSh4BaU+PPfgYPRDcFuudBqC91MaN+iZkSVLmIffhQ42U2vjAVNETTeVIWJTNTUnWUg0Aq5bdrY1t0pdU990c7zw3eMBezm4hVEj8cZOskTC1Q9SDniZIovuf3Mg7LTSudIT+xegxW7lbzS/k3NNvwxa3jLu5bf4k2U5oVUjKkXI8xB/jfrqYzoZMJ6XkIg+Gb0lIQNbGncMVHCttk8n9ug4zJC20leiDb4SoFELhekF9rw3iRWBN0KhlUrA/7J8yPbIzeU+pglX+lChrwgVczs/WbLsxtAi5M7eulowilsECyA==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
- s=arcselector9901;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
- bh=4sBZSp60/BrKzCDjCuvdWMud8rSgivEu8yvatomiFsA=;
- b=FyxNfD3oB3yPTrQtem21UhkvGoaoFbhUIWfDMo8MF7GQRptHg690hf/fi6GEv+OOzj8M6XcRIZ7g9b1d3gwqzDpJ8g/wPXQOkJuDQU+XDHkR8EmBVR2kAXaoglwYD4nMMK0oeeTlC/rtTn0fxozgkOmJ0DvSSX19mYxdwcrYKfn1ASo5BavlKaHIvU5YmuVgiChLocAS1hNYLdvulWGram6gznGZIeAmN/rZe1WW0jA87P/twVGSqJctfv5wysHIY8FFhs9qyLnDeI/v1IiPrVVyT1qJP/2CieRxbnLpejW6GZ40tM1OhLZ211BYq2afrkBbXidFpPspIsGwlwYdGA==
-ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
- smtp.mailfrom=intel.com; dmarc=pass action=none header.from=intel.com;
- dkim=pass header.d=intel.com; arc=none
-Authentication-Results: dkim=none (message not signed)
- header.d=none;dmarc=none action=none header.from=intel.com;
-Received: from PH8PR11MB8107.namprd11.prod.outlook.com (2603:10b6:510:256::6)
- by PH7PR11MB8571.namprd11.prod.outlook.com (2603:10b6:510:2fd::16) with
- Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.6652.26; Tue, 8 Aug
- 2023 15:14:06 +0000
-Received: from PH8PR11MB8107.namprd11.prod.outlook.com
- ([fe80::4556:2d4e:a29c:3712]) by PH8PR11MB8107.namprd11.prod.outlook.com
- ([fe80::4556:2d4e:a29c:3712%4]) with mapi id 15.20.6652.026; Tue, 8 Aug 2023
- 15:14:06 +0000
-Date:   Tue, 8 Aug 2023 08:14:03 -0700
-From:   Dan Williams <dan.j.williams@intel.com>
-To:     James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Dan Williams <dan.j.williams@intel.com>, <dhowells@redhat.com>
-CC:     Brijesh Singh <brijesh.singh@amd.com>,
-        Kuppuswamy Sathyanarayanan 
-        <sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        "Dionna Amalie Glaze" <dionnaglaze@google.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Samuel Ortiz <sameo@rivosinc.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-coco@lists.linux.dev>, <keyrings@vger.kernel.org>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] keys: Introduce a keys frontend for attestation
- reports
-Message-ID: <64d25bbb55d5e_2138e2942a@dwillia2-xfh.jf.intel.com.notmuch>
-References: <169057265210.180586.7950140104251236598.stgit@dwillia2-xfh.jf.intel.com>
- <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.com>
- <64c5ed6eb4ca1_a88b2942a@dwillia2-xfh.jf.intel.com.notmuch>
- <c6576d1682b576ba47556478a98f397ed518a177.camel@HansenPartnership.com>
- <64cdb5f25c56_2138e294f1@dwillia2-xfh.jf.intel.com.notmuch>
- <1180481830431165d49c5e64b92b81c396ebc9b1.camel@HansenPartnership.com>
- <64d17f5728fbc_5ea6e2943f@dwillia2-xfh.jf.intel.com.notmuch>
- <c7d6e953a4b36014ea0c7406531b24bb29d6127e.camel@HansenPartnership.com>
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <c7d6e953a4b36014ea0c7406531b24bb29d6127e.camel@HansenPartnership.com>
-X-ClientProxiedBy: MW4PR04CA0187.namprd04.prod.outlook.com
- (2603:10b6:303:86::12) To PH8PR11MB8107.namprd11.prod.outlook.com
- (2603:10b6:510:256::6)
+        with ESMTP id S229671AbjHHRGM (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 13:06:12 -0400
+Received: from mail-ot1-f51.google.com (mail-ot1-f51.google.com [209.85.210.51])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F32A62722
+        for <keyrings@vger.kernel.org>; Tue,  8 Aug 2023 09:02:35 -0700 (PDT)
+Received: by mail-ot1-f51.google.com with SMTP id 46e09a7af769-6bd0425ad4fso788748a34.2
+        for <keyrings@vger.kernel.org>; Tue, 08 Aug 2023 09:02:35 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=linaro.org; s=google; t=1691510459; x=1692115259;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=o4QCyZoKdu40FBvi48BdsqXq5s8H3SxUopDt1IBpNKc=;
+        b=xldrnoLRTejfSPZdmhUGRuxTYxyO7VguR9rvZYihd5nEm5nHit6BTR5e2p9ppAafTU
+         Z59bqQ90/N7LzdH7Fqvj34Gj5BJQM4qstEL++DqZYhn0a3CZtMYvM891PJDPp/Vh3jnZ
+         WDMlxj9njCHYSEzHde+Wai7Fhv3hggxBco39I+KD0M/FgCkBYEThjQe8AMmAbCeO5WDy
+         cKP6SpYHhv+jRom6opN/JCdlvkvD3TtAWP9Ku0yHoEX5426VMYpqy1ftdOTmarTkfCOX
+         7CXvaumRCtwEkzzc8c6356DiTEpvgvnziFhxiU5oLZgrkrUMJbh4fAS6bKmhEKeAuSvw
+         K6Pw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20221208; t=1691510459; x=1692115259;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=o4QCyZoKdu40FBvi48BdsqXq5s8H3SxUopDt1IBpNKc=;
+        b=VyLzu//xDde8ltfWVZh+tr6VEfSnoAbfFYrbVJ5xhZsuoeLcYJEOwTwqSvD79DCpxK
+         UaY0D0zsCHOmhzq9MXoXaPlim/4DFFushMqM7+Pz+KcFx5ISUL5WvTlxCbZgG0/sqLUb
+         KGAwuA19+LZnbMKFhbxnLO5j9Fpo8CL4O8UY5aLgocKqsuxsufDodJuujZkzjBeqoouY
+         LIt3+CVhRF75x9C4luY8jrwqWBO7Bpdr0J2kIP9y0YaTZ6VslkgBABh9hWCxmdof/tt5
+         aXAutQ44Bf5z3wmZfPVWo0GkYk1yIwxZh0P3gQwVcb93/1teID6Kcha03hiBY86UjAn3
+         dGrg==
+X-Gm-Message-State: AOJu0YziGohBEk9lbjBEDj/FafQH70FCRFen0LPM7MqOZqnZG6uVQX/w
+        aXdwMrm2dXyTffBjBZjN9Hl9eu0nHqfjMWAx2Htevk54p3j2J9oo3UM=
+X-Google-Smtp-Source: AGHT+IGNtfLXTIuMMWsLFIjckcjz0+W3BmhlMZ76WJBndpCHZ6yz0xZe8vd3WQsh7yBXJ2vHpUOh/8Bab44/TT3nh6Y=
+X-Received: by 2002:a05:620a:24c2:b0:75e:bf7e:e17e with SMTP id
+ m2-20020a05620a24c200b0075ebf7ee17emr15490100qkn.6.1691485652273; Tue, 08 Aug
+ 2023 02:07:32 -0700 (PDT)
 MIME-Version: 1.0
-X-MS-PublicTrafficType: Email
-X-MS-TrafficTypeDiagnostic: PH8PR11MB8107:EE_|PH7PR11MB8571:EE_
-X-MS-Office365-Filtering-Correlation-Id: 75f201ae-5583-413b-697d-08db98221bc5
-X-MS-Exchange-SenderADCheck: 1
-X-MS-Exchange-AntiSpam-Relay: 0
-X-Microsoft-Antispam: BCL:0;
-X-Microsoft-Antispam-Message-Info: ZgykI/MJP8Dk56kq136OkVgkK4IMMIYbQWmNASD08qvFA8/OKSy9ycJFd7auFR33gQCLlKFsph6rpINp9adqOecwv5nc20bgxv8/Ha8DWYwVj2aR/2pH+kfvlweUry31af+prl6pkDHXhj/0VLCBV35mrQXD26DEYti1R04RyI+pvlvjfok4UKMsUa6+csm6nsDUSN0LHQxW5Giv4KEiaNvsFjsjJ8VDcAmb9E0sVq1wAOFt8d4dLs1wHnQjEHZqv8E69lzhWMYn0F67/SGJG7GDwl4YzKahY2nCjQ/6o6egvsfd6Rq+QQyCSaY6rC7AZzJHDFqeIG9rL1U25xTfZxEEF3dGGDOVh8z5pEaQZO1wCYZLaNGsfN4ysY50WrTGAXGUC46oA3gU/Zrv8KrumNp2zalp2ggNNWWQr0i2/QLwi+3M3I2svUx3c+13qvDb725aIrknrb4ZzOWDPVNmDa7GX/rYRrQRcvbFaO/exmnjzafHqtz5tpwH6hQ2sfKzpifzA0AmLTzMydPrbZzAy/QVA42gZ6DPoYz2Ee8ZBTblcIKltTMNBwR4r2wmUsmbhzlWDx4zjp9hKZ5nG2GXnA==
-X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:PH8PR11MB8107.namprd11.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230028)(396003)(39860400002)(136003)(346002)(376002)(366004)(451199021)(186006)(1800799003)(6512007)(4326008)(966005)(9686003)(316002)(38100700002)(110136005)(54906003)(6486002)(6506007)(6666004)(86362001)(66946007)(66476007)(66556008)(478600001)(82960400001)(41300700001)(26005)(8676002)(8936002)(4744005)(2906002)(7416002)(5660300002)(15302535012);DIR:OUT;SFP:1102;
-X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
-X-MS-Exchange-AntiSpam-MessageData-0: =?us-ascii?Q?YmNI008rOo1APH3HNWY3mouTyJE7BXVocalK4DZ4Mf/a174Qfh53M8r5sDMw?=
- =?us-ascii?Q?0mNNeZqMyVt9+m8lQdPlLUUoXjEg3y4GLedh3Kh1WXyqZSlMFOVdrRs7kB9S?=
- =?us-ascii?Q?8IVaV7Nx2KFhnQ0vVsdeqzOTSKa0+VarT7rFCmhtajcFAXyKS2Ev8+4nLDKf?=
- =?us-ascii?Q?McaRfzUvGbvPn1olYJNLh3JTGeWoTzWiD0PLuhI2O89C3GId4CoqcXoqOFwf?=
- =?us-ascii?Q?4JS7gKIW14a6NdSTl7LshpRNA+b8UFx65cL5td/PvOqp1OCWEl76mRRTM7Aa?=
- =?us-ascii?Q?TydL7PahQUPO9urb7iZ3IS2SY95qcyExrpk4PgwiJjGsD3S/YlULmEOWeFY9?=
- =?us-ascii?Q?LySPOoOc3gy84rkuVLIUSO1wlVJiolp3FpG+wUb2MwYwljy+AqPKH22wOpUb?=
- =?us-ascii?Q?+8t0yZJQHHjtsU7+4nKZZUdNN1EfoTLaPLjUaTBP5lCOT05h0Cd7uwUdWsiD?=
- =?us-ascii?Q?W+fekip5C7XWjlUfvLRk93riGSAD+9K1j/cNCRdE6lEhAcm1LsVZXcyr40x3?=
- =?us-ascii?Q?dXXbPqzLsAiy/hBmXrALP9BVycMfKqDDjDrSVRXW6LOa9LF9nTTovkI+LTnk?=
- =?us-ascii?Q?oWY1RO0y2VyxAc3INwPTG7L087aPQJhzRJDLr7fatZPNgViNoN4zbmsxFnnn?=
- =?us-ascii?Q?7mILDwF7hZtgZ1plPYGTZoifHVw5yOkw7diC2X6J4bco2LbRdTuyhleEQzQD?=
- =?us-ascii?Q?sOSLNb6qPqQCRAj/4akHvNzM6DRetc8JQUegOn3DQfsTfKRkaNxCqn2xebRk?=
- =?us-ascii?Q?K+dNJy1i1p+Lk3TExKvZ23JFfZ9aGNXZzwg9xnsGpKZiqu7Zy5smlDwwMGR4?=
- =?us-ascii?Q?1vgWBI+oHcMtDsg1TPeBfVOyONxOO2M3GedVOJgeUiNlkjh8FREWPqxvYr5/?=
- =?us-ascii?Q?m0Xc5F6f0+slu694c40RDKIYBxEiemHBjoJ18vF8NusqN+N1mjHBDWeKjqcf?=
- =?us-ascii?Q?i7pSrn7THgRQYg55Jz9qrLJctAQjjEsqiV5Ki39AzydbFL/nDnr3jEp4B85e?=
- =?us-ascii?Q?T0XR8PKIAApbKBisTnbfwNwIuB9NIiIufTlppJgWIFaNCE+bVBWBl6BM2w5N?=
- =?us-ascii?Q?b4fvvjZiHBcZNu7voiitTKktvy8cke4Cxn/a1CBxLCae5+rNdEMos3lV2mMq?=
- =?us-ascii?Q?NMpEV4cFo+8cRCjpjVt8bvX7FONoxg71rXNSc9fue2UDV0HUDjOCGFamUf2X?=
- =?us-ascii?Q?+l4BWjc9EMfQ7Arjc+lOkT4kyj25N79ti0fabkUQzIuZrYU+jcRhBVCPOpY6?=
- =?us-ascii?Q?Pn0WNiEYNIwdYqjJZdkNbVqkX3JtOsfAjPBKmdgRbLwCuur7aI3EQHD2lANo?=
- =?us-ascii?Q?+4whC016hrcj4m77AP/slzmPnBnmhoaMYbUjrz3hSHfPdu0G6z6zcsfcnx4L?=
- =?us-ascii?Q?0PDciLYN3yqL0SRTYg3j6ptRmqC/mniWNka0fvBeMwCEwiIOQXSz/K0GvJ6O?=
- =?us-ascii?Q?Xr7pepjH/M81iCZmUHPeH9Xgl1ks6gGfSSv1VG5eBonoghGzRBLsLS+esTFw?=
- =?us-ascii?Q?U6SI8i4zdCs982rmjNX+lihwk7Hh7kbMxKRv2megfgTNwd1yInCeuC9C2z2W?=
- =?us-ascii?Q?xaYlD0fhUldUKRF7D59mf0441u9cTwAImSOW8I3fSTGeBR/VZOLb2AHCr8PG?=
- =?us-ascii?Q?ug=3D=3D?=
-X-MS-Exchange-CrossTenant-Network-Message-Id: 75f201ae-5583-413b-697d-08db98221bc5
-X-MS-Exchange-CrossTenant-AuthSource: PH8PR11MB8107.namprd11.prod.outlook.com
-X-MS-Exchange-CrossTenant-AuthAs: Internal
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Aug 2023 15:14:06.6987
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-CrossTenant-Id: 46c98d88-e344-4ed4-8496-4ed7712e255d
-X-MS-Exchange-CrossTenant-MailboxType: HOSTED
-X-MS-Exchange-CrossTenant-UserPrincipalName: D+1WDrS62GTmUedU/InIAA5h9VqW9GdFTr7u2eoDRDGPpCVl6Z7pmDqjldmEL1A098c4ouRAA4L21d1ZaoM+oqVoYrM+DAWmHNvrRxyYhUI=
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: PH7PR11MB8571
-X-OriginatorOrg: intel.com
+References: <20230803123515.4018838-1-jens.wiklander@linaro.org> <CAFA6WYMzBJTNUxh6b-y=a_NND8FX65YjEP4i-HPS4tQ-Qfm+0w@mail.gmail.com>
+In-Reply-To: <CAFA6WYMzBJTNUxh6b-y=a_NND8FX65YjEP4i-HPS4tQ-Qfm+0w@mail.gmail.com>
+From:   Jens Wiklander <jens.wiklander@linaro.org>
+Date:   Tue, 8 Aug 2023 11:07:21 +0200
+Message-ID: <CAHUa44ET3Oqc4Yq8E4ouAjn5dF9ygxoXyWh0sjFF_vPoooxrnA@mail.gmail.com>
+Subject: Re: [PATCH] KEYS: trusted: tee: use tee_shm_register_alloc_buf()
+To:     Sumit Garg <sumit.garg@linaro.org>
+Cc:     linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, op-tee@lists.trustedfirmware.org,
+        James Bottomley <jejb@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Mimi Zohar <zohar@linux.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-James Bottomley wrote:
-[..]
-> > This feedback cast doubt on the assumption that attestation reports
-> > are infrequently generated:
-> > 
-> > http://lore.kernel.org/r/CAAH4kHbsFbzL=0gn71qq1-1kL398jiS2rd3as1qUFnLTCB5mHQ@mail.gmail.com
-> 
-> Well, I just read attestation would be called more than once at boot. 
-> That doesn't necessarily require a concurrent interface.
+Hi Sumit,
 
-Ok, I have not seen vigorous defense of the high frequency use case, and
-that problem is solvable, it just needs a userspace daemon to front the
-interface.
+On Mon, Aug 7, 2023 at 9:58=E2=80=AFAM Sumit Garg <sumit.garg@linaro.org> w=
+rote:
+>
+> Hi Jens,
+>
+> On Thu, 3 Aug 2023 at 18:05, Jens Wiklander <jens.wiklander@linaro.org> w=
+rote:
+> >
+> > Prior to this patch was trusted_tee_seal() and trusted_tee_get_random()
+> > relying on tee_shm_register_kernel_buf() to share memory with the TEE.
+> > Depending on the memory allocation pattern the pages holding the
+> > registered buffers overlap with other buffers also shared with the TEE.
+> >
+>
+> The overlap here is due to the fact that we are registering two array
+> members of the same struct. This overlap can be removed by registering
+> the overall structure at once. But that sounds unnecessary data
+> structure type sharing with trusted keys TA.
+>
+> > The OP-TEE driver using the old SMC based ABI permits overlapping share=
+d
+> > buffers, but with the new FF-A based ABI each physical page may only
+> > be registered once.
+>
+> Would it be possible for OP-TEE FF-A ABI to check if a page is already
+> registered?
+
+No, there's no such ABI in the FF-A specification.
+
+> If it is then just return success with appropriate page
+> offset.
+
+It's more complicated than that. What if only there's a partial registratio=
+n?
+
+> As otherwise this sounds like an unnecessary restriction for
+> users. I don't think the problem is only particular to the trusted
+> keys driver but can be reproduced for user-space clients as well.
+
+Indeed, we're dealing with it by using a temporary buffer in the client lib=
+.
+
+>
+> >
+> > Fix this problem by allocating a temporary page aligned shared memory
+> > buffer to be used as a bounce buffer for the needed data buffers.
+> >
+> > Since TEE trusted keys doesn't depend on registered shared memory
+> > support any longer remove that explicit dependency when opening a
+> > context to the TEE.
+> >
+> > Signed-off-by: Jens Wiklander <jens.wiklander@linaro.org>
+> > ---
+> >  security/keys/trusted-keys/trusted_tee.c | 68 +++++++++++++-----------
+> >  1 file changed, 36 insertions(+), 32 deletions(-)
+> >
+> > diff --git a/security/keys/trusted-keys/trusted_tee.c b/security/keys/t=
+rusted-keys/trusted_tee.c
+> > index ac3e270ade69..3085343c489a 100644
+> > --- a/security/keys/trusted-keys/trusted_tee.c
+> > +++ b/security/keys/trusted-keys/trusted_tee.c
+> > @@ -8,6 +8,7 @@
+> >
+> >  #include <linux/err.h>
+> >  #include <linux/key-type.h>
+> > +#include <linux/minmax.h>
+> >  #include <linux/module.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/string.h>
+> > @@ -65,38 +66,37 @@ static int trusted_tee_seal(struct trusted_key_payl=
+oad *p, char *datablob)
+> >         int ret;
+> >         struct tee_ioctl_invoke_arg inv_arg;
+> >         struct tee_param param[4];
+> > -       struct tee_shm *reg_shm_in =3D NULL, *reg_shm_out =3D NULL;
+> > +       struct tee_shm *shm;
+> > +       uint8_t *buf;
+> >
+> >         memset(&inv_arg, 0, sizeof(inv_arg));
+> >         memset(&param, 0, sizeof(param));
+> >
+> > -       reg_shm_in =3D tee_shm_register_kernel_buf(pvt_data.ctx, p->key=
+,
+> > -                                                p->key_len);
+> > -       if (IS_ERR(reg_shm_in)) {
+> > -               dev_err(pvt_data.dev, "key shm register failed\n");
+> > -               return PTR_ERR(reg_shm_in);
+> > +       shm =3D tee_shm_alloc_kernel_buf(pvt_data.ctx,
+> > +                                      p->key_len + sizeof(p->blob));
+> > +       if (IS_ERR(shm)) {
+> > +               dev_err(pvt_data.dev, "key shm alloc failed\n");
+> > +               return PTR_ERR(shm);
+> >         }
+> > -
+> > -       reg_shm_out =3D tee_shm_register_kernel_buf(pvt_data.ctx, p->bl=
+ob,
+> > -                                                 sizeof(p->blob));
+> > -       if (IS_ERR(reg_shm_out)) {
+> > -               dev_err(pvt_data.dev, "blob shm register failed\n");
+> > -               ret =3D PTR_ERR(reg_shm_out);
+> > +       buf =3D tee_shm_get_va(shm, 0);
+> > +       if (IS_ERR(buf)) {
+> > +               ret =3D PTR_ERR(buf);
+> >                 goto out;
+> >         }
+> > +       memcpy(buf, p->key, p->key_len);
+>
+> These memcpy()'s here and below are undue overheads if we change to
+> tee_shm_alloc_kernel_buf().
+
+There's a bit of overhead when entering and exiting the secure world
+too, just to save and restore registers. Anyway, trusted_tee_seal()
+doesn't together with FF-A without this patch.
+
+Thanks,
+Jens
+
+>
+> -Sumit
+>
+> >
+> >         inv_arg.func =3D TA_CMD_SEAL;
+> >         inv_arg.session =3D pvt_data.session_id;
+> >         inv_arg.num_params =3D 4;
+> >
+> >         param[0].attr =3D TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT;
+> > -       param[0].u.memref.shm =3D reg_shm_in;
+> > +       param[0].u.memref.shm =3D shm;
+> >         param[0].u.memref.size =3D p->key_len;
+> >         param[0].u.memref.shm_offs =3D 0;
+> >         param[1].attr =3D TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
+> > -       param[1].u.memref.shm =3D reg_shm_out;
+> > +       param[1].u.memref.shm =3D shm;
+> >         param[1].u.memref.size =3D sizeof(p->blob);
+> > -       param[1].u.memref.shm_offs =3D 0;
+> > +       param[1].u.memref.shm_offs =3D p->key_len;
+> >
+> >         ret =3D tee_client_invoke_func(pvt_data.ctx, &inv_arg, param);
+> >         if ((ret < 0) || (inv_arg.ret !=3D 0)) {
+> > @@ -104,14 +104,13 @@ static int trusted_tee_seal(struct trusted_key_pa=
+yload *p, char *datablob)
+> >                         inv_arg.ret);
+> >                 ret =3D -EFAULT;
+> >         } else {
+> > +               memcpy(p->blob, buf + p->key_len,
+> > +                      min(param[1].u.memref.size, sizeof(p->blob)));
+> >                 p->blob_len =3D param[1].u.memref.size;
+> >         }
+> >
+> >  out:
+> > -       if (reg_shm_out)
+> > -               tee_shm_free(reg_shm_out);
+> > -       if (reg_shm_in)
+> > -               tee_shm_free(reg_shm_in);
+> > +       tee_shm_free(shm);
+> >
+> >         return ret;
+> >  }
+> > @@ -166,11 +165,9 @@ static int trusted_tee_unseal(struct trusted_key_p=
+ayload *p, char *datablob)
+> >                 p->key_len =3D param[1].u.memref.size;
+> >         }
+> >
+> > +       tee_shm_free(reg_shm_out);
+> >  out:
+> > -       if (reg_shm_out)
+> > -               tee_shm_free(reg_shm_out);
+> > -       if (reg_shm_in)
+> > -               tee_shm_free(reg_shm_in);
+> > +       tee_shm_free(reg_shm_in);
+> >
+> >         return ret;
+> >  }
+> > @@ -183,15 +180,21 @@ static int trusted_tee_get_random(unsigned char *=
+key, size_t key_len)
+> >         int ret;
+> >         struct tee_ioctl_invoke_arg inv_arg;
+> >         struct tee_param param[4];
+> > -       struct tee_shm *reg_shm =3D NULL;
+> > +       struct tee_shm *shm;
+> > +       void *buf;
+> >
+> >         memset(&inv_arg, 0, sizeof(inv_arg));
+> >         memset(&param, 0, sizeof(param));
+> >
+> > -       reg_shm =3D tee_shm_register_kernel_buf(pvt_data.ctx, key, key_=
+len);
+> > -       if (IS_ERR(reg_shm)) {
+> > -               dev_err(pvt_data.dev, "key shm register failed\n");
+> > -               return PTR_ERR(reg_shm);
+> > +       shm =3D tee_shm_alloc_kernel_buf(pvt_data.ctx, key_len);
+> > +       if (IS_ERR(shm)) {
+> > +               dev_err(pvt_data.dev, "key shm alloc failed\n");
+> > +               return PTR_ERR(shm);
+> > +       }
+> > +       buf =3D tee_shm_get_va(shm, 0);
+> > +       if (IS_ERR(buf)) {
+> > +               ret =3D PTR_ERR(buf);
+> > +               goto out;
+> >         }
+> >
+> >         inv_arg.func =3D TA_CMD_GET_RANDOM;
+> > @@ -199,7 +202,7 @@ static int trusted_tee_get_random(unsigned char *ke=
+y, size_t key_len)
+> >         inv_arg.num_params =3D 4;
+> >
+> >         param[0].attr =3D TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
+> > -       param[0].u.memref.shm =3D reg_shm;
+> > +       param[0].u.memref.shm =3D shm;
+> >         param[0].u.memref.size =3D key_len;
+> >         param[0].u.memref.shm_offs =3D 0;
+> >
+> > @@ -209,18 +212,19 @@ static int trusted_tee_get_random(unsigned char *=
+key, size_t key_len)
+> >                         inv_arg.ret);
+> >                 ret =3D -EFAULT;
+> >         } else {
+> > +               memcpy(key, buf, min(param[0].u.memref.size, key_len));
+> >                 ret =3D param[0].u.memref.size;
+> >         }
+> >
+> > -       tee_shm_free(reg_shm);
+> > +out:
+> > +       tee_shm_free(shm);
+> >
+> >         return ret;
+> >  }
+> >
+> >  static int optee_ctx_match(struct tee_ioctl_version_data *ver, const v=
+oid *data)
+> >  {
+> > -       if (ver->impl_id =3D=3D TEE_IMPL_ID_OPTEE &&
+> > -           ver->gen_caps & TEE_GEN_CAP_REG_MEM)
+> > +       if (ver->impl_id =3D=3D TEE_IMPL_ID_OPTEE)
+> >                 return 1;
+> >         else
+> >                 return 0;
+> > --
+> > 2.34.1
+> >
