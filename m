@@ -2,68 +2,51 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 23AC9C001B0
-	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 19:25:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E0AB3C001B0
+	for <keyrings@archiver.kernel.org>; Tue,  8 Aug 2023 20:01:14 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232512AbjHHTZP (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 8 Aug 2023 15:25:15 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39268 "EHLO
+        id S233370AbjHHUBO (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 8 Aug 2023 16:01:14 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36032 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231880AbjHHTZB (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 15:25:01 -0400
-Received: from mail-qt1-x82e.google.com (mail-qt1-x82e.google.com [IPv6:2607:f8b0:4864:20::82e])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AD20183E8
-        for <keyrings@vger.kernel.org>; Tue,  8 Aug 2023 11:49:09 -0700 (PDT)
-Received: by mail-qt1-x82e.google.com with SMTP id d75a77b69052e-4036bd4fff1so50891cf.0
-        for <keyrings@vger.kernel.org>; Tue, 08 Aug 2023 11:49:09 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20221208; t=1691520549; x=1692125349;
-        h=cc:to:subject:message-id:date:from:in-reply-to:references
-         :mime-version:from:to:cc:subject:date:message-id:reply-to;
-        bh=Zh3g3xzDTV4b/0rT3NYTC0qmjiPKkmxg3PT3HLqCVZY=;
-        b=zRZUveJH1KZRH6tYQ1yGZPSChFIbIeV6NT3uvNZujkhvRKwM95maPvj0D1SzvwSNey
-         T9uvqSCtb3wHomjfs6OYQxd0fYUXIcih9rr3ab2iQvui60Tv5IBJWUlfdVQPmRe160Hv
-         bFt0TYrE1wAnPlywT9LhmIFzigT3OeLia2ZZ0kcnxoUwoMQKwJV77L1wNSAnRe3WjUT1
-         OK3rHZYaeGLFzWk6HRg/Po/gOu0eLZeE/vzNQdgECLRNT44O55w1dKrxxZJNNbR/DHce
-         zKcbndJFc3/KWf7wejr2EgLLdCA3X8t3pndqs5viKGN+KwrtUQ8MP2FLh3C/HbgZsVl6
-         MnHw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1691520549; x=1692125349;
-        h=cc:to:subject:message-id:date:from:in-reply-to:references
-         :mime-version:x-gm-message-state:from:to:cc:subject:date:message-id
-         :reply-to;
-        bh=Zh3g3xzDTV4b/0rT3NYTC0qmjiPKkmxg3PT3HLqCVZY=;
-        b=dA2CAM39SLkxcj+iquBsn8bV7eyRMhPPi1JSQgI+rrj13uxLUwMBMpshMcMZDi7uBa
-         9RqbRaI68jIjkoCZ2Hj3nXZpi2AtOwylEa0X1CSzOj2JKqa6prUXlC9tAxmOh6NcJB2u
-         ZhnP8WH8fKXgqjZHtPQhfn3XA86nV5ikGgYrLWIiY8INYJSK9Pkyxi3s/I51ZGatBdt/
-         APJnEoO2PzhjGXnbxF8txuh8NXjzQ/7yvl6Vv3Mn0FvOmN/cf0Zy3XDJWrW+jySC7jKR
-         rX0pW4LmY6EG/+n8/IGnQEhF5vwFiPrIkdlR+Xp1dK7Ac//JisjrdQqPkbaj6Y6c/Z8n
-         j4Ew==
-X-Gm-Message-State: AOJu0YxOG1SxZwYpNF9Hs5mxIsyqJPIqFwdBWLoJjKGGmrtF2LDil+tm
-        ACtSituOxEzFvMfhb04rvndZIxzPCWv4CjKfw8sJlQ==
-X-Google-Smtp-Source: AGHT+IHKG1g9UlJ1hPirgjC7AadcpCjA9ieQnjt5my7ufYVULAUOHLkcnYD66My8bA4sXpCr+wJFuOLoENiUje06R8A=
-X-Received: by 2002:a05:622a:106:b0:3fd:ad1b:4e8a with SMTP id
- u6-20020a05622a010600b003fdad1b4e8amr49679qtw.22.1691520548584; Tue, 08 Aug
- 2023 11:49:08 -0700 (PDT)
-MIME-Version: 1.0
-References: <169057265210.180586.7950140104251236598.stgit@dwillia2-xfh.jf.intel.com>
- <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.com>
- <64c5ed6eb4ca1_a88b2942a@dwillia2-xfh.jf.intel.com.notmuch>
- <c6576d1682b576ba47556478a98f397ed518a177.camel@HansenPartnership.com>
- <64cdb5f25c56_2138e294f1@dwillia2-xfh.jf.intel.com.notmuch>
- <1180481830431165d49c5e64b92b81c396ebc9b1.camel@HansenPartnership.com>
- <64d17f5728fbc_5ea6e2943f@dwillia2-xfh.jf.intel.com.notmuch>
- <c7d6e953a4b36014ea0c7406531b24bb29d6127e.camel@HansenPartnership.com>
- <2425e00b-defb-c12b-03e5-c3d23b30be01@linux.intel.com> <64d263e44e401_2138e29486@dwillia2-xfh.jf.intel.com.notmuch>
- <CAAH4kHamob7g_+BRd0JW76cM7_vS=jzXzRjrgCPDxZ29VnzdCQ@mail.gmail.com> <f95d75c513c081d5bb8b5d1fd3b0a5d5e24ab467.camel@HansenPartnership.com>
-In-Reply-To: <f95d75c513c081d5bb8b5d1fd3b0a5d5e24ab467.camel@HansenPartnership.com>
-From:   Dionna Amalie Glaze <dionnaglaze@google.com>
-Date:   Tue, 8 Aug 2023 11:48:57 -0700
-Message-ID: <CAAH4kHYJrKPgWXn7+G_sZXoAs8fq2sDEyT-tyECPthdaaoXyDw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] keys: Introduce a keys frontend for attestation reports
-To:     James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc:     Dan Williams <dan.j.williams@intel.com>,
-        Sathyanarayanan Kuppuswamy 
+        with ESMTP id S233439AbjHHUAw (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 8 Aug 2023 16:00:52 -0400
+Received: from bedivere.hansenpartnership.com (bedivere.hansenpartnership.com [IPv6:2607:fcd0:100:8a00::2])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 809AF1E4EE;
+        Tue,  8 Aug 2023 11:16:08 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+        d=hansenpartnership.com; s=20151216; t=1691518568;
+        bh=omhrzCL2M1egS/LGQ2Ddjwn7iTzvxQN3JaA541Bt+h4=;
+        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
+        b=DtFDUjdg7qy0+JERnJJCZ7OMhocCBZSbmvSYK8fPvu/quZd1hwa+MOygYsgp9DQgl
+         NG7FgEBf60FWcYn2c7ticQ/9pF09m0jgTy6oKflqhUn2AaMHFX4sIxgljb8a4Z9IzR
+         UMpVGBDOAhHwW8b7xQwu772yH6yNG9Z+7KlGe+CY=
+Received: from localhost (localhost [127.0.0.1])
+        by bedivere.hansenpartnership.com (Postfix) with ESMTP id 065421281B19;
+        Tue,  8 Aug 2023 14:16:08 -0400 (EDT)
+Received: from bedivere.hansenpartnership.com ([127.0.0.1])
+ by localhost (bedivere.hansenpartnership.com [127.0.0.1]) (amavis, port 10024)
+ with ESMTP id gGeJ4qvip3P7; Tue,  8 Aug 2023 14:16:07 -0400 (EDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+        d=hansenpartnership.com; s=20151216; t=1691518567;
+        bh=omhrzCL2M1egS/LGQ2Ddjwn7iTzvxQN3JaA541Bt+h4=;
+        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
+        b=f0ccHe6cJqUxsmc3E8FIHyLOcxTMP0Ayr1dyYPZ2ABbzsvJPMPxnbZLF0+psOCSS9
+         7Xlh5908qpFFLG7filZQ6KbwjuryxtSAuRYx9LVbJWak1Hbe3J812m9CHrz0D15FtK
+         Pj/Rtek2qdqrG+34aS34wEiXRYY3dJhLex5QJwbY=
+Received: from [IPv6:2601:5c4:4302:c21::a774] (unknown [IPv6:2601:5c4:4302:c21::a774])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange ECDHE (prime256v1) server-signature RSA-PSS (2048 bits) server-digest SHA256)
+        (Client did not present a certificate)
+        by bedivere.hansenpartnership.com (Postfix) with ESMTPSA id 8A72D12819D2;
+        Tue,  8 Aug 2023 14:16:06 -0400 (EDT)
+Message-ID: <f95d75c513c081d5bb8b5d1fd3b0a5d5e24ab467.camel@HansenPartnership.com>
+Subject: Re: [PATCH 0/4] keys: Introduce a keys frontend for attestation
+ reports
+From:   James Bottomley <James.Bottomley@HansenPartnership.com>
+To:     Dionna Amalie Glaze <dionnaglaze@google.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc:     Sathyanarayanan Kuppuswamy 
         <sathyanarayanan.kuppuswamy@linux.intel.com>, dhowells@redhat.com,
         Brijesh Singh <brijesh.singh@amd.com>,
         Peter Zijlstra <peterz@infradead.org>,
@@ -75,31 +58,65 @@ Cc:     Dan Williams <dan.j.williams@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-coco@lists.linux.dev, keyrings@vger.kernel.org,
         x86@kernel.org, linux-kernel@vger.kernel.org
+Date:   Tue, 08 Aug 2023 14:16:04 -0400
+In-Reply-To: <CAAH4kHamob7g_+BRd0JW76cM7_vS=jzXzRjrgCPDxZ29VnzdCQ@mail.gmail.com>
+References: <169057265210.180586.7950140104251236598.stgit@dwillia2-xfh.jf.intel.com>
+         <a507ef3302d3afff58d82528ee17e82df1f21de0.camel@HansenPartnership.com>
+         <64c5ed6eb4ca1_a88b2942a@dwillia2-xfh.jf.intel.com.notmuch>
+         <c6576d1682b576ba47556478a98f397ed518a177.camel@HansenPartnership.com>
+         <64cdb5f25c56_2138e294f1@dwillia2-xfh.jf.intel.com.notmuch>
+         <1180481830431165d49c5e64b92b81c396ebc9b1.camel@HansenPartnership.com>
+         <64d17f5728fbc_5ea6e2943f@dwillia2-xfh.jf.intel.com.notmuch>
+         <c7d6e953a4b36014ea0c7406531b24bb29d6127e.camel@HansenPartnership.com>
+         <2425e00b-defb-c12b-03e5-c3d23b30be01@linux.intel.com>
+         <64d263e44e401_2138e29486@dwillia2-xfh.jf.intel.com.notmuch>
+         <CAAH4kHamob7g_+BRd0JW76cM7_vS=jzXzRjrgCPDxZ29VnzdCQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
+User-Agent: Evolution 3.42.4 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-> Isn't this more runtime attestation?  In which case you wouldn't use
-> the boot report.  I assume someone somewhere is hacking the TPM-TLS
-> protocol to also do RTMRs, but it strikes me we could just use a vTPM
-> and the existing protocols.
->
-> Even if you don't do anything as complex as TPM-TLS (and continuing
-> runtime attestation), you can still make TLS conditioned on a private
-> key released after a successful boot time attestation.  Since the boot
-> evidence never changes, there's not much point doing it on each
-> connection, so relying on a private key conditioned on boot evidence is
-> just as good.
->
-> James
->
+On Tue, 2023-08-08 at 09:07 -0700, Dionna Amalie Glaze wrote:
+> > 
+> > At least that was not the level of concurrency I was worried about.
+> > The sysfs approach makes it so that concurrency problem of
+> > option-writing vs report-reading is pushed to userspace.
+> > 
+> 
+> The reason I would advocate against making attestation report
+> collection single-threaded in user space at a machine level is that
+> there are new schemes of attested connections that may become the
+> basis of server handshakes. I think folks are mainly looking at this
+> from the use case of
+> 
+> 1. workload will do large amounts of work on behalf of the VM owner,
+> provided it gets a sealing key released by the VM owner once on boot
+> after proving its code identity
 
-The TPM quote will need to be bound to the VM instance, so there will
-still be a hardware attestation in there that incorporates the user's
-challenge.
-Anything less than that is subject to replay attacks, no? Am I missing
-a clever trick?
+Right, that's the case for boot time attestation.
 
--- 
--Dionna Glaze, PhD (she/her)
+> however I'm thinking of the case of a more user-centric use case that
+> enables service users to challenge for proof of workload identity
+> 
+> 2. workload is a server that accepts incoming connections that
+> include a hardware attestation challenge. It generates an attestation
+> report that includes the challenge as part of the connection
+> handshake
+
+Isn't this more runtime attestation?  In which case you wouldn't use
+the boot report.  I assume someone somewhere is hacking the TPM-TLS
+protocol to also do RTMRs, but it strikes me we could just use a vTPM
+and the existing protocols.
+
+Even if you don't do anything as complex as TPM-TLS (and continuing
+runtime attestation), you can still make TLS conditioned on a private
+key released after a successful boot time attestation.  Since the boot
+evidence never changes, there's not much point doing it on each
+connection, so relying on a private key conditioned on boot evidence is
+just as good.
+
+James
+
