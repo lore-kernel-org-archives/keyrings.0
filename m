@@ -2,183 +2,78 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 18430EE49AE
-	for <keyrings@archiver.kernel.org>; Tue, 22 Aug 2023 17:53:14 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D21ACEE49B0
+	for <keyrings@archiver.kernel.org>; Wed, 23 Aug 2023 01:10:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229644AbjHVRxO (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 22 Aug 2023 13:53:14 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43932 "EHLO
+        id S231949AbjHWBK2 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 22 Aug 2023 21:10:28 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38048 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229637AbjHVRxO (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 22 Aug 2023 13:53:14 -0400
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AB5C330C4;
-        Tue, 22 Aug 2023 10:52:55 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature RSA-PSS (2048 bits))
-        (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 404B56564C;
-        Tue, 22 Aug 2023 17:52:55 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 21924C433C8;
-        Tue, 22 Aug 2023 17:52:53 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1692726774;
-        bh=7ZBQ60QAjHKVFVd0j7bD6mifIJEl/fZHiRDkdIVlxpc=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=V1boDcjEUEjowJ74wIqHCDivWYXpyGjFaDDuAS9KS90+lQjBnBz51TP6w5Ic6x43H
-         Zz20oIizH/yH2WSkoXhh+vUmhufn+/aPX3wY3Zj9KKrOTGW+zaHMgqjp+oMUW7EspJ
-         5Ji01WRp74jsgv+RUr3hBbdJdGzR5wpY2UHcb7UVwhm6cZVtN18gFeOJ+9VvzluVWy
-         TCX7ssofokW2yaUtoo3uQls99pOxJRAj3dZThYhCWM1whyqbQeilV9mvzByhZU5D9t
-         zQ7BVuwAg5+JbtMGdlpwfOvgXPn+jjskPrzt60OdUKfVmOu+5g5h77A+8XR79ME0Lm
-         vfbeaVeEzcKkQ==
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     linux-sgx@vger.kernel.org
-Cc:     Jarkko Sakkinen <jarkko@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        William Roberts <bill.c.roberts@gmail.com>,
-        Stefan Berger <stefanb@linux.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Jason Gunthorpe <jgg@ziepe.ca>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        James Bottomley <jejb@linux.ibm.com>,
-        Paul Moore <paul@paul-moore.com>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/6] KEYS: trusted: tpm2: Use struct tpm_buf for sized buffers
-Date:   Tue, 22 Aug 2023 20:52:21 +0300
-Message-Id: <20230822175221.2196136-7-jarkko@kernel.org>
-X-Mailer: git-send-email 2.39.2
-In-Reply-To: <20230822175221.2196136-1-jarkko@kernel.org>
-References: <20230822175221.2196136-1-jarkko@kernel.org>
+        with ESMTP id S231453AbjHWBK1 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 22 Aug 2023 21:10:27 -0400
+X-Greylist: delayed 903 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Tue, 22 Aug 2023 18:10:20 PDT
+Received: from symantec4.comsats.net.pk (symantec4.comsats.net.pk [203.124.41.30])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B5C26CF9
+        for <keyrings@vger.kernel.org>; Tue, 22 Aug 2023 18:10:20 -0700 (PDT)
+X-AuditID: cb7c291e-055ff70000002aeb-72-64e54400aa65
+Received: from iesco.comsatshosting.com (iesco.comsatshosting.com [210.56.28.11])
+        (using TLS with cipher ECDHE-RSA-AES256-SHA (256/256 bits))
+        (Client did not present a certificate)
+        by symantec4.comsats.net.pk (Symantec Messaging Gateway) with SMTP id A7.E6.10987.00445E46; Wed, 23 Aug 2023 04:25:52 +0500 (PKT)
+DomainKey-Signature: a=rsa-sha1; c=nofws; q=dns;
+        d=iesco.com.pk; s=default;
+        h=received:content-type:mime-version:content-transfer-encoding
+          :content-description:subject:to:from:date:reply-to;
+        b=ZamwtGZdRTRsW2+Eqp8N1j98zxxvt/8BRn5onNuIVZ/if4V0tK2/9wAsMcDEQUfok
+          SdYBm/HrMGWoXkV0pWJBRQs+pOFwmsIqQ0lyFAxRIOBwhZIZUs/2iTfjm+bAL9Ie8
+          6SmKWmrPFwjn+TELZErlmydHiy6LHrvHYuMyhk6Ag=
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=iesco.com.pk; s=default;
+        h=reply-to:date:from:to:subject:content-description
+          :content-transfer-encoding:mime-version:content-type;
+        bh=GMzYzcyTxDsE6wX/XHG6MHqAdAiHrhqbmmLQ/TZ1QnQ=;
+        b=dcQX7nEYho0g20rSwhz1DH6XdcaCWewY6TTYDUsedoUts7KZMPsYiaAUFHhLkpVvB
+          liiA/3oxoyi2Numy5rR3B1jlbga38XGxCQvxXUXtOQ0bkcQwqeCTJy3zdCCcY7Fbb
+          iUGhlvfVTY6GCp7MK5Up/pM6D1SqCWAwx2VoM5pUU=
+Received: from [94.156.6.90] (UnknownHost [94.156.6.90]) by iesco.comsatshosting.com with SMTP;
+   Wed, 23 Aug 2023 04:02:36 +0500
+Message-ID: <A7.E6.10987.00445E46@symantec4.comsats.net.pk>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: quoted-printable
+Content-Description: Mail message body
+Subject: Re; Interest,
+To:     keyrings@vger.kernel.org
+From:   "Chen Yun" <pso.chairmanbod@iesco.com.pk>
+Date:   Tue, 22 Aug 2023 16:02:50 -0700
+Reply-To: chnyne@gmail.com
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVyyUKGW5fB5WmKwdTN5hZb7zSxOTB6fN4k
+        F8AYxWWTkpqTWZZapG+XwJWxZN0FloLdzBVt/YtYGhgfM3UxcnJICJhI3Lh6G8jm4hAS2MMk
+        8fzxXlYQh0VgNbPE8uY2ZgjnIbPEytZrjBBlzYwScz78ZgXp5xWwljh6ah0biM0soCdxY+oU
+        Noi4oMTJmU9YIOLaEssWvgaaxAFkq0l87SoBCQsLiEl8mraMHcQWEZCR2Pl7K9hJbAL6Eiu+
+        NjOC2CwCqhL3V/aCxYUEpCQ2XlnPNoGRfxaSbbOQbJuFZNsshG0LGFlWMUoUV+YmAoMt2UQv
+        OT+3OLGkWC8vtUSvIHsTIzAQT9doyu1gXHop8RCjAAejEg/vz3VPUoRYE8uAug4xSnAwK4nw
+        Sn9/mCLEm5JYWZValB9fVJqTWnyIUZqDRUmc11boWbKQQHpiSWp2ampBahFMlomDU6qB8VFP
+        gtmvn/V+WQcO5LrOV+KcbZc9oU1tgrHiaS2Gs5N9Xs33XiScub919x+Wd58yTn8886//7Irj
+        c67OCHR6ePRVaso5cc+ESYpfX11JiTHr6NQuuzTzGrfrrmWuOVPf3pftmDqbj+v8rIsPxWa/
+        v7bKINCz7oXnec+HWswhv4NZmHT37+SaekyJpTgj0VCLuag4EQAkTwd2QAIAAA==
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Take advantage of the new sized buffer (TPM2B) mode of struct tpm_buf in
-tpm2_seal_trusted(). This allows to add robustness to the command
-construction without requiring to calculate buffer sizes manually.
+Re; Interest,
 
-Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+I am interested in discussing the Investment proposal as I explained
+in my previous mail. May you let me know your interest and the
+possibility of a cooperation aimed for mutual interest.
 
-v2:
-* Use tpm_buf_read_*
----
- security/keys/trusted-keys/trusted_tpm2.c | 51 +++++++++++++----------
- 1 file changed, 29 insertions(+), 22 deletions(-)
+Looking forward to your mail for further discussion.
 
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index c41f30770138..5d262306184c 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -228,8 +228,9 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		      struct trusted_key_payload *payload,
- 		      struct trusted_key_options *options)
- {
-+	off_t offset = TPM_HEADER_SIZE;
-+	struct tpm_buf buf, sized;
- 	int blob_len = 0;
--	struct tpm_buf buf;
- 	u32 hash;
- 	u32 flags;
- 	int i;
-@@ -258,6 +259,13 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		return rc;
- 	}
- 
-+	rc = tpm_buf_init(&sized, true, true);
-+	if (rc) {
-+		tpm_buf_destroy(&buf);
-+		tpm_put_ops(chip);
-+		return rc;
-+	}
-+
- 	tpm_buf_reset(&buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE);
- 	tpm_buf_append_u32(&buf, options->keyhandle);
- 	tpm2_buf_append_auth(&buf, TPM2_RS_PW,
-@@ -267,36 +275,36 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 			     TPM_DIGEST_SIZE);
- 
- 	/* sensitive */
--	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len);
-+	tpm_buf_append_u16(&sized, options->blobauth_len);
- 
--	tpm_buf_append_u16(&buf, options->blobauth_len);
- 	if (options->blobauth_len)
--		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
-+		tpm_buf_append(&sized, options->blobauth, options->blobauth_len);
- 
--	tpm_buf_append_u16(&buf, payload->key_len);
--	tpm_buf_append(&buf, payload->key, payload->key_len);
-+	tpm_buf_append_u16(&sized, payload->key_len);
-+	tpm_buf_append(&sized, payload->key, payload->key_len);
-+	tpm_buf_append(&buf, sized.data, sized.length);
- 
- 	/* public */
--	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
--	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
--	tpm_buf_append_u16(&buf, hash);
-+	tpm_buf_init(&sized, false, true);
-+	tpm_buf_append_u16(&sized, TPM_ALG_KEYEDHASH);
-+	tpm_buf_append_u16(&sized, hash);
- 
- 	/* key properties */
- 	flags = 0;
- 	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
--	flags |= payload->migratable ? 0 : (TPM2_OA_FIXED_TPM |
--					    TPM2_OA_FIXED_PARENT);
--	tpm_buf_append_u32(&buf, flags);
-+	flags |= payload->migratable ? 0 : (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT);
-+	tpm_buf_append_u32(&sized, flags);
- 
- 	/* policy */
--	tpm_buf_append_u16(&buf, options->policydigest_len);
-+	tpm_buf_append_u16(&sized, options->policydigest_len);
- 	if (options->policydigest_len)
--		tpm_buf_append(&buf, options->policydigest,
--			       options->policydigest_len);
-+		tpm_buf_append(&sized, options->policydigest, options->policydigest_len);
- 
- 	/* public parameters */
--	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
--	tpm_buf_append_u16(&buf, 0);
-+	tpm_buf_append_u16(&sized, TPM_ALG_NULL);
-+	tpm_buf_append_u16(&sized, 0);
-+
-+	tpm_buf_append(&buf, sized.data, sized.length);
- 
- 	/* outside info */
- 	tpm_buf_append_u16(&buf, 0);
-@@ -313,21 +321,20 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 	if (rc)
- 		goto out;
- 
--	blob_len = be32_to_cpup((__be32 *) &buf.data[TPM_HEADER_SIZE]);
-+	blob_len = tpm_buf_read_u32(&buf, &offset);
- 	if (blob_len > MAX_BLOB_SIZE) {
- 		rc = -E2BIG;
- 		goto out;
- 	}
--	if (tpm_buf_length(&buf) < TPM_HEADER_SIZE + 4 + blob_len) {
-+	if (buf.length - offset < blob_len) {
- 		rc = -EFAULT;
- 		goto out;
- 	}
- 
--	blob_len = tpm2_key_encode(payload, options,
--				   &buf.data[TPM_HEADER_SIZE + 4],
--				   blob_len);
-+	blob_len = tpm2_key_encode(payload, options, &buf.data[offset], blob_len);
- 
- out:
-+	tpm_buf_destroy(&sized);
- 	tpm_buf_destroy(&buf);
- 
- 	if (rc > 0) {
--- 
-2.39.2
+Regards
+
+------
+Chen Yun - Chairman of CREC
+China Railway Engineering Corporation - CRECG
+China Railway Plaza, No.69 Fuxing Road, Haidian District, Beijing, P.R.
+China
 
