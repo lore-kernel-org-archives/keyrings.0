@@ -2,152 +2,162 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 34922EE7FE3
-	for <keyrings@archiver.kernel.org>; Fri,  8 Sep 2023 12:14:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3A83EEE8013
+	for <keyrings@archiver.kernel.org>; Fri,  8 Sep 2023 15:31:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231624AbjIHMOg (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 8 Sep 2023 08:14:36 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34408 "EHLO
+        id S241052AbjIHPbY (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 8 Sep 2023 11:31:24 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52426 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229713AbjIHMOg (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 8 Sep 2023 08:14:36 -0400
-Received: from mx01.omp.ru (mx01.omp.ru [90.154.21.10])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5EB921BC5;
-        Fri,  8 Sep 2023 05:14:31 -0700 (PDT)
-Received: from msexch01.omp.ru (10.188.4.12) by msexch02.omp.ru (10.188.4.13)
- with Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384) id 15.2.986.14; Fri, 8 Sep 2023
- 15:14:25 +0300
-Received: from msexch01.omp.ru ([fe80::4020:d881:621a:6b6b]) by
- msexch01.omp.ru ([fe80::4020:d881:621a:6b6b%5]) with mapi id 15.02.0986.014;
- Fri, 8 Sep 2023 15:14:25 +0300
-From:   Denis Glazkov <d.glazkov@omp.ru>
-To:     Sergey Shtylyov <s.shtylyov@omp.ru>
-CC:     Denis Glazkov <d.glazkov@omp.ru>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] certs: Add option to disallow non-CA certificates in
- secondary trusted keying
-Thread-Topic: [PATCH v2] certs: Add option to disallow non-CA certificates in
- secondary trusted keying
-Thread-Index: AQHZ4k4BzqaMvMEYP0mVw3ughXalxQ==
-Date:   Fri, 8 Sep 2023 12:14:25 +0000
-Message-ID: <20230908121330.4076-1-d.glazkov@omp.ru>
-References: <f5a1d856-0482-a2c3-0e62-3ca911ce3dd2@omp.ru>
-In-Reply-To: <f5a1d856-0482-a2c3-0e62-3ca911ce3dd2@omp.ru>
-Accept-Language: ru-RU, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.188.4.40]
-x-kse-serverinfo: msexch02.omp.ru, 9
-x-kse-attachmentfiltering-interceptor-info: protection disabled
-x-kse-antivirus-interceptor-info: scan successful
-x-kse-antivirus-info: Clean, bases: 7/15/2023 3:35:00 AM
-x-kse-bulkmessagesfiltering-scan-result: sender external
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <3039DAFBA7E16F4FBD26143DC4E2FCD5@omp.ru>
-Content-Transfer-Encoding: base64
+        with ESMTP id S229530AbjIHPbY (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 8 Sep 2023 11:31:24 -0400
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3B98019BA;
+        Fri,  8 Sep 2023 08:31:20 -0700 (PDT)
+Received: from pps.filterd (m0353724.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 388FO618013570;
+        Fri, 8 Sep 2023 15:31:01 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
+ : date : message-id : in-reply-to : references : mime-version :
+ content-transfer-encoding; s=pp1;
+ bh=l6VGKnMpb7HcR/ids8pl2nLjXlvBvwc5u/3q+Et+C3M=;
+ b=b1oUiUMxW5reQbd274axviXkRkzGh3D0/iCh4EZXN8W0cJKm0cvsbVHdwkR6AM0DxbjS
+ wnUAqMunimMXWQTUVWez/4icZp9G9c54yf/DErinQDVZNwf6aH+fRe1gyuCbkjPeYxzE
+ xGHSEO7FZlJKFm3ieMKPdLIYRdi5NiN+6TGpQdQSEe0AQzmweCYtFbPf6q58ehB+RmDT
+ iUepNkPh2h+r7lWBbWkkUR/9pDBMxkhaV9R9r5W4+b61vILibk49tz0tmqhmCkrs6xH3
+ BsanJvmkJSDVi/O2Kv78yF86/x8ft46pqLJNAVYb9x3cjOtwvZl6rQX7REtZc4+q5vbc XA== 
+Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
+        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3t067n06bm-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 08 Sep 2023 15:31:00 +0000
+Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
+        by ppma12.dal12v.mail.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 388EuAsv001603;
+        Fri, 8 Sep 2023 15:30:59 GMT
+Received: from smtprelay07.dal12v.mail.ibm.com ([172.16.1.9])
+        by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 3svfctcya2-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Fri, 08 Sep 2023 15:30:59 +0000
+Received: from smtpav02.wdc07v.mail.ibm.com (smtpav02.wdc07v.mail.ibm.com [10.39.53.229])
+        by smtprelay07.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 388FUxwl40370706
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Fri, 8 Sep 2023 15:30:59 GMT
+Received: from smtpav02.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id EFF7B5806A;
+        Fri,  8 Sep 2023 15:30:57 +0000 (GMT)
+Received: from smtpav02.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 5BE5D5805F;
+        Fri,  8 Sep 2023 15:30:57 +0000 (GMT)
+Received: from rhel-laptop.ibm.com (unknown [9.61.45.202])
+        by smtpav02.wdc07v.mail.ibm.com (Postfix) with ESMTP;
+        Fri,  8 Sep 2023 15:30:57 +0000 (GMT)
+From:   gjoyce@linux.vnet.ibm.com
+To:     linux-block@vger.kernel.org, axboe@kernel.dk, jarkko@kernel.org
+Cc:     linuxppc-dev@lists.ozlabs.org, jonathan.derrick@linux.dev,
+        brking@linux.vnet.ibm.com, msuchanek@suse.de, mpe@ellerman.id.au,
+        nayna@linux.ibm.com, akpm@linux-foundation.org,
+        gjoyce@linux.vnet.ibm.com, keyrings@vger.kernel.org
+Subject: [PATCH v7 1/3 RESEND] block:sed-opal: SED Opal keystore
+Date:   Fri,  8 Sep 2023 10:30:54 -0500
+Message-Id: <20230908153056.3503975-2-gjoyce@linux.vnet.ibm.com>
+X-Mailer: git-send-email 2.39.3
+In-Reply-To: <20230908153056.3503975-1-gjoyce@linux.vnet.ibm.com>
+References: <20230908153056.3503975-1-gjoyce@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-GUID: ysYyZ0SFwqSDvruc3yRw4or0yYl8d6x0
+X-Proofpoint-ORIG-GUID: ysYyZ0SFwqSDvruc3yRw4or0yYl8d6x0
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.267,Aquarius:18.0.957,Hydra:6.0.601,FMLib:17.11.176.26
+ definitions=2023-09-08_12,2023-09-05_01,2023-05-22_02
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxscore=0 bulkscore=0
+ clxscore=1011 lowpriorityscore=0 phishscore=0 spamscore=0 malwarescore=0
+ mlxlogscore=673 impostorscore=0 priorityscore=1501 adultscore=0
+ suspectscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2308100000 definitions=main-2309080139
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-VGhlIExpbnV4IGtlcm5lbCBoYXMgYW4gSU1BIChJbnRlZ3JpdHkgTWVhc3VyZW1lbnQgQXJjaGl0
-ZWN0dXJlKQ0Kc3Vic3lzdGVtIHRvIGNoZWNrIHRoZSBpbnRlZ3JpdHkgb2YgdGhlIGZpbGUgc3lz
-dGVtIGJhc2VkIG9uIGRpZ2l0YWwNCnNpZ25hdHVyZXMuIElNQSB1c2VzIGNlcnRpZmljYXRlcyBp
-biBgLmltYWAga2V5aW5nIHRvIGNoZWNrIGludGVncml0eS4NCg0KT25seSBjZXJ0aWZpY2F0ZXMg
-aXNzdWVkIGJ5IG9uZSBvZiB0aGUgdHJ1c3RlZCBDQSAoQ2VydGlmaWNhdGUgQXV0aG9yaXR5KQ0K
-Y2VydGlmaWNhdGVzIGNhbiBiZSBhZGRlZCB0byB0aGUgYC5pbWFgIGtleWluZy4NCg0KVGhlIExp
-bnV4IGtlcm5lbCBub3cgaGFzIGEgc2Vjb25kYXJ5IHRydXN0ZWQga2V5aW5nIHRvIHdoaWNoIHRy
-dXN0ZWQNCmNlcnRpZmljYXRlcyBmcm9tIHVzZXIgc3BhY2UgY2FuIGJlIGFkZGVkIGlmIHlvdSBo
-YXZlIHN1cGVydXNlcg0KcHJpdmlsZWdlcy4gUHJldmlvdXNseSwgYWxsIHRydXN0ZWQgY2VydGlm
-aWNhdGVzIHdlcmUgaW4gdGhlIGJ1aWx0LWluDQp0cnVzdGVkIGtleWluZywgd2hpY2ggY291bGQg
-bm90IGJlIG1vZGlmaWVkIGZyb20gdXNlciBzcGFjZS4NClRydXN0ZWQgY2VydGlmaWNhdGVzIHdl
-cmUgcGxhY2VkIGluIHRoZSBidWlsdC1pbiB0cnVzdGVkIGtleWluZyBhdA0Ka2VybmVsIGNvbXBp
-bGUgdGltZS4NCg0KVGhlIHNlY29uZGFyeSB0cnVzdGVkIGtleWluZyBpcyBkZXNpZ25lZCBzbyB0
-aGF0IGFueSBjZXJ0aWZpY2F0ZXMgdGhhdA0KYXJlIHNpZ25lZCBieSBvbmUgb2YgdGhlIHRydXN0
-ZWQgQ0EgY2VydGlmaWNhdGVzIGluIHRoZSBidWlsdC1pbiBvcg0Kc2Vjb25kYXJ5IHRydXN0ZWQg
-a2V5cmluZyBjYW4gYmUgYWRkZWQgdG8gaXQuDQoNCkxldCdzIGltYWdpbmUgdGhhdCB3ZSBoYXZl
-IHRoZSBmb2xsb3dpbmcgY2VydGlmaWNhdGUgdHJ1c3QgY2hhaW46DQoNCiAgICAgICAgICAgICDi
-lIzilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi
-lIDilIDilIDilIDilIDilIDilIDilIDilIDilKzilIDilIDilIDilIDilIDilIDilIDilIDilIDi
-lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilJANCiAgICAgICAgICAgICDilIIg
-ICAgICAgICAgICAgICAgICAgICAgICAgICDilIIgICAgIOKUjOKUgOKUgOKUgOKUgOKUgOKUgOKU
-gOKUkCAgICAgICDilIINCiAgICAgICAgICAgICDilIIgICAgICAgICAgICAgICAgICAgICAgICAg
-ICDilIIgICAgIOKUgiAgICAgICDilIIgICAgICAg4pSCDQrilIzilIDilIDilIDilIDilIDilIDi
-lIDilIDilIDilIDilIDilIDilrzilIDilIDilIDilIDilIDilIDilIDilIDilJAgICAg4pSM4pSA
-4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pa84pSA4pSA4pSA4pSA4pSA4pa8
-4pSA4pSA4pSA4pSA4pSQICDilIIg4pSM4pSA4pSA4pSA4pSA4pSA4pS04pSA4pSA4pSA4pSA4pSA
-4pSQDQrilIIuYnVpbHRpbl90cnVzdGVkX2tleXPilILil4TilIDilIDilIDilKQuc2Vjb25kYXJ5
-X3RydXN0ZWRfa2V5cyDilJzilIDilIDilJgg4pSCICAgLmltYSAgICDilIINCuKUnOKUgOKUgOKU
-gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU
-pCAgICDilJzilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi
-lIDilIDilIDilIDilIDilIDilIDilIDilKQgICAg4pSc4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA
-4pSA4pSA4pSA4pSkDQrilIIgICAgIFJvb3QgQ0EgQ2VydCAgICDilIItLS0tLeKWuiBJbnRlcm1l
-ZGlhdGUgQ0EgQ2VydCAg4pSCLS0tLS3ilrogSU1BIENlcnQg4pSCDQrilJTilIDilIDilIDilIDi
-lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilJggICAg
-4pSU4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA
-4pSA4pSA4pSA4pSA4pSA4pSA4pSYICAgIOKUlOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU
-gOKUgOKUmA0KDQogICAgICAgICAgICAgICAgSXNzdWVzICAgICAgICAgICAgICAgICAgUmVzdHJp
-Y3RlZCBieQ0KICAgICAgICAgICAgLS0tLS0tLS0tLS0tLeKWuiAgICAgICAgICAgICDilIDilIDi
-lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilroNCg0KU2luY2UgdGhlIElNQSBj
-ZXJ0aWZpY2F0ZSBpcyBzaWduZWQgYnkgYSBDQSBjZXJ0aWZpY2F0ZSBmcm9tIGEgc2Vjb25kYXJ5
-DQp0cnVzdGVkIGtleWluZywgYW4gYXR0YWNrZXIgd2l0aCBzdXBlcnVzZXIgcHJpdmlsZWdlcyB3
-aWxsIGJlIGFibGUgdG8NCmFkZCB0aGUgSU1BIGNlcnRpZmljYXRlIHRvIHRoZSBzZWNvbmRhcnkg
-dHJ1c3RlZCBrZXlpbmcuIFRoYXQgaXMsIHRoZSBJTUENCmNlcnRpZmljYXRlIHdpbGwgYmVjb21l
-IHRydXN0ZWQuDQoNClNpbmNlLCB3aXRoIGBDT05GSUdfTU9EVUxFX1NJR2Agb3B0aW9uIGVuYWJs
-ZWQsIG1vZHVsZXMgY2FuIG9ubHkgYmUNCmxvYWRlZCBpbnRvIGtlcm5lbCBzcGFjZSBpZiB0aGV5
-IGFyZSBzaWduZWQgd2l0aCBvbmUgb2YgdGhlIHRydXN0ZWQNCmNlcnRpZmljYXRlcywgYW4gYXR0
-YWNrZXIgY291bGQgc2lnbiB1bnRydXN0ZWQga2VybmVsIG1vZHVsZXMgd2l0aA0KdGhlIHByaXZh
-dGUga2V5IGNvcnJlc3BvbmRpbmcgdG8gdGhlIElNQSBjZXJ0aWZpY2F0ZSBhbmQgc3VjY2Vzc2Z1
-bGx5DQpsb2FkIHRoZSB1bnRydXN0ZWQgbW9kdWxlcyBpbnRvIGtlcm5lbCBzcGFjZS4NCg0KVGhp
-cyBwYXRjaCBhZGRzIHRoZSBjb25maWd1cmF0aW9uIHRoYXQgb25jZSBlbmFibGVkLCBvbmx5DQpj
-ZXJ0aWZpY2F0ZXMgdGhhdCBtZWV0IHRoZSBmb2xsb3dpbmcgcmVxdWlyZW1lbnRzIGNhbiBiZSBh
-ZGRlZA0KdG8gdGhlIHNlY29uZGFyeSB0cnVzdGVkIGtleWluZzoNCg0KMS4gVGhlIGNlcnRpZmlj
-YXRlIGlzIGEgQ0EgKENlcnRpZmljYXRlIEF1dGhvcml0eSkNCjIuIFRoZSBjZXJ0aWZpY2F0ZSBt
-dXN0IGJlIHVzZWQgZm9yIHZlcmlmeWluZyBhIENBJ3Mgc2lnbmF0dXJlcw0KMy4gVGhlIGNlcnRp
-ZmljYXRlIG11c3Qgbm90IGJlIHVzZWQgZm9yIGRpZ2l0YWwgc2lnbmF0dXJlcw0KDQpTaWduZWQt
-b2ZmLWJ5OiBEZW5pcyBHbGF6a292IDxkLmdsYXprb3ZAb21wLnJ1Pg0KLS0tDQp2MSAtPiB2MjoN
-CiAtIFJlYmFzZSB0aGUgcGF0Y2ggZnJvbSBgbGludXgtbmV4dGAgdG8gdGhlIG1haW4gYGxpbnV4
-YCByZXBvIG1hc3RlciBicmFuY2gNCiAtIE1ha2UgdGhlIGNvbW1pdCBtZXNzYWdlIG1vcmUgZGV0
-YWlsZWQNCiAtIE1vdmUgdGhlIHZhcmlhYmxlIGRlY2xhcmF0aW9uIHRvIHRoZSBgaWZgIGJsb2Nr
-DQogLSBSZXBsYWNlIGAjaWZkZWZgIHdpdGggYElTX0VOQUJMRURgIG1hY3JvDQotLS0NCiBjZXJ0
-cy9LY29uZmlnICAgICAgICAgIHwgIDkgKysrKysrKysrDQogY2VydHMvc3lzdGVtX2tleXJpbmcu
-YyB8IDE2ICsrKysrKysrKysrKysrKysNCiAyIGZpbGVzIGNoYW5nZWQsIDI1IGluc2VydGlvbnMo
-KykNCg0KZGlmZiAtLWdpdCBhL2NlcnRzL0tjb25maWcgYi9jZXJ0cy9LY29uZmlnDQppbmRleCAx
-ZjEwOWIwNzA4NzcuLjRhNGRjOGFhYjg5MiAxMDA2NDQNCi0tLSBhL2NlcnRzL0tjb25maWcNCisr
-KyBiL2NlcnRzL0tjb25maWcNCkBAIC05MCw2ICs5MCwxNSBAQCBjb25maWcgU0VDT05EQVJZX1RS
-VVNURURfS0VZUklORw0KIAkgIHRob3NlIGtleXMgYXJlIG5vdCBibGFja2xpc3RlZCBhbmQgYXJl
-IHZvdWNoZWQgZm9yIGJ5IGEga2V5IGJ1aWx0DQogCSAgaW50byB0aGUga2VybmVsIG9yIGFscmVh
-ZHkgaW4gdGhlIHNlY29uZGFyeSB0cnVzdGVkIGtleXJpbmcuDQogDQorY29uZmlnIFNFQ09OREFS
-WV9UUlVTVEVEX0tFWVJJTkdfRk9SX0NBX0NFUlRJRklDQVRFU19PTkxZDQorCWJvb2wgIkFsbG93
-IG9ubHkgQ0EgY2VydGlmaWNhdGVzIHRvIGJlIGFkZGVkIHRvIHRoZSBzZWNvbmRhcnkgdHJ1c3Rl
-ZCBrZXlyaW5nIg0KKwlkZXBlbmRzIG9uIFNFQ09OREFSWV9UUlVTVEVEX0tFWVJJTkcNCisJaGVs
-cA0KKwkgIElmIHNldCwgb25seSBDQSBjZXJ0aWZpY2F0ZXMgY2FuIGJlIGFkZGVkIHRvIHRoZSBz
-ZWNvbmRhcnkgdHJ1c3RlZCBrZXlyaW5nLg0KKwkgIEFuIGFjY2VwdGFibGUgQ0EgY2VydGlmaWNh
-dGUgbXVzdCBpbmNsdWRlIHRoZSBga2V5Q2VydFNpZ25gIHZhbHVlIGluDQorCSAgdGhlIGBrZXlV
-c2FnZWAgZmllbGQuIENBIGNlcnRpZmljYXRlcyB0aGF0IGluY2x1ZGUgdGhlIGBkaWdpdGFsU2ln
-bmF0dXJlYA0KKwkgIHZhbHVlIGluIHRoZSBga2V5VXNhZ2VgIGZpZWxkIHdpbGwgbm90IGJlIGFj
-Y2VwdGVkLg0KKw0KIGNvbmZpZyBTWVNURU1fQkxBQ0tMSVNUX0tFWVJJTkcNCiAJYm9vbCAiUHJv
-dmlkZSBzeXN0ZW0td2lkZSByaW5nIG9mIGJsYWNrbGlzdGVkIGtleXMiDQogCWRlcGVuZHMgb24g
-S0VZUw0KZGlmZiAtLWdpdCBhL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMgYi9jZXJ0cy9zeXN0ZW1f
-a2V5cmluZy5jDQppbmRleCA5ZGU2MTBiZjFmNGIuLmVlMTQ0NDczNzRlNyAxMDA2NDQNCi0tLSBh
-L2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMNCisrKyBiL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMNCkBA
-IC05OSw2ICs5OSwyMiBAQCBpbnQgcmVzdHJpY3RfbGlua19ieV9idWlsdGluX2FuZF9zZWNvbmRh
-cnlfdHJ1c3RlZCgNCiAJCS8qIEFsbG93IHRoZSBidWlsdGluIGtleXJpbmcgdG8gYmUgYWRkZWQg
-dG8gdGhlIHNlY29uZGFyeSAqLw0KIAkJcmV0dXJuIDA7DQogDQorCWlmIChJU19FTkFCTEVEKENP
-TkZJR19TRUNPTkRBUllfVFJVU1RFRF9LRVlSSU5HX0ZPUl9DQV9DRVJUSUZJQ0FURVNfT05MWSkg
-JiYNCisJICAgIGRlc3Rfa2V5cmluZyA9PSBzZWNvbmRhcnlfdHJ1c3RlZF9rZXlzKSB7DQorCQlj
-b25zdCBzdHJ1Y3QgcHVibGljX2tleSAqcHViID0gcGF5bG9hZC0+ZGF0YVthc3ltX2NyeXB0b107
-DQorDQorCQlpZiAodHlwZSAhPSAma2V5X3R5cGVfYXN5bW1ldHJpYykNCisJCQlyZXR1cm4gLUVP
-UE5PVFNVUFA7DQorCQlpZiAoIXB1YikNCisJCQlyZXR1cm4gLUVOT1BLRzsNCisJCWlmICghdGVz
-dF9iaXQoS0VZX0VGTEFHX0NBLCAmcHViLT5rZXlfZWZsYWdzKSkNCisJCQlyZXR1cm4gLUVQRVJN
-Ow0KKwkJaWYgKCF0ZXN0X2JpdChLRVlfRUZMQUdfS0VZQ0VSVFNJR04sICZwdWItPmtleV9lZmxh
-Z3MpKQ0KKwkJCXJldHVybiAtRVBFUk07DQorCQlpZiAodGVzdF9iaXQoS0VZX0VGTEFHX0RJR0lU
-QUxTSUcsICZwdWItPmtleV9lZmxhZ3MpKQ0KKwkJCXJldHVybiAtRVBFUk07DQorCX0NCisNCiAJ
-cmV0dXJuIHJlc3RyaWN0X2xpbmtfYnlfc2lnbmF0dXJlKGRlc3Rfa2V5cmluZywgdHlwZSwgcGF5
-bG9hZCwNCiAJCQkJCSAgc2Vjb25kYXJ5X3RydXN0ZWRfa2V5cyk7DQogfQ0KLS0gDQoyLjM0LjEN
-Cg==
+From: Greg Joyce <gjoyce@linux.vnet.ibm.com>
+
+Add read and write functions that allow SED Opal keys to stored
+in a permanent keystore.
+
+Signed-off-by: Greg Joyce <gjoyce@linux.vnet.ibm.com>
+Reviewed-by: Jonathan Derrick <jonathan.derrick@linux.dev>
+---
+ block/Makefile               |  2 +-
+ block/sed-opal-key.c         | 24 ++++++++++++++++++++++++
+ include/linux/sed-opal-key.h | 15 +++++++++++++++
+ 3 files changed, 40 insertions(+), 1 deletion(-)
+ create mode 100644 block/sed-opal-key.c
+ create mode 100644 include/linux/sed-opal-key.h
+
+diff --git a/block/Makefile b/block/Makefile
+index 46ada9dc8bbf..ea07d80402a6 100644
+--- a/block/Makefile
++++ b/block/Makefile
+@@ -34,7 +34,7 @@ obj-$(CONFIG_BLK_DEV_ZONED)	+= blk-zoned.o
+ obj-$(CONFIG_BLK_WBT)		+= blk-wbt.o
+ obj-$(CONFIG_BLK_DEBUG_FS)	+= blk-mq-debugfs.o
+ obj-$(CONFIG_BLK_DEBUG_FS_ZONED)+= blk-mq-debugfs-zoned.o
+-obj-$(CONFIG_BLK_SED_OPAL)	+= sed-opal.o
++obj-$(CONFIG_BLK_SED_OPAL)	+= sed-opal.o sed-opal-key.o
+ obj-$(CONFIG_BLK_PM)		+= blk-pm.o
+ obj-$(CONFIG_BLK_INLINE_ENCRYPTION)	+= blk-crypto.o blk-crypto-profile.o \
+ 					   blk-crypto-sysfs.o
+diff --git a/block/sed-opal-key.c b/block/sed-opal-key.c
+new file mode 100644
+index 000000000000..16f380164c44
+--- /dev/null
++++ b/block/sed-opal-key.c
+@@ -0,0 +1,24 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * SED key operations.
++ *
++ * Copyright (C) 2022 IBM Corporation
++ *
++ * These are the accessor functions (read/write) for SED Opal
++ * keys. Specific keystores can provide overrides.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/sed-opal-key.h>
++
++int __weak sed_read_key(char *keyname, char *key, u_int *keylen)
++{
++	return -EOPNOTSUPP;
++}
++
++int __weak sed_write_key(char *keyname, char *key, u_int keylen)
++{
++	return -EOPNOTSUPP;
++}
+diff --git a/include/linux/sed-opal-key.h b/include/linux/sed-opal-key.h
+new file mode 100644
+index 000000000000..c9b1447986d8
+--- /dev/null
++++ b/include/linux/sed-opal-key.h
+@@ -0,0 +1,15 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * SED key operations.
++ *
++ * Copyright (C) 2022 IBM Corporation
++ *
++ * These are the accessor functions (read/write) for SED Opal
++ * keys. Specific keystores can provide overrides.
++ *
++ */
++
++#include <linux/kernel.h>
++
++int sed_read_key(char *keyname, char *key, u_int *keylen);
++int sed_write_key(char *keyname, char *key, u_int keylen);
+-- 
+gjoyce@linux.vnet.ibm.com
+
