@@ -2,359 +2,175 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9B1E8EE57DF
-	for <keyrings@archiver.kernel.org>; Mon, 11 Sep 2023 05:26:39 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AE44DCA0EC7
+	for <keyrings@archiver.kernel.org>; Mon, 11 Sep 2023 22:11:43 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234002AbjIKF0m (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 11 Sep 2023 01:26:42 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44666 "EHLO
+        id S239479AbjIKWJ2 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 11 Sep 2023 18:09:28 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42966 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229446AbjIKF0g (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 11 Sep 2023 01:26:36 -0400
-Received: from out4-smtp.messagingengine.com (out4-smtp.messagingengine.com [66.111.4.28])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8003CCCA;
-        Sun, 10 Sep 2023 22:26:31 -0700 (PDT)
-Received: from compute5.internal (compute5.nyi.internal [10.202.2.45])
-        by mailout.nyi.internal (Postfix) with ESMTP id E46AD5C00CE;
-        Mon, 11 Sep 2023 01:26:30 -0400 (EDT)
-Received: from mailfrontend2 ([10.202.2.163])
-  by compute5.internal (MEProxy); Mon, 11 Sep 2023 01:26:30 -0400
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=jfarr.cc; h=cc
-        :cc:content-transfer-encoding:content-type:date:date:from:from
-        :in-reply-to:in-reply-to:message-id:mime-version:references
-        :reply-to:sender:subject:subject:to:to; s=fm3; t=1694409990; x=
-        1694496390; bh=BCXzQAxKcTxOEQhh9DLQ4hnHkrayZdUDOP+GxHQhMCc=; b=P
-        O+W4r3BkSWadKS/4TCpzSkOOgcR+yJRn4ND1OnYvfIu/ihtCKbqOgkTQpCO0/SdN
-        ZCjfaf9wiZz3DipGll9Ru55yaNi0hS+Xsp+WdkgSsbRS+LgN1hntDunDdxb8rMWr
-        SKwY+DTFVMmKRVwg3HthjE9p06gu8APoBP2Dek6pth4NK/u/tTMh2jbhwfAiOtUK
-        ttzSN+LRIabnzQzIzQ1G/Fk5NfjWm5trHmcur+OK650+nw7FuvCFVT+qRvRDpFJE
-        dMV+B0k7qskjBvUq9wd7a7eymQqkm3zCCDfYGKpZibV/AIgnK52vH1ItNbgDjGgY
-        KiQ3WGjC/3rM6Q4K5IOyA==
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=
-        messagingengine.com; h=cc:cc:content-transfer-encoding
-        :content-type:date:date:feedback-id:feedback-id:from:from
-        :in-reply-to:in-reply-to:message-id:mime-version:references
-        :reply-to:sender:subject:subject:to:to:x-me-proxy:x-me-proxy
-        :x-me-sender:x-me-sender:x-sasl-enc; s=fm1; t=1694409990; x=
-        1694496390; bh=BCXzQAxKcTxOEQhh9DLQ4hnHkrayZdUDOP+GxHQhMCc=; b=w
-        jmd2kyLNblsdB/Q4uTcxZgXYO1U9Ni5XU4FmSGDse431WTNl7kWjB99NRRPpLx97
-        DJn2mQKr5viNZqdySQwGXPx7IVlTvVzRHV6vcMZpRLU0QBOyUZCbHmZUhaJ+6rqY
-        /WIuTUoxpfFb46F3UsC4+2Xf9C58N7nAeqgXnJ6ht/sNzbD/ArNCbAzdn4XIKQGw
-        o3veEiDJ3My7405/CH1u8RCeVa9nsCA0DVCN6Pl7XtUx+ww9mIsE49vkVqlJmqaj
-        eiQR0wkMUDDlJe2uj97kVIkCQ4Ar8f3uhNSd2G572ojJ1Le1ShGNoQXUvJQrobCw
-        XdXJBRHEM3fTDs+M0qnwA==
-X-ME-Sender: <xms:BqX-ZCq-XgF71RDNGZWYSnPa1_fkG-TDMHsBDfMUsMSEEC2kklRL8A>
-    <xme:BqX-ZArQ3rZ71SlM39syWrfLmoI_U1zh5c-FwUDc4kGRbBDz3eAkpanW033GMJVfN
-    HqGouZSjotswEXNgsE>
-X-ME-Received: <xmr:BqX-ZHPoX3jNfcZTXg1bNJr0BMP9ikJL7F93gmtw9RPm7jrVhfXBHG_JRuEdZCOS_rhl4VPrA-iS8XJCjJ0Prf9hWNTw>
-X-ME-Proxy-Cause: gggruggvucftvghtrhhoucdtuddrgedviedrudeifedgleefucetufdoteggodetrfdotf
-    fvucfrrhhofhhilhgvmecuhfgrshhtofgrihhlpdfqfgfvpdfurfetoffkrfgpnffqhgen
-    uceurghilhhouhhtmecufedttdenucgfrhhlucfvnfffucdlfedtmdenucfjughrpefhvf
-    evufffkffojghfggfgsedtkeertdertddtnecuhfhrohhmpeflrghnucfjvghnughrihhk
-    ucfhrghrrhcuoehkvghrnhgvlhesjhhfrghrrhdrtggtqeenucggtffrrghtthgvrhhnpe
-    egfeeliefggeeiiedtudevveevvddvvefguddtvdeitdejleejuefgueelieehteenucev
-    lhhushhtvghrufhiiigvpedtnecurfgrrhgrmhepmhgrihhlfhhrohhmpehkvghrnhgvlh
-    esjhhfrghrrhdrtggt
-X-ME-Proxy: <xmx:BqX-ZB63lLQbM7t7JUnGdLXU6ba_daiPsUpmO9sXIsSMYn6SKlqYhw>
-    <xmx:BqX-ZB6wwo-f4Dv1LYMZ1c3SXDKBcKWW1slFfqDzC7RRlIO4B1CcCg>
-    <xmx:BqX-ZBiNrgAKybSryFHc8XDp1tzO9fvDSKLrn9lkgIFy0HAF1Mmhmw>
-    <xmx:BqX-ZNgV4raizDmiNNKYYAgGb6nbno40W2aGTCX7EBGFts6_6KX-pw>
-Feedback-ID: i0fc947c4:Fastmail
-Received: by mail.messagingengine.com (Postfix) with ESMTPA; Mon,
- 11 Sep 2023 01:26:29 -0400 (EDT)
-From:   Jan Hendrik Farr <kernel@jfarr.cc>
-To:     linux-kernel@vger.kernel.org
-Cc:     kexec@lists.infradead.org, x86@kernel.org, tglx@linutronix.de,
-        dhowells@redhat.com, vgoyal@redhat.com, keyrings@vger.kernel.org,
-        akpm@linux-foundation.org, bhe@redhat.com, bhelgaas@google.com,
-        bluca@debian.org, lennart@poettering.net,
-        Jan Hendrik Farr <kernel@jfarr.cc>
-Subject: [PATCH v2 2/2] x86/kexec: UKI support
-Date:   Mon, 11 Sep 2023 07:25:35 +0200
-Message-Id: <20230911052535.335770-3-kernel@jfarr.cc>
-X-Mailer: git-send-email 2.40.1
-In-Reply-To: <20230911052535.335770-1-kernel@jfarr.cc>
-References: <20230911052535.335770-1-kernel@jfarr.cc>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        with ESMTP id S237987AbjIKN3a (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 11 Sep 2023 09:29:30 -0400
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5A76012A;
+        Mon, 11 Sep 2023 06:29:25 -0700 (PDT)
+Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 38BD4wkg031453;
+        Mon, 11 Sep 2023 13:29:11 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
+ from : to : cc : date : in-reply-to : references : content-type :
+ mime-version : content-transfer-encoding; s=pp1;
+ bh=OHZCttcORDHOzgF/QX+R50Q6BNXzK/GZ2AIbEecuhtk=;
+ b=qfs1ElmOtJBt4rgKxde9Ak8dx3N3nk5SCaMs23SbhTcCU/nw+bCRiwgJqCoNnu8pJ+Wx
+ a635Y8ZLx4jb3uj2KY/2wY1UoQgSu3TH6CcegsoJo3IHPhFv+wnsFpfpvL5SoRtsUWlF
+ 0qleH8QHCez7sd9DOR/MSFHqIprE2YAZ3vTOhqZIPMr351eiv/JgrZxUPIEmcs8G1jRR
+ 4ZiEZJoRrl1VQj5f43mML4Ddpb3ksOgLGQBeyc9o2mW5LIc2klj2vC/U1SbPi4T4f2gy
+ vVP6P0jX0XZ4ZRkdGD3eOCpjYDvJMWHt7//Kj/Qj4IANR+RESvFbIdBeWSlv28Ny+CpF Dw== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3t23fb10r5-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 11 Sep 2023 13:29:11 +0000
+Received: from m0353725.ppops.net (m0353725.ppops.net [127.0.0.1])
+        by pps.reinject (8.17.1.5/8.17.1.5) with ESMTP id 38BDCtEB016977;
+        Mon, 11 Sep 2023 13:29:10 GMT
+Received: from ppma23.wdc07v.mail.ibm.com (5d.69.3da9.ip4.static.sl-reverse.com [169.61.105.93])
+        by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3t23fb10qv-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 11 Sep 2023 13:29:10 +0000
+Received: from pps.filterd (ppma23.wdc07v.mail.ibm.com [127.0.0.1])
+        by ppma23.wdc07v.mail.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 38BDHHjO002755;
+        Mon, 11 Sep 2023 13:29:09 GMT
+Received: from smtprelay03.wdc07v.mail.ibm.com ([172.16.1.70])
+        by ppma23.wdc07v.mail.ibm.com (PPS) with ESMTPS id 3t14hkjkgx-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 11 Sep 2023 13:29:09 +0000
+Received: from smtpav01.wdc07v.mail.ibm.com (smtpav01.wdc07v.mail.ibm.com [10.39.53.228])
+        by smtprelay03.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 38BDT9sp57409910
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Mon, 11 Sep 2023 13:29:09 GMT
+Received: from smtpav01.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 683DA58055;
+        Mon, 11 Sep 2023 13:29:09 +0000 (GMT)
+Received: from smtpav01.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 726F35804B;
+        Mon, 11 Sep 2023 13:29:08 +0000 (GMT)
+Received: from li-f45666cc-3089-11b2-a85c-c57d1a57929f.ibm.com (unknown [9.61.190.181])
+        by smtpav01.wdc07v.mail.ibm.com (Postfix) with ESMTP;
+        Mon, 11 Sep 2023 13:29:08 +0000 (GMT)
+Message-ID: <097a0413b27ed9792dc598ff184730bcf6ae8fcf.camel@linux.ibm.com>
+Subject: Re: [PATCH] certs: Restrict blacklist updates to the secondary
+ trusted keyring
+From:   Mimi Zohar <zohar@linux.ibm.com>
+To:     Eric Snowberg <eric.snowberg@oracle.com>, jarkko@kernel.org,
+        dhowells@redhat.com, dwmw2@infradead.org
+Cc:     mic@linux.microsoft.com, kanth.ghatraju@oracle.com,
+        konrad.wilk@oracle.com, linux-integrity@vger.kernel.org,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Date:   Mon, 11 Sep 2023 09:29:07 -0400
+In-Reply-To: <20230908213428.731513-1-eric.snowberg@oracle.com>
+References: <20230908213428.731513-1-eric.snowberg@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.28.5 (3.28.5-22.el8) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: 6yi0Q1cR-ekjGl6kAeMMU9adjH6TLfdr
+X-Proofpoint-GUID: q6rxkGZ4mzIlJGDiIwNC4aA9lpDDv0ng
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.267,Aquarius:18.0.957,Hydra:6.0.601,FMLib:17.11.176.26
+ definitions=2023-09-11_07,2023-09-05_01,2023-05-22_02
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 adultscore=0 mlxscore=0
+ spamscore=0 lowpriorityscore=0 impostorscore=0 mlxlogscore=999
+ suspectscore=0 priorityscore=1501 malwarescore=0 bulkscore=0 clxscore=1011
+ phishscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2308100000 definitions=main-2309110119
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-make the kernel accept UKIs (Unified Kernel Images) for kexec_file_load.
+Hi Eric,
 
-UKIs contain the kernel bzImage, initrd, and cmdline all packaged up as
-one EFI application. The main advantage of this is that the whole
-combination is signed together as a package for secure boot.
+On Fri, 2023-09-08 at 17:34 -0400, Eric Snowberg wrote:
+> Currently root can dynamically update the blacklist keyring if the hash
+> being added is signed and vouched for by the builtin trusted keyring.
+> Currently keys in the secondary trusted keyring can not be used.
+> 
+> Keys within the secondary trusted keyring carry the same capabilities as
+> the builtin trusted keyring.  Relax the current restriction for updating
+> the .blacklist keyring and allow the secondary to also be referenced as
+> a trust source.  Since the machine keyring is linked to the secondary
+> trusted keyring, any key within it may also be used.
+> 
+> An example use case for this is IMA appraisal.  Now that IMA both
+> references the blacklist keyring and allows the machine owner to add
+> custom IMA CA certs via the machine keyring, this adds the additional
+> capability for the machine owner to also do revocations on a running
+> system.
+> 
+> IMA appraisal usage example to add a revocation for /usr/foo:
+> 
+> sha256sum /bin/foo | awk '{printf "bin:" $1}' > hash.txt
+> 
+> openssl smime -sign -in hash.txt -inkey machine-private-key.pem \
+>        -signer machine-certificate.pem -noattr -binary -outform DER \
+>        -out hash.p7s
+> 
+> keyctl padd blacklist "$(< hash.txt)" %:.blacklist < hash.p7s
+> 
+> Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
 
-This implementation parses the UKI and passes the bzImage, initrd, and
-cmdline to the normal bzImage loader.
+The secondary keyring may include both CA and code signing keys.  With
+this change any key loaded onto the secondary keyring may blacklist a
+hash.  Wouldn't it make more sense to limit blacklisting
+certificates/hashes to at least CA keys? 
 
-Signed-off-by: Jan Hendrik Farr <kernel@jfarr.cc>
----
- arch/x86/include/asm/kexec-uki.h       |   7 ++
- arch/x86/kernel/Makefile               |   1 +
- arch/x86/kernel/kexec-uki.c            | 126 +++++++++++++++++++++++++
- arch/x86/kernel/machine_kexec_64.c     |   2 +
- crypto/asymmetric_keys/verify_pefile.c |  11 ++-
- lib/Makefile                           |   1 +
- lib/parse_pefile.c                     |  21 ++---
- 7 files changed, 157 insertions(+), 12 deletions(-)
- create mode 100644 arch/x86/include/asm/kexec-uki.h
- create mode 100644 arch/x86/kernel/kexec-uki.c
+> ---
+>  certs/Kconfig     | 2 +-
+>  certs/blacklist.c | 4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/certs/Kconfig b/certs/Kconfig
+> index 1f109b070877..23dc87c52aff 100644
+> --- a/certs/Kconfig
+> +++ b/certs/Kconfig
+> @@ -134,7 +134,7 @@ config SYSTEM_BLACKLIST_AUTH_UPDATE
+>  	depends on SYSTEM_DATA_VERIFICATION
+>  	help
+>  	  If set, provide the ability to load new blacklist keys at run time if
+> -	  they are signed and vouched by a certificate from the builtin trusted
+> +	  they are signed and vouched by a certificate from the secondary trusted
 
-diff --git a/arch/x86/include/asm/kexec-uki.h b/arch/x86/include/asm/kexec-uki.h
-new file mode 100644
-index 000000000000..87fd2c6fb091
---- /dev/null
-+++ b/arch/x86/include/asm/kexec-uki.h
-@@ -0,0 +1,7 @@
-+/* SPDX-License-Identifier: GPL-2.0-only */
-+#ifndef _ASM_KEXEC_UKI_H
-+#define _ASM_KEXEC_UKI_H
-+
-+extern const struct kexec_file_ops kexec_uki_ops;
-+
-+#endif  /* _ASM_KEXEC_UKI_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 3269a0e23d3a..a73d61f86d29 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -101,6 +101,7 @@ obj-$(CONFIG_CRASH_CORE)	+= crash_core_$(BITS).o
- obj-$(CONFIG_KEXEC_CORE)	+= machine_kexec_$(BITS).o
- obj-$(CONFIG_KEXEC_CORE)	+= relocate_kernel_$(BITS).o crash.o
- obj-$(CONFIG_KEXEC_FILE)	+= kexec-bzimage64.o
-+obj-$(CONFIG_KEXEC_FILE)	+= kexec-uki.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
- obj-y				+= kprobes/
- obj-$(CONFIG_MODULES)		+= module.o
-diff --git a/arch/x86/kernel/kexec-uki.c b/arch/x86/kernel/kexec-uki.c
-new file mode 100644
-index 000000000000..5a381e4f3728
---- /dev/null
-+++ b/arch/x86/kernel/kexec-uki.c
-@@ -0,0 +1,126 @@
-+// SPDX-License-Identifier: GPL-2.0-only
-+/*
-+ * Kexec UKI loader
-+ *
-+ * Copyright (C) 2023 Jan Hendrik Farr
-+ *
-+ * Authors:
-+ *      Jan Hendrik Farr <kernel@jfarr.cc>
-+ */
-+
-+#define pr_fmt(fmt)	"kexec-uki: " fmt
-+
-+#include <linux/kernel.h>
-+#include "linux/pe.h"
-+#include <linux/kexec.h>
-+#include <linux/err.h>
-+
-+#include <asm/kexec-uki.h>
-+#include <asm/kexec-bzimage64.h>
-+#include <linux/parse_pefile.h>
-+
-+static int find_section(struct pefile_context *ctx, const char *name,
-+			const struct section_header **sec)
-+{
-+	for (int i = 0; i < ctx->n_sections; i++) {
-+		const struct section_header *cur_sec = &ctx->secs[i];
-+
-+		if (!strncmp(cur_sec->name, name, ARRAY_SIZE(cur_sec->name))) {
-+			*sec = cur_sec;
-+			return 0;
-+		}
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static int uki_probe(const char *buf, unsigned long len)
-+{
-+	int ret = -ENOEXEC;
-+	int r = 0;
-+	struct pefile_context pe_ctx;
-+	const struct section_header *s;
-+
-+	memset(&pe_ctx, 0, sizeof(pe_ctx));
-+	r = pefile_parse_binary(buf, len, &pe_ctx);
-+
-+	if (r) {
-+		pr_info("Not a UKI. Not a valid PE file\n");
-+		return ret;
-+	}
-+
-+	if (find_section(&pe_ctx, ".linux", &s) ||
-+	    find_section(&pe_ctx, ".initrd", &s)) {
-+		pr_info("Not a UKI. Missing .linux, or .initrd\n");
-+		return ret;
-+	}
-+
-+	pr_info("It's a UKI\n");
-+	return 0;
-+}
-+
-+static void *uki_load(struct kimage *image, char *kernel,
-+		      unsigned long kernel_len, char *initrd,
-+		      unsigned long initrd_len, char *cmdline,
-+		      unsigned long cmdline_len)
-+{
-+	struct pefile_context pe_ctx;
-+	const struct section_header *sec_linux, *sec_initrd, *sec_cmdline;
-+	int r_linux, r_initrd, r_cmdline, r = 0;
-+	void *ret;
-+
-+	if (initrd_len || strcmp(cmdline, "") || cmdline_len != 1) {
-+		pr_err("No manual cmdline or initrd allowed for UKIs");
-+		return ERR_PTR(-EPERM);
-+	}
-+
-+	memset(&pe_ctx, 0, sizeof(pe_ctx));
-+	r = pefile_parse_binary(kernel, kernel_len, &pe_ctx);
-+
-+	if (r)
-+		return ERR_PTR(r);
-+
-+	r_linux   = find_section(&pe_ctx, ".linux", &sec_linux);
-+	r_initrd  = find_section(&pe_ctx, ".initrd", &sec_initrd);
-+	r_cmdline = find_section(&pe_ctx, ".cmdline", &sec_cmdline);
-+
-+	if (r_linux || r_initrd)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (r_cmdline) {
-+		cmdline = "";
-+		cmdline_len = 1;
-+	} else {
-+		cmdline = kernel + sec_cmdline->data_addr;
-+		cmdline_len = sec_cmdline->raw_data_size;
-+	}
-+
-+	ret = kexec_bzImage64_ops.load(
-+		image,
-+		kernel + sec_linux->data_addr,
-+		sec_linux->raw_data_size,
-+		kernel + sec_initrd->data_addr,
-+		sec_initrd->raw_data_size,
-+		cmdline,
-+		cmdline_len
-+	);
-+
-+	if (IS_ERR(ret))
-+		pr_err("bzImage64_load error\n");
-+
-+	return ret;
-+}
-+
-+static int uki_cleanup(void *loader_data)
-+{
-+	return kexec_bzImage64_ops.cleanup(loader_data);
-+}
-+
-+const struct kexec_file_ops kexec_uki_ops = {
-+	.probe = uki_probe,
-+	.load = uki_load,
-+	.cleanup = uki_cleanup,
-+#ifdef CONFIG_KEXEC_BZIMAGE_VERIFY_SIG
-+	.verify_sig = kexec_kernel_verify_pe_sig,
-+#endif
-+};
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index 1a3e2c05a8a5..072f5aac52b9 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -25,6 +25,7 @@
- #include <asm/io_apic.h>
- #include <asm/debugreg.h>
- #include <asm/kexec-bzimage64.h>
-+#include <asm/kexec-uki.h>
- #include <asm/setup.h>
- #include <asm/set_memory.h>
- #include <asm/cpu.h>
-@@ -81,6 +82,7 @@ static int map_acpi_tables(struct x86_mapping_info *info, pgd_t *level4p) { retu
- #ifdef CONFIG_KEXEC_FILE
- const struct kexec_file_ops * const kexec_file_loaders[] = {
- 		&kexec_bzImage64_ops,
-+		&kexec_uki_ops,
- 		NULL
- };
- #endif
-diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_keys/verify_pefile.c
-index 68592a328db7..ea183feca231 100644
---- a/crypto/asymmetric_keys/verify_pefile.c
-+++ b/crypto/asymmetric_keys/verify_pefile.c
-@@ -334,6 +334,13 @@ int verify_pefile_signature(const void *pebuf, unsigned pelen,
- 	if (ret < 0)
- 		return ret;
- 
-+	const struct data_dirent *certs = pebuf + ctx.cert_dirent_offset;
-+
-+	if (!certs->virtual_address || !certs->size) {
-+		pr_warn("Unsigned PE binary\n");
-+		return -ENODATA;
-+	}
-+
- 	ret = pefile_strip_sig_wrapper(pebuf, &ctx);
- 	if (ret < 0)
- 		return ret;
-@@ -342,8 +349,10 @@ int verify_pefile_signature(const void *pebuf, unsigned pelen,
- 				     pebuf + ctx.sig_offset, ctx.sig_len,
- 				     trusted_keys, usage,
- 				     mscode_parse, &ctx);
--	if (ret < 0)
-+	if (ret < 0) {
-+		pr_warn("invalid PE file signature\n");
- 		goto error;
-+	}
- 
- 	pr_debug("Digest: %u [%*ph]\n",
- 		 ctx.digest_len, ctx.digest_len, ctx.digest);
-diff --git a/lib/Makefile b/lib/Makefile
-index 01a6c13565b6..ad6af1bab3ef 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -366,6 +366,7 @@ obj-$(CONFIG_SBITMAP) += sbitmap.o
- obj-$(CONFIG_PARMAN) += parman.o
- 
- obj-$(CONFIG_SIGNED_PE_FILE_VERIFICATION) += parse_pefile.o
-+obj-$(CONFIG_KEXEC_FILE) += parse_pefile.o
- 
- obj-y += group_cpus.o
- 
-diff --git a/lib/parse_pefile.c b/lib/parse_pefile.c
-index 9a8496b2588e..672a044d380c 100644
---- a/lib/parse_pefile.c
-+++ b/lib/parse_pefile.c
-@@ -88,18 +88,17 @@ int pefile_parse_binary(const void *pebuf, unsigned int pelen,
- 		(unsigned long)&ddir->certs - (unsigned long)pebuf;
- 	ctx->certs_size = ddir->certs.size;
- 
--	if (!ddir->certs.virtual_address || !ddir->certs.size) {
--		pr_warn("Unsigned PE binary\n");
--		return -ENODATA;
--	}
-+	if (ddir->certs.virtual_address && ddir->certs.size) {
-+
-+		chkaddr(ctx->header_size, ddir->certs.virtual_address,
-+			ddir->certs.size);
-+		ctx->sig_offset = ddir->certs.virtual_address;
-+		ctx->sig_len = ddir->certs.size;
-+		pr_debug("cert = %x @%x [%*ph]\n",
-+			 ctx->sig_len, ctx->sig_offset,
-+			 ctx->sig_len, pebuf + ctx->sig_offset);
- 
--	chkaddr(ctx->header_size, ddir->certs.virtual_address,
--		ddir->certs.size);
--	ctx->sig_offset = ddir->certs.virtual_address;
--	ctx->sig_len = ddir->certs.size;
--	pr_debug("cert = %x @%x [%*ph]\n",
--		 ctx->sig_len, ctx->sig_offset,
--		 ctx->sig_len, pebuf + ctx->sig_offset);
-+	}
- 
- 	ctx->n_sections = pe->sections;
- 	if (ctx->n_sections > (ctx->header_size - cursor) / sizeof(*sec))
+If CONFIG_SECONDARY_TRUSTED_KEYRING is not enabled, it falls back to
+the builtin keyring.  Please update the comment accordingly.
+
+>  	  keyring.  The PKCS#7 signature of the description is set in the key
+>  	  payload.  Blacklist keys cannot be removed.
+>  
+> diff --git a/certs/blacklist.c b/certs/blacklist.c
+> index 675dd7a8f07a..0b346048ae2d 100644
+> --- a/certs/blacklist.c
+> +++ b/certs/blacklist.c
+> @@ -102,12 +102,12 @@ static int blacklist_key_instantiate(struct key *key,
+>  
+>  #ifdef CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE
+>  	/*
+> -	 * Verifies the description's PKCS#7 signature against the builtin
+> +	 * Verifies the description's PKCS#7 signature against the secondary
+>  	 * trusted keyring.
+>  	 */
+
+And similarly here ...
+
+>  	err = verify_pkcs7_signature(key->description,
+>  			strlen(key->description), prep->data, prep->datalen,
+> -			NULL, VERIFYING_UNSPECIFIED_SIGNATURE, NULL, NULL);
+> +			VERIFY_USE_SECONDARY_KEYRING, VERIFYING_UNSPECIFIED_SIGNATURE, NULL, NULL);
+>  	if (err)
+>  		return err;
+>  #else
+
 -- 
-2.40.1
+thanks,
+
+Mimi
 
