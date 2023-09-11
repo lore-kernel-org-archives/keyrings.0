@@ -2,193 +2,97 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 1EBA2CA0ED5
-	for <keyrings@archiver.kernel.org>; Mon, 11 Sep 2023 22:11:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id EC82CCA0EC3
+	for <keyrings@archiver.kernel.org>; Tue, 12 Sep 2023 00:26:44 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S240249AbjIKWJx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 11 Sep 2023 18:09:53 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42010 "EHLO
+        id S231250AbjILA0q (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 11 Sep 2023 20:26:46 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33668 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S236383AbjIKKcW (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 11 Sep 2023 06:32:22 -0400
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3B736E5F;
-        Mon, 11 Sep 2023 03:32:17 -0700 (PDT)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C0F4FC433C7;
-        Mon, 11 Sep 2023 10:32:14 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1694428336;
-        bh=NxlAgdm0zBlYQHGHYk0vtHQiaU9QKg+ESRgOgI623QA=;
-        h=Date:Cc:Subject:From:To:References:In-Reply-To:From;
-        b=YPRP152AYRqv5SeEqG2TuzRr1x/m+fO7cpvR0iJom99pBq3WtSTzem7asxaeCIOiW
-         F4fdOOx0PKr1+kqKegAMJTDs1mk2xBUpZ6j0hXL4kThf7PdV2mINHs2l3DVIRwB1Ig
-         +/bx2ApTF8w9Yl5RPIIVNymDA9D0St3XrQ1YGG3bOEy+m845bowZZz03NcoxwDfZcU
-         PY1Pi3XcSq0XAfQdAEnIj/+0RytcIMw/OkEkJxXVLHr0fAGcJXFsFvUlyYWKKZ9a8a
-         l5bcQrdTAv6s3sqwir8369BhcVy8BEvq8LXWA2ZxiOFgcrVq2OYRzALNDk2e28f1oF
-         g5oh1VYx8KEQg==
+        with ESMTP id S230157AbjILA0p (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 11 Sep 2023 20:26:45 -0400
+Received: from wout1-smtp.messagingengine.com (wout1-smtp.messagingengine.com [64.147.123.24])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 05281377B9;
+        Mon, 11 Sep 2023 15:57:43 -0700 (PDT)
+Received: from compute6.internal (compute6.nyi.internal [10.202.2.47])
+        by mailout.west.internal (Postfix) with ESMTP id F06373200918;
+        Mon, 11 Sep 2023 18:56:11 -0400 (EDT)
+Received: from imap49 ([10.202.2.99])
+  by compute6.internal (MEProxy); Mon, 11 Sep 2023 18:56:13 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=jfarr.cc; h=cc
+        :cc:content-type:content-type:date:date:from:from:in-reply-to
+        :in-reply-to:message-id:mime-version:references:reply-to:sender
+        :subject:subject:to:to; s=fm3; t=1694472971; x=1694559371; bh=Ea
+        pXY/dHk/L+KfdsJnZIXaxdmbC/YxZh0fcsusxzVFI=; b=Z1qW4isTxdg0I62aD1
+        I6xzs2VtaTEAsQ3HsKYDilLUwxksu1tbRY7mkgyromFZzzxkqw2HD1OytTiahXb+
+        Nx++gyTMlYhEOXbv5M15Sv3+PtNQihmUsv3dOXcMUtH4uwaQKDG+Ke/WcFaO7JJD
+        aWeyNoWEb0IIa0nI/WAbnscDv5AfH0utP2SU6SMXqufpPeS5IhkHAWdMizSCIZK8
+        Rz7/9L4qibgjCRoAvPnTFe0cpuOXJ48NBHwsFq99KJKgcmlKi/Uov1iytDlEUxzq
+        8+Tp6wiTCdkbuTSw+voRiO9HvyeHG+JWSKYabZ+xsSS3dUAIumWHMwWBCFWYF9mh
+        ClIA==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=
+        messagingengine.com; h=cc:cc:content-type:content-type:date:date
+        :feedback-id:feedback-id:from:from:in-reply-to:in-reply-to
+        :message-id:mime-version:references:reply-to:sender:subject
+        :subject:to:to:x-me-proxy:x-me-proxy:x-me-sender:x-me-sender
+        :x-sasl-enc; s=fm1; t=1694472971; x=1694559371; bh=EapXY/dHk/L+K
+        fdsJnZIXaxdmbC/YxZh0fcsusxzVFI=; b=yJVLsQbOVAvTKRVKS6v75wpQgMsoT
+        9ywUmKRPfsf1BBXCY1CutXWcP7i+S+utGssDMp7J1Two2sJEdzhkuWaz1mMBECld
+        BBjrrwYVyp/rU/5zE0a/OfxQFuTohRzT8ONhSZ1v5Obka3Ca+TOmBJq3oMmTjQq1
+        8ofvp3OmG0Otplz7RMq7oH75+X95yAahcq9rqtZnPK5yJQ3eowitbf9xw+l+B719
+        bVH1NVp76WU/he8clQ/fxPKSUVuyza4XyVwFIszRYV+bcvZIjpynjaYSYnjCipRP
+        ukY7Gq9Ls7qeZvo5Xan5Kaf9L3BwiPL1ovkg+VNiCwo5p0iNvkJbR2ciw==
+X-ME-Sender: <xms:C5v_ZEpwyEBB74Zm39jhT64htpAlb6MdMT-bXMXlW4cKqlytXz5fXg>
+    <xme:C5v_ZKpnaKI4JTufIEfztGy9tX4JHGg_xeZiadJLZl8SM8R6xxeO96G7pu7293XXi
+    GKiEJCQuFZAYiD7jWs>
+X-ME-Proxy-Cause: gggruggvucftvghtrhhoucdtuddrgedviedrudeihedgudegucetufdoteggodetrfdotf
+    fvucfrrhhofhhilhgvmecuhfgrshhtofgrihhlpdfqfgfvpdfurfetoffkrfgpnffqhgen
+    uceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmne
+    gfrhhlucfvnfffucdluddtmdenucfjughrpefofgggkfgjfhffhffvvefutgesthdtredt
+    reertdenucfhrhhomhepfdflrghnucfjvghnughrihhkucfhrghrrhdfuceokhgvrhhnvg
+    hlsehjfhgrrhhrrdgttgeqnecuggftrfgrthhtvghrnhepteeluefhfeehtdejvdduvdel
+    hfffueevteefgeeuhedtiefgtedtheekhfefiedunecuffhomhgrihhnpehurghpihdqgh
+    hrohhuphdrohhrghdprghrtghhlhhinhhugidrohhrghdpfhgvughorhgrphhrohhjvggt
+    thdrohhrghenucevlhhushhtvghrufhiiigvpedtnecurfgrrhgrmhepmhgrihhlfhhroh
+    hmpehkvghrnhgvlhesjhhfrghrrhdrtggt
+X-ME-Proxy: <xmx:C5v_ZJM3r-dc6IffYP6H__wC090VsMK6o19bPReC26my5OUjiXLX6w>
+    <xmx:C5v_ZL4n8AvAAM-g_ClsLtVIwL1EW8AyhNcUWsrH0sj9qsY7PP3V4w>
+    <xmx:C5v_ZD5kYXz49K8Fj_OGtrvGT6f35vMs4ZRrwW4uTHAdtcKGdgvLDQ>
+    <xmx:C5v_ZAyCAZRXV9ddr4oruuG9fD_5ZU-TmNH4hCtm0tQwHvP3F5eNPw>
+Feedback-ID: i0fc947c4:Fastmail
+Received: by mailuser.nyi.internal (Postfix, from userid 501)
+        id E597B15A0091; Mon, 11 Sep 2023 18:56:10 -0400 (EDT)
+X-Mailer: MessagingEngine.com Webmail Interface
+User-Agent: Cyrus-JMAP/3.9.0-alpha0-745-g95dd7bea33-fm-20230905.001-g95dd7bea
 Mime-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=UTF-8
-Date:   Mon, 11 Sep 2023 13:32:12 +0300
-Message-Id: <CVG0PQ1NV1XZ.1R2BD85Z1M3FO@suppilovahvero>
-Cc:     <linux-integrity@vger.kernel.org>, <keyrings@vger.kernel.org>,
-        "Jens Wiklander" <jens.wiklander@linaro.org>, <jejb@linux.ibm.com>,
-        <zohar@linux.ibm.com>, <sudeep.holla@arm.com>,
-        <achin.gupta@arm.com>, <linux-security-module@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KEYS: trusted: tee: Refactor register SHM usage
-From:   "Jarkko Sakkinen" <jarkko@kernel.org>
-To:     "Sumit Garg" <sumit.garg@linaro.org>
-X-Mailer: aerc 0.14.0
-References: <20230822112933.1550062-1-sumit.garg@linaro.org>
- <20230822125555.GA82256@rayden>
- <CAFA6WYPy=yxGg1HbT+ipWJFpxiJeUGK6BSgMhtRPd=zmKef-cw@mail.gmail.com>
- <CAHUa44G9jCeHcRq=AZeieaTPWN_tpOVKeJNY=777QAh-bw1QNg@mail.gmail.com>
- <CAFA6WYPY70iYCmQhzCkATGinqK_C1i4SEZzTdv4yDwntpGNzew@mail.gmail.com>
- <CAHUa44H5eG6N0M_aAiWsYJorWVt4pYEZPWXgOJHgXAYVmR=cww@mail.gmail.com>
- <CAFA6WYNAifDVZy-pLSTJWonGTJBECijsTFw4OQdqToW3u6Lj_Q@mail.gmail.com>
-In-Reply-To: <CAFA6WYNAifDVZy-pLSTJWonGTJBECijsTFw4OQdqToW3u6Lj_Q@mail.gmail.com>
+Message-Id: <1d974586-1bf7-42e8-9dae-e5e41a3dbc9f@app.fastmail.com>
+In-Reply-To: <CVGFE6FRWFHR.DVG9NUQID4EA@suppilovahvero>
+References: <20230909161851.223627-1-kernel@jfarr.cc>
+ <CVGFE6FRWFHR.DVG9NUQID4EA@suppilovahvero>
+Date:   Tue, 12 Sep 2023 00:54:32 +0200
+From:   "Jan Hendrik Farr" <kernel@jfarr.cc>
+To:     "Jarkko Sakkinen" <jarkko@kernel.org>, linux-kernel@vger.kernel.org
+Cc:     kexec@lists.infradead.org, x86@kernel.org, tglx@linutronix.de,
+        dhowells@redhat.com, vgoyal@redhat.com, keyrings@vger.kernel.org,
+        akpm@linux-foundation.org, bhe@redhat.com, bhelgaas@google.com,
+        lennart@poettering.net, "Luca Boccassi" <bluca@debian.org>
+Subject: Re: [PATCH 0/1] x86/kexec: UKI support
+Content-Type: text/plain
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue Sep 5, 2023 at 2:04 PM EEST, Sumit Garg wrote:
-> Hi Jarkko,
->
-> On Wed, 23 Aug 2023 at 19:58, Jens Wiklander <jens.wiklander@linaro.org> =
-wrote:
-> >
-> > On Wed, Aug 23, 2023 at 3:04=E2=80=AFPM Sumit Garg <sumit.garg@linaro.o=
-rg> wrote:
-> > >
-> > > On Wed, 23 Aug 2023 at 13:32, Jens Wiklander <jens.wiklander@linaro.o=
-rg> wrote:
-> > > >
-> > > > On Wed, Aug 23, 2023 at 8:55=E2=80=AFAM Sumit Garg <sumit.garg@lina=
-ro.org> wrote:
-> > > > >
-> > > > > On Tue, 22 Aug 2023 at 18:25, Jens Wiklander <jens.wiklander@lina=
-ro.org> wrote:
-> > > > > >
-> > > > > > On Tue, Aug 22, 2023 at 04:59:33PM +0530, Sumit Garg wrote:
-> > > > > > > The OP-TEE driver using the old SMC based ABI permits overlap=
-ping shared
-> > > > > > > buffers, but with the new FF-A based ABI each physical page m=
-ay only
-> > > > > > > be registered once.
-> > > > > > >
-> > > > > > > As the key and blob buffer are allocated adjancently, there i=
-s no need
-> > > > > > > for redundant register shared memory invocation. Also, it is =
-incompatibile
-> > > > > > > with FF-A based ABI limitation. So refactor register shared m=
-emory
-> > > > > > > implementation to use only single invocation to register both=
- key and blob
-> > > > > > > buffers.
-> > > > > > >
-> > > > > > > Fixes: 4615e5a34b95 ("optee: add FF-A support")
-> > > > > > > Reported-by: Jens Wiklander <jens.wiklander@linaro.org>
-> > > > > > > Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-> > > > > > > ---
-> > > > > > >  security/keys/trusted-keys/trusted_tee.c | 64 ++++++++------=
-----------
-> > > > > > >  1 file changed, 20 insertions(+), 44 deletions(-)
-> > > > > > >
-> > > > > > > diff --git a/security/keys/trusted-keys/trusted_tee.c b/secur=
-ity/keys/trusted-keys/trusted_tee.c
-> > > > > > > index ac3e270ade69..aa3d477de6db 100644
-> > > > > > > --- a/security/keys/trusted-keys/trusted_tee.c
-> > > > > > > +++ b/security/keys/trusted-keys/trusted_tee.c
-> > > > > > > @@ -65,24 +65,16 @@ static int trusted_tee_seal(struct truste=
-d_key_payload *p, char *datablob)
-> > > > > > >       int ret;
-> > > > > > >       struct tee_ioctl_invoke_arg inv_arg;
-> > > > > > >       struct tee_param param[4];
-> > > > > > > -     struct tee_shm *reg_shm_in =3D NULL, *reg_shm_out =3D N=
-ULL;
-> > > > > > > +     struct tee_shm *reg_shm =3D NULL;
-> > > > > > >
-> > > > > > >       memset(&inv_arg, 0, sizeof(inv_arg));
-> > > > > > >       memset(&param, 0, sizeof(param));
-> > > > > > >
-> > > > > > > -     reg_shm_in =3D tee_shm_register_kernel_buf(pvt_data.ctx=
-, p->key,
-> > > > > > > -                                              p->key_len);
-> > > > > > > -     if (IS_ERR(reg_shm_in)) {
-> > > > > > > -             dev_err(pvt_data.dev, "key shm register failed\=
-n");
-> > > > > > > -             return PTR_ERR(reg_shm_in);
-> > > > > > > -     }
-> > > > > > > -
-> > > > > > > -     reg_shm_out =3D tee_shm_register_kernel_buf(pvt_data.ct=
-x, p->blob,
-> > > > > > > -                                               sizeof(p->blo=
-b));
-> > > > > > > -     if (IS_ERR(reg_shm_out)) {
-> > > > > > > -             dev_err(pvt_data.dev, "blob shm register failed=
-\n");
-> > > > > > > -             ret =3D PTR_ERR(reg_shm_out);
-> > > > > > > -             goto out;
-> > > > > > > +     reg_shm =3D tee_shm_register_kernel_buf(pvt_data.ctx, p=
-->key,
-> > > > > > > +                                           sizeof(p->key) + =
-sizeof(p->blob));
-> > > > > >
-> > > > > > This is somewhat fragile. What if struct trusted_key_payload ha=
-s a small
-> > > > > > unexpected change in layout?
-> > > > >
-> > > > > key and blob buffers are just two adjacent fixed sized byte array=
-s. So
-> > > > > I am not worried here as long as they stay adjacent (which has be=
-en
-> > > > > the case since trusted keys were introduced in the kernel).
-> > > >
-> > > > Yeah, that was my point, but fine if you don't believe it's an issu=
-e.
-> > > >
-> > >
-> > > Does it resolve the issue with FFA ABI for you? It would be good to
-> > > have your Tested-by tag.
-> >
-> > It does:
-> > Tested-by: Jens Wiklander <jens.wiklander@linaro.org>
-> > Reviewed-by: Jens Wiklander <jens.wiklander@linaro.org>
-> >
->
-> Can you help pick up this fix for v6.6 kernel release?
+> What the heck is UKI?
 
-I pushed it and also added the missing stable tag:
+UKI (Unified Kernel Image) is the kernel image + initrd + cmdline (+ some other optional stuff) all packaged up together as one EFI application.
 
-commit 1037d6ec29cdfaaec5277c194b0278eb0a30c3f8 (HEAD -> master, origin/mas=
-ter, origin/HEAD)
-Author: Sumit Garg <sumit.garg@linaro.org>
-Date:   Tue Aug 22 16:59:33 2023 +0530
+This EFI application can then be launched directly by the UEFI without the need for any additional stuff (or by systemd-boot). It's all self contained. One benefit is that this is a convenient way to distribute kernels all in one file. Another benefit is that the whole combination of kernel image, initrd, and cmdline can all be signed together so only that particular combination can be executed if you are using secure boot.
 
-    KEYS: trusted: tee: Refactor register SHM usage
+The format itself is rather simple. It's just a PE file (as required by the UEFI spec) that contains a small stub application in the .text, .data, etc sections that is responsible for invoking the contained kernel and initrd with the contained cmdline. The kernel image is placed into a .kernel section, the initrd into a .initrd section, and the cmdline into a .cmdline section in the PE executable.
 
-    The OP-TEE driver using the old SMC based ABI permits overlapping share=
-d
-    buffers, but with the new FF-A based ABI each physical page may only
-    be registered once.
+If we want to kexec a UKI we could obviously just have userspace pick it apart and kexec it like normal. However in lockdown mode this will only work if you sign the kernel image that is contained inside the UKI. The problem with that is that anybody can then grab that signed kernel and launch it with any initrd or cmdline. So instead this patch makes the kernel do the work instead. The kernel verifies the signature on the entire UKI and then passes its components on to the normal kexec bzimage loader.
 
-    As the key and blob buffer are allocated adjancently, there is no need
-    for redundant register shared memory invocation. Also, it is incompatib=
-ile
-    with FF-A based ABI limitation. So refactor register shared memory
-    implementation to use only single invocation to register both key and b=
-lob
-    buffers.
-
-    [jarkko: Added cc to stable.]
-    Cc: stable@vger.kernel.org # v5.16+
-    Fixes: 4615e5a34b95 ("optee: add FF-A support")
-    Reported-by: Jens Wiklander <jens.wiklander@linaro.org>
-    Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-    Tested-by: Jens Wiklander <jens.wiklander@linaro.org>
-    Reviewed-by: Jens Wiklander <jens.wiklander@linaro.org>
-    Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-
-
-BR, Jarkko
+Useful Links:
+UKI format documentation: https://uapi-group.org/specifications/specs/unified_kernel_image/
+Arch wiki: https://wiki.archlinux.org/title/Unified_kernel_image
+Fedora UKI support: https://fedoraproject.org/wiki/Changes/Unified_Kernel_Support_Phase_1
