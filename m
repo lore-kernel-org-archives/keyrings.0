@@ -2,150 +2,94 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D5DC7CA0ECE
-	for <keyrings@archiver.kernel.org>; Tue, 12 Sep 2023 03:17:38 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9173DCA0ECA
+	for <keyrings@archiver.kernel.org>; Tue, 12 Sep 2023 10:35:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S242595AbjILDRl (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 11 Sep 2023 23:17:41 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43844 "EHLO
+        id S234385AbjILKfR (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 12 Sep 2023 06:35:17 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38340 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S242447AbjILDR2 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 11 Sep 2023 23:17:28 -0400
+        with ESMTP id S234435AbjILKdQ (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 12 Sep 2023 06:33:16 -0400
 Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C06A7107C72;
-        Mon, 11 Sep 2023 19:07:26 -0700 (PDT)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C5B82C433B8;
-        Mon, 11 Sep 2023 21:15:32 +0000 (UTC)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AB5C1199C;
+        Tue, 12 Sep 2023 03:33:12 -0700 (PDT)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id B3DE0C433C8;
+        Tue, 12 Sep 2023 10:33:09 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1694466934;
-        bh=jKcBqdin2tQkw/Q1r5bXfoLHC2ns8OLx8oid/0xcnhI=;
-        h=Date:Cc:Subject:From:To:References:In-Reply-To:From;
-        b=U0qjagxpMzedehK9Rnp94FOB5NGS96dvp8x4TnNeUL0sRX4Z3sceopbVWxG+fOY/W
-         5E5/UDNHg6Y62UYTfllgBH2y2VCmrR/l17pA0SKoDc88LYupqdeF6T3jV79xZFkEN4
-         u+bGTtOuSkvHrNMs42+oItei4kulqAzGJUZDdRvSHn2VvZC3HxaSBJXP5SIrW7+cAN
-         34jhVL0dMLKxF+DLxH8igFbxdSELhrRD9mHE+b6XsXzdoAZck6XUm8vjM5450Bpb5S
-         2O32TFHVMKUbTjXcDMeGdi447ptRwnzVaLcAf5hEUZvOY5XqGnQMb+dCOu4eNb1BYR
-         /WNqpkA1yMqag==
+        s=k20201202; t=1694514792;
+        bh=G6tVIRokXJPGvWKTOTzEY6bZMaPMLiU8C0XfnDPSZEo=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=Q70e/AuK1dlDgyzk41Krdj9+9w+iAK60hbwst/thT3/E+V0KBqHGq1bFVgnz1Y5tE
+         BNcZP8gyWxZmWST7xvNT50QLa1ma63GmiAsqDWy8g7fdExd57pqsnNBpEGG5y1CZZ4
+         2heJ6mtCFwi67ozo4eMk4t6tHr94WJ0+E7dwbUXTNqGn7j9LaJoii57znlFVGsSLTr
+         CalxdbClCdh/LrVxIBFE7zWni43Mp/BcEIcZiCJ88jtqnZd7S+8SJsueC3Lp4b40+d
+         +fJZjQLcQazODhw0TaBJUbAqaBJzs0VoOyrGVHiL5tqKRbPbbB7mhVtMICse6Raz7p
+         hKI6oYLR2eDCg==
 Mime-Version: 1.0
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/plain; charset=UTF-8
-Date:   Tue, 12 Sep 2023 00:15:30 +0300
-Message-Id: <CVGEE9ODRR8I.1RIVO2MVE2UAX@suppilovahvero>
-Cc:     "dhowells@redhat.com" <dhowells@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] certs: Add option to disallow non-CA certificates in
- secondary trusted keying
+Date:   Tue, 12 Sep 2023 13:33:07 +0300
+Message-Id: <CVGVCYUGNKAI.1WYRZGI9HYDMC@suppilovahvero>
 From:   "Jarkko Sakkinen" <jarkko@kernel.org>
-To:     "Denis Glazkov" <d.glazkov@omp.ru>,
-        "Sergey Shtylyov" <s.shtylyov@omp.ru>
+To:     "Jan Hendrik Farr" <kernel@jfarr.cc>,
+        <linux-kernel@vger.kernel.org>
+Cc:     <kexec@lists.infradead.org>, <x86@kernel.org>,
+        <tglx@linutronix.de>, <dhowells@redhat.com>, <vgoyal@redhat.com>,
+        <keyrings@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <bhe@redhat.com>, <bhelgaas@google.com>, <lennart@poettering.net>,
+        "Luca Boccassi" <bluca@debian.org>
+Subject: Re: [PATCH 0/1] x86/kexec: UKI support
 X-Mailer: aerc 0.14.0
-References: <f5a1d856-0482-a2c3-0e62-3ca911ce3dd2@omp.ru>
- <20230908121330.4076-1-d.glazkov@omp.ru>
-In-Reply-To: <20230908121330.4076-1-d.glazkov@omp.ru>
+References: <20230909161851.223627-1-kernel@jfarr.cc>
+ <CVGFE6FRWFHR.DVG9NUQID4EA@suppilovahvero>
+ <1d974586-1bf7-42e8-9dae-e5e41a3dbc9f@app.fastmail.com>
+In-Reply-To: <1d974586-1bf7-42e8-9dae-e5e41a3dbc9f@app.fastmail.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Fri Sep 8, 2023 at 3:14 PM EEST, Denis Glazkov wrote:
-> The Linux kernel has an IMA (Integrity Measurement Architecture)
-> subsystem to check the integrity of the file system based on digital
-> signatures. IMA uses certificates in `.ima` keying to check integrity.
+On Tue Sep 12, 2023 at 1:54 AM EEST, Jan Hendrik Farr wrote:
+> > What the heck is UKI?
 >
-> Only certificates issued by one of the trusted CA (Certificate Authority)
-> certificates can be added to the `.ima` keying.
+> UKI (Unified Kernel Image) is the kernel image + initrd + cmdline (+
+> some other optional stuff) all packaged up together as one EFI
+> application.
 >
-> The Linux kernel now has a secondary trusted keying to which trusted
-> certificates from user space can be added if you have superuser
-> privileges. Previously, all trusted certificates were in the built-in
-> trusted keying, which could not be modified from user space.
-> Trusted certificates were placed in the built-in trusted keying at
-> kernel compile time.
->
-> The secondary trusted keying is designed so that any certificates that
-> are signed by one of the trusted CA certificates in the built-in or
-> secondary trusted keyring can be added to it.
->
-> Let's imagine that we have the following certificate trust chain:
->
->              =E2=94=8C=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=AC=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=90
->              =E2=94=82                           =E2=94=82     =E2=94=8C=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=90   =
-    =E2=94=82
->              =E2=94=82                           =E2=94=82     =E2=94=82 =
-      =E2=94=82       =E2=94=82
-> =E2=94=8C=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=96=BC=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=90    =E2=94=8C=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=96=BC=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=96=BC=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=90=
-  =E2=94=82 =E2=94=8C=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=B4=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=90
-> =E2=94=82.builtin_trusted_keys=E2=94=82=E2=97=84=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=A4.secondary_trusted_keys =E2=94=9C=E2=94=80=E2=94=80=E2=94=98 =
-=E2=94=82   .ima    =E2=94=82
-> =E2=94=9C=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=A4    =E2=94=9C=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=A4=
-    =E2=94=9C=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=A4
-> =E2=94=82     Root CA Cert    =E2=94=82-----=E2=96=BA Intermediate CA Cer=
-t  =E2=94=82-----=E2=96=BA IMA Cert =E2=94=82
-> =E2=94=94=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=98    =E2=94=94=
-=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=
-=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=98=
-    =E2=94=94=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=98
->
->                 Issues                  Restricted by
->             -------------=E2=96=BA             =E2=94=80=E2=94=80=E2=94=
-=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=E2=94=80=
-=E2=94=80=E2=94=80=E2=94=80=E2=96=BA
->
-> Since the IMA certificate is signed by a CA certificate from a secondary
-> trusted keying, an attacker with superuser privileges will be able to
-> add the IMA certificate to the secondary trusted keying. That is, the IMA
-> certificate will become trusted.
->
-> Since, with `CONFIG_MODULE_SIG` option enabled, modules can only be
-> loaded into kernel space if they are signed with one of the trusted
-> certificates, an attacker could sign untrusted kernel modules with
-> the private key corresponding to the IMA certificate and successfully
-> load the untrusted modules into kernel space.
->
-> This patch adds the configuration that once enabled, only
-> certificates that meet the following requirements can be added
-> to the secondary trusted keying:
->
-> 1. The certificate is a CA (Certificate Authority)
-> 2. The certificate must be used for verifying a CA's signatures
-> 3. The certificate must not be used for digital signatures
->
-> Signed-off-by: Denis Glazkov <d.glazkov@omp.ru>
+> This EFI application can then be launched directly by the UEFI without
+> the need for any additional stuff (or by systemd-boot). It's all self
+> contained. One benefit is that this is a convenient way to distribute
+> kernels all in one file. Another benefit is that the whole combination
+> of kernel image, initrd, and cmdline can all be signed together so
+> only that particular combination can be executed if you are using
+> secure boot.
 
-s/keying/keyring/ (multiple)
+Is this also for generic purpose distributions? I mean it is not
+uncommon having to tweak the command-line in a workstation.
 
-Have you considered instead making mod_verify_sig() more robust?
-Obviously this would mean making selection of keys in
-verify_pkcs7_signature() more robust (see the documentation of
-'trusted_keys').
+> The format itself is rather simple. It's just a PE file (as required
+> by the UEFI spec) that contains a small stub application in the .text,
+> .data, etc sections that is responsible for invoking the contained
+> kernel and initrd with the contained cmdline. The kernel image is
+> placed into a .kernel section, the initrd into a .initrd section, and
+> the cmdline into a .cmdline section in the PE executable.
 
-The this would be also less niche feature to pick for distributors
-if it was just concerning module loading, and have associated config
-flag over there.
+How does this interact with the existing EFI stub support in linux?
+
+> If we want to kexec a UKI we could obviously just have userspace pick
+> it apart and kexec it like normal. However in lockdown mode this will
+> only work if you sign the kernel image that is contained inside the
+> UKI. The problem with that is that anybody can then grab that signed
+> kernel and launch it with any initrd or cmdline. So instead this patch
+> makes the kernel do the work instead. The kernel verifies the
+> signature on the entire UKI and then passes its components on to the
+> normal kexec bzimage loader.
+>
+> Useful Links:
+> UKI format documentation: https://uapi-group.org/specifications/specs/uni=
+fied_kernel_image/
+> Arch wiki: https://wiki.archlinux.org/title/Unified_kernel_image
+> Fedora UKI support: https://fedoraproject.org/wiki/Changes/Unified_Kernel=
+_Support_Phase_1
 
 BR, Jarkko
