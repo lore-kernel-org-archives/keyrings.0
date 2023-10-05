@@ -2,94 +2,102 @@ Return-Path: <keyrings-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 32571E9271C
-	for <keyrings@archiver.kernel.org>; Thu,  5 Oct 2023 17:30:15 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 155B5E9370C
+	for <keyrings@archiver.kernel.org>; Thu,  5 Oct 2023 20:09:24 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229614AbjJERaO (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 5 Oct 2023 13:30:14 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52926 "EHLO
+        id S229852AbjJEUJX (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 5 Oct 2023 16:09:23 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49152 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230163AbjJER32 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 5 Oct 2023 13:29:28 -0400
-Received: from abb.hmeau.com (abb.hmeau.com [144.6.53.87])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BF1053AA1;
-        Thu,  5 Oct 2023 10:27:03 -0700 (PDT)
-Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
-        by formenos.hmeau.com with smtp (Exim 4.94.2 #2 (Debian))
-        id 1qoLXS-003l7w-JB; Thu, 05 Oct 2023 18:25:03 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Thu, 05 Oct 2023 18:25:06 +0800
-Date:   Thu, 5 Oct 2023 18:25:06 +0800
-From:   Herbert Xu <herbert@gondor.apana.org.au>
+        with ESMTP id S229682AbjJEUJW (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 5 Oct 2023 16:09:22 -0400
+Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id ABBD0F2;
+        Thu,  5 Oct 2023 13:09:19 -0700 (PDT)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 01A5EC433C9;
+        Thu,  5 Oct 2023 20:09:18 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1696536559;
+        bh=gviqkF5bCtrPEnmL/efrb5ugCp6oRzHfV/DcplqOK/w=;
+        h=Date:From:To:Cc:Subject:In-Reply-To:From;
+        b=mPMh/YzlW9oTh5h9AJ5aAB26BKNe2mE/3C+n+4v4/3A/CAe2k4Yecrw+PoqctpsCM
+         7Rz9NE1k5UayDDxAOm9iNh49IS4NPl3z7Z1PJ9/Xk/cvDzdiK5fOzsp10llBeSnwax
+         udSKrphyyopprBbpM8FEO+w5hthYv2c6Tq8BoPNW+rRfweDFkzRci8hxE+wv+wV38F
+         rfaiern/5q24z3ng5ohmgFBbmvxW21IgYxkExh7y+5d/jGlf3aJ2u2PJ/ZKA9hjxaX
+         SzXBqCFyHL6SDZzCYBPatbmI79HVeskhOL1mn7NDoZ6rtrvfnTF+8Lcn0dkzITIw8U
+         26WOBNO0H119A==
+Date:   Thu, 5 Oct 2023 15:09:17 -0500
+From:   Bjorn Helgaas <helgaas@kernel.org>
 To:     Lukas Wunner <lukas@wunner.de>
-Cc:     David Howells <dhowells@redhat.com>,
+Cc:     Jonathan Cameron <Jonathan.Cameron@huawei.com>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] X.509: Add missing IMPLICIT annotations to AKID ASN.1
- module
-Message-ID: <ZR6PAjwmLiusu022@gondor.apana.org.au>
-References: <be8ab09429d55c6cfc52ee0e43bf021ffb384152.1695720715.git.lukas@wunner.de>
+        Alex Williamson <alex.williamson@redhat.com>,
+        linux-pci@vger.kernel.org, linux-cxl@vger.kernel.org,
+        linux-coco@lists.linux.dev, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, kvm@vger.kernel.org,
+        linuxarm@huawei.com, David Box <david.e.box@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "Li, Ming" <ming4.li@intel.com>, Zhi Wang <zhi.a.wang@intel.com>,
+        Alistair Francis <alistair.francis@wdc.com>,
+        Wilfred Mallawa <wilfred.mallawa@wdc.com>,
+        Alexey Kardashevskiy <aik@amd.com>,
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Sean Christopherson <seanjc@google.com>,
+        Alexander Graf <graf@amazon.com>
+Subject: Re: [PATCH 09/12] PCI/CMA: Validate Subject Alternative Name in
+ certificates
+Message-ID: <20231005200917.GA789502@bhelgaas>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <be8ab09429d55c6cfc52ee0e43bf021ffb384152.1695720715.git.lukas@wunner.de>
+In-Reply-To: <20231005140447.GA23472@wunner.de>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, Sep 26, 2023 at 11:46:41AM +0200, Lukas Wunner wrote:
-> The ASN.1 module in RFC 5280 appendix A.1 uses EXPLICIT TAGS whereas the
-> one in appendix A.2 uses IMPLICIT TAGS.
-> 
-> The kernel's simplified asn1_compiler.c always uses EXPLICIT TAGS, hence
-> definitions from appendix A.2 need to be annotated as IMPLICIT for the
-> compiler to generate RFC-compliant code.
-> 
-> In particular, GeneralName is defined in appendix A.2:
-> 
-> GeneralName ::= CHOICE {
->         otherName                       [0] OtherName,
->         ...
->         dNSName                         [2] IA5String,
->         x400Address                     [3] ORAddress,
->         directoryName                   [4] Name,
->         ...
->         }
-> 
-> Because appendix A.2 uses IMPLICIT TAGS, the IA5String tag (0x16) of a
-> dNSName is not rendered.  Instead, the string directly succeeds the
-> [2] tag (0x82).
-> 
-> Likewise, the SEQUENCE tag (0x30) of an OtherName is not rendered.
-> Instead, only the constituents of the SEQUENCE are rendered:  An OID tag
-> (0x06), a [0] tag (0xa0) and an ANY tag.  That's three consecutive tags
-> instead of a single encompassing tag.
-> 
-> The situation is different for x400Address and directoryName choices:
-> They reference ORAddress and Name, which are defined in appendix A.1,
-> therefore use EXPLICIT TAGS.
-> 
-> The AKID ASN.1 module is missing several IMPLICIT annotations, hence
-> isn't RFC-compliant.  In the unlikely event that an AKID contains other
-> elements beside a directoryName, users may see parse errors.
-> 
-> Add the missing annotations but do not tag this commit for stable as I
-> am not aware of any issue reports.  Fixes are only eligible for stable
-> if they're "obviously correct" and with ASN.1 there's no such thing.
-> 
-> Signed-off-by: Lukas Wunner <lukas@wunner.de>
-> ---
-> Found this while bringing up PCI device authentication, which involves
-> validating the Subject Alternative Name in certificates.
-> 
-> I double-checked all ASN.1 modules in the tree and this seems to be
-> the only one affected by the issue.
-> 
->  crypto/asymmetric_keys/x509_akid.asn1 | 24 +++++++++++++++++-------
->  1 file changed, 17 insertions(+), 7 deletions(-)
+On Thu, Oct 05, 2023 at 04:04:47PM +0200, Lukas Wunner wrote:
+> On Tue, Oct 03, 2023 at 04:04:55PM +0100, Jonathan Cameron wrote:
+> > On Thu, 28 Sep 2023 19:32:39 +0200 Lukas Wunner <lukas@wunner.de> wrote:
+> > > PCIe r6.1 sec 6.31.3 stipulates requirements for X.509 Leaf Certificates
 
-Patch applied.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+The PCIe spec does not contain "X.509", so I assume this is sort of a
+transitive requirement from SPDM.
+
+> > > presented by devices, in particular the presence of a Subject Alternative
+> > > Name extension with a name that encodes the Vendor ID, Device ID, Device
+> > > Serial Number, etc.
+> > 
+> > Lets you do any of
+> > * What you have here
+> > * Reference Integrity Manifest, e.g. see Trusted Computing Group
+> > * A pointer to a location where such a Reference Integrity Manifest can be
+> >   obtained.
+> > 
+> > So this text feels a little strong though I'm fine with only support the
+> > Subject Alternative Name bit for now. Whoever has one of the other options
+> > can add that support :)
+> 
+> I intend to amend the commit message as follows.  If anyone believes
+> this is inaccurate, please let me know:
+> 
+>     Side note:  Instead of a Subject Alternative Name, Leaf Certificates may
+>     include "a Reference Integrity Manifest, e.g., see Trusted Computing
+>     Group" or "a pointer to a location where such a Reference Integrity
+>     Manifest can be obtained" (PCIe r6.1 sec 6.31.3).
+> 
+>     A Reference Integrity Manifest contains "golden" measurements which can
+>     be compared to actual measurements retrieved from a device.  It serves a
+>     different purpose than the Subject Alternative Name, hence it is unclear
+>     why the spec says only either of them is necessary.  It is also unclear
+>     how a Reference Integrity Manifest shall be encoded into a certificate.
+> 
+>     Ignore the Reference Integrity Manifest requirement until this confusion
+>     is resolved by a spec update.
+
+Thanks for this; I was about to comment the same.
+
+Bjorn
