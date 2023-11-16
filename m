@@ -1,49 +1,49 @@
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="ArJDfkxJ"
-Received: from mail-qv1-xf29.google.com (mail-qv1-xf29.google.com [IPv6:2607:f8b0:4864:20::f29])
-	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 827EF1A4
-	for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:50 -0800 (PST)
-Received: by mail-qv1-xf29.google.com with SMTP id 6a1803df08f44-66d0169cf43so2193276d6.3
-        for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:50 -0800 (PST)
+	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="SwYS/wyu"
+Received: from mail-qt1-x833.google.com (mail-qt1-x833.google.com [IPv6:2607:f8b0:4864:20::833])
+	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 541C01AE
+	for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:52 -0800 (PST)
+Received: by mail-qt1-x833.google.com with SMTP id d75a77b69052e-421bcd0b532so2564311cf.2
+        for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:52 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google; t=1700109229; x=1700714029; darn=vger.kernel.org;
+        d=paul-moore.com; s=google; t=1700109231; x=1700714031; darn=vger.kernel.org;
         h=in-reply-to:references:subject:cc:to:from:message-id:date:from:to
          :cc:subject:date:message-id:reply-to;
-        bh=PiCZavu6LdpgpM7KuxDInwsa5hKVtQaIjvj5PjS4lZk=;
-        b=ArJDfkxJVTmtJZSuQe1mYkq9tdPwQI1OqbLQvmGxM2kb4rbr6ELI9wtIh8g/55oh03
-         x+RTp0tFaDMUjWsgcYM/hGKF0OJohxJjKwWG2wp4+2haoCyNxHPZ5+AFwaa78tlha+SZ
-         /HOuxo/C5016LJOTgLl6yL06ft+aE7Q1Z7MH8MxX+5/2Ts3BN951h/gdtQVVru/ONRHG
-         SrI/WvJNDd04gv1G9r1pmLdCeNVdaM8ddYIO+Gg869bSD2m2Y8ewQq44b/cccFRLv3Bb
-         cpviVnjhNs2PakukycYJzfuobRKEhuNCeqVjnAyqd7DLLhCs8py3bOA4m7FcSpjJzlUe
-         4S/w==
+        bh=FRCIUlxMviG/akojIoiuUtAzlfA4z+ppx5JWcANslrQ=;
+        b=SwYS/wyuZgZb9WJ0PIvbdBV7/u/Z74cHs86kLwpyUjEaxAXQtDq6If6SI7YvAdGeTm
+         6CCGvzBiXTzyxPeSUfFgQNUfwXcV8V6Ol45lE8wSbPTJkP5Yh2x+QdBsmHJs9uBoL3oJ
+         eGSmR68w0bH5KDsM4hsNba/8NMA/Dl9jaNVn85591Ud0BL+hq9WIzhpnHo13OE4hgLt2
+         JmqI4uCRpXAqIc0dTXWhjm/I3Pxv3lu83q7bOIndslt95HTIOsiQ1Xi73YnnBvxqTy2N
+         TcmKB0D9Z7rNvSj00Z8ubcL6V54Qfcuv/lxJwqOi5ttkVZ1DdMhAr9Q1PyDEV3fHaCAh
+         hhYw==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20230601; t=1700109229; x=1700714029;
+        d=1e100.net; s=20230601; t=1700109231; x=1700714031;
         h=in-reply-to:references:subject:cc:to:from:message-id:date
          :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
-        bh=PiCZavu6LdpgpM7KuxDInwsa5hKVtQaIjvj5PjS4lZk=;
-        b=k6p7MfcXB90mEee1IvbFBRSH3/jizNSpvvhGkurGvVTRlmZLaQeh5t6rAxks6sf0nC
-         ZFVfkSt3fGhqEjNWVqhBgkLLrhAc8PBaKgDIVm9VNiHEIQ8MJfpBUu33hz0J9xdUTXKt
-         lrUVvTRDqvUrZQrmr6pRuhXxLn3hWxHZbfzVb7SKLYsBDP026LlJopucZQBPoAbtX5Tu
-         3WhyMKyJQxY23my2Idfs70gDMafQIzSJpfsPEHfA/acX6zS3J2BKS+3zLRoe/+Q/2XET
-         StHZmOucctKTKQOC0PHRI2BbwokzkMiJ67qML1qJ08ngo3hCS+CvyONVolRHEl71Q5bm
-         gpEQ==
-X-Gm-Message-State: AOJu0YyYPuBarSf9HQE8xzQqcZ7FWgZH62WnkvLvO6WCo5+J0U0yxYs1
-	VswDax9rXvRk0EBnVM/a6bt6
-X-Google-Smtp-Source: AGHT+IHFUYiKsS0jS8t0pJXCpW7lmlBdYw6GTVsA7PTusM9p7OTowW12ngLkrVF8XwrOUQ8Pi+Gx1A==
-X-Received: by 2002:a05:6214:32f:b0:66f:bcc2:8724 with SMTP id j15-20020a056214032f00b0066fbcc28724mr7722038qvu.40.1700109229406;
-        Wed, 15 Nov 2023 20:33:49 -0800 (PST)
+        bh=FRCIUlxMviG/akojIoiuUtAzlfA4z+ppx5JWcANslrQ=;
+        b=TUkO/42YY+BmhyRfLIErWQlTwYAJeqgUb2XCl8NBT9EiDsDXGMwYLJwPzitNt5djOB
+         RMNek7018eKceSqbUBOPhTnLFcqHcmDS2W/T19J9XXHUOg7PSBYghHB9nhJf4X5tH/uK
+         O0B+vXJnN2CfdUom7Ct72N9kr8/5jXj7ETTwO+g5UuIb9nhuBJrCkid3Q4YsEZnaFl/b
+         EFIDPmO3XYYB0jmn4k1QFgR9vp9jIA0Xr2R8YAxzBXJCQNAeU0M9LlQQ7uGsr7ng7oS5
+         pTag6V1rqUdb2hbR+OCpneIG8WsEkYAfMLU+ZcSCdycSws11iThAXh8JRPASOyudsiYI
+         CfkA==
+X-Gm-Message-State: AOJu0YyExNSUJGtTF1UodSKTWng3yEaCjdMWF6A6Dbp9oAfvKG4HwWGR
+	CFzirWeCkna8GJvVLf+9tJHQ
+X-Google-Smtp-Source: AGHT+IHphFpDzgVFwOfukFTgf3tIsG9A83ycMGfQY4UVTT6EROx8wCbgF2iRta1hsOxzIr0MuKuWvQ==
+X-Received: by 2002:a05:622a:1a9c:b0:412:24e6:a485 with SMTP id s28-20020a05622a1a9c00b0041224e6a485mr8399280qtc.2.1700109231366;
+        Wed, 15 Nov 2023 20:33:51 -0800 (PST)
 Received: from localhost ([70.22.175.108])
-        by smtp.gmail.com with ESMTPSA id cx15-20020a056214188f00b0066cfbe4e0f4sm1092632qvb.26.2023.11.15.20.33.48
+        by smtp.gmail.com with ESMTPSA id e7-20020ac84907000000b004195faf1e2csm4050405qtq.97.2023.11.15.20.33.50
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 15 Nov 2023 20:33:48 -0800 (PST)
-Date: Wed, 15 Nov 2023 23:33:48 -0500
-Message-ID: <9239b0744e5c9a006dd4fe88c8cdc41b.paul@paul-moore.com>
+        Wed, 15 Nov 2023 20:33:50 -0800 (PST)
+Date: Wed, 15 Nov 2023 23:33:50 -0500
+Message-ID: <f79bb72356ca062d3f3b6b00c3694d8f.paul@paul-moore.com>
 From: Paul Moore <paul@paul-moore.com>
 To: Roberto Sassu <roberto.sassu@huaweicloud.com>, viro@zeniv.linux.org.uk, brauner@kernel.org, chuck.lever@oracle.com, jlayton@kernel.org, neilb@suse.de, kolga@netapp.com, Dai.Ngo@oracle.com, tom@talpey.com, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com, dhowells@redhat.com, jarkko@kernel.org, stephen.smalley.work@gmail.com, eparis@parisplace.org, casey@schaufler-ca.com, mic@digikod.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: Re: [PATCH v5 15/23] security: Introduce inode_post_create_tmpfile  hook
-References: <20231107134012.682009-16-roberto.sassu@huaweicloud.com>
-In-Reply-To: <20231107134012.682009-16-roberto.sassu@huaweicloud.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>, Stefan Berger <stefanb@linux.ibm.com>
+Subject: Re: [PATCH v5 17/23] security: Introduce inode_post_remove_acl hook
+References: <20231107134012.682009-18-roberto.sassu@huaweicloud.com>
+In-Reply-To: <20231107134012.682009-18-roberto.sassu@huaweicloud.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -53,58 +53,62 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 On Nov  7, 2023 Roberto Sassu <roberto.sassu@huaweicloud.com> wrote:
 > 
 > In preparation for moving IMA and EVM to the LSM infrastructure, introduce
-> the inode_post_create_tmpfile hook.
+> the inode_post_remove_acl hook.
 > 
-> As temp files can be made persistent, treat new temp files like other new
-> files, so that the file hash is calculated and stored in the security
-> xattr.
+> At inode_remove_acl hook, EVM verifies the file's existing HMAC value. At
+> inode_post_remove_acl, EVM re-calculates the file's HMAC with the passed
+> POSIX ACL removed and other file metadata.
 > 
-> LSMs could also take some action after temp files have been created.
+> Other LSMs could similarly take some action after successful POSIX ACL
+> removal.
 > 
 > The new hook cannot return an error and cannot cause the operation to be
-> canceled.
+> reverted.
 > 
 > Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+> Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
 > Acked-by: Casey Schaufler <casey@schaufler-ca.com>
 > Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 > ---
->  fs/namei.c                    |  1 +
+>  fs/posix_acl.c                |  1 +
 >  include/linux/lsm_hook_defs.h |  2 ++
->  include/linux/security.h      |  6 ++++++
->  security/security.c           | 15 +++++++++++++++
->  4 files changed, 24 insertions(+)
+>  include/linux/security.h      |  8 ++++++++
+>  security/security.c           | 17 +++++++++++++++++
+>  4 files changed, 28 insertions(+)
 
 ...
 
 > diff --git a/security/security.c b/security/security.c
-> index 5eaf5f2aa5ea..ca650c285fd9 100644
+> index d2dbea54a63a..6eb7c9cff1e5 100644
 > --- a/security/security.c
 > +++ b/security/security.c
-> @@ -2013,6 +2013,21 @@ int security_inode_create(struct inode *dir, struct dentry *dentry,
+> @@ -2413,6 +2413,23 @@ int security_inode_remove_acl(struct mnt_idmap *idmap,
+>  	return evm_inode_remove_acl(idmap, dentry, acl_name);
 >  }
->  EXPORT_SYMBOL_GPL(security_inode_create);
 >  
 > +/**
-> + * security_inode_post_create_tmpfile() - Update inode security of new tmpfile
+> + * security_inode_post_remove_acl() - Update inode security after rm posix acls
 > + * @idmap: idmap of the mount
-> + * @inode: inode of the new tmpfile
+> + * @dentry: file
+> + * @acl_name: acl name
 > + *
-> + * Update inode security data after a tmpfile has been created.
+> + * Update inode security data after successfully removing posix acls on
+> + * @dentry in @idmap. The posix acls are identified by @acl_name.
 > + */
-> +void security_inode_post_create_tmpfile(struct mnt_idmap *idmap,
-> +					struct inode *inode)
+> +void security_inode_post_remove_acl(struct mnt_idmap *idmap,
+> +				    struct dentry *dentry, const char *acl_name)
 > +{
-> +	if (unlikely(IS_PRIVATE(inode)))
+> +	if (unlikely(IS_PRIVATE(d_backing_inode(dentry))))
 > +		return;
 
-See my previous comments/questions about checking for S_PRIVATE here.
+See previous comments regaring S_PRIVATE checks.
 
-> +	call_void_hook(inode_post_create_tmpfile, idmap, inode);
+> +	call_void_hook(inode_post_remove_acl, idmap, dentry, acl_name);
 > +}
 > +
 >  /**
->   * security_inode_link() - Check if creating a hard link is allowed
->   * @old_dentry: existing file
+>   * security_inode_post_setxattr() - Update the inode after a setxattr operation
+>   * @dentry: file
 > -- 
 > 2.34.1
 
