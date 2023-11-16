@@ -1,49 +1,49 @@
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="Be2nyhJV"
-Received: from mail-qk1-x736.google.com (mail-qk1-x736.google.com [IPv6:2607:f8b0:4864:20::736])
-	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F3F7819B
-	for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:49 -0800 (PST)
-Received: by mail-qk1-x736.google.com with SMTP id af79cd13be357-77784edc2edso20792385a.1
-        for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:49 -0800 (PST)
+	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="OueZXl8N"
+Received: from mail-qk1-x735.google.com (mail-qk1-x735.google.com [IPv6:2607:f8b0:4864:20::735])
+	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4C878D4A
+	for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:51 -0800 (PST)
+Received: by mail-qk1-x735.google.com with SMTP id af79cd13be357-77ba6d5123fso136382885a.0
+        for <keyrings@vger.kernel.org>; Wed, 15 Nov 2023 20:33:51 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google; t=1700109228; x=1700714028; darn=vger.kernel.org;
+        d=paul-moore.com; s=google; t=1700109230; x=1700714030; darn=vger.kernel.org;
         h=in-reply-to:references:subject:cc:to:from:message-id:date:from:to
          :cc:subject:date:message-id:reply-to;
-        bh=bndky/isFZdPv4y+9HMU+8QO0OsZEFaDO/mxDCye0C0=;
-        b=Be2nyhJV8JByTCu9BsElBdGHDrrhMuIfyJI/dW5Ptt4EUKql5kjRdkX35r7Ph+ocBB
-         /LY1ZvqLo1a6v3v/Mji8zsoeKxpSQeJaWYTwmZTLARnwOL+UqNKskMYW81yULkInncEW
-         y/PVI9i7A2a/GmitESvrxjUERfNuMYi4JjrntU7AwykluwNteWHkgFBBJsCpSOCPMjbE
-         Wy9K70Nl1QZaIPNNbUGKu4zdspq8PzlFWKrViqaq3xAsJ7X5SePmlVcXHUWZl176RH3U
-         JEEv8/hCNT7+uizusuOj0/z6OHBcVfKgfMlYBpnKTxfuQO8eXa/2j+IP9b+ViTfn8PHX
-         NsdA==
+        bh=QkyYJfnzm1A7HGn47wCcQYDeiYTgoVSzUDXfMA9+Fmw=;
+        b=OueZXl8NzyZo8bZgJea+dZmFlLJjO74Ra2CopP/Qgur/mLt0dhmZVdCDsqNeS4ip94
+         UIBt6XDH7viAJ4m2+9I7XFVAWX7TJV/IWqS6Kd5F9txUgeL4Dekfo7BRAmjwdmgEE/s1
+         +TmoXy5u4Kbk/gF02UeYMmMlYOkMluVfkbnmWz5e8TLWygyFBFKyJXaFRk+xPt1EcHdV
+         MBdP6pJ3r5Vx4PWcLf3BWAzuYy4hQntcXLEpGxcW+78Rdho7TZ85xn06h6NAgk/8rWlq
+         FueizRW4rNkDdsMjbmKAnMlt2K7cgjMZ+Bet58IGWy17Imr5Gm67PEfZB0eW9hN8snud
+         utqA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20230601; t=1700109228; x=1700714028;
+        d=1e100.net; s=20230601; t=1700109230; x=1700714030;
         h=in-reply-to:references:subject:cc:to:from:message-id:date
          :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
-        bh=bndky/isFZdPv4y+9HMU+8QO0OsZEFaDO/mxDCye0C0=;
-        b=PJTUs53FhrHwhMbqLrpOa6NhoWwUZUCNqhK3LgpZVop3bDm8Y56MYa4DZs8Md/bFq7
-         LXHyAbFAOJJIYjT4pgNmxtM/gx60g7F92tiJmDgOIC+MBcXr7LK9lXRigouIV6o1+G0s
-         rmLI7kG04e1t8kKNOH6sXXDUpLuEoi7rHMH1iZuTJ8eLgyxRwNtYq0hT5XvcgShE0Ko7
-         XbbUv2H9ucpByVImLYjBl3DC2ECOyA8nKUtxfHJ+75VEU+F3gtFdejCB/IUA0ylNXqxo
-         YHbZ8emz/FuGMB3RN5UcPhvsBIMxfggKc2ol6U6kCqmPpheNN0Q4YdkJrr4Aw/V5vpAW
-         NTzQ==
-X-Gm-Message-State: AOJu0YwLcsCyADWUilDvdBOXspIflbry2jqN76bpPYPY3mmU5zkC6QQl
-	xzDpejosXGh8GGIHOGyROKyI
-X-Google-Smtp-Source: AGHT+IGCdgvNrhLjs0RBnM3O7h6Ri70uA7en86HSqfGY/HAxnYl36rBdMYafIeqWPJt4yM0F6QD9XA==
-X-Received: by 2002:a05:620a:4156:b0:775:cf5f:8a57 with SMTP id k22-20020a05620a415600b00775cf5f8a57mr8673614qko.7.1700109228335;
-        Wed, 15 Nov 2023 20:33:48 -0800 (PST)
+        bh=QkyYJfnzm1A7HGn47wCcQYDeiYTgoVSzUDXfMA9+Fmw=;
+        b=BURwd68Rqvzv0d2VERwaWdQcwJmjD8htu9KXh7iIFAxmcxd7ixjHh8Ho+Z8/XHqhtD
+         enuberIYozrcBqlD/2j2rBnstsDxmTxZ2CwpDqbbBKfyHq+2SgyDMwyz2XrxCnEu/aND
+         atfXkX2H2aMsRahCNY41l/hNgHsrwV86YvNfosom2UN9xXZBOVJUIOCoCT6xwd78bCtP
+         Z++5dUIWAzEslirjuNtWpl87Vt9R8hvjScTWUsny/bDnO1kWPEU738f8YS8HFIf1LOXN
+         JnGHbRP7SbyZeWgtvwFj/oJ3fIASZqtz+oXqAgcwOXnhrWslBis6NtjKj1Dwb4IdQIza
+         4sLw==
+X-Gm-Message-State: AOJu0YyeZcvLAeabZeouUpDGlemF9vzJ8mcX9bb8C9i7qeI34SI91zXS
+	Iz3+Mu/pICsuzIviwbJ0hJUI
+X-Google-Smtp-Source: AGHT+IGRS7nQEJCXY6T/nN7yC1vAx+U0DJtezCw7jd5lMHyaQY5xg8Dk8QLP0DAu6DJyxDh395lJwA==
+X-Received: by 2002:a05:620a:19a8:b0:76f:1614:577a with SMTP id bm40-20020a05620a19a800b0076f1614577amr844860qkb.5.1700109230369;
+        Wed, 15 Nov 2023 20:33:50 -0800 (PST)
 Received: from localhost ([70.22.175.108])
-        by smtp.gmail.com with ESMTPSA id t26-20020a05620a005a00b0077263636a95sm4006757qkt.93.2023.11.15.20.33.47
+        by smtp.gmail.com with ESMTPSA id bi33-20020a05620a31a100b0077703f31496sm4001433qkb.92.2023.11.15.20.33.49
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 15 Nov 2023 20:33:47 -0800 (PST)
-Date: Wed, 15 Nov 2023 23:33:47 -0500
-Message-ID: <4f8c441e02222f063242adfbf4d733e1.paul@paul-moore.com>
+        Wed, 15 Nov 2023 20:33:49 -0800 (PST)
+Date: Wed, 15 Nov 2023 23:33:49 -0500
+Message-ID: <add2fed4552b4cbc2919caf54e97646d.paul@paul-moore.com>
 From: Paul Moore <paul@paul-moore.com>
 To: Roberto Sassu <roberto.sassu@huaweicloud.com>, viro@zeniv.linux.org.uk, brauner@kernel.org, chuck.lever@oracle.com, jlayton@kernel.org, neilb@suse.de, kolga@netapp.com, Dai.Ngo@oracle.com, tom@talpey.com, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com, dhowells@redhat.com, jarkko@kernel.org, stephen.smalley.work@gmail.com, eparis@parisplace.org, casey@schaufler-ca.com, mic@digikod.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: Re: [PATCH v5 13/23] security: Introduce file_pre_free_security hook
-References: <20231107134012.682009-14-roberto.sassu@huaweicloud.com>
-In-Reply-To: <20231107134012.682009-14-roberto.sassu@huaweicloud.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>, Stefan Berger <stefanb@linux.ibm.com>
+Subject: Re: [PATCH v5 16/23] security: Introduce inode_post_set_acl hook
+References: <20231107134012.682009-17-roberto.sassu@huaweicloud.com>
+In-Reply-To: <20231107134012.682009-17-roberto.sassu@huaweicloud.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -53,45 +53,65 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 On Nov  7, 2023 Roberto Sassu <roberto.sassu@huaweicloud.com> wrote:
 > 
 > In preparation for moving IMA and EVM to the LSM infrastructure, introduce
-> the file_pre_free_security hook.
+> the inode_post_set_acl hook.
 > 
-> IMA calculates at file close the new digest of the file content and writes
-> it to security.ima, so that appraisal at next file access succeeds.
+> At inode_set_acl hook, EVM verifies the file's existing HMAC value. At
+> inode_post_set_acl, EVM re-calculates the file's HMAC based on the modified
+> POSIX ACL and other file metadata.
 > 
-> LSMs could also take some action before the last reference of a file is
-> released.
+> Other LSMs could similarly take some action after successful POSIX ACL
+> change.
 > 
 > The new hook cannot return an error and cannot cause the operation to be
 > reverted.
 > 
 > Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+> Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
 > Acked-by: Casey Schaufler <casey@schaufler-ca.com>
 > Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 > ---
->  fs/file_table.c               |  1 +
->  include/linux/lsm_hook_defs.h |  1 +
->  include/linux/security.h      |  4 ++++
->  security/security.c           | 11 +++++++++++
->  4 files changed, 17 insertions(+)
-> 
-> diff --git a/fs/file_table.c b/fs/file_table.c
-> index de4a2915bfd4..64ed74555e64 100644
-> --- a/fs/file_table.c
-> +++ b/fs/file_table.c
-> @@ -385,6 +385,7 @@ static void __fput(struct file *file)
->  	eventpoll_release(file);
->  	locks_remove_file(file);
+>  fs/posix_acl.c                |  1 +
+>  include/linux/lsm_hook_defs.h |  2 ++
+>  include/linux/security.h      |  7 +++++++
+>  security/security.c           | 17 +++++++++++++++++
+>  4 files changed, 27 insertions(+)
+
+...
+
+> diff --git a/security/security.c b/security/security.c
+> index ca650c285fd9..d2dbea54a63a 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -2350,6 +2350,23 @@ int security_inode_set_acl(struct mnt_idmap *idmap,
+>  	return evm_inode_set_acl(idmap, dentry, acl_name, kacl);
+>  }
 >  
-> +	security_file_pre_free(file);
+> +/**
+> + * security_inode_post_set_acl() - Update inode security from posix acls set
+> + * @dentry: file
+> + * @acl_name: acl name
+> + * @kacl: acl struct
+> + *
+> + * Update inode security data after successfully setting posix acls on @dentry.
+> + * The posix acls in @kacl are identified by @acl_name.
+> + */
+> +void security_inode_post_set_acl(struct dentry *dentry, const char *acl_name,
+> +				 struct posix_acl *kacl)
+> +{
+> +	if (unlikely(IS_PRIVATE(d_backing_inode(dentry))))
+> +		return;
 
-I worry that security_file_pre_free() is a misleading name as "free"
-tends to imply memory management tasks, which isn't the main focus of
-this hook.  What do you think of security_file_release() or
-security_file_put() instead?
+Another case where the existing evm_inode_post_set_acl() hook doesn't
+check S_PRIVATE but this hook does.
 
->  	ima_file_free(file);
->  	if (unlikely(file->f_flags & FASYNC)) {
->  		if (file->f_op->fasync)
+> +	call_void_hook(inode_post_set_acl, dentry, acl_name, kacl);
+> +}
+> +
+>  /**
+>   * security_inode_get_acl() - Check if reading posix acls is allowed
+>   * @idmap: idmap of the mount
+> -- 
+> 2.34.1
 
 --
 paul-moore.com
