@@ -1,31 +1,32 @@
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="V9fhtclw"
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
-	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 616C5D5
-	for <keyrings@vger.kernel.org>; Mon, 11 Dec 2023 13:32:44 -0800 (PST)
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="KAjkUXK5"
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 26C49B8
+	for <keyrings@vger.kernel.org>; Mon, 11 Dec 2023 13:32:47 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1702330363;
+	s=mimecast20190719; t=1702330366;
 	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
 	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=W4W692KfWBl1L0qMgZ9E2R9qieSMV5xF1Y5WsFJCo/Q=;
-	b=V9fhtclwwAuspKBT2dxVZRmfWptfUw6OuAb8+LHWUIgGPI0u/QoWBQKQN9geSJlQZhq0rj
-	QrEVju1Bq7Xbyp994B1MQYm8dLkPwh7ztJJo/kSEs9+RzMyy9i3rBbf2Frdvb7JyxeWPaN
-	4JdXhWQptWfG90aqJwlOnOgWxzJCY3Y=
-Received: from mimecast-mx02.redhat.com (mx-ext.redhat.com [66.187.233.73])
- by relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-365-qAgFnwMNORan69S0adUnmw-1; Mon,
- 11 Dec 2023 16:32:37 -0500
-X-MC-Unique: qAgFnwMNORan69S0adUnmw-1
-Received: from smtp.corp.redhat.com (int-mx06.intmail.prod.int.rdu2.redhat.com [10.11.54.6])
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=/T6yVZIIW8gaOaFWvjKuKFf94e1s7X/v7fENW4wrGt4=;
+	b=KAjkUXK5Qt+eT//hZfnCWsx4RI64QqitlAD3cjb1VjFcGSJ2S0zU4MCvWcQ6aZNDUyD4aG
+	OMl6VZCyzdRCiTnelnVGCoJauwMrilN3eK0MYMYgUUA5zQDc9oFm8xu2B7VizQX3uQaUwS
+	BxIbbHF5xx6fJ9pXBSQaAw+cBDpVoSg=
+Received: from mimecast-mx02.redhat.com (mimecast-mx02.redhat.com
+ [66.187.233.88]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.3, cipher=TLS_AES_256_GCM_SHA384) id
+ us-mta-498-6Zu9lM7qOvmBrHvBp8NfIA-1; Mon, 11 Dec 2023 16:32:40 -0500
+X-MC-Unique: 6Zu9lM7qOvmBrHvBp8NfIA-1
+Received: from smtp.corp.redhat.com (int-mx04.intmail.prod.int.rdu2.redhat.com [10.11.54.4])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
 	(No client certificate requested)
-	by mimecast-mx02.redhat.com (Postfix) with ESMTPS id E4A3828EC117;
-	Mon, 11 Dec 2023 21:32:36 +0000 (UTC)
+	by mimecast-mx02.redhat.com (Postfix) with ESMTPS id 3F2D4881C84;
+	Mon, 11 Dec 2023 21:32:40 +0000 (UTC)
 Received: from warthog.procyon.org.com (unknown [10.42.28.2])
-	by smtp.corp.redhat.com (Postfix) with ESMTP id 8143A2166B31;
-	Mon, 11 Dec 2023 21:32:35 +0000 (UTC)
+	by smtp.corp.redhat.com (Postfix) with ESMTP id 3B0B62026D66;
+	Mon, 11 Dec 2023 21:32:39 +0000 (UTC)
 From: David Howells <dhowells@redhat.com>
 To: Markus Suvanto <markus.suvanto@gmail.com>,
 	Marc Dionne <marc.dionne@auristor.com>
@@ -34,9 +35,11 @@ Cc: David Howells <dhowells@redhat.com>,
 	keyrings@vger.kernel.org,
 	linux-fsdevel@vger.kernel.org,
 	linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/3] afs: Fix dynamic root interaction with failing DNS lookups
-Date: Mon, 11 Dec 2023 21:32:30 +0000
-Message-ID: <20231211213233.2793525-1-dhowells@redhat.com>
+Subject: [PATCH v2 2/3] afs: Fix dynamic root lookup DNS check
+Date: Mon, 11 Dec 2023 21:32:32 +0000
+Message-ID: <20231211213233.2793525-3-dhowells@redhat.com>
+In-Reply-To: <20231211213233.2793525-1-dhowells@redhat.com>
+References: <20231211213233.2793525-1-dhowells@redhat.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -44,51 +47,74 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-Scanned-By: MIMEDefang 3.4.1 on 10.11.54.6
+X-Scanned-By: MIMEDefang 3.4.1 on 10.11.54.4
 
-Hi Markus, Marc,
+In the afs dynamic root directory, the ->lookup() function does a DNS check
+on the cell being asked for and if the DNS upcall reports an error it will
+report an error back to userspace (typically ENOENT).
 
-Here's a set of fixes to improve the interaction of arbitrary lookups in
-the AFS dynamic root that hit DNS lookup failures[1]:
+However, if a failed DNS upcall returns a new-style result, it will return
+a valid result, with the status field set appropriately to indicate the
+type of failure - and in that case, dns_query() doesn't return an error and
+we let stat() complete with no error - which can cause confusion in
+userspace as subsequent calls that trigger d_automount then fail with
+ENOENT.
 
- (1) Always delete unused (particularly negative) dentries as soon as
-     possible so that they don't prevent future lookups from retrying.
+Fix this by checking the status result from a valid dns_query() and
+returning an error if it indicates a failure.
 
- (2) Fix the handling of new-style negative DNS lookups in ->lookup() to
-     make them return ENOENT so that userspace doesn't get confused when
-     stat succeeds but the following open on the looked up file then fails.
+Fixes: bbb4c4323a4d ("dns: Allow the dns resolver to retrieve a server set")
+Reported-by: Markus Suvanto <markus.suvanto@gmail.com>
+Closes: https://bugzilla.kernel.org/show_bug.cgi?id=216637
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Marc Dionne <marc.dionne@auristor.com>
+cc: linux-afs@lists.infradead.org
+---
 
- (3) Fix key handling so that DNS lookup results are reclaimed as soon as
-     they expire rather than sitting round either forever or for an
-     additional 5 mins beyond a set expiry time returning EKEYEXPIRED.
+Notes:
+    Changes
+    =======
+    ver #2)
+     - Fix signed-unsigned comparison when checking return val.
 
-The patches can be found here:
+ fs/afs/dynroot.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=afs-fixes
-
-Thanks,
-David
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=216637 [1]
-Link: https://lore.kernel.org/r/20231211163412.2766147-1-dhowells@redhat.com # v1
-
-Changes
-=======
-ver #2)
- - Fix signed-unsigned comparison when checking return val.
-
-David Howells (3):
-  afs: Fix the dynamic root's d_delete to always delete unused dentries
-  afs: Fix dynamic root lookup DNS check
-  keys, dns: Allow key types (eg. DNS) to be reclaimed immediately on
-    expiry
-
- fs/afs/dynroot.c           | 31 +++++++++++++++++--------------
- include/linux/key-type.h   |  1 +
- net/dns_resolver/dns_key.c | 10 +++++++++-
- security/keys/gc.c         | 31 +++++++++++++++++++++----------
- security/keys/internal.h   |  8 +++++++-
- security/keys/key.c        | 15 +++++----------
- security/keys/proc.c       |  2 +-
- 7 files changed, 61 insertions(+), 37 deletions(-)
+diff --git a/fs/afs/dynroot.c b/fs/afs/dynroot.c
+index 34474a061654..1f656005018e 100644
+--- a/fs/afs/dynroot.c
++++ b/fs/afs/dynroot.c
+@@ -114,6 +114,7 @@ static int afs_probe_cell_name(struct dentry *dentry)
+ 	struct afs_net *net = afs_d2net(dentry);
+ 	const char *name = dentry->d_name.name;
+ 	size_t len = dentry->d_name.len;
++	char *result = NULL;
+ 	int ret;
+ 
+ 	/* Names prefixed with a dot are R/W mounts. */
+@@ -131,9 +132,22 @@ static int afs_probe_cell_name(struct dentry *dentry)
+ 	}
+ 
+ 	ret = dns_query(net->net, "afsdb", name, len, "srv=1",
+-			NULL, NULL, false);
+-	if (ret == -ENODATA || ret == -ENOKEY)
++			&result, NULL, false);
++	if (ret == -ENODATA || ret == -ENOKEY || ret == 0)
+ 		ret = -ENOENT;
++	if (ret > 0 && ret >= sizeof(struct dns_server_list_v1_header)) {
++		struct dns_server_list_v1_header *v1 = (void *)result;
++
++		if (v1->hdr.zero == 0 &&
++		    v1->hdr.content == DNS_PAYLOAD_IS_SERVER_LIST &&
++		    v1->hdr.version == 1 &&
++		    (v1->status != DNS_LOOKUP_GOOD &&
++		     v1->status != DNS_LOOKUP_GOOD_WITH_BAD))
++			return -ENOENT;
++
++	}
++
++	kfree(result);
+ 	return ret;
+ }
+ 
 
