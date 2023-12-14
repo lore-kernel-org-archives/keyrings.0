@@ -1,38 +1,35 @@
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=qq.com header.i=@qq.com header.b="pUES0AW/"
-X-Greylist: delayed 766 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Thu, 14 Dec 2023 06:46:15 PST
-Received: from out203-205-221-221.mail.qq.com (out203-205-221-221.mail.qq.com [203.205.221.221])
-	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C19D091;
-	Thu, 14 Dec 2023 06:46:15 -0800 (PST)
+	dkim=pass (1024-bit key) header.d=qq.com header.i=@qq.com header.b="Q2sX2gV5"
+Received: from out203-205-221-149.mail.qq.com (out203-205-221-149.mail.qq.com [203.205.221.149])
+	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 28B8310F;
+	Thu, 14 Dec 2023 06:51:15 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=qq.com; s=s201512;
-	t=1702565173; bh=VE5SKV+YEGhdG5E1RcdtzyBnDjYuoMTeuwkSmuF5ydU=;
+	t=1702565473; bh=H3iNTZBNvgXdZhYRXpFWoMYuroegG1F/IhVpJB+1qRc=;
 	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=pUES0AW/5OzIKFraiHMfvYNZ2f58AGsx5c0L2r0x2zousrnXlIttsZdnGgAzTXuvA
-	 eZYJI68oF+trd2mhr6yRvJHzorciRqUaCJw7zRueUNuff3q9MnpyYZxEmEBeQ6wb8u
-	 nRdJSch2hJObTUR9GEyC6Hs6BHT7DJL//8Ry/5Qo=
+	b=Q2sX2gV5YWB2z959wk3pba0YdVVSPjDPA7qFSq+NrR11viemrcRn71Xq7nvfEx3nM
+	 6cXFJndHqL36YidLQ6Z+Sk6rzJ31MX3RzrNEhYbvARhAKC5lSIVeOjpS8Gwo1nShcF
+	 /saDQCwJxxFdR8jtk4oSsRvsDShcxW9x5TNBBiRs=
 Received: from pek-lxu-l1.wrs.com ([111.198.225.215])
-	by newxmesmtplogicsvrsza7-0.qq.com (NewEsmtp) with SMTP
-	id B893E434; Thu, 14 Dec 2023 22:46:09 +0800
-X-QQ-mid: xmsmtpt1702565169tsuw2xoe6
-Message-ID: <tencent_7D663C8936BA96F837124A4474AF76ED6709@qq.com>
-X-QQ-XMAILINFO: NQR8mRxMnur97/kSRBOOAScZjvVIdlpvzlfcnilx+42vvuHEZO+csE2VrKDNHZ
-	 0jhTcEmd0p4wwmnwUb8yylTMgphW1w+OlyvAETyOnF/3cIzq+6RoTYZ41/c3AHZcNHXF7VWuWV2H
-	 +uWlORPNgMuDUnbU7uPXGgoYOsyzwICpgEpzEP0gEQEIYuCSlGBsjKEkY4Y9LRzWSLoMgAmLCuu+
-	 6p3ZT2KmFMw68gkhEY1o4Mag7iTW+oXLT8I2GUXwr76FrYeoqMeFLWTqKYWwa3t4v9BLAck/jIOn
-	 UvAFVsumz1xLvXm1nw8o8ool5JU7FUsCcX7nSyYV2cNFcesVGH7/IdRF23+rUgEyfOwNgY40cDDL
-	 SY+AwpqkUeX3QzlPQ3ZZsjI+dKjcZoW/crC8kZpgUnDBP/14aezYmCMZAsHbKX72uK+n9FU3wZ5H
-	 3PrZhijYZOEuTsivRkPr4XQaFATEgcJ0oaAtWgCmIw9+Vxr0PCIYnnqm9SxocdGFoz+pKKD9YrPh
-	 AXxmxhiyg7edN8bDgmIwk0iZDtL9y6qrj8zb3HRLflMttK6HQKHqHAaPFCky/sk2ZxeYSftLul8F
-	 Gc0CtKm75n4b2NhNeHCB3K8821GPzMKuff/veyFUjYzEDUdo+Yfxghg0b6mUr3NdxbnRtm/wtjA0
-	 Yxgs6TIa09/iDI79YsxibvcmSUDKODH7Ps/N7VeqHAYQR8CqNeNCXxF1bvL3TY51MXL89BS3jYxh
-	 5ytCVM0wYLa7Qx3ivjCHGAU5GgRaZldOGhzdtAjsN/unJt/AG1OrboZuGqe2R5H84IE93UuH5+Ec
-	 jPX4LOLGBN3V34xCMRHa6pgAIPTHrePboTyV+zwSIUzAJnTJOOD/ggollbxyGDNcL4AxXp196kjX
-	 m+rnfGJq2+xWjBPGa2KJ/LyZCs1iaUXxD1KQNLNTjF5LEZaWncEDCW2tcQzBEMVefLRClLnt74PU
-	 59iIa4nRQMgR32uDlTazYgqQY29HTSpRtyfMa4oJqdbqxmlYVveNPjCuV6XtMjsA7nfIUPXzRjJc
-	 adi+3fGyUhxqJzI/t7RKAPOz2wLs8=
-X-QQ-XMRINFO: Mp0Kj//9VHAxr69bL5MkOOs=
+	by newxmesmtplogicsvrszc5-0.qq.com (NewEsmtp) with SMTP
+	id 8568D4F3; Thu, 14 Dec 2023 22:33:22 +0800
+X-QQ-mid: xmsmtpt1702564402tglr1se4s
+Message-ID: <tencent_B0E34B701B7025C7BAFDBB2833BB9EE41B08@qq.com>
+X-QQ-XMAILINFO: OJVlX7oey6I0WONnjsPxacehnbgXyP7N3XwoWA38eqchNHms7zPovzaIUlEICL
+	 nbTMJAndYQX48YKUzJ5GGr9kwfkfxcpDAkxdXumrgxUfGWI1uspM2i2/bNX/leV7IiQitlzc5Ayc
+	 lTznkyTXIO9mYtGsmgNpzIxla3A63cKnNq+n4GcubkxEAX/j0xY3+a6z197gwLhXo6566ZzH4MgV
+	 krSex17eOLX9urtRGs5q4XNBPeBNfr1hltIBjvnczCgzrUhE8m/ABFEbtr2ARoRTLJBZrSd3IirS
+	 1omk8a5i0s8F+vxlD73EZV0udH/2oB6uZJuBJ2Drj18HQvkquj5DYx4BD6ampiBrvCmK90Iyh8Ak
+	 EgJZOSdu0t9xDMJy2Ba3hnPXdIfBIza/JR11Byu0RUW359CrOaXkf0ZKUJYi7BHH0gnp2dlpojD4
+	 4/IvszBm67C/7B8eXVW46eTWy7ogwSC6BgO/DOTA2IbSvHyXciJi3d2UBiL8UCuDIliFielBjdk5
+	 i7txg5dYu/fjGOPXFgLPZoVbGF00GDIpkPA4ncX/VeICz0D5KGJ+N0T19xw25awF5sJIgkIoyQ01
+	 Ohf79yCIbMVr6KxUlx/guL9MEK2Id5oVIMUDCGelGN399slJELN0lHs9wAkXknBYwXQ92A84VMKN
+	 OUq462f9qhmcMH5/cDfyMSLB3sY/Ew/4t6SI4V1bjeRcMH3RcIda1FAX5G43tw/njFwrpgK+mWAC
+	 jGrpbt8lntG0syKWB3rF1s9zwEHdCnTCIGyYGQ6byby1cZYQU50IaRuJNTh1z3mpTT5QT/0/qaSL
+	 m0ghPS1DpDC7Ca5fsh4NU0CN4I9qUBIU7R+2EvyrFsHaM6Rylu9s9W1dZjgBt97PapLvUU5+rB03
+	 2tjr6xDG8PzE96jKcmaBUrd7HURTxKpSktdrz8mYaXbyWa5du6e2AyAZhAZP+tbYQ+xYAqn8VN
+X-QQ-XMRINFO: NyFYKkN4Ny6FSmKK/uo/jdU=
 From: Edward Adam Davis <eadavis@qq.com>
-To: eadavis@qq.com
+To: syzbot+94bbb75204a05da3d89f@syzkaller.appspotmail.com
 Cc: davem@davemloft.net,
 	dhowells@redhat.com,
 	edumazet@google.com,
@@ -46,14 +43,13 @@ Cc: davem@davemloft.net,
 	pabeni@redhat.com,
 	paul@paul-moore.com,
 	serge@hallyn.com,
-	syzbot+94bbb75204a05da3d89f@syzkaller.appspotmail.com,
 	syzkaller-bugs@googlegroups.com
-Subject: [PATCH V2 next] keys/dns: fix slab-out-of-bounds in dns_resolver_preparse 
-Date: Thu, 14 Dec 2023 22:46:10 +0800
-X-OQ-MSGID: <20231214144609.1016162-2-eadavis@qq.com>
+Subject: [PATCH next] keys/dns: datalen must greater than sizeof(*v1)
+Date: Thu, 14 Dec 2023 22:33:23 +0800
+X-OQ-MSGID: <20231214143322.1004059-2-eadavis@qq.com>
 X-Mailer: git-send-email 2.42.0
-In-Reply-To: <tencent_B0E34B701B7025C7BAFDBB2833BB9EE41B08@qq.com>
-References: <tencent_B0E34B701B7025C7BAFDBB2833BB9EE41B08@qq.com>
+In-Reply-To: <0000000000009b39bc060c73e209@google.com>
+References: <0000000000009b39bc060c73e209@google.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -61,6 +57,7 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
+X-Spam-Level: ***
 
 bin will be forcibly converted to "struct dns_server_list_v1_header *", so it 
 is necessary to compare datalen with sizeof(*v1).
@@ -85,6 +82,4 @@ index 3233f4f25fed..15f19521021c 100644
  			return -EINVAL;
  
  		bin = (const struct dns_payload_header *)data;
--- 
-2.43.0
 
