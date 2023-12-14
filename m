@@ -1,214 +1,155 @@
-Received: from mail-pf1-f199.google.com (mail-pf1-f199.google.com [209.85.210.199])
-	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 78A4AE0
-	for <keyrings@vger.kernel.org>; Thu, 14 Dec 2023 00:15:23 -0800 (PST)
-Received: by mail-pf1-f199.google.com with SMTP id d2e1a72fcca58-6ce2e42ec17so4938711b3a.3
-        for <keyrings@vger.kernel.org>; Thu, 14 Dec 2023 00:15:23 -0800 (PST)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20230601; t=1702541723; x=1703146523;
-        h=to:from:subject:message-id:date:mime-version:x-gm-message-state
-         :from:to:cc:subject:date:message-id:reply-to;
-        bh=q2ulKuoq72Pn9SlOBn9i6jG9e0gOWsCcYWgayS3GhB8=;
-        b=L9MT31SGZwi8eos1UND58R7yt9Fzr2umi5ZQnMqktluPKaF+VN9nelQR7yoK23kPOY
-         d5xsKd5O2VFNOJAOe2ndHR7Vlx78/0luWR6iEBHlU3XS8FWgHVeA4iAkGEFHLtRQhVv/
-         RCbextJdWJKXY9mEAlcy+x3g2yKgP7rQyz8mzDwi+PbA2ybAcb774RaD53HXrCxnUFbg
-         mv8lXHMPt5IHZTHF3LgMbzR8YIIPWf7sYntm6lSRGwGvYR6ostsQlRpSoIalQ37cQco9
-         WSJlP2adb7qB3OM9ndpO/vISwW03JKW281MSeE9lpgcPfDtF4ZkdtTMJ7Psd/88UVUAR
-         ZfEw==
-X-Gm-Message-State: AOJu0Yy7mL5QH4A87k0o80lSZ6nOwA/ilifX4JLgFeo305q3KVD/SsXa
-	9ceZF6n8kQSyqr9SFGye5kwvbe9f0hJTvteJnjdcz5gw1I3s
-X-Google-Smtp-Source: AGHT+IHBg4dPtwn9W8uzlpptHAWD1jYrfuInfghlYHkLpixrN5bFQzkTbGLocMIaQXdmh//ZxuxC7PIugRHa6+pddmRsu+qKuOgI
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="G8Mle9Gd";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="6v19oXnJ";
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="G8Mle9Gd";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="6v19oXnJ"
+Received: from smtp-out1.suse.de (smtp-out1.suse.de [IPv6:2a07:de40:b251:101:10:150:64:1])
+	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 907E6115;
+	Thu, 14 Dec 2023 06:44:31 -0800 (PST)
+Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [10.150.64.97])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
+	(No client certificate requested)
+	by smtp-out1.suse.de (Postfix) with ESMTPS id 31145221F2;
+	Thu, 14 Dec 2023 14:44:30 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+	t=1702565070; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=vsmrNQCMF0LaolhCZphfif1VFSP9rpU97GQ9x/JHWt4=;
+	b=G8Mle9Gd3DbKrF2if092q2td8tfT+LX9FRC+16c0knZpByDNgYyJGYWocoiGo/E3JAXJam
+	nwo5FfNwNnVoygeaJvUhc4avXdNI5H7dB9P6ldgzrtoI5G0bqIa9/jXtKgYtARWghpazhc
+	EzNuBtMODqQlkG8MH1+hsLufl4ePOP0=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+	s=susede2_ed25519; t=1702565070;
+	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=vsmrNQCMF0LaolhCZphfif1VFSP9rpU97GQ9x/JHWt4=;
+	b=6v19oXnJqzViNUzIQTc0kVQOxs1jtdBtrfo+Vn0jL/hOn+G0wP4Eu1+0yd8RZfCmkYNjpG
+	eXO/TGC9hS5nIeAw==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+	t=1702565070; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=vsmrNQCMF0LaolhCZphfif1VFSP9rpU97GQ9x/JHWt4=;
+	b=G8Mle9Gd3DbKrF2if092q2td8tfT+LX9FRC+16c0knZpByDNgYyJGYWocoiGo/E3JAXJam
+	nwo5FfNwNnVoygeaJvUhc4avXdNI5H7dB9P6ldgzrtoI5G0bqIa9/jXtKgYtARWghpazhc
+	EzNuBtMODqQlkG8MH1+hsLufl4ePOP0=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+	s=susede2_ed25519; t=1702565070;
+	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=vsmrNQCMF0LaolhCZphfif1VFSP9rpU97GQ9x/JHWt4=;
+	b=6v19oXnJqzViNUzIQTc0kVQOxs1jtdBtrfo+Vn0jL/hOn+G0wP4Eu1+0yd8RZfCmkYNjpG
+	eXO/TGC9hS5nIeAw==
+Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
+	(No client certificate requested)
+	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id B8E8D137E8;
+	Thu, 14 Dec 2023 14:44:29 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
+	by imap1.dmz-prg2.suse.org with ESMTPSA
+	id eEJ2Kc0Ue2V3KQAAD6G6ig
+	(envelope-from <lhenriques@suse.de>); Thu, 14 Dec 2023 14:44:29 +0000
+Received: from localhost (brahms.olymp [local])
+	by brahms.olymp (OpenSMTPD) with ESMTPA id feb62ca6;
+	Thu, 14 Dec 2023 14:44:28 +0000 (UTC)
+Date: Thu, 14 Dec 2023 14:44:28 +0000
+From: =?iso-8859-1?Q?Lu=EDs?= Henriques <lhenriques@suse.de>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers@kernel.org>, Jarkko Sakkinen <jarkko@kernel.org>,
+	keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] keys: flush work when accessing /proc/key-users
+Message-ID: <ZXsUzBRR2uc81FK0@suse.de>
+References: <20231207024323.GA1994@sol.localdomain>
+ <20231206145744.17277-1-lhenriques@suse.de>
+ <498294.1701878642@warthog.procyon.org.uk>
+ <87bkb3z047.fsf@suse.de>
+ <2744563.1702303367@warthog.procyon.org.uk>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-Received: by 2002:a05:6a00:1412:b0:6cd:f50c:32ac with SMTP id
- l18-20020a056a00141200b006cdf50c32acmr1180836pfu.6.1702541722858; Thu, 14 Dec
- 2023 00:15:22 -0800 (PST)
-Date: Thu, 14 Dec 2023 00:15:22 -0800
-X-Google-Appengine-App-Id: s~syzkaller
-X-Google-Appengine-App-Id-Alias: syzkaller
-Message-ID: <0000000000009b39bc060c73e209@google.com>
-Subject: [syzbot] [net?] KASAN: slab-out-of-bounds Read in dns_resolver_preparse
-From: syzbot <syzbot+94bbb75204a05da3d89f@syzkaller.appspotmail.com>
-To: davem@davemloft.net, dhowells@redhat.com, edumazet@google.com, 
-	jarkko@kernel.org, jmorris@namei.org, keyrings@vger.kernel.org, 
-	kuba@kernel.org, linux-kernel@vger.kernel.org, 
-	linux-security-module@vger.kernel.org, netdev@vger.kernel.org, 
-	pabeni@redhat.com, paul@paul-moore.com, serge@hallyn.com, 
-	syzkaller-bugs@googlegroups.com
-Content-Type: text/plain; charset="UTF-8"
-X-Spam-Level: **
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2744563.1702303367@warthog.procyon.org.uk>
+X-Spam-Score: -1.30
+X-Spam-Level: 
+Authentication-Results: smtp-out1.suse.de;
+	none
+X-Spam-Level: 
+X-Spam-Score: -1.30
+X-Spamd-Result: default: False [-1.30 / 50.00];
+	 ARC_NA(0.00)[];
+	 RCVD_VIA_SMTP_AUTH(0.00)[];
+	 FROM_HAS_DN(0.00)[];
+	 TO_DN_SOME(0.00)[];
+	 TO_MATCH_ENVRCPT_ALL(0.00)[];
+	 NEURAL_HAM_LONG(-1.00)[-1.000];
+	 MIME_GOOD(-0.10)[text/plain];
+	 RCPT_COUNT_FIVE(0.00)[5];
+	 RCVD_COUNT_THREE(0.00)[4];
+	 DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
+	 NEURAL_HAM_SHORT(-0.20)[-0.981];
+	 FUZZY_BLOCKED(0.00)[rspamd.com];
+	 FROM_EQ_ENVFROM(0.00)[];
+	 MIME_TRACE(0.00)[0:+];
+	 RCVD_TLS_LAST(0.00)[];
+	 MID_RHS_MATCH_FROM(0.00)[];
+	 BAYES_HAM(-0.00)[16.82%]
+X-Spam-Flag: NO
 
-Hello,
+Hi David,
 
-syzbot found the following issue on:
+On Mon, Dec 11, 2023 at 02:02:47PM +0000, David Howells wrote:
+<snip>
+> > However, that would only fix the flakiness of the key quota for fs/crypto/,
+> > not for other users of the keyrings service.  Maybe this suggests that
+> > key_put() should release the key's quota right away if the key's refcount
+> > drops to 0?
+> 
+> That I would be okay with as the key should be removed in short order.
+> 
+> Note that you'd have to change the spinlocks on key->user->lock to irq-locking
+> types.  Or maybe we can do without them, at least for key gc, and use atomic
+> counters.  key_invalidate() should probably drop the quota also.
 
-HEAD commit:    48e8992e33ab Add linux-next specific files for 20231213
-git tree:       linux-next
-console+strace: https://syzkaller.appspot.com/x/log.txt?x=155c1ac1e80000
-kernel config:  https://syzkaller.appspot.com/x/.config?x=978b8aaa2e92a8f
-dashboard link: https://syzkaller.appspot.com/bug?extid=94bbb75204a05da3d89f
-compiler:       gcc (Debian 12.2.0-14) 12.2.0, GNU ld (GNU Binutils for Debian) 2.40
-syz repro:      https://syzkaller.appspot.com/x/repro.syz?x=10e0a966e80000
-C reproducer:   https://syzkaller.appspot.com/x/repro.c?x=1555a15ce80000
+I was trying to help with this but, first, I don't think atomic counters
+would actually be a solution.  For example, we have the following in
+key_alloc():
 
-Downloadable assets:
-disk image: https://storage.googleapis.com/syzbot-assets/ade5327f8151/disk-48e8992e.raw.xz
-vmlinux: https://storage.googleapis.com/syzbot-assets/16bff810e759/vmlinux-48e8992e.xz
-kernel image: https://storage.googleapis.com/syzbot-assets/14c4448589de/bzImage-48e8992e.xz
+	spin_lock(&user->lock);
+	if (!(flags & KEY_ALLOC_QUOTA_OVERRUN)) {
+		if (user->qnkeys + 1 > maxkeys ||
+		    user->qnbytes + quotalen > maxbytes ||
+		    user->qnbytes + quotalen < user->qnbytes)
+			goto no_quota;
+	}
+	user->qnkeys++;
+	user->qnbytes += quotalen;
+	spin_unlock(&user->lock);
 
-The issue was bisected to:
+Thus, I don't think it's really possible to simply stop using a lock
+without making these checks+changes non-atomic.
 
-commit b946001d3bb1202e90093cf5e72dbcb20e2689a0
-Author: David Howells <dhowells@redhat.com>
-Date:   Sat Dec 9 00:41:55 2023 +0000
+As for using spin_lock_irq() or spin_lock_irqsave(), my understanding is
+that the only places where this could be necessary is in key_put() and,
+possibly, key_payload_reserve().  key_alloc() shouldn't need that.
 
-    keys, dns: Allow key types (eg. DNS) to be reclaimed immediately on expiry
+Finally, why would key_invalidate() require handling quotas?  I'm probably
+just missing some subtlety, but I don't see the user->usage refcount being
+decremented anywhere in that path (or anywhere else, really).
 
-bisection log:  https://syzkaller.appspot.com/x/bisect.txt?x=10c349c1e80000
-final oops:     https://syzkaller.appspot.com/x/report.txt?x=12c349c1e80000
-console output: https://syzkaller.appspot.com/x/log.txt?x=14c349c1e80000
-
-IMPORTANT: if you fix the issue, please add the following tag to the commit:
-Reported-by: syzbot+94bbb75204a05da3d89f@syzkaller.appspotmail.com
-Fixes: b946001d3bb1 ("keys, dns: Allow key types (eg. DNS) to be reclaimed immediately on expiry")
-
-==================================================================
-BUG: KASAN: slab-out-of-bounds in dns_resolver_preparse+0xc9f/0xd60 net/dns_resolver/dns_key.c:127
-Read of size 1 at addr ffff888028894084 by task syz-executor265/5069
-
-CPU: 0 PID: 5069 Comm: syz-executor265 Not tainted 6.7.0-rc5-next-20231213-syzkaller #0
-Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS Google 11/10/2023
-Call Trace:
- <TASK>
- __dump_stack lib/dump_stack.c:88 [inline]
- dump_stack_lvl+0xd9/0x1b0 lib/dump_stack.c:106
- print_address_description mm/kasan/report.c:377 [inline]
- print_report+0xc3/0x620 mm/kasan/report.c:488
- kasan_report+0xd9/0x110 mm/kasan/report.c:601
- dns_resolver_preparse+0xc9f/0xd60 net/dns_resolver/dns_key.c:127
- __key_create_or_update+0x453/0xdf0 security/keys/key.c:842
- key_create_or_update+0x42/0x50 security/keys/key.c:1007
- __do_sys_add_key+0x29c/0x450 security/keys/keyctl.c:134
- do_syscall_x64 arch/x86/entry/common.c:52 [inline]
- do_syscall_64+0x40/0x110 arch/x86/entry/common.c:83
- entry_SYSCALL_64_after_hwframe+0x62/0x6a
-RIP: 0033:0x7fd37f34f2e9
-Code: 48 83 c4 28 c3 e8 37 17 00 00 0f 1f 80 00 00 00 00 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 c7 c1 b8 ff ff ff f7 d8 64 89 01 48
-RSP: 002b:00007fff2f4f3198 EFLAGS: 00000246 ORIG_RAX: 00000000000000f8
-RAX: ffffffffffffffda RBX: 00007fff2f4f3368 RCX: 00007fd37f34f2e9
-RDX: 0000000020000080 RSI: 0000000000000000 RDI: 00000000200003c0
-RBP: 00007fd37f3c2610 R08: 0000000002853c32 R09: 00007fff2f4f3368
-R10: 0000000000000004 R11: 0000000000000246 R12: 0000000000000001
-R13: 00007fff2f4f3358 R14: 0000000000000001 R15: 0000000000000001
- </TASK>
-
-Allocated by task 5069:
- kasan_save_stack+0x33/0x50 mm/kasan/common.c:47
- kasan_set_track+0x24/0x30 mm/kasan/common.c:61
- ____kasan_kmalloc mm/kasan/common.c:375 [inline]
- __kasan_kmalloc+0xa2/0xb0 mm/kasan/common.c:384
- kasan_kmalloc include/linux/kasan.h:198 [inline]
- __do_kmalloc_node mm/slub.c:3985 [inline]
- __kmalloc_node+0x226/0x480 mm/slub.c:3992
- kmalloc_node include/linux/slab.h:610 [inline]
- kvmalloc_node+0x99/0x1a0 mm/util.c:617
- kvmalloc include/linux/slab.h:728 [inline]
- __do_sys_add_key+0x1f8/0x450 security/keys/keyctl.c:116
- do_syscall_x64 arch/x86/entry/common.c:52 [inline]
- do_syscall_64+0x40/0x110 arch/x86/entry/common.c:83
- entry_SYSCALL_64_after_hwframe+0x62/0x6a
-
-The buggy address belongs to the object at ffff888028894080
- which belongs to the cache kmalloc-8 of size 8
-The buggy address is located 0 bytes to the right of
- allocated 4-byte region [ffff888028894080, ffff888028894084)
-
-The buggy address belongs to the physical page:
-page:ffffea0000a22500 refcount:1 mapcount:0 mapping:0000000000000000 index:0x0 pfn:0x28894
-anon flags: 0xfff00000000800(slab|node=0|zone=1|lastcpupid=0x7ff)
-page_type: 0xffffffff()
-raw: 00fff00000000800 ffff888013041280 0000000000000000 dead000000000001
-raw: 0000000000000000 0000000080800080 00000001ffffffff 0000000000000000
-page dumped because: kasan: bad access detected
-page_owner tracks the page as allocated
-page last allocated via order 0, migratetype Unmovable, gfp_mask 0x12cc0(GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY), pid 1, tgid 1 (swapper/0), ts 27978623390, free_ts 27978121808
- set_page_owner include/linux/page_owner.h:31 [inline]
- post_alloc_hook+0x2d0/0x350 mm/page_alloc.c:1540
- prep_new_page mm/page_alloc.c:1547 [inline]
- get_page_from_freelist+0xa19/0x3740 mm/page_alloc.c:3355
- __alloc_pages+0x22e/0x2410 mm/page_alloc.c:4611
- alloc_pages_mpol+0x258/0x5f0 mm/mempolicy.c:2133
- alloc_slab_page mm/slub.c:2191 [inline]
- allocate_slab mm/slub.c:2358 [inline]
- new_slab+0x283/0x3c0 mm/slub.c:2411
- ___slab_alloc+0x4ab/0x1990 mm/slub.c:3544
- __slab_alloc.constprop.0+0x56/0xa0 mm/slub.c:3629
- __slab_alloc_node mm/slub.c:3682 [inline]
- slab_alloc_node mm/slub.c:3854 [inline]
- __do_kmalloc_node mm/slub.c:3984 [inline]
- __kmalloc_node_track_caller+0x367/0x470 mm/slub.c:4005
- kstrdup+0x3c/0x70 mm/util.c:62
- kstrdup_const+0x5f/0x70 mm/util.c:85
- kvasprintf_const+0x10b/0x190 lib/kasprintf.c:48
- kobject_set_name_vargs+0x5a/0x130 lib/kobject.c:272
- kobject_add_varg lib/kobject.c:366 [inline]
- kobject_init_and_add+0xe8/0x190 lib/kobject.c:455
- locate_module_kobject+0xef/0x190 kernel/params.c:781
- kernel_add_sysfs_param kernel/params.c:808 [inline]
- param_sysfs_builtin kernel/params.c:856 [inline]
- param_sysfs_builtin_init+0x25f/0x450 kernel/params.c:990
- do_one_initcall+0x128/0x680 init/main.c:1236
-page last free pid 3062 tgid 3062 stack trace:
- reset_page_owner include/linux/page_owner.h:24 [inline]
- free_pages_prepare mm/page_alloc.c:1140 [inline]
- free_unref_page_prepare+0x51f/0xb10 mm/page_alloc.c:2390
- free_unref_page+0x33/0x3b0 mm/page_alloc.c:2530
- mm_free_pgd kernel/fork.c:799 [inline]
- __mmdrop+0xd5/0x470 kernel/fork.c:915
- mmdrop include/linux/sched/mm.h:54 [inline]
- __mmput+0x40a/0x4d0 kernel/fork.c:1352
- mmput+0x62/0x70 kernel/fork.c:1363
- free_bprm+0x143/0x3e0 fs/exec.c:1490
- kernel_execve+0x3e6/0x4e0 fs/exec.c:2036
- call_usermodehelper_exec_async+0x252/0x4c0 kernel/umh.c:110
- ret_from_fork+0x45/0x80 arch/x86/kernel/process.c:147
- ret_from_fork_asm+0x11/0x20 arch/x86/entry/entry_64.S:242
-
-Memory state around the buggy address:
- ffff888028893f80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
- ffff888028894000: 07 fc fc fc 07 fc fc fc fa fc fc fc 05 fc fc fc
->ffff888028894080: 04 fc fc fc fb fc fc fc fb fc fc fc 06 fc fc fc
-                   ^
- ffff888028894100: 06 fc fc fc fb fc fc fc 00 fc fc fc 00 fc fc fc
- ffff888028894180: fb fc fc fc 04 fc fc fc 04 fc fc fc fb fc fc fc
-==================================================================
-
-
----
-This report is generated by a bot. It may contain errors.
-See https://goo.gl/tpsmEJ for more information about syzbot.
-syzbot engineers can be reached at syzkaller@googlegroups.com.
-
-syzbot will keep track of this issue. See:
-https://goo.gl/tpsmEJ#status for how to communicate with syzbot.
-For information about bisection process see: https://goo.gl/tpsmEJ#bisection
-
-If the report is already addressed, let syzbot know by replying with:
-#syz fix: exact-commit-title
-
-If you want syzbot to run the reproducer, reply with:
-#syz test: git://repo/address.git branch-or-commit-hash
-If you attach or paste a git patch, syzbot will apply it before testing.
-
-If you want to overwrite report's subsystems, reply with:
-#syz set subsystems: new-subsystem
-(See the list of subsystem names on the web dashboard)
-
-If the report is a duplicate of another one, reply with:
-#syz dup: exact-subject-of-another-report
-
-If you want to undo deduplication, reply with:
-#syz undup
+Cheers,
+--
+Luís
