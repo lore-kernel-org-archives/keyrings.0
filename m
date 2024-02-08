@@ -1,117 +1,150 @@
-Received: from mail-qt1-f169.google.com (mail-qt1-f169.google.com [209.85.160.169])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from frasgout11.his.huawei.com (frasgout11.his.huawei.com [14.137.139.23])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7C23433CE7
-	for <keyrings@vger.kernel.org>; Thu,  8 Feb 2024 03:18:56 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.160.169
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1700569E00;
+	Thu,  8 Feb 2024 08:06:16 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=14.137.139.23
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1707362342; cv=none; b=ettU0L8ZJ3Vf9m1EV02VZgOo5ZmBJJg0aJtKmT8TE16eI6Jf8a13btGmbkfcsX8Scgb4gjXjKav5ILnYvnK05I7u10td1LrKCpiEEptIRC1bNyeCO+tY2Km9Lcl9uor/aBK67lhggAlCIp+GaIB/881Bt2i0r760eh8BN7m1KqA=
+	t=1707379582; cv=none; b=cjYZLj4kTYs4VdNSoShp7XqcaKzv0uX7qIhNPixldXSvlHZtJF7SI3nnPM7UOjXALHwCucZtFLOCOM63uWwXiZ2WNgMn0FIMRXbk4oL8exKB3lKbk2k81gEUrGXI/FEQdiOgwCZYFJHDGeOYYRRXdNLl0yc1cHY9HNl7O+l9W1g=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1707362342; c=relaxed/simple;
-	bh=GXUPBwjyTapvWjNtvBJBKoFYSFcsWJwH+eGj4SD5Q70=;
-	h=Date:Message-ID:MIME-Version:Content-Type:Content-Disposition:
-	 From:To:Cc:Subject:References:In-Reply-To; b=A63nAtsVcJINEXd4XANL9z3+cIG4DMhZg3rBDZlbsQzeJxF4yUd/RQugxjPLZXEBRVsVCqE5urWREobUeyh1Inz2uwWwF2+z4aO+cC3Dqo3QkqzXGOuMcyrm/p7y+pHdmq88EUI4aSaLiArI8CidWRxcPLpK+p7utFlWwrr4WYw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com; spf=pass smtp.mailfrom=paul-moore.com; dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b=acyS8Z/R; arc=none smtp.client-ip=209.85.160.169
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=paul-moore.com
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="acyS8Z/R"
-Received: by mail-qt1-f169.google.com with SMTP id d75a77b69052e-42a8b99eaf9so9489871cf.1
-        for <keyrings@vger.kernel.org>; Wed, 07 Feb 2024 19:18:56 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google; t=1707362334; x=1707967134; darn=vger.kernel.org;
-        h=in-reply-to:references:subject:cc:to:from:content-transfer-encoding
-         :content-disposition:mime-version:message-id:date:from:to:cc:subject
-         :date:message-id:reply-to;
-        bh=otFcps0stZB4weUc21xAn/KKbQgQbMJ9m7dxETe93ls=;
-        b=acyS8Z/R0dIZh2wswvf1lWx1CspWtvaaeeEQnLFFQOYo/sptS81IGt/ltXbhMd2YQt
-         Wq0LYq6i0fi3JLbcKsavndaGtsRcXGmRZx8nanIx+GVfARsqkIcyQShyM3cqMWVzm3h9
-         mqAbuD5yYHRnSAOMbCUU6rgDFoqCUmlAw2czFl6mIjP0yrRP7yFYfq9PI/guxg/Nprs3
-         1calN35kgJaeeFt2L8lj/eWXaopf+l4cToJ4gv//KlshW+RN8oNZjY2hC71vfkntzb10
-         VzCew6kVKGJ4WSYW2zonsLMVtxlIjuNDCYSw81eaf84pkYnsrqvdmG15Z3jPILdScTQB
-         GQzA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20230601; t=1707362334; x=1707967134;
-        h=in-reply-to:references:subject:cc:to:from:content-transfer-encoding
-         :content-disposition:mime-version:message-id:date:x-gm-message-state
-         :from:to:cc:subject:date:message-id:reply-to;
-        bh=otFcps0stZB4weUc21xAn/KKbQgQbMJ9m7dxETe93ls=;
-        b=jb2GXmWiz0pow5M0+5KM9CNURRN6i6K5R03bN0UellrkCf1InTzRaVbR8zo4y1nnwu
-         2WPZOsybW2/mdIeiNA9DX4XywhBo5bVBoXNeCFghN4cPy269DpjkhTfHmCmH6HrdhbkN
-         zAdSFZpC9A1jpJF11ioKaWs0j0ToiTaRpitiXUCqArfqXdfq2IoJWGQhfWEQc3Gk63R+
-         1r2UamwyT6mdFOxrIYQgF12jat306+QblQ9y+tD+75amA2JhajiUbxJJcUVfyltOULxV
-         sFBK5BNKuVmSTEtTvn0Nox9/rASxKQ8J4jOwsvN9oknrqzRGOEm3bB+dAX/gU4InLytC
-         9PIQ==
-X-Gm-Message-State: AOJu0Yx03r3mBU4HToAOaidaptWhUhpfc/HFNpr/Km1cp/6izH5lKQxj
-	EF+OyMwSfRdjebeoQXfK4H++00Y66e0kx7u1nypb+Ci82eM4Vl4bJ78FEeJxFQ==
-X-Google-Smtp-Source: AGHT+IHFFz5/7Z/fdwdSa2FnRPas4NNB4AlHkLHQ9z8CPU0B/CZNZZq3CF3i+9gIvevWdPO2woWrDQ==
-X-Received: by 2002:a05:622a:1792:b0:42c:b22:adc9 with SMTP id s18-20020a05622a179200b0042c0b22adc9mr8878842qtk.17.1707362334418;
-        Wed, 07 Feb 2024 19:18:54 -0800 (PST)
-X-Forwarded-Encrypted: i=1; AJvYcCX2SgqtyeXiRmraFSrm1+eGdFPAcILDt0E5xylLbpk4Pi8w1VK4WPvznufD108x+ZbDZUBSLiAYLOZ7ApTPH8K4po/ppreHz7WEwVjACdXoMMqO3PseGP/7ykN5TTJnpON+fslpE4zGsLYwOleANje1kGpMswXeREKcLFWgS75g6zxYbJqnUv/bi5JpCMW7IIzyqYHwG2gZNu+mVvjlrXLBog/82+mlPN7PM8KD/GpXhPv30Z/UZiQqMd8+GQTJUa7gd9OVrlr+8WhwM1ft0jOic2h2eT0T1pGZhzw57uy0oMm2n15wjGiBhhtuvkmyojFWSJ+778gaI76IHTlkxvQpGuu4lqGW1GxUwGWvx5VxpvHtSOy3mG7cdiLJ6yNJRzudwuY1LOYKCkyIZwSJC9eEs8uD2T7XYxKMjt68Vg2KYCyUY1+ZmhNd6WsdwayeEmpk2wDZ6vVLk6X6AeTDoiGmC0ToyJMVtPWV8znKT5cbhVddtpRHduAVJUZlAuaTl8wdb/Sl7VDzM0QDaHBQDEYi9sy9WdVRdIprMksHzvEsulbekjXa7Ttt3+jeiNuGZtyvAkK4jNUgF8gdJMSK4s0jtXEC3ezFJWihgleEqrvQ+ryyFaC333diwEVO6FrxH7uRjglu6iYshOeJPlxh0jrsMea+z7nslMo6YkAIFjIoSCbGVqb5Fl57uD9k/SipBrXILQHqQHCm7eQ+nocR6TkanmfRD4Ym+yMPzVVOO8WHqGtvXAqj/eIYT5pM9owBnDlHA//SjiC5nv4byvbO3AbMPXEJcaqNYJ8rr2H8qKyfWMhp37kWzmcSRBQRXS/RhK0sITI5lKrJGoOTE3S7sB3YfRIIKm5dp2YBDAcs+53VQcqmUdpJBPCcVVlIKJE95Id9/KYGLD2TKkZuZblCuTWhf+DuPCOeD62w/NVpXWNLveCMoIZ+
-Received: from localhost ([70.22.175.108])
-        by smtp.gmail.com with ESMTPSA id g3-20020ac84803000000b00429bd898838sm1062943qtq.47.2024.02.07.19.18.53
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 07 Feb 2024 19:18:54 -0800 (PST)
-Date: Wed, 07 Feb 2024 22:18:53 -0500
-Message-ID: <4e96a5f2552a51e386f327689f64dae0@paul-moore.com>
+	s=arc-20240116; t=1707379582; c=relaxed/simple;
+	bh=/zEYUb4yL29+qOwYug6IGb0qmLwNiMesnkRiO3l7WEE=;
+	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
+	 Content-Type:MIME-Version; b=qzpLo+dt2SJzSDf5lkyUu+2LfuulHqzH8Vq7eDBHH6NjDuap0SLXVbzLeKfDETWstDkwhx5JGoRJ0xSj5rQBbaDHFfO9IF4KzgtkRYEHvGjh583SvU+pkeHdMWZQd24DInM/KGwlyawv6h6OZTLabzQtcNJf7k4yArC9+tavq0o=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=huaweicloud.com; spf=pass smtp.mailfrom=huaweicloud.com; arc=none smtp.client-ip=14.137.139.23
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=huaweicloud.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=huaweicloud.com
+Received: from mail.maildlp.com (unknown [172.18.186.51])
+	by frasgout11.his.huawei.com (SkyGuard) with ESMTP id 4TVq144pfPzB0Mbw;
+	Thu,  8 Feb 2024 15:51:04 +0800 (CST)
+Received: from mail02.huawei.com (unknown [7.182.16.47])
+	by mail.maildlp.com (Postfix) with ESMTP id D29E2140595;
+	Thu,  8 Feb 2024 16:06:13 +0800 (CST)
+Received: from [127.0.0.1] (unknown [10.204.63.22])
+	by APP1 (Coremail) with SMTP id LxC2BwAXEBlli8RlWRYaAg--.2529S2;
+	Thu, 08 Feb 2024 09:06:13 +0100 (CET)
+Message-ID: <dd8a979df500489c0d8595f9a3f89c801ce6f1c2.camel@huaweicloud.com>
+Subject: Re: [PATCH v9 0/25] security: Move IMA and EVM to the LSM
+ infrastructure
+From: Roberto Sassu <roberto.sassu@huaweicloud.com>
+To: Paul Moore <paul@paul-moore.com>, viro@zeniv.linux.org.uk, 
+ brauner@kernel.org, chuck.lever@oracle.com, jlayton@kernel.org,
+ neilb@suse.de,  kolga@netapp.com, Dai.Ngo@oracle.com, tom@talpey.com,
+ jmorris@namei.org,  serge@hallyn.com, zohar@linux.ibm.com,
+ dmitry.kasatkin@gmail.com,  eric.snowberg@oracle.com, dhowells@redhat.com,
+ jarkko@kernel.org,  stephen.smalley.work@gmail.com, eparis@parisplace.org,
+ casey@schaufler-ca.com,  shuah@kernel.org, mic@digikod.net
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, 
+	linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, 
+	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, 
+	selinux@vger.kernel.org, linux-kselftest@vger.kernel.org, Roberto Sassu
+	 <roberto.sassu@huawei.com>
+Date: Thu, 08 Feb 2024 09:05:54 +0100
+In-Reply-To: <d54ca249c3071522218c7ba7b4984bab@paul-moore.com>
+References: <20240115181809.885385-1-roberto.sassu@huaweicloud.com>
+	 <d54ca249c3071522218c7ba7b4984bab@paul-moore.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.44.4-0ubuntu2 
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0 
-Content-Type: text/plain; charset=utf-8 
-Content-Disposition: inline 
-Content-Transfer-Encoding: 8bit
-From: Paul Moore <paul@paul-moore.com>
-To: Roberto Sassu <roberto.sassu@huaweicloud.com>, viro@zeniv.linux.org.uk, brauner@kernel.org, chuck.lever@oracle.com, jlayton@kernel.org, neilb@suse.de, kolga@netapp.com, Dai.Ngo@oracle.com, tom@talpey.com, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com, eric.snowberg@oracle.com, dhowells@redhat.com, jarkko@kernel.org, stephen.smalley.work@gmail.com, eparis@parisplace.org, casey@schaufler-ca.com, shuah@kernel.org, mic@digikod.net
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@vger.kernel.org, linux-kselftest@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: Re: [PATCH v9 22/25] evm: Move to LSM infrastructure
-References: <20240115181809.885385-23-roberto.sassu@huaweicloud.com>
-In-Reply-To: <20240115181809.885385-23-roberto.sassu@huaweicloud.com>
+MIME-Version: 1.0
+X-CM-TRANSID:LxC2BwAXEBlli8RlWRYaAg--.2529S2
+X-Coremail-Antispam: 1UD129KBjvJXoWxZw17AFy8Jry7Kr13Cw1DGFg_yoW5ZrWrpF
+	Z5tayfCF4qqF1I93s7Ar47WrW0kw4kKFyUJFy5Xryvy3Z8GryxJrZ7KFWUZFWDWr4rXayI
+	qw17Kr9xZ3WkZa7anT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+	9KBjDU0xBIdaVrnRJUUUkjb4IE77IF4wAFF20E14v26rWj6s0DM7CY07I20VC2zVCF04k2
+	6cxKx2IYs7xG6rWj6s0DM7CIcVAFz4kK6r1j6r18M28lY4IEw2IIxxk0rwA2F7IY1VAKz4
+	vEj48ve4kI8wA2z4x0Y4vE2Ix0cI8IcVAFwI0_Jr0_JF4l84ACjcxK6xIIjxv20xvEc7Cj
+	xVAFwI0_Gr0_Cr1l84ACjcxK6I8E87Iv67AKxVW8JVWxJwA2z4x0Y4vEx4A2jsIEc7CjxV
+	AFwI0_Gr0_Gr1UM2AIxVAIcxkEcVAq07x20xvEncxIr21l5I8CrVACY4xI64kE6c02F40E
+	x7xfMcIj6xIIjxv20xvE14v26r1j6r18McIj6I8E87Iv67AKxVWUJVW8JwAm72CE4IkC6x
+	0Yz7v_Jr0_Gr1lF7xvr2IY64vIr41lFIxGxcIEc7CjxVA2Y2ka0xkIwI1l42xK82IYc2Ij
+	64vIr41l4I8I3I0E4IkC6x0Yz7v_Jr0_Gr1lx2IqxVAqx4xG67AKxVWUJVWUGwC20s026x
+	8GjcxK67AKxVWUGVWUWwC2zVAF1VAY17CE14v26r4a6rW5MIIYrxkI7VAKI48JMIIF0xvE
+	2Ix0cI8IcVAFwI0_Jr0_JF4lIxAIcVC0I7IYx2IY6xkF7I0E14v26r4j6F4UMIIF0xvE42
+	xK8VAvwI8IcIk0rVWrZr1j6s0DMIIF0xvEx4A2jsIE14v26r1j6r4UMIIF0xvEx4A2jsIE
+	c7CjxVAFwI0_Gr0_Gr1UYxBIdaVFxhVjvjDU0xZFpf9x07UAkuxUUUUU=
+X-CM-SenderInfo: purev21wro2thvvxqx5xdzvxpfor3voofrz/1tbiAQAHBF1jj5opbgADst
 
-On Jan 15, 2024 Roberto Sassu <roberto.sassu@huaweicloud.com> wrote:
-> 
-> As for IMA, move hardcoded EVM function calls from various places in the
-> kernel to the LSM infrastructure, by introducing a new LSM named 'evm'
-> (last and always enabled like 'ima'). The order in the Makefile ensures
-> that 'evm' hooks are executed after 'ima' ones.
+On Wed, 2024-02-07 at 22:18 -0500, Paul Moore wrote:
+> On Jan 15, 2024 Roberto Sassu <roberto.sassu@huaweicloud.com> wrote:
+> >=20
+> > IMA and EVM are not effectively LSMs, especially due to the fact that i=
+n
+> > the past they could not provide a security blob while there is another =
+LSM
+> > active.
+> >=20
+> > That changed in the recent years, the LSM stacking feature now makes it
+> > possible to stack together multiple LSMs, and allows them to provide a
+> > security blob for most kernel objects. While the LSM stacking feature h=
+as
+> > some limitations being worked out, it is already suitable to make IMA a=
+nd
+> > EVM as LSMs.
+> >=20
+> > The main purpose of this patch set is to remove IMA and EVM function ca=
+lls,
+> > hardcoded in the LSM infrastructure and other places in the kernel, and=
+ to
+> > register them as LSM hook implementations, so that those functions are
+> > called by the LSM infrastructure like other regular LSMs.
+>=20
+> Thanks Roberto, this is looking good.  I appreciate all the work you've
+> put into making this happen; when I first mentioned this idea I figured
+> it would be something that would happen much farther into the future, I
+> wasn't expecting to see you pick this up and put in the work to make it
+> happen - thank you.
 
-Let's add a comment to the Makefile about this so everyone knows not
-to mix up the ordering, otherwise this looks good to me.
+Thanks! I also appreciate a lot your guidance and suggestions.
 
-At some point I think we may want to introduce the concept of numerical
-priorities to security_add_hooks() to add some additional granularity
-beyond the LSM_ORDER_XXX priority, but that is something we can do
-later.
+> I had some pretty minor comments but I think the only thing I saw that
+> I think needs a change/addition is a comment in the Makefile regarding
+> the IMA/EVM ordering; take a look and let me know what you think.
 
-Acked-by: Paul Moore <paul@paul-moore.com>
+Oh, I remember well, it is there but difficult to spot...
 
-> Make EVM functions as static (except for evm_inode_init_security(), which
-> is exported), and register them as hook implementations in init_evm_lsm().
-> Also move the inline functions evm_inode_remove_acl(),
-> evm_inode_post_remove_acl(), and evm_inode_post_set_acl() from the public
-> evm.h header to evm_main.c.
-> 
-> Unlike before (see commit to move IMA to the LSM infrastructure),
-> evm_inode_post_setattr(), evm_inode_post_set_acl(),
-> evm_inode_post_remove_acl(), and evm_inode_post_removexattr() are not
-> executed for private inodes.
-> 
-> Finally, add the LSM_ID_EVM case in lsm_list_modules_test.c
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> Reviewed-by: Casey Schaufler <casey@schaufler-ca.com>
-> ---
->  fs/attr.c                                     |   2 -
->  fs/posix_acl.c                                |   3 -
->  fs/xattr.c                                    |   2 -
->  include/linux/evm.h                           | 113 -----------------
->  include/uapi/linux/lsm.h                      |   1 +
->  security/integrity/evm/evm_main.c             | 118 +++++++++++++++---
->  security/security.c                           |  43 ++-----
->  .../selftests/lsm/lsm_list_modules_test.c     |   3 +
->  8 files changed, 116 insertions(+), 169 deletions(-)
+--- a/security/integrity/Makefile
++++ b/security/integrity/Makefile
+@@ -18,5 +18,6 @@ integrity-$(CONFIG_LOAD_IPL_KEYS) +=3D platform_certs/loa=
+d_ipl_s390.o
+ integrity-$(CONFIG_LOAD_PPC_KEYS) +=3D platform_certs/efi_parser.o \
+                                      platform_certs/load_powerpc.o \
+                                      platform_certs/keyring_handler.o
++# The relative order of the 'ima' and 'evm' LSMs depends on the order belo=
+w.
+ obj-$(CONFIG_IMA)			+=3D ima/
+ obj-$(CONFIG_EVM)			+=3D evm/
 
---
-paul-moore.com
+> There are also a few patches in the patchset that don't have an
+> ACK/review tag from Mimi, although now that you are co-maininting IMA/EVM
+> with Mimi I don't know if that matters.  If the two of you can let me
+> know how you want me to handle LSM patches that are IMA/EVM related I
+> would appreciate it (two ACKs, one or other, something else?).
+
+Ok, we will come back to you about this.
+
+> Once you add a Makefile commane and we sort out the IMA/EVM approval
+> process I think we're good to get this into linux-next.  A while back
+> Mimi and I had a chat offline and if I recall everything correctly she
+> preferred that I take this patchset via the LSM tree.  I don't have a
+> problem with that, and to be honest I would probably prefer
+> that too, but I wanted to check with everyone that is still the case.
+> Just in case, I've added my ACKs/reviews to this patchset in case this
+> needs to be merged via the integrity tree.
+
+Ok, given that there is the comment in the Makefile, the last thing to
+do from your side is to remove the vague comment in the file_release
+patch.
+
+Other than that, I think Mimi wanted to give a last look. If that is
+ok, then the patches should be ready for your repo and linux-next.
+
+Thanks
+
+Roberto
+
