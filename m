@@ -1,59 +1,59 @@
-Received: from mail-qv1-f49.google.com (mail-qv1-f49.google.com [209.85.219.49])
+Received: from mail-qv1-f54.google.com (mail-qv1-f54.google.com [209.85.219.54])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7540E2D044
-	for <keyrings@vger.kernel.org>; Thu,  8 Feb 2024 03:18:49 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.219.49
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8E516374F6
+	for <keyrings@vger.kernel.org>; Thu,  8 Feb 2024 03:18:53 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.219.54
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1707362333; cv=none; b=I3CDBmiU+BHeFxhjJezx5E1sw7ZLR4vrXPdEeHLmRne28FxWIEgFleJVbgsDDKhvAho0I6p5ZMmvis5AlH6rw6u73ZLs9QF6GYnC3P0/uF7dgTM9haAur3zZcHj5zNVKoRUo61ko9UkCcadwv5ExDsRN1vtP9i08FxZS1GRwRoU=
+	t=1707362336; cv=none; b=p1LuDYv1E1x0JC/N3gaf1TZ8R2gZAJJYoA+kWHqiQMIZXbCleey6vVBYf+UQ6cRgY0Xyc9940x41xe4mfEG42vU9tTwr3flIBo4l6nXAQ6aEVIKZjRVbubb0Jf7EKyYB+sUdUhY2hMBeWPs139bL4DqUsWk13WGRdxEIoksSNJo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1707362333; c=relaxed/simple;
-	bh=9MBr+RMrpbGZsgM1uUdKh5KZRYI7kg3buUw7CDt16OI=;
+	s=arc-20240116; t=1707362336; c=relaxed/simple;
+	bh=QxXYto16RKwpKe0WAuqyyFSv8bZEk+rYAhFfJZDWHpc=;
 	h=Date:Message-ID:MIME-Version:Content-Type:Content-Disposition:
-	 From:To:Cc:Subject:References:In-Reply-To; b=qQX2nq+AUqvsIfgUxqarFV2wL9oNoRAxy2msc27wwc5PRdpmhLHm0C/BBqJkzYPWnBiRDA2dDYFUywyoRaDbhjGeEYmwbPWKfSvk6MuQGkjj5uRQl3MiGggFD2+FUTBOmQ+M6Ww39E1HK1kBNCKM0i67/QtXcS1jlLZkDb1dDcc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com; spf=pass smtp.mailfrom=paul-moore.com; dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b=R6P81ANE; arc=none smtp.client-ip=209.85.219.49
+	 From:To:Cc:Subject:References:In-Reply-To; b=Cuc0l9YovoCAkMdwBxjRIy9l8EcCHjWnjiPYsO0L2XtpvBDp0bk23aovY0PMjcSqwux6n7nrPEbWRIHE56uQG9QO1hjB9EyZZp9FNubemY4FAaLii5AzS9Y8YsWGD6y3NLjrzyIdnSWJ1dkuN9gAxIGbMSFU+h3/GBR5wKSXVBI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com; spf=pass smtp.mailfrom=paul-moore.com; dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b=MEZRjnfC; arc=none smtp.client-ip=209.85.219.54
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=paul-moore.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="R6P81ANE"
-Received: by mail-qv1-f49.google.com with SMTP id 6a1803df08f44-68c813ba956so6520266d6.3
-        for <keyrings@vger.kernel.org>; Wed, 07 Feb 2024 19:18:48 -0800 (PST)
+	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="MEZRjnfC"
+Received: by mail-qv1-f54.google.com with SMTP id 6a1803df08f44-68c8790aeadso9324436d6.1
+        for <keyrings@vger.kernel.org>; Wed, 07 Feb 2024 19:18:53 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google; t=1707362327; x=1707967127; darn=vger.kernel.org;
+        d=paul-moore.com; s=google; t=1707362331; x=1707967131; darn=vger.kernel.org;
         h=in-reply-to:references:subject:cc:to:from:content-transfer-encoding
          :content-disposition:mime-version:message-id:date:from:to:cc:subject
          :date:message-id:reply-to;
-        bh=O7fQSgVt/E7Pqy5yj+eKD+U24pcDYXGXrM2DO75hYp0=;
-        b=R6P81ANE9DyTlwDgT+tZdgm5f+FTIVqxPlTneEGvxzueDdsIasj0Id4SamS8AH/4An
-         ymMEuuPqFqARvlvlZUuFFzzWtT2Mxcka+EQBCVldY6JDV3QwsjVM0Tfh5kV8PhBbo0Nx
-         pVf7BNt0Op5EmotLOHbSCDbJyIKcQIrDIM2L+iP2x1hxQT8Z6ccpglGmdcoINsNpS9y1
-         7ccEJpDipzR6i1ycpSiGhxDcbTLpUe3xqycrem+Iu6R8K1aCsOsK0civRfaiV0sv18rw
-         G8cMbrS4Q8FaybDERvJAt/XfNrEYeXvk0AhlJEYxy9tS2rrSI+jJ6/O/9ymQC0+4BEDh
-         l4ew==
+        bh=7jlGv8JHUSR10sS3dfCJsrgR+VqC9NQSIZQ6VcWAY+8=;
+        b=MEZRjnfCzlNL1kxcTjyVoRyMIz7o3KzC5/e53Ha+GSsH2L7wfAjXQNocGT6106lLik
+         DxWhr+cpIUfMub7P6whw+/YZrAGS9XmHG8OclvqoFLP7J6YAVmM74HayHuhIuWURtRTl
+         cXXKowO0eMnF3SMIJGfHm5lmGKEWgGmWQ7uIoo8Efl2xWd/Ii+D+hXMjjGFrggZ/iZO2
+         g4yaGFsyRY0k4cbtEf8/0o+rCvCOs+GVcp41sE8mm6AMqZQlKQgHh2nEG5yWS9yHuIhw
+         LE3CScm9hAx5qLy1uIaUbWGqohN09i2UWt/tLXCs8jfgh+Tjfw+cloL1acBdkAGQPE2F
+         lXxA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20230601; t=1707362327; x=1707967127;
+        d=1e100.net; s=20230601; t=1707362331; x=1707967131;
         h=in-reply-to:references:subject:cc:to:from:content-transfer-encoding
          :content-disposition:mime-version:message-id:date:x-gm-message-state
          :from:to:cc:subject:date:message-id:reply-to;
-        bh=O7fQSgVt/E7Pqy5yj+eKD+U24pcDYXGXrM2DO75hYp0=;
-        b=DK+bbCYl7nt1XGE1es4wxjCjxgZwBM3XMfrDsMbkn7fmlPG0rXj9HVdlmzzOIAe4ZI
-         3xEhg4xFoEZulqQA3KoTfFRn8duv/xk+nyu0jnduIObofVqOGspAlEIFU9bZKOy0f22/
-         KNAGfbVcSzqKZDfdLeEeyRoU2RN8JTEslM6wtvSUzfHkHglQxDw1ur8vLNc7WdZjFym0
-         cuMv3ZwKGKR7tep4kAMUEq61TA2AwLZ3JQYucGhQIVzuewYAM4kN2McS5nuaIMrfZHfQ
-         cHmIKgPq0UybC2QfYHbneiaFBIpM0OYJo8MGTliHWgo7RdGxtGMBJ079APWWZrK+rgzX
-         w7Qg==
-X-Gm-Message-State: AOJu0YzJpnn/NoaAhviHBESsMv+Ud4C0BYrU5SwAIM2lEr7EGUUcsDnn
-	cWp/bR+w2sjEIyJADfl7UHQ+OhQfDaHLmT9L8q+S1TM7DjbPhJpkFMmLwBJ/ZQ==
-X-Google-Smtp-Source: AGHT+IEg2jFuD33qS6tDJsMUauoak+5M3TUvs37Ud043Ss8E8vI85dIo7hUTabiYfP4Deso0lkrPFA==
-X-Received: by 2002:a05:6214:260f:b0:686:7256:c9f4 with SMTP id gu15-20020a056214260f00b006867256c9f4mr10855029qvb.9.1707362327320;
-        Wed, 07 Feb 2024 19:18:47 -0800 (PST)
-X-Forwarded-Encrypted: i=1; AJvYcCVi3gO1izPeIA/OC5xdbEjweQkU7vk98P9KgyNvjhyv44xwmGNol5Rd//WWoZucdmEstslipX1kJD+Um2MGVgkHystyYQ3F6gklDGcTngACsJLZN3JTz+wsOkwtyqPy171QyMyTNtoMmAqp2YjsKEBSR5YKGpEDHkhHkGA6xZ98WdSCJL45A5As/kwz831Hh35q1Ul9B6yi5DN1Diq7uGnIz+i7VjJgiB3HaPzUOC6IYXt3yPMxsye9o2w6FtqUfab5yGRmeaOr8GYjznCyBJ9M72Z/QmIa1nucm8boNSvGcnp+P1HzZwjMNdI2VxeoJ3DbqzTLZShcg3pBHHLe9xKfiCr5QJRxLpcte3YtgzjFtknPPsnzUsdiR+C89o+wp2n/pA2hLEF6h44sxjqrECq0lUDr/3U/D5L8uis3wJjSeOK0h1Axk2R5z7yXQFpg8AGJn3EwRkMf9y6AGV9LRqWH16ahTzyJsJ7C93FiFNGfuGuzJdnxTAhfHAVAP3rqMh80ZaEPu2BJynMmN1k+CjpEEFCcEoPE/MG1inaHSiewoBxgAmd9HWTx+l123aMLrwpBEWspTZP/xcgnJb5b8wkddvNH/7q6zLTBB5xGKPCz10yblh8LsphhG/GsVzEB8MePk9dk/DJPrjSnZCf85rmplvGT5tzhhwsdtbvCiva2XWU4Q7bwRKe1sRP77LWKyzqrsEa0tuQNE6NBf61KJJrrScQjnzo5Sw1BMuhW8Mag2clgERWpXuQwCz42EU7i6yT0lKB9uzS2HTm1Yw/LhnUn1u0Mkod7TfAVZJW8AqgyN9xQU2tH10qKDxRdzZ1mz1NBjZbnwlRVCc/udCK1UGp8wkUeuny6NP3CFnstxGbS4U1XiChi/BvIsmT16OGPd5S/RNY+U/4s0OKoc+3u5sMzv45XvIHkwKXnDXjQZ+ASBwW+WFNl
+        bh=7jlGv8JHUSR10sS3dfCJsrgR+VqC9NQSIZQ6VcWAY+8=;
+        b=NpUu7JWNmg4UzqYPQitljttpX1owTznRQa4DeRKoupSytreP8GxKsZ67FDAtRXQgFc
+         Cad1//ubOG1+edug+GkIQoS4dUB6vntdrDP0DKnRCMrwRr8yvaMIqjJB0IH4Pw1SvBCQ
+         ym6YYQu+yWpf/6WlrMvvbQ0kb90qYWioceHMO2gY2zdnYOpnCOANRXQvIIvFRsHsjf5v
+         jAJw05VIFGnyATBVCOPfyrdDwTVaEF33SVt/lKAljmqTBA10E+gAj8NIY3UMImQWJYBK
+         1aWTGkaB0St6GglqWaSSW/Ku/8Spt/56RaWv90yX8zNtLk5uY4HP5+OB7E8TI3Pu3EfV
+         pA7w==
+X-Gm-Message-State: AOJu0YxDieYULqSZcfp1nqN+ItjEGStkfZd0mVQFoBnUZFjGhxje0J4o
+	3tZnDMTxql+ounRuQJzKwzjiVnxzk8xH/wpz42Dyrn7l8S+KiEwqwJq929UcFw==
+X-Google-Smtp-Source: AGHT+IGGSLRZ//P7EVYtFYlcPCQ7WQ0ILmzzn7EukifdD7QAeQxZodCh/FoXul85fPk/+Aiu0La3VQ==
+X-Received: by 2002:a0c:dd08:0:b0:68c:a6e2:d2e1 with SMTP id u8-20020a0cdd08000000b0068ca6e2d2e1mr6625187qvk.46.1707362331602;
+        Wed, 07 Feb 2024 19:18:51 -0800 (PST)
+X-Forwarded-Encrypted: i=1; AJvYcCWXMo0UYophNRTNvt8tfg3/HdVHpjmGmQ9deqmf1QT63LWvT9XuJx4IN6kMOJQHpDxnE+SCJZihnmMuwpbfMdrFe1qIry7MoLQFoikl8h7+eoUpf0tXm0LzAFKRA1mlQyhEUfHznsAeKFZCWmKwrrRBtIb2pkjyYI6eL2vNxFc1VweebpAwHJcxTSvSmZ5PmBmx6zPfUtPKgKF4+H/VAX8cHRgRAWjvLDBYoREEajIQ694zSjS2B/PvhKlNVdWjy6zpBftKImqq4ZmTNrTPQHF9FADXzRkvV9LLJGoiJebz6aUfB6EaDxpG4xpZfQ3uKDO3QLssEmIwaavR61GyE+l+u/KUyB2mSjql2h+ArY966oAO4hQDSe3htEkkxUYxv1WbOsuSl7ueC6IfFF4aRitSWncPeJIZBif+95SS/0HjyE62Uc2vBfVdJ53vy0cJkvGjcsVPdFeMfodBemTrAbt6Pg7UbpOoz8/SYDI6yTV9QENb4t9Z+taGPZ0AtMGFwxcaeT3yR5cTpVZhn0COFFDnedFyn0cm4ALJTMTo+nj94EXf/1w9w81cM5Ntd3cGHlOgcK/iHzP7D7+C2L1sw8At+KciSyy6xpM24PONb3jMniSWcd6j/EUhsXb/LYWWOeIzxmADrVE6KZl+kf2S2URIvfRzz/hPmxgPv51zV2zoGLMcnwjQV3cRmcGeGeY7KoXuU+Q+vi5IX91HDFNFUQ4izsCzLrqeFzWz4tC7qa0u0HUVzXZoDlCgJcaNg6T60+5LUKFmjNQeIvzEvAxfAw1EUtQWwO/10mGohm4atXzXp7JQq/+V7J36s7weZF/OBdtucnJ0YqnjgqaBpBzKYzsRUyA+LyTVcDuQruFJrMkdvrMKuC744DjCud0pmJjahAnZgWHARp5WH099cN6lKiePaVe7kji+xCkGEFeOetSYC461b89f
 Received: from localhost ([70.22.175.108])
-        by smtp.gmail.com with ESMTPSA id os47-20020a05620a812f00b00783df78821dsm1079337qkn.25.2024.02.07.19.18.46
+        by smtp.gmail.com with ESMTPSA id oi8-20020a05621443c800b0068cc16f33c4sm835291qvb.80.2024.02.07.19.18.50
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 07 Feb 2024 19:18:46 -0800 (PST)
-Date: Wed, 07 Feb 2024 22:18:46 -0500
-Message-ID: <5b4c8041ca471b8a9bb76a8409927d56@paul-moore.com>
+        Wed, 07 Feb 2024 19:18:51 -0800 (PST)
+Date: Wed, 07 Feb 2024 22:18:50 -0500
+Message-ID: <1b538d1a73fd542c8463c398232091d5@paul-moore.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -66,33 +66,40 @@ Content-Transfer-Encoding: 8bit
 From: Paul Moore <paul@paul-moore.com>
 To: Roberto Sassu <roberto.sassu@huaweicloud.com>, viro@zeniv.linux.org.uk, brauner@kernel.org, chuck.lever@oracle.com, jlayton@kernel.org, neilb@suse.de, kolga@netapp.com, Dai.Ngo@oracle.com, tom@talpey.com, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com, eric.snowberg@oracle.com, dhowells@redhat.com, jarkko@kernel.org, stephen.smalley.work@gmail.com, eparis@parisplace.org, casey@schaufler-ca.com, shuah@kernel.org, mic@digikod.net
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@vger.kernel.org, linux-kselftest@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>
-Subject: Re: [PATCH v9 15/25] security: Introduce inode_post_create_tmpfile  hook
-References: <20240115181809.885385-16-roberto.sassu@huaweicloud.com>
-In-Reply-To: <20240115181809.885385-16-roberto.sassu@huaweicloud.com>
+Subject: Re: [PATCH v9 19/25] integrity: Move integrity_kernel_module_request()  to IMA
+References: <20240115181809.885385-20-roberto.sassu@huaweicloud.com>
+In-Reply-To: <20240115181809.885385-20-roberto.sassu@huaweicloud.com>
 
 On Jan 15, 2024 Roberto Sassu <roberto.sassu@huaweicloud.com> wrote:
 > 
-> In preparation for moving IMA and EVM to the LSM infrastructure, introduce
-> the inode_post_create_tmpfile hook.
+> In preparation for removing the 'integrity' LSM, move
+> integrity_kernel_module_request() to IMA, and rename it to
+> ima_kernel_module_request().
 > 
-> As temp files can be made persistent, treat new temp files like other new
-> files, so that the file hash is calculated and stored in the security
-> xattr.
+> Compile it conditionally if CONFIG_INTEGRITY_ASYMMETRIC_KEYS is enabled,
+> and call it from security.c (removed afterwards with the move of IMA to the
+> LSM infrastructure).
 > 
-> LSMs could also take some action after temp files have been created.
+> Adding this hook cannot be avoided, since IMA has no control on the flags
+> passed to crypto_alloc_sig() in public_key_verify_signature(), and thus
+> cannot pass CRYPTO_NOLOAD, which solved the problem for EVM hashing with
+> commit e2861fa71641 ("evm: Don't deadlock if a crypto algorithm is
+> unavailable").
 > 
-> The new hook cannot return an error and cannot cause the operation to be
-> canceled.
+> EVM alone does not need to implement this hook, first because there is no
+> mutex to deadlock, and second because even if it had it, there should be a
+> recursive call. However, since verification from EVM can be initiated only
+> by setting inode metadata, deadlock would occur if modprobe would do the
+> same while loading a kernel module (which is unlikely).
 > 
 > Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> Acked-by: Casey Schaufler <casey@schaufler-ca.com>
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 > ---
->  fs/namei.c                    |  1 +
->  include/linux/lsm_hook_defs.h |  2 ++
->  include/linux/security.h      |  6 ++++++
->  security/security.c           | 15 +++++++++++++++
->  4 files changed, 24 insertions(+)
+>  include/linux/ima.h                    | 10 +++++++++
+>  include/linux/integrity.h              | 13 ------------
+>  security/integrity/digsig_asymmetric.c | 23 --------------------
+>  security/integrity/ima/ima_main.c      | 29 ++++++++++++++++++++++++++
+>  security/security.c                    |  2 +-
+>  5 files changed, 40 insertions(+), 37 deletions(-)
 
 Acked-by: Paul Moore <paul@paul-moore.com>
 
