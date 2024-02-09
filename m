@@ -1,144 +1,105 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DB05C51C51;
-	Thu,  8 Feb 2024 22:19:13 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5661D664A3;
+	Fri,  9 Feb 2024 09:45:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1707430755; cv=none; b=RHa3Q9E5+42YSOYMCERG2EFmbx65qX3K+NczzaSNIvcNgoq4WNV8a5+VS6qMPXuNAjYABH3DXAaqnWJ83AR+Tk8p2CjNOCzKhrzLTPQpGdewLa+GcGxyRyXps7YL3R1krIVuYk4ka4OonOc/43zuHwGLEG44X2cY4kxSOZdwL/k=
+	t=1707471945; cv=none; b=pS5Mvjvmw42xxt76g31zwX9gFTw1lscqNe0sXV0+06U7an3rvG1rrRW7ABxeBQ9Mn39s6SKtf3rVZ3E4TRdQRjO+V0A/XdsI9eMGm3mAvm/1uiFoYV9GnYdIrngPSnH0aBo2063+4GU5D7lgFay1vhPWS4kZmP6VmmChF2q/48E=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1707430755; c=relaxed/simple;
-	bh=xBZ1n0gZp8EYVlO6T0SCUTSiV9bBvyRUZz/acfyupgY=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=bYF+CUnnx9WQCgVkEVB7yKbgE91RiGmxflYVGjFYYs+mfE2fgm89VN2KxQTUdPeV1SjjcWSvSaBs2qPWrotX+w+gENC1/otG51+YPmjUyTdC7rZszujKms8cF6PUj7MkjALSIBYVU+FLuu8q22Zmpcm1g+mJDz4a/Xdc2SANuiU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=Z/6sLODp; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1707471945; c=relaxed/simple;
+	bh=XTXqRfUyPr9yWhoo/YdxJVLsEINDyd7wbqRVK/40Huo=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=M2t1mSVwSmdoKyzvwIT3dqgLAJ9TNILgFCzEIwYtib8i/z/hpjAVK/nY1TaEUdt327CMlTJfnwodVct1K974ICNcQLm+nZXSlBftt32GVDc5AOL6uuBrTrHYEaFzoJWxLP0FPR93Xi7kB3n1jacTcxrvRvRIgp/TY3TjDOSTR/w=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=gV5hsKuy; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="Z/6sLODp"
-Received: from pps.filterd (m0356516.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 418LSUhQ018549;
-	Thu, 8 Feb 2024 22:19:08 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=ffTyu2ELv5lNxL73wl5uPavNRaJrPsOooJ4QLpeU3l4=;
- b=Z/6sLODpoA4i0TwDYApA0kJ3KoiH0cqUNgw3DCQos42xoUOjSAUxPkzW7Y+YfORfZkrH
- D3tSH0DssWi5lZidoCPR9Wr0UEDZoVUOqIH6sZKP/C2vcdAbkdl/sID1a9TLT/vBkJ1l
- hYNymEP7Sn5t/dcPg+6wuDcdWoWv2ShovfS0fgnI6PApvnI71KGDrBLz+5BGynCO75ad
- pTpOOcKpxxQx0XDiOJKQSojFyPCRqgCLPzqb7FVxZXV0NOE1btEKUEQOUZTxCcsFAK0J
- HovWM99++2kpzlQs85Fc3GaAflrRpTEbz80LFIo+pptz5Ob6fCDidKR/c9bmxNH+nuB3 oQ== 
-Received: from ppma23.wdc07v.mail.ibm.com (5d.69.3da9.ip4.static.sl-reverse.com [169.61.105.93])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3w56w7s0we-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Thu, 08 Feb 2024 22:19:08 +0000
-Received: from pps.filterd (ppma23.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma23.wdc07v.mail.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 418L0l5U005455;
-	Thu, 8 Feb 2024 22:19:07 GMT
-Received: from smtprelay02.dal12v.mail.ibm.com ([172.16.1.4])
-	by ppma23.wdc07v.mail.ibm.com (PPS) with ESMTPS id 3w21akycmm-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Thu, 08 Feb 2024 22:19:07 +0000
-Received: from smtpav03.dal12v.mail.ibm.com (smtpav03.dal12v.mail.ibm.com [10.241.53.102])
-	by smtprelay02.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 418MJ6v132178856
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Thu, 8 Feb 2024 22:19:06 GMT
-Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 959D958060;
-	Thu,  8 Feb 2024 22:19:06 +0000 (GMT)
-Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 2E13258063;
-	Thu,  8 Feb 2024 22:19:06 +0000 (GMT)
-Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
-	by smtpav03.dal12v.mail.ibm.com (Postfix) with ESMTP;
-	Thu,  8 Feb 2024 22:19:06 +0000 (GMT)
-From: Stefan Berger <stefanb@linux.ibm.com>
-To: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, saulo.alessandre@tse.jus.br,
-        Stefan Berger <stefanb@linux.ibm.com>
-Subject: [PATCH 12/14] crypto: ecc - Implement and use ecc_curve_get_nbytes to get curve's nbytes
-Date: Thu,  8 Feb 2024 17:18:38 -0500
-Message-ID: <20240208221840.3665874-13-stefanb@linux.ibm.com>
-X-Mailer: git-send-email 2.43.0
-In-Reply-To: <20240208221840.3665874-1-stefanb@linux.ibm.com>
-References: <20240208221840.3665874-1-stefanb@linux.ibm.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="gV5hsKuy"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id F2B33C433F1;
+	Fri,  9 Feb 2024 09:45:37 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=k20201202; t=1707471944;
+	bh=XTXqRfUyPr9yWhoo/YdxJVLsEINDyd7wbqRVK/40Huo=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=gV5hsKuy6kT4l1bW8GZQNbBAOcQ5vrq9TCkNC4UkHaVG8K5YdmTb7Rljqylfgd5b+
+	 2s9p+kfOyecmgRJzJG7s/swPntcVrYHyLfgg9BacyhQ5j85Tbc/Srp5jtabGK3h/jv
+	 di2qzjjAy1T5Yy5qimr+TqM+cee7u3/ZVQz46v9ijl/vslb531JM+z/Q6PE1iNRF2D
+	 a13Rt/M+jVUdTAdXGsZTaFn8piYBphLPWfDe53a+UOTDl2CJlzrvKDBinuwO9V9MTc
+	 JG22L/hmv3iJll4DQE3t+L9z9dt0K0IQnQB9gqAFiprn4ZZxO3fVQcPH+FiWTW/IvQ
+	 pFSSNKDpbPo0g==
+Date: Fri, 9 Feb 2024 10:45:35 +0100
+From: Christian Brauner <brauner@kernel.org>
+To: Roberto Sassu <roberto.sassu@huaweicloud.com>
+Cc: viro@zeniv.linux.org.uk, chuck.lever@oracle.com, jlayton@kernel.org, 
+	neilb@suse.de, kolga@netapp.com, Dai.Ngo@oracle.com, tom@talpey.com, 
+	paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, 
+	dmitry.kasatkin@gmail.com, eric.snowberg@oracle.com, dhowells@redhat.com, jarkko@kernel.org, 
+	stephen.smalley.work@gmail.com, eparis@parisplace.org, casey@schaufler-ca.com, shuah@kernel.org, 
+	mic@digikod.net, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, 
+	linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, 
+	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@vger.kernel.org, 
+	linux-kselftest@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>, 
+	Stefan Berger <stefanb@linux.ibm.com>
+Subject: Re: [PATCH v9 21/25] ima: Move IMA-Appraisal to LSM infrastructure
+Message-ID: <20240209-chancenreich-albatros-4dad750ab5f8@brauner>
+References: <20240115181809.885385-1-roberto.sassu@huaweicloud.com>
+ <20240115181809.885385-22-roberto.sassu@huaweicloud.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: nsQsEpe2xtw309j9OHAaYO0pP5PK772U
-X-Proofpoint-ORIG-GUID: nsQsEpe2xtw309j9OHAaYO0pP5PK772U
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.272,Aquarius:18.0.1011,Hydra:6.0.619,FMLib:17.11.176.26
- definitions=2024-02-08_11,2024-02-08_01,2023-05-22_02
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 malwarescore=0 adultscore=0
- spamscore=0 mlxscore=0 priorityscore=1501 impostorscore=0 mlxlogscore=998
- lowpriorityscore=0 phishscore=0 bulkscore=0 clxscore=1015 suspectscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2311290000
- definitions=main-2402080124
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20240115181809.885385-22-roberto.sassu@huaweicloud.com>
 
-Implement ecc_curve_get_nbytes to get a curve's number of bytes (nbytes).
-The number of bytes can be derived from the nbits field of a curve, if
-set, otherwise from the ndigits field.
+On Mon, Jan 15, 2024 at 07:18:05PM +0100, Roberto Sassu wrote:
+> From: Roberto Sassu <roberto.sassu@huawei.com>
+> 
+> A few additional IMA hooks are needed to reset the cached appraisal
+> status, causing the file's integrity to be re-evaluated on next access.
+> Register these IMA-appraisal only functions separately from the rest of IMA
+> functions, as appraisal is a separate feature not necessarily enabled in
+> the kernel configuration.
+> 
+> Reuse the same approach as for other IMA functions, move hardcoded calls
+> from various places in the kernel to the LSM infrastructure. Declare the
+> functions as static and register them as hook implementations in
+> init_ima_appraise_lsm(), called by init_ima_lsm().
+> 
+> Also move the inline function ima_inode_remove_acl() from the public ima.h
+> header to ima_appraise.c.
+> 
+> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+> Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
+> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+> ---
+>  fs/attr.c                             |  2 -
+>  include/linux/ima.h                   | 55 ---------------------------
+>  security/integrity/ima/ima.h          |  5 +++
+>  security/integrity/ima/ima_appraise.c | 38 +++++++++++++-----
+>  security/integrity/ima/ima_main.c     |  1 +
+>  security/security.c                   | 13 -------
+>  6 files changed, 35 insertions(+), 79 deletions(-)
+> 
+> diff --git a/fs/attr.c b/fs/attr.c
+> index 221d2bb0a906..38841f3ebbcb 100644
+> --- a/fs/attr.c
+> +++ b/fs/attr.c
+> @@ -17,7 +17,6 @@
+>  #include <linux/filelock.h>
+>  #include <linux/security.h>
+>  #include <linux/evm.h>
+> -#include <linux/ima.h>
+>  
+>  #include "internal.h"
+>  
+> @@ -503,7 +502,6 @@ int notify_change(struct mnt_idmap *idmap, struct dentry *dentry,
+>  	if (!error) {
+>  		fsnotify_change(dentry, ia_valid);
+>  		security_inode_post_setattr(idmap, dentry, ia_valid);
+> -		ima_inode_post_setattr(idmap, dentry, ia_valid);
+>  		evm_inode_post_setattr(idmap, dentry, ia_valid);
+>  	}
 
-Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
----
- crypto/ecc.c                  |  6 ++----
- include/crypto/internal/ecc.h | 11 +++++++++++
- 2 files changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/crypto/ecc.c b/crypto/ecc.c
-index 73fbbfc8d69c..f643719450b8 100644
---- a/crypto/ecc.c
-+++ b/crypto/ecc.c
-@@ -1478,10 +1478,8 @@ static int __ecc_is_key_valid(const struct ecc_curve *curve,
- int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
- 		     const u64 *private_key, unsigned int private_key_len)
- {
--	int nbytes;
- 	const struct ecc_curve *curve = ecc_get_curve(curve_id);
--
--	nbytes = ndigits << ECC_DIGITS_TO_BYTES_SHIFT;
-+	int nbytes = ecc_curve_get_nbytes(curve);
- 
- 	if (private_key_len != nbytes)
- 		return -EINVAL;
-@@ -1506,7 +1504,7 @@ int ecc_gen_privkey(unsigned int curve_id, unsigned int ndigits, u64 *privkey)
- {
- 	const struct ecc_curve *curve = ecc_get_curve(curve_id);
- 	u64 priv[ECC_MAX_DIGITS];
--	unsigned int nbytes = ndigits << ECC_DIGITS_TO_BYTES_SHIFT;
-+	unsigned int nbytes = ecc_curve_get_nbytes(curve);
- 	unsigned int nbits = vli_num_bits(curve->n, ndigits);
- 	int err;
- 
-diff --git a/include/crypto/internal/ecc.h b/include/crypto/internal/ecc.h
-index 75ee113f58f9..ba9ca0dcb971 100644
---- a/include/crypto/internal/ecc.h
-+++ b/include/crypto/internal/ecc.h
-@@ -93,6 +93,17 @@ static inline void ecc_digits_to_array(const u64 *in, unsigned int ndigits,
- 	memcpy(out, &tmp[o], nbytes);
- }
- 
-+/**
-+ * ecc_curve_get_nbytes() - Get the number of bytes the curve requires
-+ * @curve:   The curve
-+ */
-+static inline unsigned int ecc_curve_get_nbytes(const struct ecc_curve *curve)
-+{
-+	if (curve->nbits)
-+		return DIV_ROUND_UP(curve->nbits, 8);
-+	return curve->g.ndigits << ECC_DIGITS_TO_BYTES_SHIFT;
-+}
-+
- /**
-  * ecc_is_key_valid() - Validate a given ECDH private key
-  *
--- 
-2.43.0
-
+Acked-by: Christian Brauner <brauner@kernel.org>
