@@ -1,113 +1,155 @@
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-ej1-f50.google.com (mail-ej1-f50.google.com [209.85.218.50])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0034A1C684;
-	Wed,  6 Mar 2024 22:59:02 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9825E12EBED
+	for <keyrings@vger.kernel.org>; Thu,  7 Mar 2024 15:35:08 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.218.50
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1709765945; cv=none; b=db13v0Nxbj+ud9YZVU8D5zVFesI1GwVyxrfB4veChRlDmd0xjL1jkW7y+DzZOVGiwdmvycHoJ6ZkoBIQL87Bwdwc78EenU6nQDXpi5U8K9oypYHcDDK7m/llXDM9VheIbyWFbhtTuoxAb3bDX5OSYPkiiWr2SWK5Hsm3rF4imPw=
+	t=1709825711; cv=none; b=D4T+H0NZRNqLYc3u5p6R0ZmW/c2EfV7DmoUe7U5en98qkv2KlhGE/JLHfy0VAB2W+fHLs9bImzgmNXaHa79qve2tarcQlse8TAjso6lC4XJepgOhw7Bdw83/YUrfDXfLiJlrZi3rr5HRM7sgmZVT2wSVS9K4QtUYX7RwlNzcpnw=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1709765945; c=relaxed/simple;
-	bh=oNL4woPH2GgB/0aAHfXk2961xRNs+WQXgdtPX1mrVSo=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=utRuA6WZdaa1bOjybWdTTvsFRhaHcSIj+hTEz1LIPsyJicegm1WjnL/VsAHSljmLNcjBVUJShK+jPJPjRTon8eaK09lRDGsCNKX8IzkhzWSbpw9t34/X1I2MDlrq9eXfezOKaW7Q1OrfjN79+XWobdDzgJS9iV13rZg4pocGylI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=VKYrAG//; arc=none smtp.client-ip=148.163.156.1
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1709825711; c=relaxed/simple;
+	bh=zQBkiWXTggIKvHEMWEiGOum5TT7ceiwVi4duUGHOdgY=;
+	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
+	 Message-Id:References:To; b=j78gsEH5+/FV4wDotM9axwMBEB9F9JnNQQaGDIxVVNFW6U9oAZ+iVur6C/jT/ngOEkLDhPKYRdmiyj7JjY2AI+PgFmH7l+ZFS9EuaW/yZPvgSVS19SgRAnLZM3JG4gwQ/aUe2+X4+ufB3NR2LbjvE4jl/DXBosbHSxlTX7AF5JA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sigma-star.at; spf=pass smtp.mailfrom=sigma-star.at; dkim=pass (2048-bit key) header.d=sigma-star.at header.i=@sigma-star.at header.b=C7IrvgcW; arc=none smtp.client-ip=209.85.218.50
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sigma-star.at
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=sigma-star.at
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="VKYrAG//"
-Received: from pps.filterd (m0353728.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 426MgDw8018256;
-	Wed, 6 Mar 2024 22:58:57 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=fZBVeTFFrn96qz5boWPG4MRz0Oeii50WF0vdP2piFhs=;
- b=VKYrAG//fcN7izxPTJi1ObzKnhA0D3uIh3cJc0cw7fstngK+WA1siR00uN+WEowtjhjC
- /UmTVEineOuKx36dqyUSXoUBRSm/n4aweD1dhIKJjjYemdp6tHTVzU64DYGjAEDH8h2Y
- pXCjGcA4YxxfgJNzF36MPrq1wX9MMhYVDXS9222fY1fEA8u5X6q74BN1+vHn66O3uZ5L
- lIbO7TPnyVEsMLwg9rHvu+fxav2MKhp0YzImGMMVr9LPlpurDyVb1E3ZJckKQ6SW/Zwe
- 1t3QugfDSAikwQa6YcmYcteZVxunGHfqr86D3zjh35KBpzGVep/owl8q7S/Iu5ephDnK Pg== 
-Received: from ppma21.wdc07v.mail.ibm.com (5b.69.3da9.ip4.static.sl-reverse.com [169.61.105.91])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3wq1gugb0f-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 06 Mar 2024 22:58:57 +0000
-Received: from pps.filterd (ppma21.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma21.wdc07v.mail.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 426MIwG9026216;
-	Wed, 6 Mar 2024 22:23:10 GMT
-Received: from smtprelay02.dal12v.mail.ibm.com ([172.16.1.4])
-	by ppma21.wdc07v.mail.ibm.com (PPS) with ESMTPS id 3wmfep1nq3-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 06 Mar 2024 22:23:10 +0000
-Received: from smtpav01.dal12v.mail.ibm.com (smtpav01.dal12v.mail.ibm.com [10.241.53.100])
-	by smtprelay02.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 426MN7Mo13631748
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Wed, 6 Mar 2024 22:23:09 GMT
-Received: from smtpav01.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id DFCA358061;
-	Wed,  6 Mar 2024 22:23:05 +0000 (GMT)
-Received: from smtpav01.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 6208858068;
-	Wed,  6 Mar 2024 22:23:05 +0000 (GMT)
-Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
-	by smtpav01.dal12v.mail.ibm.com (Postfix) with ESMTP;
-	Wed,  6 Mar 2024 22:23:05 +0000 (GMT)
-From: Stefan Berger <stefanb@linux.ibm.com>
-To: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, saulo.alessandre@tse.jus.br, lukas@wunner.de,
-        Stefan Berger <stefanb@linux.ibm.com>
-Subject: [PATCH v5 06/12] crypto: ecc - Add special case for NIST P521 in ecc_point_mult
-Date: Wed,  6 Mar 2024 17:22:51 -0500
-Message-ID: <20240306222257.979304-7-stefanb@linux.ibm.com>
-X-Mailer: git-send-email 2.44.0
-In-Reply-To: <20240306222257.979304-1-stefanb@linux.ibm.com>
-References: <20240306222257.979304-1-stefanb@linux.ibm.com>
+	dkim=pass (2048-bit key) header.d=sigma-star.at header.i=@sigma-star.at header.b="C7IrvgcW"
+Received: by mail-ej1-f50.google.com with SMTP id a640c23a62f3a-a456ab934eeso165049466b.0
+        for <keyrings@vger.kernel.org>; Thu, 07 Mar 2024 07:35:08 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=sigma-star.at; s=google; t=1709825707; x=1710430507; darn=vger.kernel.org;
+        h=to:references:message-id:content-transfer-encoding:cc:date
+         :in-reply-to:from:subject:mime-version:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=zQBkiWXTggIKvHEMWEiGOum5TT7ceiwVi4duUGHOdgY=;
+        b=C7IrvgcW9Fq549kj0yAYS+DQZPX5ld1mrhJKmAK3P4C/2aTbjK/Wl7nHzsGZkKmX91
+         GLWtaR8iD6jI9oDNqZ5xfQmSjLjhPTwcLrCz2Ya3JX4X76I0Tto+MU0goAmU0YRsWmoH
+         JfjWxvJ98TeOxvaj2e+MSVCL43mCMJUrCUueVbdLB2eeBtO9pjH6hsbeqfeesBYk0SK2
+         8Cx/xxo6v+MLtfrvsteShmNd9u6Gc7NVeLv/gz+4ozabc1QilcFPXP18rvRR6llJ+uRj
+         WFdZ8YWFweDFgDCZyc5UrCcmulc+ZtJV2UUYakh2Vuyjc+/j1F+JQ88YNzgKaPk3QUMN
+         K6gA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1709825707; x=1710430507;
+        h=to:references:message-id:content-transfer-encoding:cc:date
+         :in-reply-to:from:subject:mime-version:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=zQBkiWXTggIKvHEMWEiGOum5TT7ceiwVi4duUGHOdgY=;
+        b=QQXPV6VaNOJRAZoMkgB5TwCtLZ5lFL7zRDxVnaMLbkYeoye649UEFOjfdMOUWGtGQE
+         oDWd3WshiQpq4f6RxHAyuyJX4atmgICrmlnILqI8kX+BwZivsgaZkcszsNGW7SL6+jXH
+         I8bAd/d2JmavwlCunvU5QgOsDMnPjtORWYgDD2U836Nl9DNILeHnJY8pwK7xiUETMHh5
+         /Sn/hJw6LdnIXKYSQjiwY6xx6hUtBqlwdEPiHb6fnuRgBb/y1NNjK7sEPPrT7j8R/X7Y
+         uwomMZb907o2W2MtZQPbI4Er14KAXg1QuwO1k1Z9tD0orAV1ocHlpkUIbYrMoz0JS/uU
+         Y4og==
+X-Forwarded-Encrypted: i=1; AJvYcCXzvqM9OrFq/0TjZjOcT9R5ksm14aDUEJ22TgfIqKEVejsIhWqJPifc8WkSoOAjAhvG8ZRb7yL9SfkBtG9QtxhUs5c568SfCjg=
+X-Gm-Message-State: AOJu0Yw6u6PwUmScjkx87wLDz9xTv98Qb+iP91Hc648H0MslBBhHKxeo
+	b+shq0YdYa++YgpKvBmw1dC4CA2X+uOvXa8GFLLgrvC6iieHe3u9trl5dko8UU8=
+X-Google-Smtp-Source: AGHT+IFZFPN298xxejGvRyvzbp276Z/iMmAVyPkxVHpe9zUTmo8gWkPUve5gZl3bDKcFPppBDzmd1g==
+X-Received: by 2002:a17:906:6a89:b0:a45:902b:3cb0 with SMTP id p9-20020a1709066a8900b00a45902b3cb0mr6729129ejr.58.1709825706741;
+        Thu, 07 Mar 2024 07:35:06 -0800 (PST)
+Received: from smtpclient.apple ([82.150.214.1])
+        by smtp.gmail.com with ESMTPSA id lz19-20020a170906fb1300b00a45b7f9e822sm1973422ejb.118.2024.03.07.07.35.04
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 07 Mar 2024 07:35:06 -0800 (PST)
+Content-Type: text/plain;
+	charset=utf-8
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: 5Wi3TuOfounAn6vNDh3bvOoo3h3hx1YA
-X-Proofpoint-ORIG-GUID: 5Wi3TuOfounAn6vNDh3bvOoo3h3hx1YA
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.272,Aquarius:18.0.1011,Hydra:6.0.619,FMLib:17.11.176.26
- definitions=2024-03-06_12,2024-03-05_01,2023-05-22_02
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 priorityscore=1501
- phishscore=0 suspectscore=0 spamscore=0 adultscore=0 mlxscore=0
- mlxlogscore=999 impostorscore=0 clxscore=1015 malwarescore=0
- lowpriorityscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=8.12.0-2311290000 definitions=main-2403060185
+Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3774.400.31\))
+Subject: Re: [PATCH v5 4/6] MAINTAINERS: add entry for DCP-based trusted keys
+From: David Gstir <david@sigma-star.at>
+In-Reply-To: <CZLBYPUU992Q.2PRCZBFNZYWY6@suppilovahvero>
+Date: Thu, 7 Mar 2024 16:34:53 +0100
+Cc: Mimi Zohar <zohar@linux.ibm.com>,
+ James Bottomley <jejb@linux.ibm.com>,
+ Herbert Xu <herbert@gondor.apana.org.au>,
+ "David S. Miller" <davem@davemloft.net>,
+ Shawn Guo <shawnguo@kernel.org>,
+ Jonathan Corbet <corbet@lwn.net>,
+ Sascha Hauer <s.hauer@pengutronix.de>,
+ "kernel@pengutronix.de" <kernel@pengutronix.de>,
+ Fabio Estevam <festevam@gmail.com>,
+ NXP Linux Team <linux-imx@nxp.com>,
+ Ahmad Fatoum <a.fatoum@pengutronix.de>,
+ sigma star Kernel Team <upstream+dcp@sigma-star.at>,
+ David Howells <dhowells@redhat.com>,
+ Li Yang <leoyang.li@nxp.com>,
+ Paul Moore <paul@paul-moore.com>,
+ James Morris <jmorris@namei.org>,
+ "Serge E. Hallyn" <serge@hallyn.com>,
+ "Paul E. McKenney" <paulmck@kernel.org>,
+ Randy Dunlap <rdunlap@infradead.org>,
+ Catalin Marinas <catalin.marinas@arm.com>,
+ "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+ Tejun Heo <tj@kernel.org>,
+ "Steven Rostedt (Google)" <rostedt@goodmis.org>,
+ linux-doc@vger.kernel.org,
+ "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+ "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>,
+ "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+ "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+ linux-arm-kernel@lists.infradead.org,
+ linuxppc-dev@lists.ozlabs.org,
+ "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <2E9B3F32-B162-4C84-81AD-5713EB53A85D@sigma-star.at>
+References: <20231215110639.45522-1-david@sigma-star.at>
+ <20231215110639.45522-5-david@sigma-star.at>
+ <CZLBYPUU992Q.2PRCZBFNZYWY6@suppilovahvero>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+X-Mailer: Apple Mail (2.3774.400.31)
 
-In ecc_point_mult use the number of bits of the NIST P521 curve + 2. The
-change is required specifically for NIST P521 to pass mathematical tests
-on the public key.
+Jarkko,
 
-Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
-Tested-by: Lukas Wunner <lukas@wunner.de>
----
- crypto/ecc.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> On 04.03.2024, at 23:48, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+>=20
+> On Fri Dec 15, 2023 at 1:06 PM EET, David Gstir wrote:
+>> This covers trusted keys backed by NXP's DCP (Data Co-Processor) chip
+>> found in smaller i.MX SoCs.
+>>=20
+>> Signed-off-by: David Gstir <david@sigma-star.at>
+>> ---
+>> MAINTAINERS | 9 +++++++++
+>> 1 file changed, 9 insertions(+)
+>>=20
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index 90f13281d297..988d01226131 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -11647,6 +11647,15 @@ S: Maintained
+>> F: include/keys/trusted_caam.h
+>> F: security/keys/trusted-keys/trusted_caam.c
+>>=20
+>> +KEYS-TRUSTED-DCP
+>> +M: David Gstir <david@sigma-star.at>
+>> +R: sigma star Kernel Team <upstream+dcp@sigma-star.at>
+>> +L: linux-integrity@vger.kernel.org
+>> +L: keyrings@vger.kernel.org
+>> +S: Supported
+>> +F: include/keys/trusted_dcp.h
+>> +F: security/keys/trusted-keys/trusted_dcp.c
+>> +
+>> KEYS-TRUSTED-TEE
+>> M: Sumit Garg <sumit.garg@linaro.org>
+>> L: linux-integrity@vger.kernel.org
+>=20
+> Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+>=20
+> I can for sure put this. The code quality is *not* bad :-) However, =
+your
+> backing story really needs rework. It is otherwise impossible to
+> understand the code changes later on because amount of information is
+> vast, and you tend to forget details of stuff that you are not =
+actively
+> working on. That is why we care so deeply about them.
 
-diff --git a/crypto/ecc.c b/crypto/ecc.c
-index 373660e7b19d..55fd390d3386 100644
---- a/crypto/ecc.c
-+++ b/crypto/ecc.c
-@@ -1326,7 +1326,10 @@ static void ecc_point_mult(struct ecc_point *result,
- 	carry = vli_add(sk[0], scalar, curve->n, ndigits);
- 	vli_add(sk[1], sk[0], curve->n, ndigits);
- 	scalar = sk[!carry];
--	num_bits = sizeof(u64) * ndigits * 8 + 1;
-+	if (curve->nbits == 521)
-+		num_bits = curve->nbits + 2;
-+	else
-+		num_bits = sizeof(u64) * ndigits * 8 + 1;
- 
- 	vli_set(rx[1], point->x, ndigits);
- 	vli_set(ry[1], point->y, ndigits);
--- 
-2.43.0
+got it! :) I=E2=80=99ve tried to rework the commit messages as good as =
+possible
+for v6 and will send that series momentarily.
 
+Thanks!
+- David=
