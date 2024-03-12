@@ -1,87 +1,146 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1B25E7BB04;
-	Tue, 12 Mar 2024 15:18:51 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6CF9314199F;
+	Tue, 12 Mar 2024 18:37:39 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1710256732; cv=none; b=sJTii9dSzgt4yIIUMSXp2l1Whs6rjG6zOpP1KvNu44QLs/Qqc6MDICUGX7FttjVyg1lx+pqExYl7bQkQ0DJjA5m6ruOy0nHL2jzOwzpq+v602Q/E5nll8oNbkyP87dBIRAqoToTLg5R5EoyVZuqwIVI2eiXJbgJMS2hsTFdsKSA=
+	t=1710268661; cv=none; b=Ua0GnwgEZgcNMqU4t7rXOA/U7cqR1XMYmIdlYU9wN0leWP6q+vh47lhWyXuSDpSlGvNpLFItsHL4rIWTVAguDGqaJpg5p23pvNsHTLFVPi51AMIYs8GD7trsuREEN6JIFx8ulNsrR53S+fk352Yg1SX1muUO/GmpsG8FIWwT7+A=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1710256732; c=relaxed/simple;
-	bh=e9D3nRiUkzwoDNU1WO9Mvab1qnoYPq79dDij4jjwu3k=;
-	h=Mime-Version:Content-Type:Date:Message-Id:Cc:Subject:From:To:
-	 References:In-Reply-To; b=DIV1v4BikQ5votpyOmv7W3jlNrfUs21j4+mxn8oVwlcjEa9B0D6SS+sJkuZr0j9LSNX4Iwndn/6iAwnufkGX3P49vH3Ig0jOV9gnf/8dIF+wDYkZ6DGCTgdy31H7YEcdxmu1uIGkbqqo69Y0PC8KTH3aaFQyLGMEpcOroJMCwJs=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=h1Lmwl5P; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1710268661; c=relaxed/simple;
+	bh=Q3nhqf0Z7dHnc4D2tVpVpCNTZs8ckLp48PrwazH2UYs=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=jbg2NIHRNRFeFwhyvAO96O+2kMeE1m/QdTvVSCuYk2oXiA7akwdY5AwA63yyY9ypx8hKF7W1++CtA85ODB6U8gcRNHWC6NQySWKnWddI6kMWtMVBuSDHGddSiVwsqapVqKSGZA+JFcIZCQfPjnn9IeomVYiMVu9tlHFXZYlrUSw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.vnet.ibm.com; spf=none smtp.mailfrom=linux.vnet.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=ovKanYjF; arc=none smtp.client-ip=148.163.158.5
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.vnet.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=none smtp.mailfrom=linux.vnet.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="h1Lmwl5P"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 74728C433F1;
-	Tue, 12 Mar 2024 15:18:47 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1710256731;
-	bh=e9D3nRiUkzwoDNU1WO9Mvab1qnoYPq79dDij4jjwu3k=;
-	h=Date:Cc:Subject:From:To:References:In-Reply-To:From;
-	b=h1Lmwl5P+pE/kbBOvKdZOZM25nEbfDfgOnhEj7uMpL3lrvqSkVH9DeyjsZEf7DTHn
-	 hE+C1iPnYAEHMQA1AkgjHn1CDxlvyhvh92FjY/rUU57Pura7j3mc/fwaDBHM0YxPTJ
-	 EuoUD49zHXeU5FjxnjVBGrnmBZIibE94K4SxGOVFkYeERZITcH2CIZ7Ggl+fqv6eoh
-	 IeaxrCO5fembgp1vdfcOdBpTepENLylh42LBlMDfzVapAhKGludQ50rVeZJO1++Zzs
-	 ezP/6E7bAq6njdK/Y/+nWz0kYO4KifZtj2dwllKvMBdw9TGXv7C5OxDFZpWF+4z+48
-	 mk2gdGgwHJZMw==
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="ovKanYjF"
+Received: from pps.filterd (m0353722.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 42CI2hiS030884;
+	Tue, 12 Mar 2024 18:36:25 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
+ : date : message-id : in-reply-to : references : mime-version :
+ content-transfer-encoding; s=pp1;
+ bh=6gXNF8QE+IKS1nhZx6FBXS6s1Z5vP2fuMlgvOR6SKfQ=;
+ b=ovKanYjFqVL9ItZi7j6DE1kZWAcP2h9G3/CXcb80p1EOPJcNlulCbA782L+rePAANT5Y
+ I7tqWtVnC6484TkuM9ZEojlJ9Xj9+uv2vByUoTEUHBEnxZMMe9oCRKi1YmQEX6ma+Sxl
+ hwAP7ruhrFnthDciSFRMLNf9NbYIjhq+ZsOBmbK0cAaw2EfY9n7eUmnaLceRGFtLCFSa
+ AaiZNDQHp7HT1cxePmrgkhuyHJWm1pvj5U0ZDxldGISYiKmeB8dN73Z9+iwYBgKbgxS4
+ X6NfwS9kYzERsediOuGp4HClGs0WSEVGsIUef9SStyj/jQzrJ99F3gPLHNylaQEDT5Ln +w== 
+Received: from ppma22.wdc07v.mail.ibm.com (5c.69.3da9.ip4.static.sl-reverse.com [169.61.105.92])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3wtuywrh3h-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Tue, 12 Mar 2024 18:36:25 +0000
+Received: from pps.filterd (ppma22.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma22.wdc07v.mail.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 42CHhIvj015477;
+	Tue, 12 Mar 2024 18:36:24 GMT
+Received: from smtprelay06.dal12v.mail.ibm.com ([172.16.1.8])
+	by ppma22.wdc07v.mail.ibm.com (PPS) with ESMTPS id 3ws2fys1c3-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Tue, 12 Mar 2024 18:36:24 +0000
+Received: from smtpav06.wdc07v.mail.ibm.com (smtpav06.wdc07v.mail.ibm.com [10.39.53.233])
+	by smtprelay06.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 42CIaLU231260944
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Tue, 12 Mar 2024 18:36:24 GMT
+Received: from smtpav06.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id C03CC58056;
+	Tue, 12 Mar 2024 18:36:21 +0000 (GMT)
+Received: from smtpav06.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id CA0315804E;
+	Tue, 12 Mar 2024 18:36:20 +0000 (GMT)
+Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
+	by smtpav06.wdc07v.mail.ibm.com (Postfix) with ESMTP;
+	Tue, 12 Mar 2024 18:36:20 +0000 (GMT)
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+To: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
+        herbert@gondor.apana.org.au, davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, saulo.alessandre@tse.jus.br, lukas@wunner.de,
+        bbhushan2@marvell.com, jarkko@kernel.org,
+        Stefan Berger <stefanb@linux.ibm.com>
+Subject: [PATCH v6 01/13] crypto: ecc - Use ECC_CURVE_NIST_P192/256/384_DIGITS where possible
+Date: Tue, 12 Mar 2024 14:36:06 -0400
+Message-ID: <20240312183618.1211745-2-stefanb@linux.vnet.ibm.com>
+X-Mailer: git-send-email 2.44.0
+In-Reply-To: <20240312183618.1211745-1-stefanb@linux.vnet.ibm.com>
+References: <20240312183618.1211745-1-stefanb@linux.vnet.ibm.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=UTF-8
-Date: Tue, 12 Mar 2024 17:18:45 +0200
-Message-Id: <CZRVET5930A0.3KM5Q2BAH05LT@kernel.org>
-Cc: "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
- "David Howells" <dhowells@redhat.com>, "David Woodhouse"
- <dwmw2@infradead.org>, "herbert@gondor.apana.org.au"
- <herbert@gondor.apana.org.au>, "davem@davemloft.net" <davem@davemloft.net>,
- "Ard Biesheuvel" <ardb@kernel.org>, "paul@paul-moore.com"
- <paul@paul-moore.com>, "jmorris@namei.org" <jmorris@namei.org>,
- "serge@hallyn.com" <serge@hallyn.com>, "zohar@linux.ibm.com"
- <zohar@linux.ibm.com>, "roberto.sassu@huawei.com"
- <roberto.sassu@huawei.com>, "dmitry.kasatkin@gmail.com"
- <dmitry.kasatkin@gmail.com>, "mic@digikod.net" <mic@digikod.net>,
- "casey@schaufler-ca.com" <casey@schaufler-ca.com>, "stefanb@linux.ibm.com"
- <stefanb@linux.ibm.com>, "linux-kernel@vger.kernel.org"
- <linux-kernel@vger.kernel.org>, "keyrings@vger.kernel.org"
- <keyrings@vger.kernel.org>, "linux-crypto@vger.kernel.org"
- <linux-crypto@vger.kernel.org>, "linux-efi@vger.kernel.org"
- <linux-efi@vger.kernel.org>, "linux-integrity@vger.kernel.org"
- <linux-integrity@vger.kernel.org>
-Subject: Re: [PATCH RFC 1/8] certs: Introduce ability to link to a system
- key
-From: "Jarkko Sakkinen" <jarkko@kernel.org>
-To: "Eric Snowberg" <eric.snowberg@oracle.com>
-X-Mailer: aerc 0.17.0
-References: <20240311161111.3268190-1-eric.snowberg@oracle.com>
- <20240311161111.3268190-2-eric.snowberg@oracle.com>
- <CZR5W1VPAVJC.2VZOSD53YNT9I@kernel.org>
- <77AE4DEA-9474-44A1-88DC-852523C36797@oracle.com>
-In-Reply-To: <77AE4DEA-9474-44A1-88DC-852523C36797@oracle.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: 4zzvrMveJsHul92aunllvAFBsJiNmjZS
+X-Proofpoint-GUID: 4zzvrMveJsHul92aunllvAFBsJiNmjZS
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.272,Aquarius:18.0.1011,Hydra:6.0.619,FMLib:17.11.176.26
+ definitions=2024-03-12_11,2024-03-12_01,2023-05-22_02
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 priorityscore=1501
+ adultscore=0 malwarescore=0 impostorscore=0 lowpriorityscore=0
+ phishscore=0 mlxscore=0 spamscore=0 suspectscore=0 mlxlogscore=999
+ bulkscore=0 clxscore=1015 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2311290000 definitions=main-2403120139
 
-On Mon Mar 11, 2024 at 11:31 PM EET, Eric Snowberg wrote:
->
->
-> > On Mar 11, 2024, at 1:18=E2=80=AFPM, Jarkko Sakkinen <jarkko@kernel.org=
-> wrote:
-> >=20
-> > On Mon Mar 11, 2024 at 6:11 PM EET, Eric Snowberg wrote:
-> >> + return -1;
-> >=20
-> > Missed this one: why a magic number?
->
-> Good point, I'll change this to return -ENOKEY.  Thanks.
+From: Stefan Berger <stefanb@linux.ibm.com>
 
-Either that or a boolean function, which ever fits to the overall
-flow better... The upside of error code is less branching in the call
-sites. The upside of boolean is that caller exactly knows all the
-values that ever should come out as a result.
+Replace hard-coded numbers with ECC_CURVE_NIST_P192/256/384_DIGITS where
+possible.
 
-Your choice ofc.
+Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+---
+ crypto/ecc.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-BR, Jarkko
+diff --git a/crypto/ecc.c b/crypto/ecc.c
+index f53fb4d6af99..415a2f4e7291 100644
+--- a/crypto/ecc.c
++++ b/crypto/ecc.c
+@@ -689,7 +689,7 @@ static void vli_mmod_barrett(u64 *result, u64 *product, const u64 *mod,
+ static void vli_mmod_fast_192(u64 *result, const u64 *product,
+ 			      const u64 *curve_prime, u64 *tmp)
+ {
+-	const unsigned int ndigits = 3;
++	const unsigned int ndigits = ECC_CURVE_NIST_P192_DIGITS;
+ 	int carry;
+ 
+ 	vli_set(result, product, ndigits);
+@@ -717,7 +717,7 @@ static void vli_mmod_fast_256(u64 *result, const u64 *product,
+ 			      const u64 *curve_prime, u64 *tmp)
+ {
+ 	int carry;
+-	const unsigned int ndigits = 4;
++	const unsigned int ndigits = ECC_CURVE_NIST_P256_DIGITS;
+ 
+ 	/* t */
+ 	vli_set(result, product, ndigits);
+@@ -800,7 +800,7 @@ static void vli_mmod_fast_384(u64 *result, const u64 *product,
+ 				const u64 *curve_prime, u64 *tmp)
+ {
+ 	int carry;
+-	const unsigned int ndigits = 6;
++	const unsigned int ndigits = ECC_CURVE_NIST_P384_DIGITS;
+ 
+ 	/* t */
+ 	vli_set(result, product, ndigits);
+@@ -932,13 +932,13 @@ static bool vli_mmod_fast(u64 *result, u64 *product,
+ 	}
+ 
+ 	switch (ndigits) {
+-	case 3:
++	case ECC_CURVE_NIST_P192_DIGITS:
+ 		vli_mmod_fast_192(result, product, curve_prime, tmp);
+ 		break;
+-	case 4:
++	case ECC_CURVE_NIST_P256_DIGITS:
+ 		vli_mmod_fast_256(result, product, curve_prime, tmp);
+ 		break;
+-	case 6:
++	case ECC_CURVE_NIST_P384_DIGITS:
+ 		vli_mmod_fast_384(result, product, curve_prime, tmp);
+ 		break;
+ 	default:
+-- 
+2.43.0
+
