@@ -1,47 +1,39 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from szxga06-in.huawei.com (szxga06-in.huawei.com [45.249.212.32])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E6AD480B;
-	Tue, 14 May 2024 00:48:18 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BC31D17F7;
+	Tue, 14 May 2024 01:43:59 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=45.249.212.32
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1715647699; cv=none; b=QM8RLQUUL8J7WOkWRdLy1/JViwSDe1HX0XpbbDeNblnjyChmOBwjOAOy2wh8QbGAxlMv6beox/kMOmEoQcYflkQwDgozS0LSy6hwC25c8vhmKZk6mYr/+h4jhl7xiOVZf398ofiDECqT+DEOsAfJouiABUVa46HXRvu5SnfongE=
+	t=1715651042; cv=none; b=OWNKt7R3rDqvHtnpUnf++Am0Zd/3zua2TWuDFNWgieA416IYs0osNLQJInVCCtqd2qmtkMXe2LrsqeQd6uNWGj3kXVu9kRDqLo/xtN/H9pfGbWx4k9ZGdJAjeLZy8uIflD5lfmo7CqvkNcPBIEQkkYakC9EBwMGikrWjvgC5GOk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1715647699; c=relaxed/simple;
-	bh=NvwhydFzvnCR2FLY56Y19UMPqpBXTv0snNN2JgKkl10=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=rEqoXpx/xVVPXKgJfw1MBL3AwP0eAZAGQrhfMbFWzl4QiFLXYu9zpCDPAA/AYg9olYinnOmQHl5h7foQhSktBcSJsTlaGNVaOV2h7rX+AW5bZ05iTSfZME5nwj4ZkEx760qqfkEsqglzewAtaVLLnt0faY3Fb0KRgwrjyvGmXXw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=S8wmgnmY; arc=none smtp.client-ip=10.30.226.201
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="S8wmgnmY"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 033CDC113CC;
-	Tue, 14 May 2024 00:48:17 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1715647698;
-	bh=NvwhydFzvnCR2FLY56Y19UMPqpBXTv0snNN2JgKkl10=;
-	h=From:To:Cc:Subject:Date:From;
-	b=S8wmgnmYjHmWGfw/F1UO9Q5/amk6LiFoo7hIbhPcCsqO+Fvgg2Sf/XjqbJZ23++VY
-	 rPmY4fFujv7r67cArqlSlIgO98fh0mZRPab7Z3KfZfBSaQNCvLH0r6QCLO6rrB0lEg
-	 Naq1qGhxp4+xBQ5BAne5t7fBSLs6Adn1wZsHiXa3phjVsDBTi72ZgskxU68AJqmeNC
-	 v7WBrLTbzgKwbDwgMZUoJ2WFoE/Fuy2iZaObk5P4GwzYhl7U2Oafui631mfe5XypXN
-	 TEzEzmpTCc5+7io9CAzleQR3qYijuBOP3NJoWdLf40p6Rs+n3E3/ssbOqMorSlyJnT
-	 gk3h8cMKvbH8g==
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: Jarkko Sakkinen <jarkko@kernel.org>,
-	stable@vger.kernel.org,
-	James Bottomley <James.Bottomley@HansenPartnership.com>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	keyrings@vger.kernel.org (open list:KEYS-TRUSTED),
-	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
-	linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2] KEYS: trusted: Do not use WARN when encode fails
-Date: Tue, 14 May 2024 03:47:59 +0300
-Message-ID: <20240514004759.6625-1-jarkko@kernel.org>
-X-Mailer: git-send-email 2.45.0
+	s=arc-20240116; t=1715651042; c=relaxed/simple;
+	bh=CUweIuQ1rzDmMP6JnYIvt1GcMSb/adaEqcvAoAgcPck=;
+	h=From:To:CC:Subject:Date:Message-ID:MIME-Version:Content-Type; b=VZr471kEuWTtk58NtTxbOX4tXg1CF1sPSUv9ysQMgz/jZ8PvS5PSgs39qlxo/wmSZ2nvosNZurkqeSrpwOnkaDwSQnWH4q5jvEJ1ry9LJheibK6kWnfhNFvBmX1JwtrcsFAmiEhOa4UALqbvcdo4OYm8Oc4uxLF8+PwmYUVc56I=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=huawei.com; spf=pass smtp.mailfrom=huawei.com; arc=none smtp.client-ip=45.249.212.32
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=huawei.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=huawei.com
+Received: from mail.maildlp.com (unknown [172.19.88.214])
+	by szxga06-in.huawei.com (SkyGuard) with ESMTP id 4VdfHh71gGz1xrV6;
+	Tue, 14 May 2024 09:42:40 +0800 (CST)
+Received: from kwepemm600010.china.huawei.com (unknown [7.193.23.86])
+	by mail.maildlp.com (Postfix) with ESMTPS id 43B311A016C;
+	Tue, 14 May 2024 09:43:51 +0800 (CST)
+Received: from localhost.localdomain (10.175.104.170) by
+ kwepemm600010.china.huawei.com (7.193.23.86) with Microsoft SMTP Server
+ (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ 15.1.2507.35; Tue, 14 May 2024 09:43:50 +0800
+From: Huaxin Lu <luhuaxin1@huawei.com>
+To: David Howells <dhowells@redhat.com>, Herbert Xu
+	<herbert@gondor.apana.org.au>, "David S . Miller" <davem@davemloft.net>,
+	<keyrings@vger.kernel.org>, <linux-crypto@vger.kernel.org>
+CC: <xiujianfeng@huawei.com>, <wangweiyang2@huawei.com>,
+	<yiyang13@huawei.com>, <zhujianwei7@huawei.com>, <shenyining@huawei.com>,
+	<luhuaxin1@huawei.com>
+Subject: [PATCH] Move SM2 digest calculation to signature verification
+Date: Tue, 14 May 2024 07:07:18 +0800
+Message-ID: <20240513230718.447895-1-luhuaxin1@huawei.com>
+X-Mailer: git-send-email 2.33.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -49,56 +41,166 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-ClientProxiedBy: dggems705-chm.china.huawei.com (10.3.19.182) To
+ kwepemm600010.china.huawei.com (7.193.23.86)
 
-When asn1_encode_sequence() fails, WARN is not the correct solution.
+In the commit of e5221fa6a355 ("KEYS: asymmetric: Move sm2 code into
+x509_public_key"), the SM2 digest hashing is moved to the process of
+certificate loading. It cause the SM2 certificate chain validation
+failure. For example, when importing a SM2 IMA certificate (x509_ima.der)
+verified by the trusted kering. The import fails due to the wrong Z value
+calculating. Because he Z value should be calculated from the public key
+of the signing certificate, not from the public key of the certificate
+itself (reference: datatracker.ietf.org/doc/html/draft-shen-sm2-ecdsa-02).
 
-1. asn1_encode_sequence() is not an internal function (located
-   in lib/asn1_encode.c).
-2. Location is known, which makes the stack trace useless.
-3. Results a crash if panic_on_warn is set.
+This commit partially revert the previous commit. Restore SM2 digest value
+calculating into the signature verification process, and use the right
+information to calculate Z value and SM2 digest.
 
-It is also noteworthy that the use of WARN is undocumented, and it
-should be avoided unless there is a carefully considered rationale to
-use it.
-
-Replace WARN with pr_err, and print the return value instead, which is
-only useful piece of information.
-
-Cc: stable@vger.kernel.org # v5.13+
-Fixes: f2219745250f ("security: keys: trusted: use ASN.1 TPM2 key format for the blobs")
-Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+Fixes: e5221fa6a355 ("KEYS: asymmetric: Move sm2 code into x509_public_key")
+Signed-off-by: Huaxin Lu <luhuaxin1@huawei.com>
 ---
-v2: Fix typos in the commit message
----
- security/keys/trusted-keys/trusted_tpm2.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ crypto/asymmetric_keys/public_key.c      | 57 ++++++++++++++++++++++++
+ crypto/asymmetric_keys/x509_public_key.c | 20 +++------
+ include/crypto/public_key.h              |  2 +
+ 3 files changed, 64 insertions(+), 15 deletions(-)
 
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index dfeec06301ce..dbdd6a318b8b 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -38,6 +38,7 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
- 	u8 *end_work = scratch + SCRATCH_SIZE;
- 	u8 *priv, *pub;
- 	u16 priv_len, pub_len;
-+	int ret;
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index e314fd57e..647a03e00 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -9,8 +9,11 @@
  
- 	priv_len = get_unaligned_be16(src) + 2;
- 	priv = src;
-@@ -79,8 +80,11 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
- 	work1 = payload->blob;
- 	work1 = asn1_encode_sequence(work1, work1 + sizeof(payload->blob),
- 				     scratch, work - scratch);
--	if (WARN(IS_ERR(work1), "BUG: ASN.1 encoder failed"))
--		return PTR_ERR(work1);
-+	if (IS_ERR(work1)) {
-+		ret = PTR_ERR(work1);
-+		pr_err("ASN.1 encode error %d\n", ret);
-+		return ret;
-+	}
- 
- 	return work1 - payload->blob;
+ #define pr_fmt(fmt) "PKEY: "fmt
+ #include <crypto/akcipher.h>
++#include <crypto/hash.h>
+ #include <crypto/public_key.h>
+ #include <crypto/sig.h>
++#include <crypto/sm2.h>
++#include <crypto/sm3.h>
+ #include <keys/asymmetric-subtype.h>
+ #include <linux/asn1.h>
+ #include <linux/err.h>
+@@ -376,6 +379,54 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
+ 	return ret;
  }
+ 
++#if IS_REACHABLE(CONFIG_CRYPTO_SM2)
++static int cert_sig_digest_update(const struct public_key_signature *sig,
++				  void *pkey, size_t pkey_len)
++{
++	struct crypto_shash *tfm;
++	struct shash_desc *desc;
++	size_t desc_size;
++	unsigned char dgst[SM3_DIGEST_SIZE];
++	int ret;
++
++	BUG_ON(!sig->data);
++
++	/* SM2 signatures always use the SM3 hash algorithm */
++	if (!sig->hash_algo || strcmp(sig->hash_algo, "sm3") != 0)
++		return -EINVAL;
++
++	tfm = crypto_alloc_shash(sig->hash_algo, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
++	desc = kzalloc(desc_size, GFP_KERNEL);
++	if (!desc) {
++		crypto_free_shash(tfm);
++		return -ENOMEM;
++	}
++
++	desc->tfm = tfm;
++
++	ret = crypto_shash_init(desc) ?:
++	      sm2_compute_z_digest(desc, pkey, pkey_len, dgst) ?:
++	      crypto_shash_init(desc) ?:
++	      crypto_shash_update(desc, dgst, SM3_DIGEST_SIZE) ?:
++	      crypto_shash_finup(desc, sig->data, sig->data_size, sig->digest);
++
++	kfree(desc);
++	crypto_free_shash(tfm);
++	return ret;
++}
++#else
++static inline int cert_sig_digest_update(
++	const struct public_key_signature *sig,
++	void *pkey, size_t pkey_len)
++{
++	return -ENOTSUPP;
++}
++#endif /* ! IS_REACHABLE(CONFIG_CRYPTO_SM2) */
++
+ /*
+  * Verify a signature using a public key.
+  */
+@@ -439,6 +490,12 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	if (ret)
+ 		goto error_free_key;
+ 
++	if (strcmp(pkey->pkey_algo, "sm2") == 0 && sig->data_size) {
++		ret = cert_sig_digest_update(sig, key, pkey->keylen);
++		if (ret)
++			goto error_free_key;
++	}
++
+ 	ret = crypto_sig_verify(tfm, sig->s, sig->s_size,
+ 				sig->digest, sig->digest_size);
+ 
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 6a4f00be2..54738af7d 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -32,6 +32,9 @@ int x509_get_sig_params(struct x509_certificate *cert)
+ 
+ 	pr_devel("==>%s()\n", __func__);
+ 
++	sig->data = cert->tbs;
++	sig->data_size = cert->tbs_size;
++
+ 	sig->s = kmemdup(cert->raw_sig, cert->raw_sig_size, GFP_KERNEL);
+ 	if (!sig->s)
+ 		return -ENOMEM;
+@@ -64,21 +67,8 @@ int x509_get_sig_params(struct x509_certificate *cert)
+ 
+ 	desc->tfm = tfm;
+ 
+-	if (strcmp(cert->pub->pkey_algo, "sm2") == 0) {
+-		ret = strcmp(sig->hash_algo, "sm3") != 0 ? -EINVAL :
+-		      crypto_shash_init(desc) ?:
+-		      sm2_compute_z_digest(desc, cert->pub->key,
+-					   cert->pub->keylen, sig->digest) ?:
+-		      crypto_shash_init(desc) ?:
+-		      crypto_shash_update(desc, sig->digest,
+-					  sig->digest_size) ?:
+-		      crypto_shash_finup(desc, cert->tbs, cert->tbs_size,
+-					 sig->digest);
+-	} else {
+-		ret = crypto_shash_digest(desc, cert->tbs, cert->tbs_size,
+-					  sig->digest);
+-	}
+-
++	ret = crypto_shash_digest(desc, cert->tbs, cert->tbs_size,
++				  sig->digest);
+ 	if (ret < 0)
+ 		goto error_2;
+ 
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index b7f308977..fce68803b 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -49,6 +49,8 @@ struct public_key_signature {
+ 	const char *pkey_algo;
+ 	const char *hash_algo;
+ 	const char *encoding;
++	const void *data;
++	unsigned int data_size;
+ };
+ 
+ extern void public_key_signature_free(struct public_key_signature *sig);
 -- 
-2.45.0
+2.33.0
 
