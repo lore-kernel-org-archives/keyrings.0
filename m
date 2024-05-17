@@ -1,162 +1,132 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from wflow2-smtp.messagingengine.com (wflow2-smtp.messagingengine.com [64.147.123.137])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DF0A738DD6;
-	Fri, 17 May 2024 16:48:52 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3852B13DDCA;
+	Fri, 17 May 2024 17:57:27 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=64.147.123.137
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1715964533; cv=none; b=gcK96rqsuVHCQSdPVyJRxYesLop7dGopXoWHhsbabq2QPCE974sPfuNzqKzPHpD1vHmolZXLomPud/zLxQ+dtAWmK+1Nh6dzNC68t0i7yFEwsn/QDa3NehcEF0ryZqDDxBnsmK0NntGlMpN1q++QbJqrTNcefj8PrY9CRRKaMe0=
+	t=1715968648; cv=none; b=nIrom0Z2xz7JRQxQxCl5TtU2iuO1Edqt/bKFh/QoeQvFMCtIO3qKv9vmxnso8cVJjcGVrhU1m8bIaxyY+fDE85jWnuX1IroS2yZZQbbFGOMZ5sROoMRecAtNBr7lL2Bk26prs7TYD+0bl5O45Iw4FszoWLkWZ1cJ+kpcEnXC5Q0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1715964533; c=relaxed/simple;
-	bh=UGkdLRqZ6n3b8m0rCAFb9FxggqgZvS7s7r5YjUFxV/s=;
-	h=Mime-Version:Content-Type:Date:Message-Id:Cc:Subject:From:To:
-	 References:In-Reply-To; b=HZy6oZMe8iaIC5oD/4jGdEbizuST+6zvtGpHSRXwjKD5ezLapWiIht+nt+acb+9YPXYLDoagrAG6Z16yuLkge6sT0QnzrxD7tkne5Sg97B2bLb/npWI3Y6VaWFj6ZjnKAjcTJrfs4LXq/hjXSOU/Bm7PR1wTZGc0jqchjtXCIsc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=kDUJlkxZ; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1715968648; c=relaxed/simple;
+	bh=I2w45PghcaqjI+y7WfkIeFOVTyWdnhXIf4c8rZ8OaJw=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=KnIDRhrQfP7T8N2nKCGyXi5RNUnz8pF8ACH3RTkFbJOnbzG1phL52NNPOnJf+O6B8W0HELQ/VhVgFAoG3Z779J1FvSFStRrul9eepvTX6R5VyC9SHHxFPpECA+wSFgvVDVnYKXAtiV4vib4eGQ6HgICwMZWY8YRFPaHWttBtfu4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=3xx0.net; spf=pass smtp.mailfrom=3xx0.net; dkim=pass (2048-bit key) header.d=3xx0.net header.i=@3xx0.net header.b=uMfGVJkU; dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b=TDNEW63p; arc=none smtp.client-ip=64.147.123.137
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=3xx0.net
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=3xx0.net
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="kDUJlkxZ"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3CD1EC2BD10;
-	Fri, 17 May 2024 16:48:50 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1715964532;
-	bh=UGkdLRqZ6n3b8m0rCAFb9FxggqgZvS7s7r5YjUFxV/s=;
-	h=Date:Cc:Subject:From:To:References:In-Reply-To:From;
-	b=kDUJlkxZiXqWz8DV3xX4JG+pjnQr7+gpM5367q5r2232f7PxD7E103JpoVL3dcb3v
-	 BPfHFX6Mq6AZhQxSPViM5+nCYxYK4uIYA1mMowSoqyjsX0OqHhejUttWRkJjfphQ/O
-	 QhKLOR0e2o4X2p4fE+OmYu4p8i2kWHouN4a5Uw9zAhKs10wuRfHjr6J3Aw+GIy3/6N
-	 tGSmod6sTDtm8RNx8dO/yILAY7u0vCcqsRRyRV028Ep8j5F0ZyutSZOj2N47GeFWpP
-	 bt9IOJtsIHf88gH3+Sf4j6GNDZCeaoB9+JrsM07P6Dvfdu06tT6h2KnxFAdwuD5Ehl
-	 1S9Cso3tRTOpA==
+	dkim=pass (2048-bit key) header.d=3xx0.net header.i=@3xx0.net header.b="uMfGVJkU";
+	dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b="TDNEW63p"
+Received: from compute7.internal (compute7.nyi.internal [10.202.2.48])
+	by mailflow.west.internal (Postfix) with ESMTP id 7886D2CC010B;
+	Fri, 17 May 2024 13:57:25 -0400 (EDT)
+Received: from mailfrontend1 ([10.202.2.162])
+  by compute7.internal (MEProxy); Fri, 17 May 2024 13:57:26 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=3xx0.net; h=cc
+	:cc:content-type:content-type:date:date:from:from:in-reply-to
+	:in-reply-to:message-id:mime-version:references:reply-to:subject
+	:subject:to:to; s=fm1; t=1715968645; x=1715972245; bh=DG6bdjmTz4
+	bBiRVx5vRqnyJGZODkSyHM0WPBKPD11vg=; b=uMfGVJkUQVRfm1T4SuQfg81+Vd
+	5+EwSSzA1veRwFXODlGOsYMfbC5e9PDXupLK9HyaH/xalBd1s2kzVUiWMT2yQzvw
+	hwRQ1fjYhfph5jS6R/35a6KtY34plcZMeR9Ze6xsvaXAZmSVgYgDUo2CD8pKLFPo
+	Xy/T7Yx76YZjEUvdKWTQ/L8b+RH71BSELaxN8E1DA4gdeovy8JQ/GaJdIRS7/+JU
+	nOR9kD+ElEjP9xlmH0WurtQuTo73SZegb2IizZ8K96HXLon2ZWd8yjQxXX9/jyWV
+	LYzWnUzZv2IlDZ6c/LFUuMihTF52VWHKB3S26Kahi3BE/rYv+w/AkiBW4sjQ==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=
+	messagingengine.com; h=cc:cc:content-type:content-type:date:date
+	:feedback-id:feedback-id:from:from:in-reply-to:in-reply-to
+	:message-id:mime-version:references:reply-to:subject:subject:to
+	:to:x-me-proxy:x-me-proxy:x-me-sender:x-me-sender:x-sasl-enc; s=
+	i76614979.fm3; t=1715968645; x=1715972245; bh=DG6bdjmTz4bBiRVx5v
+	RqnyJGZODkSyHM0WPBKPD11vg=; b=TDNEW63pXqb2VU0CcKW4l1HzhcHIdknUB/
+	pz14lQW13kC6oa25PaUJ3EtzVqxHTnNRnTjcdfH+8czm5HMuaNUoZJNfrrzALEjj
+	BhXP3yluNNAc75YUSlp2g1JKsDbzm4O1ZNjegjBzQEutxAV2qwhBA+PiVAl2qSTD
+	wcvi2l7YIS6ZSe/e860AJvkLBo69+YWUv9s79bv4P/X0XeFjuMU/7FXm6jZHziD5
+	dV8pUspsjHJiSbf/yF1J/558iKeCjLZNiZRLmWuEOFh+rxdDTbikzjB/nf4RuUcS
+	9zUWeQhZVMpSt+DZfp2vzbU8AQQhAgnJoJrumNrLMdK5EsRfgtng==
+X-ME-Sender: <xms:hJpHZgt-DnLYAP4XfCB3f4QDQ4JOhbJ0kjv4C7wIKndVKYrK6cgIIQ>
+    <xme:hJpHZteog5l-85Pkdhrlk26_ZDbUVd1ZBbQGP0nfgODF4pJa5auMVRXbP8aJJU3Up
+    NcIi4mMySIixXSafOo>
+X-ME-Received: <xmr:hJpHZrxlVLZZGOGFQfKZBifYj11s-ibw1SC9sayyin6qUTgQyif-0J2hn7vqmYdM9hEJR-MQ_giyQTDryczmkrI>
+X-ME-Proxy-Cause: gggruggvucftvghtrhhoucdtuddrgedvledrvdehgedgvdehucetufdoteggodetrfdotf
+    fvucfrrhhofhhilhgvmecuhfgrshhtofgrihhlpdfqfgfvpdfurfetoffkrfgpnffqhgen
+    uceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmne
+    cujfgurhepfffhvfevuffkfhggtggujgesthdtsfdttddtjeenucfhrhhomheplfhonhgr
+    thhhrghnucevrghlmhgvlhhsuceojhgtrghlmhgvlhhsseefgiigtddrnhgvtheqnecugg
+    ftrfgrthhtvghrnhepkeekteegfefgvdefgfefffeufeffjedvudeijeehjeehffekjeek
+    leffueelgffgnecuvehluhhsthgvrhfuihiivgeptdenucfrrghrrghmpehmrghilhhfrh
+    homhepjhgtrghlmhgvlhhsseefgiigtddrnhgvth
+X-ME-Proxy: <xmx:hJpHZjOliYt1B30kBgmlLYDz3U_k0ILR04enLwlswHtl81Hc9_tOOw>
+    <xmx:hJpHZg_tTtVt17uZ85S7l8qt2ezP1HcqKp8HG_d_HTVqD7c6KaT-Cg>
+    <xmx:hJpHZrUFUcj0c_VL6ZrIN41Q8tSZ2WWCOA-aRCVfDXmGeifvQPDOGA>
+    <xmx:hJpHZpedGcEgWYQAWwY_aGP7jCPuyq_4VonVfo014ODZjsk29EXztw>
+    <xmx:hZpHZrUx1OlgTMngfhQPqJ-LWsX64N4U3yZMVc9MloMg7FfoIwLl0U3_>
+Feedback-ID: i76614979:Fastmail
+Received: by mail.messagingengine.com (Postfix) with ESMTPA; Fri,
+ 17 May 2024 13:57:22 -0400 (EDT)
+Date: Fri, 17 May 2024 11:02:23 -0700
+From: Jonathan Calmels <jcalmels@3xx0.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: brauner@kernel.org, Luis Chamberlain <mcgrof@kernel.org>, 
+	Kees Cook <keescook@chromium.org>, Joel Granados <j.granados@samsung.com>, 
+	Serge Hallyn <serge@hallyn.com>, Paul Moore <paul@paul-moore.com>, 
+	James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>, 
+	Jarkko Sakkinen <jarkko@kernel.org>, containers@lists.linux.dev, linux-kernel@vger.kernel.org, 
+	linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+Subject: Re: [PATCH 1/3] capabilities: user namespace capabilities
+Message-ID: <mya7cjq5yzf4xc53un65zia2bwp45mbrt5ys67mgr4azn3phet@o54svegibxze>
+References: <20240516092213.6799-1-jcalmels@3xx0.net>
+ <20240516092213.6799-2-jcalmels@3xx0.net>
+ <878r08brmp.fsf@email.froward.int.ebiederm.org>
+ <xv52m5xu5tgwpckkcvyjvefbvockmb7g7fvhlky5yjs2i2jhsp@dcuovgkys4eh>
+ <87jzjsa57k.fsf@email.froward.int.ebiederm.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=UTF-8
-Date: Fri, 17 May 2024 19:48:48 +0300
-Message-Id: <D1C2NPOBHAHK.20O4IME8OK1FH@kernel.org>
-Cc: "Ard Biesheuvel" <ardb@kernel.org>, "Linux Crypto Mailing List"
- <linux-crypto@vger.kernel.org>, "Herbert Xu" <herbert@gondor.apana.org.au>,
- <linux-integrity@vger.kernel.org>, <keyrings@vger.kernel.org>,
- <regressions@lists.linux.dev>, <kernel@collabora.com>
-Subject: Re: [PATCH v8 18/22] tpm: add session encryption protection to
- tpm2_get_random()
-From: "Jarkko Sakkinen" <jarkko@kernel.org>
-To: =?utf-8?b?TsOtY29sYXMgRi4gUi4gQS4gUHJhZG8=?= <nfraprado@collabora.com>,
- "James Bottomley" <James.Bottomley@hansenpartnership.com>
-X-Mailer: aerc 0.17.0
-References: <20240429202811.13643-1-James.Bottomley@HansenPartnership.com>
- <20240429202811.13643-19-James.Bottomley@HansenPartnership.com>
- <119dc5ed-f159-41be-9dda-1a056f29888d@notapiano>
- <0f68c283ff4bbb89b8a019d47891f798c6fff287.camel@HansenPartnership.com>
- <CAMj1kXHi4r8KY9GvX573kwqvLpMfX-J=K2hWiGAKkf5bnicwYQ@mail.gmail.com>
- <0d260c2f7a9f67ec8bd2305919636678d06000d1.camel@HansenPartnership.com>
- <CAMj1kXFE_R_x10BVkU+8vrMz0RHiX0+rz-ZL+w08FH2CLQHZXA@mail.gmail.com>
- <66ec985f3ee229135bf748f1b0874d5367a74d7f.camel@HansenPartnership.com>
- <dfb0d930-7cbe-46c5-be19-d132b4906ecf@notapiano>
-In-Reply-To: <dfb0d930-7cbe-46c5-be19-d132b4906ecf@notapiano>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <87jzjsa57k.fsf@email.froward.int.ebiederm.org>
 
-On Fri May 17, 2024 at 7:22 PM EEST, N=C3=ADcolas F. R. A. Prado wrote:
-> On Fri, May 17, 2024 at 07:25:40AM -0700, James Bottomley wrote:
-> > On Fri, 2024-05-17 at 15:43 +0200, Ard Biesheuvel wrote:
-> > > On Fri, 17 May 2024 at 15:35, James Bottomley
-> > > <James.Bottomley@hansenpartnership.com> wrote:
-> > [...]
-> > > > Thanks for the analysis.=C2=A0 If I look at how CRYPTO_ECC does it,=
- that
-> > > > selects CRYPTO_RNG_DEFAULT which pulls in CRYPTO_DRBG, so the fix
-> > > > would be the attached.=C2=A0 Does that look right to you Ard?
-> > >=20
-> > > No it doesn't - it's CRYPTO_RNG_DEFAULT not CRYTPO_RNG_DEFAULT :-)
-> > >=20
-> > > With that fixed,
-> > >=20
-> > > Acked-by: Ard Biesheuvel <ardb@kernel.org>
-> >=20
-> > Erm, oops, sorry about that; so attached is the update.
-> >=20
-> > James
-> >=20
-> > ---8>8>8><8<8<8---
-> >=20
-> > From 2ac337a33e6416ef806e2c692b9239d193e8468f Mon Sep 17 00:00:00 2001
-> > From: James Bottomley <James.Bottomley@HansenPartnership.com>
-> > Date: Fri, 17 May 2024 06:29:31 -0700
-> > Subject: [PATCH] tpm: Fix sessions cryptography requirement for Random =
-Numbers
-> > MIME-Version: 1.0
-> > Content-Type: text/plain; charset=3DUTF-8
-> > Content-Transfer-Encoding: 8bit
-> >=20
-> > The ECDH code in tpm2-sessions.c requires an initial random number
-> > generator to generate the key pair.  If the configuration doesn't have
-> > CONFIG_RNG_DEFAULT, it will try to pull this in as a module (which is
-> > impossible for the early kernel boot where the TPM starts).  Fix this
-> > by selecting the required RNG.
-> >=20
-> > Reported-by: N=C3=ADcolas F. R. A. Prado <nfraprado@collabora.com>
-> > Fixes: 1b6d7f9eb150 ("tpm: add session encryption protection to tpm2_ge=
-t_random()")
-> > Acked-by: Ard Biesheuvel <ardb@kernel.org>
-> > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-> > ---
-> >  drivers/char/tpm/Kconfig | 1 +
-> >  1 file changed, 1 insertion(+)
-> >=20
-> > diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-> > index 4f83ee7021d0..ecdd3db4be2b 100644
-> > --- a/drivers/char/tpm/Kconfig
-> > +++ b/drivers/char/tpm/Kconfig
-> > @@ -31,6 +31,7 @@ config TCG_TPM2_HMAC
-> >  	bool "Use HMAC and encrypted transactions on the TPM bus"
-> >  	default y
-> >  	select CRYPTO_ECDH
-> > +	select CRYPTO_RNG_DEFAULT
-> >  	select CRYPTO_LIB_AESCFB
-> >  	select CRYPTO_LIB_SHA256
-> >  	help
-> > --=20
-> > 2.35.3
-> >=20
-> >=20
->
-> Hi James,
->
-> thanks for the patch. But I actually already had that config enabled buil=
-tin. I
-> also had ECDH and DRBG which have been suggested previously:
->
-> 	CONFIG_CRYPTO_RNG_DEFAULT=3Dy
->
-> 	CONFIG_CRYPTO_DRBG_MENU=3Dy
-> 	CONFIG_CRYPTO_DRBG_HMAC=3Dy
-> 	# CONFIG_CRYPTO_DRBG_HASH is not set
-> 	# CONFIG_CRYPTO_DRBG_CTR is not set
-> 	CONFIG_CRYPTO_DRBG=3Dy
->
-> 	CONFIG_CRYPTO_ECDH=3Dy
->
-> I've pasted my full config here: http://0x0.st/XPN_.txt
->
-> Adding a debug print I see that the module that the code tries to load is
-> "crypto-hmac(sha512)". I would have expected to see=20
->
-> 	MODULE_ALIAS_CRYPTO("hmac(sha512)");
->
-> in crypto/drbg.c, but I don't see it anywhere in the tree. Maybe it is mi=
-ssing?
+> > On Fri, May 17, 2024 at 06:32:46AM GMT, Eric W. Biederman wrote:
+> As I read your introduction you were justifying the introduction
+> of a new security mechanism with the observation that distributions
+> were carrying distribution specific patches.
+> 
+> To the best of my knowledge distribution specific patches and
+> distributions disabling user namespaces have been gone for quite a
+> while.  So if that has changed recently I would like to know.
 
-1. Bug fixes need to be submitted as described in
-   https://www.kernel.org/doc/html/latest/process/submitting-patches.html
-2. The patch is missing the transcript:
-   https://lore.kernel.org/linux-integrity/D1BRZ60B9O5S.3NAT20QPQE6KH@kerne=
-l.org/
+On the top of my head:
 
-There's nothing to review at this point.
+- RHEL based:
+  namespace.unpriv_enable
+  user_namespace.enable
 
->
-> Thanks,
-> N=C3=ADcolas
+- Arch/Debian based:
+  kernel.unprivileged_userns_clone
 
-BR, Jarkko
+- Ubuntu based:
+  kernel.apparmor_restrict_unprivileged_userns
+
+I'm not sure which exact version those apply to, but it's definitely
+still out there.
+
+The observation is that while you can disable namespaces today, in
+practice it breaks userspace in various ways. Hence, being able to
+control capabilities is a better way to approach it.
+
+For example, today's big hammer to prevent CAP_NET_ADMIN in userns:
+
+# sysctl -qw user.max_net_namespaces=0
+
+$ unshare -U -r -n ip tuntap add mode tap tap0 && echo OK
+unshare: unshare failed: No space left on device
+
+With patch, this becomes manageable:
+
+# capsh --drop=cap_net_admin --secbits=$((1 << 8)) --user=$USER -- \
+        -c 'unshare -U -r -n ip tuntap add mode tap tap0 && echo OK'
+ioctl(TUNSETIFF): Operation not permitted
