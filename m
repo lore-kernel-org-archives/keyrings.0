@@ -1,101 +1,107 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+Received: from mx0b-0031df01.pphosted.com (mx0b-0031df01.pphosted.com [205.220.180.131])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 79AFF17B4F8;
-	Wed, 29 May 2024 23:08:45 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E628128FA;
+	Thu, 30 May 2024 01:02:21 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=205.220.180.131
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1717024127; cv=none; b=dOMjPX11fQvcKNCn5iaVIsgHyWxXxg7UyXxZAicGFubQytrijcyqsp8ATpopvKd4qa4vVa97v6Mj+UTk6n9cn+bb+4bVU9QIjVNJEcaqm1K8WKBwgShTFcPR67gJwngSCVmieNlyb2Uur9oNjk6LwQsCS9Elh0B224zDeZ5i9rI=
+	t=1717030943; cv=none; b=V9OJi21rx9EeAui4akXUxDIKTbiOFtSxpbzcr4lukoa6wKwPkS9cNC/Or1qGpONNXPs+DUtrc7IuDqAfOYB3UXhH5hpt0nm2FEy79KpXmiMWhzp7lAcL9+ihVFmHvjV2omMJYJ1n777IvZVKtzI242LDgVoG9bUkBBMt7Q0eaB8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1717024127; c=relaxed/simple;
-	bh=qqaqxixml0DZHaHq5au0Y/z6Z7gDIpLbU8xm2/jNyiQ=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=S4xImnTvzAlmJwxwiN6I7T52VC9zcmJyYgb2as6Fztq/PcxjOI5gE/bnIGQaCmG1qRKRF62ONLHAT6QE2HRsBgoGYUIhLGGQqg35IFqUXPRnErGuKk+fCIfQ5qOqUUuusd2LIPa47stLK0t5GVPn2XweLtUGy5tx81KDvCk54Gs=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=nGK0s54c; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1717030943; c=relaxed/simple;
+	bh=B8P4cw0Ri7T3pjh0FXJ7HxJGptxOJd5wZrnUVn9xPII=;
+	h=From:Date:Subject:MIME-Version:Content-Type:Message-ID:To:CC; b=Gpi3zn2UC2Msg5Yrqjbs/7nTJIVseO0tQEUpldhB3PLufe2JVDg2YLYJSA+ifoXurx+Sw4JIG5KsFqvZKNPAVbFkCl5qBz5iedfp+F31CohZgJHw6vR6uaZcrS2CsKirN0TOzwbgn2f9hgyV6w6GzrACXYDHRKdcSikHwEA10fs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=quicinc.com; spf=pass smtp.mailfrom=quicinc.com; dkim=pass (2048-bit key) header.d=quicinc.com header.i=@quicinc.com header.b=UvSQLrq0; arc=none smtp.client-ip=205.220.180.131
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=quicinc.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=quicinc.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="nGK0s54c"
-Received: from pps.filterd (m0353723.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.17.1.19/8.17.1.19) with ESMTP id 44TMt8sS015064;
-	Wed, 29 May 2024 23:08:35 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc :
- content-transfer-encoding : date : from : message-id : mime-version :
- subject : to; s=pp1; bh=oTnFNl/RFWIcMBoViFfGUFJ0EOULpVLfxgPZ5X7QdL8=;
- b=nGK0s54cLh/itnJYRHwdmOChZQLvFqPuIfV+Uoc+HAJ/rH1Zwhy4FR4xP21D+qKHK956
- Hh2VkPO4vs8aDP/zDO7gBxpCbnS/z52gk1gLn71dISDZ0h1RUNiYTPiccj5e2mTkLiID
- 0ZT2K4IrVmzRp69PHVRnpUry9XKMD4Ne4vcp0LQiTf5YBTfZuAVnxbqAalElRsP5BKV/
- V0c1XZH7Quym5pNRV/BrvBSYVwVQ5sVIhzmV8oIMWBZH4UMQF1tIDTKd2tFESSyT/72D
- T8WJGxRWh+XkNs6ZuVqB3hy+qEu+QAxe/MeLLHe+vt/mMbgYOPRcEcp7d9bE/urlvkwI 9Q== 
-Received: from ppma11.dal12v.mail.ibm.com (db.9e.1632.ip4.static.sl-reverse.com [50.22.158.219])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 3yedhsr0np-1
+	dkim=pass (2048-bit key) header.d=quicinc.com header.i=@quicinc.com header.b="UvSQLrq0"
+Received: from pps.filterd (m0279870.ppops.net [127.0.0.1])
+	by mx0a-0031df01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 44TJ0aji006748;
+	Thu, 30 May 2024 01:02:04 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=quicinc.com; h=
+	cc:content-transfer-encoding:content-type:date:from:message-id
+	:mime-version:subject:to; s=qcppdkim1; bh=SqQCY9K/42kZL4O4lFD+1J
+	zxmmzC9e7N8NRzPD0Ux6o=; b=UvSQLrq0HdfS+EnO/YSEptx3attwCTJno1NNw8
+	G8vcTj5xGy+j/R8y8qkV5leKmnU1IzEeD2qTmoThMlKQlkWopCW7ls6wyUTc9Q0Q
+	nRai1zmGGa0pOHezOw+aax4JSGup5Y5Gr9YKtY7jbQEPm/ffCouayBHEyZ3CkzBT
+	pJYL6QjbSgbuloIrRPt3CaEOCrrrt+V+O40XF5DCVLclS9Sk4IwBkMDJd0pBrpp8
+	58M3h6ozMeaY9c1oh65aZDZEYwiw5yyj29cdnLCFx8Ja9Xful9f3Mr9yNRa+tQNe
+	W4s6wflw6AHw2lcsxjajHsyig9vzsBK5AsmHSigR/WHueZsA==
+Received: from nalasppmta02.qualcomm.com (Global_NAT1.qualcomm.com [129.46.96.20])
+	by mx0a-0031df01.pphosted.com (PPS) with ESMTPS id 3ybadxasap-1
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 29 May 2024 23:08:35 +0000
-Received: from pps.filterd (ppma11.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma11.dal12v.mail.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 44TLJs1F009841;
-	Wed, 29 May 2024 23:08:34 GMT
-Received: from smtprelay05.wdc07v.mail.ibm.com ([172.16.1.72])
-	by ppma11.dal12v.mail.ibm.com (PPS) with ESMTPS id 3ydpbbpkf1-1
+	Thu, 30 May 2024 01:02:04 +0000 (GMT)
+Received: from nalasex01a.na.qualcomm.com (nalasex01a.na.qualcomm.com [10.47.209.196])
+	by NALASPPMTA02.qualcomm.com (8.17.1.5/8.17.1.5) with ESMTPS id 44U123t6004114
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 29 May 2024 23:08:34 +0000
-Received: from smtpav06.wdc07v.mail.ibm.com (smtpav06.wdc07v.mail.ibm.com [10.39.53.233])
-	by smtprelay05.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 44TN8VoU16056916
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Wed, 29 May 2024 23:08:34 GMT
-Received: from smtpav06.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id D57B558055;
-	Wed, 29 May 2024 23:08:31 +0000 (GMT)
-Received: from smtpav06.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 1A09058056;
-	Wed, 29 May 2024 23:08:31 +0000 (GMT)
-Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
-	by smtpav06.wdc07v.mail.ibm.com (Postfix) with ESMTP;
-	Wed, 29 May 2024 23:08:30 +0000 (GMT)
-From: Stefan Berger <stefanb@linux.ibm.com>
-To: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, lukas@wunner.de, jarkko@kernel.org,
-        Stefan Berger <stefanb@linux.ibm.com>
-Subject: [PATCH 0/2] ecdsa: Use ecc_digits_from_bytes to simplify code
-Date: Wed, 29 May 2024 19:08:25 -0400
-Message-ID: <20240529230827.379111-1-stefanb@linux.ibm.com>
-X-Mailer: git-send-email 2.45.1
+	Thu, 30 May 2024 01:02:03 GMT
+Received: from [169.254.0.1] (10.49.16.6) by nalasex01a.na.qualcomm.com
+ (10.47.209.196) with Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.1544.9; Wed, 29 May
+ 2024 18:02:02 -0700
+From: Jeff Johnson <quic_jjohnson@quicinc.com>
+Date: Wed, 29 May 2024 18:02:01 -0700
+Subject: [PATCH] KEYS: trusted: add MODULE_DESCRIPTION()
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: chh-x652G66ubPkPQruPeqE_g9_7uw5M
-X-Proofpoint-ORIG-GUID: chh-x652G66ubPkPQruPeqE_g9_7uw5M
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <20240529-md-trusted-v1-1-56c9a0ae8e28@quicinc.com>
+X-B4-Tracking: v=1; b=H4sIAAjQV2YC/x3MQQrCQAxA0auUrA3UoAPjVcTFtEltwI6StKVQe
+ nejy7f4fwcXU3G4NTuYrOr6roHzqYF+LPUpqBwGaunSXinjxDjb4rMwJkkDU6KcC0MEH5NBt//
+ s/gh3xQU7K7Uff4uX1mXDqURrcBxfy/A7k3sAAAA=
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jarkko Sakkinen
+	<jarkko@kernel.org>, Mimi Zohar <zohar@linux.ibm.com>,
+        David Howells
+	<dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        James Morris
+	<jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+CC: <linux-integrity@vger.kernel.org>, <keyrings@vger.kernel.org>,
+        <linux-security-module@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        Jeff Johnson <quic_jjohnson@quicinc.com>
+X-Mailer: b4 0.13.0
+X-ClientProxiedBy: nalasex01a.na.qualcomm.com (10.47.209.196) To
+ nalasex01a.na.qualcomm.com (10.47.209.196)
+X-QCInternal: smtphost
+X-Proofpoint-Virus-Version: vendor=nai engine=6200 definitions=5800 signatures=585085
+X-Proofpoint-ORIG-GUID: y6llrNSiIkMm6FuLwUOu4CgG1z4r9vag
+X-Proofpoint-GUID: y6llrNSiIkMm6FuLwUOu4CgG1z4r9vag
 X-Proofpoint-Virus-Version: vendor=baseguard
  engine=ICAP:2.0.293,Aquarius:18.0.1039,Hydra:6.0.650,FMLib:17.12.28.16
  definitions=2024-05-29_16,2024-05-28_01,2024-05-17_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxscore=0 impostorscore=0
- phishscore=0 mlxlogscore=738 spamscore=0 lowpriorityscore=0 bulkscore=0
- malwarescore=0 suspectscore=0 adultscore=0 clxscore=1015
- priorityscore=1501 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2405010000 definitions=main-2405290166
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 clxscore=1011 phishscore=0
+ impostorscore=0 bulkscore=0 mlxlogscore=834 malwarescore=0
+ priorityscore=1501 mlxscore=0 suspectscore=0 spamscore=0
+ lowpriorityscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=8.19.0-2405170001 definitions=main-2405300006
 
-Simplify two functions that were using temporary byte arrays for
-converting too-short input byte arrays to digits. Use ecc_digits_from_bytes
-since this function can now handle an input byte array that provides
-less bytes than what a coordinate of a curve requires - the function
-provides zeros for the missing (leading) bytes.
+Fix the 'make W=1' warning:
+WARNING: modpost: missing MODULE_DESCRIPTION() in security/keys/trusted-keys/trusted.o
 
-See: c6ab5c915da4 ("crypto: ecc - Prevent ecc_digits_from_bytes from reading too many bytes")
+Signed-off-by: Jeff Johnson <quic_jjohnson@quicinc.com>
+---
+ security/keys/trusted-keys/trusted_core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Regards,
-   Stefan
+diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
+index 5113aeae5628..f4ab16d59663 100644
+--- a/security/keys/trusted-keys/trusted_core.c
++++ b/security/keys/trusted-keys/trusted_core.c
+@@ -395,4 +395,5 @@ static void __exit cleanup_trusted(void)
+ late_initcall(init_trusted);
+ module_exit(cleanup_trusted);
+ 
++MODULE_DESCRIPTION("Trusted Key support");
+ MODULE_LICENSE("GPL");
 
-Stefan Berger (2):
-  crypto: ecdsa - Use ecc_digits_from_bytes to create hash digits array
-  crypto: ecdsa - Use ecc_digits_from_bytes to convert signature
-
- crypto/ecdsa.c | 29 ++++++-----------------------
- 1 file changed, 6 insertions(+), 23 deletions(-)
-
--- 
-2.43.0
+---
+base-commit: 4a4be1ad3a6efea16c56615f31117590fd881358
+change-id: 20240529-md-trusted-6e6fd26299ad
 
