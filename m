@@ -1,204 +1,118 @@
-Received: from the.earth.li (the.earth.li [93.93.131.124])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-wm1-f49.google.com (mail-wm1-f49.google.com [209.85.128.49])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9C0B114AD19;
-	Wed, 17 Jul 2024 10:38:14 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=93.93.131.124
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 83CC214A61B
+	for <keyrings@vger.kernel.org>; Wed, 17 Jul 2024 11:04:00 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.128.49
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1721212697; cv=none; b=TqcVTlqGUYHHul+vC+4xMGikc+mza6YNPM1fUS+5SFo3PbEYgcov/CgEEHJqtTszRuvuyFCSCMi9z1+5q3JHWVf9aOaliZqWyLxYzPz7C/A3QXRxk5I1fGl7CR1WGwf2H4FJHWQb+8V4Qn5abRV7V34feGcVQfnbIGDrpDFJVFY=
+	t=1721214243; cv=none; b=RUsMWXmXdBHC822DXfbKDuErJdx4NEC8EmxjukJfETsIzCYLFG05ejLUSjVIZf9wLzSeFDr8lnSRTgZZitsMBqPk4ASgJu/pBe4sOKa4rXUUKXaFkxOclQ7YMyBg3oj1lA0GN+l4PqDXWctgvhGyuzB00+aT3sCYIJDjh606bp4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1721212697; c=relaxed/simple;
-	bh=HvhgoHyJKpIIPXLDKtSS/sCs2jXautb++tsD2DLZoBI=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=ECv8qcEnPXNCTpQ949BXsN1wCdg7mAeA7B37WWyT8Z9545NfFn/lz6wuk549sPhUrPPuJXL8usO8zBJbv//VsevIjm8UipIe31+yCDSqxPphOh14dKMEffFf9JCdqohW21Xp+yfMEdX1d3h/BAtP/vDel0CZrIKauoyyko6EUug=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=earth.li; spf=pass smtp.mailfrom=earth.li; dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b=MzZLfdDE; arc=none smtp.client-ip=93.93.131.124
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=earth.li
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=earth.li
+	s=arc-20240116; t=1721214243; c=relaxed/simple;
+	bh=BISw6QaYo5XGw4g9kcYQi/vCvP2PYYCiF3MeCq2fVFI=;
+	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
+	 Message-Id:References:To; b=pkckSo4KPU8W56mvyyNj9ejv8VoEshXJXtEErzhx0GVYYnx/pkDOZTxkOjkkEeAELyZiuuM8fvXlDtwa0NPXbChwHbk086+iiQab0ll3X+UBwS5P7vfdwDuVIKRXz1cTYMtRzZSiJ0+nMXcRN7jvrXonmr4JTEstqV/KZs+flUk=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sigma-star.at; spf=pass smtp.mailfrom=sigma-star.at; dkim=pass (2048-bit key) header.d=sigma-star.at header.i=@sigma-star.at header.b=vutvKP5m; arc=none smtp.client-ip=209.85.128.49
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sigma-star.at
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=sigma-star.at
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b="MzZLfdDE"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=earth.li;
-	s=the; h=In-Reply-To:Content-Type:MIME-Version:References:Message-ID:Subject:
-	Cc:To:From:Date:Sender:Reply-To:Content-Transfer-Encoding:Content-ID:
-	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
-	:Resent-Message-ID:List-Id:List-Help:List-Unsubscribe:List-Subscribe:
-	List-Post:List-Owner:List-Archive;
-	bh=crA7kBcB4rPslVEtpJNh9J3l8TLIse9JtfSt0FeRbRs=; b=MzZLfdDErg+lO02YjKutidxYlY
-	r6Yo77WfjHzXWWmnJEpO6OMjO4mhdQnMSE0ZJ0vOhaT+T28S8GsD84LHrG0jSAXB9RNNDlRPvcg3+
-	mTzDKnCMTVet153q690eQElvXA+RL9crciP35BwrVIdmNWeMopk/uOksVVs1Q2WAkr/0qxEBnLTdJ
-	yzudAfS5w724oEPnyS82XPiEhKpPKjUmGg+jykafXDC0JxzKobNIDBwfu4x+ZxYAj4/NjpaElvuCJ
-	SWyvKVLy8kCQ5qeJh1CE1A5L66Sko97ltaH6jpOlD5UU/zsBtXnz1hI1JlLCHGPp5rEww1xKoT7wE
-	zbAGjhhQ==;
-Received: from noodles by the.earth.li with local (Exim 4.96)
-	(envelope-from <noodles@earth.li>)
-	id 1sU1NO-008WmH-2y;
-	Wed, 17 Jul 2024 10:55:10 +0100
-Date: Wed, 17 Jul 2024 10:55:10 +0100
-From: Jonathan McDowell <noodles@earth.li>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: linux-integrity@vger.kernel.org, stable@vger.kernel.org,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] tpm: Relocate buf->handles to appropriate place
-Message-ID: <ZpeU_lxLtrpKGk4s@earth.li>
-References: <20240716185225.873090-1-jarkko@kernel.org>
+	dkim=pass (2048-bit key) header.d=sigma-star.at header.i=@sigma-star.at header.b="vutvKP5m"
+Received: by mail-wm1-f49.google.com with SMTP id 5b1f17b1804b1-4266ed6c691so43246535e9.3
+        for <keyrings@vger.kernel.org>; Wed, 17 Jul 2024 04:04:00 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=sigma-star.at; s=google; t=1721214239; x=1721819039; darn=vger.kernel.org;
+        h=to:references:message-id:content-transfer-encoding:cc:date
+         :in-reply-to:from:subject:mime-version:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=BISw6QaYo5XGw4g9kcYQi/vCvP2PYYCiF3MeCq2fVFI=;
+        b=vutvKP5mO5yJZfgL6NY0i5pe/9u1TdeOWI4SnjXNCpFyX3FGaZnZ6wtRslmBeXODYu
+         2CIY+fs2XJMbPPlIe9nAimchkDJIz5uf8DNirxMtxVGzB9+YaHjXWEwxG8VHrXH3m97u
+         kkAD0/SCz0afSe8iaYVdfd+UDFx0938xefudscIsQTfb6hFiXkHGiUN6YPCtoanqICbp
+         FytCooA4kVIy10XrywJ8kdMoyTp20tlUWXXZlqpWGjWscwyzCFu2UtZzp2hixFrCRc8l
+         Sb+SfZqsDEN3LeQs0GEjo/MDL6GBus6Om+JWAAtuaO33Io3ZexA4w4NLDolcnNE3gZtG
+         StRQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1721214239; x=1721819039;
+        h=to:references:message-id:content-transfer-encoding:cc:date
+         :in-reply-to:from:subject:mime-version:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=BISw6QaYo5XGw4g9kcYQi/vCvP2PYYCiF3MeCq2fVFI=;
+        b=jTW21K52ML6bMFhaJl8KENg/Vrt4s9EsClwpP/3X6Kg+zTsjO876ZgMFaaurFBQuwu
+         1lzW8sPGPrn+eOgIgJwCcBz1+3ErFkzotm/Mz/9TbnKE5I+bKHrYy3qxEJfsiCjlrdLv
+         s0X7uXDban2p3aplromC/v9APTjiQmWeEzKyLgtJLxdmswcNDqz5wf5Zr+iC7nz1Ijis
+         5WVlQh7PqxlRW7WqkFllLdZv4sAqZUulkHdNhnX8encvYdLWI8TNAAfBtGj8zSejRmrw
+         x95SeDovdo/naRvd+13kAZRJXbibR4O25JrbHNlSglRRZwBp6t6uIepok2vodAtff+rD
+         irBg==
+X-Forwarded-Encrypted: i=1; AJvYcCWmi4dbm4a8q908I7YfNI4LpkIkApgyozDURKWuvMOB5adfYn7yRzeHRX7x6Ohtr46l5JNZqyniH9bJBvYr6VrEKRLHdzTT0k4=
+X-Gm-Message-State: AOJu0YwgtUQALQK/sh+gpQmPPGi8xau/f5MFlTFDQsy4YAlI08fKcd4P
+	SSLI/0BxrXXBfzjW8Q1TYxBv6xM8eN9AzB/Psj2dKrSgDkiEZ7pSmQqI60fc8b0=
+X-Google-Smtp-Source: AGHT+IEDplGH0IVfvijmWw8u0JGSe1acucXgpm0GKMtZZyBCxjNkFTfli8WiN3/+52j395E7jXaZoA==
+X-Received: by 2002:a05:600c:4510:b0:426:6f31:5f5c with SMTP id 5b1f17b1804b1-427c2cbcbffmr9472755e9.17.1721214238878;
+        Wed, 17 Jul 2024 04:03:58 -0700 (PDT)
+Received: from smtpclient.apple ([82.150.214.1])
+        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-427a5edb525sm164901895e9.34.2024.07.17.04.03.57
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Wed, 17 Jul 2024 04:03:58 -0700 (PDT)
+Content-Type: text/plain;
+	charset=utf-8
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20240716185225.873090-1-jarkko@kernel.org>
+Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3774.600.62\))
+Subject: Re: [PATCH 1/2] KEYS: trusted: fix DCP blob payload length assignment
+From: David Gstir <david@sigma-star.at>
+In-Reply-To: <D2RQC1H7N1JI.1W4JT8FI0R8L4@kernel.org>
+Date: Wed, 17 Jul 2024 13:03:47 +0200
+Cc: sigma star Kernel Team <upstream+dcp@sigma-star.at>,
+ James Bottomley <James.Bottomley@HansenPartnership.com>,
+ Mimi Zohar <zohar@linux.ibm.com>,
+ David Howells <dhowells@redhat.com>,
+ Paul Moore <paul@paul-moore.com>,
+ James Morris <jmorris@namei.org>,
+ "Serge E. Hallyn" <serge@hallyn.com>,
+ David Oberhollenzer <david.oberhollenzer@sigma-star.at>,
+ Richard Weinberger <richard@nod.at>,
+ "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>,
+ "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+ "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>,
+ "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+ kernel test robot <lkp@intel.com>
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <CE5319C4-F81F-4C70-AF74-B0B32DC60CCE@sigma-star.at>
+References: <20240703125353.46115-1-david@sigma-star.at>
+ <D2RQC1H7N1JI.1W4JT8FI0R8L4@kernel.org>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+X-Mailer: Apple Mail (2.3774.600.62)
 
-On Tue, Jul 16, 2024 at 09:52:24PM +0300, Jarkko Sakkinen wrote:
-> tpm_buf_append_name() has the following snippet in the beginning:
-> 
-> 	if (!tpm2_chip_auth(chip)) {
-> 		tpm_buf_append_u32(buf, handle);
-> 		/* count the number of handles in the upper bits of flags */
-> 		buf->handles++;
-> 		return;
-> 	}
-> 
-> The claim in the comment is wrong, and the comment is in the wrong place
-> as alignment in this case should not anyway be a concern of the call
-> site. In essence the comment is  lying about the code, and thus needs to
-> be adressed.
-> 
-> Further, 'handles' was incorrectly place to struct tpm_buf, as tpm-buf.c
-> does manage its state. It is easy to grep that only piece of code that
-> actually uses the field is tpm2-sessions.c.
-> 
-> Address the issues by moving the variable to struct tpm_chip.
-> 
-> Cc: stable@vger.kernel.org # v6.10+
-> Fixes: 699e3efd6c64 ("tpm: Add HMAC session start and end functions")
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-> 
-> v3:
-> * Reset chip->handles in the beginning of tpm2_start_auth_session()
->   so that it shows correct value, when TCG_TPM2_HMAC is enabled but
->   tpm2_sessions_init() has never been called.
-> v2:
-> * Was a bit more broken than I first thought, as 'handles' is only
->   useful for tpm2-sessions.c and has zero relation to tpm-buf.c.
-> ---
->  drivers/char/tpm/tpm-buf.c       | 1 -
->  drivers/char/tpm/tpm2-cmd.c      | 2 +-
->  drivers/char/tpm/tpm2-sessions.c | 7 ++++---
->  include/linux/tpm.h              | 8 ++++----
->  4 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm-buf.c b/drivers/char/tpm/tpm-buf.c
-> index cad0048bcc3c..d06e8e063151 100644
-> --- a/drivers/char/tpm/tpm-buf.c
-> +++ b/drivers/char/tpm/tpm-buf.c
-> @@ -44,7 +44,6 @@ void tpm_buf_reset(struct tpm_buf *buf, u16 tag, u32 ordinal)
->  	head->tag = cpu_to_be16(tag);
->  	head->length = cpu_to_be32(sizeof(*head));
->  	head->ordinal = cpu_to_be32(ordinal);
-> -	buf->handles = 0;
->  }
->  EXPORT_SYMBOL_GPL(tpm_buf_reset);
->  
-> diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-> index 1e856259219e..b781e4406fc2 100644
-> --- a/drivers/char/tpm/tpm2-cmd.c
-> +++ b/drivers/char/tpm/tpm2-cmd.c
-> @@ -776,7 +776,7 @@ int tpm2_auto_startup(struct tpm_chip *chip)
->  	if (rc)
->  		goto out;
->  
-> -	rc = tpm2_sessions_init(chip);
-> +	/* rc = tpm2_sessions_init(chip); */
+Jarkko,
 
-Left over from testing? Or should be removed entirely?
+> On 17.07.2024, at 12:07, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+>=20
+> On Wed Jul 3, 2024 at 3:53 PM EEST, David Gstir wrote:
+>> The DCP trusted key type uses the wrong helper function to store
+>> the blob's payload length which can lead to the wrong byte order
+>> being used in case this would ever run on big endian architectures.
+>>=20
+>> Fix by using correct helper function.
+>>=20
+>> Signed-off-by: David Gstir <david@sigma-star.at>
+>> Suggested-by: Richard Weinberger <richard@nod.at>
+>=20
+> You cannot suggest a change that you author yourself.
+>=20
+>> Reported-by: kernel test robot <lkp@intel.com>
+>> Closes: =
+https://lore.kernel.org/oe-kbuild-all/202405240610.fj53EK0q-lkp@intel.com/=
 
->  out:
->  	/*
-> diff --git a/drivers/char/tpm/tpm2-sessions.c b/drivers/char/tpm/tpm2-sessions.c
-> index d3521aadd43e..5e7c12d64ba8 100644
-> --- a/drivers/char/tpm/tpm2-sessions.c
-> +++ b/drivers/char/tpm/tpm2-sessions.c
-> @@ -238,8 +238,7 @@ void tpm_buf_append_name(struct tpm_chip *chip, struct tpm_buf *buf,
->  
->  	if (!tpm2_chip_auth(chip)) {
->  		tpm_buf_append_u32(buf, handle);
-> -		/* count the number of handles in the upper bits of flags */
-> -		buf->handles++;
-> +		chip->handles++;
->  		return;
->  	}
->  
-> @@ -310,7 +309,7 @@ void tpm_buf_append_hmac_session(struct tpm_chip *chip, struct tpm_buf *buf,
->  
->  	if (!tpm2_chip_auth(chip)) {
->  		/* offset tells us where the sessions area begins */
-> -		int offset = buf->handles * 4 + TPM_HEADER_SIZE;
-> +		int offset = chip->handles * 4 + TPM_HEADER_SIZE;
->  		u32 len = 9 + passphrase_len;
->  
->  		if (tpm_buf_length(buf) != offset) {
-> @@ -963,6 +962,8 @@ int tpm2_start_auth_session(struct tpm_chip *chip)
->  	int rc;
->  	u32 null_key;
->  
-> +	chip->handles = 0;
-> +
->  	if (!auth) {
->  		dev_warn_once(&chip->dev, "auth session is not active\n");
->  		return 0;
-> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-> index e93ee8d936a9..b664f7556494 100644
-> --- a/include/linux/tpm.h
-> +++ b/include/linux/tpm.h
-> @@ -202,9 +202,9 @@ struct tpm_chip {
->  	/* active locality */
->  	int locality;
->  
-> +	/* handle count for session: */
-> +	u8 handles;
->  #ifdef CONFIG_TCG_TPM2_HMAC
-> -	/* details for communication security via sessions */
-> -
->  	/* saved context for NULL seed */
->  	u8 null_key_context[TPM2_MAX_CONTEXT_SIZE];
->  	 /* name of NULL seed */
-> @@ -377,7 +377,6 @@ struct tpm_buf {
->  	u32 flags;
->  	u32 length;
->  	u8 *data;
-> -	u8 handles;
->  };
->  
->  enum tpm2_object_attributes {
-> @@ -517,7 +516,7 @@ static inline void tpm_buf_append_hmac_session_opt(struct tpm_chip *chip,
->  	if (tpm2_chip_auth(chip)) {
->  		tpm_buf_append_hmac_session(chip, buf, attributes, passphrase, passphraselen);
->  	} else  {
-> -		offset = buf->handles * 4 + TPM_HEADER_SIZE;
-> +		offset = chip->handles * 4 + TPM_HEADER_SIZE;
->  		head = (struct tpm_header *)buf->data;
->  
->  		/*
-> @@ -541,6 +540,7 @@ void tpm2_end_auth_session(struct tpm_chip *chip);
->  
->  static inline int tpm2_start_auth_session(struct tpm_chip *chip)
->  {
-> +	chip->handles = 0;
->  	return 0;
->  }
->  static inline void tpm2_end_auth_session(struct tpm_chip *chip)
-> -- 
-> 2.45.2
+>> Fixes: 2e8a0f40a39c ("KEYS: trusted: Introduce NXP DCP-backed trusted =
+keys")
+>=20
+> Tags are in wrong order. For next round:
 
-J.
+here=E2=80=99s me relying on checkpatch.pl to tell me this, but it did =
+not. :-/
+Anyways, thanks for reviewing! I=E2=80=99ll fix the tags and send v2.
 
--- 
-"I'm not anti-establishment, I just don't see the point." -- Matthew
-Kirkwood, OxLUG mailing list.
+BR, David
+
