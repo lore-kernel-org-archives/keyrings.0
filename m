@@ -1,226 +1,129 @@
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.223.130])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D27D11A00FF
-	for <keyrings@vger.kernel.org>; Tue, 30 Jul 2024 10:34:37 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=195.135.223.130
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A60E5198856;
+	Tue, 30 Jul 2024 13:50:59 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1722335679; cv=none; b=I77E3xd7bVNNvQt7D9MhrhUPDZtJgWQ1bcRhXHWuvKS9bQLvqSiyyyXNwbjXAUY4WZ6GonwQam4OOwRHY5Tk9A+jxFN8sLZNb8QVv3yZcjKalxDvHcB6VTg8SRmOGBOMkSj1FxEiWyGZjqDlQzJ6xWPmKET693V1zs1CLse7NuI=
+	t=1722347462; cv=none; b=eP6BNHVBpmHSS3El3zyuywAQJDKcRPQoSQcAKNGI9Rl3ALyWjKLAYYDoxScYuqEU19IdEJAPCSK1wDd3WYUx3dcEril7agdiBafU885RMSDltE5lAwUVhRm7YOMPkfV6qbG/C5130WOaFMfoUm8foKHRiS3pQB6N8OAUStxvhKA=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1722335679; c=relaxed/simple;
-	bh=W30apyTxeObTOeWWCBD68GuBVHXxcCUZKOhoNOYoKZk=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=oYgyOrTiRW3p2rFHcmPMkov7wtYDvSXQZIp1u6ujPQXkQd4s0ccnPR06o84eISV+b+4aTRUdCG2NQUsyhnuT64axVxW9VD0zPB4o93cZ+wyCvf0P8Bm2bb2YF1rQV2NEsr4g3f4pptg3CZAW3okmCwncTvLJMSpFpJTjovlHMhw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=suse.cz; spf=pass smtp.mailfrom=suse.cz; dkim=pass (1024-bit key) header.d=suse.cz header.i=@suse.cz header.b=Qyd2+mc9; dkim=permerror (0-bit key) header.d=suse.cz header.i=@suse.cz header.b=eGbJiPMD; dkim=pass (1024-bit key) header.d=suse.cz header.i=@suse.cz header.b=sLoHLiQo; dkim=permerror (0-bit key) header.d=suse.cz header.i=@suse.cz header.b=MMA0KjfT; arc=none smtp.client-ip=195.135.223.130
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=suse.cz
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.cz
+	s=arc-20240116; t=1722347462; c=relaxed/simple;
+	bh=QIrpfDYRgcW7cmxsQDnufdlZBXwtZhDU5/0XxZliC5g=;
+	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
+	 In-Reply-To:Content-Type; b=hnJ422LOR50l3dZ1VIdOpoVqBFonr5WJS5XO2WzSAxypL9TR/NLExWtiVN7R/3/tLZ02nZRL/UV5S8Vg/jMmNW5Amw0vlkXfrDCdqAk+NVPCuw6E+YmNfHPZ7Y8/7ubkl5xcJcnbwX33DYvs7Be/jV/+oJcXV4fszcz7nH+4U1Y=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=f3/QYAAG; arc=none smtp.client-ip=148.163.158.5
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.cz header.i=@suse.cz header.b="Qyd2+mc9";
-	dkim=permerror (0-bit key) header.d=suse.cz header.i=@suse.cz header.b="eGbJiPMD";
-	dkim=pass (1024-bit key) header.d=suse.cz header.i=@suse.cz header.b="sLoHLiQo";
-	dkim=permerror (0-bit key) header.d=suse.cz header.i=@suse.cz header.b="MMA0KjfT"
-Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [IPv6:2a07:de40:b281:104:10:150:64:97])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-out1.suse.de (Postfix) with ESMTPS id E4EC321A9D;
-	Tue, 30 Jul 2024 10:34:35 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.cz; s=susede2_rsa;
-	t=1722335676;
-	h=from:from:reply-to:reply-to:date:date:message-id:message-id:to:to:
-	 cc:cc:mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=rUuL2K40Ym/Bz1YzJxw0jfnm6ipn80ovERkdZcIlYWs=;
-	b=Qyd2+mc96X+8VREXXnIb1toJWrF/IS30NAbzuepLAe6HtzztwCdYgr1/e7rBbJwdnECNyc
-	HddZq4vuSUOh1tTkyzcBw+WTMy3ir+K33vbGjGW8QnYBZK3F5mzNPFLOad0kP0TpxvCGSe
-	gV++m4dV1DzmRQjKrbzbJSLjGDlVyuI=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.cz;
-	s=susede2_ed25519; t=1722335676;
-	h=from:from:reply-to:reply-to:date:date:message-id:message-id:to:to:
-	 cc:cc:mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=rUuL2K40Ym/Bz1YzJxw0jfnm6ipn80ovERkdZcIlYWs=;
-	b=eGbJiPMD6szPVEg724mvFIUXWxOhbeO86kV9IdU7D3w9LpF189r1hgO/r+z2iEDNqSk/yw
-	9JSUfmj6Bq0A7UAg==
-Authentication-Results: smtp-out1.suse.de;
-	dkim=pass header.d=suse.cz header.s=susede2_rsa header.b=sLoHLiQo;
-	dkim=pass header.d=suse.cz header.s=susede2_ed25519 header.b=MMA0KjfT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.cz; s=susede2_rsa;
-	t=1722335675;
-	h=from:from:reply-to:reply-to:date:date:message-id:message-id:to:to:
-	 cc:cc:mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=rUuL2K40Ym/Bz1YzJxw0jfnm6ipn80ovERkdZcIlYWs=;
-	b=sLoHLiQozfeMx/pj5a8Sju4UDehxhAtGEffitDXE+xTqGVDxYVkXoFpBeobbZ+TleP1dkl
-	0HgCgmvMcnbu2x4PvRVHwiNtI8QV3K+Pjh23Uca9PVDlul0Be8IxMyQ71wmgNiRrO2AehW
-	tIfAH0je2sTeUs2TvtGxWKtQ5sNPMXE=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.cz;
-	s=susede2_ed25519; t=1722335675;
-	h=from:from:reply-to:reply-to:date:date:message-id:message-id:to:to:
-	 cc:cc:mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=rUuL2K40Ym/Bz1YzJxw0jfnm6ipn80ovERkdZcIlYWs=;
-	b=MMA0KjfTE3/ghfsreUOsFIeWKRR/gYpUGWCCxhhRpyOI8w9t/YzFjB/OlgC0vGNDM5NpF8
-	I2MxmPNb21I3CPDQ==
-Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id BBD5613297;
-	Tue, 30 Jul 2024 10:34:35 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
-	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id Xi6SLLvBqGZeJwAAD6G6ig
-	(envelope-from <pvorel@suse.cz>); Tue, 30 Jul 2024 10:34:35 +0000
-Date: Tue, 30 Jul 2024 12:34:31 +0200
-From: Petr Vorel <pvorel@suse.cz>
-To: Ma Xinjian <maxj.fnst@fujitsu.com>
-Cc: ltp@lists.linux.it, Eric Biggers <ebiggers@google.com>,
-	keyrings@vger.kernel.org
-Subject: Re: [LTP] [PATCH] request_key: Add negative tests for request_key
-Message-ID: <20240730103431.GA1371143@pevik>
-Reply-To: Petr Vorel <pvorel@suse.cz>
-References: <20240521081552.2162-1-maxj.fnst@fujitsu.com>
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="f3/QYAAG"
+Received: from pps.filterd (m0356516.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 46UDSjeI031591;
+	Tue, 30 Jul 2024 13:50:38 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=
+	message-id:date:mime-version:subject:to:cc:references:from
+	:in-reply-to:content-type:content-transfer-encoding; s=pp1; bh=f
+	Uv4QxtIdsR4jv7WkdAdTjk3y3C+YOSCF/nyLvLsIM0=; b=f3/QYAAGdO+Dpk1gq
+	IXS6Y2ddc+lbqEcB9ceh0hWy4CCBMMPvjKCVXRypWKEjqXQfrKGE/m8TN5Ru3q3U
+	CenYBDxXf2bJj587DUGof9XF77vI+dTCDn4EKT0ohPKivi12MtMOopLJ9UgXTlef
+	sk2YI3x1Pc9sfGaRNRXuqPFrOHQ7pVuA705Aw68sAX2tjR32s8ANAifs1o225Z/3
+	PMqcuUWS6CtV90Gnu8draV+DtKT7zfBL+52YJy3CSXZw36jgBFuGYZ34b7C6nXOt
+	qmV0JRen0s26cC5tCMdEReYAHgJvVMhl2DsllqRo3YVLcHz9L9Z17kTaRK9SZv/J
+	Q+9lA==
+Received: from pps.reinject (localhost [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 40q139r1f6-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Tue, 30 Jul 2024 13:50:38 +0000 (GMT)
+Received: from m0356516.ppops.net (m0356516.ppops.net [127.0.0.1])
+	by pps.reinject (8.18.0.8/8.18.0.8) with ESMTP id 46UDob6K002968;
+	Tue, 30 Jul 2024 13:50:37 GMT
+Received: from ppma21.wdc07v.mail.ibm.com (5b.69.3da9.ip4.static.sl-reverse.com [169.61.105.91])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 40q139r1f3-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Tue, 30 Jul 2024 13:50:37 +0000 (GMT)
+Received: from pps.filterd (ppma21.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma21.wdc07v.mail.ibm.com (8.17.1.19/8.17.1.19) with ESMTP id 46UBA68p018867;
+	Tue, 30 Jul 2024 13:50:37 GMT
+Received: from smtprelay04.dal12v.mail.ibm.com ([172.16.1.6])
+	by ppma21.wdc07v.mail.ibm.com (PPS) with ESMTPS id 40nc7pmxdx-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Tue, 30 Jul 2024 13:50:37 +0000
+Received: from smtpav04.wdc07v.mail.ibm.com (smtpav04.wdc07v.mail.ibm.com [10.39.53.231])
+	by smtprelay04.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 46UDoYEj13107868
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Tue, 30 Jul 2024 13:50:36 GMT
+Received: from smtpav04.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 186C658064;
+	Tue, 30 Jul 2024 13:50:34 +0000 (GMT)
+Received: from smtpav04.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 2E12358050;
+	Tue, 30 Jul 2024 13:50:30 +0000 (GMT)
+Received: from [9.47.158.152] (unknown [9.47.158.152])
+	by smtpav04.wdc07v.mail.ibm.com (Postfix) with ESMTP;
+	Tue, 30 Jul 2024 13:50:29 +0000 (GMT)
+Message-ID: <f6ec8fe9-b142-49bd-98e9-28f54b71dca0@linux.ibm.com>
+Date: Tue, 30 Jul 2024 09:50:29 -0400
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20240521081552.2162-1-maxj.fnst@fujitsu.com>
-X-Rspamd-Server: rspamd1.dmz-prg2.suse.org
-X-Rspamd-Action: no action
-X-Rspamd-Queue-Id: E4EC321A9D
-X-Spam-Score: -3.51
-X-Spam-Level: 
-X-Spam-Flag: NO
-X-Spamd-Result: default: False [-3.51 / 50.00];
-	BAYES_HAM(-3.00)[100.00%];
-	NEURAL_HAM_LONG(-1.00)[-1.000];
-	MID_RHS_NOT_FQDN(0.50)[];
-	HAS_REPLYTO(0.30)[pvorel@suse.cz];
-	R_DKIM_ALLOW(-0.20)[suse.cz:s=susede2_rsa,suse.cz:s=susede2_ed25519];
-	MIME_GOOD(-0.10)[text/plain];
-	MX_GOOD(-0.01)[];
-	ARC_NA(0.00)[];
-	TO_DN_SOME(0.00)[];
-	RCVD_VIA_SMTP_AUTH(0.00)[];
-	MIME_TRACE(0.00)[0:+];
-	MISSING_XM_UA(0.00)[];
-	FUZZY_BLOCKED(0.00)[rspamd.com];
-	REPLYTO_EQ_FROM(0.00)[];
-	RCPT_COUNT_THREE(0.00)[4];
-	FROM_EQ_ENVFROM(0.00)[];
-	FROM_HAS_DN(0.00)[];
-	DKIM_SIGNED(0.00)[suse.cz:s=susede2_rsa,suse.cz:s=susede2_ed25519];
-	RCVD_TLS_ALL(0.00)[];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[suse.cz:dkim,suse.cz:email,suse.cz:replyto];
-	RCVD_COUNT_TWO(0.00)[2];
-	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	DKIM_TRACE(0.00)[suse.cz:+]
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH 1/5] ASN.1: Add missing include <linux/types.h>
+To: Lukas Wunner <lukas@wunner.de>, Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>, Vitaly Chikunov <vt@altlinux.org>,
+        Tadeusz Struk <tstruk@gigaio.com>,
+        Andrew Zaborowski <andrew.zaborowski@intel.com>,
+        Saulo Alessandre <saulo.alessandre@tse.jus.br>,
+        Jonathan Cameron <Jonathan.Cameron@huawei.com>,
+        linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
+References: <cover.1722260176.git.lukas@wunner.de>
+ <a98ae07646e243fe0d9c1a25fcb3feb3e5987960.1722260176.git.lukas@wunner.de>
+Content-Language: en-US
+From: Stefan Berger <stefanb@linux.ibm.com>
+In-Reply-To: <a98ae07646e243fe0d9c1a25fcb3feb3e5987960.1722260176.git.lukas@wunner.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-GUID: NclXsB--uMF2Zs6hSBmuz7fvaoY1PQ6E
+X-Proofpoint-ORIG-GUID: oyPDAH6UvUlRLLOIP3TOiey58PqXrej-
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1039,Hydra:6.0.680,FMLib:17.12.28.16
+ definitions=2024-07-30_11,2024-07-30_01,2024-05-17_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 adultscore=0 mlxscore=0
+ mlxlogscore=999 clxscore=1015 priorityscore=1501 lowpriorityscore=0
+ spamscore=0 impostorscore=0 bulkscore=0 suspectscore=0 malwarescore=0
+ phishscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.19.0-2407110000 definitions=main-2407300091
 
-Hi Ma, Eric, all,
 
-> Add negative tests for request_key(), when errno is EFAULT or EPERM
 
-LGTM, thanks!
-Reviewed-by: Petr Vorel <pvorel@suse.cz>
+On 7/29/24 9:47 AM, Lukas Wunner wrote:
+> If <linux/asn1_decoder.h> is the first header included from a .c file
+> (due to headers being sorted alphabetically), the compiler complains:
+> 
+> include/linux/asn1_decoder.h:18:29: error: unknown type name 'size_t'
+> 
+> Fix it.
+> 
+> Signed-off-by: Lukas Wunner <lukas@wunner.de>
 
-We also somehow test EACCES (request_key04.c). Looking into man page, there are
-other interesting errno to test I suppose (EDQUOT, EKEYEXPIRED, EKEYREJECTED,
-...)
+Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
 
-@Eric, other devs, would you have time to have a quick look on the test?
-
-Kind regards,
-Petr
-
-> Signed-off-by: Ma Xinjian <maxj.fnst@fujitsu.com>
 > ---
->  runtest/syscalls                              |  1 +
->  .../kernel/syscalls/request_key/.gitignore    |  1 +
->  .../syscalls/request_key/request_key06.c      | 52 +++++++++++++++++++
->  3 files changed, 54 insertions(+)
->  create mode 100644 testcases/kernel/syscalls/request_key/request_key06.c
-
-> diff --git a/runtest/syscalls b/runtest/syscalls
-> index 3a28123a5..c04359fcd 100644
-> --- a/runtest/syscalls
-> +++ b/runtest/syscalls
-> @@ -1187,6 +1187,7 @@ request_key02 request_key02
->  request_key03 request_key03
->  request_key04 request_key04
->  request_key05 request_key05
-> +request_key06 request_key06
-
->  rmdir01 rmdir01
->  rmdir02 rmdir02
-> diff --git a/testcases/kernel/syscalls/request_key/.gitignore b/testcases/kernel/syscalls/request_key/.gitignore
-> index e8dc1c570..6dcf613c7 100644
-> --- a/testcases/kernel/syscalls/request_key/.gitignore
-> +++ b/testcases/kernel/syscalls/request_key/.gitignore
-> @@ -3,3 +3,4 @@
->  /request_key03
->  /request_key04
->  /request_key05
-> +/request_key06
-> diff --git a/testcases/kernel/syscalls/request_key/request_key06.c b/testcases/kernel/syscalls/request_key/request_key06.c
-> new file mode 100644
-> index 000000000..bd872867b
-> --- /dev/null
-> +++ b/testcases/kernel/syscalls/request_key/request_key06.c
-> @@ -0,0 +1,52 @@
-> +// SPDX-License-Identifier: GPL-2.0-or-later
-> +/*
-> + * Copyright (c) 2024 FUJITSU LIMITED. All Rights Reserved.
-> + * Author: Ma Xinjian <maxj.fnst@fujitsu.com>
-> + */
-> +
-> +/*\
-> + * [Description]
-> + *
-> + * Verify that request_key(2) fails with
-> + *
-> + * - EFAULT when type points outside the process's accessible address space
-> + * - EFAULT when description points outside the process's accessible address space
-> + * - EFAULT when callout_info points outside the process's accessible address space
-> + * - EPERM when type argument started with a period '.'
-> + */
-> +
-> +#include "tst_test.h"
-> +#include "lapi/keyctl.h"
-> +
-> +static struct test_case_t {
-> +	char *type;
-> +	char *description;
-> +	char *callout_info;
-> +	key_serial_t dest_keyring;
-> +	int expected_errno;
-> +	char *desc;
-> +} tcases[] = {
-> +	{(char *)(-1), "description", NULL, KEY_SPEC_PROCESS_KEYRING, EFAULT,
-> +		"type points outside the process's accessible address space"},
-> +	{"type", (char *)(-1), NULL, KEY_SPEC_PROCESS_KEYRING, EFAULT,
-> +		"description points outside the process's accessible address space"},
-> +	{"type", "description", (char *)(-1), KEY_SPEC_PROCESS_KEYRING, EFAULT,
-> +		"callout_info points outside the process's accessible address space"},
-> +	{".type", "description", NULL, KEY_SPEC_PROCESS_KEYRING, EPERM,
-> +		"type argument started with a period '.'"},
-> +};
-> +
-> +static void verify_request_key(unsigned int i)
-> +{
-> +	struct test_case_t *tc = &tcases[i];
-> +
-> +	TST_EXP_FAIL2(request_key(tc->type, tc->description, tc->callout_info,
-> +		tc->dest_keyring),
-> +		tc->expected_errno,
-> +		"%s", tc->desc);
-> +}
-> +
-> +static struct tst_test test = {
-> +	.tcnt = ARRAY_SIZE(tcases),
-> +	.test = verify_request_key,
-> +};
+>   include/linux/asn1_decoder.h | 1 +
+>   1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/linux/asn1_decoder.h b/include/linux/asn1_decoder.h
+> index 83f9c6e1e5e9..b41bce82a191 100644
+> --- a/include/linux/asn1_decoder.h
+> +++ b/include/linux/asn1_decoder.h
+> @@ -9,6 +9,7 @@
+>   #define _LINUX_ASN1_DECODER_H
+>   
+>   #include <linux/asn1.h>
+> +#include <linux/types.h>
+>   
+>   struct asn1_decoder;
+>   
