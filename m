@@ -1,242 +1,183 @@
-Received: from szxga03-in.huawei.com (szxga03-in.huawei.com [45.249.212.189])
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F13E62F32;
-	Thu,  3 Jul 2025 01:34:04 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=45.249.212.189
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8310F4400;
+	Thu,  3 Jul 2025 01:39:15 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1751506447; cv=none; b=BgmWUm5+MvNgITyBRJtMUb7wKC3b4Fe8E/N891M8Sz3k3WQZayxfTQvm/s71cvhP7jUnXUWoEzVJp+w/MATJ55bMxLCaJyewwSubnTOGnb7gLR/UuvHs4r0w3BVFJVBum+fcx3qoZpwr3l8BN2a92nS5ZxwR+SKmGgT7QD4AEwo=
+	t=1751506758; cv=none; b=FNVUPdLAGX0WmifOG3fLZ9xlA4/KqRjkj82oGyl64Lqhm/3B888nT9YrYtqIk+T5fAkE59Si6HOOq+RH6myykrIB1BUIikhAowwoURrxBAR8GZEQ1Inwv6rQTwyc1mJUE8p/L7fOxbyeJfUDEE5KY0Twdzzxo8lxOzGjvJCpq9k=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1751506447; c=relaxed/simple;
-	bh=eYmZ2mHPvEoDojVBRzNnkUN2xFEKbDFZ5fiTmku9tlA=;
-	h=From:To:CC:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version:Content-Type; b=ejaZcwS1TOJcmZ6nYRwMIIXwo4a5wLm/6RTQWdngnld+t58wwCbBZfa8u86SJCXRvWZzsTL3RgcsmNmlmGOrOGS8yJA22UWiciNeerZKnGRZa2udI0NH0rcCHJcWQ+kDOnXwOFdTODAFFHKgYoVMqzhKtd8/0hRAc02wxMDqkkE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=huawei.com; spf=pass smtp.mailfrom=huawei.com; arc=none smtp.client-ip=45.249.212.189
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=huawei.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=huawei.com
-Received: from mail.maildlp.com (unknown [172.19.88.194])
-	by szxga03-in.huawei.com (SkyGuard) with ESMTP id 4bXfMR06RRzvQBm;
-	Thu,  3 Jul 2025 09:29:55 +0800 (CST)
-Received: from kwepemg100016.china.huawei.com (unknown [7.202.181.57])
-	by mail.maildlp.com (Postfix) with ESMTPS id 3A7E21400CA;
-	Thu,  3 Jul 2025 09:33:56 +0800 (CST)
-Received: from huawei.com (10.67.174.33) by kwepemg100016.china.huawei.com
- (7.202.181.57) with Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.1544.11; Thu, 3 Jul
- 2025 09:33:55 +0800
-From: GONG Ruiqi <gongruiqi1@huawei.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, Roberto Sassu
-	<roberto.sassu@huawei.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>, Ard Biesheuvel <ardb@kernel.org>
-CC: Eric Snowberg <eric.snowberg@oracle.com>, Paul Moore
-	<paul@paul-moore.com>, James Morris <jmorris@namei.org>, "Serge E . Hallyn"
-	<serge@hallyn.com>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar
-	<mingo@redhat.com>, Borislav Petkov <bp@alien8.de>, Dave Hansen
-	<dave.hansen@linux.intel.com>, <x86@kernel.org>, "H . Peter Anvin"
-	<hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-	<linux-integrity@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
-	<linux-efi@vger.kernel.org>, <keyrings@vger.kernel.org>, Lu Jialin
-	<lujialin4@huawei.com>, <gongruiqi1@huawei.com>
-Subject: [PATCH v3 2/2] integrity: Extract secure boot enquiry function out of IMA
-Date: Thu, 3 Jul 2025 09:43:53 +0800
-Message-ID: <20250703014353.3366268-3-gongruiqi1@huawei.com>
-X-Mailer: git-send-email 2.25.1
-In-Reply-To: <20250703014353.3366268-1-gongruiqi1@huawei.com>
-References: <20250703014353.3366268-1-gongruiqi1@huawei.com>
+	s=arc-20240116; t=1751506758; c=relaxed/simple;
+	bh=Is9CT0Pk2pnhqnJf/3yGZr2STJU9K7oUXqy0zbJFcCI=;
+	h=Message-ID:Subject:From:To:Cc:In-Reply-To:References:Content-Type:
+	 Date:MIME-Version; b=Bu2SddXXvnxfTUogedp9CO0/OqjeEb12avRe3RV6/j7vrh6Iw7j27xJz/FcoYqgAHwo8ynB4TcnOYtSgM0eTztW50t0F2sYXkzryrGJc1e+ZyxgPlyefO4FWwrQb8Mp0Fl8FkIO7YUh9FhhYfYlbTQs2aq/ZKoTFUOypSOlmdd0=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=b4L3lFIM; arc=none smtp.client-ip=148.163.156.1
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="b4L3lFIM"
+Received: from pps.filterd (m0356517.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 562JEAxQ003793;
+	Thu, 3 Jul 2025 01:38:45 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:content-type:date:from:in-reply-to
+	:message-id:mime-version:references:subject:to; s=pp1; bh=xgpVyo
+	LPh9JdhYBwUjqBEZjWvAdIc2zVJFh7ZQkPLrQ=; b=b4L3lFIMHGyWmS95nHIWRl
+	h9DRdGUb2nGcL/94yxLei0wURBf1o8sIkM2wWKH+Sw5cpfWPMCUi/PHLXNLxC2xH
+	GBjP7tPOwggeK6mtiy2XMDP4TI9iVe3pUoZIViaZzyOOX57CVTDT+b+CoyHk6N7h
+	0FQvKDHndXCoP/gzpvoNh/FsB70oEyg2nelcqHqKf4CYYWweKNDeupcieG6y1mtn
+	Npb941m9Twm6vF/BYn8Z/VCcEiMvPERje11ZFtw0a1YQt/LSXOB7U9/rWL5EZGID
+	kABh2ml9ah7UXaVybZkhO9Sx99QVwTwFR2ANXq4r2uE0o3TX0uSV3S0NRerwCALw
+	==
+Received: from pps.reinject (localhost [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 47j84dgwfs-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 03 Jul 2025 01:38:45 +0000 (GMT)
+Received: from m0356517.ppops.net (m0356517.ppops.net [127.0.0.1])
+	by pps.reinject (8.18.0.8/8.18.0.8) with ESMTP id 5631YEmd000959;
+	Thu, 3 Jul 2025 01:38:44 GMT
+Received: from ppma13.dal12v.mail.ibm.com (dd.9e.1632.ip4.static.sl-reverse.com [50.22.158.221])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 47j84dgwfn-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 03 Jul 2025 01:38:44 +0000 (GMT)
+Received: from pps.filterd (ppma13.dal12v.mail.ibm.com [127.0.0.1])
+	by ppma13.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 562MZRJ6006841;
+	Thu, 3 Jul 2025 01:38:43 GMT
+Received: from smtprelay07.dal12v.mail.ibm.com ([172.16.1.9])
+	by ppma13.dal12v.mail.ibm.com (PPS) with ESMTPS id 47jvxmj8qq-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 03 Jul 2025 01:38:43 +0000
+Received: from smtpav02.wdc07v.mail.ibm.com (smtpav02.wdc07v.mail.ibm.com [10.39.53.229])
+	by smtprelay07.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 5631cgPX24511054
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Thu, 3 Jul 2025 01:38:42 GMT
+Received: from smtpav02.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id E1B0458059;
+	Thu,  3 Jul 2025 01:38:41 +0000 (GMT)
+Received: from smtpav02.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id C598C58058;
+	Thu,  3 Jul 2025 01:38:39 +0000 (GMT)
+Received: from li-43857255-d5e6-4659-90f1-fc5cee4750ad.ibm.com (unknown [9.61.102.8])
+	by smtpav02.wdc07v.mail.ibm.com (Postfix) with ESMTP;
+	Thu,  3 Jul 2025 01:38:39 +0000 (GMT)
+Message-ID: <eb91dcf034db28e457a4482faa397dd7632f00fd.camel@linux.ibm.com>
+Subject: Re: [PATCH v2] integrity: Extract secure boot enquiry function out
+ of IMA
+From: Mimi Zohar <zohar@linux.ibm.com>
+To: GONG Ruiqi <gongruiqi1@huawei.com>,
+        Roberto Sassu
+ <roberto.sassu@huawei.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Madhavan Srinivasan	
+ <maddy@linux.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Heiko
+ Carstens	 <hca@linux.ibm.com>,
+        Vasily Gorbik <gor@linux.ibm.com>,
+        Alexander
+ Gordeev	 <agordeev@linux.ibm.com>
+Cc: Eric Snowberg <eric.snowberg@oracle.com>,
+        Christophe Leroy	
+ <christophe.leroy@csgroup.eu>,
+        Nicholas Piggin <npiggin@gmail.com>,
+        Christian Borntraeger <borntraeger@linux.ibm.com>,
+        Sven Schnelle
+ <svens@linux.ibm.com>, "Lee, Chun-Yi" <jlee@suse.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-integrity@vger.kernel.org,
+        keyrings@vger.kernel.org, Lu Jialin <lujialin4@huawei.com>,
+        Nayna Jain	
+ <nayna@linux.ibm.com>
+In-Reply-To: <20250628063251.321370-1-gongruiqi1@huawei.com>
+References: <20250628063251.321370-1-gongruiqi1@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+Date: Wed, 02 Jul 2025 21:38:39 -0400
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain
-X-ClientProxiedBy: kwepems500002.china.huawei.com (7.221.188.17) To
- kwepemg100016.china.huawei.com (7.202.181.57)
+User-Agent: Evolution 3.54.3 (3.54.3-1.fc41) 
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: AK6aKBga4oupROxNi37kIoTGk3q8-5S4
+X-Proofpoint-GUID: uDLi-sImN3F6mgsunZuJI4XJFtTsseEO
+X-Authority-Analysis: v=2.4 cv=Ib6HWXqa c=1 sm=1 tr=0 ts=6865df25 cx=c_pps a=AfN7/Ok6k8XGzOShvHwTGQ==:117 a=AfN7/Ok6k8XGzOShvHwTGQ==:17 a=IkcTkHD0fZMA:10 a=Wb1JkmetP80A:10 a=i0EeH86SAAAA:8 a=S3K_XBxPWrw5AGGlcUgA:9 a=QEXdDO2ut3YA:10
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjUwNzAzMDAwOCBTYWx0ZWRfXy2T4VTZGAdYP sUju6z4tCTzdEu3yCSnNzl9jOk3a4Ybp+UEyit+nsO1F3Rgn1K5leqHez3AipMUriRQ47LArP40 9BIqUj1y+Bwq3B6h56eZ8DCtsDqi+DKDsWMDAYm4+YLvPQsohUdOM06LkKYeK88Imwvhck9/FKo
+ RqhPOZlG8YHqnt9HTM0wcWpofMPCBacYx0/fzrLe8sEh0fXC8+meVu/0kh2zeoxYclYP478kWTh sK9ePhL+SfXMtDKJaKxDGBhNzTab5Y2zo9cq55R3XU88nQ8TJSh4mTASDybyMK5UU67y0xVmxwQ ESS/8ZY/oYFc2rySDpumZmdXH5mBW1Ba2NXxmGHm4qkTbGVckU9hBrIXoqf43+N17w7NMatu3TU
+ yJrPAtqTjqPi4XMtScNX9MOfw5mHsMbrSdiWPhSSMhgXCy4Rf4Z4bRb9sltJlp2H9t2Gt+qB
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1099,Hydra:6.1.7,FMLib:17.12.80.40
+ definitions=2025-07-03_01,2025-07-02_04,2025-03-28_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 phishscore=0 suspectscore=0
+ clxscore=1011 mlxlogscore=691 lowpriorityscore=0 impostorscore=0
+ mlxscore=0 malwarescore=0 spamscore=0 priorityscore=1501 adultscore=0
+ bulkscore=0 classifier=spam authscore=0 authtc=n/a authcc= route=outbound
+ adjust=0 reason=mlx scancount=1 engine=8.19.0-2505280000
+ definitions=main-2507030008
 
-Commit 92ad19559ea9 ("integrity: Do not load MOK and MOKx when secure
-boot be disabled") utilizes arch_ima_get_secureboot() to perform a
-secure boot status check before loading the Machine Owner Key (MOK).
+[CC: Nayna Jain]
 
-However, only when CONFIG_IMA_SECURE_AND_OR_TRUSTED_BOOT=y can this
-function be functional, while this config could be turned on/off
-parallelly with CONFIG_LOAD_UEFI_KEYS. So the kernel could behave
-unintuitively in case that CONFIG_IMA_SECURE_AND_OR_TRUSTED_BOOT=n and
-CONFIG_LOAD_UEFI_KEYS=y, as it would refuse to load MOK even if secure
-boot is enabled.
+On Sat, 2025-06-28 at 14:32 +0800, GONG Ruiqi wrote:
+> Commit 92ad19559ea9 ("integrity: Do not load MOK and MOKx when secure
+> boot be disabled") utilizes arch_ima_get_secureboot() to perform a
+> secure boot status check before loading the Machine Owner Key (MOK).
+> However, only when CONFIG_IMA_SECURE_AND_OR_TRUSTED_BOOT=3Dy can this
+> function be functional, while this config has nothing to do with secure
+> boot or MOK loading.
+>=20
+> Given that arch_ima_get_secureboot() is just a helper to retrieve info
+> about secure boot via EFI and doesn't necessarily be a part of IMA,
+> rename it to arch_integrity_get_secureboot(), decouple its functionality
+> from IMA and extract it to be a integrity subsystem helper, so that both
+> certificate loading and IMA can make use of it.
+>=20
+> Compile-tested on powerpc, s390 and x86, with CONFIG_IMA_ARCH_POLICY=3Dn
+> and =3Dy based on defconfig and allmodconfig.
+>=20
+> Signed-off-by: GONG Ruiqi <gongruiqi1@huawei.com>
 
-Given that what arch_ima_get_secureboot() does is just to retrieve
-secure boot status via EFI interfaces and can be decoupled with IMA,
-refactor this functionality into integrity_get_efi_secureboot(), a
-general helper in the integrity subsystem that both MOK loading and IMA
-can make use of. By using the new helper, the implicit dependence of
-CONFIG_LOAD_UEFI_KEYS on CONFIG_IMA_SECURE_AND_OR_TRUSTED_BOOT is
-removed.
+The original reason for querying the secure boot status of the system was i=
+n
+order to differentiate IMA policies.  Subsequently, the secure boot check w=
+as
+also added to safely allow loading of the certificates stored in MOK. So lo=
+ading
+IMA policies and the MOK certificates ARE dependent on the secure boot mode=
+.
+                                                                           =
+    =20
+What is your real motivation for moving the secure boot checking out of IMA=
+?   =20
+                                                                           =
+    =20
+FYI, there are a number of problems with the patch itself.  From a very hig=
+h
+level: =20
+                                                                           =
+    =20
+- The EFI secure boot check is co-located with loading the architecture spe=
+cific
+policies.  By co-locating the secure boot check with loading the architectu=
+re
+specific IMA policies, there aren't any ifdef's in C code.  Please refer to=
+ the
+"conditional compilation" section in the kernel coding-style documentation =
+on
+avoiding ifdef's in C code.
+                                                                           =
+    =20
+- Each architecture has it's own method of detecting secure boot. Originall=
+y the
+x86 code was in arch/x86, but to prevent code duplication it was moved to I=
+MA.=20
+The new file should at least be named efi_secureboot.c. =20
+                                                                           =
+    =20
+- The patch title should be about moving and renaming the secure boot check=
+.=20
+The patch description should include a valid reason for the change.
 
-Signed-off-by: GONG Ruiqi <gongruiqi1@huawei.com>
----
- include/linux/integrity.h                     |  1 +
- security/integrity/Makefile                   |  1 +
- security/integrity/ima/ima_efi.c              | 42 +----------------
- security/integrity/platform_certs/load_uefi.c |  3 +-
- security/integrity/secureboot.c               | 46 +++++++++++++++++++
- 5 files changed, 51 insertions(+), 42 deletions(-)
- create mode 100644 security/integrity/secureboot.c
-
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index f5842372359b..157d29cab5cd 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -61,5 +61,6 @@ integrity_inode_attrs_changed(const struct integrity_inode_attributes *attrs,
- 		!inode_eq_iversion(inode, attrs->version));
- }
- 
-+extern bool integrity_get_efi_secureboot(void);
- 
- #endif /* _LINUX_INTEGRITY_H */
-diff --git a/security/integrity/Makefile b/security/integrity/Makefile
-index 92b63039c654..3a216ea573fb 100644
---- a/security/integrity/Makefile
-+++ b/security/integrity/Makefile
-@@ -18,6 +18,7 @@ integrity-$(CONFIG_LOAD_IPL_KEYS) += platform_certs/load_ipl_s390.o
- integrity-$(CONFIG_LOAD_PPC_KEYS) += platform_certs/efi_parser.o \
-                                      platform_certs/load_powerpc.o \
-                                      platform_certs/keyring_handler.o
-+integrity-$(CONFIG_EFI) += secureboot.o
- # The relative order of the 'ima' and 'evm' LSMs depends on the order below.
- obj-$(CONFIG_IMA)			+= ima/
- obj-$(CONFIG_EVM)			+= evm/
-diff --git a/security/integrity/ima/ima_efi.c b/security/integrity/ima/ima_efi.c
-index 9f9c30dcde17..3cf08f8ca3b7 100644
---- a/security/integrity/ima/ima_efi.c
-+++ b/security/integrity/ima/ima_efi.c
-@@ -2,51 +2,13 @@
- /*
-  * Copyright (C) 2018 IBM Corporation
-  */
--#include <linux/efi.h>
- #include <linux/module.h>
- #include <linux/ima.h>
--#include <asm/efi.h>
--
--#ifndef arch_integrity_efi_boot_mode
--#define arch_integrity_efi_boot_mode efi_secureboot_mode_unset
--#endif
--
--static enum efi_secureboot_mode get_sb_mode(void)
--{
--	enum efi_secureboot_mode mode;
--
--	if (!efi_rt_services_supported(EFI_RT_SUPPORTED_GET_VARIABLE)) {
--		pr_info("ima: secureboot mode unknown, no efi\n");
--		return efi_secureboot_mode_unknown;
--	}
--
--	mode = efi_get_secureboot_mode(efi.get_variable);
--	if (mode == efi_secureboot_mode_disabled)
--		pr_info("ima: secureboot mode disabled\n");
--	else if (mode == efi_secureboot_mode_unknown)
--		pr_info("ima: secureboot mode unknown\n");
--	else
--		pr_info("ima: secureboot mode enabled\n");
--	return mode;
--}
-+#include <linux/integrity.h>
- 
- bool arch_ima_get_secureboot(void)
- {
--	static enum efi_secureboot_mode sb_mode;
--	static bool initialized;
--
--	if (!initialized && efi_enabled(EFI_BOOT)) {
--		sb_mode = arch_integrity_efi_boot_mode;
--
--		if (sb_mode == efi_secureboot_mode_unset)
--			sb_mode = get_sb_mode();
--		initialized = true;
--	}
--
--	if (sb_mode == efi_secureboot_mode_enabled)
--		return true;
--	else
--		return false;
-+	return integrity_get_efi_secureboot();
- }
- 
- /* secureboot arch rules */
-diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
-index d1fdd113450a..deebdbf4393e 100644
---- a/security/integrity/platform_certs/load_uefi.c
-+++ b/security/integrity/platform_certs/load_uefi.c
-@@ -7,7 +7,6 @@
- #include <linux/err.h>
- #include <linux/efi.h>
- #include <linux/slab.h>
--#include <linux/ima.h>
- #include <keys/asymmetric-type.h>
- #include <keys/system_keyring.h>
- #include "../integrity.h"
-@@ -212,7 +211,7 @@ static int __init load_uefi_certs(void)
- 	}
- 
- 	/* the MOK/MOKx can not be trusted when secure boot is disabled */
--	if (!arch_ima_get_secureboot())
-+	if (!integrity_get_efi_secureboot())
- 		return 0;
- 
- 	mokx = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &status);
-diff --git a/security/integrity/secureboot.c b/security/integrity/secureboot.c
-new file mode 100644
-index 000000000000..64207ae37e6b
---- /dev/null
-+++ b/security/integrity/secureboot.c
-@@ -0,0 +1,46 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * Copyright (C) 2025 Huawei Technologies Co., Ltd
-+ */
-+#include <linux/efi.h>
-+#include <linux/integrity.h>
-+#include <asm/efi.h>
-+
-+#ifndef arch_integrity_efi_boot_mode
-+#define arch_integrity_efi_boot_mode efi_secureboot_mode_unset
-+#endif
-+
-+static enum efi_secureboot_mode get_sb_mode(void)
-+{
-+	enum efi_secureboot_mode mode;
-+
-+	if (!efi_rt_services_supported(EFI_RT_SUPPORTED_GET_VARIABLE)) {
-+		pr_info("integrity: secureboot mode unknown, no efi\n");
-+		return efi_secureboot_mode_unknown;
-+	}
-+
-+	mode = efi_get_secureboot_mode(efi.get_variable);
-+	if (mode == efi_secureboot_mode_disabled)
-+		pr_info("integrity: secureboot mode disabled\n");
-+	else if (mode == efi_secureboot_mode_unknown)
-+		pr_info("integrity: secureboot mode unknown\n");
-+	else
-+		pr_info("integrity: secureboot mode enabled\n");
-+	return mode;
-+}
-+
-+bool integrity_get_efi_secureboot(void)
-+{
-+	static enum efi_secureboot_mode sb_mode;
-+	static bool initialized;
-+
-+	if (!initialized && efi_enabled(EFI_BOOT)) {
-+		sb_mode = arch_integrity_efi_boot_mode;
-+
-+		if (sb_mode == efi_secureboot_mode_unset)
-+			sb_mode = get_sb_mode();
-+		initialized = true;
-+	}
-+
-+	return sb_mode == efi_secureboot_mode_enabled;
-+}
--- 
-2.25.1
-
+Mimi & Nayna
