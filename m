@@ -1,107 +1,98 @@
-Received: from out-178.mta0.migadu.com (out-178.mta0.migadu.com [91.218.175.178])
+Received: from bmailout3.hostsharing.net (bmailout3.hostsharing.net [176.9.242.62])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1620D2343B6
-	for <keyrings@vger.kernel.org>; Sun, 12 Oct 2025 20:39:10 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=91.218.175.178
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D3AAF27A122;
+	Mon, 13 Oct 2025 06:24:35 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=176.9.242.62
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1760301553; cv=none; b=fcKlhAyRxM7Ochgsn4/3WIfdqeGoTTGDWA3NhAKcJ/PNRSjd1dqOXB8nIFY+bfAO7WR+cbgcFxFTVZtVWkzlWa8x1xY8l2O80Ho+wgR2UocXbRc+YXUloLtatldpkuDfOsH2oBbvq60yXfdthbbU9vvW3eMguwl+uHhX3nxWd+I=
+	t=1760336680; cv=none; b=lcxrU1GMsyCI0ECCRP6bU0uAa+MMr3n8Q2XPIJUPt/OlvMihJcuriIIT8v5x1zFVFNDok0rpdbwzmtvSV/9rQl7s2eLvoLPh/4setEZyo5kJ+qLFq0ZUiSTnDGPVQnCUi1/fwlv7gwglHanVCB57dn9qGpD2T5/vsKvQW2p5xwU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1760301553; c=relaxed/simple;
-	bh=YIkTgYn9i2yw0iFaIALqYXIa9CMh1bynZaoWnsC+ihU=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=IY+o3omlIkIHkxjcLs4KWzWpFS+NTG3DzNgDHrlYcUUsquvt8Qm6Oclgf0TzrUJExGcRrgmmmNFuJ+S5gYNg3/IE5fkj+NmyfUyL+s/h92Cjx68MiZpDzMFifTGbdEfJI72HxmtTbtBgm8L59WY88jj1vXWLwR8Lfq9AbGEmdRg=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev; spf=pass smtp.mailfrom=linux.dev; dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b=ve1Cgubv; arc=none smtp.client-ip=91.218.175.178
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.dev
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b="ve1Cgubv"
-X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
-	t=1760301538;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=FKhJ/WufXxLbU2grf7XLNEYhgrmN020loyUIXPWxv7U=;
-	b=ve1Cgubv0YcbugdHFD/N9LGuipVUBqST1XmwsuU84PKVu2uM3x+m1bkJTcWy2AAarJi8+l
-	c7hO7tTAUiGx2wGD4AH7FzxgTuboVUdpgh7uNLpfzF6T5/ZIpDTGqrojsT0uGVSiGDBRvD
-	JCcCTaLZvjt7DEBEcWZn77cEA2mT55U=
-From: Thorsten Blum <thorsten.blum@linux.dev>
-To: David Howells <dhowells@redhat.com>,
-	Lukas Wunner <lukas@wunner.de>,
+	s=arc-20240116; t=1760336680; c=relaxed/simple;
+	bh=scipkCogXX/m5+KJO510ggbFUKsa7diGjhXViS+mDFE=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=rKA7+RyrGV53I+2WfCaAYM7UaUdcaXWp1iR8tYo4/yB+RSwb+6zMNmBLOzPsO3EztaV3HVEhqlMUZYRA4TCyWFpc2Srh6C66jEOW+FGbal4kFWhbSDMXUFD1MTk6rXcmGun9gzI0vsq+wal2dgxml8LSd+rCRPNBvT3MJFmZnzM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=wunner.de; spf=none smtp.mailfrom=h08.hostsharing.net; arc=none smtp.client-ip=176.9.242.62
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=wunner.de
+Authentication-Results: smtp.subspace.kernel.org; spf=none smtp.mailfrom=h08.hostsharing.net
+Received: from h08.hostsharing.net (h08.hostsharing.net [IPv6:2a01:37:1000::53df:5f1c:0])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256
+	 client-signature RSA-PSS (4096 bits) client-digest SHA256)
+	(Client CN "*.hostsharing.net", Issuer "RapidSSL TLS RSA CA G1" (verified OK))
+	by bmailout3.hostsharing.net (Postfix) with ESMTPS id 90E442C01634;
+	Mon, 13 Oct 2025 08:24:33 +0200 (CEST)
+Received: by h08.hostsharing.net (Postfix, from userid 100393)
+	id 5412C4A12; Mon, 13 Oct 2025 08:24:33 +0200 (CEST)
+Date: Mon, 13 Oct 2025 08:24:33 +0200
+From: Lukas Wunner <lukas@wunner.de>
+To: Thorsten Blum <thorsten.blum@linux.dev>
+Cc: David Howells <dhowells@redhat.com>,
 	Ignat Korchagin <ignat@cloudflare.com>,
 	Herbert Xu <herbert@gondor.apana.org.au>,
 	"David S. Miller" <davem@davemloft.net>,
-	Vivek Goyal <vgoyal@redhat.com>
-Cc: Thorsten Blum <thorsten.blum@linux.dev>,
-	stable@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-crypto@vger.kernel.org,
+	Vivek Goyal <vgoyal@redhat.com>, stable@vger.kernel.org,
+	keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
 	linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] crypto: asymmetric_keys - prevent overflow in asymmetric_key_generate_id
-Date: Sun, 12 Oct 2025 22:38:40 +0200
-Message-ID: <20251012203841.60230-1-thorsten.blum@linux.dev>
+Subject: Re: [PATCH v2 1/2] crypto: asymmetric_keys - prevent overflow in
+ asymmetric_key_generate_id
+Message-ID: <aOybIZ2iqXExpTUw@wunner.de>
+References: <20251012203841.60230-1-thorsten.blum@linux.dev>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Migadu-Flow: FLOW_OUT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20251012203841.60230-1-thorsten.blum@linux.dev>
 
-Use check_add_overflow() to guard against a potential integer overflow
-when adding the binary blob lengths in asymmetric_key_generate_id() and
-return -EOVERFLOW accordingly. This prevents a possible buffer overflow
-when copying data from potentially malicious X.509 fields that can be
-arbitrarily large, such as ASN.1 INTEGER serial numbers, issuer names,
-etc.
+On Sun, Oct 12, 2025 at 10:38:40PM +0200, Thorsten Blum wrote:
+> Use check_add_overflow() to guard against a potential integer overflow
+> when adding the binary blob lengths in asymmetric_key_generate_id() and
+> return -EOVERFLOW accordingly. This prevents a possible buffer overflow
+> when copying data from potentially malicious X.509 fields that can be
+> arbitrarily large, such as ASN.1 INTEGER serial numbers, issuer names,
+> etc.
+> 
+> Also use struct_size() to calculate the number of bytes to allocate for
+> the new asymmetric key id.
+> 
+> Cc: stable@vger.kernel.org
+> Fixes: 7901c1a8effb ("KEYS: Implement binary asymmetric key ID handling")
 
-Also use struct_size() to calculate the number of bytes to allocate for
-the new asymmetric key id.
+No stable designation please, this doesn't pass the "obviously correct"
+test, see below.
 
-Cc: stable@vger.kernel.org
-Fixes: 7901c1a8effb ("KEYS: Implement binary asymmetric key ID handling")
-Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
----
-Changes in v2:
-- Use check_add_overflow() and error out as suggested by Lukas
-- Update patch description
-- Add Fixes: tag and @stable for backporting
-- Link to v1: https://lore.kernel.org/lkml/20251007185220.234611-2-thorsten.blum@linux.dev/
----
- crypto/asymmetric_keys/asymmetric_type.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+> +++ b/crypto/asymmetric_keys/asymmetric_type.c
+> @@ -141,12 +142,14 @@ struct asymmetric_key_id *asymmetric_key_generate_id(const void *val_1,
+>  						     size_t len_2)
+>  {
+>  	struct asymmetric_key_id *kid;
+> +	size_t len;
+>  
+> -	kid = kmalloc(sizeof(struct asymmetric_key_id) + len_1 + len_2,
+> -		      GFP_KERNEL);
+> +	if (check_add_overflow(len_1, len_2, &len))
+> +		return ERR_PTR(-EOVERFLOW);
+> +	kid = kmalloc(struct_size(kid, data, len), GFP_KERNEL);
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index ba2d9d1ea235..bd96f799757d 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -11,6 +11,7 @@
- #include <crypto/public_key.h>
- #include <linux/seq_file.h>
- #include <linux/module.h>
-+#include <linux/overflow.h>
- #include <linux/slab.h>
- #include <linux/ctype.h>
- #include <keys/system_keyring.h>
-@@ -141,12 +142,14 @@ struct asymmetric_key_id *asymmetric_key_generate_id(const void *val_1,
- 						     size_t len_2)
- {
- 	struct asymmetric_key_id *kid;
-+	size_t len;
- 
--	kid = kmalloc(sizeof(struct asymmetric_key_id) + len_1 + len_2,
--		      GFP_KERNEL);
-+	if (check_add_overflow(len_1, len_2, &len))
-+		return ERR_PTR(-EOVERFLOW);
-+	kid = kmalloc(struct_size(kid, data, len), GFP_KERNEL);
- 	if (!kid)
- 		return ERR_PTR(-ENOMEM);
--	kid->len = len_1 + len_2;
-+	kid->len = len;
- 	memcpy(kid->data, val_1, len_1);
- 	memcpy(kid->data + len_1, val_2, len_2);
- 	return kid;
--- 
-2.51.0
+This will add (at least) 2 bytes to len (namely the size of struct
+asymmetric_key_id)) and may cause an overflow (even if len_1 + len_2
+did not overflow).
 
+struct_size() truncates to SIZE_MAX and then right below...
+
+>  	if (!kid)
+>  		return ERR_PTR(-ENOMEM);
+> -	kid->len = len_1 + len_2;
+> +	kid->len = len;
+>  	memcpy(kid->data, val_1, len_1);
+>  	memcpy(kid->data + len_1, val_2, len_2);
+
+... this memcpy() operation will perform an out-of-bound access
+beyond SIZE_MAX.
+
+Thanks,
+
+Lukas
