@@ -1,47 +1,45 @@
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BB24B246798
-	for <keyrings@vger.kernel.org>; Fri, 14 Nov 2025 13:06:42 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6558C3376A2
+	for <keyrings@vger.kernel.org>; Mon, 17 Nov 2025 14:56:27 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.129.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1763125604; cv=none; b=QK/fdDFMPg2yhEk81PgRaKMyjA2MYCxOVZBlXL+MX1huHGvJX7EBscOHB84sG+a/sMGnUgfkPpWXmoyA4WA9GE7zVAo/Wk1FNGZlo32JD25ysLq6Ef6nhJ6+hLNlUaGFDFs8LCBx0XiO3EEVF+/9ZytaoVSUUcMGyeHOTdKBDPc=
+	t=1763391389; cv=none; b=FBTWZfhd0HbCufVzgJuAdZpMpBjpKup8hFaxilhETEpdTdzymRnRtggENRNyH3/GEqu2KneaBj0FOB/BNAXHU2akV8hr3x2/i7B7FzavR3YRUZTEHdWe4Jxxjm8AzXsHozXcgMAlfNiSnI2poOmS/1irOSQE11TMPx+WNdt0vX0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1763125604; c=relaxed/simple;
-	bh=ArMQWvAghMmC2nm8PLAR8JM24q7T9Dcg92z+GgExWLA=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=Tos9Rad49E/vS7L0FrfO7wSX2PD9et1jGvPjwom0o1mLNBT4n+rPEkD6aYHLJFg7UGj4U60bBQNhLITIm5fN5josRqoarNYKFhPpV7pHRYiXNbCMG/fwqzxxgkbccW6YwZv/I5Uq1/DMu7SfhayYJ9/sMNy2A3I0IeMoIpRaN1A=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=OBNbyIhL; arc=none smtp.client-ip=170.10.133.124
+	s=arc-20240116; t=1763391389; c=relaxed/simple;
+	bh=IaVoMWXBWx0iN+jwWz/bDtekEZLkdrt+aTil3/se1q4=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=PWC4Edml4HSO6lSyhgJD8WG2RzIvmJdPH+Ddm9wMHuiaSMxwlbKta38UQaf48hQUwFdFyp6Nz03KheiqFGyTok9QfWzKU8rVSAqoecNhTLb05/qZssKFh9yBXEhoCbdmgr1/4Oinuxxjfx8c47vI6Tr0ObFSDtCMN5I24s+Wpfo=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=Po+IyWM8; arc=none smtp.client-ip=170.10.129.124
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="OBNbyIhL"
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="Po+IyWM8"
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1763125601;
+	s=mimecast20190719; t=1763391386;
 	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
 	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=+8aPWeACCL8i48F0dUYydfTUGTRPPCX2o+rE9TbKE+0=;
-	b=OBNbyIhLC9fM6kRHa65qOV/o3OAt9uDPZNAvRys9rHLsJaCzd6l8fFN6DOQ3F/Kdk03JZU
-	N42XELnOMFXp0C9fHnfMOXfMWSwIWjk8luPySEPc7ZBS4ilC8I4U8kl/NN9Fl7EZfMYUwh
-	9xfgrOyhHj9HZ9U5G6HTWzljWUKWODc=
-Received: from mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com
- (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=rq6kgQQJDMkSs+DOgYrF2o++rTLEO5wLK+oFcls39m0=;
+	b=Po+IyWM88PlifFUEwCtpV/dIMCWZk0p8Oq516RNv88S4XTQIjyd9kuw5G7/iGTO2ygPq2c
+	BoNhLKk+hjZqs9kqD+PvGbsqD9iIjKD0Ap3tYKgBevb3h/HyjdtOBGluU3+p5EZ6F0GVbL
+	vISjuOVJ0aJKJA9xU+1Y/raAYkSDbWM=
+Received: from mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
  relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-518-s8ZNyQ4ZOVme53G_R_3tfg-1; Fri,
- 14 Nov 2025 08:04:49 -0500
-X-MC-Unique: s8ZNyQ4ZOVme53G_R_3tfg-1
-X-Mimecast-MFC-AGG-ID: s8ZNyQ4ZOVme53G_R_3tfg_1763125486
-Received: from mx-prod-int-05.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-05.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.17])
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-461-zV-4IoaUM8GOvqCJZ0ZLiQ-1; Mon,
+ 17 Nov 2025 09:56:19 -0500
+X-MC-Unique: zV-4IoaUM8GOvqCJZ0ZLiQ-1
+X-Mimecast-MFC-AGG-ID: zV-4IoaUM8GOvqCJZ0ZLiQ_1763391375
+Received: from mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.4])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
 	(No client certificate requested)
-	by mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 069C319560B7;
-	Fri, 14 Nov 2025 13:04:46 +0000 (UTC)
-Received: from warthog.procyon.org.com (unknown [10.42.28.87])
-	by mx-prod-int-05.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 1312F1955F1B;
-	Fri, 14 Nov 2025 13:04:41 +0000 (UTC)
+	by mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 229341800561;
+	Mon, 17 Nov 2025 14:56:15 +0000 (UTC)
+Received: from warthog.procyon.org.com (unknown [10.42.28.5])
+	by mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 7899B3003754;
+	Mon, 17 Nov 2025 14:56:10 +0000 (UTC)
 From: David Howells <dhowells@redhat.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>
 Cc: David Howells <dhowells@redhat.com>,
@@ -59,11 +57,9 @@ Cc: David Howells <dhowells@redhat.com>,
 	keyrings@vger.kernel.org,
 	linux-modules@vger.kernel.org,
 	linux-kernel@vger.kernel.org
-Subject: [PATCH v8 3/9] mldsa: Add a simpler API
-Date: Fri, 14 Nov 2025 13:04:06 +0000
-Message-ID: <20251114130417.1756230-4-dhowells@redhat.com>
-In-Reply-To: <20251114130417.1756230-1-dhowells@redhat.com>
-References: <20251114130417.1756230-1-dhowells@redhat.com>
+Subject: [PATCH v9 0/9] lib/crypto: Add ML-DSA signing
+Date: Mon, 17 Nov 2025 14:55:49 +0000
+Message-ID: <20251117145606.2155773-1-dhowells@redhat.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -71,409 +67,277 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-Scanned-By: MIMEDefang 3.0 on 10.30.177.17
+X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.4
 
-Add a simpler ML-DSA API to hide all the details of packing/unpacking keys
-and signatures.
+Hi Herbert, Eric, et al.,
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
- Documentation/crypto/index.rst  |   1 +
- Documentation/crypto/mldsa.rst  | 111 +++++++++++++++++++
- include/crypto/mldsa.h          |  34 ++++++
- lib/crypto/mldsa/Makefile       |   3 +-
- lib/crypto/mldsa/crypto_mldsa.c |   4 +-
- lib/crypto/mldsa/mldsa_api.c    | 186 ++++++++++++++++++++++++++++++++
- 6 files changed, 335 insertions(+), 4 deletions(-)
+Building on the SHA-3 lib-crypto patches now in Eric's tree, here's a set of
+patches does the following:
+
+ (1) Add SHAKE-256 crypto_sig support, generating 32-byte fixed output.  The
+     XOF features aren't available through this.  SHAKE-128 crypto_sig support
+     isn't required for ML-DSA, so I haven't implemented that at this time.
+
+ (2) Add ML-DSA signature verification code, extracted from Stephan
+     Mueller's Leancrypto project.  The primary interface is intended to be
+     through crypto_sig.
+
+ (3) Add a simplified ML-DSA API for direct lib-crypto access.  Possibly
+     this should be conditional as the main access (from PKCS#7/X.509) is
+     going to be through crypto_sig.
+
+ (4) Add a kunit test in three instalments (due to size) to add some
+     testing for the three different levels of ML-DSA (44, 65 and 87).
+
+ (5) Modify PKCS#7 support to allow kernel module signatures to carry
+     authenticatedAttributes as OpenSSL refuses to let them be opted out of
+     for ML-DSA (CMS_NOATTR).  This adds an extra digest calculation to the
+     process.
+
+ (6) Modify PKCS#7 to pass the authenticatedAttributes directly to the
+     ML-DSA algorithm rather than passing over a digest as is done with RSA
+     as ML-DSA wants to do its own hashing and will add other stuff into
+     the hash.  We could use hashML-DSA or an external mu instead, but they
+     aren't standardised for CMS yet.
+
+ (7) Add support to the PKCS#7 and X.509 parsers for ML-DSA.
+
+ (8) Modify sign-file to handle OpenSSL not permitting CMS_NOATTR with
+     ML-DSA.
+
+ (9) Allow SHA-3 algorithms, including SHAKE256, to be used for the message
+     digest and add ML-DSA to the choice of algorithm with which to sign.
+
+With that, ML-DSA signing appears to work.
+
+This is based on Eric's libcrypto-next branch.
+
+The patches can also be found here:
+
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-pqc
+
+David
+
+Changes
+=======
+ver #9)
+ - ML-DSA changes:
+   - Separate output into four modules (1 common, 3 strength-specific).
+     - Solves Kconfig issue with needing to select at least one strength.
+   - Separate the strength-specific crypto-lib APIs.
+     - This is now generated by preprocessor-templating.
+   - Remove the multiplexor code.
+   - Multiplex the crypto-lib APIs by C type.
+ - Fix the PKCS#7/X.509 code to have the correct algo names.
+
+ver #8)
+ - Moved the ML-DSA code to lib/crypto/mldsa/.
+ - Renamed some bits from ml-dsa to mldsa.
+ - Created a simplified API and placed that in include/crypto/mldsa.h.
+ - Made the testing code use the simplified API.
+ - Fixed a warning about implicitly casting between uint16_t and __le16.
+
+ver #7)
+ - Rebased on Eric's tree as that now contains all the necessary SHA-3
+   infrastructure and drop the SHA-3 patches from here.
+ - Added a minimal patch to provide shake256 support for crypto_sig.
+ - Got rid of the memory allocation wrappers.
+ - Removed the ML-DSA keypair generation code and the signing code, leaving
+   only the signature verification code.
+ - Removed the secret key handling code.
+ - Removed the secret keys from the kunit tests and the signing testing.
+ - Removed some unused bits from the ML-DSA code.
+ - Downgraded the kdoc comments to ordinary comments, but keep the markup
+   for easier comparison to Leancrypto.
+
+ver #6)
+ - Added a patch to make the jitterentropy RNG use lib/sha3.
+ - Added back the crypto/sha3_generic changes.
+ - Added ML-DSA implementation (still needs more cleanup).
+ - Added kunit test for ML-DSA.
+ - Modified PKCS#7 to accommodate ML-DSA.
+ - Modified PKCS#7 and X.509 to allow ML-DSA to be specified and used.
+ - Modified sign-file to not use CMS_NOATTR with ML-DSA.
+ - Allowed SHA3 and SHAKE* algorithms for module signing default.
+ - Allowed ML-DSA-{44,65,87} to be selected as the module signing default.
+
+ver #5)
+ - Fix gen-hash-testvecs.py to correctly handle algo names that contain a
+   dash.
+ - Fix gen-hash-testvecs.py to not generate HMAC for SHA3-* or SHAKE* as
+   these don't currently have HMAC variants implemented.
+ - Fix algo names to be correct.
+ - Fix kunit module description as it now tests all SHA3 variants.
+
+ver #4)
+ - Fix a couple of arm64 build problems.
+ - Doc fixes:
+   - Fix the description of the algorithm to be closer to the NIST spec's
+     terminology.
+   - Don't talk of finialising the context for XOFs.
+   - Don't say "Return: None".
+   - Declare the "Context" to be "Any context" and make no mention of the
+     fact that it might use the FPU.
+   - Change "initialise" to "initialize".
+   - Don't warn that the context is relatively large for stack use.
+ - Use size_t for size parameters/variables.
+ - Make the module_exit unconditional.
+ - Dropped the crypto/ dir-affecting patches for the moment.
+
+ver #3)
+ - Renamed conflicting arm64 functions.
+ - Made a separate wrapper API for each algorithm in the family.
+ - Removed sha3_init(), sha3_reinit() and sha3_final().
+ - Removed sha3_ctx::digest_size.
+ - Renamed sha3_ctx::partial to sha3_ctx::absorb_offset.
+ - Refer to the output of SHAKE* as "output" not "digest".
+ - Moved the Iota transform into the one-round function.
+ - Made sha3_update() warn if called after sha3_squeeze().
+ - Simplified the module-load test to not do update after squeeze.
+ - Added Return: and Context: kdoc statements and expanded the kdoc
+   headers.
+ - Added an API description document.
+ - Overhauled the kunit tests.
+   - Only have one kunit test.
+   - Only call the general hash tester on one algo.
+   - Add separate simple cursory checks for the other algos.
+   - Add resqueezing tests.
+   - Add some NIST example tests.
+ - Changed crypto/sha3_generic to use this
+ - Added SHAKE128/256 to crypto/sha3_generic and crypto/testmgr
+ - Folded struct sha3_state into struct sha3_ctx.
+
+ver #2)
+  - Simplify the endianness handling.
+  - Rename sha3_final() to sha3_squeeze() and don't clear the context at the
+    end as it's permitted to continue calling sha3_final() to extract
+    continuations of the digest (needed by ML-DSA).
+  - Don't reapply the end marker to the hash state in continuation
+    sha3_squeeze() unless sha3_update() gets called again (needed by
+    ML-DSA).
+  - Give sha3_squeeze() the amount of digest to produce as a parameter
+    rather than using ctx->digest_size and don't return the amount digested.
+  - Reimplement sha3_final() as a wrapper around sha3_squeeze() that
+    extracts ctx->digest_size amount of digest and then zeroes out the
+    context.  The latter is necessary to avoid upsetting
+    hash-test-template.h.
+  - Provide a sha3_reinit() function to clear the state, but to leave the
+    parameters that indicate the hash properties unaffected, allowing for
+    reuse.
+  - Provide a sha3_set_digestsize() function to change the size of the
+    digest to be extracted by sha3_final().  sha3_squeeze() takes a
+    parameter for this instead.
+  - Don't pass the digest size as a parameter to shake128/256_init() but
+    rather default to 128/256 bits as per the function name.
+  - Provide a sha3_clear() function to zero out the context.
+
+David Howells (9):
+  crypto: Add support for shake256 through crypto_shash
+  crypto: Add ML-DSA/Dilithium verify support
+  mldsa: Add a simpler API
+  crypto: Add ML-DSA-44 pure rejection test vectors as a kunit test
+  crypto: Add ML-DSA-65 pure rejection test vectors as a kunit test
+  crypto: Add ML-DSA-87 pure rejection test vectors as a kunit test
+  pkcs7: Allow the signing algo to calculate the digest itself
+  pkcs7, x509: Add ML-DSA support
+  modsign: Enable ML-DSA module signing
+
+ Documentation/admin-guide/module-signing.rst  |   15 +-
+ Documentation/crypto/index.rst                |    1 +
+ Documentation/crypto/mldsa.rst                |  143 +
+ certs/Kconfig                                 |   27 +
+ certs/Makefile                                |    3 +
+ crypto/asymmetric_keys/pkcs7_parser.c         |   19 +-
+ crypto/asymmetric_keys/pkcs7_verify.c         |   52 +-
+ crypto/asymmetric_keys/public_key.c           |    7 +
+ crypto/asymmetric_keys/x509_cert_parser.c     |   24 +
+ crypto/sha3.c                                 |   42 +
+ include/crypto/mldsa.h                        |   50 +
+ include/crypto/public_key.h                   |    1 +
+ include/linux/oid_registry.h                  |    5 +
+ kernel/module/Kconfig                         |    5 +
+ lib/crypto/Kconfig                            |    1 +
+ lib/crypto/Makefile                           |    2 +
+ lib/crypto/mldsa/Kconfig                      |   29 +
+ lib/crypto/mldsa/Makefile                     |   20 +
+ lib/crypto/mldsa/crypto_mldsa_44.c            |  166 +
+ lib/crypto/mldsa/crypto_mldsa_65.c            |  166 +
+ lib/crypto/mldsa/crypto_mldsa_87.c            |  166 +
+ lib/crypto/mldsa/dilithium.h                  |  304 +
+ lib/crypto/mldsa/dilithium_44.c               |   34 +
+ lib/crypto/mldsa/dilithium_44.h               |  291 +
+ lib/crypto/mldsa/dilithium_65.c               |   34 +
+ lib/crypto/mldsa/dilithium_65.h               |  291 +
+ lib/crypto/mldsa/dilithium_87.c               |   34 +
+ lib/crypto/mldsa/dilithium_87.h               |  291 +
+ lib/crypto/mldsa/dilithium_common.c           |  117 +
+ lib/crypto/mldsa/dilithium_debug.h            |   49 +
+ lib/crypto/mldsa/dilithium_ntt.c              |   89 +
+ lib/crypto/mldsa/dilithium_ntt.h              |   35 +
+ lib/crypto/mldsa/dilithium_pack.h             |  119 +
+ lib/crypto/mldsa/dilithium_poly.c             |  377 +
+ lib/crypto/mldsa/dilithium_poly.h             |  181 +
+ lib/crypto/mldsa/dilithium_poly_c.h           |  141 +
+ lib/crypto/mldsa/dilithium_poly_common.h      |   35 +
+ lib/crypto/mldsa/dilithium_polyvec.h          |  343 +
+ lib/crypto/mldsa/dilithium_polyvec_c.h        |   81 +
+ lib/crypto/mldsa/dilithium_reduce.h           |   85 +
+ lib/crypto/mldsa/dilithium_rounding.c         |  128 +
+ lib/crypto/mldsa/dilithium_service_helpers.h  |   99 +
+ lib/crypto/mldsa/dilithium_signature_c.c      |  279 +
+ lib/crypto/mldsa/dilithium_signature_c.h      |   37 +
+ lib/crypto/mldsa/dilithium_signature_impl.h   |  370 +
+ lib/crypto/mldsa/dilithium_type.h             |  121 +
+ lib/crypto/mldsa/dilithium_zetas.c            |   68 +
+ lib/crypto/mldsa/mldsa_api.c                  |  168 +
+ .../mldsa/signature_domain_separation.c       |  204 +
+ .../mldsa/signature_domain_separation.h       |   30 +
+ lib/crypto/tests/Kconfig                      |   10 +
+ lib/crypto/tests/Makefile                     |    1 +
+ lib/crypto/tests/mldsa_kunit.c                |  105 +
+ .../tests/mldsa_pure_rejection_vectors_44.h   |  489 ++
+ .../tests/mldsa_pure_rejection_vectors_65.h   | 4741 ++++++++++++
+ .../tests/mldsa_pure_rejection_vectors_87.h   | 6456 +++++++++++++++++
+ scripts/sign-file.c                           |   26 +-
+ 57 files changed, 17171 insertions(+), 36 deletions(-)
  create mode 100644 Documentation/crypto/mldsa.rst
  create mode 100644 include/crypto/mldsa.h
+ create mode 100644 lib/crypto/mldsa/Kconfig
+ create mode 100644 lib/crypto/mldsa/Makefile
+ create mode 100644 lib/crypto/mldsa/crypto_mldsa_44.c
+ create mode 100644 lib/crypto/mldsa/crypto_mldsa_65.c
+ create mode 100644 lib/crypto/mldsa/crypto_mldsa_87.c
+ create mode 100644 lib/crypto/mldsa/dilithium.h
+ create mode 100644 lib/crypto/mldsa/dilithium_44.c
+ create mode 100644 lib/crypto/mldsa/dilithium_44.h
+ create mode 100644 lib/crypto/mldsa/dilithium_65.c
+ create mode 100644 lib/crypto/mldsa/dilithium_65.h
+ create mode 100644 lib/crypto/mldsa/dilithium_87.c
+ create mode 100644 lib/crypto/mldsa/dilithium_87.h
+ create mode 100644 lib/crypto/mldsa/dilithium_common.c
+ create mode 100644 lib/crypto/mldsa/dilithium_debug.h
+ create mode 100644 lib/crypto/mldsa/dilithium_ntt.c
+ create mode 100644 lib/crypto/mldsa/dilithium_ntt.h
+ create mode 100644 lib/crypto/mldsa/dilithium_pack.h
+ create mode 100644 lib/crypto/mldsa/dilithium_poly.c
+ create mode 100644 lib/crypto/mldsa/dilithium_poly.h
+ create mode 100644 lib/crypto/mldsa/dilithium_poly_c.h
+ create mode 100644 lib/crypto/mldsa/dilithium_poly_common.h
+ create mode 100644 lib/crypto/mldsa/dilithium_polyvec.h
+ create mode 100644 lib/crypto/mldsa/dilithium_polyvec_c.h
+ create mode 100644 lib/crypto/mldsa/dilithium_reduce.h
+ create mode 100644 lib/crypto/mldsa/dilithium_rounding.c
+ create mode 100644 lib/crypto/mldsa/dilithium_service_helpers.h
+ create mode 100644 lib/crypto/mldsa/dilithium_signature_c.c
+ create mode 100644 lib/crypto/mldsa/dilithium_signature_c.h
+ create mode 100644 lib/crypto/mldsa/dilithium_signature_impl.h
+ create mode 100644 lib/crypto/mldsa/dilithium_type.h
+ create mode 100644 lib/crypto/mldsa/dilithium_zetas.c
  create mode 100644 lib/crypto/mldsa/mldsa_api.c
-
-diff --git a/Documentation/crypto/index.rst b/Documentation/crypto/index.rst
-index 4ee667c446f9..4498fc92bfc5 100644
---- a/Documentation/crypto/index.rst
-+++ b/Documentation/crypto/index.rst
-@@ -28,3 +28,4 @@ for cryptographic use cases, as well as programming examples.
-    device_drivers/index
-    krb5
-    sha3
-+   mldsa
-diff --git a/Documentation/crypto/mldsa.rst b/Documentation/crypto/mldsa.rst
-new file mode 100644
-index 000000000000..3dcf9c0f1203
---- /dev/null
-+++ b/Documentation/crypto/mldsa.rst
-@@ -0,0 +1,111 @@
-+.. SPDX-License-Identifier: GPL-2.0-or-later
-+
-+===========================
-+ML-DSA Algorithm Collection
-+===========================
-+
-+.. contents::
-+
-+   - Overview
-+   - Library API
-+   - References
-+   - API Function Reference
-+
-+
-+Overview
-+========
-+
-+The ML-DSA algorithm, as specified in NIST FIPS-204 [1]_, is a "Post Quantum"
-+asymmetric cipher/public key algorithm.  It has digestion of the message to be
-+signed built in to the algorithm, though options exist to do that separately
-+(those aren't supported in the API presented here, however).  The algorithm
-+used to digest the message in this implementation is SHAKE256, though in theory
-+other algorithms can be used too.
-+
-+This implementation only supports signature verification and does not support
-+keypair generation or signing.
-+
-+Three strengths are provided:
-+
-+ - ML-DSA 44
-+ - ML-DSA 65
-+ - ML-DSA 87
-+
-+This document describes the ML-DSA library API.
-+
-+The algorithms are also available through the crypto_sig API, though
-+`-EOPNOTSUPP` will be returned if any of the API functions involved in signing
-+a message are invoked.
-+
-+
-+Library API
-+===========
-+
-+To use this::
-+
-+	#include <crypto/mldsa.h>
-+
-+must be included.
-+
-+To perform single-step verification of a signature, the following function can
-+be used::
-+
-+	int mldsa_verify(enum mldsa_type type,
-+			 const void *pk, size_t pk_len,
-+			 const uint8_t *data, size_t data_len,
-+			 const void *sig, size_t sig_len);
-+
-+This takes an optional key type, public key, signature and the complete message
-+as a single buffer.  The type should be one of::
-+
-+	MLDSA_UNKNOWN
-+	MLDSA_44
-+	MLDSA_65
-+	MLDSA_87
-+
-+It returns `-EINVAL` if the specified type (if known), the public key type and
-+signature type don't all match.  It return `-EBADMSG` if the computed signature
-+doesn't match the supplied one.
-+
-+If, however, the message to be verified is split into multiple fragments, then
-+the multi-step API must be used.  Firstly, a context must be allocated::
-+
-+	struct mldsa_ctx *mldsa_ctx_alloc(enum mldsa_type type);
-+
-+this is type-specific as the size of the allocated state may vary by type.
-+Then data can be added to the internal hash::
-+
-+	int mldsa_verify_update(struct mldsa_ctx *ctx,
-+				const void *data, size_t data_len);
-+
-+And finally the signature verification can be performed::
-+
-+	int mldsa_verify_final(struct mldsa_ctx *ctx,
-+			       const void *pk, size_t pk_len,
-+			       const void *sig, size_t sig_len);
-+
-+This returns `-EINVAL` if the specified type (if known), the public key type
-+and signature type don't all match.  It return `-EBADMSG` if the computed
-+signature doesn't match the supplied one.
-+
-+The context can be reset and used again (provided it's for a key of the same
-+type)::
-+
-+	void mldsa_ctx_zeroize(struct mldsa_ctx *ctx);
-+
-+And finally, it can be freed::
-+
-+	void mldsa_ctx_free(struct mldsa_ctx *ctx);
-+
-+
-+References
-+==========
-+
-+.. [1] https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.204.pdf
-+
-+
-+API Function Reference
-+======================
-+
-+.. kernel-doc:: include/crypto/mldsa.h
-+.. kernel-doc:: lib/crypto/mldsa/mldsa_api.c
-diff --git a/include/crypto/mldsa.h b/include/crypto/mldsa.h
-new file mode 100644
-index 000000000000..e7aac97ac6fd
---- /dev/null
-+++ b/include/crypto/mldsa.h
-@@ -0,0 +1,34 @@
-+/* SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause */
-+/* Simple API for ML-DSA.
-+ *
-+ * Copyright (C) 2025 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * See also Documentation/crypto/mldsa.rst
-+ */
-+
-+#ifndef _CRYPTO_MLDSA_H
-+#define _CRYPTO_MLDSA_H
-+
-+struct mldsa_ctx;
-+
-+enum mldsa_type {
-+	MLDSA_UNKNOWN,	/* Unknown key type */
-+	MLDSA_87,	/* ML-DSA 87 */
-+	MLDSA_65,	/* ML-DSA 65 */
-+	MLDSA_44,	/* ML-DSA 44 */
-+};
-+
-+int mldsa_verify(enum mldsa_type type,
-+		 const void *pk, size_t pk_len,
-+		 const uint8_t *data, size_t data_len,
-+		 const void *sig, size_t sig_len);
-+struct mldsa_ctx *mldsa_ctx_alloc(enum mldsa_type type);
-+int mldsa_verify_update(struct mldsa_ctx *ctx, const void *data, size_t data_len);
-+int mldsa_verify_final(struct mldsa_ctx *ctx,
-+		       const void *pk, size_t pk_len,
-+		       const void *sig, size_t sig_len);
-+void mldsa_ctx_zeroize(struct mldsa_ctx *ctx);
-+void mldsa_ctx_free(struct mldsa_ctx *ctx);
-+
-+#endif /* _CRYPTO_MLDSA_H */
-diff --git a/lib/crypto/mldsa/Makefile b/lib/crypto/mldsa/Makefile
-index e24bc2b57b8d..75e260615d4a 100644
---- a/lib/crypto/mldsa/Makefile
-+++ b/lib/crypto/mldsa/Makefile
-@@ -4,7 +4,8 @@ mldsa-y += \
- 	signature_domain_separation.o \
- 	dilithium_api.o \
- 	dilithium_zetas.o \
--	dilithium_signature_helper.o
-+	dilithium_signature_helper.o \
-+	mldsa_api.o
- 
- mldsa-$(CONFIG_CRYPTO_LIB_MLDSA_87) += dilithium_87.o
- mldsa-$(CONFIG_CRYPTO_LIB_MLDSA_65) += dilithium_65.o
-diff --git a/lib/crypto/mldsa/crypto_mldsa.c b/lib/crypto/mldsa/crypto_mldsa.c
-index 26cafeae6f0f..91350a828d94 100644
---- a/lib/crypto/mldsa/crypto_mldsa.c
-+++ b/lib/crypto/mldsa/crypto_mldsa.c
-@@ -28,9 +28,7 @@ enum dilithium_kernel_key_type {
- };
- 
- struct dilithium_kernel_ctx {
--	union {
--		struct dilithium_pk pk;
--	};
-+	struct dilithium_pk pk;
- 	enum dilithium_kernel_key_type key_type;
- };
- 
-diff --git a/lib/crypto/mldsa/mldsa_api.c b/lib/crypto/mldsa/mldsa_api.c
-new file mode 100644
-index 000000000000..6925c5b0d6ee
---- /dev/null
-+++ b/lib/crypto/mldsa/mldsa_api.c
-@@ -0,0 +1,186 @@
-+// SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
-+/* Simple API for ML-DSA.
-+ *
-+ * Copyright (C) 2025 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * See also Documentation/crypto/mldsa.rst
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <crypto/mldsa.h>
-+#include "dilithium.h"
-+
-+struct mldsa_ctx {
-+	struct dilithium_pk pk;
-+	struct dilithium_sig sig;
-+	struct dilithium_ctx *dilithium;
-+	enum dilithium_type type;
-+};
-+
-+/**
-+ * mldsa_verify - All-in-one ML-DSA signature verification
-+ * @type: Type of ML-DSA key
-+ * @pk: Pointer to public key
-+ * @pk_len: Length of public key
-+ * @data: Pointer to signed data
-+ * @data_len: Length of signed data
-+ * @sig: Pointer to signature
-+ * @sig_len: Length of signature
-+ *
-+ * Perform all the steps needed to verify an ML-DSA signature in one go.  Only
-+ * one data buffer may be provided.  For multifragment messages, the
-+ * alloc/update/final interface must be used instead.
-+ *
-+ * Return: 0 if signature could be verified correctly, -EBADMSG when signature
-+ * cannot be verified and < 0 on other errors.
-+ */
-+int mldsa_verify(enum mldsa_type type,
-+		 const void *pk, size_t pk_len,
-+		 const uint8_t *data, size_t data_len,
-+		 const void *sig, size_t sig_len)
-+{
-+	struct mldsa_ctx *ctx;
-+	int ret;
-+
-+	BUILD_BUG_ON((int)MLDSA_UNKNOWN != DILITHIUM_UNKNOWN ||
-+		     (int)MLDSA_44 != DILITHIUM_44 ||
-+		     (int)MLDSA_65 != DILITHIUM_65 ||
-+		     (int)MLDSA_87 != DILITHIUM_87);
-+
-+	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
-+	if (!ctx)
-+		return -ENOMEM;
-+
-+	ret = dilithium_pk_load(&ctx->pk, pk, pk_len);
-+	if (ret < 0)
-+		goto out;
-+	ret = dilithium_sig_load(&ctx->sig, sig, sig_len);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = -EINVAL;
-+	if (type != MLDSA_UNKNOWN && (int)type != ctx->pk.dilithium_type)
-+		goto out;
-+
-+	ret = dilithium_verify(&ctx->sig, data, data_len, &ctx->pk);
-+out:
-+	kfree_sensitive(ctx);
-+	return ret;
-+}
-+EXPORT_SYMBOL(mldsa_verify);
-+
-+/**
-+ * mldsa_ctx_alloc - Allocate ML-DSA context
-+ * @type: The type of ML-DSA involved.
-+ *
-+ * Return: Pointer to the allocated context or error code on failure.
-+ *
-+ * Context: Process context.  May sleep to allocate memory.
-+ */
-+struct mldsa_ctx *mldsa_ctx_alloc(enum mldsa_type type)
-+{
-+	struct mldsa_ctx *ctx;
-+
-+	if (type == MLDSA_UNKNOWN)
-+		return ERR_PTR(-EINVAL);
-+
-+	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
-+	if (!ctx)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ctx->type = (int)type;
-+	ctx->dilithium = dilithium_ctx_alloc_ahat(ctx->type);
-+	if (!ctx->dilithium) {
-+		kfree(ctx);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	return ctx;
-+}
-+EXPORT_SYMBOL(mldsa_ctx_alloc);
-+
-+/**
-+ * mldsa_verify_update - Add more data to an already initialized context
-+ * @ctx: Pointer to an allocated ML-DSA context
-+ * @data: Pointer to signed data
-+ * @data_len: Length of signed data
-+ *
-+ * Add more signed data to the state in an allocated context.  This can be use
-+ * to provide data that is split into multiple fragments.
-+ *
-+ * Return: 0 (success) or < 0 on error
-+ *
-+ * Context: Process context.  May sleep to allocate memory.
-+ */
-+int mldsa_verify_update(struct mldsa_ctx *ctx, const void *data, size_t data_len)
-+{
-+	return dilithium_verify_update(ctx->dilithium, data, data_len);
-+}
-+EXPORT_SYMBOL(mldsa_verify_update);
-+
-+/**
-+ * mldsa_verify_final - Perform signature verification
-+ * @ctx: Pointer to an allocated and updated ML-DSA context
-+ * @pk: Pointer to public key
-+ * @pk_len: Length of public key
-+ * @sig: Pointer to signature
-+ * @sig_len: Length of signature
-+ *
-+ * Finalise the state in the ML-DSA context and verify the signature.  The
-+ * caller must have allocated it and updated it with all the pieces of data.
-+ * Note that this does not free the context, but does reset it.
-+ *
-+ * Return: 0 if signature could be verified correctly, -EBADMSG when the
-+ * signature cannot be verified and < 0 on other errors.
-+ *
-+ * Context: Process context.  May sleep to allocate memory.
-+ */
-+int mldsa_verify_final(struct mldsa_ctx *ctx,
-+		       const void *pk, size_t pk_len,
-+		       const void *sig, size_t sig_len)
-+{
-+	int ret;
-+
-+	ret = dilithium_pk_load(&ctx->pk, pk, pk_len);
-+	if (ret < 0)
-+		return ret;
-+	ret = dilithium_sig_load(&ctx->sig, sig, sig_len);
-+	if (ret < 0)
-+		return ret;
-+	if (ctx->type != ctx->pk.dilithium_type)
-+		return -EINVAL;
-+
-+	ret = dilithium_verify_final(&ctx->sig, ctx->dilithium, &ctx->pk);
-+	dilithium_ctx_zero(ctx->dilithium);
-+	return ret;
-+}
-+EXPORT_SYMBOL(mldsa_verify_final);
-+
-+/**
-+ * mldsa_ctx_zeroize - Resets an ML-DSA context
-+ * @ctx: Context pointer
-+ *
-+ * Context: Any context.
-+ */
-+void mldsa_ctx_zeroize(struct mldsa_ctx *ctx)
-+{
-+	dilithium_ctx_zero(ctx->dilithium);
-+	memset(&ctx->pk, 0, sizeof(ctx->pk));
-+	memset(&ctx->sig, 0, sizeof(ctx->sig));
-+}
-+EXPORT_SYMBOL(mldsa_ctx_zeroize);
-+
-+/**
-+ * mldsa_ctx_free - Clears and frees an ML-DSA context.
-+ * @ctx: Context pointer
-+ *
-+ * Context: Any context.
-+ */
-+void mldsa_ctx_free(struct mldsa_ctx *ctx)
-+{
-+	dilithium_ctx_zero_free(ctx->dilithium);
-+	kfree(ctx);
-+}
-+EXPORT_SYMBOL(mldsa_ctx_free);
+ create mode 100644 lib/crypto/mldsa/signature_domain_separation.c
+ create mode 100644 lib/crypto/mldsa/signature_domain_separation.h
+ create mode 100644 lib/crypto/tests/mldsa_kunit.c
+ create mode 100644 lib/crypto/tests/mldsa_pure_rejection_vectors_44.h
+ create mode 100644 lib/crypto/tests/mldsa_pure_rejection_vectors_65.h
+ create mode 100644 lib/crypto/tests/mldsa_pure_rejection_vectors_87.h
 
