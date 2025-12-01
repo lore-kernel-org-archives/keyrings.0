@@ -1,35 +1,34 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DB5E9238166;
-	Mon,  1 Dec 2025 19:40:09 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 29B7F288502;
+	Mon,  1 Dec 2025 22:46:09 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1764618011; cv=none; b=SRS+Vj4VAE+p55F79S+fLFSWGRl89HhcBd05YDLdsD9p2sECxfKOsj+xliKNFzbXTZKcQexuXh62yJl+ChYV2UppqcbhfYmD2iILR9SJjiJBdnLwGq7NJnjTe/tYA3wrySwV21vivOBg/SqgMFccgaZV12U3nBcLZz7iKX5e7M0=
+	t=1764629170; cv=none; b=o+YmbXI3/2AjrneW2MDoDDayvNs19RefAVZiLeK8lzxPI0FCn/RcjRS9ITdqtncpa/mxcp//EWVB7/dv6GPo1mupC1mNdWRA5BS/03Jh5XbPternzGYWTbtjqCZ7rcoPsieaJEL0pWC9uSD/4UsoJwGFBdBdfPTuukNfK7NRSl8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1764618011; c=relaxed/simple;
-	bh=FLwA77L7nPwunEt5ZEigvdqhnIGMgdFoCkWzsVENUb0=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=EcUP5HvDp3psdu+rnm/yPmkzmAfFfizKV2bZdG6opekn/5T9RUiRbQ2LRM5ySkJUYUU/jO3AQjUpjAFOyYdcX+xjO14aLhwUbXvGJXm0xVh7eWHTWWYYYNM8UarEwQ3DMHwE/VZtXh1B05rDSaZC45t7PuP2QSD9i/BgSohDxL8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=LG8DXfhc; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1764629170; c=relaxed/simple;
+	bh=ULXvr0OMzMzOdoI2/7vLfxzyN6IdbbjfJXPpGcfVgAQ=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=nlBZ/IahsJQ09RbyRFSOMlKwljiH4AkVDpTsxOG0bbC+nGGeGxxcT8cbwX8OP4uEcfAM5UXpuFgeIdigzXDogAJxHkMDdTBEhDu8+WBCdoMggpcxiPUx7j35k1klQhv0mvNKGQjym8xT/Uc5t+PbaUETV7fVFlpgYTsTJkRu89E=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=dHDqfJoj; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="LG8DXfhc"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 9E234C4CEF1;
-	Mon,  1 Dec 2025 19:40:08 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="dHDqfJoj"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 275E3C4CEF1;
+	Mon,  1 Dec 2025 22:46:08 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1764618009;
-	bh=FLwA77L7nPwunEt5ZEigvdqhnIGMgdFoCkWzsVENUb0=;
-	h=From:To:Cc:Subject:Date:From;
-	b=LG8DXfhcssUITm1yYAuKubLyNOkBZbDNNf3Mjd6CADtTaqv+30fENcMgN29Gqv+ap
-	 3j+UI5iI4qRtcOpKIb25XndnbJ8XS+x2s91bANycJ8XJdU7wxQmtnjZVlunljyMe5c
-	 +y7heId9lfn6mOMKwLR2/+AiknVlL0tJ+C6bC2KXgMzZfcKtvJuY72+OkCjXeq0SPp
-	 kweawjcgVWA7vrO0WpzVHjAocgprPbpvus/zxYmGxR4jzPDC53Qg0TheZGK4f+WEh2
-	 R0XrNZYvaB2m+7hIq5EPg4XpsJDzFagRCBca20RotmP1xy5sCoe5ayMNF/QjouDboE
-	 iNjR6YaoXANNg==
+	s=k20201202; t=1764629169;
+	bh=ULXvr0OMzMzOdoI2/7vLfxzyN6IdbbjfJXPpGcfVgAQ=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+	b=dHDqfJojs8d0ufPk46Jtxcp5G1UVRWaElwh3amDfrXy/SJEXLqZ7SiFN4K/yw/L6h
+	 o80TBWm8adWascd/+1Jc5cb0Zo6kxK9Kw1sUaqB+2RzVWqYS+c02+O8+UEXgnMSHzB
+	 JfalCXRSHYp0Soa08ji3LaQOplcWn3TxRD+nNSmUHB0vk4gD0ow+kkKQ1Fad2dSJ6D
+	 e28kGhaDpC8W3raD4vxWnF0IFTzbTme3FvHyD7+TS/AZwVCW+T1+SVlrw/M2XsWUGz
+	 KJ1vuKPQvzonl5pdnV4zey4ec4GXkbBO8CWnZH+iXpIJ0Gnm9T88lpT4S40g8Plx8v
+	 7DfWobAqoyqeQ==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: linux-integrity@vger.kernel.org
-Cc: Jonathan McDowell <noodles@earth.li>,
-	Stefano Garzarella <sgarzare@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
+Cc: Jarkko Sakkinen <jarkko@kernel.org>,
 	stable@vger.kernel.org,
 	Peter Huewe <peterhuewe@gmx.de>,
 	Jason Gunthorpe <jgg@ziepe.ca>,
@@ -40,13 +39,15 @@ Cc: Jonathan McDowell <noodles@earth.li>,
 	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
 	Ard Biesheuvel <ardb@kernel.org>,
-	linux-kernel@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org
-Subject: [PATCH v3] tpm2-sessions: address out-of-range indexing
-Date: Mon,  1 Dec 2025 21:39:58 +0200
-Message-ID: <20251201193958.896358-1-jarkko@kernel.org>
+	linux-kernel@vger.kernel.org (open list),
+	keyrings@vger.kernel.org (open list:KEYS-TRUSTED),
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
+Subject: [PATCH 1/4] tpm2-sessions: address out-of-range indexing
+Date: Tue,  2 Dec 2025 00:45:49 +0200
+Message-ID: <20251201224554.1717104-2-jarkko@kernel.org>
 X-Mailer: git-send-email 2.52.0
+In-Reply-To: <20251201224554.1717104-1-jarkko@kernel.org>
+References: <20251201224554.1717104-1-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -70,15 +71,6 @@ the session state would be then by definition corrupted.
 Cc: stable@vger.kernel.org # v6.10+
 Fixes: 1085b8276bb4 ("tpm: Add the rest of the session HMAC API")
 Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
----
-v3:
-- Add two missing 'tpm2_end_auth_session' calls to the fallback paths of
-  'tpm_buf_fill_hmac_session'.
-- Rewrote the commit message.
-- End authorization session on failure in 'tpm2_buf_append_name' and
-  'tpm_buf_fill_hmac_session'.
-v2:
-There was spurious extra field added to tpm2_hash by mistake.
 ---
  drivers/char/tpm/tpm2-cmd.c               |  23 +++-
  drivers/char/tpm/tpm2-sessions.c          | 131 +++++++++++++++-------
