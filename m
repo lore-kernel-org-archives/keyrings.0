@@ -1,54 +1,54 @@
 Received: from the.earth.li (the.earth.li [93.93.131.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 66D572FE057;
-	Fri, 19 Dec 2025 09:42:18 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3DDAE267B02;
+	Fri, 19 Dec 2025 09:43:06 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=93.93.131.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1766137340; cv=none; b=QvexbMttSQ7evEGpNrqIkPNU41H6Brtacw/o+kVgrGWymshO4TxvV96IxsXdfNhGSNIJHZ6KvuxRGC8PFMKD13W3+V7ivljUMIFfThJRX7z8vXTUvH2LPvgvhG+AGjHzrtsusIy31QqCoZSwf0gA9vs9ngBRz3ujHGy/vXmzgeM=
+	t=1766137387; cv=none; b=nw8z7/HMppwHUpDgvPdwSQJoTN4YAlA57vfB33c3STmYV/G+WrcDInpK43nhBvXkGKhks165hncQfcM/8aBKAN9mZ8j2smrkAvFFx7Z9qvXN5rBUgPT6EvvEc422iRsVMDY+ynNgddf+Vk5p/usDMAdBmYT+PFWE2o1KfTAFMx0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1766137340; c=relaxed/simple;
-	bh=xVV9fdohq2ubL6//lM4dcaJsEWJ6R8p2wMpuHyhJunw=;
+	s=arc-20240116; t=1766137387; c=relaxed/simple;
+	bh=ONmLlQTHqkztKUuWEGL637w4QqLGg/4Idz77mIn2aM8=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=ZMCb+vz6GodCK1SlEwdLBX4TxH8rTbggZrQZ4VS+C9sV7P2WPdD0lqZHNCHyKqfg8+r6UzQ7KQb2B3Y8JMgjgevHu9pRyGfHYaWx3lOiW53vu+X4gZ/vCO/nevIu15dZyEqiilwbBshYomFBycUFWZkX2OpDy3HumBW19q29mgM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=earth.li; spf=pass smtp.mailfrom=earth.li; dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b=MbUfGVrR; arc=none smtp.client-ip=93.93.131.124
+	 Content-Type:Content-Disposition:In-Reply-To; b=Wf6rdPBOHqnWpUMpgXNNLo6Ko5+B8pd6oJTFVBrucIfBIEZAzHx2a/7H5D5m71TxzTmDR2CIu74EormD8vuvpTCiOwB4vsmRcXZ7kNtI6wQh6ygGo5eORL056CPSJoNHf+uDRaDXgjifEsBhl6Chc570AYK1B+8FS6wptZLcM9Y=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=earth.li; spf=pass smtp.mailfrom=earth.li; dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b=iFK76hse; arc=none smtp.client-ip=93.93.131.124
 Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=earth.li
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=earth.li
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b="MbUfGVrR"
+	dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b="iFK76hse"
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=earth.li;
 	s=the; h=In-Reply-To:Content-Type:MIME-Version:References:Message-ID:Subject:
 	Cc:To:From:Date:Sender:Reply-To:Content-Transfer-Encoding:Content-ID:
 	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
 	:Resent-Message-ID:List-Id:List-Help:List-Unsubscribe:List-Subscribe:
 	List-Post:List-Owner:List-Archive;
-	bh=o7XQ6clI2ABs8GcR3UzPQb45JVC8G0epQtluzmYrpEw=; b=MbUfGVrRfbr8Ptf8nszPPtAdDQ
-	fwhII4hDcMIOmfPH3uCjl9954jmpOECh4KYEqN7udSdtzCKNQWqJHAU7tApqz1HMppsLK8+mdzXI/
-	iL4+OsUOa4ZlacMLk8n+BvFeVA1IRVKVhpSnVRWZzGnRAndCSG4Vxk6uVFV3ab76dcQ6oxl9RNvok
-	SrTj5b+p+EzxKtcWjQ9HhPWb6If/0JGfLt5LBnGbP4zCkaOaYpaG6LnVS1beiyPUc9w8ZBRXFxgxG
-	8uiZZqaf95L+NmgAezN0G6OER2GVjVNtyOGyGEoo/TD4JQN/+a95xWVDRx1+zaDcrEj/P+8HSPDhU
-	EzQBGV3g==;
+	bh=7NczBA1zduLJaNIycYErUiDNCKS4PEHfp/yNC1zVExQ=; b=iFK76hseK1WlCNKZeFwXHg32I8
+	qXLo6MGVfyi0z6jBc5vtDaXVsRvBUig/IA4z043AeubAvXAUHJDtXlBxbDjzmDvAo9iZs2J8+4awU
+	IDkGCH/vRuAHsxMezch5Pk7swCREqpnBvqtc40raqPUIDoMra/swfE4WtZU6zRWCFFltd5v3BQj5b
+	8LpNgaFurm7kUHQ9QHkBe6P+AY7f8MQPCE5vQ/OZonWTX/rNnKIuZEOn4S8A2g+BS0uxo8bDIxaQi
+	qmj/+kNvq+pkTnxDJH5kIF6/LjMmCQfKELC0COSA+bQZVP2maX4wAAHxBeGGnE0HUH1IE9HWeLcA6
+	GlwfVUdQ==;
 Received: from noodles by the.earth.li with local (Exim 4.96)
 	(envelope-from <noodles@earth.li>)
-	id 1vWWzv-00EkOk-2Z;
-	Fri, 19 Dec 2025 09:42:07 +0000
-Date: Fri, 19 Dec 2025 09:42:07 +0000
+	id 1vWWgE-00EesW-1x;
+	Fri, 19 Dec 2025 09:21:46 +0000
+Date: Fri, 19 Dec 2025 09:21:46 +0000
 From: Jonathan McDowell <noodles@earth.li>
 To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: linux-integrity@vger.kernel.org,
-	"David S . Miller" <davem@davemloft.net>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Eric Biggers <ebiggers@kernel.org>, Peter Huewe <peterhuewe@gmx.de>,
-	Jason Gunthorpe <jgg@ziepe.ca>, David Howells <dhowells@redhat.com>,
+Cc: linux-integrity@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
+	David Howells <dhowells@redhat.com>,
 	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	open list <linux-kernel@vger.kernel.org>,
+	James Bottomley <James.Bottomley@hansenpartnership.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
 	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v8 04/12] tpm: Change tpm_get_random() opportunistic
-Message-ID: <aUUd760l89lrNOs-@earth.li>
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 02/12] KEYS: trusted: Use get_random_bytes_wait()
+ instead of tpm_get_random()
+Message-ID: <aUUZKu2xaZvEdq-2@earth.li>
 References: <20251216092147.2326606-1-jarkko@kernel.org>
- <20251216092147.2326606-5-jarkko@kernel.org>
+ <20251216092147.2326606-3-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -57,89 +57,76 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20251216092147.2326606-5-jarkko@kernel.org>
+In-Reply-To: <20251216092147.2326606-3-jarkko@kernel.org>
 
-On Tue, Dec 16, 2025 at 11:21:38AM +0200, Jarkko Sakkinen wrote:
->hwrng framework does not have a requirement that the all bytes requested
->need to be provided. By enforcing such a requirement internally, TPM driver
->can cause unpredictability in latency, as a single tpm_get_random() call
->can result multiple TPM commands.
->
->Especially, when TCG_TPM2_HMAC is enabled, extra roundtrips could have
->significant effect to the system latency.
->
->Thus, send TPM command only once and return bytes received instead of
->committing to the number of requested bytes.
+On Tue, Dec 16, 2025 at 11:21:36AM +0200, Jarkko Sakkinen wrote:
+>Substitute remaining tpm_get_random() calls in trusted_tpm1.c with
+>get_random_bytes_wait() thus aligning random number generation for TPM 1.2
+>with the removal of '.get_random' callback.
 
-Function comment for tpm_get_random needs updated as well, as it 
-currently says "until all of the @max bytes have been received", which 
-is no longer true with this patch. With that:
+Had to double check we wouldn't end up not getting all the randomness we 
+ask for, but get_random_bytes_wait does indeed DTRT.
 
 Reviewed-by: Jonathan McDowell <noodles@meta.com>
 
->Cc: David S. Miller <davem@davemloft.net>
->Cc: Herbert Xu <herbert@gondor.apana.org.au>
 >Cc: Eric Biggers <ebiggers@kernel.org>
 >Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 >---
->v7:
->- Given that hwrng is now only caller for tpm_get_random(), remove the
->  wait parameter.
->v4:
->- Fixed grammar mistakes.
->---
-> drivers/char/tpm/tpm-interface.c | 28 +++++-----------------------
-> 1 file changed, 5 insertions(+), 23 deletions(-)
+> security/keys/trusted-keys/trusted_tpm1.c | 18 +++---------------
+> 1 file changed, 3 insertions(+), 15 deletions(-)
 >
->diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
->index d157be738612..677dcef05dfb 100644
->--- a/drivers/char/tpm/tpm-interface.c
->+++ b/drivers/char/tpm/tpm-interface.c
->@@ -626,10 +626,6 @@ static int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max)
->  */
-> int tpm_get_random(struct tpm_chip *chip, u8 *out, size_t max)
-> {
->-	u32 num_bytes = max;
->-	u8 *out_ptr = out;
->-	int retries = 5;
->-	int total = 0;
-> 	int rc;
+>diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+>index 7ce7e31bcdfb..3d75bb6f9689 100644
+>--- a/security/keys/trusted-keys/trusted_tpm1.c
+>+++ b/security/keys/trusted-keys/trusted_tpm1.c
+>@@ -371,13 +371,10 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+> 	unsigned char ononce[TPM_NONCE_SIZE];
+> 	int ret;
 >
-> 	if (!out || !max || max > TPM_MAX_RNG_DATA)
->@@ -646,28 +642,14 @@ int tpm_get_random(struct tpm_chip *chip, u8 *out, size_t max)
-> 		rc = tpm2_start_auth_session(chip);
-> 		if (rc)
-> 			return rc;
+>-	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
+>+	ret = get_random_bytes_wait(ononce, TPM_NONCE_SIZE);
+> 	if (ret < 0)
+> 		return ret;
+>
+>-	if (ret != TPM_NONCE_SIZE)
+>-		return -EIO;
+>-
+> 	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OSAP);
+> 	tpm_buf_append_u16(tb, type);
+> 	tpm_buf_append_u32(tb, handle);
+>@@ -464,15 +461,10 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+> 	memcpy(td->xorwork + SHA1_DIGEST_SIZE, sess.enonce, SHA1_DIGEST_SIZE);
+> 	sha1(td->xorwork, SHA1_DIGEST_SIZE * 2, td->xorhash);
+>
+>-	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
+>+	ret = get_random_bytes_wait(td->nonceodd, TPM_NONCE_SIZE);
+> 	if (ret < 0)
+> 		goto out;
+>
+>-	if (ret != TPM_NONCE_SIZE) {
+>-		ret = -EIO;
+>-		goto out;
 >-	}
 >-
->-	do {
->-		if (chip->flags & TPM_CHIP_FLAG_TPM2)
->-			rc = tpm2_get_random(chip, out_ptr, num_bytes);
->-		else
->-			rc = tpm1_get_random(chip, out_ptr, num_bytes);
->-
->-		if (rc < 0)
->-			goto err;
->-
->-		out_ptr += rc;
->-		total += rc;
->-		num_bytes -= rc;
->-	} while (retries-- && total < max);
+> 	ordinal = htonl(TPM_ORD_SEAL);
+> 	datsize = htonl(datalen);
+> 	pcrsize = htonl(pcrinfosize);
+>@@ -575,14 +567,10 @@ static int tpm_unseal(struct tpm_buf *tb,
+> 	}
 >
->-	tpm_put_ops(chip);
->-	return total ? total : -EIO;
->+		rc = tpm2_get_random(chip, out, max);
->+	} else {
->+		rc = tpm1_get_random(chip, out, max);
->+	}
+> 	ordinal = htonl(TPM_ORD_UNSEAL);
+>-	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
+>+	ret = get_random_bytes_wait(nonceodd, TPM_NONCE_SIZE);
+> 	if (ret < 0)
+> 		return ret;
 >
->-err:
-> 	tpm_put_ops(chip);
->-	return rc;
->+	return rc != 0 ? rc : -EIO;
-> }
-> EXPORT_SYMBOL_GPL(tpm_get_random);
->
+>-	if (ret != TPM_NONCE_SIZE) {
+>-		pr_info("tpm_get_random failed (%d)\n", ret);
+>-		return -EIO;
+>-	}
+> 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
+> 			   enonce1, nonceodd, cont, sizeof(uint32_t),
+> 			   &ordinal, bloblen, blob, 0, 0);
 >-- 
 >2.39.5
 >
@@ -148,4 +135,6 @@ Reviewed-by: Jonathan McDowell <noodles@meta.com>
 J.
 
 -- 
-... We are talking one charming motherf**king pig.
+Web [         Avoid temporary variables and strange women.         ]
+site: https:// [                                          ]      Made by
+www.earth.li/~noodles/  [                      ]         HuggieTag 0.0.24
