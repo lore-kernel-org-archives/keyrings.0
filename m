@@ -1,74 +1,190 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from the.earth.li (the.earth.li [93.93.131.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 263282D7387;
-	Thu, 18 Dec 2025 19:08:16 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C6ACC2D1914;
+	Fri, 19 Dec 2025 09:32:09 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=93.93.131.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1766084897; cv=none; b=V/uDh4soK1R59kpy8KVoJRuW6+lQb3v7Oou5/w+bLar+BC4rmJFKQDFWBeajOkF8iO2hnaNC727uCFvdF/QlEv3MnMf1xI4kAjnO+FhzIG6fAXguZ9D8c8F3oTtJtKu4fSWt5rmPQfRTGAxJ1F2rp55OUOSanVeIN3hgq0wQvYA=
+	t=1766136732; cv=none; b=MxOmpDkvjKW9GG5gRG5QCXF6tEmS4qjQlLs8GWDiGDr9LapeHHAsjSDlM0ayJczZ2mqM1sU2PezBdu17c+lavMU7MhR7z7ItZ/KFa1YDa9OEdCvw/4O/mQ/njybduatiPIGxyB4lTsEbgOE3NuUfyuykMUvSno07lg/s2F5yt18=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1766084897; c=relaxed/simple;
-	bh=Z9a4e2kqMkKgECN326Qvq7UbuTUqk+wZb7MlxJlWTR4=;
+	s=arc-20240116; t=1766136732; c=relaxed/simple;
+	bh=xC/6nDi0AkRFTeJmzaaR8UocFoB+waWVhJidMRjJZgM=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=XFCwg2FtC3qLYEAgNwe9f/WBxdnAnYbQLkhqNgwfKfFb8VAzTVQJF6isUifEGSfJG2DDs8HDTMtUc1fEsebReS8O8oxT7jXTn7hb4mMDnfk2Wf34pc3KN6CnzxS0r1o7soPQks8pmKKq9kDccN5pe8r0R5AARai8kfBcJTj0nFg=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TVt7IRjs; arc=none smtp.client-ip=10.30.226.201
+	 Content-Type:Content-Disposition:In-Reply-To; b=A8u6UsnUkWrZ+T6z62xU2trBRTvjlvfe/I/n9tfP5v0Rgs9lyrkIofa2XV1+lqifjJ+qC+/TmHlzryvvXyrAe07bBqVcXCr89Xtme/El6UfbGUEk9kQATqjV3V6y00nfs/mkZ1d33x02j2m2SgkdjaSZZ5FSllA2ovdk+R4m2bQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=earth.li; spf=pass smtp.mailfrom=earth.li; dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b=fFc14KzO; arc=none smtp.client-ip=93.93.131.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=earth.li
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=earth.li
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TVt7IRjs"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 5813BC4CEFB;
-	Thu, 18 Dec 2025 19:08:16 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1766084896;
-	bh=Z9a4e2kqMkKgECN326Qvq7UbuTUqk+wZb7MlxJlWTR4=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=TVt7IRjs2ghTWN3c/22Tqxzt7YfvoutHaPj12OH2pkrYO0vk7kdjC1PcIN3tbB8jx
-	 saNOCAOq1OkKPa6P3kT1vqi+EGUX3VOKj25mztYDS+7+S1g+mNPD2p9EbKXfxdEyPE
-	 pPCT7Y6SXCKA9irZLQ8j2wjwLOHurx3Lw79KgxSXDrb57WfAlxu8vZVKfJ1fpwsaug
-	 5mBinKohEUuxMrO9B0eBjiE0nH3RWbdJwMTNs1OgL6O6Ct6Hk+dEo+Fq7pgIiELPWj
-	 LSakdMvRzAC40tGgo3jrVCZik7E+2oN9buaWBIY2PUAy4SxRJEEyddTXD/mo/Gps8s
-	 BEW4+wBo38ikg==
-Date: Thu, 18 Dec 2025 11:08:07 -0800
-From: Eric Biggers <ebiggers@kernel.org>
-To: linux-crypto@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Luis Chamberlain <mcgrof@kernel.org>,
-	Petr Pavlu <petr.pavlu@suse.com>,
-	Daniel Gomez <da.gomez@kernel.org>,
-	Sami Tolvanen <samitolvanen@google.com>,
-	"Jason A . Donenfeld" <Jason@zx2c4.com>,
-	Ard Biesheuvel <ardb@kernel.org>,
-	Stephan Mueller <smueller@chronox.de>,
-	Lukas Wunner <lukas@wunner.de>,
-	Ignat Korchagin <ignat@cloudflare.com>, keyrings@vger.kernel.org,
-	linux-modules@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] lib/crypto: ML-DSA verification support
-Message-ID: <20251218190807.GC21380@sol>
-References: <20251214181712.29132-1-ebiggers@kernel.org>
+	dkim=pass (2048-bit key) header.d=earth.li header.i=@earth.li header.b="fFc14KzO"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=earth.li;
+	s=the; h=In-Reply-To:Content-Type:MIME-Version:References:Message-ID:Subject:
+	Cc:To:From:Date:Sender:Reply-To:Content-Transfer-Encoding:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:List-Id:List-Help:List-Unsubscribe:List-Subscribe:
+	List-Post:List-Owner:List-Archive;
+	bh=ZVX1yxlirPOx+c8T4LygoqEHC+5AB40jquLHhJDGoCg=; b=fFc14KzOgfqOG939bHVZdx3kig
+	eggHitiuc2jdXjTlca0PoIcDxbrRZxgy0AzhjSeaV6YvimVGElpWtHtjszVC31V8WHjfaSfb7am2L
+	TN4EiwXPw4H/E+LQibVkkj45B3eJzOusW9zM+FhUPOJ/reelH3D0GYHvkRu1oCVc/U8oqBvugyfS2
+	+RSvATNyAzpzgiqkWTBaPHXxpC0aGtTyRijz1Ifng+z5XcNKQLf8PkBbGuq+iiuD9QnpN2Da1spcv
+	WvuC/LZ4ECAxFisv3wqtJtT7eU1GyJZCcHhuj7U/Py8uMQK4ex7T7geRZObHJf5CzPNu1Zkwq41N3
+	VT/YvPYg==;
+Received: from noodles by the.earth.li with local (Exim 4.96)
+	(envelope-from <noodles@earth.li>)
+	id 1vWWqA-00Eiye-1X;
+	Fri, 19 Dec 2025 09:32:02 +0000
+Date: Fri, 19 Dec 2025 09:32:02 +0000
+From: Jonathan McDowell <noodles@earth.li>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: linux-integrity@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>,
+	Jason Gunthorpe <jgg@ziepe.ca>, David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v8 05/12] tpm2-sessions: Define TPM2_NAME_MAX_SIZE
+Message-ID: <aUUbkosWlOjZ48YP@earth.li>
+References: <20251216092147.2326606-1-jarkko@kernel.org>
+ <20251216092147.2326606-6-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20251214181712.29132-1-ebiggers@kernel.org>
+In-Reply-To: <20251216092147.2326606-6-jarkko@kernel.org>
 
-On Sun, Dec 14, 2025 at 10:17:10AM -0800, Eric Biggers wrote:
-> This series can also be retrieved from:
-> 
->     git fetch https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/linux.git mldsa-v4
-> 
-> This series adds support for verifying ML-DSA signatures to lib/crypto/.
-> Patch 1 is the ML-DSA implementation itself.  See that for full details.
-> Patch 2 adds the KUnit test suite.
-> 
-> The initial use case for this will be kernel module signature
-> verification.  For more details, see David Howells' patchset
-> https://lore.kernel.org/linux-crypto/20251120104439.2620205-1-dhowells@redhat.com/
-> 
-> Note: I'm planning to apply this to libcrypto-next for 6.20.
+On Tue, Dec 16, 2025 at 11:21:39AM +0200, Jarkko Sakkinen wrote:
+>Define TPM2_NAME_MAX_SIZE, which describes the maximum size for hashes
+>encoded as TPMT_HA, which the prime identifier used for persistent and
+>transient keys in TPM2 protocol.
+>
+>Set its value to 'SHA512_DIGEST_SIZE + 2', as SHA512 has the largest
+>digest size of the algorithms in TCG algorithm repository.
+>
+>In additionl, rename TPM2_NAME_SIZE as TPM2_NULL_NAME_SIZE in order to
+>avoid any possible confusion.
 
-Applied to https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/linux.git/log/?h=libcrypto-next
+One minor capitalisation nit, otherwise:
 
-- Eric
+Reviewed-by: Jonathan McDowell <noodles@meta.com>
+
+>Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+>---
+>v6:
+>- Rewrote the commit message.
+>v2:
+>- Rename TPM2_NAME_SIZE as TPM2_NULL_NAME_SIZE.
+>---
+> drivers/char/tpm/tpm-sysfs.c     |  2 +-
+> drivers/char/tpm/tpm2-sessions.c |  2 +-
+> include/linux/tpm.h              | 37 +++++++++++++++++++++-----------
+> 3 files changed, 27 insertions(+), 14 deletions(-)
+>
+>diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
+>index 94231f052ea7..4a6a27ee295d 100644
+>--- a/drivers/char/tpm/tpm-sysfs.c
+>+++ b/drivers/char/tpm/tpm-sysfs.c
+>@@ -314,7 +314,7 @@ static ssize_t null_name_show(struct device *dev, struct device_attribute *attr,
+> 			      char *buf)
+> {
+> 	struct tpm_chip *chip = to_tpm_chip(dev);
+>-	int size = TPM2_NAME_SIZE;
+>+	int size = TPM2_NULL_NAME_SIZE;
+>
+> 	bin2hex(buf, chip->null_key_name, size);
+> 	size *= 2;
+>diff --git a/drivers/char/tpm/tpm2-sessions.c b/drivers/char/tpm/tpm2-sessions.c
+>index 4149379665c4..525b8622d1c3 100644
+>--- a/drivers/char/tpm/tpm2-sessions.c
+>+++ b/drivers/char/tpm/tpm2-sessions.c
+>@@ -137,7 +137,7 @@ struct tpm2_auth {
+> 	 * we must compute and remember
+> 	 */
+> 	u32 name_h[AUTH_MAX_NAMES];
+>-	u8 name[AUTH_MAX_NAMES][2 + SHA512_DIGEST_SIZE];
+>+	u8 name[AUTH_MAX_NAMES][TPM2_MAX_NAME_SIZE];
+> };
+>
+> #ifdef CONFIG_TCG_TPM2_HMAC
+>diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+>index 202da079d500..e10f2096eae7 100644
+>--- a/include/linux/tpm.h
+>+++ b/include/linux/tpm.h
+>@@ -27,9 +27,33 @@
+>
+> #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
+>
+>+/*
+>+ * SHA-512 is, as of today, the largest digest in the TCG algorithm repository.
+>+ */
+> #define TPM2_MAX_DIGEST_SIZE	SHA512_DIGEST_SIZE
+>+
+>+/*
+>+ * A TPM name digest i.e., TPMT_HA, is a concatenation of TPM_ALG_ID of the
+>+ * name algorithm and hash of TPMT_PUBLIC.
+>+ */
+>+#define TPM2_MAX_NAME_SIZE	(TPM2_MAX_DIGEST_SIZE + 2)
+>+
+>+/*
+>+ * The maximum number of PCR banks.
+>+ */
+> #define TPM2_MAX_PCR_BANKS	8
+>
+>+/*
+>+ * fixed define for the size of a name.  This is actually HASHALG size
+
+"Fixed define".
+
+>+ * plus 2, so 32 for SHA256
+>+ */
+>+#define TPM2_NULL_NAME_SIZE	34
+>+
+>+/*
+>+ * The maximum size for an object context
+>+ */
+>+#define TPM2_MAX_CONTEXT_SIZE	4096
+>+
+> struct tpm_chip;
+> struct trusted_key_payload;
+> struct trusted_key_options;
+>@@ -139,17 +163,6 @@ struct tpm_chip_seqops {
+> /* fixed define for the curve we use which is NIST_P256 */
+> #define EC_PT_SZ	32
+>
+>-/*
+>- * fixed define for the size of a name.  This is actually HASHALG size
+>- * plus 2, so 32 for SHA256
+>- */
+>-#define TPM2_NAME_SIZE	34
+>-
+>-/*
+>- * The maximum size for an object context
+>- */
+>-#define TPM2_MAX_CONTEXT_SIZE 4096
+>-
+> struct tpm_chip {
+> 	struct device dev;
+> 	struct device devs;
+>@@ -211,7 +224,7 @@ struct tpm_chip {
+> 	/* saved context for NULL seed */
+> 	u8 null_key_context[TPM2_MAX_CONTEXT_SIZE];
+> 	 /* name of NULL seed */
+>-	u8 null_key_name[TPM2_NAME_SIZE];
+>+	u8 null_key_name[TPM2_NULL_NAME_SIZE];
+> 	u8 null_ec_key_x[EC_PT_SZ];
+> 	u8 null_ec_key_y[EC_PT_SZ];
+> 	struct tpm2_auth *auth;
+>-- 
+>2.39.5
+>
+>
+
+J.
+
+-- 
+Why do I get the feeling I'm going to regret this?
+This .sig brought to you by the letter S and the number 50
+Product of the Republic of HuggieTag
