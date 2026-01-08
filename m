@@ -1,157 +1,93 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C642A46661C;
-	Thu,  8 Jan 2026 13:27:57 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B7C3E3E8C7D
+	for <keyrings@vger.kernel.org>; Thu,  8 Jan 2026 14:38:34 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1767878877; cv=none; b=j6wPHa7YeJNOgnZItHKIjmlr6mApBl2CxWnnjHiq3VNFy25ouKF2e207FFfA91QoPqTCyRorjftVq6dpKp20kWrOvCULuuVnp+vJHPcgESFyNoPrzp8AZcabWCasc+xtFtU9aKuDXGi2I/61Pypt/tSDRUjr0OEv/ZKJepZnyTw=
+	t=1767883116; cv=none; b=alshOeBv4SWsyEsni+EVUQIEP66zLZ0SKuwUXDbymNtyKJVBhvXJrKJMNEfvBxAxKRTUJnjva0cMNBTnV6TOtG96WAF3HKIPFr1FceyNqcjbzAboOLHLuLngTIiu9PQRX2HzEEdXiws0KXfwBWbCtfnbi9+p028+LpG+t09y/9Q=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1767878877; c=relaxed/simple;
-	bh=aZNd5ZfiO0jANMEUjjmztVseOVSusFwq/OISmXO7svU=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=S8PAy4pY6inFSMuBLJCFLl+a73xzN19k76kJtQnOYG4RBNHozsq6qx/3KIZ+3xP36fYPVuSvOIbFxJUv0pSe30enJ9IePFIMqF7h53U83qBjVKiPSEayLO3iiuyHxjB06zW9I/ISGEljeFq4XTki936XTqfVCsXidTZsYqJXp/E=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=CH1+bSbA; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1767883116; c=relaxed/simple;
+	bh=p+WpUe61Uf/9zsVuhMKn5/zWYHwkJX9Z0uAkX0tmoM0=;
+	h=From:In-Reply-To:References:To:Cc:Subject:MIME-Version:
+	 Content-Type:Date:Message-ID; b=UzlVgtg7fm/IzmriD0g1G9VYbvtoigmJiMVyZFhxjZ4Xn/nJIi9cUMhOjZHESMjrHkgyRIo3Ni7xQAv5Sx4EcM2RAiQ2AHfzLJoUf5r49AdnlVl9o+Ykq7oXbPFJuSFsn5uJErxWrVEHVTEZ1ZaYaY5P9xB5Hry0IO3ASbxMBqI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=CpfYEq1L; arc=none smtp.client-ip=170.10.133.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="CH1+bSbA"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id D5147C19421;
-	Thu,  8 Jan 2026 13:27:56 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1767878877;
-	bh=aZNd5ZfiO0jANMEUjjmztVseOVSusFwq/OISmXO7svU=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=CH1+bSbA5L8VA7mSCokBdbx0AQgkjkRqmlrahfX8ELEJ2ypQXmqMvcVRFwP7BZeA7
-	 BSx1jwXQromcfmdUn8aCj7co5SIo6jWylGAll+D8/cqvoddu2YDx/42e4v3GQ3kfOz
-	 +1PoWfVz+3t/HWc4puXWpPQCy6NYloGtTiCiECELj0Y0Hp+zjD/1J3iVbJxox5Ity6
-	 QaQzo86aAYTUV/n2JZ6YOjcvzpmeH/Yfp1Gl7rASdzecJ/OYwGp/JWhgiT6oliOfkr
-	 BlTlJ/L02ES4BbNGkIKJon53evIWuoF0ZuqgYoqF07gC76ayOx/8VUA7eTOYM4Hwv9
-	 qpH7uZBqvoYSw==
-Date: Thu, 8 Jan 2026 15:27:52 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Srish Srinivasan <ssrish@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-	linuxppc-dev@lists.ozlabs.org, maddy@linux.ibm.com,
-	mpe@ellerman.id.au, npiggin@gmail.com, christophe.leroy@csgroup.eu,
-	James.Bottomley@hansenpartnership.com, zohar@linux.ibm.com,
-	nayna@linux.ibm.com, rnsastry@linux.ibm.com,
-	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v3 5/6] keys/trusted_keys: establish PKWM as a trusted
- source
-Message-ID: <aV-w2NbxAPuuXy_U@kernel.org>
-References: <20260106150527.446525-1-ssrish@linux.ibm.com>
- <20260106150527.446525-6-ssrish@linux.ibm.com>
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="CpfYEq1L"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1767883113;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+	 in-reply-to:in-reply-to:references:references;
+	bh=XLV+b8wRoDeQA2Nas8F4iCfGEiK/r85r+1LvNr8tJ1Y=;
+	b=CpfYEq1L3M2Tb7L985BABPY3nOxtl5TnMRzzyfwHIjnV2htR3eT/0jpeKbYhStGFFFH8Ni
+	DS6gRu4VkE1V1s73u2T0pJHezF5CuDGcsQPfX3nQrtHzLHL66bS4ID/Zkj8xRXeSkbF2oW
+	9S9jlghJG1Jqf2mBUOQ30a6fXlhv7e4=
+Received: from mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-264-96nE0lGHMHWWZwJmSEH8kQ-1; Thu,
+ 08 Jan 2026 09:38:30 -0500
+X-MC-Unique: 96nE0lGHMHWWZwJmSEH8kQ-1
+X-Mimecast-MFC-AGG-ID: 96nE0lGHMHWWZwJmSEH8kQ_1767883108
+Received: from mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.4])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id CA09219560AA;
+	Thu,  8 Jan 2026 14:38:27 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.42.28.4])
+	by mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 47A2130002D1;
+	Thu,  8 Jan 2026 14:38:21 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20260106080251.GD2630@sol>
+References: <20260106080251.GD2630@sol> <20260105152145.1801972-1-dhowells@redhat.com> <20260105152145.1801972-4-dhowells@redhat.com>
+To: Eric Biggers <ebiggers@kernel.org>,
+    Herbert Xu <herbert@gondor.apana.org.au>
+Cc: dhowells@redhat.com, Lukas Wunner <lukas@wunner.de>,
+    Ignat Korchagin <ignat@cloudflare.com>,
+    Jarkko Sakkinen <jarkko@kernel.org>,
+    Luis Chamberlain <mcgrof@kernel.org>,
+    Petr Pavlu <petr.pavlu@suse.com>, Daniel Gomez <da.gomez@kernel.org>,
+    Sami Tolvanen <samitolvanen@google.com>,
+    "Jason A . Donenfeld" <Jason@zx2c4.com>,
+    Ard Biesheuvel <ardb@kernel.org>,
+    Stephan Mueller <smueller@chronox.de>, linux-crypto@vger.kernel.org,
+    keyrings@vger.kernel.org, linux-modules@vger.kernel.org,
+    linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 3/8] pkcs7, x509: Add ML-DSA support
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260106150527.446525-6-ssrish@linux.ibm.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <2745002.1767883099.1@warthog.procyon.org.uk>
+Date: Thu, 08 Jan 2026 14:38:19 +0000
+Message-ID: <2745003.1767883099@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.4
 
-On Tue, Jan 06, 2026 at 08:35:26PM +0530, Srish Srinivasan wrote:
-> The wrapping key does not exist by default and is generated by the
-> hypervisor as a part of PKWM initialization. This key is then persisted by
-> the hypervisor and is used to wrap trusted keys. These are variable length
-> symmetric keys, which in the case of PowerVM Key Wrapping Module (PKWM) are
-> generated using the kernel RNG. PKWM can be used as a trust source through
-> the following example keyctl commands:
-> 
-> keyctl add trusted my_trusted_key "new 32" @u
-> 
-> Use the wrap_flags command option to set the secure boot requirement for
-> the wrapping request through the following keyctl commands
-> 
-> case1: no secure boot requirement. (default)
-> keyctl usage: keyctl add trusted my_trusted_key "new 32" @u
-> 	      OR
-> 	      keyctl add trusted my_trusted_key "new 32 wrap_flags=0x00" @u
-> 
-> case2: secure boot required to in either audit or enforce mode. set bit 0
-> keyctl usage: keyctl add trusted my_trusted_key "new 32 wrap_flags=0x01" @u
-> 
-> case3: secure boot required to be in enforce mode. set bit 1
-> keyctl usage: keyctl add trusted my_trusted_key "new 32 wrap_flags=0x02" @u
-> 
-> NOTE:
-> -> Setting the secure boot requirement is NOT a must.
-> -> Only either of the secure boot requirement options should be set. Not
-> both.
-> -> All the other bits are required to be not set.
-> -> Set the kernel parameter trusted.source=pkwm to choose PKWM as the
-> backend for trusted keys implementation.
-> -> CONFIG_PSERIES_PLPKS must be enabled to build PKWM.
-> 
-> Add PKWM, which is a combination of IBM PowerVM and Power LPAR Platform
-> KeyStore, as a new trust source for trusted keys.
-> 
-> Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-> ---
->  MAINTAINERS                               |   9 ++
->  include/keys/trusted-type.h               |   7 +-
->  include/keys/trusted_pkwm.h               |  22 +++
->  security/keys/trusted-keys/Kconfig        |   8 ++
->  security/keys/trusted-keys/Makefile       |   2 +
->  security/keys/trusted-keys/trusted_core.c |   6 +-
->  security/keys/trusted-keys/trusted_pkwm.c | 168 ++++++++++++++++++++++
->  7 files changed, 220 insertions(+), 2 deletions(-)
->  create mode 100644 include/keys/trusted_pkwm.h
->  create mode 100644 security/keys/trusted-keys/trusted_pkwm.c
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index a0dd762f5648..ba51eff21a16 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -14003,6 +14003,15 @@ S:	Supported
->  F:	include/keys/trusted_dcp.h
->  F:	security/keys/trusted-keys/trusted_dcp.c
->  
-> +KEYS-TRUSTED-PLPKS
-> +M:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +M:	Nayna Jain <nayna@linux.ibm.com>
-> +L:	linux-integrity@vger.kernel.org
-> +L:	keyrings@vger.kernel.org
-> +S:	Supported
-> +F:	include/keys/trusted_plpks.h
-> +F:	security/keys/trusted-keys/trusted_pkwm.c
-> +
->  KEYS-TRUSTED-TEE
->  M:	Sumit Garg <sumit.garg@kernel.org>
->  L:	linux-integrity@vger.kernel.org
-> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
-> index 4eb64548a74f..45c6c538df22 100644
-> --- a/include/keys/trusted-type.h
-> +++ b/include/keys/trusted-type.h
-> @@ -19,7 +19,11 @@
->  
->  #define MIN_KEY_SIZE			32
->  #define MAX_KEY_SIZE			128
-> -#define MAX_BLOB_SIZE			512
-> +#if IS_ENABLED(CONFIG_TRUSTED_KEYS_PKWM)
-> +#define MAX_BLOB_SIZE			1152
-> +#else
-> +#define MAX_BLOB_SIZE                   512
-> +#endif
->  #define MAX_PCRINFO_SIZE		64
->  #define MAX_DIGEST_SIZE			64
->  
-> @@ -46,6 +50,7 @@ struct trusted_key_options {
->  	uint32_t policydigest_len;
->  	unsigned char policydigest[MAX_DIGEST_SIZE];
->  	uint32_t policyhandle;
-> +	uint16_t wrap_flags;
->  };
+Eric Biggers <ebiggers@kernel.org> wrote:
 
-We should introduce:
+> 
+> 1.) If the CMS object doesn't include signed attributes, then it's a
+>     digest of the real message the caller provided.
 
-	void *private;
+Yeah - that needs fixing, but I need to be able to test it.
 
-And hold backend specific fields there.
+openssl-4.0 (at least that's what appears to be on the master branch) will
+have a fix for ML-DSA CMS_NOATTR support (it was committed in November), but
+it's not available yet unless you want to build your own.
 
-This patch set does not necessarily have to migrate TPM fields to this
-new framework, only start a better convention before this turns into
-a chaos.
+sign-file would would normally use CMS_NOATTR, and this is worked round by
+patch 4 in this series by using signed attributes for ML_DSA.
 
-BR, Jarkko
+David
+
