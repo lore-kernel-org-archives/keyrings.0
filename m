@@ -1,181 +1,86 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CBD76308F2E;
-	Fri, 23 Jan 2026 07:47:49 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0CA56346AF9
+	for <keyrings@vger.kernel.org>; Fri, 23 Jan 2026 11:13:55 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1769154469; cv=none; b=htKTN3wJW7iqRpx6j5+C5e/jKOjwpkXfZT0CxpMgQ3wCeDbt3RaP7ecKfYFY+DPadVvpDuSCoL/JuvTJdlDa9nPOaAPGs1bhccm0B20luWseEh1kwMXjnpT1xqX0OzJ9MTfH3K/hfnnwbwV/UjVRHvwi622Iz7ZqAE9cRfHqj4M=
+	t=1769166839; cv=none; b=lDIymLgPcHtLUQLs2t1decM8gV9GlXvupBrHSXarfwUt5jAxWtK6cZr+0nci4im1fRdBIE/eZiUYlxIA+4k8IGDJ+RoXeRToUGfZhSVynXt1iD9d9MusAfrjIXTscvPXODN7YfHuzCzGm3yTg/9z2xCXRcHrwOl/MHrGNZrbCUQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1769154469; c=relaxed/simple;
-	bh=qZcCh8YaN75BaHxJI3n8DUClBttDVVefL2TarE8x2cs=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=lJsHFDrNLxQcn9mmJ0cV3XPS2T4Vd3l92YJIpk9Pgkk0W0skCQlV4my1lzyoeGCr3b4Vn8SIRgWnYA8xbLmPWo/jwFGpGzbe9AnuxVIlkkpSC4U3+yHF9xzJgLhJh8rFTXVaWu3oT0xOIExg6wiI4RkJBcW9/VO8yq2StIYGNKc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Dhz6ArAn; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1769166839; c=relaxed/simple;
+	bh=Uctvhaao4TwZFvZs8nG3yHG4j63vmM1NOm8Qll9foJY=;
+	h=From:In-Reply-To:References:Cc:Subject:MIME-Version:Content-Type:
+	 Date:Message-ID; b=BXADmYWm9rebh7eX1TbUL+WMMCk1jg5R2BOQAI2E2Vl5ZXvVcOcCYfniUvmcH86TGQ5QXbHSwZlUX7OGILyRHTxvJ5JPPgzUXYXy+lFGWGr3mrXlpCazDFdBrsJ59mnBwkIeyzwpMBcY0RLH/TJCqBT9o2uwlKuqQf8kca+GCc0=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=AEXmg4sA; arc=none smtp.client-ip=170.10.133.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Dhz6ArAn"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 1D6FAC2BC86;
-	Fri, 23 Jan 2026 07:47:49 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1769154469;
-	bh=qZcCh8YaN75BaHxJI3n8DUClBttDVVefL2TarE8x2cs=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=Dhz6ArAnF4mrMgD2V9gaW0IOdAyt0UWHdcwmUQgrPBIWvnoaDzJtzmzMJxVck5gv+
-	 zEZgJOeFD/IJQzx2Up99SCKmemnDSbXrWZlm1SAK7ny61M8KuplDc84jbfdlgQwQR6
-	 +8Rb9fJ2j1Dh4UnsHETHjtBawHKcytU2E3ai7JjVMGK0KGDMhhcMz8n/3MAGSNlsTJ
-	 lel+3wVzQK3+jEYSZdvY/T5wo14jtYZ5i4jErLaZOvUngMzlLTTOeS1t4am1xi1tfP
-	 GskVtQYN+cTM93xV5bjb1azN9mPAsYErt+ynoEzLMYagl5talCo4C2ogUWa2ojcK07
-	 lGuDTmdB4UMCw==
-Date: Thu, 22 Jan 2026 23:47:48 -0800
-From: "Darrick J. Wong" <djwong@kernel.org>
-To: Lorenzo Stoakes <lorenzo.stoakes@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Dave Hansen <dave.hansen@linux.intel.com>,
-	Thomas Gleixner <tglx@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-	Borislav Petkov <bp@alien8.de>, x86@kernel.org,
-	"H . Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Dan Williams <dan.j.williams@intel.com>,
-	Vishal Verma <vishal.l.verma@intel.com>,
-	Dave Jiang <dave.jiang@intel.com>,
-	Maarten Lankhorst <maarten.lankhorst@linux.intel.com>,
-	Maxime Ripard <mripard@kernel.org>,
-	Thomas Zimmermann <tzimmermann@suse.de>,
-	David Airlie <airlied@gmail.com>, Simona Vetter <simona@ffwll.ch>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Joonas Lahtinen <joonas.lahtinen@linux.intel.com>,
-	Rodrigo Vivi <rodrigo.vivi@intel.com>,
-	Tvrtko Ursulin <tursulin@ursulin.net>,
-	Christian Koenig <christian.koenig@amd.com>,
-	Huang Rui <ray.huang@amd.com>,
-	Matthew Auld <matthew.auld@intel.com>,
-	Matthew Brost <matthew.brost@intel.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Christian Brauner <brauner@kernel.org>, Jan Kara <jack@suse.cz>,
-	Benjamin LaHaise <bcrl@kvack.org>, Gao Xiang <xiang@kernel.org>,
-	Chao Yu <chao@kernel.org>, Yue Hu <zbestahu@gmail.com>,
-	Jeffle Xu <jefflexu@linux.alibaba.com>,
-	Sandeep Dhavale <dhavale@google.com>,
-	Hongbo Li <lihongbo22@huawei.com>,
-	Chunhai Guo <guochunhai@vivo.com>, Theodore Ts'o <tytso@mit.edu>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	Muchun Song <muchun.song@linux.dev>,
-	Oscar Salvador <osalvador@suse.de>,
-	David Hildenbrand <david@kernel.org>,
-	Konstantin Komarov <almaz.alexandrovich@paragon-software.com>,
-	Mike Marshall <hubcap@omnibond.com>,
-	Martin Brandenburg <martin@omnibond.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Reinette Chatre <reinette.chatre@intel.com>,
-	Dave Martin <Dave.Martin@arm.com>,
-	James Morse <james.morse@arm.com>, Babu Moger <babu.moger@amd.com>,
-	Carlos Maiolino <cem@kernel.org>,
-	Damien Le Moal <dlemoal@kernel.org>,
-	Naohiro Aota <naohiro.aota@wdc.com>,
-	Johannes Thumshirn <jth@kernel.org>,
-	Matthew Wilcox <willy@infradead.org>,
-	"Liam R . Howlett" <Liam.Howlett@oracle.com>,
-	Vlastimil Babka <vbabka@suse.cz>, Mike Rapoport <rppt@kernel.org>,
-	Suren Baghdasaryan <surenb@google.com>,
-	Michal Hocko <mhocko@suse.com>, Hugh Dickins <hughd@google.com>,
-	Baolin Wang <baolin.wang@linux.alibaba.com>,
-	Zi Yan <ziy@nvidia.com>, Nico Pache <npache@redhat.com>,
-	Ryan Roberts <ryan.roberts@arm.com>, Dev Jain <dev.jain@arm.com>,
-	Barry Song <baohua@kernel.org>, Lance Yang <lance.yang@linux.dev>,
-	Jann Horn <jannh@google.com>, Pedro Falcato <pfalcato@suse.de>,
-	David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E . Hallyn" <serge@hallyn.com>,
-	Yury Norov <yury.norov@gmail.com>,
-	Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-	linux-sgx@vger.kernel.org, linux-kernel@vger.kernel.org,
-	nvdimm@lists.linux.dev, linux-cxl@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
-	linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-	linux-erofs@lists.ozlabs.org, linux-ext4@vger.kernel.org,
-	linux-mm@kvack.org, ntfs3@lists.linux.dev, devel@lists.orangefs.org,
-	linux-xfs@vger.kernel.org, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	Jason Gunthorpe <jgg@nvidia.com>
-Subject: Re: [PATCH v2 09/13] mm: update all remaining mmap_prepare users to
- use vma_flags_t
-Message-ID: <20260123074748.GX5945@frogsfrogsfrogs>
-References: <cover.1769097829.git.lorenzo.stoakes@oracle.com>
- <fb1f55323799f09fe6a36865b31550c9ec67c225.1769097829.git.lorenzo.stoakes@oracle.com>
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="AEXmg4sA"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1769166832;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:to:
+	 cc:cc:mime-version:mime-version:content-type:content-type:
+	 in-reply-to:in-reply-to:references:references;
+	bh=u+zpIB6rSPmIkhyyL0wrbSSRBgkyqQ8ePd4cJB2UVC0=;
+	b=AEXmg4sAbdQIAzap/13IM1CuYgB+HAl4nvynyBsTfqY1hSJgbh3IenEJGkhMM13VAD7aae
+	XyTn9nbQwdqZUu/2wxZWbJ5CRCtgHJvubf8Zrrk+6PwOgqM+aJDhHb8wmyNLqkFcyWZuE2
+	Zy4cPjvdMWFnS+ZEpLM4Nq8qicIta7k=
+Received: from mx-prod-mc-08.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-622-KvdH0h4hO1uAyeziSG2IdA-1; Fri,
+ 23 Jan 2026 06:13:50 -0500
+X-MC-Unique: KvdH0h4hO1uAyeziSG2IdA-1
+X-Mimecast-MFC-AGG-ID: KvdH0h4hO1uAyeziSG2IdA_1769166827
+Received: from mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.4])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-08.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 20DC418002C7;
+	Fri, 23 Jan 2026 11:13:47 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.42.28.2])
+	by mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id BA48830002D1;
+	Fri, 23 Jan 2026 11:13:42 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20260121223609.1650735-1-dhowells@redhat.com>
+References: <20260121223609.1650735-1-dhowells@redhat.com>
+Cc: dhowells@redhat.com, Lukas Wunner <lukas@wunner.de>,
+    Ignat Korchagin <ignat@cloudflare.com>,
+    Jarkko Sakkinen <jarkko@kernel.org>,
+    Herbert Xu <herbert@gondor.apana.org.au>,
+    Eric Biggers <ebiggers@kernel.org>,
+    Luis Chamberlain <mcgrof@kernel.org>,
+    Petr Pavlu <petr.pavlu@suse.com>, Daniel Gomez <da.gomez@kernel.org>,
+    Sami Tolvanen <samitolvanen@google.com>,
+    "Jason A . Donenfeld" <Jason@zx2c4.com>,
+    Ard Biesheuvel <ardb@kernel.org>,
+    Stephan Mueller <smueller@chronox.de>, linux-crypto@vger.kernel.org,
+    keyrings@vger.kernel.org, linux-modules@vger.kernel.org,
+    linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v14 0/5] x509, pkcs7, crypto: Add ML-DSA and RSASSA-PSS signing
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fb1f55323799f09fe6a36865b31550c9ec67c225.1769097829.git.lorenzo.stoakes@oracle.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <1753971.1769166821.1@warthog.procyon.org.uk>
+Date: Fri, 23 Jan 2026 11:13:41 +0000
+Message-ID: <1753972.1769166821@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.4
 
-On Thu, Jan 22, 2026 at 04:06:18PM +0000, Lorenzo Stoakes wrote:
-> We will be shortly removing the vm_flags_t field from vm_area_desc so we
-> need to update all mmap_prepare users to only use the dessc->vma_flags
-> field.
-> 
-> This patch achieves that and makes all ancillary changes required to make
-> this possible.
-> 
-> This lays the groundwork for future work to eliminate the use of vm_flags_t
-> in vm_area_desc altogether and more broadly throughout the kernel.
-> 
-> While we're here, we take the opportunity to replace VM_REMAP_FLAGS with
-> VMA_REMAP_FLAGS, the vma_flags_t equivalent.
-> 
-> No functional changes intended.
-> 
-> Signed-off-by: Lorenzo Stoakes <lorenzo.stoakes@oracle.com>
-> ---
->  drivers/char/mem.c       |  6 +++---
->  drivers/dax/device.c     | 10 +++++-----
->  fs/aio.c                 |  2 +-
->  fs/erofs/data.c          |  5 +++--
->  fs/ext4/file.c           |  4 ++--
->  fs/ntfs3/file.c          |  2 +-
->  fs/orangefs/file.c       |  4 ++--
->  fs/ramfs/file-nommu.c    |  2 +-
->  fs/resctrl/pseudo_lock.c |  2 +-
->  fs/romfs/mmap-nommu.c    |  2 +-
->  fs/xfs/xfs_file.c        |  4 ++--
->  fs/zonefs/file.c         |  3 ++-
->  include/linux/dax.h      |  8 ++++----
->  include/linux/mm.h       | 24 +++++++++++++++++++-----
->  kernel/relay.c           |  2 +-
->  mm/memory.c              | 17 ++++++++---------
->  16 files changed, 56 insertions(+), 41 deletions(-)
-> 
+David Howells <dhowells@redhat.com> wrote:
 
-<snip to xfs>
+> Subject: [PATCH v14 0/5] x509, pkcs7, crypto: Add ML-DSA and RSASSA-PSS
+>  signing
 
-> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-> index 7874cf745af3..1238ec018bc7 100644
-> --- a/fs/xfs/xfs_file.c
-> +++ b/fs/xfs/xfs_file.c
-> @@ -1974,14 +1974,14 @@ xfs_file_mmap_prepare(
->  	 * We don't support synchronous mappings for non-DAX files and
->  	 * for DAX files if underneath dax_device is not synchronous.
->  	 */
-> -	if (!daxdev_mapping_supported(desc->vm_flags, file_inode(file),
-> +	if (!daxdev_mapping_supported(desc, file_inode(file),
->  				      target->bt_daxdev))
->  		return -EOPNOTSUPP;
->  
->  	file_accessed(file);
->  	desc->vm_ops = &xfs_file_vm_ops;
->  	if (IS_DAX(inode))
-> -		desc->vm_flags |= VM_HUGEPAGE;
-> +		vma_desc_set_flags(desc, VMA_HUGEPAGE_BIT);
+I forgot to edit the cover to reflect I dropped RSASSA-PSS support from the
+patchset for now.
 
-Looks good to me,
-Acked-by: "Darrick J. Wong" <djwong@kernel.org>
+David
 
---D
-
->  	return 0;
->  }
->  
