@@ -1,607 +1,272 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+Received: from DM5PR21CU001.outbound.protection.outlook.com (mail-centralusazon11011021.outbound.protection.outlook.com [52.101.62.21])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CE5FD35DD12;
-	Tue, 27 Jan 2026 14:53:24 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
-ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1769525607; cv=none; b=fBTy/4CLytcGdiK4V2KrN78IpwrdegEqPbMjETL55hYa4Jx/sja3Pd4gQ5iIKqS/wXH86d2NI+/C/W8nCoI/kNJLOndhKbmR06+vStSqSjBD3yvMCTvWktMa+OPKvSYyXtlgacmJBUmjAkilFiYgIoPlUOSNwhv1FRs8zwaJAYA=
-ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1769525607; c=relaxed/simple;
-	bh=y3ks8vciy7VCVy0nXBy8GhcqEKRxjBszZcFcig/SlP8=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=TLl7Yy3DG7p6AY03/jG/l3yCQjpnrFabG+duKIzShmiq6zs4KnNvLUUZuF6cTawLHfAyAX4SxdtgQJtfylIdS44Jk/WSRm7peH+n5jC6JUSCPqBWvecJQgsqiaKoxoKPKJru2HBkDynF3G7MTBjiGiL9l4Zq11soFO+4N0l2a2o=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=CNM0sEXf; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5AC1B28469A;
+	Tue, 27 Jan 2026 21:37:01 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=fail smtp.client-ip=52.101.62.21
+ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1769549822; cv=fail; b=Ldt/ZO5qJxzXq55DVjVwns5jbZs71wG7qudj6ZLxmlCIhNrvBA+IQJYtrqcFsU+OXFCyjUi7wNQoDNXw3PzmlUJvoicfew2bUmxq1fv2y7wvqjqNzapbehu6CMONR/mccfVR/GyRPsooPH0zilGHLN3Xu73QjqCZvGjrxpUAkzE=
+ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1769549822; c=relaxed/simple;
+	bh=jGK45oPnIug8Tg8H9nYMWNWysr8GBSUjYm03cmpFyyc=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:Content-Type:
+	 Content-Disposition:In-Reply-To:MIME-Version; b=IXSfhQ75VQgRCl7PpcpsmLDfeujAsjTap+xQH5GyAHaV6JkylkbCIjifbnMzPcTGsw7a/ZiugD9LAlDxeiC+/b7nADVhmi2SNFe7LsgzYjUlKFOJHXZa11MEFyATR6iSyJr7QN8RcU9zcjWcqK7UD7jUSACPhW97BqiHLm0Htnc=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=nvidia.com; spf=fail smtp.mailfrom=nvidia.com; dkim=pass (2048-bit key) header.d=Nvidia.com header.i=@Nvidia.com header.b=RpMkBW0T; arc=fail smtp.client-ip=52.101.62.21
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=nvidia.com
+Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=nvidia.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="CNM0sEXf"
-Received: from pps.filterd (m0360072.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 60R8OYOo016222;
-	Tue, 27 Jan 2026 14:53:02 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:date:from:in-reply-to:message-id
-	:mime-version:references:subject:to; s=pp1; bh=9Fm0jSaawrywiM+j+
-	JokalnFc+ZmwEdF3JyuNbZO5uQ=; b=CNM0sEXfgjZD5tIqqLDPqq1RZe1zHlIjP
-	jOVNG2eKT6y4yYa2utjyeOthJh5ugOZxu0eJWejRzMEexIrDbkjKwwFwLd2NRIoZ
-	MefyAI0PdVYEBnySDYsi6BaZpooaLb7yabFrlmvjaCC9aaXMvz7SAcf2pV50xmqW
-	x9Pe4od0ZKNYjdl1cBFF5dDXTWVy7kmRhozkmEfUjjXXKWfnQmJH3hlAhpOC7BKy
-	fVnX33R53mqL4jLlEZDTzLpeMxdfOVTWpr4LF+FnWjt9ohMoJasdKhKh/fyL2OuM
-	O7IgAnFTIfaydfxIQATXWnB6K+d5ObchtJuAS/p0F82AEJyB6fOYg==
-Received: from pps.reinject (localhost [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4bvnr644fj-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Tue, 27 Jan 2026 14:53:02 +0000 (GMT)
-Received: from m0360072.ppops.net (m0360072.ppops.net [127.0.0.1])
-	by pps.reinject (8.18.1.12/8.18.0.8) with ESMTP id 60REhpsP020393;
-	Tue, 27 Jan 2026 14:53:01 GMT
-Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4bvnr644fd-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Tue, 27 Jan 2026 14:53:01 +0000 (GMT)
-Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma12.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 60RDBE3a031067;
-	Tue, 27 Jan 2026 14:53:00 GMT
-Received: from smtprelay02.fra02v.mail.ibm.com ([9.218.2.226])
-	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4bw8dsh4he-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Tue, 27 Jan 2026 14:53:00 +0000
-Received: from smtpav02.fra02v.mail.ibm.com (smtpav02.fra02v.mail.ibm.com [10.20.54.101])
-	by smtprelay02.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 60REquTo46989700
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Tue, 27 Jan 2026 14:52:56 GMT
-Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 9C67220043;
-	Tue, 27 Jan 2026 14:52:56 +0000 (GMT)
-Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 6CA1720040;
-	Tue, 27 Jan 2026 14:52:53 +0000 (GMT)
-Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.ibm.com.com (unknown [9.124.210.108])
-	by smtpav02.fra02v.mail.ibm.com (Postfix) with ESMTP;
-	Tue, 27 Jan 2026 14:52:53 +0000 (GMT)
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: maddy@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com,
-        christophe.leroy@csgroup.eu, James.Bottomley@HansenPartnership.com,
-        jarkko@kernel.org, zohar@linux.ibm.com, nayna@linux.ibm.com,
-        rnsastry@linux.ibm.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, ssrish@linux.ibm.com
-Subject: [PATCH v5 4/6] pseries/plpks: add HCALLs for PowerVM Key Wrapping Module
-Date: Tue, 27 Jan 2026 20:22:26 +0530
-Message-ID: <20260127145228.48320-5-ssrish@linux.ibm.com>
-X-Mailer: git-send-email 2.52.0
-In-Reply-To: <20260127145228.48320-1-ssrish@linux.ibm.com>
-References: <20260127145228.48320-1-ssrish@linux.ibm.com>
+	dkim=pass (2048-bit key) header.d=Nvidia.com header.i=@Nvidia.com header.b="RpMkBW0T"
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=jXNpxYZPw8pXapf+T9FPhcGZWo81ilcCLkKNA1fXrkUisP4wmezqsiygZBn4tjJ85McBX7zoVVyUbyB0jA8udwCXuuW1b2/DyWjQ7+evquA7AgwkiVLMry9NZMsbhIHgcvkmyIIBa8yvPQExws94BLY6KJXl9cBk6fYPgSHKr1WJk6Rbz/h7U7ZyTIPJBQvN37ghVpgIVW55OoCg6kR5pTsy0DXj3+GzLKcMTWI8KnQovtkaNXTs55JV75iQIsbB1vRqTAJGJOnoqPabLcE4VnTNrAFmZbq1eXl2Kle6srukRQs/4DT3sPI2atpHiEY2DK0sEgHa6Qkm3otXyVS+cw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=+qv8p9swejJ40jcF2xi9qe5Fp2Kt5Ct6peel7ONdu54=;
+ b=kQN89yT0riLtEG9ahpe/BtL7ofgc4VE/SO++HFs0aPWjBUIGUeh5p7csO9dfxSsRcXn+JPFdHY9PKPeoNt1reNpjbNA2wbYdwPQBhSpO/iTSY+YodvcOvjwTakkTbWPCU571iul5FXQaD3Mb669+z4Hd9xlCYOm9pYom/z7rT5RcWxM0GEe4iXueonGsJzhZGTX8vELL0UbwQHWH3Ry5Qxo9j0ahs1js0o7N6odREuiFqtA2fWHW01am6DEm41xSbOl4FbMBDEcroez3hQiPl3xtvEzje1qRykuhgfqCDq0NCMzeyO6uMKcvO2B7Rd9l1fzArC6KvWrwqdc5BFerzA==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=nvidia.com; dmarc=pass action=none header.from=nvidia.com;
+ dkim=pass header.d=nvidia.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=Nvidia.com;
+ s=selector2;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=+qv8p9swejJ40jcF2xi9qe5Fp2Kt5Ct6peel7ONdu54=;
+ b=RpMkBW0T0y/KsE3WQkthBOhVVtR/hQf+VW8+bHb+Tvn5tH4UD6UezSgDNvw9LmjM9MFzoB3YYKu7CzsR7j0YIIOB0mxV7JPYZwK4R8FTO1IoKEfvMRdhuius6maWGWb39QIQG89FjmSt9E/EwkUZCVqoi2Vhn9X8gzrHvrFKzt9Qp+rYTfokW6TJCFaG62JFckOXaibw6hxFLhSAQM35moJCyHcGcVeHE2F4ZrbMxi5HhMuc45Rm14kNrIyLELR6kfgo8Pkfo6NLtp9AN4DxHZaJKLoDSC0neFPzwgfqhA7iujtIBcIVWJCD0JZf8cqskaUKT2KPNOzZpFYefqWVNA==
+Authentication-Results: dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=nvidia.com;
+Received: from PH0PR12MB8800.namprd12.prod.outlook.com (2603:10b6:510:26f::12)
+ by DM4PR12MB6181.namprd12.prod.outlook.com (2603:10b6:8:a9::22) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9564.7; Tue, 27 Jan
+ 2026 21:36:49 +0000
+Received: from PH0PR12MB8800.namprd12.prod.outlook.com
+ ([fe80::f79d:ddc5:2ad7:762d]) by PH0PR12MB8800.namprd12.prod.outlook.com
+ ([fe80::f79d:ddc5:2ad7:762d%4]) with mapi id 15.20.9542.010; Tue, 27 Jan 2026
+ 21:36:49 +0000
+Date: Tue, 27 Jan 2026 16:36:44 -0500
+From: Yury Norov <ynorov@nvidia.com>
+To: Lorenzo Stoakes <lorenzo.stoakes@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Dave Hansen <dave.hansen@linux.intel.com>,
+	Thomas Gleixner <tglx@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+	Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+	"H . Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Dan Williams <dan.j.williams@intel.com>,
+	Vishal Verma <vishal.l.verma@intel.com>,
+	Dave Jiang <dave.jiang@intel.com>,
+	Maarten Lankhorst <maarten.lankhorst@linux.intel.com>,
+	Maxime Ripard <mripard@kernel.org>,
+	Thomas Zimmermann <tzimmermann@suse.de>,
+	David Airlie <airlied@gmail.com>, Simona Vetter <simona@ffwll.ch>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Joonas Lahtinen <joonas.lahtinen@linux.intel.com>,
+	Rodrigo Vivi <rodrigo.vivi@intel.com>,
+	Tvrtko Ursulin <tursulin@ursulin.net>,
+	Christian Koenig <christian.koenig@amd.com>,
+	Huang Rui <ray.huang@amd.com>,
+	Matthew Auld <matthew.auld@intel.com>,
+	Matthew Brost <matthew.brost@intel.com>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Christian Brauner <brauner@kernel.org>, Jan Kara <jack@suse.cz>,
+	Benjamin LaHaise <bcrl@kvack.org>, Gao Xiang <xiang@kernel.org>,
+	Chao Yu <chao@kernel.org>, Yue Hu <zbestahu@gmail.com>,
+	Jeffle Xu <jefflexu@linux.alibaba.com>,
+	Sandeep Dhavale <dhavale@google.com>,
+	Hongbo Li <lihongbo22@huawei.com>,
+	Chunhai Guo <guochunhai@vivo.com>, Theodore Ts'o <tytso@mit.edu>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	Muchun Song <muchun.song@linux.dev>,
+	Oscar Salvador <osalvador@suse.de>,
+	David Hildenbrand <david@kernel.org>,
+	Konstantin Komarov <almaz.alexandrovich@paragon-software.com>,
+	Mike Marshall <hubcap@omnibond.com>,
+	Martin Brandenburg <martin@omnibond.com>,
+	Tony Luck <tony.luck@intel.com>,
+	Reinette Chatre <reinette.chatre@intel.com>,
+	Dave Martin <Dave.Martin@arm.com>,
+	James Morse <james.morse@arm.com>, Babu Moger <babu.moger@amd.com>,
+	Carlos Maiolino <cem@kernel.org>,
+	Damien Le Moal <dlemoal@kernel.org>,
+	Naohiro Aota <naohiro.aota@wdc.com>,
+	Johannes Thumshirn <jth@kernel.org>,
+	Matthew Wilcox <willy@infradead.org>,
+	"Liam R . Howlett" <Liam.Howlett@oracle.com>,
+	Vlastimil Babka <vbabka@suse.cz>, Mike Rapoport <rppt@kernel.org>,
+	Suren Baghdasaryan <surenb@google.com>,
+	Michal Hocko <mhocko@suse.com>, Hugh Dickins <hughd@google.com>,
+	Baolin Wang <baolin.wang@linux.alibaba.com>,
+	Zi Yan <ziy@nvidia.com>, Nico Pache <npache@redhat.com>,
+	Ryan Roberts <ryan.roberts@arm.com>, Dev Jain <dev.jain@arm.com>,
+	Barry Song <baohua@kernel.org>, Lance Yang <lance.yang@linux.dev>,
+	Jann Horn <jannh@google.com>, Pedro Falcato <pfalcato@suse.de>,
+	David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	Yury Norov <yury.norov@gmail.com>,
+	Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+	linux-sgx@vger.kernel.org, linux-kernel@vger.kernel.org,
+	nvdimm@lists.linux.dev, linux-cxl@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
+	linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+	linux-erofs@lists.ozlabs.org, linux-ext4@vger.kernel.org,
+	linux-mm@kvack.org, ntfs3@lists.linux.dev, devel@lists.orangefs.org,
+	linux-xfs@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	Jason Gunthorpe <jgg@nvidia.com>
+Subject: Re: [PATCH v2 00/13] mm: add bitmap VMA flag helpers and convert all
+ mmap_prepare to use them
+Message-ID: <aXkv7DSUbdY-RD5d@yury>
+References: <cover.1769097829.git.lorenzo.stoakes@oracle.com>
+ <aXjDaN4pwEyyBy-I@yury>
+ <5f764622-fd45-4c49-8ecb-7dc4d1fa48d6@lucifer.local>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5f764622-fd45-4c49-8ecb-7dc4d1fa48d6@lucifer.local>
+X-ClientProxiedBy: BN0PR04CA0183.namprd04.prod.outlook.com
+ (2603:10b6:408:e9::8) To PH0PR12MB8800.namprd12.prod.outlook.com
+ (2603:10b6:510:26f::12)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwMTI3MDEyMSBTYWx0ZWRfXzAQGl9mHYPId
- iWxsvAz/KVoADaEz8ZpAfuLpWywF70mElwHTepasMd/HSmMUYuIXXeAsIGlonebUH1v2unoZR6f
- UwEDtotUfRqpzSeAw90vdJwGmMvkOt4QjnBuL3w+W/tKsmYKEKcWgIb3sThmTwel8D2sB8pJe61
- La/tZV4DkO38uz3BfXDnK/IIyzRSe27Ul5fBG7vXHVO/rR0XPoM2ujvigJRPv0Sl/07EOtJLeKj
- Dbi41aWovlZiZhfbTmnsxyPPzLc1Hw0Y/jK/UVJAp1Hc1V1aHk7qp/ZZCKlPg1YOwXL3EXUajTx
- K5p1/SCeOXMNsfW7Ccq3nqyBN04wnP8+yb8RkEdfDklqPNtIkLS0MzOEMHsXSaFIgWtpa+ynjUj
- 3zV1Izcnv4VH2mlsY0jyXM5wp8INhh6sauVTn2oXvaEkU2ar6EK6x0+46EJL3pqb3+4rDPETLpI
- Gw6+fwPBIlUY5Q6L9dg==
-X-Proofpoint-GUID: rXf7kBJpVpDe7ER1usz1NYs5q6P5weJ_
-X-Proofpoint-ORIG-GUID: b0VZXbCFY5a4jrZWNjwDB6b7lLSWqF69
-X-Authority-Analysis: v=2.4 cv=X+Vf6WTe c=1 sm=1 tr=0 ts=6978d14e cx=c_pps
- a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
- a=vUbySO9Y5rIA:10 a=VkNPw1HP01LnGYTKEx00:22 a=VnNF1IyMAAAA:8
- a=nO4dFLMeAchwtJrxA4IA:9 a=POYjf8jjcDEwoKyR:21
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1121,Hydra:6.1.51,FMLib:17.12.100.49
- definitions=2026-01-27_03,2026-01-27_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- priorityscore=1501 suspectscore=0 impostorscore=0 lowpriorityscore=0
- clxscore=1015 spamscore=0 adultscore=0 malwarescore=0 bulkscore=0
- phishscore=0 classifier=typeunknown authscore=0 authtc= authcc=
- route=outbound adjust=0 reason=mlx scancount=1 engine=8.19.0-2601150000
- definitions=main-2601270121
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: PH0PR12MB8800:EE_|DM4PR12MB6181:EE_
+X-MS-Office365-Filtering-Correlation-Id: 9715e4eb-27eb-46f4-124e-08de5dec2d78
+X-MS-Exchange-SenderADCheck: 1
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam: BCL:0;ARA:13230040|1800799024|366016|7416014|376014;
+X-Microsoft-Antispam-Message-Info:
+	=?us-ascii?Q?/CxFGOmbCbqIf4nVNlqlax8EqAx+3g0xSd7lsfdJekbBxdAXPS7XO7aq5Aa/?=
+ =?us-ascii?Q?Fz3XrLTea5juPeYALAIdLfSryni+ZvFO1A6JgvH7pfyLM1eocH/0P/c2LcqK?=
+ =?us-ascii?Q?TF2wNlR47IAtORpVVCNwNoyezQxl232MhFdHIA08ROQ3Q2Mt4naD1klB8XqK?=
+ =?us-ascii?Q?W6pJUpdod/z1Rmj2BUIzrkkKbz75ckPMHmHS+OVlLLozgO/30jPyWgKxsN72?=
+ =?us-ascii?Q?WkgwunEbCfIa16G+cpcoTUFEHwtBwpIKfFOaQc1UEsFPdz+cROavwqJu914/?=
+ =?us-ascii?Q?MzUQQ4gj6SgI4sr4TIlHGILs+sPS5M2rNjgo9GWFdLuGfuvrYh3adDe3dgQ7?=
+ =?us-ascii?Q?OtioEdB8AYQiijLs+iEx4Ar5BDIK/9fima6bDf+rRIm3iTZtAen7l2LqUzsF?=
+ =?us-ascii?Q?bcOp5Fv6EhekEfiXNdnqpe1qJeg6+GjkFVZhCpbhiQ116ZfzQzaqfPzm43e/?=
+ =?us-ascii?Q?kExvyrWEryUcTz+v9WwZGBPXSeIybka4f1qkmaIW2kOG+sONJbdr2nhnMwO0?=
+ =?us-ascii?Q?hX8Z8Pv6anPYiYeoz/yuGNH+/o4RsCpjtXFU2bdCmlRdZ9U51Si0TwPEjefs?=
+ =?us-ascii?Q?sg7gvzQihC4S8HsSAL7UPBJGaty0K0CB1Y3gTszxXUa9xgPbQLMzWf5y3aVx?=
+ =?us-ascii?Q?Z7yTgjDsToTGh6uz50HJmZqnc9KeoJOVMlTfGLRvlOF9kpx2UQKO6VHpDv4L?=
+ =?us-ascii?Q?UhMTx/o7SvqxavW/oezKQvSRj7Es+wj9rCoVfHuu66ewQX2uM17UhcNJ7umS?=
+ =?us-ascii?Q?lorvi0wtzlhrpZj2cpWefb1Ijlnp9gEO78Ru2HTnj2IcEKttGtMA+SVvY8qg?=
+ =?us-ascii?Q?OAXPv0I44fEXgaQ7jpC7AL6/ReD2P8KxNJf2D35zXcI5afE2j4yHXjWPLroW?=
+ =?us-ascii?Q?l3MtlrgtraS4S5ev+4tpTIGPKyFzvinb35mnyaFKkhlVO/ivMny6IDUepBAV?=
+ =?us-ascii?Q?blCrYzGS6YiOdOnRy8zVeBNO0UJKtIlgjUDw3JMrd6kLUdBe9Q8CbndMMcTa?=
+ =?us-ascii?Q?BCw2qFy9gb4CH3c3yZKQuKF8Ybw9Xx3uu1wDipQFP9Yq7fY/UfQddW0NcCdf?=
+ =?us-ascii?Q?Uha9UJpw75t1oJkVumk5S8+0XyFcWWoq2kNKwXOcbxtww4YlMRhFlB4K8Rzy?=
+ =?us-ascii?Q?AXcezYr1yQzBniT+lXwUnO+Oij6E4IY6ZKLGxGSd9vj5cm6zsqxbEXqxmARs?=
+ =?us-ascii?Q?+zOp9S1y3uDbY2ojcJSHmZL23O9X1h8GTGmN8s6raLkhtU7IGC9grgw4pqNV?=
+ =?us-ascii?Q?yOh08QRCT2pnLfhoXvL1uZpJbKb64LZcqVzvaupRbfcP2m6ArxrSiTPmgVME?=
+ =?us-ascii?Q?x6TYoYmTPQxrqaQ72nViEA3VJ5S+luV33Ix64fwWxnbwZw6K/sXmwE+xJZSw?=
+ =?us-ascii?Q?zEmywJg3Pzt2bltVvvof3584zlLOKMQ9ZOq8Re2gYszykswkTGRW/GWxJhOh?=
+ =?us-ascii?Q?bQWi9IAvjjd8YyrD6eNF7WKJUHH5+G334ug4uqO7FjiAxjYaXjZPqkT9rMvj?=
+ =?us-ascii?Q?2hdXMlUhLEe9m4xQjzQftxdg5D/BWdWe7joDKNvQ7gyx5dEl9tAqrmZVMZkA?=
+ =?us-ascii?Q?rF7aZYX+AxkDVe9Bn9c=3D?=
+X-Forefront-Antispam-Report:
+	CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:PH0PR12MB8800.namprd12.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230040)(1800799024)(366016)(7416014)(376014);DIR:OUT;SFP:1101;
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-MessageData-0:
+	=?us-ascii?Q?nVr7vf4K4dD5oV9cnVY2LyP/cQnbgrl/4k7k5SNCjndzCk3ODsBCSvLNneT0?=
+ =?us-ascii?Q?MHVVrq8U05fL14fg1qZ/ePW5eAXd0QhqbijK3TfxQFAYxQDv8Av4P2kkjVtP?=
+ =?us-ascii?Q?esLecIFlRrj7+uwllckDyzTvoNnltXYtv0a9giyrDj7ea4lv5pMwCzUm80yg?=
+ =?us-ascii?Q?vA8JjZVAyBJYTc5QwKtQ5ZoqztIGE+OK5C0ehUqaQ/RHJukz/NRLr92ErW60?=
+ =?us-ascii?Q?nyJyMJykBnT8SQv7XVzgRVFCEewY78kKX4UC1nD8WOTZ0zsJ29inMt0kfedP?=
+ =?us-ascii?Q?Q4Tohnw9x4D5anQDoynDGC8EaAZ5TzYJkGQ1PJ1OPZYFWHCb3LOoD/hnQ9NN?=
+ =?us-ascii?Q?nal46GgENpV0VBjafRfN+0JCFgXvh+bHGaxuMUgl0Pq82My4+RaqjkiG0v+g?=
+ =?us-ascii?Q?asFXL5BIKsH6QCYFY5+qkk8sQ1HoWWqhz2v+8APmtsFqNwtIXbgoT8IShJTj?=
+ =?us-ascii?Q?T7BjS9+R+QLtvo2klfwOsncZTnodVLi10USkU+Y5yws7GTsy+bbVtLnP3gPD?=
+ =?us-ascii?Q?Mc3hbuj4YEE/x2Dt67VL/E+ufl93u5CXmPAqR6HSMh9z4QmUFU7YisAw2Mco?=
+ =?us-ascii?Q?qviE20o7ZJ3mWeqD4szpnpr+k7xMBDE0PyKD7Zsr+3c/qR1tPSdYII9e4V03?=
+ =?us-ascii?Q?zLlZUitJB6RTVV3KVaBw8B2XSP4VYvdvul5oFfCRR175xuNsn85XH9cwvsle?=
+ =?us-ascii?Q?RzH3G9cam9ECRPekQUtvdW4dghZD/biGnuZ50UwtwJPAzq8ySk0gwsHz6Lme?=
+ =?us-ascii?Q?UIYiOqo5F897jgCwErUcEO/BjfWffpjQEkvD0vvytSTf939CWWKy9z/W+YVz?=
+ =?us-ascii?Q?mMCsF46Q/KZO53dATdRbatRFfxQwpgPmaBEgarRlD8unm2icPK05kLlF0M88?=
+ =?us-ascii?Q?/eWHYdfcYAyYqV1j9CwmD2JK3ZMuCR+U6+h5IJdzQQd8OYSliyQsKsuKDe2l?=
+ =?us-ascii?Q?xoxwCzRxMrGJ6vjMVsCgJ5IWrEFcdhklsyA7I84X5ugfpVSGeCkeWPETveWm?=
+ =?us-ascii?Q?3iUvR1NH+Z10MzLqYMGbONK/Vhozr6nMyWZLosRPPIq6GrvMhxBysFVcBxby?=
+ =?us-ascii?Q?dSeoXvQcAUvmk4w1B9VmGu6aFSq7aZZsR2ZcRmBUE+sDNm436W7qIRDDcAzx?=
+ =?us-ascii?Q?lHWbdGpu8vmvvofm8Bfzl3+abzt6FPplapMlAbZsRj0zaOgg2OhHJdjmHb7A?=
+ =?us-ascii?Q?sSsfP9Q7fcqw2xB8OGjwnfMPZYJUiOGj8KdGCv3y09wHxgHOIFarzxjda8q+?=
+ =?us-ascii?Q?IWgxqeOF3ucvO4YaZLCfslnvnmON3MO5pfB7omAQrIr2zm5i8zS5R/kNep8M?=
+ =?us-ascii?Q?CkR0Pjh8UR/0a131NKfPrsYUSaQOsgzdH9ytbGoqgOPVUdkas/U2F+/YdfQ1?=
+ =?us-ascii?Q?K0B1eh6xiCHpJhuqT+Lxo6mgphnMR7ImcuJTP6geQKgy/Sp4Q8xfyhn7n2pJ?=
+ =?us-ascii?Q?gvZUSr3z2EMATrKxrxv1vkG+Dn6HbyBgxeLHeUuJ1SqpRvPyATqfaVxmcc6Q?=
+ =?us-ascii?Q?/YURxDwmu9gLa5EvFW1lmq781zUEKX4v76bRAisP9Mu7zLFhaaD1Zit2vJbj?=
+ =?us-ascii?Q?ad7w3J7g5ZtdcgJ3r5CV35pu9ytgR0id0DHV/vz9VnGCu8Eca9wDqSNpj+Rk?=
+ =?us-ascii?Q?znOA6BVLTS49d6JyOKzXkuB9F4/IzcFf8oVw9/kdIVJUAIScY8+ZE9nH3u/g?=
+ =?us-ascii?Q?BjK8dxAQ0HkRg96p/a+qEdjRnwgHv0gwciA3o4DU6NsvOOMuB0/dgGDXrIWE?=
+ =?us-ascii?Q?cfHoqYuTMw=3D=3D?=
+X-OriginatorOrg: Nvidia.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 9715e4eb-27eb-46f4-124e-08de5dec2d78
+X-MS-Exchange-CrossTenant-AuthSource: PH0PR12MB8800.namprd12.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 27 Jan 2026 21:36:49.2117
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 43083d15-7273-40c1-b7db-39efd9ccc17a
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: LJQwMiYJ1JxNiQOeUsQsB3o0tMV1NN87hW/jO/8uLDBsvXWmb3F3KJNuykw328t2Qcr1qGkVlVVw3FAcJeZsmA==
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM4PR12MB6181
 
-The hypervisor generated wrapping key is an AES-GCM-256 symmetric key which
-is stored in a non-volatile, secure, and encrypted storage called the Power
-LPAR Platform KeyStore. It has policy based protections that prevent it
-from being read out or exposed to the user.
+On Tue, Jan 27, 2026 at 02:40:03PM +0000, Lorenzo Stoakes wrote:
+> On Tue, Jan 27, 2026 at 08:53:44AM -0500, Yury Norov wrote:
+> > On Thu, Jan 22, 2026 at 04:06:09PM +0000, Lorenzo Stoakes wrote:
 
-Implement H_PKS_GEN_KEY, H_PKS_WRAP_OBJECT, and H_PKS_UNWRAP_OBJECT HCALLs
-to enable using the PowerVM Key Wrapping Module (PKWM) as a new trust
-source for trusted keys. Disallow H_PKS_READ_OBJECT, H_PKS_SIGNED_UPDATE,
-and H_PKS_WRITE_OBJECT for objects with the 'wrapping key' policy set.
-Capture the availability status for the H_PKS_WRAP_OBJECT interface.
+...
 
-Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
-Reviewed-by: Nayna Jain <nayna@linux.ibm.com>
----
- Documentation/arch/powerpc/papr_hcalls.rst |  43 +++
- arch/powerpc/include/asm/plpks.h           |  10 +
- arch/powerpc/platforms/pseries/plpks.c     | 343 ++++++++++++++++++++-
- 3 files changed, 394 insertions(+), 2 deletions(-)
+> > Even if you expect adding more flags, u128 would double your capacity,
+> > and people will still be able to use language-supported operation on
+> > the bits in flag. Which looks simpler to me...
+> 
+> u128 isn't supported on all architectures, VMA flags have to have absolutely
+ 
+What about big integers?
 
-diff --git a/Documentation/arch/powerpc/papr_hcalls.rst b/Documentation/arch/powerpc/papr_hcalls.rst
-index 805e1cb9bab9..14e39f095a1c 100644
---- a/Documentation/arch/powerpc/papr_hcalls.rst
-+++ b/Documentation/arch/powerpc/papr_hcalls.rst
-@@ -300,6 +300,49 @@ H_HTM supports setup, configuration, control and dumping of Hardware Trace
- Macro (HTM) function and its data. HTM buffer stores tracing data for functions
- like core instruction, core LLAT and nest.
- 
-+**H_PKS_GEN_KEY**
-+
-+| Input: authorization, objectlabel, objectlabellen, policy, out, outlen
-+| Out: *Hypervisor Generated Key, or None when the wrapping key policy is set*
-+| Return Value: *H_SUCCESS, H_Function, H_State, H_R_State, H_Parameter, H_P2,
-+                H_P3, H_P4, H_P5, H_P6, H_Authority, H_Nomem, H_Busy, H_Resource,
-+                H_Aborted*
-+
-+H_PKS_GEN_KEY is used to have the hypervisor generate a new random key.
-+This key is stored as an object in the Power LPAR Platform KeyStore with
-+the provided object label. With the wrapping key policy set the key is only
-+visible to the hypervisor, while the key's label would still be visible to
-+the user. Generation of wrapping keys is supported only for a key size of
-+32 bytes.
-+
-+**H_PKS_WRAP_OBJECT**
-+
-+| Input: authorization, wrapkeylabel, wrapkeylabellen, objectwrapflags, in,
-+|        inlen, out, outlen, continue-token
-+| Out: *continue-token, byte size of wrapped object, wrapped object*
-+| Return Value: *H_SUCCESS, H_Function, H_State, H_R_State, H_Parameter, H_P2,
-+                H_P3, H_P4, H_P5, H_P6, H_P7, H_P8, H_P9, H_Authority, H_Invalid_Key,
-+                H_NOT_FOUND, H_Busy, H_LongBusy, H_Aborted*
-+
-+H_PKS_WRAP_OBJECT is used to wrap an object using a wrapping key stored in the
-+Power LPAR Platform KeyStore and return the wrapped object to the caller. The
-+caller provides a label to a wrapping key with the 'wrapping key' policy set,
-+which must have been previously created with H_PKS_GEN_KEY. The provided object
-+is then encrypted with the wrapping key and additional metadata and the result
-+is returned to the caller.
-+
-+
-+**H_PKS_UNWRAP_OBJECT**
-+
-+| Input: authorization, objectwrapflags, in, inlen, out, outlen, continue-token
-+| Out: *continue-token, byte size of unwrapped object, unwrapped object*
-+| Return Value: *H_SUCCESS, H_Function, H_State, H_R_State, H_Parameter, H_P2,
-+                H_P3, H_P4, H_P5, H_P6, H_P7, H_Authority, H_Unsupported, H_Bad_Data,
-+                H_NOT_FOUND, H_Invalid_Key, H_Busy, H_LongBusy, H_Aborted*
-+
-+H_PKS_UNWRAP_OBJECT is used to unwrap an object that was previously warapped with
-+H_PKS_WRAP_OBJECT.
-+
- References
- ==========
- .. [1] "Power Architecture Platform Reference"
-diff --git a/arch/powerpc/include/asm/plpks.h b/arch/powerpc/include/asm/plpks.h
-index 8f034588fdf7..e87f90e40d4e 100644
---- a/arch/powerpc/include/asm/plpks.h
-+++ b/arch/powerpc/include/asm/plpks.h
-@@ -113,6 +113,16 @@ void plpks_early_init_devtree(void);
- int plpks_populate_fdt(void *fdt);
- 
- int plpks_config_create_softlink(struct kobject *from);
-+
-+bool plpks_wrapping_is_supported(void);
-+
-+int plpks_gen_wrapping_key(void);
-+
-+int plpks_wrap_object(u8 **input_buf, u32 input_len, u16 wrap_flags,
-+		      u8 **output_buf, u32 *output_len);
-+
-+int plpks_unwrap_object(u8 **input_buf, u32 input_len,
-+			u8 **output_buf, u32 *output_len);
- #else // CONFIG_PSERIES_PLPKS
- static inline bool plpks_is_available(void) { return false; }
- static inline u16 plpks_get_passwordlen(void) { BUILD_BUG(); }
-diff --git a/arch/powerpc/platforms/pseries/plpks.c b/arch/powerpc/platforms/pseries/plpks.c
-index 4a08f51537c8..038ecf8f6d6b 100644
---- a/arch/powerpc/platforms/pseries/plpks.c
-+++ b/arch/powerpc/platforms/pseries/plpks.c
-@@ -9,6 +9,32 @@
- 
- #define pr_fmt(fmt) "plpks: " fmt
- 
-+#define PLPKS_WRAPKEY_COMPONENT	"PLPKSWR"
-+#define PLPKS_WRAPKEY_NAME	"default-wrapping-key"
-+
-+/*
-+ * To 4K align the {input, output} buffers to the {UN}WRAP H_CALLs
-+ */
-+#define PLPKS_WRAPPING_BUF_ALIGN	4096
-+
-+/*
-+ * To ensure the output buffer's length is at least 1024 bytes greater
-+ * than the input buffer's length during the WRAP H_CALL
-+ */
-+#define PLPKS_WRAPPING_BUF_DIFF	1024
-+
-+#define PLPKS_WRAP_INTERFACE_BIT	3
-+#define PLPKS_WRAPPING_KEY_LENGTH	32
-+
-+#define WRAPFLAG_BE_BIT_SET(be_bit) \
-+	BIT_ULL(63 - (be_bit))
-+
-+#define WRAPFLAG_BE_GENMASK(be_bit_hi, be_bit_lo) \
-+	GENMASK_ULL(63 - (be_bit_hi), 63 - (be_bit_lo))
-+
-+#define WRAPFLAG_BE_FIELD_PREP(be_bit_hi, be_bit_lo, val) \
-+	FIELD_PREP(WRAPFLAG_BE_GENMASK(be_bit_hi, be_bit_lo), (val))
-+
- #include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/io.h>
-@@ -19,6 +45,7 @@
- #include <linux/of_fdt.h>
- #include <linux/libfdt.h>
- #include <linux/memblock.h>
-+#include <linux/bitfield.h>
- #include <asm/hvcall.h>
- #include <asm/machdep.h>
- #include <asm/plpks.h>
-@@ -39,6 +66,7 @@ static u32 supportedpolicies;
- static u32 maxlargeobjectsize;
- static u64 signedupdatealgorithms;
- static u64 wrappingfeatures;
-+static bool wrapsupport;
- 
- struct plpks_auth {
- 	u8 version;
-@@ -283,6 +311,7 @@ static int _plpks_get_config(void)
- 	maxlargeobjectsize = be32_to_cpu(config->maxlargeobjectsize);
- 	signedupdatealgorithms = be64_to_cpu(config->signedupdatealgorithms);
- 	wrappingfeatures = be64_to_cpu(config->wrappingfeatures);
-+	wrapsupport = config->flags & PPC_BIT8(PLPKS_WRAP_INTERFACE_BIT);
- 
- 	// Validate that the numbers we get back match the requirements of the spec
- 	if (maxpwsize < 32) {
-@@ -614,6 +643,9 @@ int plpks_signed_update_var(struct plpks_var *var, u64 flags)
- 	if (!(var->policy & PLPKS_SIGNEDUPDATE))
- 		return -EINVAL;
- 
-+	if (var->policy & PLPKS_WRAPPINGKEY)
-+		return -EINVAL;
-+
- 	// Signed updates need the component to be NULL.
- 	if (var->component)
- 		return -EINVAL;
-@@ -696,6 +728,9 @@ int plpks_write_var(struct plpks_var var)
- 	if (var.policy & PLPKS_SIGNEDUPDATE)
- 		return -EINVAL;
- 
-+	if (var.policy & PLPKS_WRAPPINGKEY)
-+		return -EINVAL;
-+
- 	auth = construct_auth(PLPKS_OS_OWNER);
- 	if (IS_ERR(auth))
- 		return PTR_ERR(auth);
-@@ -790,6 +825,9 @@ static int plpks_read_var(u8 consumer, struct plpks_var *var)
- 	if (var->namelen > PLPKS_MAX_NAME_SIZE)
- 		return -EINVAL;
- 
-+	if (var->policy & PLPKS_WRAPPINGKEY)
-+		return -EINVAL;
-+
- 	auth = construct_auth(consumer);
- 	if (IS_ERR(auth))
- 		return PTR_ERR(auth);
-@@ -845,8 +883,309 @@ static int plpks_read_var(u8 consumer, struct plpks_var *var)
- }
- 
- /**
-- * plpks_read_os_var() - Fetch the data for the specified variable that is
-- * owned by the OS consumer.
-+ * plpks_wrapping_is_supported() - Get the H_PKS_WRAP_OBJECT interface
-+ * availability status for the LPAR.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * sets bit 3 of the flags variable in the PLPKS config structure if the
-+ * H_PKS_WRAP_OBJECT interface is supported.
-+ *
-+ * Returns: true if the H_PKS_WRAP_OBJECT interface is supported, false if not.
-+ */
-+bool plpks_wrapping_is_supported(void)
-+{
-+	return wrapsupport;
-+}
-+
-+/**
-+ * plpks_gen_wrapping_key() - Generate a new random key with the 'wrapping key'
-+ * policy set.
-+ *
-+ * The H_PKS_GEN_KEY HCALL makes the hypervisor generate a new random key and
-+ * store the key in a PLPKS object with the provided object label. With the
-+ * 'wrapping key' policy set, only the label to the newly generated random key
-+ * would be visible to the user.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if PLPKS modification is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid object label parameter
-+ *		if invalid object label len parameter
-+ *		if invalid or unsupported policy declaration
-+ *		if invalid output buffer parameter
-+ *		if invalid output buffer length parameter
-+ * -EPERM	if access is denied
-+ * -ENOMEM	if there is inadequate memory to perform this operation
-+ * -EBUSY	if unable to handle the request
-+ * -EEXIST	if the object label already exists
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
-+int plpks_gen_wrapping_key(void)
-+{
-+	unsigned long retbuf[PLPAR_HCALL_BUFSIZE] = { 0 };
-+	struct plpks_auth *auth;
-+	struct label *label;
-+	int rc = 0, pseries_status = 0;
-+	struct plpks_var var = {
-+		.name = PLPKS_WRAPKEY_NAME,
-+		.namelen = strlen(var.name),
-+		.policy = PLPKS_WRAPPINGKEY,
-+		.os = PLPKS_VAR_LINUX,
-+		.component = PLPKS_WRAPKEY_COMPONENT
-+	};
-+
-+	auth = construct_auth(PLPKS_OS_OWNER);
-+	if (IS_ERR(auth))
-+		return PTR_ERR(auth);
-+
-+	label = construct_label(var.component, var.os, var.name, var.namelen);
-+	if (IS_ERR(label)) {
-+		rc = PTR_ERR(label);
-+		goto out;
-+	}
-+
-+	rc = plpar_hcall(H_PKS_GEN_KEY, retbuf,
-+			 virt_to_phys(auth), virt_to_phys(label),
-+			 label->size, var.policy,
-+			 NULL, PLPKS_WRAPPING_KEY_LENGTH);
-+
-+	if (!rc)
-+		rc = plpks_confirm_object_flushed(label, auth);
-+
-+	pseries_status = rc;
-+	rc = pseries_status_to_err(rc);
-+
-+	if (rc && rc != -EEXIST) {
-+		pr_err("H_PKS_GEN_KEY failed. pseries_status=%d, rc=%d",
-+		       pseries_status, rc);
-+	} else {
-+		rc = 0;
-+	}
-+
-+	kfree(label);
-+out:
-+	kfree(auth);
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(plpks_gen_wrapping_key);
-+
-+/**
-+ * plpks_wrap_object() - Wrap an object using the default wrapping key stored in
-+ * the PLPKS.
-+ * @input_buf: buffer containing the data to be wrapped
-+ * @input_len: length of the input buffer
-+ * @wrap_flags: object wrapping flags
-+ * @output_buf: buffer to store the wrapped data
-+ * @output_len: length of the output buffer
-+ *
-+ * The H_PKS_WRAP_OBJECT HCALL wraps an object using a wrapping key stored in
-+ * the PLPKS and returns the wrapped object to the caller. The caller provides a
-+ * label to the wrapping key with the 'wrapping key' policy set that must have
-+ * been previously created with the H_PKS_GEN_KEY HCALL. The provided object is
-+ * then encrypted with the wrapping key and additional metadata and the result
-+ * is returned to the user. The metadata includes the wrapping algorithm and the
-+ * wrapping key name so those parameters are not required during unwrap.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if PLPKS modification is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid wrapping key label parameter
-+ *		if invalid wrapping key label length parameter
-+ *		if invalid or unsupported object wrapping flags
-+ *		if invalid input buffer parameter
-+ *		if invalid input buffer length parameter
-+ *		if invalid output buffer parameter
-+ *		if invalid output buffer length parameter
-+ *		if invalid continue token parameter
-+ *		if the wrapping key is not compatible with the wrapping
-+ *		algorithm
-+ * -EPERM	if access is denied
-+ * -ENOENT	if the requested wrapping key was not found
-+ * -EBUSY	if unable to handle the request or long running operation
-+ *		initiated, retry later.
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
-+int plpks_wrap_object(u8 **input_buf, u32 input_len, u16 wrap_flags,
-+		      u8 **output_buf, u32 *output_len)
-+{
-+	unsigned long retbuf[PLPAR_HCALL9_BUFSIZE] = { 0 };
-+	struct plpks_auth *auth;
-+	struct label *label;
-+	u64 continuetoken = 0;
-+	u64 objwrapflags = 0;
-+	int rc = 0, pseries_status = 0;
-+	bool sb_audit_or_enforce_bit = wrap_flags & BIT(0);
-+	bool sb_enforce_bit = wrap_flags & BIT(1);
-+	struct plpks_var var = {
-+		.name = PLPKS_WRAPKEY_NAME,
-+		.namelen = strlen(var.name),
-+		.os = PLPKS_VAR_LINUX,
-+		.component = PLPKS_WRAPKEY_COMPONENT
-+	};
-+
-+	auth = construct_auth(PLPKS_OS_OWNER);
-+	if (IS_ERR(auth))
-+		return PTR_ERR(auth);
-+
-+	label = construct_label(var.component, var.os, var.name, var.namelen);
-+	if (IS_ERR(label)) {
-+		rc = PTR_ERR(label);
-+		goto out;
-+	}
-+
-+	/* Set the consumer password requirement bit. A must have. */
-+	objwrapflags |= WRAPFLAG_BE_BIT_SET(3);
-+
-+	/* Set the wrapping algorithm bit. Just one algorithm option for now */
-+	objwrapflags |= WRAPFLAG_BE_FIELD_PREP(60, 63, 0x1);
-+
-+	if (sb_audit_or_enforce_bit & sb_enforce_bit) {
-+		pr_err("Cannot set both audit/enforce and enforce bits.");
-+		rc = -EINVAL;
-+		goto out_free_label;
-+	} else if (sb_audit_or_enforce_bit) {
-+		objwrapflags |= WRAPFLAG_BE_BIT_SET(1);
-+	} else if (sb_enforce_bit) {
-+		objwrapflags |= WRAPFLAG_BE_BIT_SET(2);
-+	}
-+
-+	*output_len = input_len + PLPKS_WRAPPING_BUF_DIFF;
-+
-+	*output_buf = kzalloc(ALIGN(*output_len, PLPKS_WRAPPING_BUF_ALIGN),
-+			      GFP_KERNEL);
-+	if (!(*output_buf)) {
-+		pr_err("Output buffer allocation failed. Returning -ENOMEM.");
-+		rc = -ENOMEM;
-+		goto out_free_label;
-+	}
-+
-+	do {
-+		rc = plpar_hcall9(H_PKS_WRAP_OBJECT, retbuf,
-+				  virt_to_phys(auth), virt_to_phys(label),
-+				  label->size, objwrapflags,
-+				  virt_to_phys(*input_buf), input_len,
-+				  virt_to_phys(*output_buf), *output_len,
-+				  continuetoken);
-+
-+		continuetoken = retbuf[0];
-+		pseries_status = rc;
-+		rc = pseries_status_to_err(rc);
-+	} while (rc == -EBUSY);
-+
-+	if (rc) {
-+		pr_err("H_PKS_WRAP_OBJECT failed. pseries_status=%d, rc=%d",
-+		       pseries_status, rc);
-+		kfree(*output_buf);
-+		*output_buf = NULL;
-+	} else {
-+		*output_len = retbuf[1];
-+	}
-+
-+out_free_label:
-+	kfree(label);
-+out:
-+	kfree(auth);
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(plpks_wrap_object);
-+
-+/**
-+ * plpks_unwrap_object() - Unwrap an object using the default wrapping key
-+ * stored in the PLPKS.
-+ * @input_buf: buffer containing the data to be unwrapped
-+ * @input_len: length of the input buffer
-+ * @output_buf: buffer to store the unwrapped data
-+ * @output_len: length of the output buffer
-+ *
-+ * The H_PKS_UNWRAP_OBJECT HCALL unwraps an object that was previously wrapped
-+ * using the H_PKS_WRAP_OBJECT HCALL.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if PLPKS modification is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid or unsupported object unwrapping flags
-+ *		if invalid input buffer parameter
-+ *		if invalid input buffer length parameter
-+ *		if invalid output buffer parameter
-+ *		if invalid output buffer length parameter
-+ *		if invalid continue token parameter
-+ *		if the wrapping key is not compatible with the wrapping
-+ *		algorithm
-+ *		if the wrapped object's format is not supported
-+ *		if the wrapped object is invalid
-+ * -EPERM	if access is denied
-+ * -ENOENT	if the wrapping key for the provided object was not found
-+ * -EBUSY	if unable to handle the request or long running operation
-+ *		initiated, retry later.
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
-+int plpks_unwrap_object(u8 **input_buf, u32 input_len, u8 **output_buf,
-+			u32 *output_len)
-+{
-+	unsigned long retbuf[PLPAR_HCALL9_BUFSIZE] = { 0 };
-+	struct plpks_auth *auth;
-+	u64 continuetoken = 0;
-+	u64 objwrapflags = 0;
-+	int rc = 0, pseries_status = 0;
-+
-+	auth = construct_auth(PLPKS_OS_OWNER);
-+	if (IS_ERR(auth))
-+		return PTR_ERR(auth);
-+
-+	*output_len = input_len - PLPKS_WRAPPING_BUF_DIFF;
-+	*output_buf = kzalloc(ALIGN(*output_len, PLPKS_WRAPPING_BUF_ALIGN),
-+			      GFP_KERNEL);
-+	if (!(*output_buf)) {
-+		pr_err("Output buffer allocation failed. Returning -ENOMEM.");
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	do {
-+		rc = plpar_hcall9(H_PKS_UNWRAP_OBJECT, retbuf,
-+				  virt_to_phys(auth), objwrapflags,
-+				  virt_to_phys(*input_buf), input_len,
-+				  virt_to_phys(*output_buf), *output_len,
-+				  continuetoken);
-+
-+		continuetoken = retbuf[0];
-+		pseries_status = rc;
-+		rc = pseries_status_to_err(rc);
-+	} while (rc == -EBUSY);
-+
-+	if (rc) {
-+		pr_err("H_PKS_UNWRAP_OBJECT failed. pseries_status=%d, rc=%d",
-+		       pseries_status, rc);
-+		kfree(*output_buf);
-+		*output_buf = NULL;
-+	} else {
-+		*output_len = retbuf[1];
-+	}
-+
-+out:
-+	kfree(auth);
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(plpks_unwrap_object);
-+
-+/**
-+ * plpks_read_os_var() - Fetch the data for the specified variable that is owned
-+ * by the OS consumer.
-  * @var: variable to be read from the PLPKS
-  *
-  * The consumer or the owner of the object is the os kernel. The
--- 
-2.47.3
+        typedef unsigned _BitInt(VMA_FLAGS_COUNT) vma_flags_t
 
+> We want to be able to arbitrarily extend this as we please in the future. So
+> using u64 wouldn't buy us _anything_ except getting the 32-bit kernels in line.
+
+So enabling 32-bit arches is a big deal, even if it's a temporary
+solution. Again, how many flags in your opinion are blocked because of
+32-bit integer limitation? How soon 64-bit capacity will get fully
+used?
+
+> Using an integral value doesn't give us any kind of type safety, nor does it
+> give us as easy a means to track what users are doing with flags - both
+> additional benefits of this change.
+
+I tried the below, and it works OK for me with i386:
+
+$ cat bi.c
+#include <stdio.h>
+#include <limits.h>
+
+int main() {
+    unsigned _BitInt(128) a = (_BitInt(128))1 << 65;
+    unsigned _BitInt(128) b = (_BitInt(128))1 << 66;
+
+    printf("a | b == %llx\n", (unsigned long long)((a | b)>>64));
+    printf("BITINT_MAXWIDTH ==  0x%x\n", BITINT_MAXWIDTH);
+
+    return 0;
+}
+
+$ clang -m32 -std=c2x bi.c
+$ ./a.out
+a | b == 6
+BITINT_MAXWIDTH == 0x800000
+
+I didn't make GCC building it, at least out of the box. So the above
+question about 64-bit capacity has a practical meaning. If we've got a
+few years to let GCC fully support big integers as clang does, we don't 
+have to wish anything else.
+
+I'd like to put it right. I maintain bitmaps, and I like it widely
+adopted. But when it comes to flags, being able to use plain logic
+operations looks so important to me so I'd like to make sure that
+switching to bitmaps is the only working option.
