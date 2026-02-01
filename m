@@ -1,64 +1,64 @@
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 741B6339B37;
-	Sun,  1 Feb 2026 14:00:13 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8882333CEB9;
+	Sun,  1 Feb 2026 14:00:15 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1769954415; cv=none; b=exy570MocMFnK6GD4boOUVyAJsJbaCc2aH2g0da29tOLoxHCnUXSYVBPLgSGn4LaPV2iiUY0h4ZL835/j08pkh5S4XbSMbKthnr2d03TEvAf3FXVCHLIy6jujLhI62cVL1bfuS0lmCDn82s6jpl0m9y70v5OO9MNAz57BjUPI+g=
+	t=1769954417; cv=none; b=UOb55LgmIQaazwWhfOF1J7C/j9oP3j3p2oS1U02vfyYGD03RMhsZeGrbz0WoM5FvaO+294XpOCE9KSN36AbutxrN8aZBdQVb6d6Wb0vQ80Yb8yzPWrK1wWtWRARjP9CVCaxScJCkoK/qbuuRM0UzjyFPs0oQyqLiwnFBoFA8liY=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1769954415; c=relaxed/simple;
-	bh=58z831xEZjotF1JqNM/2tMwZGDuce+3MSvtLQ6FXC4I=;
+	s=arc-20240116; t=1769954417; c=relaxed/simple;
+	bh=XCefpgXUxyNEKk/AXlmykIVBUmEW8jSfP/BPAzjGEUk=;
 	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=L29QvnQ1ygPFJZt1PU2IkckomD3T2lhSmRFSW64zQdUvYbp/NEklt0LibPe7X2ZzoGCkj6VyfnjRq2ZpbBifaeDIOUiMlh0V77CDpbhjlplkDrOaHuG0aDaPNcFryLb2vfPPvQmR4TaAfeYMiUHiy2vDjxN/3Rva5adize2/0GY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=I60oVpqP; arc=none smtp.client-ip=148.163.156.1
+	 MIME-Version; b=bDtzRBAmeQ1e203K0hZfTNT5FClufQi1Gp1gDWgr2jk0Xnhuat7xgTzX5RfKH0PIgjZeK6+ENYasvAXIx5OPDw96QVEN5GKC8HF6ENKql3scjJFcHZUv2voa1U2rSUU+35TDYN3jqKlEAPwnw6m8rUwLfkCDwzK/U1V+P7HkGwg=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=DgTYn2aq; arc=none smtp.client-ip=148.163.158.5
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="I60oVpqP"
-Received: from pps.filterd (m0356517.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 611BDi6w006540;
-	Sun, 1 Feb 2026 13:59:48 GMT
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="DgTYn2aq"
+Received: from pps.filterd (m0356516.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 611AvakW006015;
+	Sun, 1 Feb 2026 14:00:02 GMT
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
 	:content-transfer-encoding:date:from:in-reply-to:message-id
-	:mime-version:references:subject:to; s=pp1; bh=PXEl5ntH2yB3D9QQh
-	QxsIoEGl7c4wijnMH7IySeNjT8=; b=I60oVpqPux3+LXJKl22a5UjdeDfNwYl7a
-	doOD2UiXNIeb3YOf35yJYeDlCMKtdDjMTVd6EfzpurN9sB7ZUJA9Knm1YG9dxOzJ
-	8mej892Xuk0HAQfFMrteoY6S53BM7Kt09QSHEuaxgjEn/GGU5ag3QX7u1dSPUDDH
-	QLidRXqE/Xew41hNxR+tKvfE3CrVaHye1tXpe80UwB+6X3pJMz4XK+gu8Vvupvc5
-	861KQTuatYrTQ0oNMXi3OozbwpCeZ62OgXO8dIT97dynTuqejy8tuFUl4HBuSu4+
-	I0hQ7HzkD61Ii1SmH+ewvb7P/7r7nuUSGnbnHKVOSGsh+3bCzHC0Q==
+	:mime-version:references:subject:to; s=pp1; bh=3AlJIuHueyJfodCUq
+	PQr+cGMD8wjDvVNfPBSHGCosjo=; b=DgTYn2aqvWNFxtbgbqf/eul0lpRzK4kWi
+	LomWABHSwpnLhQqk9QS0ntqJttnEUbn3LtCP86wSr4/AoOiStQ3B6NObiZ73S60s
+	ANiD64cv+CUJSKyT8bR0NhcdbJr2ncaltt6hZeujFwVI8d0teIV5uX3I2J4WqUUT
+	EzFzRHNeAKaBEPu+8GCcRphR98W4rSaiMY0b9XMaIVCxFFnEEr2AwPpJQlqAiqXv
+	rhBB3S0l5+Xy0SpdXrwnv0b1yKXfEpXH10gJ3kdDpLOaWMnQ9Xmiy8OftF+YBMqu
+	MYz1d4kkAmji8o7pPT1VR8xAoVrXaXyTHL6hNY1gxuvVXrr1zxsNg==
 Received: from pps.reinject (localhost [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c19f64jxr-1
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c175mkx5y-1
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 01 Feb 2026 13:59:48 +0000 (GMT)
-Received: from m0356517.ppops.net (m0356517.ppops.net [127.0.0.1])
-	by pps.reinject (8.18.1.12/8.18.0.8) with ESMTP id 611DxlaA027339;
-	Sun, 1 Feb 2026 13:59:48 GMT
-Received: from ppma23.wdc07v.mail.ibm.com (5d.69.3da9.ip4.static.sl-reverse.com [169.61.105.93])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c19f64jxk-1
+	Sun, 01 Feb 2026 14:00:01 +0000 (GMT)
+Received: from m0356516.ppops.net (m0356516.ppops.net [127.0.0.1])
+	by pps.reinject (8.18.1.12/8.18.0.8) with ESMTP id 611E01oY021627;
+	Sun, 1 Feb 2026 14:00:01 GMT
+Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c175mkx5u-1
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 01 Feb 2026 13:59:47 +0000 (GMT)
-Received: from pps.filterd (ppma23.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma23.wdc07v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 6118rYCD004422;
-	Sun, 1 Feb 2026 13:59:46 GMT
+	Sun, 01 Feb 2026 14:00:01 +0000 (GMT)
+Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
+	by ppma12.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 61170cbT029108;
+	Sun, 1 Feb 2026 14:00:00 GMT
 Received: from smtprelay06.fra02v.mail.ibm.com ([9.218.2.230])
-	by ppma23.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4c1wjjhh6q-1
+	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4c1v2s1rd3-1
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 01 Feb 2026 13:59:46 +0000
+	Sun, 01 Feb 2026 14:00:00 +0000
 Received: from smtpav05.fra02v.mail.ibm.com (smtpav05.fra02v.mail.ibm.com [10.20.54.104])
-	by smtprelay06.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 611Dxg3c19530030
+	by smtprelay06.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 611DxuLV19530040
 	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Sun, 1 Feb 2026 13:59:42 GMT
+	Sun, 1 Feb 2026 13:59:56 GMT
 Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 7A81E20043;
-	Sun,  1 Feb 2026 13:59:42 +0000 (GMT)
+	by IMSVA (Postfix) with ESMTP id 8306A20043;
+	Sun,  1 Feb 2026 13:59:56 +0000 (GMT)
 Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 2118820040;
-	Sun,  1 Feb 2026 13:59:39 +0000 (GMT)
+	by IMSVA (Postfix) with ESMTP id 728B120040;
+	Sun,  1 Feb 2026 13:59:53 +0000 (GMT)
 Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.ibm.com.com (unknown [9.39.20.39])
 	by smtpav05.fra02v.mail.ibm.com (Postfix) with ESMTP;
-	Sun,  1 Feb 2026 13:59:38 +0000 (GMT)
+	Sun,  1 Feb 2026 13:59:53 +0000 (GMT)
 From: Srish Srinivasan <ssrish@linux.ibm.com>
 To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org
@@ -67,9 +67,9 @@ Cc: maddy@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com,
         jarkko@kernel.org, zohar@linux.ibm.com, nayna@linux.ibm.com,
         rnsastry@linux.ibm.com, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org, ssrish@linux.ibm.com
-Subject: [PATCH v6 2/6] powerpc/pseries: move the PLPKS config inside its own sysfs directory
-Date: Sun,  1 Feb 2026 19:29:26 +0530
-Message-ID: <20260201135930.898721-3-ssrish@linux.ibm.com>
+Subject: [PATCH v6 6/6] docs: trusted-encryped: add PKWM as a new trust source
+Date: Sun,  1 Feb 2026 19:29:30 +0530
+Message-ID: <20260201135930.898721-7-ssrish@linux.ibm.com>
 X-Mailer: git-send-email 2.52.0
 In-Reply-To: <20260201135930.898721-1-ssrish@linux.ibm.com>
 References: <20260201135930.898721-1-ssrish@linux.ibm.com>
@@ -81,445 +81,151 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-TM-AS-GCONF: 00
-X-Proofpoint-GUID: 4RE3I6p2rvjNGfRoKsWNFqxwvS9vaC8-
-X-Authority-Analysis: v=2.4 cv=drTWylg4 c=1 sm=1 tr=0 ts=697f5c54 cx=c_pps
- a=3Bg1Hr4SwmMryq2xdFQyZA==:117 a=3Bg1Hr4SwmMryq2xdFQyZA==:17
+X-Proofpoint-ORIG-GUID: Evg04QKxuVsarJqa7i2QNI9Y4fRtEMkb
+X-Authority-Analysis: v=2.4 cv=VcX6/Vp9 c=1 sm=1 tr=0 ts=697f5c61 cx=c_pps
+ a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
  a=HzLeVaNsDn8A:10 a=VkNPw1HP01LnGYTKEx00:22 a=VnNF1IyMAAAA:8
- a=mWGr4ncSMiNchjaCnzgA:9
-X-Proofpoint-ORIG-GUID: leH-8NybOkIi7CiXPy2efX8duDAKW46o
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwMjAxMDEyMCBTYWx0ZWRfXwNw3cDk74Ka3
- IqltltVgAEq1r84356rzXdQus3IAHPrj+hT2Hpe2M6VIjPl2uA76PB1q+cJY+eMsWA2TvdqSjK3
- ijvEa1cPCeojXTnPyhbJMP3Ky4hqpzmFviWAhf5k9fJzfWuPRNJbtl8th2vy1h63gx/gnhXnGOO
- x8zqE063QAP4QbCOSyjOyeS4K/tQh67eBcLBADE5iLH+l2qiBD8/P01dKnX4ZEhKf0Wi+OLdz/g
- ELDP4XL8aIuo0tByd0WYA6mrRKWG+yQVInT75xLB3xQmi4UEJgdVmKQhwKLeN60SrvxWcsQl5gF
- KaT2+BRhGVzOxikEZpzGwAfX5iDbqUNBm7d6VZ5bAWEi9T+5IJtJBwc+pyW0GTDepQ0ZbeT4Jgd
- NUTMzQBP/kZVBm05NXImZzTMrySNo6QpRDvj03X2WvtsQ6/J73MWY7xd6Nc09e8TG/+LIU8kmcF
- hYu/nqwMZkGkNfbhSdQ==
+ a=ULK339cd-4IVAxCgyX4A:9
+X-Proofpoint-GUID: d_3W2q5XZ5y6p6-HFy-5oJprXxLmYsF1
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwMjAxMDEyMCBTYWx0ZWRfX0J06/X323CG0
+ b+VW8LTBlJTEm4h6KBf1GeFq9oqzj13DG1zswjhuipqApsdx0hhWty+CMP5o8iTRXbGu0IKkzS1
+ gNL+g9Q8bWvu1dCeUzT9pdyuH7uMjAnA/Hi+HiqaMd+bHZCNQA9wI7JFsgblbmmnoFdlGDzSG4J
+ reNdhTRM5JYspysBMgcxc94JxLWfinSGdtcRD+A0Z8JYTY5aDM2tV0/LGuoXa4GIKx+2lnu6jkI
+ Uryln5s32N0j3UZKs8scYDE+AgmhvedDmR18FNZmh3sOsHQlL0M1iwspHmG/MVY8AVrSQj5t7Y6
+ dKDVuyhNeKI+B9ONhoj+JF8ItMlp2SR92DF056QSPFt/a7Gpc1OdX4ru/RORvq/L/hUCWVsTESe
+ lyJaQPm9hJZBIPgalR6QX9YV49/9Q0deyXuofZ8SG5oSxBrA0b3fU0B1XlvTJPrUncbyITyBN+r
+ R6RScvPIu6rPL91vMJg==
 X-Proofpoint-Virus-Version: vendor=baseguard
  engine=ICAP:2.0.293,Aquarius:18.0.1121,Hydra:6.1.51,FMLib:17.12.100.49
  definitions=2026-02-01_05,2026-01-30_04,2025-10-01_01
 X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- suspectscore=0 clxscore=1015 spamscore=0 malwarescore=0 bulkscore=0
- phishscore=0 adultscore=0 lowpriorityscore=0 impostorscore=0
- priorityscore=1501 classifier=typeunknown authscore=0 authtc= authcc=
- route=outbound adjust=0 reason=mlx scancount=1 engine=8.19.0-2601150000
- definitions=main-2602010120
+ priorityscore=1501 malwarescore=0 suspectscore=0 spamscore=0 adultscore=0
+ bulkscore=0 phishscore=0 lowpriorityscore=0 impostorscore=0 clxscore=1015
+ classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
+ reason=mlx scancount=1 engine=8.19.0-2601150000 definitions=main-2602010120
 
-The /sys/firmware/secvar/config directory represents Power LPAR Platform
-KeyStore (PLPKS) configuration properties such as max_object_size, signed_
-update_algorithms, supported_policies, total_size, used_space, and version.
-These attributes describe the PLPKS, and not the secure boot variables
-(secvars).
+From: Nayna Jain <nayna@linux.ibm.com>
 
-Create /sys/firmware/plpks directory and move the PLPKS config inside this
-directory. For backwards compatibility, create a soft link from the secvar
-sysfs directory to this config and emit a warning stating that the older
-sysfs path has been deprecated. Separate out the plpks specific
-documentation from secvar.
+Update Documentation/security/keys/trusted-encrypted.rst and Documentation/
+admin-guide/kernel-parameters.txt with PowerVM Key Wrapping Module (PKWM)
+as a new trust source
 
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
 Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
 Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-Reviewed-by: Nayna Jain <nayna@linux.ibm.com>
-Tested-by: Nayna Jain <nayna@linux.ibm.com>
 ---
- .../ABI/testing/sysfs-firmware-plpks          | 50 ++++++++++
- Documentation/ABI/testing/sysfs-secvar        | 65 -------------
- arch/powerpc/include/asm/plpks.h              |  5 +
- arch/powerpc/include/asm/secvar.h             |  1 -
- arch/powerpc/kernel/secvar-sysfs.c            | 21 ++---
- arch/powerpc/platforms/pseries/Makefile       |  2 +-
- arch/powerpc/platforms/pseries/plpks-secvar.c | 29 ------
- arch/powerpc/platforms/pseries/plpks-sysfs.c  | 94 +++++++++++++++++++
- 8 files changed, 156 insertions(+), 111 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-plpks
- create mode 100644 arch/powerpc/platforms/pseries/plpks-sysfs.c
+ .../admin-guide/kernel-parameters.txt         |  1 +
+ .../security/keys/trusted-encrypted.rst       | 50 +++++++++++++++++++
+ 2 files changed, 51 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-firmware-plpks b/Documentation/ABI/testing/sysfs-firmware-plpks
-new file mode 100644
-index 000000000000..af0353f34115
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-firmware-plpks
-@@ -0,0 +1,50 @@
-+What:		/sys/firmware/plpks/config
-+Date:		February 2023
-+Contact:	Nayna Jain <nayna@linux.ibm.com>
-+Description:	This optional directory contains read-only config attributes as
-+		defined by the PLPKS implementation. All data is in ASCII
-+		format.
-+
-+What:		/sys/firmware/plpks/config/version
-+Date:		February 2023
-+Contact:	Nayna Jain <nayna@linux.ibm.com>
-+Description:	Config version as reported by the hypervisor in ASCII decimal
-+		format.
-+
-+What:		/sys/firmware/plpks/config/max_object_size
-+Date:		February 2023
-+Contact:	Nayna Jain <nayna@linux.ibm.com>
-+Description:	Maximum allowed size of	objects in the keystore in bytes,
-+		represented in ASCII decimal format.
-+
-+		This is not necessarily the same as the max size that can be
-+		written to an update file as writes can contain more than
-+		object data, you should use the size of the update file for
-+		that purpose.
-+
-+What:		/sys/firmware/plpks/config/total_size
-+Date:		February 2023
-+Contact:	Nayna Jain <nayna@linux.ibm.com>
-+Description:	Total size of the PLPKS in bytes, represented in ASCII decimal
-+		format.
-+
-+What:		/sys/firmware/plpks/config/used_space
-+Date:		February 2023
-+Contact:	Nayna Jain <nayna@linux.ibm.com>
-+Description:	Current space consumed by the key store, in bytes, represented
-+		in ASCII decimal format.
-+
-+What:		/sys/firmware/plpks/config/supported_policies
-+Date:		February 2023
-+Contact:	Nayna Jain <nayna@linux.ibm.com>
-+Description:	Bitmask of supported policy flags by the hypervisor, represented
-+		as an 8 byte hexadecimal ASCII string. Consult the hypervisor
-+		documentation for what these flags are.
-+
-+What:		/sys/firmware/plpks/config/signed_update_algorithms
-+Date:		February 2023
-+Contact:	Nayna Jain <nayna@linux.ibm.com>
-+Description:	Bitmask of flags indicating which algorithms the hypervisor
-+		supports for signed update of objects, represented as a 16 byte
-+		hexadecimal ASCII string. Consult the hypervisor documentation
-+		for what these flags mean.
-diff --git a/Documentation/ABI/testing/sysfs-secvar b/Documentation/ABI/testing/sysfs-secvar
-index 1016967a730f..c52a5fd15709 100644
---- a/Documentation/ABI/testing/sysfs-secvar
-+++ b/Documentation/ABI/testing/sysfs-secvar
-@@ -63,68 +63,3 @@ Contact:	Nayna Jain <nayna@linux.ibm.com>
- Description:	A write-only file that is used to submit the new value for the
- 		variable. The size of the file represents the maximum size of
- 		the variable data that can be written.
--
--What:		/sys/firmware/secvar/config
--Date:		February 2023
--Contact:	Nayna Jain <nayna@linux.ibm.com>
--Description:	This optional directory contains read-only config attributes as
--		defined by the secure variable implementation.  All data is in
--		ASCII format. The directory is only created if the backing
--		implementation provides variables to populate it, which at
--		present is only PLPKS on the pseries platform.
--
--What:		/sys/firmware/secvar/config/version
--Date:		February 2023
--Contact:	Nayna Jain <nayna@linux.ibm.com>
--Description:	Config version as reported by the hypervisor in ASCII decimal
--		format.
--
--		Currently only provided by PLPKS on the pseries platform.
--
--What:		/sys/firmware/secvar/config/max_object_size
--Date:		February 2023
--Contact:	Nayna Jain <nayna@linux.ibm.com>
--Description:	Maximum allowed size of	objects in the keystore in bytes,
--		represented in ASCII decimal format.
--
--		This is not necessarily the same as the max size that can be
--		written to an update file as writes can contain more than
--		object data, you should use the size of the update file for
--		that purpose.
--
--		Currently only provided by PLPKS on the pseries platform.
--
--What:		/sys/firmware/secvar/config/total_size
--Date:		February 2023
--Contact:	Nayna Jain <nayna@linux.ibm.com>
--Description:	Total size of the PLPKS in bytes, represented in ASCII decimal
--		format.
--
--		Currently only provided by PLPKS on the pseries platform.
--
--What:		/sys/firmware/secvar/config/used_space
--Date:		February 2023
--Contact:	Nayna Jain <nayna@linux.ibm.com>
--Description:	Current space consumed by the key store, in bytes, represented
--		in ASCII decimal format.
--
--		Currently only provided by PLPKS on the pseries platform.
--
--What:		/sys/firmware/secvar/config/supported_policies
--Date:		February 2023
--Contact:	Nayna Jain <nayna@linux.ibm.com>
--Description:	Bitmask of supported policy flags by the hypervisor,
--		represented as an 8 byte hexadecimal ASCII string. Consult the
--		hypervisor documentation for what these flags are.
--
--		Currently only provided by PLPKS on the pseries platform.
--
--What:		/sys/firmware/secvar/config/signed_update_algorithms
--Date:		February 2023
--Contact:	Nayna Jain <nayna@linux.ibm.com>
--Description:	Bitmask of flags indicating which algorithms the hypervisor
--		supports for signed update of objects, represented as a 16 byte
--		hexadecimal ASCII string. Consult the hypervisor documentation
--		for what these flags mean.
--
--		Currently only provided by PLPKS on the pseries platform.
-diff --git a/arch/powerpc/include/asm/plpks.h b/arch/powerpc/include/asm/plpks.h
-index f303922bf622..8829a13bfda0 100644
---- a/arch/powerpc/include/asm/plpks.h
-+++ b/arch/powerpc/include/asm/plpks.h
-@@ -13,6 +13,7 @@
+diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
+index 1058f2a6d6a8..aac15079b33d 100644
+--- a/Documentation/admin-guide/kernel-parameters.txt
++++ b/Documentation/admin-guide/kernel-parameters.txt
+@@ -7790,6 +7790,7 @@ Kernel parameters
+ 			- "tee"
+ 			- "caam"
+ 			- "dcp"
++			- "pkwm"
+ 			If not specified then it defaults to iterating through
+ 			the trust source list starting with TPM and assigns the
+ 			first trust source as a backend which is initialized
+diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
+index eae6a36b1c9a..ddff7c7c2582 100644
+--- a/Documentation/security/keys/trusted-encrypted.rst
++++ b/Documentation/security/keys/trusted-encrypted.rst
+@@ -81,6 +81,14 @@ safe.
+          and the UNIQUE key. Default is to use the UNIQUE key, but selecting
+          the OTP key can be done via a module parameter (dcp_use_otp_key).
  
- #include <linux/types.h>
- #include <linux/list.h>
-+#include <linux/kobject.h>
++     (5) PKWM (PowerVM Key Wrapping Module: IBM PowerVM + Platform KeyStore)
++
++         Rooted to a unique, per-LPAR key, which is derived from a system-wide,
++         randomly generated LPAR root key. Both the per-LPAR keys and the LPAR
++         root key are stored in hypervisor-owned secure memory at runtime,
++         and the LPAR root key is additionally persisted in secure locations
++         such as the processor SEEPROMs and encrypted NVRAM.
++
+   *  Execution isolation
  
- // Object policy flags from supported_policies
- #define PLPKS_OSSECBOOTAUDIT	PPC_BIT32(1) // OS secure boot must be audit/enforce
-@@ -107,11 +108,15 @@ u16 plpks_get_passwordlen(void);
- void plpks_early_init_devtree(void);
+      (1) TPM
+@@ -102,6 +110,14 @@ safe.
+          environment. Only basic blob key encryption is executed there.
+          The actual key sealing/unsealing is done on main processor/kernel space.
  
- int plpks_populate_fdt(void *fdt);
++     (5) PKWM (PowerVM Key Wrapping Module: IBM PowerVM + Platform KeyStore)
 +
-+int plpks_config_create_softlink(struct kobject *from);
- #else // CONFIG_PSERIES_PLPKS
- static inline bool plpks_is_available(void) { return false; }
- static inline u16 plpks_get_passwordlen(void) { BUILD_BUG(); }
- static inline void plpks_early_init_devtree(void) { }
- static inline int plpks_populate_fdt(void *fdt) { BUILD_BUG(); }
-+static inline int plpks_config_create_softlink(struct kobject *from)
-+						{ return 0; }
- #endif // CONFIG_PSERIES_PLPKS
++         Fixed set of cryptographic operations done on on-chip hardware
++         cryptographic acceleration unit NX. Keys for wrapping and unwrapping
++         are managed by PowerVM Platform KeyStore, which stores keys in an
++         isolated in-memory copy in secure hypervisor memory, as well as in a
++         persistent copy in hypervisor-encrypted NVRAM.
++
+   * Optional binding to platform integrity state
  
- #endif // _ASM_POWERPC_PLPKS_H
-diff --git a/arch/powerpc/include/asm/secvar.h b/arch/powerpc/include/asm/secvar.h
-index 4828e0ab7e3c..fd5006307f2a 100644
---- a/arch/powerpc/include/asm/secvar.h
-+++ b/arch/powerpc/include/asm/secvar.h
-@@ -20,7 +20,6 @@ struct secvar_operations {
- 	int (*set)(const char *key, u64 key_len, u8 *data, u64 data_size);
- 	ssize_t (*format)(char *buf, size_t bufsize);
- 	int (*max_size)(u64 *max_size);
--	const struct attribute **config_attrs;
+      (1) TPM
+@@ -129,6 +145,11 @@ safe.
+          Relies on Secure/Trusted boot process (called HAB by vendor) for
+          platform integrity.
  
- 	// NULL-terminated array of fixed variable names
- 	// Only used if get_next() isn't provided
-diff --git a/arch/powerpc/kernel/secvar-sysfs.c b/arch/powerpc/kernel/secvar-sysfs.c
-index ec900bce0257..4111b21962eb 100644
---- a/arch/powerpc/kernel/secvar-sysfs.c
-+++ b/arch/powerpc/kernel/secvar-sysfs.c
-@@ -12,6 +12,7 @@
- #include <linux/string.h>
- #include <linux/of.h>
- #include <asm/secvar.h>
-+#include <asm/plpks.h>
++     (5) PKWM (PowerVM Key Wrapping Module: IBM PowerVM + Platform KeyStore)
++
++         Relies on secure and trusted boot process of IBM Power systems for
++         platform integrity.
++
+   *  Interfaces and APIs
  
- #define NAME_MAX_SIZE	   1024
+      (1) TPM
+@@ -149,6 +170,11 @@ safe.
+          Vendor-specific API that is implemented as part of the DCP crypto driver in
+          ``drivers/crypto/mxs-dcp.c``.
  
-@@ -145,19 +146,6 @@ static __init int update_kobj_size(void)
- 	return 0;
- }
++     (5) PKWM (PowerVM Key Wrapping Module: IBM PowerVM + Platform KeyStore)
++
++         Platform Keystore has well documented interfaces in PAPR document.
++         Refer to ``Documentation/arch/powerpc/papr_hcalls.rst``
++
+   *  Threat model
  
--static __init int secvar_sysfs_config(struct kobject *kobj)
--{
--	struct attribute_group config_group = {
--		.name = "config",
--		.attrs = (struct attribute **)secvar_ops->config_attrs,
--	};
--
--	if (secvar_ops->config_attrs)
--		return sysfs_create_group(kobj, &config_group);
--
--	return 0;
--}
--
- static __init int add_var(const char *name)
- {
- 	struct kobject *kobj;
-@@ -260,12 +248,15 @@ static __init int secvar_sysfs_init(void)
- 		goto err;
- 	}
+      The strength and appropriateness of a particular trust source for a given
+@@ -191,6 +217,10 @@ selected trust source:
+      a dedicated hardware RNG that is independent from DCP which can be enabled
+      to back the kernel RNG.
  
--	rc = secvar_sysfs_config(secvar_kobj);
-+	rc = plpks_config_create_softlink(secvar_kobj);
- 	if (rc) {
--		pr_err("Failed to create config directory\n");
-+		pr_err("Failed to create softlink to PLPKS config directory");
- 		goto err;
- 	}
++   * PKWM (PowerVM Key Wrapping Module: IBM PowerVM + Platform KeyStore)
++
++     The normal kernel random number generator is used to generate keys.
++
+ Users may override this by specifying ``trusted.rng=kernel`` on the kernel
+ command-line to override the used RNG with the kernel's random number pool.
  
-+	pr_info("/sys/firmware/secvar/config is now deprecated.\n");
-+	pr_info("Will be removed in future versions.\n");
-+
- 	if (secvar_ops->get_next)
- 		rc = secvar_sysfs_load();
- 	else
-diff --git a/arch/powerpc/platforms/pseries/Makefile b/arch/powerpc/platforms/pseries/Makefile
-index 931ebaa474c8..3ced289a675b 100644
---- a/arch/powerpc/platforms/pseries/Makefile
-+++ b/arch/powerpc/platforms/pseries/Makefile
-@@ -30,7 +30,7 @@ obj-$(CONFIG_PAPR_SCM)		+= papr_scm.o
- obj-$(CONFIG_PPC_SPLPAR)	+= vphn.o
- obj-$(CONFIG_PPC_SVM)		+= svm.o
- obj-$(CONFIG_FA_DUMP)		+= rtas-fadump.o
--obj-$(CONFIG_PSERIES_PLPKS)	+= plpks.o
-+obj-$(CONFIG_PSERIES_PLPKS)	+= plpks.o plpks-sysfs.o
- obj-$(CONFIG_PPC_SECURE_BOOT)	+= plpks-secvar.o
- obj-$(CONFIG_PSERIES_PLPKS_SED)	+= plpks_sed_ops.o
- obj-$(CONFIG_SUSPEND)		+= suspend.o
-diff --git a/arch/powerpc/platforms/pseries/plpks-secvar.c b/arch/powerpc/platforms/pseries/plpks-secvar.c
-index f9e9cc40c9d0..a50ff6943d80 100644
---- a/arch/powerpc/platforms/pseries/plpks-secvar.c
-+++ b/arch/powerpc/platforms/pseries/plpks-secvar.c
-@@ -20,33 +20,6 @@
- #include <asm/secvar.h>
- #include <asm/plpks.h>
+@@ -321,6 +351,26 @@ Usage::
+ specific to this DCP key-blob implementation.  The key length for new keys is
+ always in bytes. Trusted Keys can be 32 - 128 bytes (256 - 1024 bits).
  
--// Config attributes for sysfs
--#define PLPKS_CONFIG_ATTR(name, fmt, func)			\
--	static ssize_t name##_show(struct kobject *kobj,	\
--				   struct kobj_attribute *attr,	\
--				   char *buf)			\
--	{							\
--		return sysfs_emit(buf, fmt, func());		\
--	}							\
--	static struct kobj_attribute attr_##name = __ATTR_RO(name)
--
--PLPKS_CONFIG_ATTR(version, "%u\n", plpks_get_version);
--PLPKS_CONFIG_ATTR(max_object_size, "%u\n", plpks_get_maxobjectsize);
--PLPKS_CONFIG_ATTR(total_size, "%u\n", plpks_get_totalsize);
--PLPKS_CONFIG_ATTR(used_space, "%u\n", plpks_get_usedspace);
--PLPKS_CONFIG_ATTR(supported_policies, "%08x\n", plpks_get_supportedpolicies);
--PLPKS_CONFIG_ATTR(signed_update_algorithms, "%016llx\n", plpks_get_signedupdatealgorithms);
--
--static const struct attribute *config_attrs[] = {
--	&attr_version.attr,
--	&attr_max_object_size.attr,
--	&attr_total_size.attr,
--	&attr_used_space.attr,
--	&attr_supported_policies.attr,
--	&attr_signed_update_algorithms.attr,
--	NULL,
--};
--
- static u32 get_policy(const char *name)
- {
- 	if ((strcmp(name, "db") == 0) ||
-@@ -225,7 +198,6 @@ static const struct secvar_operations plpks_secvar_ops_static = {
- 	.set = plpks_set_variable,
- 	.format = plpks_secvar_format,
- 	.max_size = plpks_max_size,
--	.config_attrs = config_attrs,
- 	.var_names = plpks_var_names_static,
- };
++Trusted Keys usage: PKWM
++------------------------
++
++Usage::
++
++    keyctl add trusted name "new keylen [options]" ring
++    keyctl add trusted name "load hex_blob" ring
++    keyctl print keyid
++
++    options:
++       wrap_flags=   ascii hex value of security policy requirement
++                       0x00: no secure boot requirement (default)
++                       0x01: require secure boot to be in either audit or
++                             enforced mode
++                       0x02: require secure boot to be in enforced mode
++
++"keyctl print" returns an ASCII hex copy of the sealed key, which is in format
++specific to PKWM key-blob implementation.  The key length for new keys is
++always in bytes. Trusted Keys can be 32 - 128 bytes (256 - 1024 bits).
++
+ Encrypted Keys usage
+ --------------------
  
-@@ -234,7 +206,6 @@ static const struct secvar_operations plpks_secvar_ops_dynamic = {
- 	.set = plpks_set_variable,
- 	.format = plpks_secvar_format,
- 	.max_size = plpks_max_size,
--	.config_attrs = config_attrs,
- 	.var_names = plpks_var_names_dynamic,
- };
- 
-diff --git a/arch/powerpc/platforms/pseries/plpks-sysfs.c b/arch/powerpc/platforms/pseries/plpks-sysfs.c
-new file mode 100644
-index 000000000000..01d526185783
---- /dev/null
-+++ b/arch/powerpc/platforms/pseries/plpks-sysfs.c
-@@ -0,0 +1,94 @@
-+// SPDX-License-Identifier: GPL-2.0-only
-+/*
-+ * Copyright (C) 2025 IBM Corporation, Srish Srinivasan <ssrish@linux.ibm.com>
-+ *
-+ * This code exposes PLPKS config to user via sysfs
-+ */
-+
-+#define pr_fmt(fmt) "plpks-sysfs: "fmt
-+
-+#include <linux/init.h>
-+#include <linux/printk.h>
-+#include <linux/types.h>
-+#include <asm/machdep.h>
-+#include <asm/plpks.h>
-+
-+/* config attributes for sysfs */
-+#define PLPKS_CONFIG_ATTR(name, fmt, func)			\
-+	static ssize_t name##_show(struct kobject *kobj,	\
-+				   struct kobj_attribute *attr,	\
-+				   char *buf)			\
-+	{							\
-+		return sysfs_emit(buf, fmt, func());		\
-+	}							\
-+	static struct kobj_attribute attr_##name = __ATTR_RO(name)
-+
-+PLPKS_CONFIG_ATTR(version, "%u\n", plpks_get_version);
-+PLPKS_CONFIG_ATTR(max_object_size, "%u\n", plpks_get_maxobjectsize);
-+PLPKS_CONFIG_ATTR(total_size, "%u\n", plpks_get_totalsize);
-+PLPKS_CONFIG_ATTR(used_space, "%u\n", plpks_get_usedspace);
-+PLPKS_CONFIG_ATTR(supported_policies, "%08x\n", plpks_get_supportedpolicies);
-+PLPKS_CONFIG_ATTR(signed_update_algorithms, "%016llx\n",
-+		  plpks_get_signedupdatealgorithms);
-+
-+static const struct attribute *config_attrs[] = {
-+	&attr_version.attr,
-+	&attr_max_object_size.attr,
-+	&attr_total_size.attr,
-+	&attr_used_space.attr,
-+	&attr_supported_policies.attr,
-+	&attr_signed_update_algorithms.attr,
-+	NULL,
-+};
-+
-+static struct kobject *plpks_kobj, *plpks_config_kobj;
-+
-+int plpks_config_create_softlink(struct kobject *from)
-+{
-+	if (!plpks_config_kobj)
-+		return -EINVAL;
-+	return sysfs_create_link(from, plpks_config_kobj, "config");
-+}
-+
-+static __init int plpks_sysfs_config(struct kobject *kobj)
-+{
-+	struct attribute_group config_group = {
-+		.name = NULL,
-+		.attrs = (struct attribute **)config_attrs,
-+	};
-+
-+	return sysfs_create_group(kobj, &config_group);
-+}
-+
-+static __init int plpks_sysfs_init(void)
-+{
-+	int rc;
-+
-+	if (!plpks_is_available())
-+		return -ENODEV;
-+
-+	plpks_kobj = kobject_create_and_add("plpks", firmware_kobj);
-+	if (!plpks_kobj) {
-+		pr_err("Failed to create plpks kobj\n");
-+		return -ENOMEM;
-+	}
-+
-+	plpks_config_kobj = kobject_create_and_add("config", plpks_kobj);
-+	if (!plpks_config_kobj) {
-+		pr_err("Failed to create plpks config kobj\n");
-+		kobject_put(plpks_kobj);
-+		return -ENOMEM;
-+	}
-+
-+	rc = plpks_sysfs_config(plpks_config_kobj);
-+	if (rc) {
-+		pr_err("Failed to create attribute group for plpks config\n");
-+		kobject_put(plpks_config_kobj);
-+		kobject_put(plpks_kobj);
-+		return rc;
-+	}
-+
-+	return 0;
-+}
-+
-+machine_subsys_initcall(pseries, plpks_sysfs_init);
 -- 
 2.47.3
 
