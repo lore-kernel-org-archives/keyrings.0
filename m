@@ -1,64 +1,64 @@
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6F9F133ADA8;
-	Sun,  1 Feb 2026 14:00:12 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3A4D733B96B;
+	Sun,  1 Feb 2026 14:00:13 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1769954414; cv=none; b=M/zCR/DOzHxG+6biHpv+Qnrv06qLZiGG2XZ2liNIE5sAxPLMCW/IwiKaNwHUWATRfg42qCyAh8G9NfXR9DfcUqUjg6LejCLaMeBctkr5UOhFGEw9o+JFuCohrnytiLHN3PtvtGZEusE/Vavq4FOxlh+PZyda0/0NkbFUazfDemY=
+	t=1769954414; cv=none; b=JS4ka+oO3xNS2bTfSj1/GtKu1sIYDKoRW3TTYzl8qvXtpsBCQhg5bfNvuAXEpZJwbGc/XlNPTPn/l+YtBBPguEtlVRbbyeCuB35j5HRxkcMLem/X8Ws3d8vWnRzTKHBjvkReMR99VUsFWOqSVBBcE152lxeC5DsFOZYsi9rrDbA=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
 	s=arc-20240116; t=1769954414; c=relaxed/simple;
-	bh=h2rPnqdUjlC/2anIjbKI07xGV38lcrsncM4x8N/x+4s=;
+	bh=8GSCM9PTZmTDnOfw++1u4ef8KcGAb923KxDhQz2Xeec=;
 	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=WPhtjZPA9SrJX6Y9VkYhYQdSJIiVB3L7bbydoltfd9DGpG7UBF1NnIAgzsFtyXp16IMQbhfffiF7nxhm3aalUxuFfLfYS/Gec4PgrRKPE3nFv3u/zd6AS7xJVYkH6QYU3B0Jb0d2Ev3vH4MnKnZgYmuvYsZc/12fLlmPco0O/dw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=ksL6SpQj; arc=none smtp.client-ip=148.163.156.1
+	 MIME-Version; b=Q9sXEGtB0pEQLjBFftiVUHz63WCKrKqubv1aIXsQJFZdUx8ZYAJ1I61P6vKwCT/+VfGRxCzu+bPr2gjQSzxyzTZ6TE0iEc1DUvOaJhZnAcfWyCes2gQPdxm3PWwE2oKK7oW3k248mqC6GrbhWVje/As73AXK/h+Ch43yCLtUFBs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=S8uC7eMP; arc=none smtp.client-ip=148.163.158.5
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="ksL6SpQj"
-Received: from pps.filterd (m0353729.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 6119uCI6026510;
-	Sun, 1 Feb 2026 13:59:44 GMT
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="S8uC7eMP"
+Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.2/8.18.1.2) with ESMTP id 611804YK008775;
+	Sun, 1 Feb 2026 13:59:58 GMT
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
 	:content-transfer-encoding:date:from:in-reply-to:message-id
-	:mime-version:references:subject:to; s=pp1; bh=1L34ePcbZI2PV75Rb
-	gNaWlBUXbZOXn27dYGuhzId7PI=; b=ksL6SpQjp2AcDukLkqxA964l75LiGkUbY
-	n6su4lKY/9Ak2huYql1RjvntMrlUY/YE7BQzIyAMfWwKC4U2LWYvo0OhhbYu87e3
-	9l55Dd4KX8D5UfiMwQtJswN7n/QFlb76CDu2mg4LnxyWOmT3stJCR6W2z5Mb51Mu
-	wpZfo4sN41lQ27Ge1pSLv2krRL/OmjPIJy1WVvcH0RmJQi+LNqlQFuMylBIlJMcF
-	1MerOMsVgWnSI7ALyq3dJ0lTRQc/GuIn/eVAzFi0uut5UcEwT4dhTGMxllhzlh20
-	21PcK9nkEfPwwRYj45recTiccDdUDbQ6WnWaMTPKRekEMb97FxEVw==
+	:mime-version:references:subject:to; s=pp1; bh=JPX9D80ShV/Vh62aB
+	WDxM9M6aEzJOTHR1/BpdkwVEEw=; b=S8uC7eMPegxckvofTXBZpHtxZeN05NUjn
+	9YxzvroqJbJMchuCfdkclRbIzo7ehKPY9uvwV5r+Nab7fUDiGl7phalDEz9r70Iq
+	bHkKDfNBUT9SlDcqcUejBZ2aioLYs1zjvSvDvg4vS5PvFmgZWQohRByjZvhtScFf
+	PXlGFpCzbdlIXJ5+jEL1YtgMVRLd75szIEIN+e7+Y0T97jQ1g8zYvwVDAXAsfR9T
+	Ajk6H5J/HUIodeNARhA6Cm9PSmHzKx3s3tmAktAY6rRYx4hy6+b4SgE4Ungm4pBA
+	ku1WxrUB14ZqmyEWn1Ym/36a+Zwocey3J8/8B1P8UyxhkJxKxvuow==
 Received: from pps.reinject (localhost [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c19dsvjax-1
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c185gkt4s-1
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 01 Feb 2026 13:59:44 +0000 (GMT)
-Received: from m0353729.ppops.net (m0353729.ppops.net [127.0.0.1])
-	by pps.reinject (8.18.1.12/8.18.0.8) with ESMTP id 611Dxhvd011390;
-	Sun, 1 Feb 2026 13:59:43 GMT
-Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c19dsvjav-1
+	Sun, 01 Feb 2026 13:59:58 +0000 (GMT)
+Received: from m0353725.ppops.net (m0353725.ppops.net [127.0.0.1])
+	by pps.reinject (8.18.1.12/8.18.0.8) with ESMTP id 611Dxv06000499;
+	Sun, 1 Feb 2026 13:59:57 GMT
+Received: from ppma21.wdc07v.mail.ibm.com (5b.69.3da9.ip4.static.sl-reverse.com [169.61.105.91])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4c185gkt4q-1
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 01 Feb 2026 13:59:43 +0000 (GMT)
-Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma12.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 611775Vu029082;
-	Sun, 1 Feb 2026 13:59:42 GMT
-Received: from smtprelay03.fra02v.mail.ibm.com ([9.218.2.224])
-	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4c1v2s1rcq-1
+	Sun, 01 Feb 2026 13:59:57 +0000 (GMT)
+Received: from pps.filterd (ppma21.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma21.wdc07v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 61187s8T025696;
+	Sun, 1 Feb 2026 13:59:57 GMT
+Received: from smtprelay04.fra02v.mail.ibm.com ([9.218.2.228])
+	by ppma21.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4c1w2mhkq5-1
 	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 01 Feb 2026 13:59:42 +0000
+	Sun, 01 Feb 2026 13:59:56 +0000
 Received: from smtpav05.fra02v.mail.ibm.com (smtpav05.fra02v.mail.ibm.com [10.20.54.104])
-	by smtprelay03.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 611DxcZ141877908
+	by smtprelay04.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 611Dxr8d13697450
 	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Sun, 1 Feb 2026 13:59:38 GMT
+	Sun, 1 Feb 2026 13:59:53 GMT
 Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id B0F0320040;
-	Sun,  1 Feb 2026 13:59:38 +0000 (GMT)
+	by IMSVA (Postfix) with ESMTP id 0F4F520043;
+	Sun,  1 Feb 2026 13:59:53 +0000 (GMT)
 Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 24E372004D;
-	Sun,  1 Feb 2026 13:59:35 +0000 (GMT)
+	by IMSVA (Postfix) with ESMTP id E837120040;
+	Sun,  1 Feb 2026 13:59:49 +0000 (GMT)
 Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.ibm.com.com (unknown [9.39.20.39])
 	by smtpav05.fra02v.mail.ibm.com (Postfix) with ESMTP;
-	Sun,  1 Feb 2026 13:59:34 +0000 (GMT)
+	Sun,  1 Feb 2026 13:59:49 +0000 (GMT)
 From: Srish Srinivasan <ssrish@linux.ibm.com>
 To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org
@@ -67,9 +67,9 @@ Cc: maddy@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com,
         jarkko@kernel.org, zohar@linux.ibm.com, nayna@linux.ibm.com,
         rnsastry@linux.ibm.com, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org, ssrish@linux.ibm.com
-Subject: [PATCH v6 1/6] pseries/plpks: fix kernel-doc comment inconsistencies
-Date: Sun,  1 Feb 2026 19:29:25 +0530
-Message-ID: <20260201135930.898721-2-ssrish@linux.ibm.com>
+Subject: [PATCH v6 5/6] keys/trusted_keys: establish PKWM as a trusted source
+Date: Sun,  1 Feb 2026 19:29:29 +0530
+Message-ID: <20260201135930.898721-6-ssrish@linux.ibm.com>
 X-Mailer: git-send-email 2.52.0
 In-Reply-To: <20260201135930.898721-1-ssrish@linux.ibm.com>
 References: <20260201135930.898721-1-ssrish@linux.ibm.com>
@@ -81,616 +81,422 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-TM-AS-GCONF: 00
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwMjAxMDEyMCBTYWx0ZWRfX+DzDngfJNrcF
- E7DMQvCWgBb1wjqCvLX/bYXUNKm41KfNPWWzbv8Ixa8dVl9CLZJn+41A4gM3Do9cRy8x4mzj4Gm
- vjP0P6jgMxugTBuRTS98bi7ZfKf+2D+Zvu1lK8f+YxNo4pVy+XEIk1xXbAHWn9L2twfapYhRhOc
- dRdOch1ePBQrXuU8d9PIdZWW7NyBU+65DApE2eoXTlE+numgE1aH37GPDx497FonrZ7pMGf12Wh
- XkJQkZ4YvcH8yCSdCcgRjb+0HXrnId3UiiD06X2Ci+soFVyZvnvGNdP/4d8LutI7bDD6dHavIcv
- a+YDtLM4x0hEqQ0W1jQ4Ie99YgGLFgqxviEm/voRJRtAscyHWFZUXNcVGZ1d7fAyzv9EkVLGx8r
- 8obpVDiQ2s9i5uhFWxBBnPw2hPzS3nWDjZg+kdj/mYoR8DSzRUE7t+mxnrGGotTKC9JREPzPnWd
- zgY6/ijzoCw3RpJKSmA==
-X-Proofpoint-GUID: dCFHSulLfy8bkHMubi1HAtJU8iWnQhQQ
-X-Proofpoint-ORIG-GUID: kgFF0d8KXjCrX_ggS2JfyNgDrrRX_2wL
-X-Authority-Analysis: v=2.4 cv=LesxKzfi c=1 sm=1 tr=0 ts=697f5c50 cx=c_pps
- a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
- a=HzLeVaNsDn8A:10 a=VkNPw1HP01LnGYTKEx00:22 a=VnNF1IyMAAAA:8
- a=_jD9v-G-JNOk7KggL9IA:9 a=tQW_-zY1P7yUjf7c:21
+X-Authority-Analysis: v=2.4 cv=UdxciaSN c=1 sm=1 tr=0 ts=697f5c5e cx=c_pps
+ a=GFwsV6G8L6GxiO2Y/PsHdQ==:117 a=GFwsV6G8L6GxiO2Y/PsHdQ==:17
+ a=HzLeVaNsDn8A:10 a=VkNPw1HP01LnGYTKEx00:22 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8
+ a=6hcB66QTelQ3WYe9m3UA:9
+X-Proofpoint-GUID: dvlZM0pJONVTpG8C-cyyAEqLVT6K_W1x
+X-Proofpoint-ORIG-GUID: t2eacskfmF420wyF_lXk8jsO-JzQi3QC
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwMjAxMDEyMCBTYWx0ZWRfX0EwaMa03mfQF
+ nR+oDv38Ly/JttSqzJwM2Xs78zgpDvr/9JcqNzuIjRMTK4LiRVAYlveX1CLO3wV2quPR1glSjOX
+ xalQ/laBb/fSPc57Ei2bjX7w+iNgVyUqNefjmpIMmJHRZoNQhPP6cZOIOrU/8A3gsc5hHaYruIk
+ PbAXOyzEtWwTUfMb9fVwIcN1x+9qowViDyzQWHlcpzDBvp6u9O/SzNxRklScvE1BJEpkfdvFsuH
+ n7mAAfvw1YzW1fkO6y0QB2h0hF1XQaCktBLwWJqZOs6mJJ74qSX63XPzLRy49tRPloMd2GQZZKk
+ JkUKBpDkwJWHmVr6vE8N8CZYkBAjsGiHJeicDZk6E4QunHYJrsBqZgcEdHxgX1WyLjtpCkVHxCz
+ reyekBIH/8qn9R1f6ixSTdDIAGVMeV8T39osJLrEW07ukdMEoItUluDYOxRu2XXy+9nGjv7+QcD
+ 0Abwt9EnlAgvK8fCdVA==
 X-Proofpoint-Virus-Version: vendor=baseguard
  engine=ICAP:2.0.293,Aquarius:18.0.1121,Hydra:6.1.51,FMLib:17.12.100.49
  definitions=2026-02-01_05,2026-01-30_04,2025-10-01_01
 X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- bulkscore=0 impostorscore=0 spamscore=0 lowpriorityscore=0 clxscore=1015
- adultscore=0 suspectscore=0 priorityscore=1501 phishscore=0 malwarescore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.19.0-2601150000 definitions=main-2602010120
+ priorityscore=1501 malwarescore=0 impostorscore=0 lowpriorityscore=0
+ suspectscore=0 clxscore=1015 bulkscore=0 spamscore=0 phishscore=0
+ adultscore=0 classifier=typeunknown authscore=0 authtc= authcc=
+ route=outbound adjust=0 reason=mlx scancount=1 engine=8.19.0-2601150000
+ definitions=main-2602010120
 
-Fix issues with comments for all the applicable functions to be
-consistent with kernel-doc format. Move them before the function
-definition as opposed to the function prototype.
+The wrapping key does not exist by default and is generated by the
+hypervisor as a part of PKWM initialization. This key is then persisted by
+the hypervisor and is used to wrap trusted keys. These are variable length
+symmetric keys, which in the case of PowerVM Key Wrapping Module (PKWM) are
+generated using the kernel RNG. PKWM can be used as a trust source through
+the following example keyctl commands:
+
+keyctl add trusted my_trusted_key "new 32" @u
+
+Use the wrap_flags command option to set the secure boot requirement for
+the wrapping request through the following keyctl commands
+
+case1: no secure boot requirement. (default)
+keyctl usage: keyctl add trusted my_trusted_key "new 32" @u
+	      OR
+	      keyctl add trusted my_trusted_key "new 32 wrap_flags=0x00" @u
+
+case2: secure boot required to in either audit or enforce mode. set bit 0
+keyctl usage: keyctl add trusted my_trusted_key "new 32 wrap_flags=0x01" @u
+
+case3: secure boot required to be in enforce mode. set bit 1
+keyctl usage: keyctl add trusted my_trusted_key "new 32 wrap_flags=0x02" @u
+
+NOTE:
+-> Setting the secure boot requirement is NOT a must.
+-> Only either of the secure boot requirement options should be set. Not
+both.
+-> All the other bits are required to be not set.
+-> Set the kernel parameter trusted.source=pkwm to choose PKWM as the
+backend for trusted keys implementation.
+-> CONFIG_PSERIES_PLPKS must be enabled to build PKWM.
+
+Add PKWM, which is a combination of IBM PowerVM and Power LPAR Platform
+KeyStore, as a new trust source for trusted keys.
 
 Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 Reviewed-by: Nayna Jain <nayna@linux.ibm.com>
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 Tested-by: Nayna Jain <nayna@linux.ibm.com>
 ---
- arch/powerpc/include/asm/plpks.h       |  77 ------
- arch/powerpc/platforms/pseries/plpks.c | 328 ++++++++++++++++++++++++-
- 2 files changed, 318 insertions(+), 87 deletions(-)
+ MAINTAINERS                               |   9 +
+ include/keys/trusted-type.h               |   7 +-
+ include/keys/trusted_pkwm.h               |  33 ++++
+ security/keys/trusted-keys/Kconfig        |   8 +
+ security/keys/trusted-keys/Makefile       |   2 +
+ security/keys/trusted-keys/trusted_core.c |   6 +-
+ security/keys/trusted-keys/trusted_pkwm.c | 190 ++++++++++++++++++++++
+ 7 files changed, 253 insertions(+), 2 deletions(-)
+ create mode 100644 include/keys/trusted_pkwm.h
+ create mode 100644 security/keys/trusted-keys/trusted_pkwm.c
 
-diff --git a/arch/powerpc/include/asm/plpks.h b/arch/powerpc/include/asm/plpks.h
-index 7a84069759b0..f303922bf622 100644
---- a/arch/powerpc/include/asm/plpks.h
-+++ b/arch/powerpc/include/asm/plpks.h
-@@ -67,122 +67,45 @@ struct plpks_var_name_list {
- 	struct plpks_var_name varlist[];
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0efa8cc6775b..b037648e66fc 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -14013,6 +14013,15 @@ S:	Supported
+ F:	include/keys/trusted_dcp.h
+ F:	security/keys/trusted-keys/trusted_dcp.c
+ 
++KEYS-TRUSTED-PLPKS
++M:	Srish Srinivasan <ssrish@linux.ibm.com>
++M:	Nayna Jain <nayna@linux.ibm.com>
++L:	linux-integrity@vger.kernel.org
++L:	keyrings@vger.kernel.org
++S:	Supported
++F:	include/keys/trusted_pkwm.h
++F:	security/keys/trusted-keys/trusted_pkwm.c
++
+ KEYS-TRUSTED-TEE
+ M:	Sumit Garg <sumit.garg@kernel.org>
+ L:	linux-integrity@vger.kernel.org
+diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+index 4eb64548a74f..03527162613f 100644
+--- a/include/keys/trusted-type.h
++++ b/include/keys/trusted-type.h
+@@ -19,7 +19,11 @@
+ 
+ #define MIN_KEY_SIZE			32
+ #define MAX_KEY_SIZE			128
+-#define MAX_BLOB_SIZE			512
++#if IS_ENABLED(CONFIG_TRUSTED_KEYS_PKWM)
++#define MAX_BLOB_SIZE			1152
++#else
++#define MAX_BLOB_SIZE                   512
++#endif
+ #define MAX_PCRINFO_SIZE		64
+ #define MAX_DIGEST_SIZE			64
+ 
+@@ -46,6 +50,7 @@ struct trusted_key_options {
+ 	uint32_t policydigest_len;
+ 	unsigned char policydigest[MAX_DIGEST_SIZE];
+ 	uint32_t policyhandle;
++	void *private;
  };
  
--/**
-- * Updates the authenticated variable. It expects NULL as the component.
-- */
- int plpks_signed_update_var(struct plpks_var *var, u64 flags);
+ struct trusted_key_ops {
+diff --git a/include/keys/trusted_pkwm.h b/include/keys/trusted_pkwm.h
+new file mode 100644
+index 000000000000..4035b9776394
+--- /dev/null
++++ b/include/keys/trusted_pkwm.h
+@@ -0,0 +1,33 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef __PKWM_TRUSTED_KEY_H
++#define __PKWM_TRUSTED_KEY_H
++
++#include <keys/trusted-type.h>
++#include <linux/bitops.h>
++#include <linux/printk.h>
++
++extern struct trusted_key_ops pkwm_trusted_key_ops;
++
++struct trusted_pkwm_options {
++	u16 wrap_flags;
++};
++
++static inline void dump_options(struct trusted_key_options *o)
++{
++	const struct trusted_pkwm_options *pkwm;
++	bool sb_audit_or_enforce_bit;
++	bool sb_enforce_bit;
++
++	pkwm = o->private;
++	sb_audit_or_enforce_bit = pkwm->wrap_flags & BIT(0);
++	sb_enforce_bit = pkwm->wrap_flags & BIT(1);
++
++	if (sb_audit_or_enforce_bit)
++		pr_debug("secure boot mode required: audit or enforce");
++	else if (sb_enforce_bit)
++		pr_debug("secure boot mode required: enforce");
++	else
++		pr_debug("secure boot mode required: disabled");
++}
++
++#endif
+diff --git a/security/keys/trusted-keys/Kconfig b/security/keys/trusted-keys/Kconfig
+index 204a68c1429d..9e00482d886a 100644
+--- a/security/keys/trusted-keys/Kconfig
++++ b/security/keys/trusted-keys/Kconfig
+@@ -46,6 +46,14 @@ config TRUSTED_KEYS_DCP
+ 	help
+ 	  Enable use of NXP's DCP (Data Co-Processor) as trusted key backend.
  
--/**
-- * Writes the specified var and its data to PKS.
-- * Any caller of PKS driver should present a valid component type for
-- * their variable.
-- */
- int plpks_write_var(struct plpks_var var);
++config TRUSTED_KEYS_PKWM
++	bool "PKWM-based trusted keys"
++	depends on PSERIES_PLPKS >= TRUSTED_KEYS
++	default y
++	select HAVE_TRUSTED_KEYS
++	help
++	  Enable use of IBM PowerVM Key Wrapping Module (PKWM) as a trusted key backend.
++
+ if !HAVE_TRUSTED_KEYS
+ 	comment "No trust source selected!"
+ endif
+diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
+index f0f3b27f688b..5fc053a21dad 100644
+--- a/security/keys/trusted-keys/Makefile
++++ b/security/keys/trusted-keys/Makefile
+@@ -16,3 +16,5 @@ trusted-$(CONFIG_TRUSTED_KEYS_TEE) += trusted_tee.o
+ trusted-$(CONFIG_TRUSTED_KEYS_CAAM) += trusted_caam.o
  
--/**
-- * Removes the specified var and its data from PKS.
-- */
- int plpks_remove_var(char *component, u8 varos,
- 		     struct plpks_var_name vname);
+ trusted-$(CONFIG_TRUSTED_KEYS_DCP) += trusted_dcp.o
++
++trusted-$(CONFIG_TRUSTED_KEYS_PKWM) += trusted_pkwm.o
+diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
+index b1680ee53f86..2d328de170e8 100644
+--- a/security/keys/trusted-keys/trusted_core.c
++++ b/security/keys/trusted-keys/trusted_core.c
+@@ -12,6 +12,7 @@
+ #include <keys/trusted_caam.h>
+ #include <keys/trusted_dcp.h>
+ #include <keys/trusted_tpm.h>
++#include <keys/trusted_pkwm.h>
+ #include <linux/capability.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+@@ -31,7 +32,7 @@ MODULE_PARM_DESC(rng, "Select trusted key RNG");
  
--/**
-- * Returns the data for the specified os variable.
-- *
-- * Caller must allocate a buffer in var->data with length in var->datalen.
-- * If no buffer is provided, var->datalen will be populated with the object's
-- * size.
-- */
- int plpks_read_os_var(struct plpks_var *var);
+ static char *trusted_key_source;
+ module_param_named(source, trusted_key_source, charp, 0);
+-MODULE_PARM_DESC(source, "Select trusted keys source (tpm, tee, caam or dcp)");
++MODULE_PARM_DESC(source, "Select trusted keys source (tpm, tee, caam, dcp or pkwm)");
  
--/**
-- * Returns the data for the specified firmware variable.
-- *
-- * Caller must allocate a buffer in var->data with length in var->datalen.
-- * If no buffer is provided, var->datalen will be populated with the object's
-- * size.
-- */
- int plpks_read_fw_var(struct plpks_var *var);
+ static const struct trusted_key_source trusted_key_sources[] = {
+ #if defined(CONFIG_TRUSTED_KEYS_TPM)
+@@ -46,6 +47,9 @@ static const struct trusted_key_source trusted_key_sources[] = {
+ #if defined(CONFIG_TRUSTED_KEYS_DCP)
+ 	{ "dcp", &dcp_trusted_key_ops },
+ #endif
++#if defined(CONFIG_TRUSTED_KEYS_PKWM)
++	{ "pkwm", &pkwm_trusted_key_ops },
++#endif
+ };
  
--/**
-- * Returns the data for the specified bootloader variable.
-- *
-- * Caller must allocate a buffer in var->data with length in var->datalen.
-- * If no buffer is provided, var->datalen will be populated with the object's
-- * size.
-- */
- int plpks_read_bootloader_var(struct plpks_var *var);
- 
--/**
-- * Returns if PKS is available on this LPAR.
-- */
- bool plpks_is_available(void);
- 
--/**
-- * Returns version of the Platform KeyStore.
-- */
- u8 plpks_get_version(void);
- 
--/**
-- * Returns hypervisor storage overhead per object, not including the size of
-- * the object or label. Only valid for config version >= 2
-- */
- u16 plpks_get_objoverhead(void);
- 
--/**
-- * Returns maximum password size. Must be >= 32 bytes
-- */
- u16 plpks_get_maxpwsize(void);
- 
--/**
-- * Returns maximum object size supported by Platform KeyStore.
-- */
- u16 plpks_get_maxobjectsize(void);
- 
--/**
-- * Returns maximum object label size supported by Platform KeyStore.
-- */
- u16 plpks_get_maxobjectlabelsize(void);
- 
--/**
-- * Returns total size of the configured Platform KeyStore.
-- */
- u32 plpks_get_totalsize(void);
- 
--/**
-- * Returns used space from the total size of the Platform KeyStore.
-- */
- u32 plpks_get_usedspace(void);
- 
--/**
-- * Returns bitmask of policies supported by the hypervisor.
-- */
- u32 plpks_get_supportedpolicies(void);
- 
--/**
-- * Returns maximum byte size of a single object supported by the hypervisor.
-- * Only valid for config version >= 3
-- */
- u32 plpks_get_maxlargeobjectsize(void);
- 
--/**
-- * Returns bitmask of signature algorithms supported for signed updates.
-- * Only valid for config version >= 3
-- */
- u64 plpks_get_signedupdatealgorithms(void);
- 
--/**
-- * Returns the length of the PLPKS password in bytes.
-- */
- u16 plpks_get_passwordlen(void);
- 
--/**
-- * Called in early init to retrieve and clear the PLPKS password from the DT.
-- */
- void plpks_early_init_devtree(void);
- 
--/**
-- * Populates the FDT with the PLPKS password to prepare for kexec.
-- */
- int plpks_populate_fdt(void *fdt);
- #else // CONFIG_PSERIES_PLPKS
- static inline bool plpks_is_available(void) { return false; }
-diff --git a/arch/powerpc/platforms/pseries/plpks.c b/arch/powerpc/platforms/pseries/plpks.c
-index b1667ed05f98..03722fabf9c3 100644
---- a/arch/powerpc/platforms/pseries/plpks.c
-+++ b/arch/powerpc/platforms/pseries/plpks.c
-@@ -312,40 +312,107 @@ static int _plpks_get_config(void)
- 	return rc;
- }
- 
-+/**
-+ * plpks_get_version() - Get the version of the PLPKS config structure.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads the PLPKS config structure version and saves it in a file local static
-+ * version variable.
-+ *
-+ * Returns: On success the saved PLPKS config structure version is returned, 0
-+ * if not.
+ DEFINE_STATIC_CALL_NULL(trusted_key_seal, *trusted_key_sources[0].ops->seal);
+diff --git a/security/keys/trusted-keys/trusted_pkwm.c b/security/keys/trusted-keys/trusted_pkwm.c
+new file mode 100644
+index 000000000000..4f391b77a907
+--- /dev/null
++++ b/security/keys/trusted-keys/trusted_pkwm.c
+@@ -0,0 +1,190 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Copyright (C) 2025 IBM Corporation, Srish Srinivasan <ssrish@linux.ibm.com>
 + */
- u8 plpks_get_version(void)
- {
- 	return version;
- }
- 
-+/**
-+ * plpks_get_objoverhead() - Get the hypervisor storage overhead per object.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads the per object hypervisor storage overhead in bytes into the local
-+ * static objoverhead variable, excluding the size of the object or the label.
-+ * This value can be treated as valid only when the PLPKS config structure
-+ * version >= 2.
-+ *
-+ * Returns: If PLPKS config structure version >= 2 then the storage overhead is
-+ * returned, 0 otherwise.
-+ */
- u16 plpks_get_objoverhead(void)
- {
- 	return objoverhead;
- }
- 
-+/**
-+ * plpks_get_maxpwsize() - Get the maximum password size.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads the maximum password size and checks if it is 32 bytes at the least
-+ * before storing it in the local static maxpwsize variable.
-+ *
-+ * Returns: On success the maximum password size is returned, 0 if not.
-+ */
- u16 plpks_get_maxpwsize(void)
- {
- 	return maxpwsize;
- }
- 
-+/**
-+ * plpks_get_maxobjectsize() - Get the maximum object size supported by the
-+ * PLPKS.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads the maximum object size into the file local static maxobjsize variable.
-+ *
-+ * Returns: On success the maximum object size is returned, 0 if not.
-+ */
- u16 plpks_get_maxobjectsize(void)
- {
- 	return maxobjsize;
- }
- 
-+/**
-+ * plpks_get_maxobjectlabelsize() - Get the maximum object label size supported
-+ * by the PLPKS.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads the maximum object label size into the local static maxobjlabelsize
-+ * variable.
-+ *
-+ * Returns: On success the maximum object label size is returned, 0 if not.
-+ */
- u16 plpks_get_maxobjectlabelsize(void)
- {
- 	return maxobjlabelsize;
- }
- 
-+/**
-+ * plpks_get_totalsize() - Get the total size of the PLPKS that is configured.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads the total size of the PLPKS that is configured for the LPAR into the
-+ * file local static totalsize variable.
-+ *
-+ * Returns: On success the total size of the PLPKS configured is returned, 0 if
-+ * not.
-+ */
- u32 plpks_get_totalsize(void)
- {
- 	return totalsize;
- }
- 
-+/**
-+ * plpks_get_usedspace() - Get the used space from the total size of the PLPKS.
-+ *
-+ * Invoke the H_PKS_GET_CONFIG HCALL to refresh the latest value for the used
-+ * space as this keeps changing with the creation and removal of objects in the
-+ * PLPKS.
-+ *
-+ * Returns: On success the used space is returned, 0 if not.
-+ */
- u32 plpks_get_usedspace(void)
- {
--	// Unlike other config values, usedspace regularly changes as objects
--	// are updated, so we need to refresh.
- 	int rc = _plpks_get_config();
- 	if (rc) {
- 		pr_err("Couldn't get config, rc: %d\n", rc);
-@@ -354,26 +421,84 @@ u32 plpks_get_usedspace(void)
- 	return usedspace;
- }
- 
-+/**
-+ * plpks_get_supportedpolicies() - Get a bitmask of the policies supported by
-+ * the hypervisor.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads a bitmask of the policies supported by the hypervisor into the file
-+ * local static supportedpolicies variable.
-+ *
-+ * Returns: On success the bitmask of the policies supported by the hypervisor
-+ * are returned, 0 if not.
-+ */
- u32 plpks_get_supportedpolicies(void)
- {
- 	return supportedpolicies;
- }
- 
-+/**
-+ * plpks_get_maxlargeobjectsize() - Get the maximum object size supported for
-+ * PLPKS config structure version >= 3
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads the maximum object size into the local static maxlargeobjectsize
-+ * variable for PLPKS config structure version >= 3. This was introduced
-+ * starting with PLPKS config structure version 3 to allow for objects of
-+ * size >= 64K.
-+ *
-+ * Returns: If PLPKS config structure version >= 3 then the new maximum object
-+ * size is returned, 0 if not.
-+ */
- u32 plpks_get_maxlargeobjectsize(void)
- {
- 	return maxlargeobjectsize;
- }
- 
-+/**
-+ * plpks_get_signedupdatealgorithms() - Get a bitmask of the signature
-+ * algorithms supported for signed updates.
-+ *
-+ * Successful execution of the H_PKS_GET_CONFIG HCALL during initialization
-+ * reads a bitmask of the signature algorithms supported for signed updates into
-+ * the file local static signedupdatealgorithms variable. This is valid only
-+ * when the PLPKS config structure version >= 3.
-+ *
-+ * Returns: On success the bitmask of the signature algorithms supported for
-+ * signed updates is returned, 0 if not.
-+ */
- u64 plpks_get_signedupdatealgorithms(void)
- {
- 	return signedupdatealgorithms;
- }
- 
-+/**
-+ * plpks_get_passwordlen() - Get the length of the PLPKS password in bytes.
-+ *
-+ * The H_PKS_GEN_PASSWORD HCALL makes the hypervisor generate a random password
-+ * for the specified consumer, apply that password to the PLPKS and return it to
-+ * the caller. In this process, the password length for the OS consumer is
-+ * stored in the local static ospasswordlength variable.
-+ *
-+ * Returns: On success the password length for the OS consumer in bytes is
-+ * returned, 0 if not.
-+ */
- u16 plpks_get_passwordlen(void)
- {
- 	return ospasswordlength;
- }
- 
-+/**
-+ * plpks_is_available() - Get the PLPKS availability status for the LPAR.
-+ *
-+ * The availability of PLPKS is inferred based upon the successful execution of
-+ * the H_PKS_GET_CONFIG HCALL provided the firmware supports this feature. The
-+ * H_PKS_GET_CONFIG HCALL reads the configuration and status information related
-+ * to the PLPKS. The configuration structure provides a version number to inform
-+ * the caller of the supported features.
-+ *
-+ * Returns: true is returned if PLPKS is available, false if not.
-+ */
- bool plpks_is_available(void)
- {
- 	int rc;
-@@ -425,6 +550,35 @@ static int plpks_confirm_object_flushed(struct label *label,
- 	return pseries_status_to_err(rc);
- }
- 
-+/**
-+ * plpks_signed_update_var() - Update the specified authenticated variable.
-+ * @var: authenticated variable to be updated
-+ * @flags: signed update request operation flags
-+ *
-+ * The H_PKS_SIGNED_UPDATE HCALL performs a signed update to an object in the
-+ * PLPKS. The object must have the signed update policy flag set.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if PLPKS modification is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid object label parameter
-+ *		if invalid object label len parameter
-+ *		if invalid or unsupported policy declaration
-+ *		if invalid signed update flags
-+ *		if invalid input data parameter
-+ *		if invalid input data len parameter
-+ *		if invalid continue token parameter
-+ * -EPERM	if access is denied
-+ * -ENOMEM	if there is inadequate memory to perform the operation
-+ * -EBUSY	if unable to handle the request or long running operation
-+ *		initiated, retry later
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
- int plpks_signed_update_var(struct plpks_var *var, u64 flags)
- {
- 	unsigned long retbuf[PLPAR_HCALL9_BUFSIZE] = {0};
-@@ -481,6 +635,33 @@ int plpks_signed_update_var(struct plpks_var *var, u64 flags)
- 	return rc;
- }
- 
-+/**
-+ * plpks_write_var() - Write the specified variable and its data to PLPKS.
-+ * @var: variable to be written into the PLPKS
-+ *
-+ * The H_PKS_WRITE_OBJECT HCALL writes an object into the PLPKS. The caller must
-+ * provide a valid component type for the variable, and the signed update policy
-+ * flag must not be set.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if PLPKS modification is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid object label parameter
-+ *		if invalid object label len parameter
-+ *		if invalid or unsupported policy declaration
-+ *		if invalid input data parameter
-+ *		if invalid input data len parameter
-+ * -EPERM	if access is denied
-+ * -ENOMEM	if unable to store the requested object in the space available
-+ * -EBUSY	if unable to handle the request
-+ * -EEXIST	if the object label already exists
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
- int plpks_write_var(struct plpks_var var)
- {
- 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE] = { 0 };
-@@ -520,6 +701,30 @@ int plpks_write_var(struct plpks_var var)
- 	return rc;
- }
- 
-+/**
-+ * plpks_remove_var() - Remove the specified variable and its data from PLPKS.
-+ * @component: metadata prefix in the object label metadata structure
-+ * @varos: metadata OS flags in the object label metadata structure
-+ * @vname: object label for the object that needs to be removed
-+ *
-+ * The H_PKS_REMOVE_OBJECT HCALL removes an object from the PLPKS. The removal
-+ * is independent of the policy bits that are set.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if PLPKS modification is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid object label parameter
-+ *		if invalid object label len parameter
-+ * -EPERM	if access is denied
-+ * -ENOENT	if the requested object was not found
-+ * -EBUSY	if unable to handle the request
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
- int plpks_remove_var(char *component, u8 varos, struct plpks_var_name vname)
- {
- 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE] = { 0 };
-@@ -619,21 +824,119 @@ static int plpks_read_var(u8 consumer, struct plpks_var *var)
- 	return rc;
- }
- 
-+/**
-+ * plpks_read_os_var() - Fetch the data for the specified variable that is
-+ * owned by the OS consumer.
-+ * @var: variable to be read from the PLPKS
-+ *
-+ * The consumer or the owner of the object is the os kernel. The
-+ * H_PKS_READ_OBJECT HCALL reads an object from the PLPKS. The caller must
-+ * allocate the buffer var->data and specify the length for this buffer in
-+ * var->datalen. If no buffer is provided, var->datalen will be populated with
-+ * the requested object's size.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid object label parameter
-+ *		if invalid object label len parameter
-+ *		if invalid output data parameter
-+ *		if invalid output data len parameter
-+ * -EPERM	if access is denied
-+ * -ENOENT	if the requested object was not found
-+ * -EFBIG	if the requested object couldn't be
-+ *		stored in the buffer provided
-+ * -EBUSY	if unable to handle the request
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
- int plpks_read_os_var(struct plpks_var *var)
- {
- 	return plpks_read_var(PLPKS_OS_OWNER, var);
- }
- 
-+/**
-+ * plpks_read_fw_var() - Fetch the data for the specified variable that is
-+ * owned by the firmware consumer.
-+ * @var: variable to be read from the PLPKS
-+ *
-+ * The consumer or the owner of the object is the firmware. The
-+ * H_PKS_READ_OBJECT HCALL reads an object from the PLPKS. The caller must
-+ * allocate the buffer var->data and specify the length for this buffer in
-+ * var->datalen. If no buffer is provided, var->datalen will be populated with
-+ * the requested object's size.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid object label parameter
-+ *		if invalid object label len parameter
-+ *		if invalid output data parameter
-+ *		if invalid output data len parameter
-+ * -EPERM	if access is denied
-+ * -ENOENT	if the requested object was not found
-+ * -EFBIG	if the requested object couldn't be
-+ *		stored in the buffer provided
-+ * -EBUSY	if unable to handle the request
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
- int plpks_read_fw_var(struct plpks_var *var)
- {
- 	return plpks_read_var(PLPKS_FW_OWNER, var);
- }
- 
-+/**
-+ * plpks_read_bootloader_var() - Fetch the data for the specified variable
-+ * owned by the bootloader consumer.
-+ * @var: variable to be read from the PLPKS
-+ *
-+ * The consumer or the owner of the object is the bootloader. The
-+ * H_PKS_READ_OBJECT HCALL reads an object from the PLPKS. The caller must
-+ * allocate the buffer var->data and specify the length for this buffer in
-+ * var->datalen. If no buffer is provided, var->datalen will be populated with
-+ * the requested object's size.
-+ *
-+ * Possible reasons for the returned errno values:
-+ *
-+ * -ENXIO	if PLPKS is not supported
-+ * -EIO		if PLPKS access is blocked due to the LPAR's state
-+ *		if an error occurred while processing the request
-+ * -EINVAL	if invalid authorization parameter
-+ *		if invalid object label parameter
-+ *		if invalid object label len parameter
-+ *		if invalid output data parameter
-+ *		if invalid output data len parameter
-+ * -EPERM	if access is denied
-+ * -ENOENT	if the requested object was not found
-+ * -EFBIG	if the requested object couldn't be
-+ *		stored in the buffer provided
-+ * -EBUSY	if unable to handle the request
-+ *
-+ * Returns: On success 0 is returned, a negative errno if not.
-+ */
- int plpks_read_bootloader_var(struct plpks_var *var)
- {
- 	return plpks_read_var(PLPKS_BOOTLOADER_OWNER, var);
- }
- 
-+/**
-+ * plpks_populate_fdt(): Populates the FDT with the PLPKS password to prepare
-+ * for kexec.
-+ * @fdt: pointer to the device tree blob
-+ *
-+ * Upon confirming the existence of the chosen node, invoke fdt_setprop to
-+ * populate the device tree with the PLPKS password in order to prepare for
-+ * kexec.
-+ *
-+ * Returns: On success 0 is returned, a negative value if not.
-+ */
- int plpks_populate_fdt(void *fdt)
- {
- 	int chosen_offset = fdt_path_offset(fdt, "/chosen");
-@@ -647,14 +950,19 @@ int plpks_populate_fdt(void *fdt)
- 	return fdt_setprop(fdt, chosen_offset, "ibm,plpks-pw", ospassword, ospasswordlength);
- }
- 
--// Once a password is registered with the hypervisor it cannot be cleared without
--// rebooting the LPAR, so to keep using the PLPKS across kexec boots we need to
--// recover the previous password from the FDT.
--//
--// There are a few challenges here.  We don't want the password to be visible to
--// users, so we need to clear it from the FDT.  This has to be done in early boot.
--// Clearing it from the FDT would make the FDT's checksum invalid, so we have to
--// manually cause the checksum to be recalculated.
-+/**
-+ * plpks_early_init_devtree() - Retrieves and clears the PLPKS password from the
-+ * DT in early init.
-+ *
-+ * Once a password is registered with the hypervisor it cannot be cleared
-+ * without rebooting the LPAR, so to keep using the PLPKS across kexec boots we
-+ * need to recover the previous password from the FDT.
-+ *
-+ * There are a few challenges here.  We don't want the password to be visible to
-+ * users, so we need to clear it from the FDT.  This has to be done in early
-+ * boot. Clearing it from the FDT would make the FDT's checksum invalid, so we
-+ * have to manually cause the checksum to be recalculated.
-+ */
- void __init plpks_early_init_devtree(void)
- {
- 	void *fdt = initial_boot_params;
++
++#include <keys/trusted_pkwm.h>
++#include <keys/trusted-type.h>
++#include <linux/build_bug.h>
++#include <linux/key-type.h>
++#include <linux/parser.h>
++#include <asm/plpks.h>
++
++enum {
++	Opt_err,
++	Opt_wrap_flags,
++};
++
++static const match_table_t key_tokens = {
++	{Opt_wrap_flags, "wrap_flags=%s"},
++	{Opt_err, NULL}
++};
++
++static int getoptions(char *datablob, struct trusted_key_options *opt)
++{
++	substring_t args[MAX_OPT_ARGS];
++	char *p = datablob;
++	int token;
++	int res;
++	u16 wrap_flags;
++	unsigned long token_mask = 0;
++	struct trusted_pkwm_options *pkwm;
++
++	if (!datablob)
++		return 0;
++
++	pkwm = opt->private;
++
++	while ((p = strsep(&datablob, " \t"))) {
++		if (*p == '\0' || *p == ' ' || *p == '\t')
++			continue;
++
++		token = match_token(p, key_tokens, args);
++		if (test_and_set_bit(token, &token_mask))
++			return -EINVAL;
++
++		switch (token) {
++		case Opt_wrap_flags:
++			res = kstrtou16(args[0].from, 16, &wrap_flags);
++			if (res < 0 || wrap_flags > 2)
++				return -EINVAL;
++			pkwm->wrap_flags = wrap_flags;
++			break;
++		default:
++			return -EINVAL;
++		}
++	}
++	return 0;
++}
++
++static struct trusted_key_options *trusted_options_alloc(void)
++{
++	struct trusted_key_options *options;
++	struct trusted_pkwm_options *pkwm;
++
++	options = kzalloc(sizeof(*options), GFP_KERNEL);
++
++	if (options) {
++		pkwm = kzalloc(sizeof(*pkwm), GFP_KERNEL);
++
++		if (!pkwm) {
++			kfree_sensitive(options);
++			options = NULL;
++		} else {
++			options->private = pkwm;
++		}
++	}
++
++	return options;
++}
++
++static int trusted_pkwm_seal(struct trusted_key_payload *p, char *datablob)
++{
++	struct trusted_key_options *options = NULL;
++	struct trusted_pkwm_options *pkwm = NULL;
++	u8 *input_buf, *output_buf;
++	u32 output_len, input_len;
++	int rc;
++
++	options = trusted_options_alloc();
++
++	if (!options)
++		return -ENOMEM;
++
++	rc = getoptions(datablob, options);
++	if (rc < 0)
++		goto out;
++	dump_options(options);
++
++	input_len = p->key_len;
++	input_buf = kmalloc(ALIGN(input_len, 4096), GFP_KERNEL);
++	if (!input_buf) {
++		pr_err("Input buffer allocation failed. Returning -ENOMEM.");
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	memcpy(input_buf, p->key, p->key_len);
++
++	pkwm = options->private;
++
++	rc = plpks_wrap_object(&input_buf, input_len, pkwm->wrap_flags,
++			       &output_buf, &output_len);
++	if (!rc) {
++		memcpy(p->blob, output_buf, output_len);
++		p->blob_len = output_len;
++		dump_payload(p);
++	} else {
++		pr_err("Wrapping of payload key failed: %d\n", rc);
++	}
++
++	kfree(input_buf);
++	kfree(output_buf);
++
++out:
++	kfree_sensitive(options->private);
++	kfree_sensitive(options);
++	return rc;
++}
++
++static int trusted_pkwm_unseal(struct trusted_key_payload *p, char *datablob)
++{
++	u8 *input_buf, *output_buf;
++	u32 input_len, output_len;
++	int rc;
++
++	input_len = p->blob_len;
++	input_buf = kmalloc(ALIGN(input_len, 4096), GFP_KERNEL);
++	if (!input_buf) {
++		pr_err("Input buffer allocation failed. Returning -ENOMEM.");
++		return -ENOMEM;
++	}
++
++	memcpy(input_buf, p->blob, p->blob_len);
++
++	rc = plpks_unwrap_object(&input_buf, input_len, &output_buf,
++				 &output_len);
++	if (!rc) {
++		memcpy(p->key, output_buf, output_len);
++		p->key_len = output_len;
++		dump_payload(p);
++	} else {
++		pr_err("Unwrapping of payload failed: %d\n", rc);
++	}
++
++	kfree(input_buf);
++	kfree(output_buf);
++
++	return rc;
++}
++
++static int trusted_pkwm_init(void)
++{
++	int ret;
++
++	if (!plpks_wrapping_is_supported()) {
++		pr_err("H_PKS_WRAP_OBJECT interface not supported\n");
++		return -ENODEV;
++	}
++
++	ret = plpks_gen_wrapping_key();
++	if (ret) {
++		pr_err("Failed to generate default wrapping key\n");
++		return -EINVAL;
++	}
++
++	return register_key_type(&key_type_trusted);
++}
++
++static void trusted_pkwm_exit(void)
++{
++	unregister_key_type(&key_type_trusted);
++}
++
++struct trusted_key_ops pkwm_trusted_key_ops = {
++	.migratable = 0, /* non-migratable */
++	.init = trusted_pkwm_init,
++	.seal = trusted_pkwm_seal,
++	.unseal = trusted_pkwm_unseal,
++	.exit = trusted_pkwm_exit,
++};
 -- 
 2.47.3
 
