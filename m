@@ -1,176 +1,111 @@
-Received: from galois.linutronix.de (Galois.linutronix.de [193.142.43.55])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 812C037AA97;
-	Thu,  5 Mar 2026 09:31:44 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=193.142.43.55
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9E16937B41E
+	for <keyrings@vger.kernel.org>; Thu,  5 Mar 2026 10:53:12 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.129.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1772703107; cv=none; b=gTYbp0mQ2QTiSnmpGEhCICal6BwmJtoMoF84zgW7oUFZuAa84dPIYWaH3RYOiUYFtGsFaw1HzQoejBb36+xfdxrKL59HnZ2+1WNRe4ElpHmlJhVyQsWhtINhEtncFh0rWQf3qQe7UlpR15kc0ABslHBQLQ+Kip3GraB+3yuV/0k=
+	t=1772707993; cv=none; b=INJh67XjI+XIebuHjCDdQFg1wYeatcBxi0cuDff0d1LCEnifR9TVZYov+XhQR3Hjiywry+Zs0rsVZtWtRys8eQ3x+W6fqchv5w7YwwdXjTlPkeu5xeIKPMesYFnUAImmnVHA2VbxXeKM70xYgdeX873qIAqWIwnZ2hZWt8dCprE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1772703107; c=relaxed/simple;
-	bh=zLOR26cLBLYh5Klh+Pn0d+Hj/jKctPEuA5Lkndxr7M8=;
-	h=From:Date:Subject:MIME-Version:Content-Type:Message-Id:References:
-	 In-Reply-To:To:Cc; b=ffDQNn6nZ3A+DL6FxaTKRKCsfHA8yY6RTjy+7P+1N+kqe04JzZMQ5arYLD+yTgjh+kDwpxxNt1P+TAs8LmN+QJjlZ/fYStVDp23oCTm8wdN7DJyVSbpk/kkIfADIkzhh6qVqf3RN72aYY5m2MXnnmf7NpHiRrkzMx9U8nnT8jYo=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linutronix.de; spf=pass smtp.mailfrom=linutronix.de; dkim=pass (2048-bit key) header.d=linutronix.de header.i=@linutronix.de header.b=u4Ey9NAy; dkim=permerror (0-bit key) header.d=linutronix.de header.i=@linutronix.de header.b=bEppHdnl; arc=none smtp.client-ip=193.142.43.55
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linutronix.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linutronix.de
+	s=arc-20240116; t=1772707993; c=relaxed/simple;
+	bh=rs3bg1xVBMOIHl8pwvkjraFExtOanyyrx+EFz99dEDs=;
+	h=From:In-Reply-To:References:To:Cc:Subject:MIME-Version:
+	 Content-Type:Date:Message-ID; b=DOMoQ+Lgjbz4NH4x7QuVxTnL2OwgiGRey+96RfXzqIgiMtvpw9Mx5HE63kcgqaKncYLg0oEzJ6pbI/30KD/qvD+pBfM3F6+kEp0hSdSewlj4IUqLKKoeXHmcCwFg10FRbLAszJ7dKRDY2o9pVEmDmhj/07MjUcjPQzhuEYhFSug=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=i4bg53zB; arc=none smtp.client-ip=170.10.129.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=linutronix.de header.i=@linutronix.de header.b="u4Ey9NAy";
-	dkim=permerror (0-bit key) header.d=linutronix.de header.i=@linutronix.de header.b="bEppHdnl"
-From: =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <thomas.weissschuh@linutronix.de>
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linutronix.de;
-	s=2020; t=1772703102;
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="i4bg53zB"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1772707991;
 	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
 	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
 	 content-transfer-encoding:content-transfer-encoding:
 	 in-reply-to:in-reply-to:references:references;
-	bh=co01dxvIFWtkmzMGUBe0JJ0whr193iX3Ll+T6RjyBMU=;
-	b=u4Ey9NAyGUWhFzkNvW79whLpHoE678j2ZVNI7l110NkoHqN/cvmf1WNc3en60CY14hUlcd
-	kGiibB4af3kjSPeilIZYEZVe6jXa4M/ZzqJ7K24k+SsbED4eMaTIf7dq3jyeqyptm+uzzo
-	pajMZj8GX8f16XWZsq6rPOlGiLslBquq0Rwar2AumaULhH058WMlwnGrQkKGgFr4qf8Ujd
-	JeyEcLkiWaC/LgpXfmVyPchP4j+ox31IW901B3NWKwjirWkOfrbx00ujQHARucnXbzr39h
-	6qmNSlRU7Ksg/rNroUDh+eKhwj8+sBpNk4i5P/TkWF3Pp4pJLaGRco2c2F7wpA==
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=linutronix.de;
-	s=2020e; t=1772703102;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=co01dxvIFWtkmzMGUBe0JJ0whr193iX3Ll+T6RjyBMU=;
-	b=bEppHdnlxpvy3m7oFR2YBsCtCjTREF5/5uSe5duOhyg3S0XxgXU4LtbYlykc9tTHgO6Ibx
-	csrqBtCXrUrD4UAA==
-Date: Thu, 05 Mar 2026 10:31:43 +0100
-Subject: [PATCH v3 7/8] sign-file: use 'struct module_signature' from the
- UAPI headers
+	bh=YNU5NICRfpcxZgiMM9TUX/QSXZor0ct6JOqY4Ec4h94=;
+	b=i4bg53zB0MrVlD7iN7JHsufLOilDYGqBPNDnpF1G1vUhIcxhICHVG6pKmCCsHibJxywOJ8
+	4WO9B23sKKEwAYTgk52Dv/y1IN8ep9T30Zrh4VMKBeOhkRbQLWiYUea+wAqyyO0yq18IqB
+	faITux74bVZycBCPP00yBorIDgI0B+A=
+Received: from mx-prod-mc-01.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-391-G2eoyCM-MW29ZhCAlPKaPA-1; Thu,
+ 05 Mar 2026 05:53:08 -0500
+X-MC-Unique: G2eoyCM-MW29ZhCAlPKaPA-1
+X-Mimecast-MFC-AGG-ID: G2eoyCM-MW29ZhCAlPKaPA_1772707983
+Received: from mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.93])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 6C35A1956089;
+	Thu,  5 Mar 2026 10:53:02 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.44.32.194])
+	by mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 63BBD1800671;
+	Thu,  5 Mar 2026 10:52:49 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20260305-module-signature-uapi-v3-3-92f45ea6028c@linutronix.de>
+References: <20260305-module-signature-uapi-v3-3-92f45ea6028c@linutronix.de> <20260305-module-signature-uapi-v3-0-92f45ea6028c@linutronix.de>
+To: =?us-ascii?Q?=3D=3Futf-8=3Fq=3FThomas=5FWei=3DC3=3D9Fschuh=3F=3D?= <thomas.weissschuh@linutronix.de>
+Cc: David Howells <dhowells@redhat.com>,
+    David Woodhouse <dwmw2@infradead.org>,
+    Luis Chamberlain <mcgrof@kernel.org>,
+    Petr Pavlu <petr.pavlu@suse.com>, Daniel Gomez <da.gomez@kernel.org>,
+    Sami Tolvanen <samitolvanen@google.com>,
+    Aaron Tomlin <atomlin@atomlin.com>,
+    Heiko Carstens <hca@linux.ibm.com>,
+    Vasily Gorbik <gor@linux.ibm.com>,
+    Alexander Gordeev <agordeev@linux.ibm.com>,
+    Christian Borntraeger <borntraeger@linux.ibm.com>,
+    Sven Schnelle <svens@linux.ibm.com>,
+    Mimi Zohar <zohar@linux.ibm.com>,
+    Roberto Sassu <roberto.sassu@huawei.com>,
+    Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+    Eric Snowberg <eric.snowberg@oracle.com>,
+    Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+    "Serge E.
+ Hallyn" <serge@hallyn.com>,
+    Nathan Chancellor <nathan@kernel.org>,
+    Nicolas Schier <nsc@kernel.org>, Alexei Starovoitov <ast@kernel.org>,
+    Daniel Borkmann <daniel@iogearbox.net>,
+    Andrii Nakryiko <andrii@kernel.org>,
+    Martin KaFai Lau <martin.lau@linux.dev>,
+    Eduard Zingerman <eddyz87@gmail.com>, Song Liu <song@kernel.org>,
+    Yonghong Song <yonghong.song@linux.dev>,
+    John Fastabend <john.fastabend@gmail.com>,
+    KP Singh <kpsingh@kernel.org>, Stanislav Fomichev <sdf@fomichev.me>,
+    Hao Luo <haoluo@google.com>, Jiri Olsa <jolsa@kernel.org>,
+    Shuah Khan <shuah@kernel.org>, keyrings@vger.kernel.org,
+    linux-kernel@vger.kernel.org, linux-modules@vger.kernel.org,
+    linux-s390@vger.kernel.org, linux-integrity@vger.kernel.org,
+    linux-security-module@vger.kernel.org, linux-kbuild@vger.kernel.org,
+    bpf@vger.kernel.org, linux-kselftest@vger.kernel.org
+Subject: Re: [PATCH v3 3/8] module: Give 'enum pkey_id_type' a more specific name
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <20260305-module-signature-uapi-v3-7-92f45ea6028c@linutronix.de>
-References: <20260305-module-signature-uapi-v3-0-92f45ea6028c@linutronix.de>
-In-Reply-To: <20260305-module-signature-uapi-v3-0-92f45ea6028c@linutronix.de>
-To: David Howells <dhowells@redhat.com>, 
- David Woodhouse <dwmw2@infradead.org>, Luis Chamberlain <mcgrof@kernel.org>, 
- Petr Pavlu <petr.pavlu@suse.com>, Daniel Gomez <da.gomez@kernel.org>, 
- Sami Tolvanen <samitolvanen@google.com>, Aaron Tomlin <atomlin@atomlin.com>, 
- Heiko Carstens <hca@linux.ibm.com>, Vasily Gorbik <gor@linux.ibm.com>, 
- Alexander Gordeev <agordeev@linux.ibm.com>, 
- Christian Borntraeger <borntraeger@linux.ibm.com>, 
- Sven Schnelle <svens@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, 
- Roberto Sassu <roberto.sassu@huawei.com>, 
- Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, 
- Eric Snowberg <eric.snowberg@oracle.com>, Paul Moore <paul@paul-moore.com>, 
- James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
- Nathan Chancellor <nathan@kernel.org>, Nicolas Schier <nsc@kernel.org>, 
- Alexei Starovoitov <ast@kernel.org>, Daniel Borkmann <daniel@iogearbox.net>, 
- Andrii Nakryiko <andrii@kernel.org>, 
- Martin KaFai Lau <martin.lau@linux.dev>, 
- Eduard Zingerman <eddyz87@gmail.com>, Song Liu <song@kernel.org>, 
- Yonghong Song <yonghong.song@linux.dev>, 
- John Fastabend <john.fastabend@gmail.com>, KP Singh <kpsingh@kernel.org>, 
- Stanislav Fomichev <sdf@fomichev.me>, Hao Luo <haoluo@google.com>, 
- Jiri Olsa <jolsa@kernel.org>, Shuah Khan <shuah@kernel.org>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, 
- linux-modules@vger.kernel.org, linux-s390@vger.kernel.org, 
- linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, 
- linux-kbuild@vger.kernel.org, bpf@vger.kernel.org, 
- linux-kselftest@vger.kernel.org, 
- =?utf-8?q?Thomas_Wei=C3=9Fschuh?= <thomas.weissschuh@linutronix.de>
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1772703098; l=3380;
- i=thomas.weissschuh@linutronix.de; s=20240209; h=from:subject:message-id;
- bh=zLOR26cLBLYh5Klh+Pn0d+Hj/jKctPEuA5Lkndxr7M8=;
- b=cbKMWPxLR0aa06YPMJMNH+3sP2FeyyExCNDYs8ZhrAmgMGdFUszFLlFGXUBMFrAX7ZUpY1tuP
- TT9qQLgbqBID7uuHWdtKTfOJ/DTI7Hziz33pfmvgOnHWrkQKgvv0/7w
-X-Developer-Key: i=thomas.weissschuh@linutronix.de; a=ed25519;
- pk=pfvxvpFUDJV2h2nY0FidLUml22uGLSjByFbM6aqQQws=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date: Thu, 05 Mar 2026 10:52:47 +0000
+Message-ID: <287135.1772707967@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.93
 
-Now that the UAPI headers provide the required definitions, use those.
-Some symbols have been renamed, adapt to those.
 
-Also adapt the include path for the custom sign-file rule in the
-bpf selftests.
+Thomas Wei=C3=9Fschuh <thomas.weissschuh@linutronix.de> wrote:
 
-Signed-off-by: Thomas Weißschuh <thomas.weissschuh@linutronix.de>
-Reviewed-by: Petr Pavlu <petr.pavlu@suse.com>
----
- scripts/Makefile                     |  1 +
- scripts/sign-file.c                  | 19 ++++---------------
- tools/testing/selftests/bpf/Makefile |  1 +
- 3 files changed, 6 insertions(+), 15 deletions(-)
+> -enum pkey_id_type {
+> -	PKEY_ID_PKCS7 =3D 2,	/* Signature in PKCS#7 message */
+> +enum module_signature_type {
+> +	MODULE_SIGNATURE_TYPE_PKCS7 =3D 2,	/* Signature in PKCS#7 message */
+>  };
 
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 0941e5ce7b57..3434a82a119f 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -35,6 +35,7 @@ HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
- HOSTLDLIBS_sorttable = -lpthread
- HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
- HOSTCFLAGS_sign-file.o = $(shell $(HOSTPKG_CONFIG) --cflags libcrypto 2> /dev/null)
-+HOSTCFLAGS_sign-file.o += -I$(srctree)/tools/include/uapi/
- HOSTLDLIBS_sign-file = $(shell $(HOSTPKG_CONFIG) --libs libcrypto 2> /dev/null || echo -lcrypto)
- 
- ifdef CONFIG_UNWINDER_ORC
-diff --git a/scripts/sign-file.c b/scripts/sign-file.c
-index 73fbefd2e540..86b010ac1514 100644
---- a/scripts/sign-file.c
-+++ b/scripts/sign-file.c
-@@ -40,19 +40,7 @@
- #endif
- #include "ssl-common.h"
- 
--struct module_signature {
--	uint8_t		algo;		/* Public-key crypto algorithm [0] */
--	uint8_t		hash;		/* Digest algorithm [0] */
--	uint8_t		id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
--	uint8_t		signer_len;	/* Length of signer's name [0] */
--	uint8_t		key_id_len;	/* Length of key identifier [0] */
--	uint8_t		__pad[3];
--	uint32_t	sig_len;	/* Length of signature data */
--};
--
--#define PKEY_ID_PKCS7 2
--
--static char magic_number[] = "~Module signature appended~\n";
-+#include <linux/module_signature.h>
- 
- static __attribute__((noreturn))
- void format(void)
-@@ -197,7 +185,7 @@ static X509 *read_x509(const char *x509_name)
- 
- int main(int argc, char **argv)
- {
--	struct module_signature sig_info = { .id_type = PKEY_ID_PKCS7 };
-+	struct module_signature sig_info = { .id_type = MODULE_SIGNATURE_TYPE_PKCS7 };
- 	char *hash_algo = NULL;
- 	char *private_key_name = NULL, *raw_sig_name = NULL;
- 	char *x509_name, *module_name, *dest_name;
-@@ -357,7 +345,8 @@ int main(int argc, char **argv)
- 	sig_size = BIO_number_written(bd) - module_size;
- 	sig_info.sig_len = htonl(sig_size);
- 	ERR(BIO_write(bd, &sig_info, sizeof(sig_info)) < 0, "%s", dest_name);
--	ERR(BIO_write(bd, magic_number, sizeof(magic_number) - 1) < 0, "%s", dest_name);
-+	ERR(BIO_write(bd, MODULE_SIGNATURE_MARKER, sizeof(MODULE_SIGNATURE_MARKER) - 1) < 0,
-+	    "%s", dest_name);
- 
- 	ERR(BIO_free(bd) != 1, "%s", dest_name);
- 
-diff --git a/tools/testing/selftests/bpf/Makefile b/tools/testing/selftests/bpf/Makefile
-index 6776158f1f3e..2b1080892208 100644
---- a/tools/testing/selftests/bpf/Makefile
-+++ b/tools/testing/selftests/bpf/Makefile
-@@ -270,6 +270,7 @@ $(OUTPUT)/urandom_read: urandom_read.c urandom_read_aux.c $(OUTPUT)/liburandom_r
- $(OUTPUT)/sign-file: ../../../../scripts/sign-file.c
- 	$(call msg,SIGN-FILE,,$@)
- 	$(Q)$(CC) $(shell $(PKG_CONFIG) --cflags libcrypto 2> /dev/null) \
-+		  -I$(srctree)/tools/include/uapi/ \
- 		  $< -o $@ \
- 		  $(shell $(PKG_CONFIG) --libs libcrypto 2> /dev/null || echo -lcrypto)
- 
+It might be best to just kill the enum and replace it with a single #define.
 
--- 
-2.53.0
+David
 
