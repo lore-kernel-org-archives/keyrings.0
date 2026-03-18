@@ -1,86 +1,88 @@
-Received: from lamorak.hansenpartnership.com (lamorak.hansenpartnership.com [198.37.111.173])
+Received: from mail.acc.umu.se (mail.acc.umu.se [130.239.18.156])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 731943DE438;
-	Wed, 18 Mar 2026 14:53:18 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=198.37.111.173
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C701028C5B1
+	for <keyrings@vger.kernel.org>; Wed, 18 Mar 2026 15:30:26 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=130.239.18.156
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1773845602; cv=none; b=GFyUhbc7/KEtZeGtysj6hP0Wi0dLhAvXaeZ0BYoXzgQP3hnukZs4DXoo10bDDFOcP1l600uoWBvAvkTjHzMqXeqiT2/ryYg+3+H1pSgcresI/TBfv55eMyGuHuZ/+BONlDLpwCSTjUgxODA7S2daF0/3T1nqBb99v/CwvzWhfdI=
+	t=1773847829; cv=none; b=AsfjEedEjzQd+1tdtvyC/xcbRiLlw8Z7lTAUgvs56XkY3woeIUgNF6awrUK3eJ4nV5GjxdRSkBULxZ/EhJ4NhDiePCC5TMHWbKFtccsj5OQzbrbt0V6B1OqiTXx9/SOfeNtjUn7WFmJPQyJGUyo62tjBBGSrh/cQQqrUqTOQyLo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1773845602; c=relaxed/simple;
-	bh=ryWWanqw5kiRDWIZqmmFEVjdTVrziO6SB8vHLZE9HOY=;
-	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
-	 Content-Type:MIME-Version; b=iVXVW1DXn0SMB1kzVCh2GGrN6YuVTr20G4HJOjR4T+p3VxEeDaNSZ/AjQydSYgWmsTzxPG/cckjILIrE9s2e2C9RT+05I9cokIet/4GW9x+MYWq4dxIkWNxi+NotARs7peUxwnju4PizcvFBjhWXUcvksR3bYDpooIhY8jnAtZs=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com; spf=pass smtp.mailfrom=HansenPartnership.com; dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b=KX20a3WJ; arc=none smtp.client-ip=198.37.111.173
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=HansenPartnership.com
+	s=arc-20240116; t=1773847829; c=relaxed/simple;
+	bh=AKcunM3iWUh4cw3R/thVy83DnMENaqi/MzghhGnaspk=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=Ol21qobY86qvFfFx/dRpXQte1shzH6PyWdV9JpnySWlNgKoucx67WZACk8uwEUzwfxWPs34Z0iv3m4tPTj3mC4+i+mSWmzfdsB5pdmeCfqveoA+BQ9Ysr0ostg3yiZDmTQwuFXsXC2DG2JP6dLSGgr+yoh2Jo7ZQAlX1jBLsWI4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=ac2.se; spf=pass smtp.mailfrom=ac2.se; dkim=pass (1024-bit key) header.d=ac2.se header.i=@ac2.se header.b=Sg/fv/dS; arc=none smtp.client-ip=130.239.18.156
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=ac2.se
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=ac2.se
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="KX20a3WJ"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-	d=hansenpartnership.com; s=20151216; t=1773845596;
-	bh=ryWWanqw5kiRDWIZqmmFEVjdTVrziO6SB8vHLZE9HOY=;
-	h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-	b=KX20a3WJwBewnNMOg6k0TF40gkJSvRvyhCYykhSrgBp9evvdFp9O0IECO/9AqkfQF
-	 4VW6pe0rszkdHS0gti9QV6rj4JMGc2Aye4Wc3Qlf8WjcyPkKyCLXO5IiEHqPjK8fqj
-	 4VxjjfCjjmaDZFSPB5T1rHQA4ah5M6HELkWo8kOM=
-Received: from [IPv6:2601:5c4:4300:d341::a774] (unknown [IPv6:2601:5c4:4300:d341::a774])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange x25519)
-	(No client certificate requested)
-	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id BA1F61C01E7;
-	Wed, 18 Mar 2026 10:53:16 -0400 (EDT)
-Message-ID: <55cdec43cafe67dd632b665d18b1b5d423a749dd.camel@HansenPartnership.com>
+	dkim=pass (1024-bit key) header.d=ac2.se header.i=@ac2.se header.b="Sg/fv/dS"
+Received: from localhost (localhost.localdomain [127.0.0.1])
+	by amavisd-new (Postfix) with ESMTP id D93BD44B90;
+	Wed, 18 Mar 2026 16:30:24 +0100 (CET)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ac2.se; s=default;
+	t=1773847824; bh=AKcunM3iWUh4cw3R/thVy83DnMENaqi/MzghhGnaspk=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=Sg/fv/dSVqr5b2fCTEIBB7XstyCV9fllbXH1t8gBR3N3yi3NE+KKE6fCF6OmsxLXs
+	 rL1C29i3zoO3P73F7qsfBrz8oWSq4uzC+T4YTbsj03IM9BNHCSnEZS8QItWruN1JdE
+	 vIxGHxwAZ9ikNGIUfk7UGAW/qAzPrZ1zCqbXKRCg=
+Received: by mail.acc.umu.se (Postfix, from userid 24471)
+	id 64CDA44B91; Wed, 18 Mar 2026 16:30:24 +0100 (CET)
+Date: Wed, 18 Mar 2026 16:30:23 +0100
+From: Anton Lundin <glance@ac2.se>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+	David Howells <dhowells@redhat.com>,
+	David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org
 Subject: Re: [PATCHv2] sign-file,extract-cert: use KBUILD_SIGN_PIN in
  provider mode
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Anton Lundin <glance@ac2.se>, keyrings@vger.kernel.org, 
-	linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, David Woodhouse
- <dwmw2@infradead.org>,  stable@vger.kernel.org
-Date: Wed, 18 Mar 2026 10:53:16 -0400
-In-Reply-To: <6327e8c3d5828ac60c95a5b51c4bc17ec7f3d9f9.camel@HansenPartnership.com>
+Message-ID: <abrFD67qPggeEUWs@accum.se>
 References: <20260318090336.556068-1-glance@ac2.se>
-	 <6327e8c3d5828ac60c95a5b51c4bc17ec7f3d9f9.camel@HansenPartnership.com>
-Autocrypt: addr=James.Bottomley@HansenPartnership.com;
- prefer-encrypt=mutual;
- keydata=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
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-User-Agent: Evolution 3.50.3 
+ <6327e8c3d5828ac60c95a5b51c4bc17ec7f3d9f9.camel@HansenPartnership.com>
+ <55cdec43cafe67dd632b665d18b1b5d423a749dd.camel@HansenPartnership.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <55cdec43cafe67dd632b665d18b1b5d423a749dd.camel@HansenPartnership.com>
 
-On Wed, 2026-03-18 at 10:44 -0400, James Bottomley wrote:
-> On Wed, 2026-03-18 at 10:02 +0100, Anton Lundin wrote:
-> > This adds support for the documented KBUILD_SIGN_PIN functionality
-> > to
-> > sign-file and extract-cert when built with USE_PKCS11_PROVIDER.
->=20
-> Why would you do this?=C2=A0 It's going to pop up a prompt for a password
-> for every module you have ... that can be hundreds to thousands in a
-> distribution kernel, so it's unscalable.=C2=A0 The usual way we do this i=
-s
-> to put the password into an environment variable (insecure but
-> scalable) but I suppose if you have a more secure solution there
-> might
-> be interest.
+On 18 March, 2026 - James Bottomley wrote:
 
-Sorry, ignore me.  I didn't read enough to see this is only plumbing
-our current environment variable method into the new store open API we
-use for providers which didn't pick up a password method.  However, the
-thought does occur: if the pkcs11 engine does this by an engine
-parameter, wouldn't the provider have an equivalent provider parameter?
+> On Wed, 2026-03-18 at 10:44 -0400, James Bottomley wrote:
+> > On Wed, 2026-03-18 at 10:02 +0100, Anton Lundin wrote:
+> > > This adds support for the documented KBUILD_SIGN_PIN functionality
+> > > to
+> > > sign-file and extract-cert when built with USE_PKCS11_PROVIDER.
+> > 
+> > Why would you do this?  It's going to pop up a prompt for a password
+> > for every module you have ... that can be hundreds to thousands in a
+> > distribution kernel, so it's unscalable.  The usual way we do this is
+> > to put the password into an environment variable (insecure but
+> > scalable) but I suppose if you have a more secure solution there
+> > might
+> > be interest.
+> 
+> Sorry, ignore me.  I didn't read enough to see this is only plumbing
+> our current environment variable method into the new store open API we
+> use for providers which didn't pick up a password method.  However, the
+> thought does occur: if the pkcs11 engine does this by an engine
+> parameter, wouldn't the provider have an equivalent provider parameter?
 
-Regards,
+There are OSSL_PROVIDER_add_conf_parameter, which are from OpenSSL 3.5,
+which can set pkcs11-module-token-pin.
 
-James
+This code path has been activated from OpenSSL 3.0 and even when testing
+with my local OpenSSL 3.5.5 I haven't gotten that to work.
 
+
+Until recently I've had a patch in our local trees which just disables
+the openssl provider parts and uses the engine api instead. In debian
+bookworm the pkcs11-provider was too old to get anything working anyway,
+and because of reasons that patch stuck around until now.
+
+
+//Anton
