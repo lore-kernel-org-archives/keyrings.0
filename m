@@ -1,35 +1,35 @@
 Received: from lamorak.hansenpartnership.com (lamorak.hansenpartnership.com [198.37.111.173])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A3B243DB62A;
-	Wed, 18 Mar 2026 14:44:44 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 731943DE438;
+	Wed, 18 Mar 2026 14:53:18 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=198.37.111.173
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1773845086; cv=none; b=JqT1q7rg0NpssoBhKEgdX5GQaPTel0W4rHTYFnGl27kZEvVSSG8dHNnVztSQAlxV6/4eZbLycpPbIYW3bsf9wX+2e/kHiNl1BVhm49eRxKCvxJgHhN7++RcfseJwet7RHmMTdZj6Ys3Z0OTFqWJHrXYNe4nRiXzETlpXuymzBJw=
+	t=1773845602; cv=none; b=GFyUhbc7/KEtZeGtysj6hP0Wi0dLhAvXaeZ0BYoXzgQP3hnukZs4DXoo10bDDFOcP1l600uoWBvAvkTjHzMqXeqiT2/ryYg+3+H1pSgcresI/TBfv55eMyGuHuZ/+BONlDLpwCSTjUgxODA7S2daF0/3T1nqBb99v/CwvzWhfdI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1773845086; c=relaxed/simple;
-	bh=kwMzpxb1nGNpuVAkn//SNwVVDa44Eba4svkSZCLgmus=;
+	s=arc-20240116; t=1773845602; c=relaxed/simple;
+	bh=ryWWanqw5kiRDWIZqmmFEVjdTVrziO6SB8vHLZE9HOY=;
 	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
-	 Content-Type:MIME-Version; b=j9Ji77ALzAu9b8NSHEfHGcqDKgnxgRO6YfZWK/9xVAiUHxCMHbrMlHw77my0GFwdXJm9XuF1Rksox0zZAZW58xoZPaiBivpqF8d804hNJmBG0/i1q29sjIbKsnQYmlt3pHtN8HNWKuh8mkOHGdfaK3TRl1Q2Y2rK1gMsnbvWVK8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com; spf=pass smtp.mailfrom=HansenPartnership.com; dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b=HqP2SPKh; arc=none smtp.client-ip=198.37.111.173
+	 Content-Type:MIME-Version; b=iVXVW1DXn0SMB1kzVCh2GGrN6YuVTr20G4HJOjR4T+p3VxEeDaNSZ/AjQydSYgWmsTzxPG/cckjILIrE9s2e2C9RT+05I9cokIet/4GW9x+MYWq4dxIkWNxi+NotARs7peUxwnju4PizcvFBjhWXUcvksR3bYDpooIhY8jnAtZs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com; spf=pass smtp.mailfrom=HansenPartnership.com; dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b=KX20a3WJ; arc=none smtp.client-ip=198.37.111.173
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=HansenPartnership.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="HqP2SPKh"
+	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="KX20a3WJ"
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-	d=hansenpartnership.com; s=20151216; t=1773845083;
-	bh=kwMzpxb1nGNpuVAkn//SNwVVDa44Eba4svkSZCLgmus=;
+	d=hansenpartnership.com; s=20151216; t=1773845596;
+	bh=ryWWanqw5kiRDWIZqmmFEVjdTVrziO6SB8vHLZE9HOY=;
 	h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-	b=HqP2SPKh6+EQOs9rjU2Yb8JBB5lOGQLq7kEff7mFMcPTnsHjxQhKovKsIyZQDh1vQ
-	 +xNuADZpT+opPNgCnVwL3bM4/6XmgxS0nINBe7RI0DoJ+g4EbxmqNAy/cO5Ga4lLeI
-	 nd6h0B2UFTfBMS6zc1hB9nSu4zmwiLZl8k7emNkQ=
+	b=KX20a3WJwBewnNMOg6k0TF40gkJSvRvyhCYykhSrgBp9evvdFp9O0IECO/9AqkfQF
+	 4VW6pe0rszkdHS0gti9QV6rj4JMGc2Aye4Wc3Qlf8WjcyPkKyCLXO5IiEHqPjK8fqj
+	 4VxjjfCjjmaDZFSPB5T1rHQA4ah5M6HELkWo8kOM=
 Received: from [IPv6:2601:5c4:4300:d341::a774] (unknown [IPv6:2601:5c4:4300:d341::a774])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange x25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	 key-exchange x25519)
 	(No client certificate requested)
-	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id 1A4DB1C00F6;
-	Wed, 18 Mar 2026 10:44:43 -0400 (EDT)
-Message-ID: <6327e8c3d5828ac60c95a5b51c4bc17ec7f3d9f9.camel@HansenPartnership.com>
+	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id BA1F61C01E7;
+	Wed, 18 Mar 2026 10:53:16 -0400 (EDT)
+Message-ID: <55cdec43cafe67dd632b665d18b1b5d423a749dd.camel@HansenPartnership.com>
 Subject: Re: [PATCHv2] sign-file,extract-cert: use KBUILD_SIGN_PIN in
  provider mode
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
@@ -37,9 +37,10 @@ To: Anton Lundin <glance@ac2.se>, keyrings@vger.kernel.org,
 	linux-kernel@vger.kernel.org
 Cc: David Howells <dhowells@redhat.com>, David Woodhouse
  <dwmw2@infradead.org>,  stable@vger.kernel.org
-Date: Wed, 18 Mar 2026 10:44:42 -0400
-In-Reply-To: <20260318090336.556068-1-glance@ac2.se>
+Date: Wed, 18 Mar 2026 10:53:16 -0400
+In-Reply-To: <6327e8c3d5828ac60c95a5b51c4bc17ec7f3d9f9.camel@HansenPartnership.com>
 References: <20260318090336.556068-1-glance@ac2.se>
+	 <6327e8c3d5828ac60c95a5b51c4bc17ec7f3d9f9.camel@HansenPartnership.com>
 Autocrypt: addr=James.Bottomley@HansenPartnership.com;
  prefer-encrypt=mutual;
  keydata=mQENBE58FlABCADPM714lRLxGmba4JFjkocqpj1/6/Cx+IXezcS22azZetzCXDpm2MfNElecY3qkFjfnoffQiw5rrOO0/oRSATOh8+2fmJ6el7naRbDuh+i8lVESfdlkoqX57H5R8h/UTIp6gn1mpNlxjQv6QSZbl551zQ1nmkSVRbA5TbEp4br5GZeJ58esmYDCBwxuFTsSsdzbOBNthLcudWpJZHURfMc0ew24By1nldL9F37AktNcCipKpC2U0NtGlJjYPNSVXrCd1izxKmO7te7BLP+7B4DNj1VRnaf8X9+VIApCi/l4Kdx+ZR3aLTqSuNsIMmXUJ3T8JRl+ag7kby/KBp+0OpotABEBAAG0N0phbWVzIEJvdHRvbWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT6JAVgEEwEIAEICGwMGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAhkBFiEE1WBuc8i0YnG+rZrfgUrkfCFIVNYFAml2ZBIFCS3GUMIACgkQgUrkfCFIVNZKjQf/deRzlXZClKxTC/Ee2yEPqqS7mm/INUA49KdQQ5oIhSxkUBy09J4qjMIo5F8ZFkFTqikBqeL35LKu7O7rn8WETfX8Bxvos3HUsl3jHo34DES4MUFIpoQPgtiLRGwLbK0cVCAArR2u2qj4ABmTRrs1I1kvdjEw6gatOuXtEe/j5O2fvfzTq9GBr0Q3n2IAsFXi4hLlx6VPE8tyWUZ8BWJKtih3JAeUiXFvASL3McV0rV9RnU0VbjEQEhSE7PMYhWpnDC9AyBb0lXJllQRvC3NSkUB8KVQgNNxRPss0WE/nBoZ4dFA42jTyzTz8lNylxZoAWV7WJb3QxVg4oCodRVrxxrQhSmFtZXMgQm90dG9tbGV5IDxqZWpiQGtlcm5lbC5vcmc+iQFVBBMBCAA/AhsDBgsJCAcDAgYVCAIJCgsEFgIDA
@@ -58,16 +59,26 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 
-On Wed, 2026-03-18 at 10:02 +0100, Anton Lundin wrote:
-> This adds support for the documented KBUILD_SIGN_PIN functionality to
-> sign-file and extract-cert when built with USE_PKCS11_PROVIDER.
+On Wed, 2026-03-18 at 10:44 -0400, James Bottomley wrote:
+> On Wed, 2026-03-18 at 10:02 +0100, Anton Lundin wrote:
+> > This adds support for the documented KBUILD_SIGN_PIN functionality
+> > to
+> > sign-file and extract-cert when built with USE_PKCS11_PROVIDER.
+>=20
+> Why would you do this?=C2=A0 It's going to pop up a prompt for a password
+> for every module you have ... that can be hundreds to thousands in a
+> distribution kernel, so it's unscalable.=C2=A0 The usual way we do this i=
+s
+> to put the password into an environment variable (insecure but
+> scalable) but I suppose if you have a more secure solution there
+> might
+> be interest.
 
-Why would you do this?  It's going to pop up a prompt for a password
-for every module you have ... that can be hundreds to thousands in a
-distribution kernel, so it's unscalable.  The usual way we do this is
-to put the password into an environment variable (insecure but
-scalable) but I suppose if you have a more secure solution there might
-be interest.
+Sorry, ignore me.  I didn't read enough to see this is only plumbing
+our current environment variable method into the new store open API we
+use for providers which didn't pick up a password method.  However, the
+thought does occur: if the pkcs11 engine does this by an engine
+parameter, wouldn't the provider have an equivalent provider parameter?
 
 Regards,
 
