@@ -1,78 +1,64 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from abb.hmeau.com (abb.hmeau.com [180.181.231.80])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6FD83242D9D;
-	Sat, 21 Mar 2026 22:43:50 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BDFE340DFBE;
+	Sun, 22 Mar 2026 02:19:38 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=180.181.231.80
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1774133030; cv=none; b=J8AKLsGydkJbJdCDjXhung576iWqEFPJ5J9ReDNCucw9Aocf2mOWuxKjtZOh0es/5duJCRx7utk1sCWRMJasF5Tu2Y6kJ9WyaUD1Ik5eqeS/Y0fPKmgfKw52ndEU2Vgj2Li+LTGGuHZRZI92HtWrXJwmIxNCawQn4fnPgXrcD2I=
+	t=1774145980; cv=none; b=jq7LBX+a5XkTdxFO2TiypMe3otXP/gV/19KtN7/l3gEiphf6RdiSuwIBjF22zfLhbgCuTC4lXTxFFTcqRc3Kvh8NnwkGBeSSWAJzHAdVr8QLUQRcBzExmLdfg43yJQ8yjIIF/zb2rSyYnfn0Um9xu9CN09JnOY4SeQyKkQ6J+m8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1774133030; c=relaxed/simple;
-	bh=N81+17i5oYGVxtdvDVaBEgwZ/+w1fAdF0poOrxWOIts=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=IdiQZY/tG2qjr9LnBCUQolx207q/KGGpvqT9bUaD1Xzjgi4EkrFHy94EqhUzdTSGHeUQk0J7osiIxmJdGl2Y9NNe/FgID1enwTfPm2N9gzBs2+Mq4Jd9exd6msOt5xiKBrnKZREJOSlxrY/lzmsKGcmhZ15FtoluaH2QiJNftJI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=AUTpBjPl; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1774145980; c=relaxed/simple;
+	bh=Y9FRz5h5YmEd63G1rR3QNbOwA7tCiqvFTD5pAThVUfY=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=O2OA3qaremcCR7UbJ7EiCYUC6Ao5AYIXul/CmS4FlEmNa2FeFuVdSqBaqyg7S5wvTNsJ2RDi7EMT45qEL8p2OqBaI6ZWdXcRxPpXsOBO8xC7271tVWoVlyjRKnN+KWbtyvG/8dJK79gphYvfdrK0V7YZqFF8GTFaVsWBw0WyjdA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au; spf=pass smtp.mailfrom=gondor.apana.org.au; dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b=c3ceLe6v; arc=none smtp.client-ip=180.181.231.80
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gondor.apana.org.au
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="AUTpBjPl"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id B7110C19421;
-	Sat, 21 Mar 2026 22:43:49 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1774133030;
-	bh=N81+17i5oYGVxtdvDVaBEgwZ/+w1fAdF0poOrxWOIts=;
-	h=From:To:Cc:Subject:Date:From;
-	b=AUTpBjPlnwM6bNKKDU1+OLFeMJ/soI22qijEC6sbuUgF7cFkjmRDUlYJNS0cY+vp3
-	 VGpr1tJ4D4dLxCR3PPlC0Bzbb8VCyFpzKo0aARP5jIdeTsSEga4teculhMVMlauU/U
-	 KA9u6N1eJEu39CDxRrgvLk4Bn2zHnwEHdBRSu0Vu4uagyiTrP0+Ttv7fWbSaNf3HqJ
-	 0YB/Kx/rtGCRN60aEtRUX8WbNIZHi1i1VU6gHo45ZzJ9M6HzXK45fZqTjTNzkRRI6v
-	 6h2Odo9Qtm004Ra9JmLkBgeXpuXYGlil7SnD/5zrtzeMEvT2DCDAcahMJFB/mvVJq3
-	 co6pI4QJ2nIqg==
-From: Eric Biggers <ebiggers@kernel.org>
-To: keyrings@vger.kernel.org,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	David Howells <dhowells@redhat.com>,
-	Mimi Zohar <zohar@linux.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-	Eric Biggers <ebiggers@kernel.org>
-Subject: [PATCH] KEYS: encrypted: Remove unnecessary selection of CRYPTO_RNG
-Date: Sat, 21 Mar 2026 15:42:18 -0700
-Message-ID: <20260321224218.60418-1-ebiggers@kernel.org>
-X-Mailer: git-send-email 2.53.0
+	dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b="c3ceLe6v"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=gondor.apana.org.au; s=h01; h=In-Reply-To:Content-Type:MIME-Version:
+	References:Message-ID:Subject:Cc:To:From:Date:cc:to:subject:message-id:date:
+	from:content-type:reply-to; bh=Jpa0L6dM/gHFuGcVJmFRR50dCokLJlK9AOT7wXIiP8A=; 
+	b=c3ceLe6vYD0WgtfFQSKvWXSZbMSMM3MHtAH/vwXnXfTirEwsH6O41wwl6pq89DgcGhgsIH0edxU
+	P0MDYurnk/0G7TUUQ6Qfj3JbVpVeR29BksQzxJ9lGniF9cFaFpfd2z+3qejmN/dXIxUpTBTi10N5q
+	HCNpmXPA7VC0L05xAqTVlAA+ipI7yfsjNVXO+K27btmTOnIdqP/CyMKNm1xlrT/VXY1BRZY/1XkQN
+	9Z9jcz1xr9R4quUVhF2u6T9v58syU8n5YQKhPW3PsOQDPh45vzDET9vFKp7I2qcoiBgXT3Vlnv9PO
+	3PTxvoyCj0vP9PMXGkt5V5p7MTTC1D9YGQpQ==;
+Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
+	by formenos.hmeau.com with smtp (Exim 4.96 #2 (Debian))
+	id 1w48PW-00GSPc-26;
+	Sun, 22 Mar 2026 10:19:27 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Sun, 22 Mar 2026 11:19:26 +0900
+Date: Sun, 22 Mar 2026 11:19:26 +0900
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Lukas Wunner <lukas@wunner.de>
+Cc: Ignat Korchagin <ignat@cloudflare.com>, akpm@linux-foundation.org,
+	dhowells@redhat.com, keyrings@vger.kernel.org,
+	linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+	ignat@linux.win
+Subject: Re: [PATCH] MAINTAINERS: update email address for Ignat Korchagin
+Message-ID: <ab9RrsZmvPLC3dew@gondor.apana.org.au>
+References: <20260309173445.71393-1-ignat@cloudflare.com>
+ <ab5ajEP3OL-3RLCr@gondor.apana.org.au>
+ <ab7041i5NKEH0Uvp@wunner.de>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ab7041i5NKEH0Uvp@wunner.de>
 
-encrypted-keys uses the regular Linux RNG (get_random_bytes()), not the
-duplicative crypto_rng one.  So it does not need to select CRYPTO_RNG.
+On Sat, Mar 21, 2026 at 08:43:31PM +0100, Lukas Wunner wrote:
+>
+> Andrew already applied it and forwarded it to Linus.
+> This is now commit 182b9b3d8d1d in Linus' tree.
 
-Signed-off-by: Eric Biggers <ebiggers@kernel.org>
----
-
-This patch is targeting the keyrings tree
-
- security/keys/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 84f39e50ca36..f4510d8cb485 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -85,11 +85,10 @@ config ENCRYPTED_KEYS
- 	tristate "ENCRYPTED KEYS"
- 	select CRYPTO
- 	select CRYPTO_AES
- 	select CRYPTO_CBC
- 	select CRYPTO_LIB_SHA256
--	select CRYPTO_RNG
- 	help
- 	  This option provides support for create/encrypting/decrypting keys
- 	  in the kernel.  Encrypted keys are instantiated using kernel
- 	  generated random numbers or provided decrypted data, and are
- 	  encrypted/decrypted with a 'master' symmetric key. The 'master'
-
-base-commit: 113ae7b4decc6c2d95bdbbe52e615a0137ef7f9f
+Thanks, I've backed it out again.
 -- 
-2.53.0
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
