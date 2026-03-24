@@ -1,30 +1,30 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 71EB13E928D;
-	Tue, 24 Mar 2026 11:00:30 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A803A393DD1;
+	Tue, 24 Mar 2026 11:01:00 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1774350030; cv=none; b=jDh7dtV4F1+VqYZA4KgVG0/A1ztAnqbK+GdPxIb8PzNvQeCPEMHOX2N3dHO4sr8ynMmZbs4ijLRki9/UxMed90mwRw1osF4CaOxF6MiCEf2rYC5vJN32u14LfF24sTBBaxeOkJong//PoboWu1djGpEukNhDStncXroMQosZOKc=
+	t=1774350060; cv=none; b=lq4yJfBWJiKFMGvZ2gH6hkJFV2qZPjkx8Rf8Q0P4mpYRR0uEe2JczocqUUPXR2a9rMiE3rQWnMH5ELNF1I52Fp+dAbKXKhkNWObgCgHCMgijkacLtSgy7gGah1InVr6fG2XK5GtlWgwibhP/kXpR/kZgKQ+G/Mld9JUo1aG9+Nk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1774350030; c=relaxed/simple;
+	s=arc-20240116; t=1774350060; c=relaxed/simple;
 	bh=YW9shs/L5EFC8ZMfP+jjcBW3dgrut5uF1OXxXMpXw+Q=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=NMZOUPGM7bWVyO+Wp7fKvoT5aori6ygb9hcqdBJAkaJts08aalvMzVmikaKwcq0qzmcscBQBRiLriEqtAT05V2BNT/8L0TeF9Q/5A7PnyrgUBJQLCXgTt3CBs98CgQGxIbKqVlAeYA9lIU8BuSQyDyqDeMy2rMotJWaNY4KlQlw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=OCi4amT3; arc=none smtp.client-ip=10.30.226.201
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=XUSr8SZAfvyc+XB+89UyiWy7SI+UhO3I+Cq/IUpIQlCBSkmUPmMGp8M0PPvH+7l8Rl50NIJLM3zfT28UgXQ0C4e6sWm/AIjq7/Zu3kR66uB0aucV4q6OJx3fE7ME5+MVYDBb5JUt/b88M2cXyJw13mAujBsn8v1r/TMFLferqZQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=KqOVcwLE; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="OCi4amT3"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 44216C19424;
-	Tue, 24 Mar 2026 11:00:29 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="KqOVcwLE"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id D4744C19424;
+	Tue, 24 Mar 2026 11:00:59 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1774350030;
+	s=k20201202; t=1774350060;
 	bh=YW9shs/L5EFC8ZMfP+jjcBW3dgrut5uF1OXxXMpXw+Q=;
 	h=From:To:Cc:Subject:Date:From;
-	b=OCi4amT3w5K346lNG+3nrIO4jXD8DXHJO8TFU7DO8zn7TsX4/uSfCvA7qoEwWLSqK
-	 vkTYSGWgSr+q9q495T9PuubMhvcnYUXlgXQRvyRXn4O03GkYz3o6G4Aq2g8oDuigdH
-	 GFm1aCNanm1Zqm9tqm2hnluqNgn3fz7FNlIaSdqOn7kRJDWeLSGHkgKXb82KKKnoGf
-	 9ChoOrW5bPav4XTOKrdmiYd7lLwIyfgdelPm4R22E1VwAfAoDbEDSP+ipf5U0b/6iQ
-	 liUOK4hQUWd5qHgKmDDkk6akAEYu/HqCEH/SfbqPwQeCp/KVaYxkiT/hXQddKwWUBt
-	 DbhpG7Ak1vHnQ==
+	b=KqOVcwLE1O2TpeLqVRHOBPnhh2qBIFPckuTKvzb2PL9XGTEJcVJTvAFUR75yeOci9
+	 OdwLt1rKgAtRyKDdkgtOnaz+Yls/p23HFDJVR6AZ96gANC61900kBGX87hkEJZZKLx
+	 rYA7h7dO+JbzwIea7dO7RJbEhUX5oKZbWsl7SlFNj/AnrY4QxLGMqHywNLafu00ni8
+	 MV/ZWDPWPJKSS6RNnilULZEh8DOfbx9EJg+kAlHQdBT8tGL3J/BtiXRe8l/dewlYV0
+	 A5B8s9TdxTWTBGahANxir+Zj7KD9GA/4w8VeOIiAe/WeHIq7yzw5toDLqAO+hYiago
+	 bijwClDr/Nc7w==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: linux-integrity@vger.kernel.org
 Cc: keyrings@vger.kernel.org,
@@ -42,8 +42,8 @@ Cc: keyrings@vger.kernel.org,
 	linux-kernel@vger.kernel.org (open list),
 	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
 Subject: [PATCH v2] KEYS: trusted: Debugging as a feature
-Date: Tue, 24 Mar 2026 13:00:15 +0200
-Message-ID: <20260324110018.67081-1-jarkko@kernel.org>
+Date: Tue, 24 Mar 2026 13:00:40 +0200
+Message-ID: <20260324110043.67248-1-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
