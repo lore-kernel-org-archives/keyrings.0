@@ -1,316 +1,124 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-dl1-f74.google.com (mail-dl1-f74.google.com [74.125.82.74])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E1B0D27FD75;
-	Thu, 26 Mar 2026 17:05:26 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8821F347BD4
+	for <keyrings@vger.kernel.org>; Thu, 26 Mar 2026 20:06:53 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.82.74
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1774544728; cv=none; b=OFiy8K1HgRBD/v8t68EGRIHdc14fTuP0H7SMpj/3Jt4F3FqF5y9BnyY+XR06hjJxSKlgR2rRDVMGZofJ9U9SKdy3i8DVa75Ssp6v4656YT4yN1vgaVZamxPV67fYTf6sswwkLM56Jjq8m7MWnnfgO9StimsK7ZUK+4RwV3fZigs=
+	t=1774555615; cv=none; b=CZwfRSSMg2Y8JGxIQbDB0l9Ze/TPvWc+TIc/nom1+TfRCi7DuGkNuFo9HE2vSaeGrxX3YZdDIOJDOKjyaDMuEBHrTbCA876msh6HXTvoe8ZP4L7tCNu1g0JVrq2vQgMj8u15/Pd7j6/DNeiAexrmgo0HCWQ9dTnHSv2I4ia3Gnk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1774544728; c=relaxed/simple;
-	bh=wwT8IcuZNGY/4L8pI23iKZgguLKjG+SYZC129kw9BGU=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=YnRbYqVB6b1awLc33ggx2r8O9LNf4LNq9hq3bXfCYh+c4lidinN5/itDikIMeZbj3GrCiAhTDjyLKJzVPXV546Kx7RymvMugI2MGoFk4owzRwugxUInn/PmONaK6fAYyS8DchVkG2bBz8UQ7FJx9J4TiBSOnAS8wrURWdXU0f/M=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=CpRuM4SW; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1774555615; c=relaxed/simple;
+	bh=jj+yorpeEBxwk+7nym3Vu8xagBVeQ+tug3rKRqZFhbU=;
+	h=Date:In-Reply-To:Mime-Version:References:Message-ID:Subject:From:
+	 To:Cc:Content-Type; b=io/GzTA2TGRfUMQDJ6RawJpdYbJnGz0JVfd29FGd5M0i2d2RIJelVtV9M2oZXZi5dOrnAEjHGQUzWiqItN8t8BokzrWQT1q38frSZ2XbHDmJk5CkExcnuUugPmuuxeN72oob49/SqxhZQCNkwcVy3Racz1HMTeMIDp6IBGtXWGk=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--samitolvanen.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=lZiTYQ6K; arc=none smtp.client-ip=74.125.82.74
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--samitolvanen.bounces.google.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="CpRuM4SW"
-Received: from pps.filterd (m0356516.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 62QElNQg670670;
-	Thu, 26 Mar 2026 17:05:07 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=cX4hUe
-	gJluicWnx+VsXDTf/AVhViit/rZsgRCm8k/NA=; b=CpRuM4SWqiEXTsztr9X/Ee
-	BqUG/Trmol9JlsvBIm+CFxIM+Gi3yNsYkN11vkVdyRyE7C3dHalnurSKAqJYKY6h
-	7frUScvYbC4vAwmm8L1Z7imaLgKp8Oi5uxmIDNH4SbbiVfjdlSXyDyaQoSo0UomC
-	6mDppOfr0qA+xpcnEWgB/bjVg7HqrE9Zj/FJeg5pwkYZ3Rh7m7qgK+hpJSvKHKQz
-	AfrRotqhIfNlL+4kuZihHszQSo/OhiHxHKFugNmE+c6FigZjLxKwOQW3jKzV+GU2
-	PFQAOGFXhw1uXxnxoWWRvn0khVMnddlk9ALloI7oRsUvIDRXqscQnPgvXc3bFJ5Q
-	==
-Received: from ppma22.wdc07v.mail.ibm.com (5c.69.3da9.ip4.static.sl-reverse.com [169.61.105.92])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4d1ktv5a6d-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Thu, 26 Mar 2026 17:05:07 +0000 (GMT)
-Received: from pps.filterd (ppma22.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma22.wdc07v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 62QFjI7g005976;
-	Thu, 26 Mar 2026 17:05:06 GMT
-Received: from smtprelay03.dal12v.mail.ibm.com ([172.16.1.5])
-	by ppma22.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4d261yv0dy-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Thu, 26 Mar 2026 17:05:06 +0000
-Received: from smtpav04.wdc07v.mail.ibm.com (smtpav04.wdc07v.mail.ibm.com [10.39.53.231])
-	by smtprelay03.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 62QH558634013750
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Thu, 26 Mar 2026 17:05:05 GMT
-Received: from smtpav04.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 09C2C58050;
-	Thu, 26 Mar 2026 17:05:05 +0000 (GMT)
-Received: from smtpav04.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 787C558054;
-	Thu, 26 Mar 2026 17:05:00 +0000 (GMT)
-Received: from [9.39.29.16] (unknown [9.39.29.16])
-	by smtpav04.wdc07v.mail.ibm.com (Postfix) with ESMTP;
-	Thu, 26 Mar 2026 17:05:00 +0000 (GMT)
-Message-ID: <0ce8d850-9ca7-4327-a6be-d1cb84925915@linux.ibm.com>
-Date: Thu, 26 Mar 2026 22:34:58 +0530
+	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="lZiTYQ6K"
+Received: by mail-dl1-f74.google.com with SMTP id a92af1059eb24-12a77b008deso4920892c88.0
+        for <keyrings@vger.kernel.org>; Thu, 26 Mar 2026 13:06:53 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=20251104; t=1774555613; x=1775160413; darn=vger.kernel.org;
+        h=content-transfer-encoding:cc:to:from:subject:message-id:references
+         :mime-version:in-reply-to:date:from:to:cc:subject:date:message-id
+         :reply-to;
+        bh=Q39vkXCHwVXHxLZOMIlHqDW4HE8OruDbuf0XK+bdxP4=;
+        b=lZiTYQ6Kyz0T/yPpRU+2Ues0ncOW+GZ8GrSdz9B5oe/4TO36d9Ev8LUF8ozT8UsAHd
+         2bjYRDZ3tiFtL7tXngPxVo8KHGLnfj9Aj3pVdD/+Xcc8IQ95oRsE7B8xRrgyQowML9dw
+         qHSTkk5cAotTvdMS4d7EOVfKI1ZcKPyReHPbSanRuWfrxB/Dedsb7i+hStuMvIV3BEE1
+         uE1LfztRPH3kETgM/+rYr2JyHnGu+ig1uWp2hjgJ3tYF4HUnE5XV5xlClzEO+7B3nJEA
+         UlfD7isuxSZXtc6vWE7NEVDt6oCIbop+EGUh/HTcGHPuVP15IcqVfi33sCVcfIqtjh/R
+         uSXg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1774555613; x=1775160413;
+        h=content-transfer-encoding:cc:to:from:subject:message-id:references
+         :mime-version:in-reply-to:date:x-gm-message-state:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=Q39vkXCHwVXHxLZOMIlHqDW4HE8OruDbuf0XK+bdxP4=;
+        b=GzDVKxH8rxRy1Xk6mvXFSbNpjka7rvEGdmwOqY58A+wao8L5dDaLkV/tEsCxApWXZP
+         +OO6+jZC/L9ML3cQGP8t41fheoEJPpaMpdZ1XdlgTMVwRv3xW7ucYDIRvnkuLCgL9spd
+         4L8LytLlWLFLyGNgHJlXwbYI/mFFfD0LF7Dfa5OaxXRO6y0AQqxwu3XAloPc9UWVX/dc
+         7qwpJY4WzrIYxxx4WNKtPC0rYzo6Zvod90l8WPpRaT5uOnh1tfg5U3mnzdsgmxEFtJaH
+         vH7sdjoNNQuJx+7Zl7E24TAexycqj5ejHhVtcFowTDTFz6unbNWhrRedEeG9YddjRRqH
+         +68Q==
+X-Gm-Message-State: AOJu0Yx2uZo6/1tG2sVobH0vyudwagv01ffgA6GW+cze8mUd6BLIsQKm
+	RbKWqVqvDe4DrIbe4uH516HcN0PUIZsFZp1LmEPfQMh4lBCKRjkr7qle0y9WxqQO9qv6WynYdbi
+	yqO4uLrMnhYeokLeSUWjWEp5pAzSxPg==
+X-Received: from dleb3-n1.prod.google.com ([2002:a05:701b:4243:10b0:12a:86e5:44de])
+ (user=samitolvanen job=prod-delivery.src-stubby-dispatcher) by
+ 2002:a05:7022:125:b0:128:cf5c:5362 with SMTP id a92af1059eb24-12a96e5cde5mr5257574c88.12.1774555612457;
+ Thu, 26 Mar 2026 13:06:52 -0700 (PDT)
+Date: Thu, 26 Mar 2026 20:06:51 +0000
+In-Reply-To: <20260305-module-signature-uapi-v3-0-92f45ea6028c@linutronix.de>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v2] KEYS: trusted: Debugging as a feature
-To: Jarkko Sakkinen <jarkko@kernel.org>, linux-integrity@vger.kernel.org
-Cc: keyrings@vger.kernel.org, Nayna Jain <nayna@linux.ibm.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
-        Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Ahmad Fatoum
- <a.fatoum@pengutronix.de>,
-        Pengutronix Kernel Team <kernel@pengutronix.de>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-References: <20260324110018.67081-1-jarkko@kernel.org>
-Content-Language: en-US
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-In-Reply-To: <20260324110018.67081-1-jarkko@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-ORIG-GUID: czlX2P7hXv12V3PGer_OJzZI345CX_cz
-X-Authority-Analysis: v=2.4 cv=aMr9aL9m c=1 sm=1 tr=0 ts=69c56743 cx=c_pps
- a=5BHTudwdYE3Te8bg5FgnPg==:117 a=5BHTudwdYE3Te8bg5FgnPg==:17
- a=IkcTkHD0fZMA:10 a=Yq5XynenixoA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=Y2IxJ9c9Rs8Kov3niI8_:22 a=VwQbUJbxAAAA:8
- a=VnNF1IyMAAAA:8 a=E9m4iwf8s1Ab0jgAuK4A:9 a=QEXdDO2ut3YA:10
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwMzI2MDExOSBTYWx0ZWRfXy2UHYXUjEkwv
- NEXekn9joZLK1DLnL+AvkOY8QG5mltQ2ZQPNvzFbi/n/PfQ/OMk6CiXqpNjNiwM58DQLLZ4ROBk
- 7dPU6RXEb4yKmhGO0vZX+wBbG4zaXMu/MeIsNL3IeHNm1scGTjK+GAEOK/PYokb/E9kQ2IhQm0w
- I/HAcWWkuGFb4fYERmvdffOMpBaDc8tvGRD+fATRxu1cWYUgA7Fi+yZzR/FNmM6JeF4EHVIx1mr
- AN5Fudqh/XhAF2OlTjldOk0XBuNn5AJb8Aj/APDdT7K4C97nRg2I+OMIQKVRY9wDAjyJtg/gEcJ
- zk17RBh0tmWOHYKV/NlvqZj1MD2WE1ej4lUagANDWhLMFAnd3qWQF4a7px8+u6WmjzyOj/n0uL+
- vwufadnVW1GK0r7I5D92HDakI+IPvvXLNPKwt5Rd9a+xctD90U69MgkdENpOtJEHWVcn8XL80Nj
- vR7jbTpWCxHU7uIiB2g==
-X-Proofpoint-GUID: czlX2P7hXv12V3PGer_OJzZI345CX_cz
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1143,Hydra:6.1.51,FMLib:17.12.100.49
- definitions=2026-03-26_03,2026-03-26_01,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- spamscore=0 lowpriorityscore=0 adultscore=0 impostorscore=0 malwarescore=0
- suspectscore=0 phishscore=0 priorityscore=1501 bulkscore=0 clxscore=1011
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2603050001 definitions=main-2603260119
+Mime-Version: 1.0
+References: <20260305-module-signature-uapi-v3-0-92f45ea6028c@linutronix.de>
+X-Mailer: b4 0.14.3
+Message-ID: <177455561121.2009594.1781899946157697823.b4-ty@google.com>
+Subject: Re: [PATCH v3 0/8] module: Move 'struct module_signature' to UAPI
+From: Sami Tolvanen <samitolvanen@google.com>
+To: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, 
+	Luis Chamberlain <mcgrof@kernel.org>, Petr Pavlu <petr.pavlu@suse.com>, 
+	Daniel Gomez <da.gomez@kernel.org>, Aaron Tomlin <atomlin@atomlin.com>, 
+	Heiko Carstens <hca@linux.ibm.com>, Vasily Gorbik <gor@linux.ibm.com>, 
+	Alexander Gordeev <agordeev@linux.ibm.com>, Christian Borntraeger <borntraeger@linux.ibm.com>, 
+	Sven Schnelle <svens@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, 
+	Roberto Sassu <roberto.sassu@huawei.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, 
+	Eric Snowberg <eric.snowberg@oracle.com>, Paul Moore <paul@paul-moore.com>, 
+	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
+	Nathan Chancellor <nathan@kernel.org>, Nicolas Schier <nsc@kernel.org>, Alexei Starovoitov <ast@kernel.org>, 
+	Daniel Borkmann <daniel@iogearbox.net>, Andrii Nakryiko <andrii@kernel.org>, 
+	Martin KaFai Lau <martin.lau@linux.dev>, Eduard Zingerman <eddyz87@gmail.com>, Song Liu <song@kernel.org>, 
+	Yonghong Song <yonghong.song@linux.dev>, John Fastabend <john.fastabend@gmail.com>, 
+	KP Singh <kpsingh@kernel.org>, Stanislav Fomichev <sdf@fomichev.me>, Hao Luo <haoluo@google.com>, 
+	Jiri Olsa <jolsa@kernel.org>, Shuah Khan <shuah@kernel.org>, 
+	"=?utf-8?q?Thomas_Wei=C3=9Fschuh?=" <thomas.weissschuh@linutronix.de>
+Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, 
+	linux-modules@vger.kernel.org, linux-s390@vger.kernel.org, 
+	linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, 
+	linux-kbuild@vger.kernel.org, bpf@vger.kernel.org, 
+	linux-kselftest@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, 05 Mar 2026 10:31:36 +0100, Thomas Wei=C3=9Fschuh wrote:
+> This structure definition is used outside the kernel proper.
+> For example in kmod and the kernel build environment.
+>=20
+> To allow reuse, move it to a new UAPI header.
+>=20
+> While it is not a true UAPI, it is a common practice to have
+> non-UAPI interface definitions in the kernel's UAPI headers.
+>=20
+> [...]
+
+Applied to modules-next, thanks!
+
+[1/8] extract-cert: drop unused definition of PKEY_ID_PKCS7
+      commit: 137676d4482d8b8d755890b4ed29fe8223661d20
+[2/8] module: Drop unused signature types
+      commit: 8988913aacee82e5401bf3b96839731982dcbde7
+[3/8] module: Give 'enum pkey_id_type' a more specific name
+      commit: acd87264af525dba6e9355310e8acdf066a5f6b5
+[4/8] module: Give MODULE_SIG_STRING a more descriptive name
+      commit: 2ae4ea2d9aaf25cb74fbc23450b1b8f0a5b7aa89
+[5/8] module: Move 'struct module_signature' to UAPI
+      commit: f9909cf0a2dcc9e99377f3fcc965ccd93e518e34
+[6/8] tools uapi headers: add linux/module_signature.h
+      commit: d2d7561dc656748f592cc34d34bf5db8d5c67f7b
+[7/8] sign-file: use 'struct module_signature' from the UAPI headers
+      commit: e340db306c3bb85877490f33a78eb80549ac43a7
+[8/8] selftests/bpf: verify_pkcs7_sig: Use 'struct module_signature' from t=
+he UAPI headers
+      commit: 55722b3f80377103bac6ac748554129108c75651
+
+Best regards,
+
+	Sami
 
 
-On 3/24/26 4:30 PM, Jarkko Sakkinen wrote:
-> TPM_DEBUG, and other similar flags, are a non-standard way to specify a
-> feature in Linux kernel.  Introduce CONFIG_TRUSTED_KEYS_DEBUG for
-> trusted keys, and use it to replace these ad-hoc feature flags.
->
-> Given that trusted keys debug dumps can contain sensitive data, harden
-> the feature as follows:
->
-> 1. In the Kconfig description postulate that pr_debug() statements must be
->     used.
-> 2. Use pr_debug() statements in TPM 1.x driver to print the protocol dump.
->
-> Traces, when actually needed, can be easily enabled by providing
-> trusted.dyndbg='+p' in the kernel command-line.
->
-> Cc: Srish Srinivasan <ssrish@linux.ibm.com>
-> Reported-by: Nayna Jain <nayna@linux.ibm.com>
-> Closes: https://lore.kernel.org/all/7f8b8478-5cd8-4d97-bfd0-341fd5cf10f9@linux.ibm.com/
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-
-
-Tested on PKWM and emulated TPM backends.
-
-Tested-by: Srish Srinivasan <ssrish@linux.ibm.com>
-
-
-> ---
-> v2:
-> - Implement for all trusted keys backends.
-> - Add HAVE_TRUSTED_KEYS_DEBUG as it is a good practice despite full
->    coverage.
-> ---
->   include/keys/trusted-type.h               | 18 +++++-------
->   security/keys/trusted-keys/Kconfig        | 19 ++++++++++++
->   security/keys/trusted-keys/trusted_caam.c |  4 +--
->   security/keys/trusted-keys/trusted_tpm1.c | 36 +++++++++++------------
->   4 files changed, 46 insertions(+), 31 deletions(-)
->
-> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
-> index 03527162613f..620a1f890b6b 100644
-> --- a/include/keys/trusted-type.h
-> +++ b/include/keys/trusted-type.h
-> @@ -83,18 +83,16 @@ struct trusted_key_source {
->   
->   extern struct key_type key_type_trusted;
->   
-> -#define TRUSTED_DEBUG 0
-> -
-> -#if TRUSTED_DEBUG
-> +#ifdef CONFIG_TRUSTED_KEYS_DEBUG
->   static inline void dump_payload(struct trusted_key_payload *p)
->   {
-> -	pr_info("key_len %d\n", p->key_len);
-> -	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
-> -		       16, 1, p->key, p->key_len, 0);
-> -	pr_info("bloblen %d\n", p->blob_len);
-> -	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
-> -		       16, 1, p->blob, p->blob_len, 0);
-> -	pr_info("migratable %d\n", p->migratable);
-> +	pr_debug("key_len %d\n", p->key_len);
-> +	print_hex_dump_debug("key ", DUMP_PREFIX_NONE,
-> +			     16, 1, p->key, p->key_len, 0);
-> +	pr_debug("bloblen %d\n", p->blob_len);
-> +	print_hex_dump_debug("blob ", DUMP_PREFIX_NONE,
-> +			     16, 1, p->blob, p->blob_len, 0);
-> +	pr_debug("migratable %d\n", p->migratable);
->   }
->   #else
->   static inline void dump_payload(struct trusted_key_payload *p)
-> diff --git a/security/keys/trusted-keys/Kconfig b/security/keys/trusted-keys/Kconfig
-> index 9e00482d886a..2ad9ba0e03f1 100644
-> --- a/security/keys/trusted-keys/Kconfig
-> +++ b/security/keys/trusted-keys/Kconfig
-> @@ -1,10 +1,25 @@
->   config HAVE_TRUSTED_KEYS
->   	bool
->   
-> +config HAVE_TRUSTED_KEYS_DEBUG
-> +	bool
-> +
-> +config TRUSTED_KEYS_DEBUG
-> +	bool "Debug trusted keys"
-> +	depends on HAVE_TRUSTED_KEYS_DEBUG
-> +	default n
-> +	help
-> +	  Trusted keys backends and core code that support debug dumps
-> +	  can opt-in that feature here. Dumps must only use DEBUG
-> +	  level output, as sensitive data may pass by. In the
-> +	  kernel-command line traces can be enabled via
-> +	  trusted.dyndbg='+p'.
-> +
->   config TRUSTED_KEYS_TPM
->   	bool "TPM-based trusted keys"
->   	depends on TCG_TPM >= TRUSTED_KEYS
->   	default y
-> +	select HAVE_TRUSTED_KEYS_DEBUG
->   	select CRYPTO_HASH_INFO
->   	select CRYPTO_LIB_SHA1
->   	select CRYPTO_LIB_UTILS
-> @@ -23,6 +38,7 @@ config TRUSTED_KEYS_TEE
->   	bool "TEE-based trusted keys"
->   	depends on TEE >= TRUSTED_KEYS
->   	default y
-> +	select HAVE_TRUSTED_KEYS_DEBUG
->   	select HAVE_TRUSTED_KEYS
->   	help
->   	  Enable use of the Trusted Execution Environment (TEE) as trusted
-> @@ -33,6 +49,7 @@ config TRUSTED_KEYS_CAAM
->   	depends on CRYPTO_DEV_FSL_CAAM_JR >= TRUSTED_KEYS
->   	select CRYPTO_DEV_FSL_CAAM_BLOB_GEN
->   	default y
-> +	select HAVE_TRUSTED_KEYS_DEBUG
->   	select HAVE_TRUSTED_KEYS
->   	help
->   	  Enable use of NXP's Cryptographic Accelerator and Assurance Module
-> @@ -42,6 +59,7 @@ config TRUSTED_KEYS_DCP
->   	bool "DCP-based trusted keys"
->   	depends on CRYPTO_DEV_MXS_DCP >= TRUSTED_KEYS
->   	default y
-> +	select HAVE_TRUSTED_KEYS_DEBUG
->   	select HAVE_TRUSTED_KEYS
->   	help
->   	  Enable use of NXP's DCP (Data Co-Processor) as trusted key backend.
-> @@ -50,6 +68,7 @@ config TRUSTED_KEYS_PKWM
->   	bool "PKWM-based trusted keys"
->   	depends on PSERIES_PLPKS >= TRUSTED_KEYS
->   	default y
-> +	select HAVE_TRUSTED_KEYS_DEBUG
->   	select HAVE_TRUSTED_KEYS
->   	help
->   	  Enable use of IBM PowerVM Key Wrapping Module (PKWM) as a trusted key backend.
-> diff --git a/security/keys/trusted-keys/trusted_caam.c b/security/keys/trusted-keys/trusted_caam.c
-> index 601943ce0d60..015cddc6b53c 100644
-> --- a/security/keys/trusted-keys/trusted_caam.c
-> +++ b/security/keys/trusted-keys/trusted_caam.c
-> @@ -28,10 +28,10 @@ static const match_table_t key_tokens = {
->   	{opt_err, NULL}
->   };
->   
-> -#ifdef CAAM_DEBUG
-> +#ifdef CONFIG_TRUSTED_KEYS_DEBUG
->   static inline void dump_options(const struct caam_pkey_info *pkey_info)
->   {
-> -	pr_info("key encryption algo %d\n", pkey_info->key_enc_algo);
-> +	pr_debug("key encryption algo %d\n", pkey_info->key_enc_algo);
->   }
->   #else
->   static inline void dump_options(const struct caam_pkey_info *pkey_info)
-> diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-> index c865c97aa1b4..8fe889c7cdd1 100644
-> --- a/security/keys/trusted-keys/trusted_tpm1.c
-> +++ b/security/keys/trusted-keys/trusted_tpm1.c
-> @@ -46,38 +46,36 @@ enum {
->   	SRK_keytype = 4
->   };
->   
-> -#define TPM_DEBUG 0
-> -
-> -#if TPM_DEBUG
-> +#ifdef CONFIG_TRUSTED_KEYS_DEBUG
->   static inline void dump_options(struct trusted_key_options *o)
->   {
-> -	pr_info("sealing key type %d\n", o->keytype);
-> -	pr_info("sealing key handle %0X\n", o->keyhandle);
-> -	pr_info("pcrlock %d\n", o->pcrlock);
-> -	pr_info("pcrinfo %d\n", o->pcrinfo_len);
-> -	print_hex_dump(KERN_INFO, "pcrinfo ", DUMP_PREFIX_NONE,
-> -		       16, 1, o->pcrinfo, o->pcrinfo_len, 0);
-> +	pr_debug("sealing key type %d\n", o->keytype);
-> +	pr_debug("sealing key handle %0X\n", o->keyhandle);
-> +	pr_debug("pcrlock %d\n", o->pcrlock);
-> +	pr_debug("pcrinfo %d\n", o->pcrinfo_len);
-> +	print_hex_dump_debug("pcrinfo ", DUMP_PREFIX_NONE,
-> +			     16, 1, o->pcrinfo, o->pcrinfo_len, 0);
->   }
->   
->   static inline void dump_sess(struct osapsess *s)
->   {
-> -	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
-> -		       16, 1, &s->handle, 4, 0);
-> -	pr_info("secret:\n");
-> -	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
-> -		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
-> -	pr_info("trusted-key: enonce:\n");
-> -	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
-> -		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
-> +	print_hex_dump_debug("trusted-key: handle ", DUMP_PREFIX_NONE,
-> +			     16, 1, &s->handle, 4, 0);
-> +	pr_debug("secret:\n");
-> +	print_hex_dump_debug("", DUMP_PREFIX_NONE,
-> +			     16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
-> +	pr_debug("trusted-key: enonce:\n");
-> +	print_hex_dump_debug("", DUMP_PREFIX_NONE,
-> +			     16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
->   }
->   
->   static inline void dump_tpm_buf(unsigned char *buf)
->   {
->   	int len;
->   
-> -	pr_info("\ntpm buffer\n");
-> +	pr_debug("\ntpm buffer\n");
->   	len = LOAD32(buf, TPM_SIZE_OFFSET);
-> -	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
-> +	print_hex_dump_debug("", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
->   }
->   #else
->   static inline void dump_options(struct trusted_key_options *o)
