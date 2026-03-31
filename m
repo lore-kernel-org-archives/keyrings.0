@@ -1,124 +1,109 @@
-Received: from mail-dl1-f74.google.com (mail-dl1-f74.google.com [74.125.82.74])
+Received: from mail-wm1-f52.google.com (mail-wm1-f52.google.com [209.85.128.52])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8821F347BD4
-	for <keyrings@vger.kernel.org>; Thu, 26 Mar 2026 20:06:53 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.82.74
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B20243E1208
+	for <keyrings@vger.kernel.org>; Tue, 31 Mar 2026 12:22:19 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.128.52
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1774555615; cv=none; b=CZwfRSSMg2Y8JGxIQbDB0l9Ze/TPvWc+TIc/nom1+TfRCi7DuGkNuFo9HE2vSaeGrxX3YZdDIOJDOKjyaDMuEBHrTbCA876msh6HXTvoe8ZP4L7tCNu1g0JVrq2vQgMj8u15/Pd7j6/DNeiAexrmgo0HCWQ9dTnHSv2I4ia3Gnk=
+	t=1774959740; cv=none; b=W1T1DWGq9bVa6Q2ebadGq2/cZV6b4g+jTZtWy676Ugu6erFEWlwEcShIgdfhQBO2n28abaYKIGsOW47wSoLQT+G4aj4T6U5cp8hbEF3tHtJuORZW1RP0Yfxk/ANwYbTtfCOH45ENEnPbvjLCpLACYILaNFfEYM+fDlBXby8E+hw=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1774555615; c=relaxed/simple;
-	bh=jj+yorpeEBxwk+7nym3Vu8xagBVeQ+tug3rKRqZFhbU=;
-	h=Date:In-Reply-To:Mime-Version:References:Message-ID:Subject:From:
-	 To:Cc:Content-Type; b=io/GzTA2TGRfUMQDJ6RawJpdYbJnGz0JVfd29FGd5M0i2d2RIJelVtV9M2oZXZi5dOrnAEjHGQUzWiqItN8t8BokzrWQT1q38frSZ2XbHDmJk5CkExcnuUugPmuuxeN72oob49/SqxhZQCNkwcVy3Racz1HMTeMIDp6IBGtXWGk=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--samitolvanen.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=lZiTYQ6K; arc=none smtp.client-ip=74.125.82.74
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--samitolvanen.bounces.google.com
+	s=arc-20240116; t=1774959740; c=relaxed/simple;
+	bh=yBZY08O+PquoIPkc9X1R3mmq3ZSMTpZWXuFFS2nK6Eo=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=jn3dFilcuB1eXpH0mjBT163S5KQKp9ZKyniebZEP0KXs+xslz6hBRFUNJa7U5QzyExbcq1jfMrnVbUbxHYWbFc98FXk30+xKyXV4OYO1uVZy4xIfgyP+C0nLWnIo4kXLuaRfPbqiqxUSlHus4MlfUIvxp1s7EkNc7qMwuS84BFw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=hofufR+S; arc=none smtp.client-ip=209.85.128.52
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="lZiTYQ6K"
-Received: by mail-dl1-f74.google.com with SMTP id a92af1059eb24-12a77b008deso4920892c88.0
-        for <keyrings@vger.kernel.org>; Thu, 26 Mar 2026 13:06:53 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="hofufR+S"
+Received: by mail-wm1-f52.google.com with SMTP id 5b1f17b1804b1-486fc4725f0so57341975e9.1
+        for <keyrings@vger.kernel.org>; Tue, 31 Mar 2026 05:22:19 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20251104; t=1774555613; x=1775160413; darn=vger.kernel.org;
-        h=content-transfer-encoding:cc:to:from:subject:message-id:references
-         :mime-version:in-reply-to:date:from:to:cc:subject:date:message-id
-         :reply-to;
-        bh=Q39vkXCHwVXHxLZOMIlHqDW4HE8OruDbuf0XK+bdxP4=;
-        b=lZiTYQ6Kyz0T/yPpRU+2Ues0ncOW+GZ8GrSdz9B5oe/4TO36d9Ev8LUF8ozT8UsAHd
-         2bjYRDZ3tiFtL7tXngPxVo8KHGLnfj9Aj3pVdD/+Xcc8IQ95oRsE7B8xRrgyQowML9dw
-         qHSTkk5cAotTvdMS4d7EOVfKI1ZcKPyReHPbSanRuWfrxB/Dedsb7i+hStuMvIV3BEE1
-         uE1LfztRPH3kETgM/+rYr2JyHnGu+ig1uWp2hjgJ3tYF4HUnE5XV5xlClzEO+7B3nJEA
-         UlfD7isuxSZXtc6vWE7NEVDt6oCIbop+EGUh/HTcGHPuVP15IcqVfi33sCVcfIqtjh/R
-         uSXg==
+        d=gmail.com; s=20251104; t=1774959738; x=1775564538; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:sender:from:to:cc:subject:date:message-id:reply-to;
+        bh=R8DsriGRZc/vlEI1YAFmA+byoc1+oLgtee4dpAnNTZY=;
+        b=hofufR+S07q6x1DJ2I8xz9+0B1SSTOonrLkb/h9bpmBT6HJ9HPOs5mDEqrHeq/2ibd
+         NjMapTPg2SodMAl95Buz170U0GfjlOH7NvLM99frZOQZufKMgytrm4hlXRGxprnkWtAP
+         xpTRZ7xLdBs5umnrwIhyqNJ6qETOqE3umtqvbpeBR0G4xhOs8IGYzYmkTU4wWZHENs7E
+         eC5XXAYWIKcSk5AJmXlUGtuNUYNgoqZYgdP9IBgjvhjAXfjOKa5g+tKiYbukinNjvphz
+         86hz4/rllTS6FmJM5BVA8easeT1Dd+/qh11sZJMZqOs4eLytugdnxGMA1D1MAUHlAQxB
+         stXQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1774555613; x=1775160413;
-        h=content-transfer-encoding:cc:to:from:subject:message-id:references
-         :mime-version:in-reply-to:date:x-gm-message-state:from:to:cc:subject
-         :date:message-id:reply-to;
-        bh=Q39vkXCHwVXHxLZOMIlHqDW4HE8OruDbuf0XK+bdxP4=;
-        b=GzDVKxH8rxRy1Xk6mvXFSbNpjka7rvEGdmwOqY58A+wao8L5dDaLkV/tEsCxApWXZP
-         +OO6+jZC/L9ML3cQGP8t41fheoEJPpaMpdZ1XdlgTMVwRv3xW7ucYDIRvnkuLCgL9spd
-         4L8LytLlWLFLyGNgHJlXwbYI/mFFfD0LF7Dfa5OaxXRO6y0AQqxwu3XAloPc9UWVX/dc
-         7qwpJY4WzrIYxxx4WNKtPC0rYzo6Zvod90l8WPpRaT5uOnh1tfg5U3mnzdsgmxEFtJaH
-         vH7sdjoNNQuJx+7Zl7E24TAexycqj5ejHhVtcFowTDTFz6unbNWhrRedEeG9YddjRRqH
-         +68Q==
-X-Gm-Message-State: AOJu0Yx2uZo6/1tG2sVobH0vyudwagv01ffgA6GW+cze8mUd6BLIsQKm
-	RbKWqVqvDe4DrIbe4uH516HcN0PUIZsFZp1LmEPfQMh4lBCKRjkr7qle0y9WxqQO9qv6WynYdbi
-	yqO4uLrMnhYeokLeSUWjWEp5pAzSxPg==
-X-Received: from dleb3-n1.prod.google.com ([2002:a05:701b:4243:10b0:12a:86e5:44de])
- (user=samitolvanen job=prod-delivery.src-stubby-dispatcher) by
- 2002:a05:7022:125:b0:128:cf5c:5362 with SMTP id a92af1059eb24-12a96e5cde5mr5257574c88.12.1774555612457;
- Thu, 26 Mar 2026 13:06:52 -0700 (PDT)
-Date: Thu, 26 Mar 2026 20:06:51 +0000
-In-Reply-To: <20260305-module-signature-uapi-v3-0-92f45ea6028c@linutronix.de>
+        d=1e100.net; s=20251104; t=1774959738; x=1775564538;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:sender:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=R8DsriGRZc/vlEI1YAFmA+byoc1+oLgtee4dpAnNTZY=;
+        b=hPn3ddP703eoc3uIW1qTW9dJQV4338Nxuly+WQxnYyWYYlFhxJ07Xw4MLVioiiZ5Zk
+         JoBDiIpfSmqeBxPEWtL8px9oQagnWu8N/AFdnTi4WXziyy7IU4Xp8kBvWLy6PXOWV24u
+         BDmnCCWNWhp5EAls+qky2nAga4SV+j0gr4P2tULBqNgVEbZm9eBIvaRKKnw+igsNGMFa
+         RseBfWfoUwq0uemFV6VVrYF4EudNm4HGRKiuM1dxpVUzeH97o77WuRA+rgeycT8mknH8
+         O0D3Bpcp7ED9bD/ReIevU3ZvY6qpYkfjs7oLrkiW3+0JFJH1ZAsbBROLLobyR3LxI6r+
+         RqlA==
+X-Forwarded-Encrypted: i=1; AJvYcCXTbiCK9LLlBnoIC/puiClzIaN4j7GM4fvZeS3eETZizXTR+FVKVqZ0GKT5HoAN1mw1Fl0Mb0t/ug==@vger.kernel.org
+X-Gm-Message-State: AOJu0Yz6MyI0XpTxexJ+SmLfg6rI4OuqZeizK6g4zYmomnoAL6PG79uD
+	+xpki+D/hsUSGGat0SE/OWMTAs6ebmvM954nY0hLxu4ugMea64WgPLWzX91EyoII0Q/iRQ==
+X-Gm-Gg: ATEYQzwHMOxEvwfjJvLPKNIj20STcDQ3gof7guIcZx1jrC/eBtVo3CUaq4N3uzWd/+Y
+	JbP2RsJWfNoZIcRoNhdw/ndUVbXBpGjFxhttZp2tHqwy5uyh7I3XoaohSvg28pLCCh1//JdJXFv
+	tpiPvn05+PZAoVQ7gjD28E9VLB3sK5EL+svIWOVzudUZb2CAnc+zzaGUb0+vHggE6H/ftJw/2jW
+	6gFy5Ao6j9wPjZ1n5fTCZaxd6pq65pe9uovsHjD+4H5U59m65lQ78Z1W5TOKkvbJrcaZg8hAl5e
+	Qxnj/tnRIH27W+0ZfAbeDss+ahNCRrv2+UBILQ0Cu9mJYjCbRhyT+5wlBZ/QjDvCZbR5YbE4AvR
+	Pu1GoNbYwx3ttSiU+jN4l0Ur1i1QaOUczIfYWhlcW0+2KbtYThnNiYxPtt9FOfdQPImabobLIQ+
+	azDev1NQt7GjS17Y9eUAwUKdmb5ncdhJwiyU59YCUQwSBZawxHuHRq1ss=
+X-Received: by 2002:a05:600c:83c3:b0:485:3428:774c with SMTP id 5b1f17b1804b1-48878281a4cmr56435855e9.4.1774959737714;
+        Tue, 31 Mar 2026 05:22:17 -0700 (PDT)
+Received: from nixos-office (195-23-151-163.net.novis.pt. [195.23.151.163])
+        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-4887aecf6e6sm16977185e9.13.2026.03.31.05.22.16
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 31 Mar 2026 05:22:17 -0700 (PDT)
+Sender: Julian Braha <julian.braha@gmail.com>
+From: Julian Braha <julianbraha@gmail.com>
+To: dhowells@redhat.com,
+	rusty@rustcorp.com.au
+Cc: lukas@wunner.de,
+	ignat@linux.win,
+	keyrings@vger.kernel.org,
+	linux-crypto@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Julian Braha <julianbraha@gmail.com>
+Subject: [PATCH] keys: cleanup dead code in Kconfig for FIPS_SIGNATURE_SELFTEST
+Date: Tue, 31 Mar 2026 13:22:14 +0100
+Message-ID: <20260331122214.103145-1-julianbraha@gmail.com>
+X-Mailer: git-send-email 2.51.2
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-References: <20260305-module-signature-uapi-v3-0-92f45ea6028c@linutronix.de>
-X-Mailer: b4 0.14.3
-Message-ID: <177455561121.2009594.1781899946157697823.b4-ty@google.com>
-Subject: Re: [PATCH v3 0/8] module: Move 'struct module_signature' to UAPI
-From: Sami Tolvanen <samitolvanen@google.com>
-To: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, 
-	Luis Chamberlain <mcgrof@kernel.org>, Petr Pavlu <petr.pavlu@suse.com>, 
-	Daniel Gomez <da.gomez@kernel.org>, Aaron Tomlin <atomlin@atomlin.com>, 
-	Heiko Carstens <hca@linux.ibm.com>, Vasily Gorbik <gor@linux.ibm.com>, 
-	Alexander Gordeev <agordeev@linux.ibm.com>, Christian Borntraeger <borntraeger@linux.ibm.com>, 
-	Sven Schnelle <svens@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, 
-	Roberto Sassu <roberto.sassu@huawei.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, 
-	Eric Snowberg <eric.snowberg@oracle.com>, Paul Moore <paul@paul-moore.com>, 
-	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
-	Nathan Chancellor <nathan@kernel.org>, Nicolas Schier <nsc@kernel.org>, Alexei Starovoitov <ast@kernel.org>, 
-	Daniel Borkmann <daniel@iogearbox.net>, Andrii Nakryiko <andrii@kernel.org>, 
-	Martin KaFai Lau <martin.lau@linux.dev>, Eduard Zingerman <eddyz87@gmail.com>, Song Liu <song@kernel.org>, 
-	Yonghong Song <yonghong.song@linux.dev>, John Fastabend <john.fastabend@gmail.com>, 
-	KP Singh <kpsingh@kernel.org>, Stanislav Fomichev <sdf@fomichev.me>, Hao Luo <haoluo@google.com>, 
-	Jiri Olsa <jolsa@kernel.org>, Shuah Khan <shuah@kernel.org>, 
-	"=?utf-8?q?Thomas_Wei=C3=9Fschuh?=" <thomas.weissschuh@linutronix.de>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, 
-	linux-modules@vger.kernel.org, linux-s390@vger.kernel.org, 
-	linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, 
-	linux-kbuild@vger.kernel.org, bpf@vger.kernel.org, 
-	linux-kselftest@vger.kernel.org
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-On Thu, 05 Mar 2026 10:31:36 +0100, Thomas Wei=C3=9Fschuh wrote:
-> This structure definition is used outside the kernel proper.
-> For example in kmod and the kernel build environment.
->=20
-> To allow reuse, move it to a new UAPI header.
->=20
-> While it is not a true UAPI, it is a common practice to have
-> non-UAPI interface definitions in the kernel's UAPI headers.
->=20
-> [...]
+There is already an 'if ASYMMETRIC_KEY_TYPE' condition wrapping
+FIPS_SIGNATURE_SELFTEST, making the 'depends on' statement a
+duplicate dependency (dead code).
 
-Applied to modules-next, thanks!
+I propose leaving the outer 'if ASYMMETRIC_KEY_TYPE...endif' and removing
+the individual 'depends on' statement.
 
-[1/8] extract-cert: drop unused definition of PKEY_ID_PKCS7
-      commit: 137676d4482d8b8d755890b4ed29fe8223661d20
-[2/8] module: Drop unused signature types
-      commit: 8988913aacee82e5401bf3b96839731982dcbde7
-[3/8] module: Give 'enum pkey_id_type' a more specific name
-      commit: acd87264af525dba6e9355310e8acdf066a5f6b5
-[4/8] module: Give MODULE_SIG_STRING a more descriptive name
-      commit: 2ae4ea2d9aaf25cb74fbc23450b1b8f0a5b7aa89
-[5/8] module: Move 'struct module_signature' to UAPI
-      commit: f9909cf0a2dcc9e99377f3fcc965ccd93e518e34
-[6/8] tools uapi headers: add linux/module_signature.h
-      commit: d2d7561dc656748f592cc34d34bf5db8d5c67f7b
-[7/8] sign-file: use 'struct module_signature' from the UAPI headers
-      commit: e340db306c3bb85877490f33a78eb80549ac43a7
-[8/8] selftests/bpf: verify_pkcs7_sig: Use 'struct module_signature' from t=
-he UAPI headers
-      commit: 55722b3f80377103bac6ac748554129108c75651
+This dead code was found by kconfirm, a static analysis tool for Kconfig.
 
-Best regards,
+Signed-off-by: Julian Braha <julianbraha@gmail.com>
+---
+ crypto/asymmetric_keys/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
-	Sami
-
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index e50bd9b3e27b..6a2f664046ef 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -95,7 +95,6 @@ config FIPS_SIGNATURE_SELFTEST
+ 	  verification code, using some built in data.  This is required
+ 	  for FIPS.
+ 	depends on KEYS
+-	depends on ASYMMETRIC_KEY_TYPE
+ 	depends on PKCS7_MESSAGE_PARSER=X509_CERTIFICATE_PARSER
+ 	depends on X509_CERTIFICATE_PARSER
+ 	depends on CRYPTO_RSA
+-- 
+2.51.2
 
