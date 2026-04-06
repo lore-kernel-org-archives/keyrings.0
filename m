@@ -1,83 +1,77 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from out-177.mta1.migadu.com (out-177.mta1.migadu.com [95.215.58.177])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 063D938759D;
-	Mon,  6 Apr 2026 16:55:07 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5DBD238CFFC;
+	Mon,  6 Apr 2026 17:59:01 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=95.215.58.177
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1775494508; cv=none; b=EHM4UIWclohcYnwBJ9icPmjQl3CCAJzjCKQLEKVkaK97aRmEJClbtbx4rDMh6CcbFGleq2Hy5ia1P2l7rf9blmhTvwA5+khEsYIY95OfLdx00Sma+9U5Fd2hY73FLArqiq8FPOv1p8cdJf89Ku6cLKZnw+5Hu0lvVaiLmK9HgVI=
+	t=1775498342; cv=none; b=A6zQDdkoGdAzlLkFXEkJgGrQJ390A04b2oiM2iHUJfF+JQ0T5RCy3EumRx4zLumxB8iJ03qbDVFYot2hJyUbbZulcF5PTubR79OA76NveMU2JUYEH/g2uu3GFP+nYSawKNOT6zJ5WgHn00G4klP64aEoh6sq7w1iuqDoag92990=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1775494508; c=relaxed/simple;
-	bh=YPa/uyVI/zqPFLBKVoFkDJwBwijtEHRHs03s3tfOZ/o=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=j6W92YKfkwNoOr/kNCfh1P1pQDwSYwx8Wxjg+dUUFRHnFlvmAyXtv2wjCp6TmhCYzzShbZPuIpd+QJVQxzmZ1tCdwz+xk4yDQjwTkBjkcRnm8wZtIWrepBUtL4tB4QhE8OXQtNBPfCyn63hg5jA6MDNbSUUsl+qd6euoR30E0DU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=RPSu1G8y; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1775498342; c=relaxed/simple;
+	bh=WKatVZ4ijznTXfeAzfxBPkp0ScePMGQUAQ2+GI9ot5o=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=KkaaqF8L4LFvbw86L73HaYqq7P5PEZUxFuHZsxktZr/ccdLoByrYO6Rn2sPlFX8agFhrODN8uVTop7E3gNM5hqQIrFWx/RUKEajmLtpcsEJeScjl17C4NIWE7+6J49OEzW3z6hbFL6ckx4xGFiFu8J/HclQOiRzLnjbZZ8uo2DI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev; spf=pass smtp.mailfrom=linux.dev; dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b=fKGHf8DK; arc=none smtp.client-ip=95.215.58.177
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.dev
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="RPSu1G8y"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 4343BC4CEF7;
-	Mon,  6 Apr 2026 16:55:07 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1775494507;
-	bh=YPa/uyVI/zqPFLBKVoFkDJwBwijtEHRHs03s3tfOZ/o=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=RPSu1G8yBRgJShEMiu/+j9upL2j+a0NY3G8eULqcdFSnVU+teFCtNYnqjbCFLkUj2
-	 eMRppvBNylHBFD+njmyliTADdLua7U7arTjjkYbfU5TQW7Mivuv1/2ExjlAh/PcXnS
-	 IZpfs1K7j+enuMZ8dsjdg3XlSa5ci/cbq+biGIiHagNSLKjOjq1TUzkfkYc4Uduqkz
-	 fzgqWC69jt8FIqUNX6fqQcCcYKUdEu1K8Hrjux3iTMXDW/Y/MsmDvz1vSfaTdBlsp3
-	 Bly1FwKmjXyKXPYDXGj4I7vNjBvQCNlzk0Da+qPhwU9ytoBLDupG4J0bwENGxvpBdI
-	 /qHBboGghIp3g==
-Date: Mon, 6 Apr 2026 09:53:50 -0700
-From: Eric Biggers <ebiggers@kernel.org>
-To: Stefan Berger <stefanb@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org, zohar@linux.ibm.com,
-	roberto.sassu@huawei.com, David Howells <dhowells@redhat.com>,
-	Lukas Wunner <lukas@wunner.de>, Ignat Korchagin <ignat@linux.win>,
-	keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 1/3] crypto: public_key: Remove check for valid hash_algo
- for ML-DSA keys
-Message-ID: <20260406165350.GD2971@sol>
-References: <20260405231224.4008298-1-stefanb@linux.ibm.com>
- <20260405231224.4008298-2-stefanb@linux.ibm.com>
+	dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b="fKGHf8DK"
+X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
+	t=1775498339;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=GsA0DQ7RZ25+fuPh8E9nbhfynHH+2ccVrJP5vTigsvs=;
+	b=fKGHf8DKSJ6N5tXqc6Yv5YQpuEsbs0mtXnxqRlrkOvO0on3gfEYEdFkV/IuUzYqJ/tVILG
+	k3LB0F7bPedV91BXyF5/FmsD8Qu5xYKc2cK74vxN6qoH8v/ElX7drvZv2hdjXId7nR7Xnq
+	X+YMqxaZS+FqMBHQR0z0yDT7V4HlofQ=
+From: Thorsten Blum <thorsten.blum@linux.dev>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Kees Cook <kees@kernel.org>,
+	"Gustavo A. R. Silva" <gustavoars@kernel.org>
+Cc: Thorsten Blum <thorsten.blum@linux.dev>,
+	keyrings@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-hardening@vger.kernel.org
+Subject: [PATCH net-next 2/2] KEYS: annotate struct user_key_payload with __counted_by
+Date: Mon,  6 Apr 2026 19:58:10 +0200
+Message-ID: <20260406175810.1018681-4-thorsten.blum@linux.dev>
+In-Reply-To: <20260406175810.1018681-3-thorsten.blum@linux.dev>
+References: <20260406175810.1018681-3-thorsten.blum@linux.dev>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260405231224.4008298-2-stefanb@linux.ibm.com>
+X-Developer-Signature: v=1; a=openpgp-sha256; l=834; i=thorsten.blum@linux.dev; h=from:subject; bh=WKatVZ4ijznTXfeAzfxBPkp0ScePMGQUAQ2+GI9ot5o=; b=owGbwMvMwCUWt7pQ4caZUj3G02pJDJmXv1jzr01u3xn/MXrvXOn5BrseRLkuc7MKcOvhTyx79 azih4lgRykLgxgXg6yYIsuDWT9m+JbWVG4yidgJM4eVCWQIAxenAExEWYCRYVFc6Yq7x8Lec72d +qVY5UfxRPuaO7cmm+4Nl3w3beFs34uMDCePXp9r0/7j+mu/mmZuVT3/+d07hEIvsTxaGNsz4Ur uLz4A
+X-Developer-Key: i=thorsten.blum@linux.dev; a=openpgp; fpr=1D60735E8AEF3BE473B69D84733678FD8DFEEAD4
+Content-Transfer-Encoding: 8bit
+X-Migadu-Flow: FLOW_OUT
 
-On Sun, Apr 05, 2026 at 07:12:22PM -0400, Stefan Berger wrote:
-> Remove the check for the hash_algo since ML-DSA is only used in pure mode
-> and there is no relevance of a hash_algo for the input data.
-> 
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Lukas Wunner <lukas@wunner.de>
-> Cc: Ignat Korchagin <ignat@linux.win>
-> Cc: keyrings@vger.kernel.org
-> Cc: linux-crypto@vger.kernel.org
-> Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
-> ---
->  crypto/asymmetric_keys/public_key.c | 5 -----
->  1 file changed, 5 deletions(-)
-> 
-> diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-> index 09a0b83d5d77..df6918a77ab8 100644
-> --- a/crypto/asymmetric_keys/public_key.c
-> +++ b/crypto/asymmetric_keys/public_key.c
-> @@ -147,11 +147,6 @@ software_key_determine_akcipher(const struct public_key *pkey,
->  		   strcmp(pkey->pkey_algo, "mldsa87") == 0) {
->  		if (strcmp(encoding, "raw") != 0)
->  			return -EINVAL;
-> -		if (!hash_algo)
-> -			return -EINVAL;
-> -		if (strcmp(hash_algo, "none") != 0 &&
-> -		    strcmp(hash_algo, "sha512") != 0)
-> -			return -EINVAL;
+Add the __counted_by() compiler attribute to the flexible array member
+'data' to improve access bounds-checking via CONFIG_UBSAN_BOUNDS and
+CONFIG_FORTIFY_SOURCE.
 
-Does this broaden which hash algorithms are accepted for CMS signatures
-that use ML-DSA and contain signed attributes?
+Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
+---
+ include/keys/user-type.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-- Eric
+diff --git a/include/keys/user-type.h b/include/keys/user-type.h
+index 386c31432789..2305991f4fcd 100644
+--- a/include/keys/user-type.h
++++ b/include/keys/user-type.h
+@@ -27,7 +27,8 @@
+ struct user_key_payload {
+ 	struct rcu_head	rcu;		/* RCU destructor */
+ 	unsigned short	datalen;	/* length of this data */
+-	char		data[] __aligned(__alignof__(u64)); /* actual data */
++	char		data[]		/* actual data */
++			__aligned(__alignof__(u64)) __counted_by(datalen);
+ };
+ 
+ extern struct key_type key_type_user;
