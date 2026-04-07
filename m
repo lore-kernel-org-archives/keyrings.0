@@ -1,204 +1,257 @@
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pf1-f179.google.com (mail-pf1-f179.google.com [209.85.210.179])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6E5FA34E779;
-	Tue,  7 Apr 2026 02:42:22 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D285C72617
+	for <keyrings@vger.kernel.org>; Tue,  7 Apr 2026 05:39:57 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.179
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1775529743; cv=none; b=TugmwKxMMLSrvkmW1dxB0HbQEVDEvK+qbHhLVWLQPH3J1CH/Si4Hmubsjew20lIGF2gxCqpUZK/ZlbLIuY3ol+pT0aLeRPVP92YDL6lySmHofmfWj3I0ZCCV4sX3eqgzpVUzS21ZqTnWZMrGVCbBROhBZKkDWQdt3veQtdNMtXI=
+	t=1775540399; cv=none; b=GmJsufdPbiLn8nQMB7FO1a5nttqCy1Lco7McR/m7UY2uxlbXdhT5iceOh9EvsWNuiAbMBR8FZadXR4uDB+Z7ueOrRYC6jJsT8Mqx3+a0+sxr1TBEOz6EKuADKeUiNZzy4Ijk5oBlQzqarUIyT71Y8Se31Ltqdw3K2LlP2EJQBcU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1775529743; c=relaxed/simple;
-	bh=hD7ny2UtURDWAaGQWwY50Eq44SALrFdnbjtoJ7AO95A=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=F0fcoD8DwFQ4uPqYqr9JDB3lhKv5NpTu50inS4geytLLS/lj9XmQe4oBGEhMUNc/dWayRzCF/VGLJGLJdoZ6hDI+2sAxVWwywUq5UBJssi5YbI8gtHBdl+vGKE6df8IC0DiRRvvVCgyvvQBxIAV5ARKdnRj/pDeVz5p/2phOe84=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=ShToX8ul; arc=none smtp.client-ip=148.163.156.1
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1775540399; c=relaxed/simple;
+	bh=CPbR4ynt7lEIxU7KeKqzmpsU+S0DEoU9918vVnGWAyU=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=L7lGtDg/eET/ziPZjBoj4Vd8IUstMAe5iw2II7M6tXd0segwHd19pELYf7qQKSPSmQe9nPlwKQ88F764wGKBwkKpZYbb2bGivxXWt5x6b4mrsQ3J7rthrYMcBg4bU8t0MBSTRu31EB32ouI1o+Stx0nHhGSYFIPDPGGQUc+VoQE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=S1HEselG; arc=none smtp.client-ip=209.85.210.179
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="ShToX8ul"
-Received: from pps.filterd (m0356517.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 636LmWOm2302659;
-	Tue, 7 Apr 2026 02:42:05 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=SjZSuM
-	MSH7KpHIfjsafQiM652H97zB0x6jfHu2syyu4=; b=ShToX8ulucyElHd1M9VsEk
-	y5R6q8gi/gnUcC/e4NQEMsC/+INQLkteeycVnUzdiX6OwrgdQQI4pkQTOQDhb2Ng
-	Dg8bjcfkeICwDkd7gk3Nmt0d+2OtAXsgFVM9iCjM5bPlhdggmdTWVajrNy301cgw
-	rnQAeEKX+OhUfeW7LKY80k8lncklde/tUfm6B79eS//DMT5teq1zuQqadmwuG7Ba
-	lIvz8mlifNNvwJr6Q3qCZ9fFdxUquocGjYWeQY6IjR9uxznjsvvKoF6RD+heCkwF
-	1yo603R9VQFmlPDc/GhXBbCMxEQuJ2L8GQ2g50uI4E/ru6KXx9N/9nS1e4+UOBAQ
-	==
-Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4dcn2f8rde-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Tue, 07 Apr 2026 02:42:04 +0000 (GMT)
-Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma12.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 636L8t4c026655;
-	Tue, 7 Apr 2026 02:42:03 GMT
-Received: from smtprelay05.wdc07v.mail.ibm.com ([172.16.1.72])
-	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4dcmg7rsev-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Tue, 07 Apr 2026 02:42:03 +0000
-Received: from smtpav01.dal12v.mail.ibm.com (smtpav01.dal12v.mail.ibm.com [10.241.53.100])
-	by smtprelay05.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6372g1cK21299802
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Tue, 7 Apr 2026 02:42:02 GMT
-Received: from smtpav01.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id C38BD5806E;
-	Tue,  7 Apr 2026 02:42:01 +0000 (GMT)
-Received: from smtpav01.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 238F758078;
-	Tue,  7 Apr 2026 02:42:01 +0000 (GMT)
-Received: from [9.61.12.143] (unknown [9.61.12.143])
-	by smtpav01.dal12v.mail.ibm.com (Postfix) with ESMTP;
-	Tue,  7 Apr 2026 02:42:01 +0000 (GMT)
-Message-ID: <afc489d2-a62f-4604-8e56-219311b46516@linux.ibm.com>
-Date: Mon, 6 Apr 2026 22:42:00 -0400
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="S1HEselG"
+Received: by mail-pf1-f179.google.com with SMTP id d2e1a72fcca58-82cf636dac8so2101113b3a.3
+        for <keyrings@vger.kernel.org>; Mon, 06 Apr 2026 22:39:57 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1775540397; x=1776145197; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to;
+        bh=c6aWKXGZ6Pq+U28ptkw+X3vtfA+Mw7YFFm3cXv1/n54=;
+        b=S1HEselG+5nNhY2Srz5kkiAmr2xgljZF73LFbllCg5dV2APgGIPPtGXQ7Z0H/O9d4U
+         /nOu02Mnmmqff+ZxJKo4aVUhz/S6FrMxD/0E5xfnq4Ov69uZIhD742DUXdfuBqq5hbI2
+         n5X+ghfPsMGJs3gVCPSZa9skLTvBYZog5MAwTQyJX3RfvcoRFl+ai29SAkIlpMnYhJpg
+         Z++L9hry6+cgTmXb0e9f5UniMgRch8ATldMFvkzQ4x/uaVTFcbKmCXw6T5399KOGxIWv
+         g3ptevnb/VVaBSax0HO6gKNY4tX1YocCIog44PmM+NeBXKHgutD+TLxvGnk7MHx36hd9
+         H9PA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1775540397; x=1776145197;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=c6aWKXGZ6Pq+U28ptkw+X3vtfA+Mw7YFFm3cXv1/n54=;
+        b=QdGzT+aF6DUrxEuFPOQ02/Nhbe3TQxykqXnux3ui95OHAx2Q/duz3+mTJSRsZrx0Vd
+         jYJzAoHta4ZK7fLMfmScVzRghb3/nesHzR/L3ml1GP8MIcQYLKY44EOZMdH8qP1l17vm
+         mw6Lc00rDDIl1DI9c7fO0+6ZI3r3Ij8KgUIR064HYQyrtJTUDjLj+2koSXbc6qLvFtG8
+         n+WbEbABtkSyYjQ0s4+oXZ6hyrcSCx+CPadlWL/UVUUKhlBXhypegunnsvh+G4QttHQt
+         w8kHEz5zjn/QS4+YxefBmBcAFBeGv+/o9Rpe/AHF4/a2XXfgo0sI02AoxpceTDN5nxk5
+         sudg==
+X-Forwarded-Encrypted: i=1; AJvYcCVR/XERS3bomjxMbMnV9+GJwSJ9HoK1MFXkl8fHq/i7ZY3DzzD7ucBDXPhfayspnMd3h0idrcfXvg==@vger.kernel.org
+X-Gm-Message-State: AOJu0YyvJIHUj/IEzv7DzYiH7SLDen9RqBKoz0cG3qpcLKTsdNmuaem8
+	GMBAQ0yx1Pww5cXTrWvuFY8ZbqWmqLGdCxrc57MEYNlmFmHuGVE5zKn9
+X-Gm-Gg: AeBDievF9vA9Clu+YYMZpC7wxTlUwOE4o5I681oKNXGu52VHJoyfCyUf8ze+CKL/+Lh
+	K8qW6Bv5pkIJ6CgHB8QUnnVhp70Z8uMb9ZLSPuQ3PiCS00uQhw4guIo1dJURYobq8567r2pdmeM
+	r94XNJssgzgbzfu3NrspnoOI0RZiWSQ2/IErj9Y8KXfIQeiC1VK4GEPgW+cV3BakLFWuxG0oKOx
+	jgUtO71sAFucOJjAZ58vBQT329Irj8zLPiradsyizOmGkBpT0pe1hQc1OBMb+nXaLHNiPiyI3la
+	EwVFAQHSLsNeDOEdbk+2dD5k4VvCP7tb+aZiT9cMi28q8Pah5qIRw46M80LXHrlof2rrfkPDU0Z
+	oZiFJDaz5c2kGpCj/+aY+31s58GnTvWmA/t1Ubx/JOmzxI6GKpbCAjVoKmdcDPtnMiLZS/A2h6/
+	1zxNXmMjqZaUwDHtNXJMll
+X-Received: by 2002:a05:6a00:ab87:b0:82c:dc9c:e770 with SMTP id d2e1a72fcca58-82d0dbb2ad9mr14100756b3a.40.1775540397159;
+        Mon, 06 Apr 2026 22:39:57 -0700 (PDT)
+Received: from rockpi-5b ([45.112.0.243])
+        by smtp.gmail.com with ESMTPSA id d2e1a72fcca58-82cf9b23c6asm20873248b3a.10.2026.04.06.22.39.49
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 06 Apr 2026 22:39:56 -0700 (PDT)
+From: Anand Moon <linux.amoon@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Christian Brauner <brauner@kernel.org>,
+	Jan Kara <jack@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	David Hildenbrand <david@kernel.org>,
+	Lorenzo Stoakes <ljs@kernel.org>,
+	"Liam R. Howlett" <Liam.Howlett@oracle.com>,
+	Vlastimil Babka <vbabka@kernel.org>,
+	Mike Rapoport <rppt@kernel.org>,
+	Suren Baghdasaryan <surenb@google.com>,
+	Michal Hocko <mhocko@suse.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Nathan Chancellor <nathan@kernel.org>,
+	Kees Cook <kees@kernel.org>,
+	Thomas Gleixner <tglx@kernel.org>,
+	=?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <thomas.weissschuh@linutronix.de>,
+	Douglas Anderson <dianders@chromium.org>,
+	Shakeel Butt <shakeel.butt@linux.dev>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Masahiro Yamada <masahiroy@kernel.org>,
+	keyrings@vger.kernel.org (open list:CERTIFICATE HANDLING),
+	linux-kernel@vger.kernel.org (open list),
+	linux-fsdevel@vger.kernel.org (open list:FILESYSTEMS (VFS and infrastructure)),
+	linux-mm@kvack.org (open list:MEMORY MANAGEMENT - CORE)
+Cc: Anand Moon <linux.amoon@gmail.com>
+Subject: [PATCH v1] treewide: Fix indentation and whitespace in Kconfig files
+Date: Tue,  7 Apr 2026 11:09:34 +0530
+Message-ID: <20260407053945.14116-1-linux.amoon@gmail.com>
+X-Mailer: git-send-email 2.50.1
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v2] KEYS: trusted: Debugging as a feature
-To: Jarkko Sakkinen <jarkko@kernel.org>, linux-integrity@vger.kernel.org
-Cc: keyrings@vger.kernel.org, Srish Srinivasan <ssrish@linux.ibm.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
-        Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Ahmad Fatoum
- <a.fatoum@pengutronix.de>,
-        Pengutronix Kernel Team <kernel@pengutronix.de>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-References: <20260324110043.67248-1-jarkko@kernel.org>
-Content-Language: en-US
-From: Nayna Jain <nayna@linux.ibm.com>
-In-Reply-To: <20260324110043.67248-1-jarkko@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwNDA3MDAyMCBTYWx0ZWRfX8aXmQrBQcTzg
- 7i9Y1K3k1OL3Q28XWfljbac938IMGnfJvIPdgZmzHAJZfdVQFTLedQun/N9MgrDCESgmdxCWQ5+
- l0gLBFcq1jXxJ7xGx3bVlVvHMh3g4vI/ri6Z1BgDa3b8HxYkpOo33BLp56NJ6qR6g7dtoocfBLI
- XKdNL2Fxp1z6sAtd5Jf9/uYU2bGMjHTwvs7ODC9x2FOTvEO8u3pFIWOcXULIjgKFzCiZ0JdRyAt
- ifQM/B9j7i6yuw0A5aLT3225Ml1q5Yx0Z4mWn/GdavcYDbxDFNITAigkInBuJvCr7k9ox+udgEJ
- BFz9yLtgetNHLhlwzio0fAAVC1nrzTWBtDicoPILFmnWjI/RCGjcJ5VX/wkmfkByF9ebqjnUnJB
- NkE1JrMFs0HWtVNw7L0oGQDK7E48zEQ2hroMmTcSEFVjMsxD9pE5gc45ixKJagsj8xkezBNE0P4
- cL6JvUK+ME/TWsewM3w==
-X-Authority-Analysis: v=2.4 cv=FsY1OWrq c=1 sm=1 tr=0 ts=69d46efc cx=c_pps
- a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
- a=IkcTkHD0fZMA:10 a=A5OVakUREuEA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=U7nrCbtTmkRpXpFmAIza:22 a=VwQbUJbxAAAA:8
- a=VnNF1IyMAAAA:8 a=RvNJM_tC9QKxUJJT61sA:9 a=QEXdDO2ut3YA:10
-X-Proofpoint-ORIG-GUID: Ou-HjR_-LKL2lQukpjvvCC7pbCNSvzOy
-X-Proofpoint-GUID: Ou-HjR_-LKL2lQukpjvvCC7pbCNSvzOy
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1143,Hydra:6.1.51,FMLib:17.12.100.49
- definitions=2026-04-07_01,2026-04-03_01,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- bulkscore=0 priorityscore=1501 impostorscore=0 spamscore=0 phishscore=0
- lowpriorityscore=0 clxscore=1011 adultscore=0 malwarescore=0 suspectscore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2604010000 definitions=main-2604070020
+Content-Transfer-Encoding: 8bit
 
+Clean up inconsistent indentation (mixing tabs and spaces) and remove
+extraneous whitespace in several Kconfig files across the tree.
+This is a purely cosmetic change to improve readability.
 
-On 3/24/26 7:00 AM, Jarkko Sakkinen wrote:
-> TPM_DEBUG, and other similar flags, are a non-standard way to specify a
-> feature in Linux kernel.  Introduce CONFIG_TRUSTED_KEYS_DEBUG for
-> trusted keys, and use it to replace these ad-hoc feature flags.
->
-> Given that trusted keys debug dumps can contain sensitive data, harden
-> the feature as follows:
->
-> 1. In the Kconfig description postulate that pr_debug() statements must be
->     used.
-> 2. Use pr_debug() statements in TPM 1.x driver to print the protocol dump.
->
-> Traces, when actually needed, can be easily enabled by providing
-> trusted.dyndbg='+p' in the kernel command-line.
->
-> Cc: Srish Srinivasan <ssrish@linux.ibm.com>
-> Reported-by: Nayna Jain <nayna@linux.ibm.com>
-> Closes: https://lore.kernel.org/all/7f8b8478-5cd8-4d97-bfd0-341fd5cf10f9@linux.ibm.com/
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-> ---
-> v2:
-> - Implement for all trusted keys backends.
-> - Add HAVE_TRUSTED_KEYS_DEBUG as it is a good practice despite full
->    coverage.
-> ---
->   include/keys/trusted-type.h               | 18 +++++-------
->   security/keys/trusted-keys/Kconfig        | 19 ++++++++++++
->   security/keys/trusted-keys/trusted_caam.c |  4 +--
->   security/keys/trusted-keys/trusted_tpm1.c | 36 +++++++++++------------
->   4 files changed, 46 insertions(+), 31 deletions(-)
->
-> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
-> index 03527162613f..620a1f890b6b 100644
-> --- a/include/keys/trusted-type.h
-> +++ b/include/keys/trusted-type.h
-> @@ -83,18 +83,16 @@ struct trusted_key_source {
->   
->   extern struct key_type key_type_trusted;
->   
-> -#define TRUSTED_DEBUG 0
-> -
-> -#if TRUSTED_DEBUG
-> +#ifdef CONFIG_TRUSTED_KEYS_DEBUG
->   static inline void dump_payload(struct trusted_key_payload *p)
->   {
-> -	pr_info("key_len %d\n", p->key_len);
-> -	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
-> -		       16, 1, p->key, p->key_len, 0);
-> -	pr_info("bloblen %d\n", p->blob_len);
-> -	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
-> -		       16, 1, p->blob, p->blob_len, 0);
-> -	pr_info("migratable %d\n", p->migratable);
-> +	pr_debug("key_len %d\n", p->key_len);
-> +	print_hex_dump_debug("key ", DUMP_PREFIX_NONE,
-> +			     16, 1, p->key, p->key_len, 0);
-> +	pr_debug("bloblen %d\n", p->blob_len);
-> +	print_hex_dump_debug("blob ", DUMP_PREFIX_NONE,
-> +			     16, 1, p->blob, p->blob_len, 0);
-> +	pr_debug("migratable %d\n", p->migratable);
->   }
->   #else
->   static inline void dump_payload(struct trusted_key_payload *p)
-> diff --git a/security/keys/trusted-keys/Kconfig b/security/keys/trusted-keys/Kconfig
-> index 9e00482d886a..2ad9ba0e03f1 100644
-> --- a/security/keys/trusted-keys/Kconfig
-> +++ b/security/keys/trusted-keys/Kconfig
-> @@ -1,10 +1,25 @@
->   config HAVE_TRUSTED_KEYS
->   	bool
->   
-> +config HAVE_TRUSTED_KEYS_DEBUG
-> +	bool
-> +
-> +config TRUSTED_KEYS_DEBUG
-> +	bool "Debug trusted keys"
-> +	depends on HAVE_TRUSTED_KEYS_DEBUG
-> +	default n
-> +	help
-> +	  Trusted keys backends and core code that support debug dumps
-> +	  can opt-in that feature here. Dumps must only use DEBUG
-> +	  level output, as sensitive data may pass by. In the
-> +	  kernel-command line traces can be enabled via
-> +	  trusted.dyndbg='+p'.
+Adjust indentation from spaces to tab (+optional two spaces) as in
+coding style with command like:
 
-Would it be good idea to add an explicit note/warning:
+$ sed -e 's/^        /\t/' -i */Kconfig
 
+Signed-off-by: Anand Moon <linux.amoon@gmail.com>
+---
+ certs/Kconfig | 16 ++++++++--------
+ fs/Kconfig    |  6 +++---
+ init/Kconfig  | 24 ++++++++++++------------
+ lib/Kconfig   |  2 +-
+ mm/Kconfig    |  4 ++--
+ 5 files changed, 26 insertions(+), 26 deletions(-)
 
-NOTE: This option is intended for debugging purposes only. Do not enable 
-on production systems as debug output may expose sensitive cryptographic 
-material.
-If you are unsure, say N.
+diff --git a/certs/Kconfig b/certs/Kconfig
+index 8e39a80c7abe5..9d2bf7fb5b9e4 100644
+--- a/certs/Kconfig
++++ b/certs/Kconfig
+@@ -6,14 +6,14 @@ config MODULE_SIG_KEY
+ 	default "certs/signing_key.pem"
+ 	depends on MODULE_SIG || (IMA_APPRAISE_MODSIG && MODULES)
+ 	help
+-         Provide the file name of a private key/certificate in PEM format,
+-         or a PKCS#11 URI according to RFC7512. The file should contain, or
+-         the URI should identify, both the certificate and its corresponding
+-         private key.
+-
+-         If this option is unchanged from its default "certs/signing_key.pem",
+-         then the kernel will automatically generate the private key and
+-         certificate as described in Documentation/admin-guide/module-signing.rst
++	 Provide the file name of a private key/certificate in PEM format,
++	 or a PKCS#11 URI according to RFC7512. The file should contain, or
++	 the URI should identify, both the certificate and its corresponding
++	 private key.
++
++	 If this option is unchanged from its default "certs/signing_key.pem",
++	 then the kernel will automatically generate the private key and
++	 certificate as described in Documentation/admin-guide/module-signing.rst
+ 
+ choice
+ 	prompt "Type of module signing key to be generated"
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 0bfdaecaa8775..74110311968aa 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -78,7 +78,7 @@ config FS_DAX
+ 	  --map=mem:
+ 	  https://docs.pmem.io/ndctl-user-guide/ndctl-man-pages/ndctl-create-namespace
+ 
+-          For ndctl to work CONFIG_DEV_DAX needs to be enabled as well. For most
++	  For ndctl to work CONFIG_DEV_DAX needs to be enabled as well. For most
+ 	  file systems DAX support needs to be manually enabled globally or
+ 	  per-inode using a mount option as well.  See the file documentation in
+ 	  Documentation/filesystems/dax.rst for details.
+@@ -116,8 +116,8 @@ config FILE_LOCKING
+ 	default y
+ 	help
+ 	  This option enables standard file locking support, required
+-          for filesystems like NFS and for the flock() system
+-          call. Disabling this option saves about 11k.
++	  for filesystems like NFS and for the flock() system
++	  call. Disabling this option saves about 11k.
+ 
+ source "fs/crypto/Kconfig"
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 7484cd703bc1a..6fea1453c2941 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1036,14 +1036,14 @@ config PAGE_COUNTER
+ 	bool
+ 
+ config CGROUP_FAVOR_DYNMODS
+-        bool "Favor dynamic modification latency reduction by default"
+-        help
+-          This option enables the "favordynmods" mount option by default
+-          which reduces the latencies of dynamic cgroup modifications such
+-          as task migrations and controller on/offs at the cost of making
+-          hot path operations such as forks and exits more expensive.
++	bool "Favor dynamic modification latency reduction by default"
++	help
++	  This option enables the "favordynmods" mount option by default
++	  which reduces the latencies of dynamic cgroup modifications such
++	  as task migrations and controller on/offs at the cost of making
++	  hot path operations such as forks and exits more expensive.
+ 
+-          Say N if unsure.
++	  Say N if unsure.
+ 
+ config MEMCG
+ 	bool "Memory controller"
+@@ -1125,7 +1125,7 @@ config GROUP_SCHED_WEIGHT
+ 	def_bool n
+ 
+ config GROUP_SCHED_BANDWIDTH
+-        def_bool n
++	def_bool n
+ 
+ config FAIR_GROUP_SCHED
+ 	bool "Group scheduling for SCHED_OTHER"
+@@ -1625,10 +1625,10 @@ config LD_ORPHAN_WARN
+ 	depends on $(ld-option,--orphan-handling=error)
+ 
+ config LD_ORPHAN_WARN_LEVEL
+-        string
+-        depends on LD_ORPHAN_WARN
+-        default "error" if WERROR
+-        default "warn"
++	string
++	depends on LD_ORPHAN_WARN
++	default "error" if WERROR
++	default "warn"
+ 
+ config SYSCTL
+ 	bool
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 0f2fb96106476..4b0026954a370 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -589,7 +589,7 @@ config OBJAGG
+ config LWQ_TEST
+ 	bool "Boot-time test for lwq queuing"
+ 	help
+-          Run boot-time test of light-weight queuing.
++	  Run boot-time test of light-weight queuing.
+ 
+ endmenu
+ 
+diff --git a/mm/Kconfig b/mm/Kconfig
+index ebd8ea353687e..10a4ce4247fa1 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -1304,7 +1304,7 @@ config ARCH_HAS_PTE_SPECIAL
+ 	bool
+ 
+ config MAPPING_DIRTY_HELPERS
+-        bool
++	bool
+ 
+ config KMAP_LOCAL
+ 	bool
+@@ -1435,7 +1435,7 @@ config ARCH_HAS_USER_SHADOW_STACK
+ 	bool
+ 	help
+ 	  The architecture has hardware support for userspace shadow call
+-          stacks (eg, x86 CET, arm64 GCS or RISC-V Zicfiss).
++	  stacks (eg, x86 CET, arm64 GCS or RISC-V Zicfiss).
+ 
+ config HAVE_ARCH_TLB_REMOVE_TABLE
+ 	def_bool n
 
-Apart from this, looks good to me.
-
-Reviewed-by: Nayna Jain <nayna@linux.ibm.com>
+base-commit: bfe62a454542cfad3379f6ef5680b125f41e20f4
+-- 
+2.50.1
 
