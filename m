@@ -1,257 +1,88 @@
-Received: from mail-pf1-f179.google.com (mail-pf1-f179.google.com [209.85.210.179])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mailout3.hostsharing.net (mailout3.hostsharing.net [144.76.133.104])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D285C72617
-	for <keyrings@vger.kernel.org>; Tue,  7 Apr 2026 05:39:57 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.179
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0384C3AB292;
+	Tue,  7 Apr 2026 10:58:11 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=144.76.133.104
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1775540399; cv=none; b=GmJsufdPbiLn8nQMB7FO1a5nttqCy1Lco7McR/m7UY2uxlbXdhT5iceOh9EvsWNuiAbMBR8FZadXR4uDB+Z7ueOrRYC6jJsT8Mqx3+a0+sxr1TBEOz6EKuADKeUiNZzy4Ijk5oBlQzqarUIyT71Y8Se31Ltqdw3K2LlP2EJQBcU=
+	t=1775559496; cv=none; b=SImvd0O3qqjiZW3jBL2P5vEcymgtL9sB6GJhu3mg5vWkiGlct3hKmKUZJtY4buf1kYWt2EbGYs25nh4upAYxRAvUg7TSCspRE97TijOT3tNR22svLxUnzxYmR72aJeS+crX2Zj9iwHOBv7p7siU8m7HKUjsXlv6oLErqTYNO4v4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1775540399; c=relaxed/simple;
-	bh=CPbR4ynt7lEIxU7KeKqzmpsU+S0DEoU9918vVnGWAyU=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=L7lGtDg/eET/ziPZjBoj4Vd8IUstMAe5iw2II7M6tXd0segwHd19pELYf7qQKSPSmQe9nPlwKQ88F764wGKBwkKpZYbb2bGivxXWt5x6b4mrsQ3J7rthrYMcBg4bU8t0MBSTRu31EB32ouI1o+Stx0nHhGSYFIPDPGGQUc+VoQE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=S1HEselG; arc=none smtp.client-ip=209.85.210.179
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="S1HEselG"
-Received: by mail-pf1-f179.google.com with SMTP id d2e1a72fcca58-82cf636dac8so2101113b3a.3
-        for <keyrings@vger.kernel.org>; Mon, 06 Apr 2026 22:39:57 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1775540397; x=1776145197; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to;
-        bh=c6aWKXGZ6Pq+U28ptkw+X3vtfA+Mw7YFFm3cXv1/n54=;
-        b=S1HEselG+5nNhY2Srz5kkiAmr2xgljZF73LFbllCg5dV2APgGIPPtGXQ7Z0H/O9d4U
-         /nOu02Mnmmqff+ZxJKo4aVUhz/S6FrMxD/0E5xfnq4Ov69uZIhD742DUXdfuBqq5hbI2
-         n5X+ghfPsMGJs3gVCPSZa9skLTvBYZog5MAwTQyJX3RfvcoRFl+ai29SAkIlpMnYhJpg
-         Z++L9hry6+cgTmXb0e9f5UniMgRch8ATldMFvkzQ4x/uaVTFcbKmCXw6T5399KOGxIWv
-         g3ptevnb/VVaBSax0HO6gKNY4tX1YocCIog44PmM+NeBXKHgutD+TLxvGnk7MHx36hd9
-         H9PA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1775540397; x=1776145197;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=c6aWKXGZ6Pq+U28ptkw+X3vtfA+Mw7YFFm3cXv1/n54=;
-        b=QdGzT+aF6DUrxEuFPOQ02/Nhbe3TQxykqXnux3ui95OHAx2Q/duz3+mTJSRsZrx0Vd
-         jYJzAoHta4ZK7fLMfmScVzRghb3/nesHzR/L3ml1GP8MIcQYLKY44EOZMdH8qP1l17vm
-         mw6Lc00rDDIl1DI9c7fO0+6ZI3r3Ij8KgUIR064HYQyrtJTUDjLj+2koSXbc6qLvFtG8
-         n+WbEbABtkSyYjQ0s4+oXZ6hyrcSCx+CPadlWL/UVUUKhlBXhypegunnsvh+G4QttHQt
-         w8kHEz5zjn/QS4+YxefBmBcAFBeGv+/o9Rpe/AHF4/a2XXfgo0sI02AoxpceTDN5nxk5
-         sudg==
-X-Forwarded-Encrypted: i=1; AJvYcCVR/XERS3bomjxMbMnV9+GJwSJ9HoK1MFXkl8fHq/i7ZY3DzzD7ucBDXPhfayspnMd3h0idrcfXvg==@vger.kernel.org
-X-Gm-Message-State: AOJu0YyvJIHUj/IEzv7DzYiH7SLDen9RqBKoz0cG3qpcLKTsdNmuaem8
-	GMBAQ0yx1Pww5cXTrWvuFY8ZbqWmqLGdCxrc57MEYNlmFmHuGVE5zKn9
-X-Gm-Gg: AeBDievF9vA9Clu+YYMZpC7wxTlUwOE4o5I681oKNXGu52VHJoyfCyUf8ze+CKL/+Lh
-	K8qW6Bv5pkIJ6CgHB8QUnnVhp70Z8uMb9ZLSPuQ3PiCS00uQhw4guIo1dJURYobq8567r2pdmeM
-	r94XNJssgzgbzfu3NrspnoOI0RZiWSQ2/IErj9Y8KXfIQeiC1VK4GEPgW+cV3BakLFWuxG0oKOx
-	jgUtO71sAFucOJjAZ58vBQT329Irj8zLPiradsyizOmGkBpT0pe1hQc1OBMb+nXaLHNiPiyI3la
-	EwVFAQHSLsNeDOEdbk+2dD5k4VvCP7tb+aZiT9cMi28q8Pah5qIRw46M80LXHrlof2rrfkPDU0Z
-	oZiFJDaz5c2kGpCj/+aY+31s58GnTvWmA/t1Ubx/JOmzxI6GKpbCAjVoKmdcDPtnMiLZS/A2h6/
-	1zxNXmMjqZaUwDHtNXJMll
-X-Received: by 2002:a05:6a00:ab87:b0:82c:dc9c:e770 with SMTP id d2e1a72fcca58-82d0dbb2ad9mr14100756b3a.40.1775540397159;
-        Mon, 06 Apr 2026 22:39:57 -0700 (PDT)
-Received: from rockpi-5b ([45.112.0.243])
-        by smtp.gmail.com with ESMTPSA id d2e1a72fcca58-82cf9b23c6asm20873248b3a.10.2026.04.06.22.39.49
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 06 Apr 2026 22:39:56 -0700 (PDT)
-From: Anand Moon <linux.amoon@gmail.com>
-To: David Howells <dhowells@redhat.com>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Christian Brauner <brauner@kernel.org>,
-	Jan Kara <jack@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Hildenbrand <david@kernel.org>,
-	Lorenzo Stoakes <ljs@kernel.org>,
-	"Liam R. Howlett" <Liam.Howlett@oracle.com>,
-	Vlastimil Babka <vbabka@kernel.org>,
-	Mike Rapoport <rppt@kernel.org>,
-	Suren Baghdasaryan <surenb@google.com>,
-	Michal Hocko <mhocko@suse.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Nathan Chancellor <nathan@kernel.org>,
-	Kees Cook <kees@kernel.org>,
-	Thomas Gleixner <tglx@kernel.org>,
-	=?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <thomas.weissschuh@linutronix.de>,
-	Douglas Anderson <dianders@chromium.org>,
-	Shakeel Butt <shakeel.butt@linux.dev>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	Masahiro Yamada <masahiroy@kernel.org>,
-	keyrings@vger.kernel.org (open list:CERTIFICATE HANDLING),
-	linux-kernel@vger.kernel.org (open list),
-	linux-fsdevel@vger.kernel.org (open list:FILESYSTEMS (VFS and infrastructure)),
-	linux-mm@kvack.org (open list:MEMORY MANAGEMENT - CORE)
-Cc: Anand Moon <linux.amoon@gmail.com>
-Subject: [PATCH v1] treewide: Fix indentation and whitespace in Kconfig files
-Date: Tue,  7 Apr 2026 11:09:34 +0530
-Message-ID: <20260407053945.14116-1-linux.amoon@gmail.com>
-X-Mailer: git-send-email 2.50.1
+	s=arc-20240116; t=1775559496; c=relaxed/simple;
+	bh=TwcGXH5k9itx8omwaiUTnFcxsSLaWmfYI5kkdDTmZgY=;
+	h=Message-Id:From:Date:Subject:To:Cc; b=rq2xV9JcA8hePaRDwk2azPUEglNV6PiRg1xLeCKxI/R2dSgL58LADT7PVjacDrNyaVp+PHEl+jTpqXkEliRJIIH3Y/d85XD63OKYEdwv04Pq97DBQZ/hihHTTZqo0uOeZsKtSZ6wBcfJ/+lNC/3kgX5Oa8tsJyTd6uvt66eigiY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=wunner.de; spf=pass smtp.mailfrom=wunner.de; arc=none smtp.client-ip=144.76.133.104
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=wunner.de
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=wunner.de
+Received: from h08.hostsharing.net (h08.hostsharing.net [83.223.95.28])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange x25519 server-signature ECDSA (secp384r1) server-digest SHA384
+	 client-signature ECDSA (secp384r1) client-digest SHA384)
+	(Client CN "*.hostsharing.net", Issuer "GlobalSign GCC R6 AlphaSSL CA 2025" (verified OK))
+	by mailout3.hostsharing.net (Postfix) with ESMTPS id 63436C16;
+	Tue, 07 Apr 2026 12:58:04 +0200 (CEST)
+Received: by h08.hostsharing.net (Postfix, from userid 100393)
+	id 3180E6029B1F; Tue,  7 Apr 2026 12:58:04 +0200 (CEST)
+Message-Id: <db192bcb9467d30068c97a4007822f21aab6766f.1775512248.git.lukas@wunner.de>
+From: Lukas Wunner <lukas@wunner.de>
+Date: Tue, 7 Apr 2026 12:58:18 +0200
+Subject: [PATCH] X.509: Fix out-of-bounds access when parsing extensions
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jarkko Sakkinen <jarkko@kernel.org>
+Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Leo Lin <leo@depthfirst.com>, Eric Snowberg <eric.snowberg@oracle.com>, Mimi Zohar <zohar@linux.ibm.com>, Ignat Korchagin <ignat@linux.win>, David Howells <dhowells@redhat.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 
-Clean up inconsistent indentation (mixing tabs and spaces) and remove
-extraneous whitespace in several Kconfig files across the tree.
-This is a purely cosmetic change to improve readability.
+Leo reports an out-of-bounds access when parsing a certificate with
+empty Basic Constraints or Key Usage extension because the first byte of
+the extension is read before checking its length.  Fix it.
 
-Adjust indentation from spaces to tab (+optional two spaces) as in
-coding style with command like:
+The bug can be triggered by an unprivileged user by submitting a
+specially crafted certificate to the kernel through the keyrings(7) API.
+Leo has demonstrated this with a proof-of-concept program responsibly
+disclosed off-list.
 
-$ sed -e 's/^        /\t/' -i */Kconfig
-
-Signed-off-by: Anand Moon <linux.amoon@gmail.com>
+Fixes: 30eae2b037af ("KEYS: X.509: Parse Basic Constraints for CA")
+Fixes: 567671281a75 ("KEYS: X.509: Parse Key Usage")
+Reported-by: Leo Lin <leo@depthfirst.com> # off-list
+Signed-off-by: Lukas Wunner <lukas@wunner.de>
+Reviewed-by: Ignat Korchagin <ignat@linux.win>
+Cc: stable@vger.kernel.org # v6.4+
 ---
- certs/Kconfig | 16 ++++++++--------
- fs/Kconfig    |  6 +++---
- init/Kconfig  | 24 ++++++++++++------------
- lib/Kconfig   |  2 +-
- mm/Kconfig    |  4 ++--
- 5 files changed, 26 insertions(+), 26 deletions(-)
+ crypto/asymmetric_keys/x509_cert_parser.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/certs/Kconfig b/certs/Kconfig
-index 8e39a80c7abe5..9d2bf7fb5b9e4 100644
---- a/certs/Kconfig
-+++ b/certs/Kconfig
-@@ -6,14 +6,14 @@ config MODULE_SIG_KEY
- 	default "certs/signing_key.pem"
- 	depends on MODULE_SIG || (IMA_APPRAISE_MODSIG && MODULES)
- 	help
--         Provide the file name of a private key/certificate in PEM format,
--         or a PKCS#11 URI according to RFC7512. The file should contain, or
--         the URI should identify, both the certificate and its corresponding
--         private key.
--
--         If this option is unchanged from its default "certs/signing_key.pem",
--         then the kernel will automatically generate the private key and
--         certificate as described in Documentation/admin-guide/module-signing.rst
-+	 Provide the file name of a private key/certificate in PEM format,
-+	 or a PKCS#11 URI according to RFC7512. The file should contain, or
-+	 the URI should identify, both the certificate and its corresponding
-+	 private key.
-+
-+	 If this option is unchanged from its default "certs/signing_key.pem",
-+	 then the kernel will automatically generate the private key and
-+	 certificate as described in Documentation/admin-guide/module-signing.rst
- 
- choice
- 	prompt "Type of module signing key to be generated"
-diff --git a/fs/Kconfig b/fs/Kconfig
-index 0bfdaecaa8775..74110311968aa 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -78,7 +78,7 @@ config FS_DAX
- 	  --map=mem:
- 	  https://docs.pmem.io/ndctl-user-guide/ndctl-man-pages/ndctl-create-namespace
- 
--          For ndctl to work CONFIG_DEV_DAX needs to be enabled as well. For most
-+	  For ndctl to work CONFIG_DEV_DAX needs to be enabled as well. For most
- 	  file systems DAX support needs to be manually enabled globally or
- 	  per-inode using a mount option as well.  See the file documentation in
- 	  Documentation/filesystems/dax.rst for details.
-@@ -116,8 +116,8 @@ config FILE_LOCKING
- 	default y
- 	help
- 	  This option enables standard file locking support, required
--          for filesystems like NFS and for the flock() system
--          call. Disabling this option saves about 11k.
-+	  for filesystems like NFS and for the flock() system
-+	  call. Disabling this option saves about 11k.
- 
- source "fs/crypto/Kconfig"
- 
-diff --git a/init/Kconfig b/init/Kconfig
-index 7484cd703bc1a..6fea1453c2941 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1036,14 +1036,14 @@ config PAGE_COUNTER
- 	bool
- 
- config CGROUP_FAVOR_DYNMODS
--        bool "Favor dynamic modification latency reduction by default"
--        help
--          This option enables the "favordynmods" mount option by default
--          which reduces the latencies of dynamic cgroup modifications such
--          as task migrations and controller on/offs at the cost of making
--          hot path operations such as forks and exits more expensive.
-+	bool "Favor dynamic modification latency reduction by default"
-+	help
-+	  This option enables the "favordynmods" mount option by default
-+	  which reduces the latencies of dynamic cgroup modifications such
-+	  as task migrations and controller on/offs at the cost of making
-+	  hot path operations such as forks and exits more expensive.
- 
--          Say N if unsure.
-+	  Say N if unsure.
- 
- config MEMCG
- 	bool "Memory controller"
-@@ -1125,7 +1125,7 @@ config GROUP_SCHED_WEIGHT
- 	def_bool n
- 
- config GROUP_SCHED_BANDWIDTH
--        def_bool n
-+	def_bool n
- 
- config FAIR_GROUP_SCHED
- 	bool "Group scheduling for SCHED_OTHER"
-@@ -1625,10 +1625,10 @@ config LD_ORPHAN_WARN
- 	depends on $(ld-option,--orphan-handling=error)
- 
- config LD_ORPHAN_WARN_LEVEL
--        string
--        depends on LD_ORPHAN_WARN
--        default "error" if WERROR
--        default "warn"
-+	string
-+	depends on LD_ORPHAN_WARN
-+	default "error" if WERROR
-+	default "warn"
- 
- config SYSCTL
- 	bool
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 0f2fb96106476..4b0026954a370 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -589,7 +589,7 @@ config OBJAGG
- config LWQ_TEST
- 	bool "Boot-time test for lwq queuing"
- 	help
--          Run boot-time test of light-weight queuing.
-+	  Run boot-time test of light-weight queuing.
- 
- endmenu
- 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index ebd8ea353687e..10a4ce4247fa1 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -1304,7 +1304,7 @@ config ARCH_HAS_PTE_SPECIAL
- 	bool
- 
- config MAPPING_DIRTY_HELPERS
--        bool
-+	bool
- 
- config KMAP_LOCAL
- 	bool
-@@ -1435,7 +1435,7 @@ config ARCH_HAS_USER_SHADOW_STACK
- 	bool
- 	help
- 	  The architecture has hardware support for userspace shadow call
--          stacks (eg, x86 CET, arm64 GCS or RISC-V Zicfiss).
-+	  stacks (eg, x86 CET, arm64 GCS or RISC-V Zicfiss).
- 
- config HAVE_ARCH_TLB_REMOVE_TABLE
- 	def_bool n
-
-base-commit: bfe62a454542cfad3379f6ef5680b125f41e20f4
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index b37cae9..aac2d55 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -584,10 +584,10 @@ int x509_process_extension(void *context, size_t hdrlen,
+ 		 *   0x04 is where keyCertSign lands in this bit string
+ 		 *   0x80 is where digitalSignature lands in this bit string
+ 		 */
+-		if (v[0] != ASN1_BTS)
+-			return -EBADMSG;
+ 		if (vlen < 4)
+ 			return -EBADMSG;
++		if (v[0] != ASN1_BTS)
++			return -EBADMSG;
+ 		if (v[2] >= 8)
+ 			return -EBADMSG;
+ 		if (v[3] & 0x80)
+@@ -620,10 +620,10 @@ int x509_process_extension(void *context, size_t hdrlen,
+ 		 *	(Expect 0xFF if the CA is TRUE)
+ 		 * vlen should match the entire extension size
+ 		 */
+-		if (v[0] != (ASN1_CONS_BIT | ASN1_SEQ))
+-			return -EBADMSG;
+ 		if (vlen < 2)
+ 			return -EBADMSG;
++		if (v[0] != (ASN1_CONS_BIT | ASN1_SEQ))
++			return -EBADMSG;
+ 		if (v[1] != vlen - 2)
+ 			return -EBADMSG;
+ 		/* Empty SEQUENCE means CA:FALSE (default value omitted per DER) */
 -- 
-2.50.1
+2.51.0
 
