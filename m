@@ -1,77 +1,204 @@
-Received: from out-177.mta1.migadu.com (out-177.mta1.migadu.com [95.215.58.177])
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5DBD238CFFC;
-	Mon,  6 Apr 2026 17:59:01 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=95.215.58.177
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6E5FA34E779;
+	Tue,  7 Apr 2026 02:42:22 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1775498342; cv=none; b=A6zQDdkoGdAzlLkFXEkJgGrQJ390A04b2oiM2iHUJfF+JQ0T5RCy3EumRx4zLumxB8iJ03qbDVFYot2hJyUbbZulcF5PTubR79OA76NveMU2JUYEH/g2uu3GFP+nYSawKNOT6zJ5WgHn00G4klP64aEoh6sq7w1iuqDoag92990=
+	t=1775529743; cv=none; b=TugmwKxMMLSrvkmW1dxB0HbQEVDEvK+qbHhLVWLQPH3J1CH/Si4Hmubsjew20lIGF2gxCqpUZK/ZlbLIuY3ol+pT0aLeRPVP92YDL6lySmHofmfWj3I0ZCCV4sX3eqgzpVUzS21ZqTnWZMrGVCbBROhBZKkDWQdt3veQtdNMtXI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1775498342; c=relaxed/simple;
-	bh=WKatVZ4ijznTXfeAzfxBPkp0ScePMGQUAQ2+GI9ot5o=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=KkaaqF8L4LFvbw86L73HaYqq7P5PEZUxFuHZsxktZr/ccdLoByrYO6Rn2sPlFX8agFhrODN8uVTop7E3gNM5hqQIrFWx/RUKEajmLtpcsEJeScjl17C4NIWE7+6J49OEzW3z6hbFL6ckx4xGFiFu8J/HclQOiRzLnjbZZ8uo2DI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev; spf=pass smtp.mailfrom=linux.dev; dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b=fKGHf8DK; arc=none smtp.client-ip=95.215.58.177
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.dev
+	s=arc-20240116; t=1775529743; c=relaxed/simple;
+	bh=hD7ny2UtURDWAaGQWwY50Eq44SALrFdnbjtoJ7AO95A=;
+	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
+	 In-Reply-To:Content-Type; b=F0fcoD8DwFQ4uPqYqr9JDB3lhKv5NpTu50inS4geytLLS/lj9XmQe4oBGEhMUNc/dWayRzCF/VGLJGLJdoZ6hDI+2sAxVWwywUq5UBJssi5YbI8gtHBdl+vGKE6df8IC0DiRRvvVCgyvvQBxIAV5ARKdnRj/pDeVz5p/2phOe84=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=ShToX8ul; arc=none smtp.client-ip=148.163.156.1
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b="fKGHf8DK"
-X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
-	t=1775498339;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=GsA0DQ7RZ25+fuPh8E9nbhfynHH+2ccVrJP5vTigsvs=;
-	b=fKGHf8DKSJ6N5tXqc6Yv5YQpuEsbs0mtXnxqRlrkOvO0on3gfEYEdFkV/IuUzYqJ/tVILG
-	k3LB0F7bPedV91BXyF5/FmsD8Qu5xYKc2cK74vxN6qoH8v/ElX7drvZv2hdjXId7nR7Xnq
-	X+YMqxaZS+FqMBHQR0z0yDT7V4HlofQ=
-From: Thorsten Blum <thorsten.blum@linux.dev>
-To: David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Kees Cook <kees@kernel.org>,
-	"Gustavo A. R. Silva" <gustavoars@kernel.org>
-Cc: Thorsten Blum <thorsten.blum@linux.dev>,
-	keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	linux-hardening@vger.kernel.org
-Subject: [PATCH net-next 2/2] KEYS: annotate struct user_key_payload with __counted_by
-Date: Mon,  6 Apr 2026 19:58:10 +0200
-Message-ID: <20260406175810.1018681-4-thorsten.blum@linux.dev>
-In-Reply-To: <20260406175810.1018681-3-thorsten.blum@linux.dev>
-References: <20260406175810.1018681-3-thorsten.blum@linux.dev>
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="ShToX8ul"
+Received: from pps.filterd (m0356517.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 636LmWOm2302659;
+	Tue, 7 Apr 2026 02:42:05 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:content-type:date:from:in-reply-to
+	:message-id:mime-version:references:subject:to; s=pp1; bh=SjZSuM
+	MSH7KpHIfjsafQiM652H97zB0x6jfHu2syyu4=; b=ShToX8ulucyElHd1M9VsEk
+	y5R6q8gi/gnUcC/e4NQEMsC/+INQLkteeycVnUzdiX6OwrgdQQI4pkQTOQDhb2Ng
+	Dg8bjcfkeICwDkd7gk3Nmt0d+2OtAXsgFVM9iCjM5bPlhdggmdTWVajrNy301cgw
+	rnQAeEKX+OhUfeW7LKY80k8lncklde/tUfm6B79eS//DMT5teq1zuQqadmwuG7Ba
+	lIvz8mlifNNvwJr6Q3qCZ9fFdxUquocGjYWeQY6IjR9uxznjsvvKoF6RD+heCkwF
+	1yo603R9VQFmlPDc/GhXBbCMxEQuJ2L8GQ2g50uI4E/ru6KXx9N/9nS1e4+UOBAQ
+	==
+Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4dcn2f8rde-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Tue, 07 Apr 2026 02:42:04 +0000 (GMT)
+Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
+	by ppma12.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 636L8t4c026655;
+	Tue, 7 Apr 2026 02:42:03 GMT
+Received: from smtprelay05.wdc07v.mail.ibm.com ([172.16.1.72])
+	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4dcmg7rsev-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Tue, 07 Apr 2026 02:42:03 +0000
+Received: from smtpav01.dal12v.mail.ibm.com (smtpav01.dal12v.mail.ibm.com [10.241.53.100])
+	by smtprelay05.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6372g1cK21299802
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Tue, 7 Apr 2026 02:42:02 GMT
+Received: from smtpav01.dal12v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id C38BD5806E;
+	Tue,  7 Apr 2026 02:42:01 +0000 (GMT)
+Received: from smtpav01.dal12v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 238F758078;
+	Tue,  7 Apr 2026 02:42:01 +0000 (GMT)
+Received: from [9.61.12.143] (unknown [9.61.12.143])
+	by smtpav01.dal12v.mail.ibm.com (Postfix) with ESMTP;
+	Tue,  7 Apr 2026 02:42:01 +0000 (GMT)
+Message-ID: <afc489d2-a62f-4604-8e56-219311b46516@linux.ibm.com>
+Date: Mon, 6 Apr 2026 22:42:00 -0400
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-Developer-Signature: v=1; a=openpgp-sha256; l=834; i=thorsten.blum@linux.dev; h=from:subject; bh=WKatVZ4ijznTXfeAzfxBPkp0ScePMGQUAQ2+GI9ot5o=; b=owGbwMvMwCUWt7pQ4caZUj3G02pJDJmXv1jzr01u3xn/MXrvXOn5BrseRLkuc7MKcOvhTyx79 azih4lgRykLgxgXg6yYIsuDWT9m+JbWVG4yidgJM4eVCWQIAxenAExEWYCRYVFc6Yq7x8Lec72d +qVY5UfxRPuaO7cmm+4Nl3w3beFs34uMDCePXp9r0/7j+mu/mmZuVT3/+d07hEIvsTxaGNsz4Ur uLz4A
-X-Developer-Key: i=thorsten.blum@linux.dev; a=openpgp; fpr=1D60735E8AEF3BE473B69D84733678FD8DFEEAD4
-Content-Transfer-Encoding: 8bit
-X-Migadu-Flow: FLOW_OUT
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH v2] KEYS: trusted: Debugging as a feature
+To: Jarkko Sakkinen <jarkko@kernel.org>, linux-integrity@vger.kernel.org
+Cc: keyrings@vger.kernel.org, Srish Srinivasan <ssrish@linux.ibm.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
+        Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Ahmad Fatoum
+ <a.fatoum@pengutronix.de>,
+        Pengutronix Kernel Team <kernel@pengutronix.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+References: <20260324110043.67248-1-jarkko@kernel.org>
+Content-Language: en-US
+From: Nayna Jain <nayna@linux.ibm.com>
+In-Reply-To: <20260324110043.67248-1-jarkko@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwNDA3MDAyMCBTYWx0ZWRfX8aXmQrBQcTzg
+ 7i9Y1K3k1OL3Q28XWfljbac938IMGnfJvIPdgZmzHAJZfdVQFTLedQun/N9MgrDCESgmdxCWQ5+
+ l0gLBFcq1jXxJ7xGx3bVlVvHMh3g4vI/ri6Z1BgDa3b8HxYkpOo33BLp56NJ6qR6g7dtoocfBLI
+ XKdNL2Fxp1z6sAtd5Jf9/uYU2bGMjHTwvs7ODC9x2FOTvEO8u3pFIWOcXULIjgKFzCiZ0JdRyAt
+ ifQM/B9j7i6yuw0A5aLT3225Ml1q5Yx0Z4mWn/GdavcYDbxDFNITAigkInBuJvCr7k9ox+udgEJ
+ BFz9yLtgetNHLhlwzio0fAAVC1nrzTWBtDicoPILFmnWjI/RCGjcJ5VX/wkmfkByF9ebqjnUnJB
+ NkE1JrMFs0HWtVNw7L0oGQDK7E48zEQ2hroMmTcSEFVjMsxD9pE5gc45ixKJagsj8xkezBNE0P4
+ cL6JvUK+ME/TWsewM3w==
+X-Authority-Analysis: v=2.4 cv=FsY1OWrq c=1 sm=1 tr=0 ts=69d46efc cx=c_pps
+ a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
+ a=IkcTkHD0fZMA:10 a=A5OVakUREuEA:10 a=VkNPw1HP01LnGYTKEx00:22
+ a=RnoormkPH1_aCDwRdu11:22 a=U7nrCbtTmkRpXpFmAIza:22 a=VwQbUJbxAAAA:8
+ a=VnNF1IyMAAAA:8 a=RvNJM_tC9QKxUJJT61sA:9 a=QEXdDO2ut3YA:10
+X-Proofpoint-ORIG-GUID: Ou-HjR_-LKL2lQukpjvvCC7pbCNSvzOy
+X-Proofpoint-GUID: Ou-HjR_-LKL2lQukpjvvCC7pbCNSvzOy
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1143,Hydra:6.1.51,FMLib:17.12.100.49
+ definitions=2026-04-07_01,2026-04-03_01,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ bulkscore=0 priorityscore=1501 impostorscore=0 spamscore=0 phishscore=0
+ lowpriorityscore=0 clxscore=1011 adultscore=0 malwarescore=0 suspectscore=0
+ classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
+ reason=mlx scancount=1 engine=8.22.0-2604010000 definitions=main-2604070020
 
-Add the __counted_by() compiler attribute to the flexible array member
-'data' to improve access bounds-checking via CONFIG_UBSAN_BOUNDS and
-CONFIG_FORTIFY_SOURCE.
 
-Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
----
- include/keys/user-type.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On 3/24/26 7:00 AM, Jarkko Sakkinen wrote:
+> TPM_DEBUG, and other similar flags, are a non-standard way to specify a
+> feature in Linux kernel.  Introduce CONFIG_TRUSTED_KEYS_DEBUG for
+> trusted keys, and use it to replace these ad-hoc feature flags.
+>
+> Given that trusted keys debug dumps can contain sensitive data, harden
+> the feature as follows:
+>
+> 1. In the Kconfig description postulate that pr_debug() statements must be
+>     used.
+> 2. Use pr_debug() statements in TPM 1.x driver to print the protocol dump.
+>
+> Traces, when actually needed, can be easily enabled by providing
+> trusted.dyndbg='+p' in the kernel command-line.
+>
+> Cc: Srish Srinivasan <ssrish@linux.ibm.com>
+> Reported-by: Nayna Jain <nayna@linux.ibm.com>
+> Closes: https://lore.kernel.org/all/7f8b8478-5cd8-4d97-bfd0-341fd5cf10f9@linux.ibm.com/
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+> ---
+> v2:
+> - Implement for all trusted keys backends.
+> - Add HAVE_TRUSTED_KEYS_DEBUG as it is a good practice despite full
+>    coverage.
+> ---
+>   include/keys/trusted-type.h               | 18 +++++-------
+>   security/keys/trusted-keys/Kconfig        | 19 ++++++++++++
+>   security/keys/trusted-keys/trusted_caam.c |  4 +--
+>   security/keys/trusted-keys/trusted_tpm1.c | 36 +++++++++++------------
+>   4 files changed, 46 insertions(+), 31 deletions(-)
+>
+> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+> index 03527162613f..620a1f890b6b 100644
+> --- a/include/keys/trusted-type.h
+> +++ b/include/keys/trusted-type.h
+> @@ -83,18 +83,16 @@ struct trusted_key_source {
+>   
+>   extern struct key_type key_type_trusted;
+>   
+> -#define TRUSTED_DEBUG 0
+> -
+> -#if TRUSTED_DEBUG
+> +#ifdef CONFIG_TRUSTED_KEYS_DEBUG
+>   static inline void dump_payload(struct trusted_key_payload *p)
+>   {
+> -	pr_info("key_len %d\n", p->key_len);
+> -	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
+> -		       16, 1, p->key, p->key_len, 0);
+> -	pr_info("bloblen %d\n", p->blob_len);
+> -	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
+> -		       16, 1, p->blob, p->blob_len, 0);
+> -	pr_info("migratable %d\n", p->migratable);
+> +	pr_debug("key_len %d\n", p->key_len);
+> +	print_hex_dump_debug("key ", DUMP_PREFIX_NONE,
+> +			     16, 1, p->key, p->key_len, 0);
+> +	pr_debug("bloblen %d\n", p->blob_len);
+> +	print_hex_dump_debug("blob ", DUMP_PREFIX_NONE,
+> +			     16, 1, p->blob, p->blob_len, 0);
+> +	pr_debug("migratable %d\n", p->migratable);
+>   }
+>   #else
+>   static inline void dump_payload(struct trusted_key_payload *p)
+> diff --git a/security/keys/trusted-keys/Kconfig b/security/keys/trusted-keys/Kconfig
+> index 9e00482d886a..2ad9ba0e03f1 100644
+> --- a/security/keys/trusted-keys/Kconfig
+> +++ b/security/keys/trusted-keys/Kconfig
+> @@ -1,10 +1,25 @@
+>   config HAVE_TRUSTED_KEYS
+>   	bool
+>   
+> +config HAVE_TRUSTED_KEYS_DEBUG
+> +	bool
+> +
+> +config TRUSTED_KEYS_DEBUG
+> +	bool "Debug trusted keys"
+> +	depends on HAVE_TRUSTED_KEYS_DEBUG
+> +	default n
+> +	help
+> +	  Trusted keys backends and core code that support debug dumps
+> +	  can opt-in that feature here. Dumps must only use DEBUG
+> +	  level output, as sensitive data may pass by. In the
+> +	  kernel-command line traces can be enabled via
+> +	  trusted.dyndbg='+p'.
 
-diff --git a/include/keys/user-type.h b/include/keys/user-type.h
-index 386c31432789..2305991f4fcd 100644
---- a/include/keys/user-type.h
-+++ b/include/keys/user-type.h
-@@ -27,7 +27,8 @@
- struct user_key_payload {
- 	struct rcu_head	rcu;		/* RCU destructor */
- 	unsigned short	datalen;	/* length of this data */
--	char		data[] __aligned(__alignof__(u64)); /* actual data */
-+	char		data[]		/* actual data */
-+			__aligned(__alignof__(u64)) __counted_by(datalen);
- };
- 
- extern struct key_type key_type_user;
+Would it be good idea to add an explicit note/warning:
+
+
+NOTE: This option is intended for debugging purposes only. Do not enable 
+on production systems as debug output may expose sensitive cryptographic 
+material.
+If you are unsure, say N.
+
+Apart from this, looks good to me.
+
+Reviewed-by: Nayna Jain <nayna@linux.ibm.com>
+
