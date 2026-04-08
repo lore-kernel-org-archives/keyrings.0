@@ -1,144 +1,149 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pg1-f176.google.com (mail-pg1-f176.google.com [209.85.215.176])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AFCBC351C0B;
-	Wed,  8 Apr 2026 17:30:45 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D1101391856
+	for <keyrings@vger.kernel.org>; Wed,  8 Apr 2026 20:25:18 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.215.176
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1775669447; cv=none; b=Dw+304D6yX1ldfpS6uXsUkVWQpp0kxawl4acuM6Ci4ENFB1CFV2gAQeei7HCQFRzkIHo44wV/Hoy4Wsy10ELYQdTXSDvEuzJlPEQWcPgNtnptDXJ1W2aMXb3tP/M3tkPelgivE4NAovpyDUzsCy+dYLGYUZinQZ2TohemFIiNFA=
+	t=1775679920; cv=none; b=JZ0rRmTHJQ7xedGVsz7vlJKcOSc3x8Y1FPjILaxLSIR9f1Ruy8dE2hh6t5PV2bL1gRIV+xK0xmnfH9cAnM/1NHT+yDzFkR9xQMGDIBqhhEM9beClYP+UCOxMYnwj/HkWMHg2naR8BYYcbALqEUfPhGtFMsJQCYt+dy4VQxUKr+E=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1775669447; c=relaxed/simple;
-	bh=V9Ysri9yBV0ssb6z7/sHiNxJ/2JfcKp9FBo2tQIxH+U=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=abr1wnUkjlObOHFlLscU/siGttrrSLd8gedhbXMqRLvrhv2JdNYnmzEsGkyItkqhwnTc9MNrpoVawjb+nx+w2I3aVpv7+Y3Hv7p58AmbyTx6Bi79xAg2rlvEcyvEQjxTSEz0x1ieiFy1lNlTsNCDRB4PlwfGaOzDve+DqjyhcMI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=ejwqzfZw; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1775679920; c=relaxed/simple;
+	bh=YK2ErFGtqJmjNXRFUKyoD+PTGXRuF4JLe0eoAfWTn3o=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=EANSSR8xAIgJ8+94Qe/zam+yRWcufw8cAVtdVgTRZTgO+C0TJjWm24Jf62t+Uyejkk1PwHLL+Njw4lW9YWm28oneQXeIOzFF0ybPOjVUYxIld8GLgy/hwQdGpMcFRpQ0u1Ck1o5PACrrVT3xN7oqV8Itnlx8tOWIG08PN7CBOCc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=h+4CDHXV; arc=none smtp.client-ip=209.85.215.176
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=google.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="ejwqzfZw"
-Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 6387A5T22211023;
-	Wed, 8 Apr 2026 17:25:21 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=2L9Rxw
-	LB5Yun5hkXaWCX44IyoaSD4xIhAzlmUoq9v0w=; b=ejwqzfZwSePmBP4I8Io3Fl
-	/cHVf+lZCq0woEJbQzTW34oEGYs0cDbWL3qIK9VzNO4TVgoudL2UMxPdzltnAAD4
-	2n4pHK6wxtUnw1fkwAJZlDRgxlANS8TczPDTwxioypCyalw9ORo3Hx29VLJ1eGSa
-	MSxXosL45l58zlowEtrbx/p0kv6RhvMIAm7DlEjj0HPb4uSurB67AfRD8WAb24qE
-	1UcDllUOFn2BgBOSm6Ztz3jvx/U3jynnoaPRs83aI+hh+uE8kMd+vrQlDGOBWsAF
-	Ir6t0iVeYhslZmh0qxqoXRgaSBfJHanPNqpa+4ft2mvFra79XryNuk+LZP76d3+w
-	==
-Received: from ppma13.dal12v.mail.ibm.com (dd.9e.1632.ip4.static.sl-reverse.com [50.22.158.221])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4dcn2hgh9e-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 08 Apr 2026 17:25:21 +0000 (GMT)
-Received: from pps.filterd (ppma13.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma13.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 638G0H1T018877;
-	Wed, 8 Apr 2026 17:25:20 GMT
-Received: from smtprelay03.dal12v.mail.ibm.com ([172.16.1.5])
-	by ppma13.dal12v.mail.ibm.com (PPS) with ESMTPS id 4dcme9gakw-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 08 Apr 2026 17:25:20 +0000
-Received: from smtpav06.wdc07v.mail.ibm.com (smtpav06.wdc07v.mail.ibm.com [10.39.53.233])
-	by smtprelay03.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 638HPJI025297424
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Wed, 8 Apr 2026 17:25:20 GMT
-Received: from smtpav06.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id AE6FD58055;
-	Wed,  8 Apr 2026 17:25:19 +0000 (GMT)
-Received: from smtpav06.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 7AEFF5803F;
-	Wed,  8 Apr 2026 17:25:18 +0000 (GMT)
-Received: from [9.47.158.152] (unknown [9.47.158.152])
-	by smtpav06.wdc07v.mail.ibm.com (Postfix) with ESMTP;
-	Wed,  8 Apr 2026 17:25:18 +0000 (GMT)
-Message-ID: <a38caed3-150c-4438-8ead-465c628899a4@linux.ibm.com>
-Date: Wed, 8 Apr 2026 13:25:17 -0400
+	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="h+4CDHXV"
+Received: by mail-pg1-f176.google.com with SMTP id 41be03b00d2f7-c76c067bc51so86696a12.0
+        for <keyrings@vger.kernel.org>; Wed, 08 Apr 2026 13:25:18 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=20251104; t=1775679918; x=1776284718; darn=vger.kernel.org;
+        h=in-reply-to:content-disposition:mime-version:references:message-id
+         :subject:cc:to:from:date:from:to:cc:subject:date:message-id:reply-to;
+        bh=qtez7uO2X5FjsGHqGis7qBChcDlylFjTSAlBvJbABwk=;
+        b=h+4CDHXVKB5TtWWN1DQ4w19egGCrJEuQ7L2O729FNN6ypKu8RYyLM31dYGeETYo73t
+         9kUT/25ZSaplj+XAKaDnwuRMSaH11T+IrISdl4sCB/Rc29bS8EMC5uq230Y6jyErv4nZ
+         5EpYLz9phFMW6iXjY49RUCn6Fr++JRhzC0LeoBiZVY5LcvN+wQ8pE6I76QpP06vzYn/A
+         /AxcW213j6RVOpULzBq9OaZNSK+NFtP3OBZoYz0XLnpYq1QfhZaHbAWHtPSfGL6Z5tvN
+         qZYtwbk3D3dDQDDuakz7IwSijDpLnTTDhA0N4oDKUJ9ylmnDaeyH5V9yu2GQ8iZPimPY
+         S7XQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1775679918; x=1776284718;
+        h=in-reply-to:content-disposition:mime-version:references:message-id
+         :subject:cc:to:from:date:x-gm-gg:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=qtez7uO2X5FjsGHqGis7qBChcDlylFjTSAlBvJbABwk=;
+        b=MqQmA6FJ5UMhqaY0OeRSqaUTQmLQ43u6UTGckvnAwvmybexHmr1YZk3cZgzHeePahe
+         P7NRI4miLRcadGcM2uLMGSqT8E6b4/xLDdetFGOE2zmSPewrp6ZTnfIS38NdCCZBUsdX
+         4csYpmFlkFuFcdzynye738LzCjQmYHnlix9wPmLO5U3XV/eXdL8bxrxY1MGrFZyL3ThP
+         i6FB+u1ni2p8x28rYVpCCYTYH+zeVW+HBUWXndJ/tQqq0hsITtrRiOEQ6yLxbKgQDSJm
+         Hdy/3F3lKgFnuVV4eIy6zLlxL3J/kkyvtgIhHXuYdpeizX2Q4Cz+DZAgxcxXzjbaN21B
+         HxVg==
+X-Forwarded-Encrypted: i=1; AJvYcCUn+N75b7/GarUso4vCDCGIzi1flh3+2crY6M44XS/nPnhaqbGgJELOpgBZ12l9UOd56DRSCE5Ntg==@vger.kernel.org
+X-Gm-Message-State: AOJu0Yzogf3hRTsQc++JUvy7E1R8OjTYA2AAm2zhUmb2wQBYsafRtccF
+	FBYekF3ayjIHUkNudKh383PaZ1KqjNb59DIBPYZBSeVoG+xIr54kZoplL7EY2UJiJdHaespI/d1
+	wHm1fPw==
+X-Gm-Gg: AeBDieueTLlkir8/t3fcKYTjGmdrn//ysYBYtqQV9+P8TaJ+zDeTiIow2RPBz3VKwcv
+	txRX8jGmzbAWGztUU1uXqNlCn9V+1BUbpX8B3iiq9Ib2fThzB4Hv0WChiy2jwXsieoogDcSNx3h
+	kjcxMAAjMcvoYyB5u0GzrBOfbYQ7raJMSazk5z+vH0zB1RBTh5m/ajAxm3jJm8xmbMBEbxmNVBx
+	bz619L0qDy4adEENKDNCuc3g/cSk2I8PD5z52DAa01dv4yL4RqEF0yBxfGlZ7pxqQwIB5Wc4Sja
+	xbYVjjs85h7ngy5SAC1e/JeDWK3nIjxSEmCJ6YaoG6wcRQqkH68Z/fMdIYoP5DRoTdhCAY/7Fmf
+	3CRFPaO7u1I7yNM5H0qQjco+0BnaVM9ngObKxRg2XLjbLxyVcfTZN58/wfMsmbk3+lgm2HbLL62
+	w805Q2uzJXLdZeo9eAjmVfMq/eTWT9rlj9VXgJqjLR2+zDZWzqwLyFslicn+/DinIS
+X-Received: by 2002:a05:7022:40b:b0:12a:8ea4:252 with SMTP id a92af1059eb24-12c28b7f511mr541759c88.4.1775679917525;
+        Wed, 08 Apr 2026 13:25:17 -0700 (PDT)
+Received: from google.com (78.93.125.34.bc.googleusercontent.com. [34.125.93.78])
+        by smtp.gmail.com with ESMTPSA id a92af1059eb24-12bfea5f860sm21165384c88.2.2026.04.08.13.25.16
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Wed, 08 Apr 2026 13:25:16 -0700 (PDT)
+Date: Wed, 8 Apr 2026 20:25:12 +0000
+From: Nick Desaulniers <ndesaulniers@google.com>
+To: Nathan Chancellor <nathan@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, 
+	David Woodhouse <dwmw2@infradead.org>, Nick Desaulniers <nick.desaulniers+lkml@gmail.com>, 
+	Bill Wendling <morbo@google.com>, Justin Stitt <justinstitt@google.com>, keyrings@vger.kernel.org, 
+	linux-kernel@vger.kernel.org, llvm@lists.linux.dev, stable@vger.kernel.org
+Subject: Re: [PATCH] extract-cert: Wrap key_pass with '#ifdef
+ USE_PKCS11_ENGINE'
+Message-ID: <ada5jlwkMYrtfRHv@google.com>
+References: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH 1/3] crypto: public_key: Remove check for valid hash_algo
- for ML-DSA keys
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zohar@linux.ibm.com,
-        roberto.sassu@huawei.com, David Howells <dhowells@redhat.com>,
-        Lukas Wunner <lukas@wunner.de>, Ignat Korchagin <ignat@linux.win>,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
-References: <20260405231224.4008298-1-stefanb@linux.ibm.com>
- <20260405231224.4008298-2-stefanb@linux.ibm.com> <20260406165350.GD2971@sol>
-Content-Language: en-US
-From: Stefan Berger <stefanb@linux.ibm.com>
-In-Reply-To: <20260406165350.GD2971@sol>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwNDA4MDE2MSBTYWx0ZWRfX/FNcyuAJmjFE
- 2laY4tXIATjWXCFua5RH0zQWrG/l1CrUcNIfrNXIwv/V8jZyuQhn/WnJ9QEvIc8jO5JyNYdbyGY
- GXykXTAp+WCJItRjVgNYmpyI3yCuHK28ETctcXFQYDfTQ39HXVwXMSVRnBK2Srcnb/ltM1Rd84Z
- dUCXkhf8bq3ztt7IsZKED4VtOyvM4M2ZIYlxIr8i75cbxRR9yL8CETHLU+9BD8d5OIgWZTUtaKb
- IuNAwmG+8iEeCkVwN5/3beT9vwNbB6MbSX3Ac88qjsLaizkT2Lf1LYQ4BphpVX7Vap83fpHQOR3
- QdXRDY4Ulkn/MqpPHTQ9aAUV6DNxCOlIPZ09QQwRIirGBh8QA8No7UuWw1muPFJ/Se7OzMCeKr/
- s5RADDAR28NwTYZSFqXCLy8TJy8fko7E0UvCo0aPwW2N4EE54SLwmATLK0ehihUbazCYg7YEICK
- fqv+KLcwf5SUQmGOO8Q==
-X-Proofpoint-GUID: P-YEUHDbPH_rP0TK97HeWmxXcwQ207Zo
-X-Authority-Analysis: v=2.4 cv=a/wAM0SF c=1 sm=1 tr=0 ts=69d68f81 cx=c_pps
- a=AfN7/Ok6k8XGzOShvHwTGQ==:117 a=AfN7/Ok6k8XGzOShvHwTGQ==:17
- a=IkcTkHD0fZMA:10 a=A5OVakUREuEA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=V8glGbnc2Ofi9Qvn3v5h:22 a=20KFwNOVAAAA:8
- a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=SDgfmxtV1g6ypeqyy2kA:9 a=QEXdDO2ut3YA:10
-X-Proofpoint-ORIG-GUID: P-YEUHDbPH_rP0TK97HeWmxXcwQ207Zo
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1143,Hydra:6.1.51,FMLib:17.12.100.49
- definitions=2026-04-08_05,2026-04-08_01,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- bulkscore=0 clxscore=1015 spamscore=0 impostorscore=0 priorityscore=1501
- phishscore=0 lowpriorityscore=0 adultscore=0 malwarescore=0 suspectscore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2604010000 definitions=main-2604080161
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
 
-
-
-On 4/6/26 12:53 PM, Eric Biggers wrote:
-> On Sun, Apr 05, 2026 at 07:12:22PM -0400, Stefan Berger wrote:
->> Remove the check for the hash_algo since ML-DSA is only used in pure mode
->> and there is no relevance of a hash_algo for the input data.
->>
->> Cc: David Howells <dhowells@redhat.com>
->> Cc: Lukas Wunner <lukas@wunner.de>
->> Cc: Ignat Korchagin <ignat@linux.win>
->> Cc: keyrings@vger.kernel.org
->> Cc: linux-crypto@vger.kernel.org
->> Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
->> ---
->>   crypto/asymmetric_keys/public_key.c | 5 -----
->>   1 file changed, 5 deletions(-)
->>
->> diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
->> index 09a0b83d5d77..df6918a77ab8 100644
->> --- a/crypto/asymmetric_keys/public_key.c
->> +++ b/crypto/asymmetric_keys/public_key.c
->> @@ -147,11 +147,6 @@ software_key_determine_akcipher(const struct public_key *pkey,
->>   		   strcmp(pkey->pkey_algo, "mldsa87") == 0) {
->>   		if (strcmp(encoding, "raw") != 0)
->>   			return -EINVAL;
->> -		if (!hash_algo)
->> -			return -EINVAL;
->> -		if (strcmp(hash_algo, "none") != 0 &&
->> -		    strcmp(hash_algo, "sha512") != 0)
->> -			return -EINVAL;
+On Wed, Mar 25, 2026 at 06:19:15PM -0700, Nathan Chancellor wrote:
+> A recent strengthening of -Wunused-but-set-variable (enabled with -Wall)
+> in clang under a new subwarning, -Wunused-but-set-global, points out an
+> unused static global variable in certs/extract-cert.c:
 > 
-> Does this broaden which hash algorithms are accepted for CMS signatures
-> that use ML-DSA and contain signed attributes?
-
-Right... dropping this patch and using the "none" route now.
-
+>   certs/extract-cert.c:46:20: error: variable 'key_pass' set but not used [-Werror,-Wunused-but-set-global]
+>      46 | static const char *key_pass;
+>         |                    ^
 > 
-> - Eric
+> After commit 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider
+> for OPENSSL MAJOR >= 3"), key_pass is only used with the OpenSSL engine
+> API, not the new provider API. Wrap key_pass's declaration and
+> assignment with '#ifdef USE_PKCS11_ENGINE' so that it is only included
+> with its use to clear up the warning. While this is a little uglier than
+> just marking key_pass with the unused attribute, this will make it
+> easier to clean up all code associated with the use of the engine API if
+> it were ever removed in the future. While in the area, use a tab for
+> the key_pass assignment line to match the rest of the file.
 > 
+> Cc: stable@vger.kernel.org
+> Fixes: 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider for OPENSSL MAJOR >= 3")
+> Signed-off-by: Nathan Chancellor <nathan@kernel.org>
 
+Reviewed-by: Nick Desaulniers <ndesaulniers@google.com>
+Tested-by: Nick Desaulniers <ndesaulniers@google.com>
+
+> ---
+> I am taking a fix for a similar warning in modpost through the kbuild
+> tree so I don't mind picking this up with an appropriate Ack or it can
+> just go through the keyring tree, does not matter to me.
+> ---
+>  certs/extract-cert.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/certs/extract-cert.c b/certs/extract-cert.c
+> index 7d6d468ed612..54ecd1024274 100644
+> --- a/certs/extract-cert.c
+> +++ b/certs/extract-cert.c
+> @@ -43,7 +43,9 @@ void format(void)
+>  	exit(2);
+>  }
+>  
+> +#ifdef USE_PKCS11_ENGINE
+>  static const char *key_pass;
+> +#endif
+>  static BIO *wb;
+>  static char *cert_dst;
+>  static bool verbose;
+> @@ -135,7 +137,9 @@ int main(int argc, char **argv)
+>  	if (verbose_env && strchr(verbose_env, '1'))
+>  		verbose = true;
+>  
+> -        key_pass = getenv("KBUILD_SIGN_PIN");
+> +#ifdef USE_PKCS11_ENGINE
+> +	key_pass = getenv("KBUILD_SIGN_PIN");
+> +#endif
+>  
+>  	if (argc != 3)
+>  		format();
+> 
+> ---
+> base-commit: d2a43e7f89da55d6f0f96aaadaa243f35557291e
+> change-id: 20260325-certs-extract-cert-key_pass-unused-but-set-global-23007ecfadf9
+> 
+> Best regards,
+> --  
+> Nathan Chancellor <nathan@kernel.org>
+> 
