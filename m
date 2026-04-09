@@ -1,81 +1,73 @@
-Received: from out-180.mta1.migadu.com (out-180.mta1.migadu.com [95.215.58.180])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C9D463164BA
-	for <keyrings@vger.kernel.org>; Thu,  9 Apr 2026 07:38:36 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=95.215.58.180
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C51FD2C0303;
+	Thu,  9 Apr 2026 13:23:08 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1775720318; cv=none; b=cRzLAdIwFgQ9KtMipG7yqnx720OZ4TbCTp/DNmIEEZGqcNtCKJbmBmAqhz59+3FpNmPsap2+Vpesk6tKsc+QlsTDB0gjbLKVKaZcGtHnaO06/ME5aU6CRfw/Gzy2uuC51Vdlt/JAeuuri0uv7dD/xZF2QoGF1xvnAWOpEob319c=
+	t=1775740988; cv=none; b=jMNSRaUjyVyEBGK34m6wdE8FxJiBhfnuWWFqfPCg8ZaPOpCSJokoY1YH13JsloERiJKfCLoTLAsdmnkBokV6a6IKjDAmbvp6xjJhItvIzCiMuhiNTBJ+XBYWRQcljw/jSgQzDk8LfZPUbiCYm+qyegzJCzTaR4EPr1yFSTJ3Qsg=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1775720318; c=relaxed/simple;
-	bh=jUVCD18qBj55kiQf5LCb0CfnXhvlUgd5d4yqTC7/xCg=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=GvdRhCZk2p/GhdOi56VgEg1DBRaUka8muQVNAhVb35lZzaEuFquSlL0UJ0/tLQcjz+8Gxbl4TeMkGaLqVclW6Qp6sHf8BLIn5nuNtOOCPPlya45syTkQwqPadCSv/bJcw0r0HYP8PXouClgpN+uLStkAesNONSXdfxES6oOANcA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev; spf=pass smtp.mailfrom=linux.dev; dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b=ZOJUrxfH; arc=none smtp.client-ip=95.215.58.180
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.dev
+	s=arc-20240116; t=1775740988; c=relaxed/simple;
+	bh=tqL1fimNDWlyLrxDSkoymopCMl8WNimZ9u/t901NIq4=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=twO0weUwoTvbf0ES9QVBDarzikqFFBYgLCzmyOkfdNzgPgKI0pEhdCopIIg1/sgm146LPb6YNlfJqYWfe+adkvyFy7x1JzpegOvjC0VLmnCWrvtsAqKzU5jyh1dRBiBUgUHg1cObLx96BUpOa0eTgW2RC2rkus5PsqPZtO4CJ3Q=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=gAVlBbSw; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b="ZOJUrxfH"
-X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
-	t=1775720315;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=AiTN0Mif+OlOP/8EPg85nSXf7Y5Nv8jHlAvMHMDCs20=;
-	b=ZOJUrxfHxIiSMG4KLG5gzEWNzkptjlTg0dGlAbWcYpARzsszbaCh6rjBSg2l/hpxn74yun
-	gcigbuZOgomb074+8LBZV6iYejbJjvrq9A1ZKjnHKcMjpND++QW/XOuyta5B/nJB/zjEwB
-	HUJWB8BVcNjOggS16UcsgqU02Kj8uVU=
-From: Thorsten Blum <thorsten.blum@linux.dev>
-To: David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Kees Cook <kees@kernel.org>,
-	"Gustavo A. R. Silva" <gustavoars@kernel.org>
-Cc: Thorsten Blum <thorsten.blum@linux.dev>,
-	netdev@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	linux-hardening@vger.kernel.org
-Subject: [PATCH RESEND net-next 2/2] KEYS: annotate struct user_key_payload with __counted_by
-Date: Thu,  9 Apr 2026 09:37:13 +0200
-Message-ID: <20260409073711.57020-6-thorsten.blum@linux.dev>
-In-Reply-To: <20260409073711.57020-4-thorsten.blum@linux.dev>
-References: <20260409073711.57020-4-thorsten.blum@linux.dev>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="gAVlBbSw"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id C9666C2BCB2;
+	Thu,  9 Apr 2026 13:23:02 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=k20201202; t=1775740988;
+	bh=tqL1fimNDWlyLrxDSkoymopCMl8WNimZ9u/t901NIq4=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=gAVlBbSwQ2EhjlAwBlMNJeosfz0dD/8/v41ae3TtdzbJ4z1x3dD4yTseDt0lVJtuY
+	 bPPpYhmxSCVZyjh7JC0K0y5Dw2ZboOV+3v0qtTJfhHkOkdo8tkm1dRIIKCBDhYcCpw
+	 62TcG886O1nJQIEV5zQUUb2JNYXEHY8UDWiHHh0habAexbRBhLpAkYw/Yf7Fu10JrT
+	 6yEawp4pnmL1Vrsjz8Iq4dX+w+XzA9pmI1rgkQ5grLt0pzA3IDL93pcxKo2fB07nfV
+	 2B7unxdgFM/y+9dQ1ApQeXfmvZtOnpQkyjMNYFbiVx96jPgwg8CrxgwCTE4Ymj7s9J
+	 YKfVqZs9BLKVA==
+Date: Thu, 9 Apr 2026 15:23:00 +0200
+From: Christian Brauner <brauner@kernel.org>
+To: Anand Moon <linux.amoon@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, 
+	David Woodhouse <dwmw2@infradead.org>, Alexander Viro <viro@zeniv.linux.org.uk>, 
+	Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>, 
+	David Hildenbrand <david@kernel.org>, Lorenzo Stoakes <ljs@kernel.org>, 
+	"Liam R. Howlett" <Liam.Howlett@oracle.com>, Vlastimil Babka <vbabka@kernel.org>, 
+	Mike Rapoport <rppt@kernel.org>, Suren Baghdasaryan <surenb@google.com>, 
+	Michal Hocko <mhocko@suse.com>, Peter Zijlstra <peterz@infradead.org>, 
+	Nathan Chancellor <nathan@kernel.org>, Kees Cook <kees@kernel.org>, Thomas Gleixner <tglx@kernel.org>, 
+	Thomas =?utf-8?Q?Wei=C3=9Fschuh?= <thomas.weissschuh@linutronix.de>, Douglas Anderson <dianders@chromium.org>, 
+	Shakeel Butt <shakeel.butt@linux.dev>, Randy Dunlap <rdunlap@infradead.org>, 
+	Masahiro Yamada <masahiroy@kernel.org>, "open list:CERTIFICATE HANDLING" <keyrings@vger.kernel.org>, 
+	open list <linux-kernel@vger.kernel.org>, 
+	"open list:FILESYSTEMS (VFS and infrastructure)" <linux-fsdevel@vger.kernel.org>, "open list:MEMORY MANAGEMENT - CORE" <linux-mm@kvack.org>
+Subject: Re: [PATCH v1] treewide: Fix indentation and whitespace in Kconfig
+ files
+Message-ID: <20260409-kontraproduktiv-sterben-034defac1e79@brauner>
+References: <20260407053945.14116-1-linux.amoon@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-Developer-Signature: v=1; a=openpgp-sha256; l=930; i=thorsten.blum@linux.dev; h=from:subject; bh=jUVCD18qBj55kiQf5LCb0CfnXhvlUgd5d4yqTC7/xCg=; b=owGbwMvMwCUWt7pQ4caZUj3G02pJDJnXw9WXpfasVXvPK1hQdNRTsS/H/d9hIaVFq3ZMXxEoc eSmUtHNjlIWBjEuBlkxRZYHs37M8C2tqdxkErETZg4rE8gQBi5OAZhISw0jw436jQL9uVbnEyP2 NLP3affN2rMyLKG1To9TTvuA9W9hSYb/Ecfy1XQne6aeS/D/uVBHtKVurui6qkOBlkWsuxSctzR zAgA=
-X-Developer-Key: i=thorsten.blum@linux.dev; a=openpgp; fpr=1D60735E8AEF3BE473B69D84733678FD8DFEEAD4
-Content-Transfer-Encoding: 8bit
-X-Migadu-Flow: FLOW_OUT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20260407053945.14116-1-linux.amoon@gmail.com>
 
-Add the __counted_by() compiler attribute to the flexible array member
-'data' to improve access bounds-checking via CONFIG_UBSAN_BOUNDS and
-CONFIG_FORTIFY_SOURCE.
+On Tue, Apr 07, 2026 at 11:09:34AM +0530, Anand Moon wrote:
+> Clean up inconsistent indentation (mixing tabs and spaces) and remove
+> extraneous whitespace in several Kconfig files across the tree.
+> This is a purely cosmetic change to improve readability.
+> 
+> Adjust indentation from spaces to tab (+optional two spaces) as in
+> coding style with command like:
+> 
+> $ sed -e 's/^        /\t/' -i */Kconfig
+> 
+> Signed-off-by: Anand Moon <linux.amoon@gmail.com>
+> ---
 
-Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
----
-Resending this because patch 2/2 didn't go to netdev@ (Jakub)
-Cc: netdev@vger.kernel.org
----
- include/keys/user-type.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/include/keys/user-type.h b/include/keys/user-type.h
-index 386c31432789..2305991f4fcd 100644
---- a/include/keys/user-type.h
-+++ b/include/keys/user-type.h
-@@ -27,7 +27,8 @@
- struct user_key_payload {
- 	struct rcu_head	rcu;		/* RCU destructor */
- 	unsigned short	datalen;	/* length of this data */
--	char		data[] __aligned(__alignof__(u64)); /* actual data */
-+	char		data[]		/* actual data */
-+			__aligned(__alignof__(u64)) __counted_by(datalen);
- };
- 
- extern struct key_type key_type_user;
+Sure,
+Reviewed-by: Christian Brauner <brauner@kernel.org>
