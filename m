@@ -1,149 +1,220 @@
-Received: from mail-pg1-f176.google.com (mail-pg1-f176.google.com [209.85.215.176])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D1101391856
-	for <keyrings@vger.kernel.org>; Wed,  8 Apr 2026 20:25:18 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.215.176
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1C1FD1B4257;
+	Thu,  9 Apr 2026 00:41:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1775679920; cv=none; b=JZ0rRmTHJQ7xedGVsz7vlJKcOSc3x8Y1FPjILaxLSIR9f1Ruy8dE2hh6t5PV2bL1gRIV+xK0xmnfH9cAnM/1NHT+yDzFkR9xQMGDIBqhhEM9beClYP+UCOxMYnwj/HkWMHg2naR8BYYcbALqEUfPhGtFMsJQCYt+dy4VQxUKr+E=
+	t=1775695307; cv=none; b=R7ttcpPn81eH0rmSMi+VIXjeuL352p96RjewJ8vUw5sEud8wolXZCJS9jVdDcx4nrOz9K/udytokJKmD+aFXP2w/m74DjAajt3TPeZTtJhZXLM3S+XeKsFPfJFLGeXCqSirZLWGv1RQEkLkfzdCOovjwq2ceEk/Yo6kTKxmciCU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1775679920; c=relaxed/simple;
-	bh=YK2ErFGtqJmjNXRFUKyoD+PTGXRuF4JLe0eoAfWTn3o=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=EANSSR8xAIgJ8+94Qe/zam+yRWcufw8cAVtdVgTRZTgO+C0TJjWm24Jf62t+Uyejkk1PwHLL+Njw4lW9YWm28oneQXeIOzFF0ybPOjVUYxIld8GLgy/hwQdGpMcFRpQ0u1Ck1o5PACrrVT3xN7oqV8Itnlx8tOWIG08PN7CBOCc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=h+4CDHXV; arc=none smtp.client-ip=209.85.215.176
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=google.com
+	s=arc-20240116; t=1775695307; c=relaxed/simple;
+	bh=8wLuI6mh7RXt8kDT4ACedoTRSCK518cCE/kGtYLgjzs=;
+	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
+	 In-Reply-To:Content-Type; b=o0cJLLR3ncD39EYw5gTeUpaY5rvYAXCd5ZMaMF5juJ9Pqr18hLorIots4qLh0IV321N/bfrnu3XCKVGC1s9G3u5XE7NjdyabZZa/+0cjTvaY4IXniP30vvI/lHJPOYsF50jZw3AaPS+D1AC27UTV23sv+lfEYsdHEcKcNbA9rSk=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=rdk4EEpr; arc=none smtp.client-ip=148.163.156.1
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="h+4CDHXV"
-Received: by mail-pg1-f176.google.com with SMTP id 41be03b00d2f7-c76c067bc51so86696a12.0
-        for <keyrings@vger.kernel.org>; Wed, 08 Apr 2026 13:25:18 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20251104; t=1775679918; x=1776284718; darn=vger.kernel.org;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:from:to:cc:subject:date:message-id:reply-to;
-        bh=qtez7uO2X5FjsGHqGis7qBChcDlylFjTSAlBvJbABwk=;
-        b=h+4CDHXVKB5TtWWN1DQ4w19egGCrJEuQ7L2O729FNN6ypKu8RYyLM31dYGeETYo73t
-         9kUT/25ZSaplj+XAKaDnwuRMSaH11T+IrISdl4sCB/Rc29bS8EMC5uq230Y6jyErv4nZ
-         5EpYLz9phFMW6iXjY49RUCn6Fr++JRhzC0LeoBiZVY5LcvN+wQ8pE6I76QpP06vzYn/A
-         /AxcW213j6RVOpULzBq9OaZNSK+NFtP3OBZoYz0XLnpYq1QfhZaHbAWHtPSfGL6Z5tvN
-         qZYtwbk3D3dDQDDuakz7IwSijDpLnTTDhA0N4oDKUJ9ylmnDaeyH5V9yu2GQ8iZPimPY
-         S7XQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1775679918; x=1776284718;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:x-gm-gg:x-gm-message-state:from:to:cc
-         :subject:date:message-id:reply-to;
-        bh=qtez7uO2X5FjsGHqGis7qBChcDlylFjTSAlBvJbABwk=;
-        b=MqQmA6FJ5UMhqaY0OeRSqaUTQmLQ43u6UTGckvnAwvmybexHmr1YZk3cZgzHeePahe
-         P7NRI4miLRcadGcM2uLMGSqT8E6b4/xLDdetFGOE2zmSPewrp6ZTnfIS38NdCCZBUsdX
-         4csYpmFlkFuFcdzynye738LzCjQmYHnlix9wPmLO5U3XV/eXdL8bxrxY1MGrFZyL3ThP
-         i6FB+u1ni2p8x28rYVpCCYTYH+zeVW+HBUWXndJ/tQqq0hsITtrRiOEQ6yLxbKgQDSJm
-         Hdy/3F3lKgFnuVV4eIy6zLlxL3J/kkyvtgIhHXuYdpeizX2Q4Cz+DZAgxcxXzjbaN21B
-         HxVg==
-X-Forwarded-Encrypted: i=1; AJvYcCUn+N75b7/GarUso4vCDCGIzi1flh3+2crY6M44XS/nPnhaqbGgJELOpgBZ12l9UOd56DRSCE5Ntg==@vger.kernel.org
-X-Gm-Message-State: AOJu0Yzogf3hRTsQc++JUvy7E1R8OjTYA2AAm2zhUmb2wQBYsafRtccF
-	FBYekF3ayjIHUkNudKh383PaZ1KqjNb59DIBPYZBSeVoG+xIr54kZoplL7EY2UJiJdHaespI/d1
-	wHm1fPw==
-X-Gm-Gg: AeBDieueTLlkir8/t3fcKYTjGmdrn//ysYBYtqQV9+P8TaJ+zDeTiIow2RPBz3VKwcv
-	txRX8jGmzbAWGztUU1uXqNlCn9V+1BUbpX8B3iiq9Ib2fThzB4Hv0WChiy2jwXsieoogDcSNx3h
-	kjcxMAAjMcvoYyB5u0GzrBOfbYQ7raJMSazk5z+vH0zB1RBTh5m/ajAxm3jJm8xmbMBEbxmNVBx
-	bz619L0qDy4adEENKDNCuc3g/cSk2I8PD5z52DAa01dv4yL4RqEF0yBxfGlZ7pxqQwIB5Wc4Sja
-	xbYVjjs85h7ngy5SAC1e/JeDWK3nIjxSEmCJ6YaoG6wcRQqkH68Z/fMdIYoP5DRoTdhCAY/7Fmf
-	3CRFPaO7u1I7yNM5H0qQjco+0BnaVM9ngObKxRg2XLjbLxyVcfTZN58/wfMsmbk3+lgm2HbLL62
-	w805Q2uzJXLdZeo9eAjmVfMq/eTWT9rlj9VXgJqjLR2+zDZWzqwLyFslicn+/DinIS
-X-Received: by 2002:a05:7022:40b:b0:12a:8ea4:252 with SMTP id a92af1059eb24-12c28b7f511mr541759c88.4.1775679917525;
-        Wed, 08 Apr 2026 13:25:17 -0700 (PDT)
-Received: from google.com (78.93.125.34.bc.googleusercontent.com. [34.125.93.78])
-        by smtp.gmail.com with ESMTPSA id a92af1059eb24-12bfea5f860sm21165384c88.2.2026.04.08.13.25.16
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 08 Apr 2026 13:25:16 -0700 (PDT)
-Date: Wed, 8 Apr 2026 20:25:12 +0000
-From: Nick Desaulniers <ndesaulniers@google.com>
-To: Nathan Chancellor <nathan@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, 
-	David Woodhouse <dwmw2@infradead.org>, Nick Desaulniers <nick.desaulniers+lkml@gmail.com>, 
-	Bill Wendling <morbo@google.com>, Justin Stitt <justinstitt@google.com>, keyrings@vger.kernel.org, 
-	linux-kernel@vger.kernel.org, llvm@lists.linux.dev, stable@vger.kernel.org
-Subject: Re: [PATCH] extract-cert: Wrap key_pass with '#ifdef
- USE_PKCS11_ENGINE'
-Message-ID: <ada5jlwkMYrtfRHv@google.com>
-References: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="rdk4EEpr"
+Received: from pps.filterd (m0356517.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 638JwMZS2302812;
+	Thu, 9 Apr 2026 00:41:25 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:content-type:date:from:in-reply-to
+	:message-id:mime-version:references:subject:to; s=pp1; bh=pRmlUh
+	ffsUdNaSm0DEU37CAO1oOaNK/euXOQaoxSaSA=; b=rdk4EEpr/tmMiUNhFkqbU8
+	7Fo+coYxcS6ZHPGjcHU/uS8/P/rFty9qgyqOM0IH/H3hGWEq3Am1wVBaVnayZIhc
+	18AoLpjRCF/XFt1bDZ24BAzLaodUdA8zNvElqXq2tG/4Hotp8e68P7kJZEOZSrjl
+	q6/irpToG3G8O7WxC9doHv5sFElV8zeu/zonQDfZdjv7Z+oZj0nR2cPjogAunJZ0
+	75u5fa6a7oksxTIk9tQ+nyMFrmrL8mohIHLQFWn4nHRUMntUiWgAY45EECnKK7tu
+	xn+wad2YbytkLz1x/yqj6ITjhAnbDTwUGHnSn6NgqeVNZQDw5Tt0MDZ+jir68hHQ
+	==
+Received: from ppma23.wdc07v.mail.ibm.com (5d.69.3da9.ip4.static.sl-reverse.com [169.61.105.93])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4dcn2fjm8f-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 09 Apr 2026 00:41:24 +0000 (GMT)
+Received: from pps.filterd (ppma23.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma23.wdc07v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 638KivM3013827;
+	Thu, 9 Apr 2026 00:41:23 GMT
+Received: from smtprelay05.wdc07v.mail.ibm.com ([172.16.1.72])
+	by ppma23.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4dcmf49kmg-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 09 Apr 2026 00:41:23 +0000
+Received: from smtpav02.dal12v.mail.ibm.com (smtpav02.dal12v.mail.ibm.com [10.241.53.101])
+	by smtprelay05.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6390fMdf29426372
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Thu, 9 Apr 2026 00:41:22 GMT
+Received: from smtpav02.dal12v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id F2FC258051;
+	Thu,  9 Apr 2026 00:41:21 +0000 (GMT)
+Received: from smtpav02.dal12v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 2FD425805C;
+	Thu,  9 Apr 2026 00:41:21 +0000 (GMT)
+Received: from [9.61.12.143] (unknown [9.61.12.143])
+	by smtpav02.dal12v.mail.ibm.com (Postfix) with ESMTP;
+	Thu,  9 Apr 2026 00:41:21 +0000 (GMT)
+Message-ID: <de80f843-32cf-44fc-99fa-27741bb5591a@linux.ibm.com>
+Date: Wed, 8 Apr 2026 20:41:20 -0400
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH v2] KEYS: trusted: Debugging as a feature
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        Srish Srinivasan <ssrish@linux.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
+        Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Ahmad Fatoum
+ <a.fatoum@pengutronix.de>,
+        Pengutronix Kernel Team <kernel@pengutronix.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+References: <20260324110043.67248-1-jarkko@kernel.org>
+ <afc489d2-a62f-4604-8e56-219311b46516@linux.ibm.com>
+ <adYRURAJfNCu0FYB@kernel.org>
+Content-Language: en-US
+From: Nayna Jain <nayna@linux.ibm.com>
+In-Reply-To: <adYRURAJfNCu0FYB@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwNDA5MDAwMSBTYWx0ZWRfXx03AtMlscnw0
+ +nHg0Q1ejTFqilAIAFX/PS/H+YJcRn5uw9YzKjL8vaGETUH+ktrw6C5mUcs+1oBbRXIKQcD+/Nm
+ 28Mx0LAybPA2KjS6vsd+QP83xa30zDv9vnid84UQO1Z7vLNkfTh6fHPdBQf/pfU2Z46jiu0yDZa
+ TfuwyfXTcVpAWDstqF4nFZSOJzJV2RsYaC36t2twHwj4wSIMnEFw+DVITWu6ZxCsr+9ibSlVb4N
+ qoqCakTZ9cC7ThHAasbvBYswRgKNKJuzF6Z40mWeqXfBa1BRWsI6PwJsFO2iGY5n9nPOepgk7NW
+ KhySIq5mQsE4nW7taDiME3dT3Cxa/1MuZogI2s5tQ2D9xCfjxBt5VbtiyJ9wUV8vPOR9/OBJuUi
+ 4OkSrgj7uLUtpIuq91dbnAQBCQgDeu/GsqT0ilhk+doT5P9xUY1DC2q3MUIRmq3aiR29K32hvM8
+ 4UTT+U5z55ZMPX5rVJg==
+X-Authority-Analysis: v=2.4 cv=FsY1OWrq c=1 sm=1 tr=0 ts=69d6f5b4 cx=c_pps
+ a=3Bg1Hr4SwmMryq2xdFQyZA==:117 a=3Bg1Hr4SwmMryq2xdFQyZA==:17
+ a=IkcTkHD0fZMA:10 a=A5OVakUREuEA:10 a=VkNPw1HP01LnGYTKEx00:22
+ a=RnoormkPH1_aCDwRdu11:22 a=U7nrCbtTmkRpXpFmAIza:22 a=VwQbUJbxAAAA:8
+ a=VnNF1IyMAAAA:8 a=9zmYnvBJHafUxEwRPyoA:9 a=3ZKOabzyN94A:10 a=QEXdDO2ut3YA:10
+X-Proofpoint-ORIG-GUID: iiKealSa48_Ha8C8NaPTn0cV83Mj2L13
+X-Proofpoint-GUID: iiKealSa48_Ha8C8NaPTn0cV83Mj2L13
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1143,Hydra:6.1.51,FMLib:17.12.100.49
+ definitions=2026-04-08_07,2026-04-08_01,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ bulkscore=0 priorityscore=1501 impostorscore=0 spamscore=0 phishscore=0
+ lowpriorityscore=0 clxscore=1015 adultscore=0 malwarescore=0 suspectscore=0
+ classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
+ reason=mlx scancount=1 engine=8.22.0-2604010000 definitions=main-2604090001
 
-On Wed, Mar 25, 2026 at 06:19:15PM -0700, Nathan Chancellor wrote:
-> A recent strengthening of -Wunused-but-set-variable (enabled with -Wall)
-> in clang under a new subwarning, -Wunused-but-set-global, points out an
-> unused static global variable in certs/extract-cert.c:
-> 
->   certs/extract-cert.c:46:20: error: variable 'key_pass' set but not used [-Werror,-Wunused-but-set-global]
->      46 | static const char *key_pass;
->         |                    ^
-> 
-> After commit 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider
-> for OPENSSL MAJOR >= 3"), key_pass is only used with the OpenSSL engine
-> API, not the new provider API. Wrap key_pass's declaration and
-> assignment with '#ifdef USE_PKCS11_ENGINE' so that it is only included
-> with its use to clear up the warning. While this is a little uglier than
-> just marking key_pass with the unused attribute, this will make it
-> easier to clean up all code associated with the use of the engine API if
-> it were ever removed in the future. While in the area, use a tab for
-> the key_pass assignment line to match the rest of the file.
-> 
-> Cc: stable@vger.kernel.org
-> Fixes: 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider for OPENSSL MAJOR >= 3")
-> Signed-off-by: Nathan Chancellor <nathan@kernel.org>
 
-Reviewed-by: Nick Desaulniers <ndesaulniers@google.com>
-Tested-by: Nick Desaulniers <ndesaulniers@google.com>
+On 4/8/26 4:26 AM, Jarkko Sakkinen wrote:
+> On Mon, Apr 06, 2026 at 10:42:00PM -0400, Nayna Jain wrote:
+>> On 3/24/26 7:00 AM, Jarkko Sakkinen wrote:
+>>> TPM_DEBUG, and other similar flags, are a non-standard way to specify a
+>>> feature in Linux kernel.  Introduce CONFIG_TRUSTED_KEYS_DEBUG for
+>>> trusted keys, and use it to replace these ad-hoc feature flags.
+>>>
+>>> Given that trusted keys debug dumps can contain sensitive data, harden
+>>> the feature as follows:
+>>>
+>>> 1. In the Kconfig description postulate that pr_debug() statements must be
+>>>      used.
+>>> 2. Use pr_debug() statements in TPM 1.x driver to print the protocol dump.
+>>>
+>>> Traces, when actually needed, can be easily enabled by providing
+>>> trusted.dyndbg='+p' in the kernel command-line.
+>>>
+>>> Cc: Srish Srinivasan <ssrish@linux.ibm.com>
+>>> Reported-by: Nayna Jain <nayna@linux.ibm.com>
+>>> Closes: https://lore.kernel.org/all/7f8b8478-5cd8-4d97-bfd0-341fd5cf10f9@linux.ibm.com/
+>>> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+>>> ---
+>>> v2:
+>>> - Implement for all trusted keys backends.
+>>> - Add HAVE_TRUSTED_KEYS_DEBUG as it is a good practice despite full
+>>>     coverage.
+>>> ---
+>>>    include/keys/trusted-type.h               | 18 +++++-------
+>>>    security/keys/trusted-keys/Kconfig        | 19 ++++++++++++
+>>>    security/keys/trusted-keys/trusted_caam.c |  4 +--
+>>>    security/keys/trusted-keys/trusted_tpm1.c | 36 +++++++++++------------
+>>>    4 files changed, 46 insertions(+), 31 deletions(-)
+>>>
+>>> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+>>> index 03527162613f..620a1f890b6b 100644
+>>> --- a/include/keys/trusted-type.h
+>>> +++ b/include/keys/trusted-type.h
+>>> @@ -83,18 +83,16 @@ struct trusted_key_source {
+>>>    extern struct key_type key_type_trusted;
+>>> -#define TRUSTED_DEBUG 0
+>>> -
+>>> -#if TRUSTED_DEBUG
+>>> +#ifdef CONFIG_TRUSTED_KEYS_DEBUG
+>>>    static inline void dump_payload(struct trusted_key_payload *p)
+>>>    {
+>>> -	pr_info("key_len %d\n", p->key_len);
+>>> -	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
+>>> -		       16, 1, p->key, p->key_len, 0);
+>>> -	pr_info("bloblen %d\n", p->blob_len);
+>>> -	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
+>>> -		       16, 1, p->blob, p->blob_len, 0);
+>>> -	pr_info("migratable %d\n", p->migratable);
+>>> +	pr_debug("key_len %d\n", p->key_len);
+>>> +	print_hex_dump_debug("key ", DUMP_PREFIX_NONE,
+>>> +			     16, 1, p->key, p->key_len, 0);
+>>> +	pr_debug("bloblen %d\n", p->blob_len);
+>>> +	print_hex_dump_debug("blob ", DUMP_PREFIX_NONE,
+>>> +			     16, 1, p->blob, p->blob_len, 0);
+>>> +	pr_debug("migratable %d\n", p->migratable);
+>>>    }
+>>>    #else
+>>>    static inline void dump_payload(struct trusted_key_payload *p)
+>>> diff --git a/security/keys/trusted-keys/Kconfig b/security/keys/trusted-keys/Kconfig
+>>> index 9e00482d886a..2ad9ba0e03f1 100644
+>>> --- a/security/keys/trusted-keys/Kconfig
+>>> +++ b/security/keys/trusted-keys/Kconfig
+>>> @@ -1,10 +1,25 @@
+>>>    config HAVE_TRUSTED_KEYS
+>>>    	bool
+>>> +config HAVE_TRUSTED_KEYS_DEBUG
+>>> +	bool
+>>> +
+>>> +config TRUSTED_KEYS_DEBUG
+>>> +	bool "Debug trusted keys"
+>>> +	depends on HAVE_TRUSTED_KEYS_DEBUG
+>>> +	default n
+>>> +	help
+>>> +	  Trusted keys backends and core code that support debug dumps
+>>> +	  can opt-in that feature here. Dumps must only use DEBUG
+>>> +	  level output, as sensitive data may pass by. In the
+>>> +	  kernel-command line traces can be enabled via
+>>> +	  trusted.dyndbg='+p'.
+>> Would it be good idea to add an explicit note/warning:
+>>
+>>
+>> NOTE: This option is intended for debugging purposes only. Do not enable on
+>> production systems as debug output may expose sensitive cryptographic
+>> material.
+>> If you are unsure, say N.
+>>
+>> Apart from this, looks good to me.
+>>
+>> Reviewed-by: Nayna Jain <nayna@linux.ibm.com>
+> Thank, I'll add your tag but would you mind quickly screening v3 again
+> where I add "trusted.debug=0|1". And yes, your suggestion about extra
+> warning makes sense.
+Sure Jarkko.. However, I don't see v3 version in my inbox or in 
+linux-integrity. Or you are about to post it soon.
+>
+> Let's make this safe as possible. Mistakes do happen... and then those
+> measures pay off :-)
+Yes agree.
+>
+> BR, Jarkko
 
-> ---
-> I am taking a fix for a similar warning in modpost through the kbuild
-> tree so I don't mind picking this up with an appropriate Ack or it can
-> just go through the keyring tree, does not matter to me.
-> ---
->  certs/extract-cert.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/certs/extract-cert.c b/certs/extract-cert.c
-> index 7d6d468ed612..54ecd1024274 100644
-> --- a/certs/extract-cert.c
-> +++ b/certs/extract-cert.c
-> @@ -43,7 +43,9 @@ void format(void)
->  	exit(2);
->  }
->  
-> +#ifdef USE_PKCS11_ENGINE
->  static const char *key_pass;
-> +#endif
->  static BIO *wb;
->  static char *cert_dst;
->  static bool verbose;
-> @@ -135,7 +137,9 @@ int main(int argc, char **argv)
->  	if (verbose_env && strchr(verbose_env, '1'))
->  		verbose = true;
->  
-> -        key_pass = getenv("KBUILD_SIGN_PIN");
-> +#ifdef USE_PKCS11_ENGINE
-> +	key_pass = getenv("KBUILD_SIGN_PIN");
-> +#endif
->  
->  	if (argc != 3)
->  		format();
-> 
-> ---
-> base-commit: d2a43e7f89da55d6f0f96aaadaa243f35557291e
-> change-id: 20260325-certs-extract-cert-key_pass-unused-but-set-global-23007ecfadf9
-> 
-> Best regards,
-> --  
-> Nathan Chancellor <nathan@kernel.org>
-> 
+Thanks & Regards,
+
+     - Nayna
+
