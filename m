@@ -1,140 +1,122 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+Received: from metis.whiteo.stw.pengutronix.de (metis.whiteo.stw.pengutronix.de [185.203.201.7])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 677B5362133;
-	Sun, 12 Apr 2026 18:47:41 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 05C433BD64D
+	for <keyrings@vger.kernel.org>; Mon, 13 Apr 2026 11:01:36 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=185.203.201.7
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1776019662; cv=none; b=nUU2da3QquJbr+Ha8GaH2vQsvVwE8p9rmK0L/xNA+9MIZ5RVHJepy7Pn5oSW0kPNfRYlooIJ6lGYXH44Ulbi3DSsXhcBztxyBH1iV3H+g8WhEwAj3QeSis6ceU041K+v670m+NJmxbYxCu8GJt6LkoBwOo6ArvPn6tDhjE3SFqI=
+	t=1776078098; cv=none; b=AskikR/TT3EYLhGmsrf2SzTwIFdkTRRRwBs6NN2AXnnr8niwyh2LHnvGj7ZqQIScV/e3ARd9WPxwhqI93VZtMrVjOatN9ZT9t9gOlxK0HWS78jrLdfC3Nlztmy0wWACZtC7kM67z/z8mM8jWlUqO3B01TeP3ziiZNQxE5eUVg4Y=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1776019662; c=relaxed/simple;
-	bh=9Obmst+vffFZ2JuGzK4zifDXwljV3xYV6tNooPgFR9s=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=ipLnf8cWFvdtdKg0buD7ROUFNRvwh/roVN3d51ZUTxNjztO/BnPlsazCXb9EJ75sPsibtoWabSNi5NoijR842vk8RFUAqPCboflNgmpC77eyaFVbL9zmGG16552DyJgC0+d1QXzF9zcuWtVPL4UR+KEpZDAzRzK76Tg9zWyxmmg=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=Am89wA0z; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="Am89wA0z"
-Received: from pps.filterd (m0356516.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 63CBteJE2081391;
-	Sun, 12 Apr 2026 18:47:25 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=Xj9+2x
-	m71UDvoJ8SbcfXc1BJI9JWIvui23ZYPXOYMds=; b=Am89wA0zf+c60FC9KOPmVI
-	GMAl5E98UDykqjUYqlsMORhUkV9YJGflXW5eU2rXinL0EXSsC4aN0iGVeetFajwq
-	xs6lPiZ+tC4gePmWcwHbBJmR7X+5+Vd02g2rWupEN3iy9E9DISna8IYnrrMl5w6l
-	N/YHy7AH25OafBaRn2aRMkquOjEPon7gTa6VlDsrsYWf2oeGFhOkSZObjeo1CIyn
-	/zszkPyyu4JFHqfMUxhc2PnQzHsDhERR14tF4cXW4RMedniE2y01YVTw+NXlLrJS
-	8Vf1lxN4LFUrAiwTv4nP7DQzib2sUrTtgLAIVyabbgghNpPGtMEAbZFaT7HEuiSQ
-	==
-Received: from ppma11.dal12v.mail.ibm.com (db.9e.1632.ip4.static.sl-reverse.com [50.22.158.219])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4dfbqkcrb3-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 12 Apr 2026 18:47:25 +0000 (GMT)
-Received: from pps.filterd (ppma11.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma11.dal12v.mail.ibm.com (8.18.1.2/8.18.1.2) with ESMTP id 63CGD3P5025831;
-	Sun, 12 Apr 2026 18:47:24 GMT
-Received: from smtprelay02.wdc07v.mail.ibm.com ([172.16.1.69])
-	by ppma11.dal12v.mail.ibm.com (PPS) with ESMTPS id 4dg3b1a3hv-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sun, 12 Apr 2026 18:47:24 +0000
-Received: from smtpav03.dal12v.mail.ibm.com (smtpav03.dal12v.mail.ibm.com [10.241.53.102])
-	by smtprelay02.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 63CIlM8L22151690
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Sun, 12 Apr 2026 18:47:22 GMT
-Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 3E40E58056;
-	Sun, 12 Apr 2026 18:47:22 +0000 (GMT)
-Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 3928F5803F;
-	Sun, 12 Apr 2026 18:47:21 +0000 (GMT)
-Received: from [9.61.16.31] (unknown [9.61.16.31])
-	by smtpav03.dal12v.mail.ibm.com (Postfix) with ESMTP;
-	Sun, 12 Apr 2026 18:47:21 +0000 (GMT)
-Message-ID: <129b137c-be9b-4b01-824f-beec7111377c@linux.ibm.com>
-Date: Sun, 12 Apr 2026 14:47:20 -0400
+	s=arc-20240116; t=1776078098; c=relaxed/simple;
+	bh=BTAb5P3FcxAPfrVAIVK0AI9lyHr0Q7MtwgUjM7kClJA=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=W6ffY36cN/UhdTrk/IQVtmaJT4uOJWkM2XTb6YIZfnjTGv3LWslzHpmI7LhWchybFR1zV10QfgLEDp17qmSC+O/GSEFQnfbak2Vo9bio0KXgqy4x3C1G6ODq5YnVGO+prQTz3pAVhgHuoJExOcZZx2zmuVo9/ocb2Yt40x5hMD8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=pengutronix.de; spf=pass smtp.mailfrom=pengutronix.de; arc=none smtp.client-ip=185.203.201.7
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=pengutronix.de
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=pengutronix.de
+Received: from drehscheibe.grey.stw.pengutronix.de ([2a0a:edc0:0:c01:1d::a2])
+	by metis.whiteo.stw.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
+	(Exim 4.92)
+	(envelope-from <mfe@pengutronix.de>)
+	id 1wCF2U-0007TR-PF; Mon, 13 Apr 2026 13:01:10 +0200
+Received: from pty.whiteo.stw.pengutronix.de ([2a0a:edc0:2:b01:1d::c5])
+	by drehscheibe.grey.stw.pengutronix.de with esmtps  (TLS1.3) tls TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+	(Exim 4.96)
+	(envelope-from <mfe@pengutronix.de>)
+	id 1wCF2S-0059mD-2y;
+	Mon, 13 Apr 2026 13:01:08 +0200
+Received: from mfe by pty.whiteo.stw.pengutronix.de with local (Exim 4.98.2)
+	(envelope-from <mfe@pengutronix.de>)
+	id 1wCF2S-00000007THT-3LMn;
+	Mon, 13 Apr 2026 13:01:08 +0200
+Date: Mon, 13 Apr 2026 13:01:08 +0200
+From: Marco Felsch <m.felsch@pengutronix.de>
+To: Josh Snyder <josh@code406.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>, 
+	Jarkko Sakkinen <jarkko@kernel.org>, Mimi Zohar <zohar@linux.ibm.com>, 
+	David Howells <dhowells@redhat.com>, Ahmad Fatoum <a.fatoum@pengutronix.de>, 
+	Pengutronix Kernel Team <kernel@pengutronix.de>, Paul Moore <paul@paul-moore.com>, 
+	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
+	David Gstir <david@sigma-star.at>, sigma star Kernel Team <upstream+dcp@sigma-star.at>, 
+	Srish Srinivasan <ssrish@linux.ibm.com>, Nayna Jain <nayna@linux.ibm.com>, 
+	Sumit Garg <sumit.garg@kernel.org>, linux-security-module@vger.kernel.org, 
+	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trusted-keys: move pr_fmt out of trusted-type.h
+Message-ID: <cie3zqy5phlopdrxsxpniujwr6i3cpdkfrwjvth3a7ypwjx3ee@hqjl67jnfdch>
+References: <20260411-trusted-key-header-v1-1-407c2cd954db@code406.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v3] KEYS: trusted: Debugging as a feature
-To: Jarkko Sakinen <jarkko@kernel.org>, linux-integrity@vger.kernel.org,
-        keyrings@vger.kernel.org
-Cc: Srish Srinivasan <ssrish@linux.ibm.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
-        Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Ahmad Fatoum
- <a.fatoum@pengutronix.de>,
-        Pengutronix Kernel Team <kernel@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-References: <20260409160752.988713-1-jarkko@kernel.org>
-Content-Language: en-US
-From: Nayna Jain <nayna@linux.ibm.com>
-In-Reply-To: <20260409160752.988713-1-jarkko@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Authority-Analysis: v=2.4 cv=I+9Vgtgg c=1 sm=1 tr=0 ts=69dbe8bd cx=c_pps
- a=aDMHemPKRhS1OARIsFnwRA==:117 a=aDMHemPKRhS1OARIsFnwRA==:17
- a=IkcTkHD0fZMA:10 a=A5OVakUREuEA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=Y2IxJ9c9Rs8Kov3niI8_:22 a=VwQbUJbxAAAA:8
- a=VnNF1IyMAAAA:8 a=rlHd4n21sRncWQMmDL0A:9 a=3ZKOabzyN94A:10 a=QEXdDO2ut3YA:10
-X-Proofpoint-GUID: BUR2Qn7W8kE29AgtgCgbdcxV3guvnvO9
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwNDEyMDE4NCBTYWx0ZWRfX77VwhTiXgwV4
- YmhhxjLCtyUOzManSjWGLizoRjiP1OHmHzYLmpWuWNQ3qSeB5+Cx4THYkppN14MOwUa8t5FcxjR
- Lhe+vAArsZYkf08TioNwHQK559UdkHvfHHlyCMGu5xFjMw9ZoizFiezziTieHP1Vqk9ZorbNRLE
- 6adDjweFl+6KdqOScFFfWW5tmYj0gGme6+WclsWpp9Qu4JDMXHTuZOjJgyJDlxIk8I2giE8gc7v
- 3j9z1RW5Ow3o8UyMnPMep8fNdgLZiDGe8gLHDgIbVqoWISNHpLrLrzotr/OV/UieGqQ1OjO9V2N
- XJkFx7HPwne01+SOvgGlsJIFq9SbnQEf49OLsW0v4IsejZjHn54rvsKvYel836DSctmowkdBaz6
- LfGxXvsYdPvDpBXZSrU+ibTrsCjg6vGu4QGCnY78GiOJRwY8J4UfK90yRET8dCZph6u9VWh7/Vr
- N7epiJjidGNwOJiURGA==
-X-Proofpoint-ORIG-GUID: BUR2Qn7W8kE29AgtgCgbdcxV3guvnvO9
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1143,Hydra:6.1.51,FMLib:17.12.100.49
- definitions=2026-04-12_04,2026-04-09_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- priorityscore=1501 impostorscore=0 bulkscore=0 suspectscore=0 adultscore=0
- lowpriorityscore=0 spamscore=0 malwarescore=0 clxscore=1015 phishscore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2604010000 definitions=main-2604120184
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20260411-trusted-key-header-v1-1-407c2cd954db@code406.com>
+X-SA-Exim-Connect-IP: 2a0a:edc0:0:c01:1d::a2
+X-SA-Exim-Mail-From: mfe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.whiteo.stw.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: keyrings@vger.kernel.org
 
+Hi Josh,
 
-On 4/9/26 12:07 PM, Jarkko Sakinen wrote:
-> From: Jarkko Sakkinen <jarkko@kernel.org>
->
-> TPM_DEBUG, and other similar flags, are a non-standard way to specify a
-> feature in Linux kernel. Introduce CONFIG_TRUSTED_KEYS_DEBUG for trusted
-> keys, and use it to replace these ad-hoc feature flags.
->
-> Given that trusted keys debug dumps can contain sensitive data, harden the
-> feature as follows:
->
-> 1. In the Kconfig description postulate that pr_debug() statements must be
->     used.
-> 2. Use pr_debug() statements in TPM 1.x driver to print the protocol dump.
-> 3. Require trusted.debug=1 on the kernel command line (default: 0) to
->     activate dumps at runtime, even when CONFIG_TRUSTED_KEYS_DEBUG=y.
->
-> Traces, when actually needed, can be easily enabled by providing
-> trusted.dyndbg='+p' and trusted.debug=1 in the kernel command-line.
+On 26-04-11, Josh Snyder wrote:
+> Defining pr_fmt in a widely-included header leaks the "trusted_key: "
+> prefix into every translation unit that transitively includes
+> <keys/trusted-type.h>. dm-crypt, for example, ends up printing
+> 
+>     trusted_key: device-mapper: crypt: dm-10: INTEGRITY AEAD ERROR ...
+> 
+> dm-crypt began including <keys/trusted-type.h> in commit 363880c4eb36
+> ("dm crypt: support using trusted keys"), which predates the pr_fmt
+> addition, so the regression has been live from the moment the header
+> gained its own pr_fmt definition.
+> 
+> Move the pr_fmt definition into the trusted-keys source files that
+> actually want the prefix.
+> 
+> Fixes: 5d0682be3189 ("KEYS: trusted: Add generic trusted keys framework")
+> Assisted-by: Claude:claude-opus-4-6
+> Signed-off-by: Josh Snyder <josh@code406.com>
+> ---
+>  include/keys/trusted-type.h               | 6 ------
+>  security/keys/trusted-keys/trusted_caam.c | 2 ++
+>  security/keys/trusted-keys/trusted_core.c | 2 ++
+>  security/keys/trusted-keys/trusted_dcp.c  | 2 ++
+>  security/keys/trusted-keys/trusted_pkwm.c | 2 ++
+>  security/keys/trusted-keys/trusted_tpm1.c | 2 ++
+>  security/keys/trusted-keys/trusted_tpm2.c | 2 ++
+>  7 files changed, 12 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+> index 03527162613f7..54da1f174aeab 100644
+> --- a/include/keys/trusted-type.h
+> +++ b/include/keys/trusted-type.h
+> @@ -11,12 +11,6 @@
+>  #include <linux/rcupdate.h>
+>  #include <linux/tpm.h>
+>  
+> -#ifdef pr_fmt
+> -#undef pr_fmt
+> -#endif
+> -
+> -#define pr_fmt(fmt) "trusted_key: " fmt
+> -
+>  #define MIN_KEY_SIZE			32
+>  #define MAX_KEY_SIZE			128
+>  #if IS_ENABLED(CONFIG_TRUSTED_KEYS_PKWM)
+> diff --git a/security/keys/trusted-keys/trusted_caam.c b/security/keys/trusted-keys/trusted_caam.c
+> index 601943ce0d60f..a31fd89c0e5c5 100644
+> --- a/security/keys/trusted-keys/trusted_caam.c
+> +++ b/security/keys/trusted-keys/trusted_caam.c
+> @@ -4,6 +4,8 @@
+>   * Copyright 2025 NXP
+>   */
+>  
+> +#define pr_fmt(fmt) "trusted_key: " fmt
 
-Thanks Jarkko. Additional changes looks good to me. I just realized that 
-the kernel command-line parameters document may need to be updated to 
-include these parameters.
+Can we adapt this patch further to include the trusted-key type as well?
+E.g. 'trusted_key-caam'.
 
-Apart from that, feel free to add my
-
-Reviewed-by: Nayna Jain <nayna@linux.ibm.com>
-
-Thanks & Regards,
-
-     - Nayna
-
-
+Regards,
+  Marco
