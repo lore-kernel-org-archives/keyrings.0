@@ -1,136 +1,105 @@
-Received: from metis.whiteo.stw.pengutronix.de (metis.whiteo.stw.pengutronix.de [185.203.201.7])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1AB7D3624C3
-	for <keyrings@vger.kernel.org>; Mon, 13 Apr 2026 11:03:50 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=185.203.201.7
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9337038424D;
+	Tue, 14 Apr 2026 23:58:09 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1776078232; cv=none; b=ZFGkPNg96ItS2bINSh8ubnLA71NtUKPL1/aSylCa9DWdsrfLFvPXfFrFcRmAeYnFPaZVcnrdEcCO15fCukNKLdxyX+NDiBVeqqNkdUHmsfuvfQM2WG3xSAR2G+z73/NTaVZysp2lwP1q8I/DlLGW/j6ZcRsHH/eC/EjWuG/1rdc=
+	t=1776211089; cv=none; b=s9Ha/BOxnujKYIe9KQFdhcuq/SM7JUI2IU1PbpzTPAclMbRrAzprO7BP+iocJNYZuqyv2xeM908TjtI7c4xpaSGrxK1sE2nEgBEAuCrOI7zZTIlu05Qk/Vu+pBA9kVn+U/rINLFvBWFHSMAOsdi1Pu4cqDqjXv2QJ2c7xgss2Lc=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1776078232; c=relaxed/simple;
-	bh=MeOutffsjD4+Sqt7uudqdDFUVeC0MMpC/NDFeB5xch8=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=FHIllbf+ap5NTYwTwslQH7atchHi4+imBu6tAj690D9YAArVUiLwV4fQBDTDoZBtVQEhdCQJ5n19q5hbw64hTLXggU6jgCNDNG5HGBEzhDo73eGhCxHKbZYcGrKmKUUHb4074HX+UlCe1JzY0SF2wH1p3IAgCi4ZkgE6j3cF5Eo=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=pengutronix.de; spf=pass smtp.mailfrom=pengutronix.de; arc=none smtp.client-ip=185.203.201.7
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=pengutronix.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=pengutronix.de
-Received: from ptz.office.stw.pengutronix.de ([2a0a:edc0:0:900:1d::77] helo=[127.0.0.1])
-	by metis.whiteo.stw.pengutronix.de with esmtp (Exim 4.92)
-	(envelope-from <a.fatoum@pengutronix.de>)
-	id 1wCF4n-0007q2-4q; Mon, 13 Apr 2026 13:03:33 +0200
-Message-ID: <20e9f021-f6b3-4e19-9e1b-93b1e00eb803@pengutronix.de>
-Date: Mon, 13 Apr 2026 13:03:30 +0200
+	s=arc-20240116; t=1776211089; c=relaxed/simple;
+	bh=Ncf1TM3KGCc69Qo8ck7pIPJKQUTkRyFmU/ifvTZXZUo=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=MCvZgHqi5yqYo0qlI3O61UdchG08Ph0CQv4ge+s4JgGqAuC4qceEvAJGkfZ0wO+pd9c+IW5A2njZnZHy5CnXnruaGoTXNmfXOEHvtQPJIB+LSb33qfNFnrGsWgJ2/AemQ6RwrNg/nIdgdpfdS4IkHMkbnVood3ICI3rizOBnQ3I=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=teW2CwnQ; arc=none smtp.client-ip=10.30.226.201
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="teW2CwnQ"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id DD438C19425;
+	Tue, 14 Apr 2026 23:58:08 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=k20201202; t=1776211089;
+	bh=Ncf1TM3KGCc69Qo8ck7pIPJKQUTkRyFmU/ifvTZXZUo=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=teW2CwnQRyZwGMj8dvwPkxhtKLKEq1Z+PeDJS19fuE8Nqb+GxwIw9JtwTblNDOzw2
+	 c0rK26r9Qfaz8aW3xu2ozXEmVrRRtt1yxFOhP6Myi804ymw02tybDOoYVmNKGzKKu2
+	 53H1pgXqGeNgXlgMUtQoWhfMZMF1fFWGT2gMsERtqCSEz8ycpGW6tTWFnbAK8bVTVo
+	 /wUMllVPO+FOzp9Ql7BTEhi8d05lk3dMeuYXcMiYelYu1MWPc+Zycrgf1kl65UjuiP
+	 qqwDgwJ2N10MRPIQgDUczTPDX1TmGjjbNkfHlJobJBN8lzRgRf3Uwvh4pbRTcrp02M
+	 5h450u+gUohCA==
+Date: Wed, 15 Apr 2026 02:58:05 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Thorsten Blum <thorsten.blum@linux.dev>
+Cc: David Howells <dhowells@redhat.com>, Kees Cook <kees@kernel.org>,
+	"Gustavo A. R. Silva" <gustavoars@kernel.org>,
+	keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-hardening@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] KEYS: annotate struct user_key_payload with
+ __counted_by
+Message-ID: <ad7UjdtT1vLwlu0_@kernel.org>
+References: <20260406175810.1018681-3-thorsten.blum@linux.dev>
+ <20260406175810.1018681-4-thorsten.blum@linux.dev>
+ <adYZoWK_CTv2-RA_@kernel.org>
+ <adZIP8w0IttbIZa2@linux.dev>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH] trusted-keys: move pr_fmt out of trusted-type.h
-To: Marco Felsch <m.felsch@pengutronix.de>, Josh Snyder <josh@code406.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
- Jarkko Sakkinen <jarkko@kernel.org>, Mimi Zohar <zohar@linux.ibm.com>,
- David Howells <dhowells@redhat.com>,
- Pengutronix Kernel Team <kernel@pengutronix.de>,
- Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
- "Serge E. Hallyn" <serge@hallyn.com>, David Gstir <david@sigma-star.at>,
- sigma star Kernel Team <upstream+dcp@sigma-star.at>,
- Srish Srinivasan <ssrish@linux.ibm.com>, Nayna Jain <nayna@linux.ibm.com>,
- Sumit Garg <sumit.garg@kernel.org>, linux-security-module@vger.kernel.org,
- linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
- linux-kernel@vger.kernel.org
-References: <20260411-trusted-key-header-v1-1-407c2cd954db@code406.com>
- <cie3zqy5phlopdrxsxpniujwr6i3cpdkfrwjvth3a7ypwjx3ee@hqjl67jnfdch>
-From: Ahmad Fatoum <a.fatoum@pengutronix.de>
-Content-Language: en-US, de-DE, de-BE
-In-Reply-To: <cie3zqy5phlopdrxsxpniujwr6i3cpdkfrwjvth3a7ypwjx3ee@hqjl67jnfdch>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2a0a:edc0:0:900:1d::77
-X-SA-Exim-Mail-From: a.fatoum@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.whiteo.stw.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <adZIP8w0IttbIZa2@linux.dev>
 
-Hi,
-
-On 4/13/26 1:01 PM, Marco Felsch wrote:
-> Hi Josh,
+On Wed, Apr 08, 2026 at 02:21:19PM +0200, Thorsten Blum wrote:
+> On Wed, Apr 08, 2026 at 12:02:25PM +0300, Jarkko Sakkinen wrote:
+> > On Mon, Apr 06, 2026 at 07:58:10PM +0200, Thorsten Blum wrote:
+> > > Add the __counted_by() compiler attribute to the flexible array member
+> > > 'data' to improve access bounds-checking via CONFIG_UBSAN_BOUNDS and
+> > > CONFIG_FORTIFY_SOURCE.
+> > > 
+> > > Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
+> > > ---
+> > >  include/keys/user-type.h | 3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/include/keys/user-type.h b/include/keys/user-type.h
+> > > index 386c31432789..2305991f4fcd 100644
+> > > --- a/include/keys/user-type.h
+> > > +++ b/include/keys/user-type.h
+> > > @@ -27,7 +27,8 @@
+> > >  struct user_key_payload {
+> > >  	struct rcu_head	rcu;		/* RCU destructor */
+> > >  	unsigned short	datalen;	/* length of this data */
+> > > -	char		data[] __aligned(__alignof__(u64)); /* actual data */
+> > > +	char		data[]		/* actual data */
+> > > +			__aligned(__alignof__(u64)) __counted_by(datalen);
+> > >  };
+> > >  
+> > >  extern struct key_type key_type_user;
+> > 
+> > You don't provide any evidence of any improvement.
 > 
-> On 26-04-11, Josh Snyder wrote:
->> Defining pr_fmt in a widely-included header leaks the "trusted_key: "
->> prefix into every translation unit that transitively includes
->> <keys/trusted-type.h>. dm-crypt, for example, ends up printing
->>
->>     trusted_key: device-mapper: crypt: dm-10: INTEGRITY AEAD ERROR ...
->>
->> dm-crypt began including <keys/trusted-type.h> in commit 363880c4eb36
->> ("dm crypt: support using trusted keys"), which predates the pr_fmt
->> addition, so the regression has been live from the moment the header
->> gained its own pr_fmt definition.
->>
->> Move the pr_fmt definition into the trusted-keys source files that
->> actually want the prefix.
->>
->> Fixes: 5d0682be3189 ("KEYS: trusted: Add generic trusted keys framework")
->> Assisted-by: Claude:claude-opus-4-6
->> Signed-off-by: Josh Snyder <josh@code406.com>
->> ---
->>  include/keys/trusted-type.h               | 6 ------
->>  security/keys/trusted-keys/trusted_caam.c | 2 ++
->>  security/keys/trusted-keys/trusted_core.c | 2 ++
->>  security/keys/trusted-keys/trusted_dcp.c  | 2 ++
->>  security/keys/trusted-keys/trusted_pkwm.c | 2 ++
->>  security/keys/trusted-keys/trusted_tpm1.c | 2 ++
->>  security/keys/trusted-keys/trusted_tpm2.c | 2 ++
->>  7 files changed, 12 insertions(+), 6 deletions(-)
->>
->> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
->> index 03527162613f7..54da1f174aeab 100644
->> --- a/include/keys/trusted-type.h
->> +++ b/include/keys/trusted-type.h
->> @@ -11,12 +11,6 @@
->>  #include <linux/rcupdate.h>
->>  #include <linux/tpm.h>
->>  
->> -#ifdef pr_fmt
->> -#undef pr_fmt
->> -#endif
->> -
->> -#define pr_fmt(fmt) "trusted_key: " fmt
->> -
->>  #define MIN_KEY_SIZE			32
->>  #define MAX_KEY_SIZE			128
->>  #if IS_ENABLED(CONFIG_TRUSTED_KEYS_PKWM)
->> diff --git a/security/keys/trusted-keys/trusted_caam.c b/security/keys/trusted-keys/trusted_caam.c
->> index 601943ce0d60f..a31fd89c0e5c5 100644
->> --- a/security/keys/trusted-keys/trusted_caam.c
->> +++ b/security/keys/trusted-keys/trusted_caam.c
->> @@ -4,6 +4,8 @@
->>   * Copyright 2025 NXP
->>   */
->>  
->> +#define pr_fmt(fmt) "trusted_key: " fmt
+> It's a proactive hardening change to help avoid future mistakes.
 > 
-> Can we adapt this patch further to include the trusted-key type as well?
-> E.g. 'trusted_key-caam'.
-
-Agreed, if we move it into the individual files, we can use the occasion
-to make it a bit more descriptive.
-
-I would suggest "trusted_key: caam: ", so the prefix stays the same.
-
-Cheers,
-Ahmad
-
+> The __counted_by() annotation makes the bounds visible to the compiler
+> and at runtime so that future ->data accesses can be checked against
+> ->datalen.
 > 
-> Regards,
->   Marco
-> 
+> The current code is correct regarding ->data accesses and doesn't
+> require any changes.
 
--- 
-Pengutronix e.K.                  |                             |
-Steuerwalder Str. 21              | http://www.pengutronix.de/  |
-31137 Hildesheim, Germany         | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686  | Fax:   +49-5121-206917-5555 |
+OK I'll buy that but send +1 version:
 
+~/work/kernel.org/jarkko/linux-tpmdd next
+❯ git am -3 20260406_thorsten_blum_keys_dns_drop_unused_upayload_data_nul_terminator.mbx
+Applying: keys, dns: drop unused upayload->data NUL terminator
+error: sha1 information is lacking or useless (net/dns_resolver/dns_key.c).
+error: could not build fake ancestor
+Patch failed at 0001 keys, dns: drop unused upayload->data NUL terminator
+hint: Use 'git am --show-current-patch=diff' to see the failed patch
+When you have resolved this problem, run "git am --continue".
+If you prefer to skip this patch, run "git am --skip" instead.
+To restore the original branch and stop patching, run "git am --abort".
+
+BR, Jarkko
