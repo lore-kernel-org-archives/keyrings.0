@@ -1,55 +1,56 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A31D0223702;
-	Thu, 16 Apr 2026 20:42:42 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 26A8E198A17;
+	Thu, 16 Apr 2026 21:21:50 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1776372162; cv=none; b=CF1LLjSyeCxmo5EbRRvkRHnS5wB2edER7Mo8+I4X7CU315T9Mu4ouxYhpUwz5nvS9M3Sf7a2ofJfZ3veWwdqYNHLpaQ5OuXPvzzfqYopV44l6XP5hu5RVaUXDdJNFrlK7lMSoXBdS1tMpw/CkJbzp7MB2XZeP9mX7Bu8N7YIGXw=
+	t=1776374510; cv=none; b=taAn8CA+xDLpsndcYY4ocpnYHQcRK+NyvBZU3+beID2c6C3Qsw8JQ4636X2O9bhqRwjDVPfZ2pTgUYhR/i+J0bJQw+eBGlRkWjojpD7AjmFHqT7h6O1SvSMs2MW/mtwVq3eog2luw/GXTwizoU9uemhwkWwDOEHKpPcoth5Oqc8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1776372162; c=relaxed/simple;
-	bh=JPUtuKxwLtiIktkD4islzsWIZs7009+OiFPhBhlfWPE=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=RA/7Yj6T98VeuzaDrfOKdB/1C1NYBVu2Y0TsvuRHiSMJ2NdVwwh5H0E4gNj5+2xLwQ0tAksYvYuCIIeYDi2jFL/IUk4Q/yPuLMMwkD//Skl/3R5rnnAUdgHJhc3//s+j8uvzYCef+ihlKFtRXMgIPFcCJpwFLIigCyfxlEjxyx4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=BKl/TJ+Z; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1776374510; c=relaxed/simple;
+	bh=0A66zo/Lfk4qleLToQJ1y9UBbagG08xg62HQhV2NSh0=;
+	h=From:To:Cc:In-Reply-To:References:Subject:Message-Id:Date:
+	 MIME-Version:Content-Type; b=sW2MnF94XX/IvE2RhTvOXT6t2EHHa34lhG7pXsQbI21obacVrelCe3zDQ57l+lHQgC0zqG+XgKnnh2E1s7NZHeWTCV9Urs2J5AyYGjK1pd4ir9YqWhqiSrtwE0yFpExHLE6J+dIO5PN4RMzUhgnrABEXGDwuNoZaqWNXxrHatHc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=ao1i69/e; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="BKl/TJ+Z"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 55CAAC2BCAF;
-	Thu, 16 Apr 2026 20:42:40 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="ao1i69/e"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 1B78EC2BCAF;
+	Thu, 16 Apr 2026 21:21:47 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1776372162;
-	bh=JPUtuKxwLtiIktkD4islzsWIZs7009+OiFPhBhlfWPE=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=BKl/TJ+ZPdIlIDnjASWVrYDL3IV0Hg0SaOut31d8EHj6+hXZs80Wfl4tXdwmMANjD
-	 p0Cip9RVzakMik22MUBSbt49iaVUGF0GFEsqa8q67nNOSf0B58sUOk8hbyTUr7krtJ
-	 UFhL/EMnZ1xQEjfvXrdyn60WEML2yUN/qnke0FX8jFsFUCTDNT14bfzSbX4oyJSsLI
-	 BArEStBBoQzqcYsFHt+csASsL1Zlv1gAZrubkNPfOzId3/fu5m8FsfxfSgfmJOAQgV
-	 WIosob1fRsmzNhwqzTKTOhp2Q29qUP9+5Fsz1vtfOJ2RRibzDH6LkGjNEEkBTXOqZl
-	 hEV324AI0Bt5A==
-Date: Thu, 16 Apr 2026 13:42:37 -0700
+	s=k20201202; t=1776374510;
+	bh=0A66zo/Lfk4qleLToQJ1y9UBbagG08xg62HQhV2NSh0=;
+	h=From:To:Cc:In-Reply-To:References:Subject:Date:From;
+	b=ao1i69/eS+dMjRfpuMEDbs5RypkrgKgwNwXDU+bNO8B6w4O3pUs2lBVS3YosBcUBQ
+	 Z/aIUnWkG0mrLOFmvoX088hXa4k4Ja2PHxEAtAns5pLIH0MzuuZ18xYZWbT1XwuxEW
+	 kvTd28xoA2lNfMFy3kOFyVGMzFbsKFFVo6c6p9B9ngsSHsLk5vFrdPeJ8K9LVT7JbS
+	 7cW44/ssidio+fdYUOSzdvP508Fy0fDMdCU5VPEGndM4IQildNTEbW9HUPvbT+aWf+
+	 satzbKv2sBMCmOP4Jt4vEvV/uCocr++HMG7cIDNgn37ermIV2Se2R2IJTELLwiUbFl
+	 gS5yELI6Hcxzg==
 From: Nathan Chancellor <nathan@kernel.org>
-To: David Howells <dhowells@redhat.com>,
-	David Woodhouse <dwmw2@infradead.org>
-Cc: Nick Desaulniers <nick.desaulniers+lkml@gmail.com>,
-	Bill Wendling <morbo@google.com>,
-	Justin Stitt <justinstitt@google.com>, keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org, llvm@lists.linux.dev,
-	stable@vger.kernel.org
+To: David Howells <dhowells@redhat.com>, 
+ David Woodhouse <dwmw2@infradead.org>, 
+ Nathan Chancellor <nathan@kernel.org>
+Cc: Nick Desaulniers <nick.desaulniers+lkml@gmail.com>, 
+ Bill Wendling <morbo@google.com>, Justin Stitt <justinstitt@google.com>, 
+ keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, 
+ llvm@lists.linux.dev, stable@vger.kernel.org
+In-Reply-To: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
+References: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
 Subject: Re: [PATCH] extract-cert: Wrap key_pass with '#ifdef
  USE_PKCS11_ENGINE'
-Message-ID: <20260416204237.GA4136475@ax162>
-References: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
+Message-Id: <177637450781.4150069.540537972769992997.b4-ty@b4>
+Date: Thu, 16 Apr 2026 14:21:47 -0700
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: b4 0.16-dev
 
-On Wed, Mar 25, 2026 at 06:19:15PM -0700, Nathan Chancellor wrote:
+On Wed, 25 Mar 2026 18:19:15 -0700, Nathan Chancellor wrote:
 > A recent strengthening of -Wunused-but-set-variable (enabled with -Wall)
 > in clang under a new subwarning, -Wunused-but-set-global, points out an
 > unused static global variable in certs/extract-cert.c:
@@ -58,65 +59,22 @@ On Wed, Mar 25, 2026 at 06:19:15PM -0700, Nathan Chancellor wrote:
 >      46 | static const char *key_pass;
 >         |                    ^
 > 
-> After commit 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider
-> for OPENSSL MAJOR >= 3"), key_pass is only used with the OpenSSL engine
-> API, not the new provider API. Wrap key_pass's declaration and
-> assignment with '#ifdef USE_PKCS11_ENGINE' so that it is only included
-> with its use to clear up the warning. While this is a little uglier than
-> just marking key_pass with the unused attribute, this will make it
-> easier to clean up all code associated with the use of the engine API if
-> it were ever removed in the future. While in the area, use a tab for
-> the key_pass assignment line to match the rest of the file.
-> 
-> Cc: stable@vger.kernel.org
-> Fixes: 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider for OPENSSL MAJOR >= 3")
-> Signed-off-by: Nathan Chancellor <nathan@kernel.org>
+> [...]
 
-I am going to apply this to my tree and send it to Linus at some point
-during the merge window, as this warning breaks the build early,
-disrupting our upstream LLVM testing. If there are any objections to
-this, please let me know; it does not seem like extract-cert.c is a hard
-owned file.
+Applied to
 
-> ---
-> I am taking a fix for a similar warning in modpost through the kbuild
-> tree so I don't mind picking this up with an appropriate Ack or it can
-> just go through the keyring tree, does not matter to me.
-> ---
->  certs/extract-cert.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/certs/extract-cert.c b/certs/extract-cert.c
-> index 7d6d468ed612..54ecd1024274 100644
-> --- a/certs/extract-cert.c
-> +++ b/certs/extract-cert.c
-> @@ -43,7 +43,9 @@ void format(void)
->  	exit(2);
->  }
->  
-> +#ifdef USE_PKCS11_ENGINE
->  static const char *key_pass;
-> +#endif
->  static BIO *wb;
->  static char *cert_dst;
->  static bool verbose;
-> @@ -135,7 +137,9 @@ int main(int argc, char **argv)
->  	if (verbose_env && strchr(verbose_env, '1'))
->  		verbose = true;
->  
-> -        key_pass = getenv("KBUILD_SIGN_PIN");
-> +#ifdef USE_PKCS11_ENGINE
-> +	key_pass = getenv("KBUILD_SIGN_PIN");
-> +#endif
->  
->  	if (argc != 3)
->  		format();
-> 
-> ---
-> base-commit: d2a43e7f89da55d6f0f96aaadaa243f35557291e
-> change-id: 20260325-certs-extract-cert-key_pass-unused-but-set-global-23007ecfadf9
-> 
-> Best regards,
-> --  
-> Nathan Chancellor <nathan@kernel.org>
-> 
+  https://git.kernel.org/pub/scm/linux/kernel/git/nathan/linux.git clang-fixes
+
+Thanks!
+
+[1/1] extract-cert: Wrap key_pass with '#ifdef USE_PKCS11_ENGINE'
+      https://git.kernel.org/nathan/c/4f96b7c68a990
+
+Please look out for regression or issue reports or other follow up
+comments, as they may result in the patch/series getting dropped or
+reverted.
+
+Best regards,
+-- 
+Nathan Chancellor <nathan@kernel.org>
+
