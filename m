@@ -1,127 +1,122 @@
-Received: from out-189.mta0.migadu.com (out-189.mta0.migadu.com [91.218.175.189])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CE55139B4A9
-	for <keyrings@vger.kernel.org>; Thu, 16 Apr 2026 10:13:43 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=91.218.175.189
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A31D0223702;
+	Thu, 16 Apr 2026 20:42:42 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1776334425; cv=none; b=TQh4heo0lS12iOWB8qAjzMVEKQ+DUDulfEXMCe6PcvaFWHyXbCmHwIX743A0MrUMaY2FydGr9oNLyMP/rqM5HSJUE8f00gJNuVzbFB0U7RbKf9KjF08tcTEJU1t8ItoPZADPK+3S2E4BCw20AK8fgf0sdmHqwuFaeydLZLEpePM=
+	t=1776372162; cv=none; b=CF1LLjSyeCxmo5EbRRvkRHnS5wB2edER7Mo8+I4X7CU315T9Mu4ouxYhpUwz5nvS9M3Sf7a2ofJfZ3veWwdqYNHLpaQ5OuXPvzzfqYopV44l6XP5hu5RVaUXDdJNFrlK7lMSoXBdS1tMpw/CkJbzp7MB2XZeP9mX7Bu8N7YIGXw=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1776334425; c=relaxed/simple;
-	bh=ArcIWCZmBPTDwwsC/vDqAb5wp9IUKWfD7vKLk5BsjGM=;
+	s=arc-20240116; t=1776372162; c=relaxed/simple;
+	bh=JPUtuKxwLtiIktkD4islzsWIZs7009+OiFPhBhlfWPE=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=lVR0rgzL+fOk75UmkJLb5zaPIVMgktQ1ewogCxvnASDSYcWi9m/ubk8cg+7UaBgpZzNotYTsW4fqCq96/hlKlkBzFvgiOnCa4quvc1aHaVoYRbuNHVpX44O9pN66oRS3PsVl/sXvXsd5GoeQD+07KXsfPshnBSH3okmcw8Rkf2I=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev; spf=pass smtp.mailfrom=linux.dev; dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b=QuOGEMes; arc=none smtp.client-ip=91.218.175.189
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.dev
+	 Content-Type:Content-Disposition:In-Reply-To; b=RA/7Yj6T98VeuzaDrfOKdB/1C1NYBVu2Y0TsvuRHiSMJ2NdVwwh5H0E4gNj5+2xLwQ0tAksYvYuCIIeYDi2jFL/IUk4Q/yPuLMMwkD//Skl/3R5rnnAUdgHJhc3//s+j8uvzYCef+ihlKFtRXMgIPFcCJpwFLIigCyfxlEjxyx4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=BKl/TJ+Z; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b="QuOGEMes"
-Date: Thu, 16 Apr 2026 12:13:28 +0200
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
-	t=1776334411;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=cEP3FwppOq3TV1mgmtnkSnFGLCh9cN1Mu28D/6VMLvQ=;
-	b=QuOGEMeskI5EHg8WF/aN2FDxxyoBCBMMDRWLZC0h8nwkBkwFFFIfd8azWo96C/GLU6PQzQ
-	qb+W2G2Sdow+98lNEaUKyWepNCtZtxmREM1iiQ/vDr2jqBbOy/wi2MuBTf+DXHn7ERUwbY
-	fMGFg4r1+TSUfgcWsO7S72b5S+okw1o=
-X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
-From: Thorsten Blum <thorsten.blum@linux.dev>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, Kees Cook <kees@kernel.org>,
-	"Gustavo A. R. Silva" <gustavoars@kernel.org>,
-	keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-hardening@vger.kernel.org
-Subject: Re: [PATCH net-next 2/2] KEYS: annotate struct user_key_payload with
- __counted_by
-Message-ID: <aeC2SNPslfdMV-Rh@linux.dev>
-References: <20260406175810.1018681-3-thorsten.blum@linux.dev>
- <20260406175810.1018681-4-thorsten.blum@linux.dev>
- <adYZoWK_CTv2-RA_@kernel.org>
- <adZIP8w0IttbIZa2@linux.dev>
- <ad7UjdtT1vLwlu0_@kernel.org>
- <ad9dCoEsiwwgRK2L@linux.dev>
- <ad9_wQfq7fYEU7mS@kernel.org>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="BKl/TJ+Z"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 55CAAC2BCAF;
+	Thu, 16 Apr 2026 20:42:40 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=k20201202; t=1776372162;
+	bh=JPUtuKxwLtiIktkD4islzsWIZs7009+OiFPhBhlfWPE=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=BKl/TJ+ZPdIlIDnjASWVrYDL3IV0Hg0SaOut31d8EHj6+hXZs80Wfl4tXdwmMANjD
+	 p0Cip9RVzakMik22MUBSbt49iaVUGF0GFEsqa8q67nNOSf0B58sUOk8hbyTUr7krtJ
+	 UFhL/EMnZ1xQEjfvXrdyn60WEML2yUN/qnke0FX8jFsFUCTDNT14bfzSbX4oyJSsLI
+	 BArEStBBoQzqcYsFHt+csASsL1Zlv1gAZrubkNPfOzId3/fu5m8FsfxfSgfmJOAQgV
+	 WIosob1fRsmzNhwqzTKTOhp2Q29qUP9+5Fsz1vtfOJ2RRibzDH6LkGjNEEkBTXOqZl
+	 hEV324AI0Bt5A==
+Date: Thu, 16 Apr 2026 13:42:37 -0700
+From: Nathan Chancellor <nathan@kernel.org>
+To: David Howells <dhowells@redhat.com>,
+	David Woodhouse <dwmw2@infradead.org>
+Cc: Nick Desaulniers <nick.desaulniers+lkml@gmail.com>,
+	Bill Wendling <morbo@google.com>,
+	Justin Stitt <justinstitt@google.com>, keyrings@vger.kernel.org,
+	linux-kernel@vger.kernel.org, llvm@lists.linux.dev,
+	stable@vger.kernel.org
+Subject: Re: [PATCH] extract-cert: Wrap key_pass with '#ifdef
+ USE_PKCS11_ENGINE'
+Message-ID: <20260416204237.GA4136475@ax162>
+References: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <ad9_wQfq7fYEU7mS@kernel.org>
-X-Migadu-Flow: FLOW_OUT
+In-Reply-To: <20260325-certs-extract-cert-key_pass-unused-but-set-global-v1-1-ecf94326d532@kernel.org>
 
-On Wed, Apr 15, 2026 at 03:08:33PM +0300, Jarkko Sakkinen wrote:
-> On Wed, Apr 15, 2026 at 11:40:26AM +0200, Thorsten Blum wrote:
-> > On Wed, Apr 15, 2026 at 02:58:05AM +0300, Jarkko Sakkinen wrote:
-> > > On Wed, Apr 08, 2026 at 02:21:19PM +0200, Thorsten Blum wrote:
-> > > > On Wed, Apr 08, 2026 at 12:02:25PM +0300, Jarkko Sakkinen wrote:
-> > > > > On Mon, Apr 06, 2026 at 07:58:10PM +0200, Thorsten Blum wrote:
-> > > > > > Add the __counted_by() compiler attribute to the flexible array member
-> > > > > > 'data' to improve access bounds-checking via CONFIG_UBSAN_BOUNDS and
-> > > > > > CONFIG_FORTIFY_SOURCE.
-> > > > > > 
-> > > > > > Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
-> > > > > > ---
-> > > > > >  include/keys/user-type.h | 3 ++-
-> > > > > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > > > > 
-> > > > > > diff --git a/include/keys/user-type.h b/include/keys/user-type.h
-> > > > > > index 386c31432789..2305991f4fcd 100644
-> > > > > > --- a/include/keys/user-type.h
-> > > > > > +++ b/include/keys/user-type.h
-> > > > > > @@ -27,7 +27,8 @@
-> > > > > >  struct user_key_payload {
-> > > > > >  	struct rcu_head	rcu;		/* RCU destructor */
-> > > > > >  	unsigned short	datalen;	/* length of this data */
-> > > > > > -	char		data[] __aligned(__alignof__(u64)); /* actual data */
-> > > > > > +	char		data[]		/* actual data */
-> > > > > > +			__aligned(__alignof__(u64)) __counted_by(datalen);
-> > > > > >  };
-> > > > > >  
-> > > > > >  extern struct key_type key_type_user;
-> > > > > 
-> > > > > You don't provide any evidence of any improvement.
-> > > > 
-> > > > It's a proactive hardening change to help avoid future mistakes.
-> > > > 
-> > > > The __counted_by() annotation makes the bounds visible to the compiler
-> > > > and at runtime so that future ->data accesses can be checked against
-> > > > ->datalen.
-> > > > 
-> > > > The current code is correct regarding ->data accesses and doesn't
-> > > > require any changes.
-> > > 
-> > > OK I'll buy that but send +1 version:
-> > > 
-> > > ~/work/kernel.org/jarkko/linux-tpmdd next
-> > > ❯ git am -3 20260406_thorsten_blum_keys_dns_drop_unused_upayload_data_nul_terminator.mbx
-> > > Applying: keys, dns: drop unused upayload->data NUL terminator
-> > > error: sha1 information is lacking or useless (net/dns_resolver/dns_key.c).
-> > > error: could not build fake ancestor
-> > > Patch failed at 0001 keys, dns: drop unused upayload->data NUL terminator
-> > > hint: Use 'git am --show-current-patch=diff' to see the failed patch
-> > > When you have resolved this problem, run "git am --continue".
-> > > If you prefer to skip this patch, run "git am --skip" instead.
-> > > To restore the original branch and stop patching, run "git am --abort".
-> > 
-> > AFAICT, linux-tpmdd/next is missing this change:
-> > 
-> > https://lore.kernel.org/all/20260226214930.785423-3-thorsten.blum@linux.dev/
+On Wed, Mar 25, 2026 at 06:19:15PM -0700, Nathan Chancellor wrote:
+> A recent strengthening of -Wunused-but-set-variable (enabled with -Wall)
+> in clang under a new subwarning, -Wunused-but-set-global, points out an
+> unused static global variable in certs/extract-cert.c:
 > 
-> By pratical means, that is lacking any proper commit message.
+>   certs/extract-cert.c:46:20: error: variable 'key_pass' set but not used [-Werror,-Wunused-but-set-global]
+>      46 | static const char *key_pass;
+>         |                    ^
+> 
+> After commit 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider
+> for OPENSSL MAJOR >= 3"), key_pass is only used with the OpenSSL engine
+> API, not the new provider API. Wrap key_pass's declaration and
+> assignment with '#ifdef USE_PKCS11_ENGINE' so that it is only included
+> with its use to clear up the warning. While this is a little uglier than
+> just marking key_pass with the unused attribute, this will make it
+> easier to clean up all code associated with the use of the engine API if
+> it were ever removed in the future. While in the area, use a tab for
+> the key_pass assignment line to match the rest of the file.
+> 
+> Cc: stable@vger.kernel.org
+> Fixes: 558bdc45dfb2 ("sign-file,extract-cert: use pkcs11 provider for OPENSSL MAJOR >= 3")
+> Signed-off-by: Nathan Chancellor <nathan@kernel.org>
 
-My point was that it has been in linux-next since February, but it's
-missing in linux-tpmdd/next, which is why patch 1/2 doesn't apply.
+I am going to apply this to my tree and send it to Linus at some point
+during the merge window, as this warning breaks the build early,
+disrupting our upstream LLVM testing. If there are any objections to
+this, please let me know; it does not seem like extract-cert.c is a hard
+owned file.
 
-I'll send a new version with 'char data[] __aligned(8) ...' on a single
-line in patch 2/2 after the merge window - please let me know if there's
-anything else that should be changed.
-
-Thanks,
-Thorsten
+> ---
+> I am taking a fix for a similar warning in modpost through the kbuild
+> tree so I don't mind picking this up with an appropriate Ack or it can
+> just go through the keyring tree, does not matter to me.
+> ---
+>  certs/extract-cert.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/certs/extract-cert.c b/certs/extract-cert.c
+> index 7d6d468ed612..54ecd1024274 100644
+> --- a/certs/extract-cert.c
+> +++ b/certs/extract-cert.c
+> @@ -43,7 +43,9 @@ void format(void)
+>  	exit(2);
+>  }
+>  
+> +#ifdef USE_PKCS11_ENGINE
+>  static const char *key_pass;
+> +#endif
+>  static BIO *wb;
+>  static char *cert_dst;
+>  static bool verbose;
+> @@ -135,7 +137,9 @@ int main(int argc, char **argv)
+>  	if (verbose_env && strchr(verbose_env, '1'))
+>  		verbose = true;
+>  
+> -        key_pass = getenv("KBUILD_SIGN_PIN");
+> +#ifdef USE_PKCS11_ENGINE
+> +	key_pass = getenv("KBUILD_SIGN_PIN");
+> +#endif
+>  
+>  	if (argc != 3)
+>  		format();
+> 
+> ---
+> base-commit: d2a43e7f89da55d6f0f96aaadaa243f35557291e
+> change-id: 20260325-certs-extract-cert-key_pass-unused-but-set-global-23007ecfadf9
+> 
+> Best regards,
+> --  
+> Nathan Chancellor <nathan@kernel.org>
+> 
