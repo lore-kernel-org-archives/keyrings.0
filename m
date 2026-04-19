@@ -1,41 +1,44 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 028704400;
-	Sun, 19 Apr 2026 21:52:44 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6C85628469F;
+	Sun, 19 Apr 2026 22:08:49 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1776635565; cv=none; b=ODYywF+kEKK+G/y9FmuDa1oBKeA7f56knMd7YzlQ9Wv4yoIbsZx7IJ2tbb99XO6ZVnZsN82mO8DfOfOscn2WDr5vY5WOTfCrMhT0vYqzHrbCZOhMghRbS6EX/tNnWr8M+UARi9SvxiPhnOXVSO9taigu5K2inacj7l1qqbfXD54=
+	t=1776636529; cv=none; b=EsnhbhO4KwrSYryW4ZD2yH7z0rF7oHM3NCXICUhPa4wQubbP1SV3gDP/EbiCbe/CINAzGODTjKmOksVsXOtWfMWz40RvCFODzVxlqtIV/524OwbAFSssn41UTCYXpIBwtzD9l+YAm4epo3XsBslq+tSQvQOXF55rqJtq4nM0AC8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1776635565; c=relaxed/simple;
-	bh=UFOElHvnY8LDWSkGy6GCIIqhsHPqlmKW6sITTLH33gM=;
+	s=arc-20240116; t=1776636529; c=relaxed/simple;
+	bh=wStAdO7mfEx4FH3qgv15bmA6U5wIK3h8L2nlKjb+EM0=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=LAKByoTUuA3I7I6DPprcbOLYcibZRt2X/g5uIlmERhCp87+FQjeMSpTHi4Ykh+R8BplaEzMgiTOy+lEW1HLvCCZOOImj8VIwsO9YZ7hmw+aReSb6uPphXWJ09hoI/7687r2J1UewBmvw6apinCuiHnDW+IxIQIGPRr2qRlv3iXA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=iJ2qq5Jp; arc=none smtp.client-ip=10.30.226.201
+	 Content-Type:Content-Disposition:In-Reply-To; b=Spya0fitNIpFJrKBSiAU2PvnVz4QRIiJy4anm8VZGKtUWtdtj8/aMXKKwNiXM4Bsy09kw1ubeH93e5M+w9f/eIuBzm7+aWEgFA6XSyt7xIELwX4zp4JYT3SBJK5EQdjP5Wcjz2/ouHV4fuQQr2FRfse7NZr6cZNFAG6hcDD6lYA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=BP8Abvn9; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="iJ2qq5Jp"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 4E4E9C2BCAF;
-	Sun, 19 Apr 2026 21:52:44 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="BP8Abvn9"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id A6CDBC2BCAF;
+	Sun, 19 Apr 2026 22:08:48 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1776635564;
-	bh=UFOElHvnY8LDWSkGy6GCIIqhsHPqlmKW6sITTLH33gM=;
+	s=k20201202; t=1776636529;
+	bh=wStAdO7mfEx4FH3qgv15bmA6U5wIK3h8L2nlKjb+EM0=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=iJ2qq5JpBYM13vW0Jh1bz/4QZZ1yUWRRvVKGeRpBk1m2bDptDOrgvv9ibS64QQf4T
-	 vHq7k9EF3Bx1hTO+iDDeRNysg9h9Ug9CXWKsn93fG1igcgHg8CWZFNhSEiba56wtwv
-	 RpyRAyEUYUxFshfO1wK9cT//+ppI04oB9maTGUTmGrIt9R/NuG1QLtJBEqjuArICyB
-	 5f+RuUF4TrztuyEb5Rec6decvGG9N2GmnzWBYoT+ycdSvbdvohUmFvNGL3j5P7yiBc
-	 97CBip6rYP98PPaxwkTbPX4mCO/eaBrOplN7NNIPrbqiDS0ixpYtxdocp6DsQN3fFU
-	 /ZzS4NRe+WgZw==
-Date: Mon, 20 Apr 2026 00:52:41 +0300
+	b=BP8Abvn9pgBsjSRLy4QOGLHYh5r5/tpadgJ05Gl9WjucdQ/zGUXFUl6VU8l5IxXzs
+	 5FSXjPazwWAg3+mAFWaj33FPsIWwGuEJQDnYcM2NnPiHKxHuDMQje/vwAC7BLotqMU
+	 HDgbMvyyiPE9AKb6E3YtZydrE9ReK0TZOVAzQz/HVf9U9A1nIW2/aGf0rw9CiGkK5V
+	 gY40cHLW+BowmbxHVxygThCFfWev3vgIh57pGMl+atZ9f7IwQlmhcoOSbsdMG8I2I7
+	 wrECDl+4c1Al4B5h1xt+Tlu4jczXlpjApraspiLsQpQkbx4bFYHSZRCD+UIXh7Ius7
+	 ZHtlzaDU+xsuw==
+Date: Mon, 20 Apr 2026 01:08:45 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
-	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] TPM DEVICE DRIVER: tpmdd-next-7.1-rc1
-Message-ID: <aeVOqT605cwcFtnu@kernel.org>
-References: <aeTM2CO_mlNYViFU@kernel.org>
- <CAHk-=wiPWCUHsNvzKep7z4VGaL-Brx6Zmh7Efn28WWTPbwn5dA@mail.gmail.com>
+Cc: David Howells <dhowells@redhat.com>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org
+Subject: Re: [GIT PULL] KEYS: keys-next-7.1-rc1
+Message-ID: <aeVSbVIFaCDRXf7C@kernel.org>
+References: <aeTLzOgblMZRnDvF@kernel.org>
+ <CAHk-=whjUfVy22QCcsCS2h8AkJVpQBjHyVW4_hKXpUxHn9S65w@mail.gmail.com>
+ <aeVLPLa8JDLIEgDR@kernel.org>
+ <CAHk-=wjaGOBCsRpEhmPLcsuK6ggiaaeyz0rT6x3Zv7DMK7JNHA@mail.gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -44,30 +47,50 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHk-=wiPWCUHsNvzKep7z4VGaL-Brx6Zmh7Efn28WWTPbwn5dA@mail.gmail.com>
+In-Reply-To: <CAHk-=wjaGOBCsRpEhmPLcsuK6ggiaaeyz0rT6x3Zv7DMK7JNHA@mail.gmail.com>
 
-On Sun, Apr 19, 2026 at 08:40:36AM -0700, Linus Torvalds wrote:
-> On Sun, 19 Apr 2026 at 05:38, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+On Sun, Apr 19, 2026 at 02:52:06PM -0700, Linus Torvalds wrote:
+> On Sun, 19 Apr 2026 at 14:38, Jarkko Sakkinen <jarkko@kernel.org> wrote:
 > >
-> > This pull request contains accumulated bug fixes for TPM driver.
+> > I tested both PRs for the same baseline with two separate buildroot builds of
 > 
-> This is all very recent, not all of it has been in linux-next at all,
-> and stuff that appears to have been there has been rebased.
+> You threw away any and all testing that had been done by anybody else
+> in linux-next.
 > 
-> Why?
+> And you rebased things on top of a random commit-of-the-day during the
+> merge window, when things are possibly unstable due to all the *other*
+> churn going on.
 > 
->             Linus
+> In other words, you did *EVERYTHING* that you shouldn't be doing, and
+> that the documentation tells you not to do.
+> 
+> The WHOLE POINT of being in linux-next and being ready when the merge
+> window opens is gone. All for apparently nothing.
+> 
+> Those stable cc tags do not add *any* value, since you could just have
+> cc'd stable later instead.
+> 
+> I'm not pulling this. You need to stop doing this pointless churn, and
+> read the docs on rebasing. See
+> 
+>    Documentation/maintainer/rebasing-and-merging.rst
+> 
+> about how you are *not* supposed to randomly just rebase, and
+> _particularly_ not rebase on top of some random state during the merge
+> window.
 
-Responded for both in keys PR but why it came so late has a QA story
-behind it.
+"A frequent cause of merge-window trouble is when Linus is presented with a
+patch series that has clearly been reparented, often to a random commit,
+shortly before the pull request was sent.  The chances of such a series
+having been adequately tested are relatively low - as are the chances of
+the pull request being acted upon."
 
-I created this week a uefi bootable buildroot target (I have tpm in the
-gpios) for RPi 400 and tried to get first QA round with it but I run
-into some systemd issues.
+OK, point digested.
 
-The upside (and the goal for doing that) is that for future releases I
-will bare-metal testing on aarch64 for all commits that pass through.
-Should have just given up on that for the time being earlier...
+I can update 'next' to contain only fixes from these PRs, and hold on up
+til doing PR for -rc2 (as corrective step).
+
+> 
+>           Linus
 
 BR, Jarkko
-
