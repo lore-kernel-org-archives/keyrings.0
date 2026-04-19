@@ -1,40 +1,39 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 59D2C22578D;
-	Sun, 19 Apr 2026 12:34:25 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0646118BC3D;
+	Sun, 19 Apr 2026 12:38:51 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1776602065; cv=none; b=g46iUTcRUHytadFRaK/lXkldPHbiTWU7Ikeinyw9kDwFe/BX6qln8doE1L5KIK9dRdgI6boyLNEWSlJWqZYDFcUD55+3ynKzT4y0T4S0RKDX9bwjbn8g6ajiVO76J6VLbqE1STlXuLSqeKhRJfGBD/xsOw6z4HcRO9jqLCVjgAE=
+	t=1776602332; cv=none; b=eyUuEQ9LVT/xaLj0VtVbjv+0IsGwPkaplynFpxUSbGzcaVTA8yuvf2DZLkA6jvezoOi9REsg+2s699qnH+oG2DlBUUWwnCuYlOoHWrRvHxCWX/edjxzVACVO4Yy8DuokBu8iedYQlSyjRekyVUmywab9n/DYCnkqVSWU9V+74DQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1776602065; c=relaxed/simple;
-	bh=07q3DFZkPKKyPBCWMzl/ekvXtnWQ2w3JToiHgy0TPW0=;
+	s=arc-20240116; t=1776602332; c=relaxed/simple;
+	bh=kbbbmBOzimS7USWiqfOjMMfXl0aAStRYXstWAfJc1z4=;
 	h=Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:
-	 Content-Disposition; b=O6GUsctccSieqRUfMKD3nNx4CyByx6zcWiv+79hUKCobAK/Uti9olyZjkV5FEQB6x6DsCSOkveUt3xQ30bZaAAZjJokVNirjaSJ47hFmQ5m3YxEwbrhq68hzkDrpKyVd4XrObdvUrPcGvG7ea8uGhYUQoMoEEcNPN3EziD1wJOs=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=OsGNviiP; arc=none smtp.client-ip=10.30.226.201
+	 Content-Disposition; b=SnYRsm0z5Y5TmWM8QAE0H+OldQbHsSSVF44tODVWFxbOc3K+SNZ5sv5ohSmDK9z1Y/Z6VnUlFnmX847BzQ88Q8H5rmFXB5kscQfG3cnegQwRI0Z5sVaQ8xlMZ5x5DTanQHdIMmTsGEQvGC/k69ujBt2oJabYjcCH/pLI1KN1a24=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=LQMVuc4q; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="OsGNviiP"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 616AEC2BCAF;
-	Sun, 19 Apr 2026 12:34:24 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="LQMVuc4q"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 46767C2BCAF;
+	Sun, 19 Apr 2026 12:38:51 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1776602064;
-	bh=07q3DFZkPKKyPBCWMzl/ekvXtnWQ2w3JToiHgy0TPW0=;
+	s=k20201202; t=1776602331;
+	bh=kbbbmBOzimS7USWiqfOjMMfXl0aAStRYXstWAfJc1z4=;
 	h=Date:From:To:Cc:Subject:From;
-	b=OsGNviiP0+tn1hoXqbeQDtMWR3Tn8QPbcNqynrM17LfQuKH8jTcjKmQNb8yEc9Ztm
-	 5prbPa7NE3fNdqf1X6+ZGzy+On/gKunFAYmWnpzxEjYD6GjS+MiQmmqtGl02K5oil2
-	 zqzw31NthH0vMPLCcbJtBJQqhBThbsz3gJUP5RokD5nCc2lpuy9/HTi/tUG5GH5nZ3
-	 PjjWkkeUBBGjT7z5QIYsvlI9SPZf4YljcE6T9E1fNM6jragfr+OwIdmnmYlG6UuxFL
-	 1y9+1SO3tC7qsPXSeq8T1ZiSMivKIiAakaV5i/4wmUXq7A2VFCrgkZiQQTDA6WMeby
-	 Rzbtx3iT+fFpQ==
-Date: Sun, 19 Apr 2026 15:34:20 +0300
+	b=LQMVuc4q1mHlN1B3EKSwvvAG1iP3PgheAfwzBoQ0D0J6geRE4cTdTb89Yuc5zaXl/
+	 Nte6wYs2Mmq+gIpXUAiAqM8OFI5L4DCfB4AcrNu3A9+5smQqSbVqX2qPfLf2RwjY8S
+	 cSbvdlFIguo3gObrtqsaUX8RXg5TIyuqXyIK+ADZMLeiNZt7q8x/RmO0N4Ii6vFuDA
+	 D7zrCwH8u+TygUEXL48J74ah8bUQl7aT18q0dRPTjdc4C6stt2OiceuvgoseytZ8G/
+	 54UZOH9wNbFbjsT4+RSwTTDWd6bPDqzMdZZeUxgsySNqJBX9KhJQszYDGO/fbqi9Ps
+	 l0RhIcJiJb/LQ==
+Date: Sun, 19 Apr 2026 15:38:48 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org
-Subject: [GIT PULL] KEYS: keys-next-7.1-rc1
-Message-ID: <aeTLzOgblMZRnDvF@kernel.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
+	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] TPM DEVICE DRIVER: tpmdd-next-7.1-rc1
+Message-ID: <aeTM2CO_mlNYViFU@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -43,7 +42,6 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mailer: aerc
 
 The following changes since commit faeab166167f5787719eb8683661fd41a3bb1514:
 
@@ -51,34 +49,46 @@ The following changes since commit faeab166167f5787719eb8683661fd41a3bb1514:
 
 are available in the Git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/keys-next-7.1-rc1
+  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/tpmdd-next-7.1-rc1
 
-for you to fetch changes up to 4fb4ce024d06a0b31ab6cdd17ab8cb6aff851067:
+for you to fetch changes up to 038c2344756c76b2363e820519ca09fb0fc17a53:
 
-  KEYS: trusted: Debugging as a feature (2026-04-19 15:17:03 +0300)
+  tpm: tpm_tis: stop transmit if retries are exhausted (2026-04-19 15:35:23 +0300)
 
 ----------------------------------------------------------------
 Hi
 
-This pull request mainly sanitizes debug traces in trusted keys to
-proper kconfig flags, and makes the whole feature overall a bit safer
-by putting it under kernel command-line parameter and setting up a
-convention to only use debug level traces.
+This pull request contains accumulated bug fixes for TPM driver.
 
 BR, Jarkko
 
 ----------------------------------------------------------------
-Eric Biggers (1):
-      KEYS: encrypted: Remove unnecessary selection of CRYPTO_RNG
+Arnd Bergmann (1):
+      tpm: avoid -Wunused-but-set-variable
 
-Jarkko Sakkinen (1):
-      KEYS: trusted: Debugging as a feature
+Ethan Luna (1):
+      tpm: i2c: atmel: fix block comment formatting
 
- Documentation/admin-guide/kernel-parameters.txt | 16 +++++++++
- include/keys/trusted-type.h                     | 21 +++++++-----
- security/keys/Kconfig                           |  1 -
- security/keys/trusted-keys/Kconfig              | 23 +++++++++++++
- security/keys/trusted-keys/trusted_caam.c       |  7 ++--
- security/keys/trusted-keys/trusted_core.c       |  6 ++++
- security/keys/trusted-keys/trusted_tpm1.c       | 44 ++++++++++++++-----------
- 7 files changed, 87 insertions(+), 31 deletions(-)
+Gunnar Kudrjavets (3):
+      tpm: Fix auth session leak in tpm2_get_random() error path
+      tpm2-sessions: Fix missing tpm_buf_destroy() in tpm2_read_public()
+      tpm: Use kfree_sensitive() to free auth session in tpm_dev_release()
+
+Jacqueline Wong (2):
+      tpm: tpm_tis: add error logging for data transfer
+      tpm: tpm_tis: stop transmit if retries are exhausted
+
+Krzysztof Kozlowski (1):
+      tpm: Make tcpci_pm_ops variable static const
+
+Rafael J. Wysocki (1):
+      tpm_crb: Convert ACPI driver to a platform one
+
+ drivers/char/tpm/tpm-chip.c      |  2 +-
+ drivers/char/tpm/tpm2-cmd.c      |  8 +++-----
+ drivers/char/tpm/tpm2-sessions.c |  5 ++++-
+ drivers/char/tpm/tpm_crb.c       | 35 ++++++++++++++++-------------------
+ drivers/char/tpm/tpm_i2c_atmel.c | 34 +++++++++++++++++++++++-----------
+ drivers/char/tpm/tpm_tis_core.c  | 11 ++++++++++-
+ include/linux/tpm_eventlog.h     |  9 +++++++--
+ 7 files changed, 64 insertions(+), 40 deletions(-)
