@@ -1,44 +1,38 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6C85628469F;
-	Sun, 19 Apr 2026 22:08:49 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6D46F221FCD;
+	Fri, 24 Apr 2026 09:05:56 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1776636529; cv=none; b=EsnhbhO4KwrSYryW4ZD2yH7z0rF7oHM3NCXICUhPa4wQubbP1SV3gDP/EbiCbe/CINAzGODTjKmOksVsXOtWfMWz40RvCFODzVxlqtIV/524OwbAFSssn41UTCYXpIBwtzD9l+YAm4epo3XsBslq+tSQvQOXF55rqJtq4nM0AC8=
+	t=1777021556; cv=none; b=gBFWX7n4A0sTW/HLJHnd1T5/gVIjRKXkD3aC2IukuHFUC3dM8mKFln5Pa/4DwqlNfy4TRnmN6py5EhC1BOg7NIhvT37vCDaAPM3IHYv9AurrBxX5fUTxHVn167eqz3XVQ1IXjPnyuIf8IJPjn9e6zSWRA+hecO/vfqPBS+wkJ0c=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1776636529; c=relaxed/simple;
-	bh=wStAdO7mfEx4FH3qgv15bmA6U5wIK3h8L2nlKjb+EM0=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=Spya0fitNIpFJrKBSiAU2PvnVz4QRIiJy4anm8VZGKtUWtdtj8/aMXKKwNiXM4Bsy09kw1ubeH93e5M+w9f/eIuBzm7+aWEgFA6XSyt7xIELwX4zp4JYT3SBJK5EQdjP5Wcjz2/ouHV4fuQQr2FRfse7NZr6cZNFAG6hcDD6lYA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=BP8Abvn9; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1777021556; c=relaxed/simple;
+	bh=7PFm+QQuLq59kl+BDNPwDMb6QB6MGxC+l5QBmBMZ2/M=;
+	h=Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:
+	 Content-Disposition; b=rQ8jTmXg09ZklwbwudQe8vrpbk32+s6dHWdRMokv3bjhG2o5vIAx7d4S649YEIHLXx28RD80L76imPyO9UfLbMe5WL80aX+2CVFT2pNHOPdWUW1UeolnSj5seVMph07GFIwEiRg79Hj0CGjpV2T7oD0Bnon3AipsGFy5qK8A9go=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TSvLYQkl; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="BP8Abvn9"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id A6CDBC2BCAF;
-	Sun, 19 Apr 2026 22:08:48 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TSvLYQkl"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id B319DC19425;
+	Fri, 24 Apr 2026 09:05:55 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1776636529;
-	bh=wStAdO7mfEx4FH3qgv15bmA6U5wIK3h8L2nlKjb+EM0=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=BP8Abvn9pgBsjSRLy4QOGLHYh5r5/tpadgJ05Gl9WjucdQ/zGUXFUl6VU8l5IxXzs
-	 5FSXjPazwWAg3+mAFWaj33FPsIWwGuEJQDnYcM2NnPiHKxHuDMQje/vwAC7BLotqMU
-	 HDgbMvyyiPE9AKb6E3YtZydrE9ReK0TZOVAzQz/HVf9U9A1nIW2/aGf0rw9CiGkK5V
-	 gY40cHLW+BowmbxHVxygThCFfWev3vgIh57pGMl+atZ9f7IwQlmhcoOSbsdMG8I2I7
-	 wrECDl+4c1Al4B5h1xt+Tlu4jczXlpjApraspiLsQpQkbx4bFYHSZRCD+UIXh7Ius7
-	 ZHtlzaDU+xsuw==
-Date: Mon, 20 Apr 2026 01:08:45 +0300
+	s=k20201202; t=1777021556;
+	bh=7PFm+QQuLq59kl+BDNPwDMb6QB6MGxC+l5QBmBMZ2/M=;
+	h=Date:From:To:Cc:Subject:From;
+	b=TSvLYQklnU1BRRR3llfn7/CsLvbB3eDH6A3FFQeHUF5Vt5Fwe2gQeKDCAeuKo7cEl
+	 +VxH08nW6CRF4QQdc3G8u3OJFaXSCiCMZPZHIAxvNWg5LIwpucp2nxRJrgV1TevRsK
+	 5AnqrcvOPcQE5OmyDAmtY4+yHzQtV0USAeOXbO7LOMwXYl751Lt462RqvCjkRV1zZa
+	 bCsdfEzKeOlDt37UUk20DxaHJJep1YKZBp0Z/gS1FaDfma1PwGA8wNErEv67t5tWSp
+	 M+dLyR/tIEs4X4cCJ/RwhnYH5RbifAIxFAO6yYW3w0hbLj/EYkWUSCF0N/kKZwKlNj
+	 P5XlP4ORCEB3Q==
+Date: Fri, 24 Apr 2026 12:05:51 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org
-Subject: Re: [GIT PULL] KEYS: keys-next-7.1-rc1
-Message-ID: <aeVSbVIFaCDRXf7C@kernel.org>
-References: <aeTLzOgblMZRnDvF@kernel.org>
- <CAHk-=whjUfVy22QCcsCS2h8AkJVpQBjHyVW4_hKXpUxHn9S65w@mail.gmail.com>
- <aeVLPLa8JDLIEgDR@kernel.org>
- <CAHk-=wjaGOBCsRpEhmPLcsuK6ggiaaeyz0rT6x3Zv7DMK7JNHA@mail.gmail.com>
+To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
+Cc: Paul Moore <paul@paul-moore.com>, David Howells <dhowells@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+Subject: linux-next changes on my tree
+Message-ID: <aesyb0h16NPy-T3o@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -47,50 +41,40 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHk-=wjaGOBCsRpEhmPLcsuK6ggiaaeyz0rT6x3Zv7DMK7JNHA@mail.gmail.com>
 
-On Sun, Apr 19, 2026 at 02:52:06PM -0700, Linus Torvalds wrote:
-> On Sun, 19 Apr 2026 at 14:38, Jarkko Sakkinen <jarkko@kernel.org> wrote:
-> >
-> > I tested both PRs for the same baseline with two separate buildroot builds of
-> 
-> You threw away any and all testing that had been done by anybody else
-> in linux-next.
-> 
-> And you rebased things on top of a random commit-of-the-day during the
-> merge window, when things are possibly unstable due to all the *other*
-> churn going on.
-> 
-> In other words, you did *EVERYTHING* that you shouldn't be doing, and
-> that the documentation tells you not to do.
-> 
-> The WHOLE POINT of being in linux-next and being ready when the merge
-> window opens is gone. All for apparently nothing.
-> 
-> Those stable cc tags do not add *any* value, since you could just have
-> cc'd stable later instead.
-> 
-> I'm not pulling this. You need to stop doing this pointless churn, and
-> read the docs on rebasing. See
-> 
->    Documentation/maintainer/rebasing-and-merging.rst
-> 
-> about how you are *not* supposed to randomly just rebase, and
-> _particularly_ not rebase on top of some random state during the merge
-> window.
+Hi,
 
-"A frequent cause of merge-window trouble is when Linus is presented with a
-patch series that has clearly been reparented, often to a random commit,
-shortly before the pull request was sent.  The chances of such a series
-having been adequately tested are relatively low - as are the chances of
-the pull request being acted upon."
+First I want to apologize for messing up with PRs for 7.1 [1]. I've
+taken steps to sanitize my branching and the changes are now reflected
+to -next:
 
-OK, point digested.
+commit 3ee56e5cf8afb875beab59e42e0b69cdb31050ab
+Merge: e77ce03e10ba 4fb4ce024d06
+Author: Mark Brown <broonie@kernel.org>
+Date:   Thu Apr 23 13:26:01 2026 +0100
 
-I can update 'next' to contain only fixes from these PRs, and hold on up
-til doing PR for -rc2 (as corrective step).
+    Merge branch 'for-next-keys' of
+    https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
 
-> 
->           Linus
+commit e77ce03e10baf7b84d169efcaa497861dc9a07bf
+Merge: c6391bbee383 949692da7211
+Author: Mark Brown <broonie@kernel.org>
+Date:   Thu Apr 23 13:26:00 2026 +0100
+
+    Merge branch 'for-next-tpm' of
+    https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
+
+I'm now travelling right now in Budapest but will be back in Finland
+tomorrow, and will retry my PRs then.
+
+Paul, I promised to look into [2] this week but unfortunately it is
+delayed +1 but is on my TODO list for next week along with couple
+of other kernel review/testing backlog items :-) Hope you understand.
+
+[1] https://lore.kernel.org/linux-integrity/aeVSbVIFaCDRXf7C@kernel.org/T/#t
+    Yes, and I know late cc-tagging was also additional reason for
+    NAK, can't blame branching on that. I did also execute stupid shit
+    to add in.
+[2] https://lore.kernel.org/all/ad--R8KaGgucLxmH@kernel.org/
 
 BR, Jarkko
