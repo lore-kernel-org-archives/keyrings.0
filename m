@@ -1,38 +1,39 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6D46F221FCD;
-	Fri, 24 Apr 2026 09:05:56 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4FB6F337688;
+	Sat, 25 Apr 2026 15:08:13 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1777021556; cv=none; b=gBFWX7n4A0sTW/HLJHnd1T5/gVIjRKXkD3aC2IukuHFUC3dM8mKFln5Pa/4DwqlNfy4TRnmN6py5EhC1BOg7NIhvT37vCDaAPM3IHYv9AurrBxX5fUTxHVn167eqz3XVQ1IXjPnyuIf8IJPjn9e6zSWRA+hecO/vfqPBS+wkJ0c=
+	t=1777129693; cv=none; b=oAnxxtK46O4+kt7SaebwzhJKu69dUhaqYiigIxiwxF7X0JvkNspW8/vjfqRbWl//1gOJa+AbYdN7IyliItDYbneo8Tzu9lBSlY1/Reer/VR5Z42xVhCN/DUCii8Fl3zRa5wfcNRSmzvErtL/BHWFTEHsBim0Km4t2erWdN7K8Os=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1777021556; c=relaxed/simple;
-	bh=7PFm+QQuLq59kl+BDNPwDMb6QB6MGxC+l5QBmBMZ2/M=;
+	s=arc-20240116; t=1777129693; c=relaxed/simple;
+	bh=s6YTtDDJV69wZb0GYZh3ZF8m4gmsieyu+q2ASn3r/Pg=;
 	h=Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:
-	 Content-Disposition; b=rQ8jTmXg09ZklwbwudQe8vrpbk32+s6dHWdRMokv3bjhG2o5vIAx7d4S649YEIHLXx28RD80L76imPyO9UfLbMe5WL80aX+2CVFT2pNHOPdWUW1UeolnSj5seVMph07GFIwEiRg79Hj0CGjpV2T7oD0Bnon3AipsGFy5qK8A9go=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TSvLYQkl; arc=none smtp.client-ip=10.30.226.201
+	 Content-Disposition; b=Xr0LvlxhT0e65+z7psu8SmkKPsmD8wbkvn5Qc7muag+G6aIemzwcBpLiRLPA2or+XwFLZ2KkOvyJnmwNO/yJC3gsTbWrpoU92p+C0+MWSmOlOPKFvZKn8X4ui6BHW6jd4R4bUqhF4zSl7mjhc18QAYMXlkfox7MQGvvN0P3TuSc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=SAn2u9mf; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TSvLYQkl"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id B319DC19425;
-	Fri, 24 Apr 2026 09:05:55 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="SAn2u9mf"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id C4E33C2BCB0;
+	Sat, 25 Apr 2026 15:08:12 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1777021556;
-	bh=7PFm+QQuLq59kl+BDNPwDMb6QB6MGxC+l5QBmBMZ2/M=;
+	s=k20201202; t=1777129693;
+	bh=s6YTtDDJV69wZb0GYZh3ZF8m4gmsieyu+q2ASn3r/Pg=;
 	h=Date:From:To:Cc:Subject:From;
-	b=TSvLYQklnU1BRRR3llfn7/CsLvbB3eDH6A3FFQeHUF5Vt5Fwe2gQeKDCAeuKo7cEl
-	 +VxH08nW6CRF4QQdc3G8u3OJFaXSCiCMZPZHIAxvNWg5LIwpucp2nxRJrgV1TevRsK
-	 5AnqrcvOPcQE5OmyDAmtY4+yHzQtV0USAeOXbO7LOMwXYl751Lt462RqvCjkRV1zZa
-	 bCsdfEzKeOlDt37UUk20DxaHJJep1YKZBp0Z/gS1FaDfma1PwGA8wNErEv67t5tWSp
-	 M+dLyR/tIEs4X4cCJ/RwhnYH5RbifAIxFAO6yYW3w0hbLj/EYkWUSCF0N/kKZwKlNj
-	 P5XlP4ORCEB3Q==
-Date: Fri, 24 Apr 2026 12:05:51 +0300
+	b=SAn2u9mfZf42M2P7WUYiKZQ2kf3xNXhlm/iTo0aL/y18IyomIHH0qAFWFOqwuZzR0
+	 E6P6btQEqGYxV8FaFMxhMHDzrM4hrde9qNJWuGRtld52YI27bVTLSDL4VNLuBocIab
+	 69hVWR/WH1sNJDOGtZ0mb/fhx2MWGVehVq5P4U3U2ecIVJ8ojeGhY2lkTx0JxXn1zZ
+	 7099WYVajP2S8YMU/9p+YVz+rShvweSJTXgX7GhdIozVY1Ij6xPI2aggmO1vo5LzIP
+	 At3yrSwR6ZQPbB9ZebkE5vK2iJ0CZOe7JyOmywomu3hy+uIoR1A6VZKy6qosVd1G42
+	 dutbX9oB51X1Q==
+Date: Sat, 25 Apr 2026 18:08:09 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
-Cc: Paul Moore <paul@paul-moore.com>, David Howells <dhowells@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-Subject: linux-next changes on my tree
-Message-ID: <aesyb0h16NPy-T3o@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
+	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-7.1-rc1
+Message-ID: <aezY2QpQiSQvnpCf@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -42,39 +43,59 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-Hi,
+Hi, 
 
-First I want to apologize for messing up with PRs for 7.1 [1]. I've
-taken steps to sanitize my branching and the changes are now reflected
-to -next:
+I'll hold with pull request of 'for-next-keys' up until I know the status
+of this (in order not to cause unnecessary spam).
 
-commit 3ee56e5cf8afb875beab59e42e0b69cdb31050ab
-Merge: e77ce03e10ba 4fb4ce024d06
-Author: Mark Brown <broonie@kernel.org>
-Date:   Thu Apr 23 13:26:01 2026 +0100
+BR< Jarkko
 
-    Merge branch 'for-next-keys' of
-    https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
+The following changes since commit faeab166167f5787719eb8683661fd41a3bb1514:
 
-commit e77ce03e10baf7b84d169efcaa497861dc9a07bf
-Merge: c6391bbee383 949692da7211
-Author: Mark Brown <broonie@kernel.org>
-Date:   Thu Apr 23 13:26:00 2026 +0100
+  Merge tag 'pinctrl-v7.1-1' of git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl (2026-04-18 16:59:09 -0700)
 
-    Merge branch 'for-next-tpm' of
-    https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git
+are available in the Git repository at:
 
-I'm now travelling right now in Budapest but will be back in Finland
-tomorrow, and will retry my PRs then.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.1-rc1
 
-Paul, I promised to look into [2] this week but unfortunately it is
-delayed +1 but is on my TODO list for next week along with couple
-of other kernel review/testing backlog items :-) Hope you understand.
+for you to fetch changes up to 949692da7211572fac419b2986b6abc0cd1aeb76:
 
-[1] https://lore.kernel.org/linux-integrity/aeVSbVIFaCDRXf7C@kernel.org/T/#t
-    Yes, and I know late cc-tagging was also additional reason for
-    NAK, can't blame branching on that. I did also execute stupid shit
-    to add in.
-[2] https://lore.kernel.org/all/ad--R8KaGgucLxmH@kernel.org/
+  tpm: tpm_tis: stop transmit if retries are exhausted (2026-04-21 18:54:29 +0300)
 
-BR, Jarkko
+----------------------------------------------------------------
+Here are the accumulated fixes for 7.1-rc1 and a single structural worth of
+mentioning separately: Rafael's commit converting tpm_crb from ACPI driver
+to a platform driver. Starting from this release cycle, the branch with TPM
+changes mirrored to next is 'for-next-tpm', and patches for keys have their
+own separate 'for-next-keys' branch.
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      tpm: avoid -Wunused-but-set-variable
+
+Ethan Luna (1):
+      tpm: i2c: atmel: fix block comment formatting
+
+Gunnar Kudrjavets (3):
+      tpm: Fix auth session leak in tpm2_get_random() error path
+      tpm2-sessions: Fix missing tpm_buf_destroy() in tpm2_read_public()
+      tpm: Use kfree_sensitive() to free auth session in tpm_dev_release()
+
+Jacqueline Wong (2):
+      tpm: tpm_tis: add error logging for data transfer
+      tpm: tpm_tis: stop transmit if retries are exhausted
+
+Krzysztof Kozlowski (1):
+      tpm: Make tcpci_pm_ops variable static const
+
+Rafael J. Wysocki (1):
+      tpm_crb: Convert ACPI driver to a platform one
+
+ drivers/char/tpm/tpm-chip.c      |  2 +-
+ drivers/char/tpm/tpm2-cmd.c      |  8 +++-----
+ drivers/char/tpm/tpm2-sessions.c |  5 ++++-
+ drivers/char/tpm/tpm_crb.c       | 35 ++++++++++++++++-------------------
+ drivers/char/tpm/tpm_i2c_atmel.c | 34 +++++++++++++++++++++++-----------
+ drivers/char/tpm/tpm_tis_core.c  | 11 ++++++++++-
+ include/linux/tpm_eventlog.h     |  9 +++++++--
+ 7 files changed, 64 insertions(+), 40 deletions(-)
