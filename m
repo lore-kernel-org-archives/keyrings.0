@@ -1,101 +1,63 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4FB6F337688;
-	Sat, 25 Apr 2026 15:08:13 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1DABA2D1931;
+	Sun, 26 Apr 2026 19:36:15 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1777129693; cv=none; b=oAnxxtK46O4+kt7SaebwzhJKu69dUhaqYiigIxiwxF7X0JvkNspW8/vjfqRbWl//1gOJa+AbYdN7IyliItDYbneo8Tzu9lBSlY1/Reer/VR5Z42xVhCN/DUCii8Fl3zRa5wfcNRSmzvErtL/BHWFTEHsBim0Km4t2erWdN7K8Os=
+	t=1777232175; cv=none; b=CQLp428nZNCPZShfc+mOfQQg7rr+DdrvO7TgUnSlMX58BISRDgc7PY3uDjvWf1nb0x8yeFQFt9ARPhYdv7AA/GGb7RyDwFcVZwGKE6khGOxs7GrlEVhh0VLGza5Bpv5sLycsjIS1p36crxbiXZAoeZI0QDCGGX1u1nqZ5/1wJew=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1777129693; c=relaxed/simple;
-	bh=s6YTtDDJV69wZb0GYZh3ZF8m4gmsieyu+q2ASn3r/Pg=;
-	h=Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:
-	 Content-Disposition; b=Xr0LvlxhT0e65+z7psu8SmkKPsmD8wbkvn5Qc7muag+G6aIemzwcBpLiRLPA2or+XwFLZ2KkOvyJnmwNO/yJC3gsTbWrpoU92p+C0+MWSmOlOPKFvZKn8X4ui6BHW6jd4R4bUqhF4zSl7mjhc18QAYMXlkfox7MQGvvN0P3TuSc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=SAn2u9mf; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1777232175; c=relaxed/simple;
+	bh=tB7OeQ6KDxkkX71AM0BnZLAiq0rMIjup0yCrI/TbUbk=;
+	h=Subject:From:In-Reply-To:References:Message-Id:Date:To:Cc; b=LM8Vc/1Jv7TTFE/szeYpi/+sECmkz6pQVioNG/1Z990JQpdvVmPhnFLpp0sYMd65zVOVdpEImVEYNX8A46axv0hEakNvMaqcflLY8dvzOCTQSmDHtsxzFj/YzhCserg7E+hOVWFAdaGEOqKUdbl334Jey2sMRJjOzlmsvKBN1ck=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Xbtd1cii; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="SAn2u9mf"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C4E33C2BCB0;
-	Sat, 25 Apr 2026 15:08:12 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Xbtd1cii"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 00297C2BCAF;
+	Sun, 26 Apr 2026 19:36:14 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1777129693;
-	bh=s6YTtDDJV69wZb0GYZh3ZF8m4gmsieyu+q2ASn3r/Pg=;
-	h=Date:From:To:Cc:Subject:From;
-	b=SAn2u9mfZf42M2P7WUYiKZQ2kf3xNXhlm/iTo0aL/y18IyomIHH0qAFWFOqwuZzR0
-	 E6P6btQEqGYxV8FaFMxhMHDzrM4hrde9qNJWuGRtld52YI27bVTLSDL4VNLuBocIab
-	 69hVWR/WH1sNJDOGtZ0mb/fhx2MWGVehVq5P4U3U2ecIVJ8ojeGhY2lkTx0JxXn1zZ
-	 7099WYVajP2S8YMU/9p+YVz+rShvweSJTXgX7GhdIozVY1Ij6xPI2aggmO1vo5LzIP
-	 At3yrSwR6ZQPbB9ZebkE5vK2iJ0CZOe7JyOmywomu3hy+uIoR1A6VZKy6qosVd1G42
-	 dutbX9oB51X1Q==
-Date: Sat, 25 Apr 2026 18:08:09 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
-	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-7.1-rc1
-Message-ID: <aezY2QpQiSQvnpCf@kernel.org>
+	s=k20201202; t=1777232175;
+	bh=tB7OeQ6KDxkkX71AM0BnZLAiq0rMIjup0yCrI/TbUbk=;
+	h=Subject:From:In-Reply-To:References:Date:To:Cc:From;
+	b=Xbtd1ciiGhrXiP2N+9s6+viH3B7XEaHsyu5Ozszj1xBLD0Is9whYkWO+2aK5noYSy
+	 8Mk7NebDF6abaGhUm34C0FpG5dtRnr0YplA87/lFRp1f6A2+j0CgqyWn0GtQwJlCbO
+	 Nqqs+1MqQ1HXCBiILp5csYAItkD4EoFmkHtxK+pW/xk3nm/JIs4AfxSGmc5YTNr9qu
+	 lR5I+Nw2Pr1JFw6jUW1Vkk2Ltqc23MxyunpZUx+V4ZISeuIDFqkNg6QcgZiBKtJtU4
+	 1XWMxrrn45J8oEbgmXk16+xTMS+qGGG34jHAYlxKL3ItZEnnvpYQcMILulR0pV806v
+	 8a4kY0KrAbMmQ==
+Received: from [10.30.226.235] (localhost [IPv6:::1])
+	by aws-us-west-2-korg-oddjob-rhel9-1.codeaurora.org (Postfix) with ESMTP id B9E6038119E5;
+	Sun, 26 Apr 2026 19:35:34 +0000 (UTC)
+Subject: Re: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-7.1-rc1
+From: pr-tracker-bot@kernel.org
+In-Reply-To: <aezY2QpQiSQvnpCf@kernel.org>
+References: <aezY2QpQiSQvnpCf@kernel.org>
+X-PR-Tracked-List-Id: <linux-kernel.vger.kernel.org>
+X-PR-Tracked-Message-Id: <aezY2QpQiSQvnpCf@kernel.org>
+X-PR-Tracked-Remote: git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.1-rc1
+X-PR-Tracked-Commit-Id: 949692da7211572fac419b2986b6abc0cd1aeb76
+X-PR-Merge-Tree: torvalds/linux.git
+X-PR-Merge-Refname: refs/heads/master
+X-PR-Merge-Commit-Id: 1d9f1b5e4374c6b40df1a56b35901312ec98c9af
+Message-Id: <177723213336.2364874.8512645158684897088.pr-tracker-bot@kernel.org>
+Date: Sun, 26 Apr 2026 19:35:33 +0000
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-Hi, 
+The pull request you sent on Sat, 25 Apr 2026 18:08:09 +0300:
 
-I'll hold with pull request of 'for-next-keys' up until I know the status
-of this (in order not to cause unnecessary spam).
+> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.1-rc1
 
-BR< Jarkko
+has been merged into torvalds/linux.git:
+https://git.kernel.org/torvalds/c/1d9f1b5e4374c6b40df1a56b35901312ec98c9af
 
-The following changes since commit faeab166167f5787719eb8683661fd41a3bb1514:
+Thank you!
 
-  Merge tag 'pinctrl-v7.1-1' of git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl (2026-04-18 16:59:09 -0700)
-
-are available in the Git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.1-rc1
-
-for you to fetch changes up to 949692da7211572fac419b2986b6abc0cd1aeb76:
-
-  tpm: tpm_tis: stop transmit if retries are exhausted (2026-04-21 18:54:29 +0300)
-
-----------------------------------------------------------------
-Here are the accumulated fixes for 7.1-rc1 and a single structural worth of
-mentioning separately: Rafael's commit converting tpm_crb from ACPI driver
-to a platform driver. Starting from this release cycle, the branch with TPM
-changes mirrored to next is 'for-next-tpm', and patches for keys have their
-own separate 'for-next-keys' branch.
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      tpm: avoid -Wunused-but-set-variable
-
-Ethan Luna (1):
-      tpm: i2c: atmel: fix block comment formatting
-
-Gunnar Kudrjavets (3):
-      tpm: Fix auth session leak in tpm2_get_random() error path
-      tpm2-sessions: Fix missing tpm_buf_destroy() in tpm2_read_public()
-      tpm: Use kfree_sensitive() to free auth session in tpm_dev_release()
-
-Jacqueline Wong (2):
-      tpm: tpm_tis: add error logging for data transfer
-      tpm: tpm_tis: stop transmit if retries are exhausted
-
-Krzysztof Kozlowski (1):
-      tpm: Make tcpci_pm_ops variable static const
-
-Rafael J. Wysocki (1):
-      tpm_crb: Convert ACPI driver to a platform one
-
- drivers/char/tpm/tpm-chip.c      |  2 +-
- drivers/char/tpm/tpm2-cmd.c      |  8 +++-----
- drivers/char/tpm/tpm2-sessions.c |  5 ++++-
- drivers/char/tpm/tpm_crb.c       | 35 ++++++++++++++++-------------------
- drivers/char/tpm/tpm_i2c_atmel.c | 34 +++++++++++++++++++++++-----------
- drivers/char/tpm/tpm_tis_core.c  | 11 ++++++++++-
- include/linux/tpm_eventlog.h     |  9 +++++++--
- 7 files changed, 64 insertions(+), 40 deletions(-)
+-- 
+Deet-doot-dot, I am a bot.
+https://korg.docs.kernel.org/prtracker.html
