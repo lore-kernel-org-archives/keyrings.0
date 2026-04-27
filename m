@@ -1,63 +1,95 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+Received: from out-182.mta1.migadu.com (out-182.mta1.migadu.com [95.215.58.182])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1DABA2D1931;
-	Sun, 26 Apr 2026 19:36:15 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A59083128A2;
+	Mon, 27 Apr 2026 11:46:28 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=95.215.58.182
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1777232175; cv=none; b=CQLp428nZNCPZShfc+mOfQQg7rr+DdrvO7TgUnSlMX58BISRDgc7PY3uDjvWf1nb0x8yeFQFt9ARPhYdv7AA/GGb7RyDwFcVZwGKE6khGOxs7GrlEVhh0VLGza5Bpv5sLycsjIS1p36crxbiXZAoeZI0QDCGGX1u1nqZ5/1wJew=
+	t=1777290390; cv=none; b=qC1XJkQUvJiQOk+R3xvaJ8tRB6RSjNYz55WsnqZR30kgd0NKKbbBI/6XVe/dMpk9Y8wxNElUBIepL/rcvov7xjGwQJVuSR4wp6CfuQLBzt7T1rJyy5BmUEDGmzCqoTQe6k5Y5hg5p1RG0Jle+WtTHRfCxKAIyO3Q3zWtiCTpuNE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1777232175; c=relaxed/simple;
-	bh=tB7OeQ6KDxkkX71AM0BnZLAiq0rMIjup0yCrI/TbUbk=;
-	h=Subject:From:In-Reply-To:References:Message-Id:Date:To:Cc; b=LM8Vc/1Jv7TTFE/szeYpi/+sECmkz6pQVioNG/1Z990JQpdvVmPhnFLpp0sYMd65zVOVdpEImVEYNX8A46axv0hEakNvMaqcflLY8dvzOCTQSmDHtsxzFj/YzhCserg7E+hOVWFAdaGEOqKUdbl334Jey2sMRJjOzlmsvKBN1ck=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Xbtd1cii; arc=none smtp.client-ip=10.30.226.201
+	s=arc-20240116; t=1777290390; c=relaxed/simple;
+	bh=CTj4QwE1RWL3i8XJdtIRCIYzLjALNk996d85++ya1yw=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=XtawYUFLIa4yw0S5k3Z58sKWSbf/ju5lpnAcji+OvL0sVmI/R7lgGzkAqEeuzG6uJKa2gmatBj8sO/k0QdvHgxfF2Q/P4cqHNBtx3hkJeRZGrBqrzLmQrL9yp4A4doJVNeC13FB4ha5CQ6bksmNktPCzCEIRXtayKCtK5qUUWBg=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev; spf=pass smtp.mailfrom=linux.dev; dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b=u42SxLhm; arc=none smtp.client-ip=95.215.58.182
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.dev
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Xbtd1cii"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 00297C2BCAF;
-	Sun, 26 Apr 2026 19:36:14 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1777232175;
-	bh=tB7OeQ6KDxkkX71AM0BnZLAiq0rMIjup0yCrI/TbUbk=;
-	h=Subject:From:In-Reply-To:References:Date:To:Cc:From;
-	b=Xbtd1ciiGhrXiP2N+9s6+viH3B7XEaHsyu5Ozszj1xBLD0Is9whYkWO+2aK5noYSy
-	 8Mk7NebDF6abaGhUm34C0FpG5dtRnr0YplA87/lFRp1f6A2+j0CgqyWn0GtQwJlCbO
-	 Nqqs+1MqQ1HXCBiILp5csYAItkD4EoFmkHtxK+pW/xk3nm/JIs4AfxSGmc5YTNr9qu
-	 lR5I+Nw2Pr1JFw6jUW1Vkk2Ltqc23MxyunpZUx+V4ZISeuIDFqkNg6QcgZiBKtJtU4
-	 1XWMxrrn45J8oEbgmXk16+xTMS+qGGG34jHAYlxKL3ItZEnnvpYQcMILulR0pV806v
-	 8a4kY0KrAbMmQ==
-Received: from [10.30.226.235] (localhost [IPv6:::1])
-	by aws-us-west-2-korg-oddjob-rhel9-1.codeaurora.org (Postfix) with ESMTP id B9E6038119E5;
-	Sun, 26 Apr 2026 19:35:34 +0000 (UTC)
-Subject: Re: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-7.1-rc1
-From: pr-tracker-bot@kernel.org
-In-Reply-To: <aezY2QpQiSQvnpCf@kernel.org>
-References: <aezY2QpQiSQvnpCf@kernel.org>
-X-PR-Tracked-List-Id: <linux-kernel.vger.kernel.org>
-X-PR-Tracked-Message-Id: <aezY2QpQiSQvnpCf@kernel.org>
-X-PR-Tracked-Remote: git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.1-rc1
-X-PR-Tracked-Commit-Id: 949692da7211572fac419b2986b6abc0cd1aeb76
-X-PR-Merge-Tree: torvalds/linux.git
-X-PR-Merge-Refname: refs/heads/master
-X-PR-Merge-Commit-Id: 1d9f1b5e4374c6b40df1a56b35901312ec98c9af
-Message-Id: <177723213336.2364874.8512645158684897088.pr-tracker-bot@kernel.org>
-Date: Sun, 26 Apr 2026 19:35:33 +0000
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+	dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b="u42SxLhm"
+X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
+	t=1777290386;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=8BW7GQeRm82gJgeFBqFgMlL65ttm9v5/emTGsqLJjPc=;
+	b=u42SxLhmacDDfSoqTNO7eZKLEI4/AT+EWlfQ70vVOUGJgV2BGvJWs08GcF2zqA9A69iAp6
+	CyTBrphoHtXre1Ecn3a9gTWizlZT/P84UDC/qOXl9aUEdVH9oKZhLOPz0yhC+UIi85pWUC
+	ghzX2OW3Z49wv8eC8wqKyGwa28QJViw=
+From: Thorsten Blum <thorsten.blum@linux.dev>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	"David S. Miller" <davem@davemloft.net>,
+	Eric Dumazet <edumazet@google.com>,
+	Jakub Kicinski <kuba@kernel.org>,
+	Paolo Abeni <pabeni@redhat.com>,
+	Simon Horman <horms@kernel.org>,
+	Kees Cook <kees@kernel.org>,
+	"Gustavo A. R. Silva" <gustavoars@kernel.org>
+Cc: Thorsten Blum <thorsten.blum@linux.dev>,
+	Tim Bird <tim.bird@sony.com>,
+	keyrings@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org,
+	linux-hardening@vger.kernel.org
+Subject: [PATCH net-next v3 1/2] keys, dns: drop unused upayload->data NUL terminator
+Date: Mon, 27 Apr 2026 13:44:23 +0200
+Message-ID: <20260427114422.313356-3-thorsten.blum@linux.dev>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
+MIME-Version: 1.0
+X-Developer-Signature: v=1; a=openpgp-sha256; l=1396; i=thorsten.blum@linux.dev; h=from:subject; bh=CTj4QwE1RWL3i8XJdtIRCIYzLjALNk996d85++ya1yw=; b=owGbwMvMwCUWt7pQ4caZUj3G02pJDJnvfcQUg7vf8P+dzX5OviQ+4rP+j+/zndlcSsy5bwXbH d54ujOyo5SFQYyLQVZMkeXBrB8zfEtrKjeZROyEmcPKBDKEgYtTACZifo/hv9PZgomXW4/nr2Th vHFP5l3aBnHfCR/XVX0WOffhlMnUWQoM/32nTq1+tc6kaAPf9gfKpyr0YlwL5wavEWnqNH9nopo sygIA
+X-Developer-Key: i=thorsten.blum@linux.dev; a=openpgp; fpr=1D60735E8AEF3BE473B69D84733678FD8DFEEAD4
+Content-Transfer-Encoding: 8bit
+X-Migadu-Flow: FLOW_OUT
 
-The pull request you sent on Sat, 25 Apr 2026 18:08:09 +0300:
+->data includes an extra NUL terminator despite never being used as a C
+string and only accessing ->datalen bytes. Remove the redundant NUL
+terminator and allocate one byte less in dns_resolver_preparse().
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.1-rc1
+Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
+---
+Changes in v3:
+- Update commit message
+- v2: https://lore.kernel.org/lkml/20260409225703.158552-4-thorsten.blum@linux.dev/
 
-has been merged into torvalds/linux.git:
-https://git.kernel.org/torvalds/c/1d9f1b5e4374c6b40df1a56b35901312ec98c9af
+Changes in v2:
+- No changes in patch 1/2
+- v1: https://lore.kernel.org/lkml/20260406175810.1018681-3-thorsten.blum@linux.dev/
+---
+ net/dns_resolver/dns_key.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Thank you!
-
--- 
-Deet-doot-dot, I am a bot.
-https://korg.docs.kernel.org/prtracker.html
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index c3c8c3240ef9..451247864a63 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -203,7 +203,7 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+ 	kdebug("store result");
+ 	prep->quotalen = result_len;
+ 
+-	upayload = kmalloc_flex(*upayload, data, result_len + 1);
++	upayload = kmalloc_flex(*upayload, data, result_len);
+ 	if (!upayload) {
+ 		kleave(" = -ENOMEM");
+ 		return -ENOMEM;
+@@ -211,7 +211,6 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+ 
+ 	upayload->datalen = result_len;
+ 	memcpy(upayload->data, data, result_len);
+-	upayload->data[result_len] = '\0';
+ 
+ 	prep->payload.data[dns_key_data] = upayload;
+ 	kleave(" = 0");
