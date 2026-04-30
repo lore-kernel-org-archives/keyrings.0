@@ -1,77 +1,77 @@
 Received: from mail-dl1-f41.google.com (mail-dl1-f41.google.com [74.125.82.41])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E0F3A32B99F
-	for <keyrings@vger.kernel.org>; Wed, 29 Apr 2026 18:17:00 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 947AE2848BA
+	for <keyrings@vger.kernel.org>; Thu, 30 Apr 2026 17:37:43 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.82.41
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1777486623; cv=none; b=gcKFrjYDjhgePfTFNE6KCl3fRZRxMNx2/vDdblFf9puZUPVeQM0Lh1wZNJBtLClks2Lp69xi0w2wuQqQerN2pZwInJSjKGhO0BeaaDHm2ut6rBwt+eBA4Z+r+oXUS0HFPWHSuE/pR+lwXYnNKtGZv5Jt7QHlBf7ZYIiuXMkzYNQ=
+	t=1777570664; cv=none; b=b2zYcEsyPKzCwkaRtbxUufxkto8/IjfcodkZUtQNjig6dMp/pLa+MmQigbBnxWT6dxBgpwLn9XXVp63ZrQTrIruYnE8OvnElhjeI8y8AFx7D3wpyXMPywmm7yNQGfRP6pMur9mIrs7xHEihtGUz0REGQhfDDPkXIxUwe867EjtY=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1777486623; c=relaxed/simple;
-	bh=VOKbcR0YI+YuvmodCjPRijspSYgm7HYwS+yOVO9jSOU=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=cGtmD3SWUaZJFDQd5D1cvKUhoz03TNjKpVinBYU3QE5v8fhjGNj8BU4fTIgtQk7pUGxK11uWl4kVbDXO5RCSkcMkjXMKcC6mihiOnliTG9DrkCH3380h3jh85CULV7WH1Ulww/qy0/WDGOMI33fqw8nGPrUOOCxo9z+kLWy+A2s=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=VMuJ7PoG; arc=none smtp.client-ip=74.125.82.41
+	s=arc-20240116; t=1777570664; c=relaxed/simple;
+	bh=g+RA+/B9ogh5Lr5VFnWAfVAqAy9aljo+8QIRWQwcF9c=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=dKWbhbhDdsPjAGrXXVw3uAudnKDGjwce2p3N7o/Zs+ILK4Q40mh5jPnjlzHaEMB4ivav271Or7gzDWh8nKDwJQ1hWdx52YBfKm2Px5s7b2FKyKJ/YvkpaAHBuOYib4AD65jzhb0nydXQ3t90dZMRVcYU1YuADSgfCs/w80oCZT8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=aaPCe/gM; arc=none smtp.client-ip=74.125.82.41
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="VMuJ7PoG"
-Received: by mail-dl1-f41.google.com with SMTP id a92af1059eb24-12dcdcd54adso53536c88.1
-        for <keyrings@vger.kernel.org>; Wed, 29 Apr 2026 11:17:00 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="aaPCe/gM"
+Received: by mail-dl1-f41.google.com with SMTP id a92af1059eb24-12ddbe104ccso1303469c88.0
+        for <keyrings@vger.kernel.org>; Thu, 30 Apr 2026 10:37:43 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1777486620; x=1778091420; darn=vger.kernel.org;
+        d=gmail.com; s=20251104; t=1777570663; x=1778175463; darn=vger.kernel.org;
         h=content-transfer-encoding:mime-version:message-id:date:subject:cc
          :to:from:from:to:cc:subject:date:message-id:reply-to;
-        bh=U3x1o891z7jO+x1WN2dbr172zqOri+EKzTP7TtRTF/o=;
-        b=VMuJ7PoG5bRnwdnaqUxgnUC2VN+YCaAqwOiELQtVa7Y+YeB7hnERR/y/ju7wczibRY
-         tWrfCtokWSlhX9m7IiyPbm0TVJlVoSMVOYD+82EY9YEP6gCjCOfUsKdeX6s10xjXLfpe
-         oh8lnu95Nx3iTyF8caZZYBfoQBpAQuGGzRtL59dWAAiJY+dcNu174r8W9rrvCGKICxvV
-         OAzfV5GFYzSkmb98v+4x7LHK2y/VCZRRbsK61BiyzEPmUYtnmM7z8iJHc1ieCCjk2Wcw
-         4cphZcrRHr8PHo+06eLZ7BepnbLryjFyzbckIl/nndByhTqhRKVQb8xI5rMrdeatpms/
-         pfUQ==
+        bh=qWw6wa3QL95dIfuoX0OrurEDxczvWFjJooGa8i+ckkQ=;
+        b=aaPCe/gMAyeM2vWCwWN4RPacWpHlSwl9FCJMFRNMLx8u6VRnLPBjIkmdsIONHDdz3Z
+         cQLC3Z2mcsb/0sYA6Ao5SaMIpP533PHBF43uO/d7xZjeGMKk7DbGxufv6sQgDS5+KfpI
+         2zzyz4709e4NBJxJocBFaF2pvy4dIRce1TpT5VpQg3cy6lyhO+ZdPPnglflKxHfY+WM1
+         H1W0d7/xp66QUg9nBrsAdwg9FXOg84cjh7Ryw4L/3dhrUBR0ffTpaATFoPWD/clzQZHV
+         yFaH2cKOHnfpNzdWXOzjBin73ZiqWklnSpsJXTPkzIIGtzxjZtcWcDdsf8c0pYzW5r+7
+         cOkg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1777486620; x=1778091420;
+        d=1e100.net; s=20251104; t=1777570663; x=1778175463;
         h=content-transfer-encoding:mime-version:message-id:date:subject:cc
          :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
          :message-id:reply-to;
-        bh=U3x1o891z7jO+x1WN2dbr172zqOri+EKzTP7TtRTF/o=;
-        b=MR04ydcRQgE1LlLi9sMzkjf16/ckVUeowS5tXmaQEyD4Bm8d9nAu1yc0tqkh1SjvFn
-         xDC48O1yUloZ/ROlMgwsT1h6Xe5yxQ+7s1UvLEIVWoXbzF8GoGXSapJLkHgX6w66nE8Y
-         ZJCPyIlgu2afeeq9Pjlutk11HRJWMWx3voCxXvYQB06qQ891iRn4d0nWL6NiYml+5Wq1
-         365t59NlrDXUIGKZuf0g4Ka8qV2iBOuv+BJHoQToCeDy0xTa4PlXYgLGQlOGb2AcCFha
-         PNGk5HdkSSGVQsYNTfrhL5qJZUJjd2oZlYv7niAcwxcgXds8CSy6YSPD4Hb6FCoWlq47
-         RQEw==
-X-Forwarded-Encrypted: i=1; AFNElJ+pR9Jyu15VLGKYVQRuW6maF8o2n6g4+MjNiY53pHoCmlnNghoAy1RMRxR+ak/wQRS4cYWg0ErLrA==@vger.kernel.org
-X-Gm-Message-State: AOJu0Yw74fzHquetEyWnLsB9a6NPo9xLzOzIJh9RaOluElr1BkN2hiaV
-	vGj8P6av/3XJJuRkrfj5tyOQ4EcC86KieH864XavbSMcgbusCvWXHP2e
-X-Gm-Gg: AeBDieuPB3iJngTEOsZ8EUo5k70PRT+e2JVEJ+FTKDuAslPfbBhh3HXCMhEwKyX7/42
-	cqgZbTE+p6wvhxxG2WCbvE2VvCeL9GHJQ7d8vBPnN7MRGtsbf+C0a2Ao2bvVJphBQXmg+PmV0J8
-	SnEDAUB/n7cc9pS3dVEM0Ibreqok/rMHUe84cTXpQ2yBz6SRRInae9MDt9s9F74/D9HsKMYNHqr
-	Zb5jBfE5UXo1aKR3Ft8t2AhhA+K5V+kgNv+x5nYtHowDLeGC4m/11JdcpI1gVTmLXTC68FZzr4M
-	Igrr4nLIcECVZHngEFUgQQYbU4JWUbXmdaOqavfx6yYQQJA4iwex9aVd9n2ieJwv5LwlLxZXkGE
-	c3Pw8ckreZc505C2XiWdrWvuIFQziSxetaEIagfJQRGObXVmnNq6uTxAyDgd9uIVcA3ydpMGFGX
-	oOI7a1I6Sdvg/m8ZuILJzi2uuhTYucPSCOD83GWCYhv4OWMjUXv4Uw24aafURMjHeasAQrONv1j
-	IENBE6AeeEzhNWOvE7hDOhzcCoAZJc=
-X-Received: by 2002:a05:7022:6881:b0:128:dedf:f56d with SMTP id a92af1059eb24-12ddd991628mr4408396c88.24.1777486619386;
-        Wed, 29 Apr 2026 11:16:59 -0700 (PDT)
+        bh=qWw6wa3QL95dIfuoX0OrurEDxczvWFjJooGa8i+ckkQ=;
+        b=Q2TEptuP2s9vpAhiSFWHXBrcNQB0iUFN68ng7jICw8uNp967aZoUB/O4z/8kxzJubF
+         Qku9gI3xuE1U1vxA7adPViNXr8BtFSSgOZXP3OqgMFll78NAptEKv7FxrNH6EuXjXIss
+         U9Cq0UdgXUUDmM5NswKAFeXMNOulbDTfBpl3xriEEdDSqaT6tKNmosgzIQdIEgRAujCn
+         ++H/s1gB/a1l2xkbzvWQJdaZIV8HMZ0pXXTI1eU9pCZ8PE+wLY9beRM/WAos2B3ZrqjI
+         BO9Wag7Cegzp2uRG2OJFW3uFe/GuD3lxv7yxOqAgqXa6W+Oo4BH+OZbfH2NRyUaFjn5J
+         rhfw==
+X-Forwarded-Encrypted: i=1; AFNElJ8xLKJzgId16JsIiFhP4zgwiZG9jB+4TtIJWJrPFRKYegm4Gd/U8s4I4tmCvLW1GCBRrAWzAC7bRw==@vger.kernel.org
+X-Gm-Message-State: AOJu0YwK00zJ0DgwNCDrpOM30XOnX+mVZOFxzgMpbyD+QGh+SHjZf9OR
+	5iut+hvvjrL2h8HXjSF5ndnNB6IUJ/D2I/Le0NqXDd062N86UrqiyGyQ
+X-Gm-Gg: AeBDievXBTgNMwDhkvBn97fGhJeDwGs9lOO54X45gzpRylDdiLVrb7V4TNJVI/u6b0o
+	wY90ByC+o6yNumZ/3H67e/BF6bzVIfaq1i3TCQqJBhfBVut89NdKE2ZnKw7oNSDuR1eFY4gqMMI
+	a/n8IokqmFzPiSqliHJeFwDOL8U3qukjwoArlcfhcmd2G8ZYq6PGFqA1MEwDzaE4paNLuQ0QufE
+	QTp9VonSn+xVAroj69n6/Lm5gBye2N6Zs2M8Vrz+u7QClVs5pebpPWYRm1Non09/GTDMwpNGBIx
+	i2H8pGEYYbDMAhFQwhAx8TkESPdWTqQiyignLW1ivq0nA4hjsMO0x3JI7zqKIABdGwMmGSn2cYf
+	Hrija67NKlC7cbkH2RYXpvr8QIPj8b2zx09EMt07WAHfpFiXy/nUBORzIubukInB54Bjr0iPWyN
+	dUNIviGpEtnP9B4OWp0JK9wUNWreyNbg8zj77/+gU0QjcVit+8dL5LqKrCm6IjWB7pA6dvW8SQv
+	RahQz5L7IW4x3ZnabRi
+X-Received: by 2002:a05:7022:43:b0:12d:de3f:d853 with SMTP id a92af1059eb24-12dead675c2mr1724005c88.44.1777570662331;
+        Thu, 30 Apr 2026 10:37:42 -0700 (PDT)
 Received: from efaec68ba852.tailc0aff1.ts.net ([206.206.192.132])
-        by smtp.gmail.com with ESMTPSA id a92af1059eb24-12de320f2a7sm4125005c88.1.2026.04.29.11.16.58
+        by smtp.gmail.com with ESMTPSA id 5a478bee46e88-2ee38e71ccesm1044942eec.10.2026.04.30.10.37.41
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 29 Apr 2026 11:16:58 -0700 (PDT)
+        Thu, 30 Apr 2026 10:37:41 -0700 (PDT)
 From: Weiming Shi <bestswngs@gmail.com>
 To: David Howells <dhowells@redhat.com>,
 	Lukas Wunner <lukas@wunner.de>,
 	Ignat Korchagin <ignat@linux.win>,
 	Herbert Xu <herbert@gondor.apana.org.au>,
 	"David S . Miller" <davem@davemloft.net>
-Cc: Jarkko Sakkinen <jarkko@kernel.org>,
-	Andrew Zaborowski <andrew.zaborowski@intel.com>,
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+	Kees Cook <kees@kernel.org>,
 	keyrings@vger.kernel.org,
 	linux-crypto@vger.kernel.org,
 	Xiang Mei <xmei5@asu.edu>,
 	Weiming Shi <bestswngs@gmail.com>
-Subject: [PATCH] asymmetric_keys: check asymmetric_key_ids() for NULL before dereference
-Date: Wed, 29 Apr 2026 11:16:30 -0700
-Message-ID: <20260429181629.110802-2-bestswngs@gmail.com>
+Subject: [PATCH] crypto: fix OOB read in pefile_digest_pe_contents
+Date: Thu, 30 Apr 2026 10:36:34 -0700
+Message-ID: <20260430173632.277436-3-bestswngs@gmail.com>
 X-Mailer: git-send-email 2.43.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
@@ -81,83 +81,50 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-asymmetric_key_ids() returns key->payload.data[asym_key_ids], which can
-be NULL for keys parsed by the PKCS#8 parser (pkcs8_parser.c explicitly
-stores NULL in prep->payload.data[asym_key_ids]).
+pefile_digest_pe_contents() computes the trailing-data hash length as
+pelen - (hashed_bytes + certs_size). A crafted PE can make the addition
+exceed pelen, causing the unsigned subtraction to underflow to ~4 GiB.
+This is passed to crypto_shash_update() which reads out of bounds and
+panics on unmapped vmalloc guard pages.
 
-key_or_keyring_common() in restrict.c and find_asymmetric_key() in
-asymmetric_type.c both dereference this return value without checking
-for NULL. An unprivileged user can trigger a NULL pointer dereference
-in key_or_keyring_common() by creating a PKCS#8 key, restricting a
-keyring with key_or_keyring:<pkcs8_serial>, and adding an X.509 cert
-to the restricted keyring. CONFIG_PKCS8_PRIVATE_KEY_PARSER=y is
-required.
-
- Oops: general protection fault, probably for non-canonical address 0xdffffc0000000000
- KASAN: null-ptr-deref in range [0x0000000000000000-0x0000000000000007]
- RIP: 0010:key_or_keyring_common (crypto/asymmetric_keys/restrict.c:205 crypto/asymmetric_keys/restrict.c:279)
+ BUG: unable to handle page fault for address: ffffc900038d8000
+ Oops: Oops: 0000 [#1] SMP KASAN NOPTI
+ RIP: 0010:sha256_blocks_generic (lib/crypto/sha256.c:152)
  Call Trace:
   <TASK>
-  __key_create_or_update (security/keys/key.c:884)
-  key_create_or_update (security/keys/key.c:1021)
-  __do_sys_add_key (security/keys/keyctl.c:134)
-  do_syscall_64 (arch/x86/entry/common.c:52 arch/x86/entry/common.c:83)
-  entry_SYSCALL_64_after_hwframe (arch/x86/entry/entry_64.S:130)
+  __sha256_update (lib/crypto/sha256.c:208)
+  crypto_sha256_update (crypto/sha256.c:142)
+  verify_pefile_signature (crypto/asymmetric_keys/verify_pefile.c:436)
+  kexec_kernel_verify_pe_sig (kernel/kexec_file.c:151)
+  __do_sys_kexec_file_load (kernel/kexec_file.c:406)
+  do_syscall_64 (arch/x86/entry/syscall_64.c:94)
+  entry_SYSCALL_64_after_hwframe (arch/x86/entry/entry_64.S:121)
   </TASK>
  Kernel panic - not syncing: Fatal exception
 
-Add a NULL check in find_asymmetric_key(), mirroring the existing
-pattern in asymmetric_match_key_ids() and asymmetric_key_describe().
-In key_or_keyring_common(), skip the trusted key matching when it
-has no key IDs and fall through to the check_dest path.
+Validate that the addition does not overflow and the result does not
+exceed pelen before the subtraction. Return -ELIBBAD on failure.
 
-Fixes: 7d30198ee24f ("keys: X.509 public key issuer lookup without AKID")
+Fixes: af316fc442ef ("pefile: Digest the PE binary and compare to the PKCS#7 data")
 Reported-by: Xiang Mei <xmei5@asu.edu>
 Signed-off-by: Weiming Shi <bestswngs@gmail.com>
 ---
- crypto/asymmetric_keys/asymmetric_type.c | 2 ++
- crypto/asymmetric_keys/restrict.c        | 9 ++++++---
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ crypto/asymmetric_keys/verify_pefile.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -109,6 +109,8 @@ struct key *find_asymmetric_key(struct key *keyring,
- 	if (id_0 && id_1) {
- 		const struct asymmetric_key_ids *kids = asymmetric_key_ids(key);
+diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_keys/verify_pefile.c
+index 1f3b227ba7f2..cec99db14129 100644
+--- a/crypto/asymmetric_keys/verify_pefile.c
++++ b/crypto/asymmetric_keys/verify_pefile.c
+@@ -305,6 +305,8 @@ static int pefile_digest_pe_contents(const void *pebuf, unsigned int pelen,
+ 
+ 	if (pelen > hashed_bytes) {
+ 		tmp = hashed_bytes + ctx->certs_size;
++		if (tmp <= hashed_bytes || pelen < tmp)
++			return -ELIBBAD;
+ 		ret = crypto_shash_update(desc,
+ 					  pebuf + hashed_bytes,
+ 					  pelen - tmp);
+-- 
+2.43.0
 
-+		if (!kids)
-+			goto reject;
- 		if (!kids->id[1]) {
- 			pr_debug("First ID matches, but second is missing\n");
- 			goto reject;
-diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
---- a/crypto/asymmetric_keys/restrict.c
-+++ b/crypto/asymmetric_keys/restrict.c
-@@ -243,10 +243,14 @@ static int key_or_keyring_common(struct key *dest_keyring,
- 			if (IS_ERR(key))
- 				key = NULL;
- 		} else if (trusted->type == &key_type_asymmetric) {
-+			const struct asymmetric_key_ids *kids;
- 			const struct asymmetric_key_id **signer_ids;
-
--			signer_ids = (const struct asymmetric_key_id **)
--				asymmetric_key_ids(trusted)->id;
-+			kids = asymmetric_key_ids(trusted);
-+			if (!kids)
-+				goto skip_trusted;
-+
-+			signer_ids = (const struct asymmetric_key_id **)kids->id;
-
- 			/*
- 			 * The auth_ids come from the candidate key (the
-@@ -290,6 +294,7 @@ static int key_or_keyring_common(struct key *dest_keyring,
- 		}
- 	}
-
-+skip_trusted:
- 	if (check_dest && !key) {
- 		/* See if the destination has a key that signed this one. */
- 		key = find_asymmetric_key(dest_keyring, sig->auth_ids[0],
---
-2.39.0
