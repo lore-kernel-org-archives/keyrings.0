@@ -1,118 +1,135 @@
-Received: from abb.hmeau.com (abb.hmeau.com [180.181.231.80])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B0C5530BB91;
-	Tue,  5 May 2026 09:34:24 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=180.181.231.80
+Received: from foss.arm.com (foss.arm.com [217.140.110.172])
+	by smtp.subspace.kernel.org (Postfix) with ESMTP id 9B40A3368B7;
+	Tue,  5 May 2026 09:54:15 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=217.140.110.172
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1777973666; cv=none; b=tERxmXAGguEq0GV3QQ97TMoB2/vdm+qXgX6GG/4FxSwBXSatvTiM3JfAuXStnHOtdq10I984CQ8HDiNL02TtpqmitFgvnrrdmVLdMIwM/ENPnj8U0u+bOgw+Xq3XqkVBoKs7qNhEYJr5ZmqJxUuVCaZgEeq7RT6Uphpy4dahXhI=
+	t=1777974858; cv=none; b=l+qHfsJlvmiuE4J50K9thkVa5rBl3eP5YYI4u0yicHjERmLbcCZSoz3ha4+midn9Gyaj4k0k8+kIRpR9zDUxPI9H4+6+ogdAh4DA58BYZAKKaGjpnWR9Wmm0dT27+/bH0qnUjQX936vAiQlMasFVfuGZ1AG4UrPEcNpJz4qcjg4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1777973666; c=relaxed/simple;
-	bh=m3xuei7QEO3BdWh2AVG4O5jLXHx0ii9UR2cx9wz5MaE=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=mtoKXU7En8Jq74vweR6IIVvxGADN548wWrwnnS/+K8oAoL3TCRoqvU27crEAbZnR3hxZbQfLYsHB4inAv3YBxLJlrtKSFf2sNqej7XXO6cQpxFiqz0FlzmfC+wQSgC6TKUNno/SbWWjRz/bdfaMfgofenCYCQTOGJd+VvbBwFFk=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au; spf=pass smtp.mailfrom=gondor.apana.org.au; dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b=H1Bi44I0; arc=none smtp.client-ip=180.181.231.80
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gondor.apana.org.au
+	s=arc-20240116; t=1777974858; c=relaxed/simple;
+	bh=mZATz5adCxjq+rKLQMa6TL0ztfFjDih5jW0Ffnpg7tA=;
+	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version:Content-Type; b=bCG33MyR7ueNxSWPzcvR28YeKDTw28bJn9c2htIP0XoQgyH4ASINdn1ORynLqoosogwEmucNcxmDPTIkchrPpeIgT7vlzRySCA4AYA3ZLFlvZczoFw2XYXBy4pdmKZQ5ZdTsXKY2Tuypm0phqpDXcr6VJ58UZGkumJOPdO2BQPM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=arm.com; spf=pass smtp.mailfrom=arm.com; dkim=pass (1024-bit key) header.d=arm.com header.i=@arm.com header.b=OroYeXVb; arc=none smtp.client-ip=217.140.110.172
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=arm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=arm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b="H1Bi44I0"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=gondor.apana.org.au; s=h01; h=In-Reply-To:Content-Type:MIME-Version:
-	References:Message-ID:Subject:Cc:To:From:Date:cc:to:subject:message-id:date:
-	from:content-type:reply-to; bh=19oxxEfEgeVcmULINNrHzCxUZfxu7gYS2kOyozmBmVw=; 
-	b=H1Bi44I0OMMUu6iU0to92pgaU+40XB5tcoTmZDDnhajeE5VA6Sl1tAyEGD06Pnzoxf0Pw7yvODV
-	/QbYAxhbAjRQskcG9NaSyVgPLJJ3Ggxku78IcqvMjtRgvGRZxU3T4tT5So9MeV++AeWmdlfHkGnDA
-	RStOgXeqx+XesZxYm5y05/tB2Ov7fQ3gHScYRUuNhk0R6Gj1Bz83+wE1Zwkd9EH1ZEVQbRWW5XOIm
-	1xFXcLuybgyzg5SUAFv1G6CyzfRq6c2Uk2ntEm4EeJ0bVUdvGNOp34cL0TDPJ1Dz5Ft1YdhmBEksC
-	+vpuEh3u4dPJ2jPYHU9mHTz64ydxQ8Sm3v3g==;
-Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
-	by formenos.hmeau.com with smtp (Exim 4.96 #2 (Debian))
-	id 1wKCAJ-00BO8c-0I;
-	Tue, 05 May 2026 17:34:08 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Tue, 05 May 2026 17:34:07 +0800
-Date: Tue, 5 May 2026 17:34:07 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Weiming Shi <bestswngs@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
-	Ignat Korchagin <ignat@linux.win>,
-	"David S . Miller" <davem@davemloft.net>,
-	Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
-	linux-crypto@vger.kernel.org, Xiang Mei <xmei5@asu.edu>
-Subject: Re: [PATCH v2] asymmetric_keys: check asymmetric_key_ids() for NULL
- before dereference
-Message-ID: <afm5jwh7jzm-5mI2@gondor.apana.org.au>
-References: <20260502163328.696098-2-bestswngs@gmail.com>
+	dkim=pass (1024-bit key) header.d=arm.com header.i=@arm.com header.b="OroYeXVb"
+Received: from usa-sjc-imap-foss1.foss.arm.com (unknown [10.121.207.14])
+	by usa-sjc-mx-foss1.foss.arm.com (Postfix) with ESMTP id 84CCD2936;
+	Tue,  5 May 2026 02:54:09 -0700 (PDT)
+Received: from e129823.cambridge.arm.com (e129823.arm.com [10.1.197.6])
+	by usa-sjc-imap-foss1.foss.arm.com (Postfix) with ESMTPA id 8439C3F836;
+	Tue,  5 May 2026 02:54:11 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=arm.com; s=foss;
+	t=1777974854; bh=mZATz5adCxjq+rKLQMa6TL0ztfFjDih5jW0Ffnpg7tA=;
+	h=From:To:Cc:Subject:Date:From;
+	b=OroYeXVbEYXngvWHaW/fKZK/iVp506G7ITZsUT5skzUb/lyh16bF4bNuXqK2hsAk4
+	 KHLBmCmRAo8EyvVyzaTbJ96xJ8EXSV+onS6Gun44JBV9cfTfanJdk/xIyQ/g9mRhv3
+	 0U5EXk7QZoh+tZoy9yfqywFgFvYyeXEhIxggEoJ0=
+From: Yeoreum Yun <yeoreum.yun@arm.com>
+To: linux-integrity@vger.kernel.org,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org,
+	kvmarm@lists.linux.dev
+Cc: jarkko@kernel.org,
+	zohar@linux.ibm.com,
+	roberto.sassu@huawei.com,
+	dmitry.kasatkin@gmail.com,
+	eric.snowberg@oracle.com,
+	paul@paul-moore.com,
+	jmorris@namei.org,
+	serge@hallyn.com,
+	maz@kernel.org,
+	oupton@kernel.org,
+	joey.gouly@arm.com,
+	suzuki.poulose@arm.com,
+	yuzenghui@huawei.com,
+	catalin.marinas@arm.com,
+	will@kernel.org,
+	sudeep.holla@kernel.org,
+	Yeoreum Yun <yeoreum.yun@arm.com>
+Subject: [RFC PATCH 0/3] initalise ff-a after finalising pKVM
+Date: Tue,  5 May 2026 10:54:06 +0100
+Message-Id: <20260505095409.1948371-1-yeoreum.yun@arm.com>
+X-Mailer: git-send-email 2.34.1
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260502163328.696098-2-bestswngs@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-On Sat, May 02, 2026 at 09:33:29AM -0700, Weiming Shi wrote:
-> asymmetric_key_ids() returns key->payload.data[asym_key_ids], which can
-> be NULL for keys parsed by the PKCS#8 parser (pkcs8_parser.c explicitly
-> stores NULL in prep->payload.data[asym_key_ids]).
-> 
-> key_or_keyring_common() in restrict.c and find_asymmetric_key() in
-> asymmetric_type.c both dereference this return value without checking
-> for NULL. An unprivileged user can trigger a NULL pointer dereference
-> in key_or_keyring_common() by creating a PKCS#8 key, restricting a
-> keyring with key_or_keyring:<pkcs8_serial>, and adding an X.509 cert
-> to the restricted keyring. CONFIG_PKCS8_PRIVATE_KEY_PARSER=y is
-> required.
-> 
-> The following bash script can reproduce the issue:
-> 
->   #!/bin/bash
->   modprobe pkcs8_key_parser 2>/dev/null
->   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:1024 \
->       -out /tmp/poc.pem 2>/dev/null
->   openssl pkcs8 -topk8 -nocrypt -in /tmp/poc.pem \
->       -outform DER -out /tmp/poc.p8
->   openssl req -new -x509 -key /tmp/poc.pem -outform DER \
->       -out /tmp/poc.der -days 365 -subj "/CN=Test" \
->       -addext "subjectKeyIdentifier=hash" \
->       -addext "authorityKeyIdentifier=keyid:always" 2>/dev/null
->   PKCS8_ID=$(keyctl padd asymmetric pkcs8key @s < /tmp/poc.p8)
->   KR=$(keyctl newring test_kr @s)
->   keyctl restrict_keyring $KR asymmetric "key_or_keyring:$PKCS8_ID"
->   keyctl padd asymmetric trigger $KR < /tmp/poc.der
->   rm -f /tmp/poc.pem /tmp/poc.p8 /tmp/poc.der
-> 
->  Oops: general protection fault, probably for non-canonical address 0xdffffc0000000000
->  KASAN: null-ptr-deref in range [0x0000000000000000-0x0000000000000007]
->  RIP: 0010:key_or_keyring_common (crypto/asymmetric_keys/restrict.c:205 crypto/asymmetric_keys/restrict.c:279)
->  Call Trace:
->   <TASK>
->   __key_create_or_update (security/keys/key.c:884)
->   key_create_or_update (security/keys/key.c:1021)
->   __do_sys_add_key (security/keys/keyctl.c:134)
->   do_syscall_64 (arch/x86/entry/common.c:52 arch/x86/entry/common.c:83)
->   entry_SYSCALL_64_after_hwframe (arch/x86/entry/entry_64.S:130)
->   </TASK>
->  Kernel panic - not syncing: Fatal exception
-> 
-> Add a NULL check in find_asymmetric_key(), mirroring the existing
-> pattern in asymmetric_match_key_ids() and asymmetric_key_describe().
-> In key_or_keyring_common(), skip the trusted key matching when it
-> has no key IDs and fall through to the check_dest path.
-> 
-> Fixes: 7d30198ee24f ("keys: X.509 public key issuer lookup without AKID")
-> Reported-by: Xiang Mei <xmei5@asu.edu>
-> Signed-off-by: Weiming Shi <bestswngs@gmail.com>
-> ---
-> v2: add bash reproducer to commit message (Ignat)
-> 
->  crypto/asymmetric_keys/asymmetric_type.c | 2 ++
->  crypto/asymmetric_keys/restrict.c        | 9 +++++++--
->  2 files changed, 9 insertions(+), 2 deletions(-)
+This patch is split out from the patchset [0] --
+fix FF-A call failure with pKVM when the FF-A driver is built-in,
+specifically the IMA-related part.
 
-Patch applied.  Thanks.
+When pKVM is enabled, the FF-A driver must be initialised after pKVM.
+Otherwise, pKVM cannot negotiate the FF-A version or obtain the RX/TX
+buffer information, leading to failures in FF-A calls.
+
+Currently, pKVM initialisation completes at device_initcall_sync,
+while ffa_init() runs at the device_initcall level.
+
+So far, linker deployes kvm_arm_init() before ffa_init(), and SMCs can
+still be trapped even before finalise_pkvm() is invoked.
+As a result, this issue has not been observed.
+
+However, relying on above stuff is fragile.
+Therefore, when pKVM is enabled, the FF-A infrastructure should be
+initialised only after pKVM initialisation has been fully finalised.
+
+To achieve this, introduce an ffa_root_dev ("arm-ffa") and
+a corresponding driver to defer initialisation of the FF-A infrastructure
+until pKVM initialisation is complete, and to defer probing of all FF-A devices until then
+when pKVM is enabled.
+
+This patch is based on v7.1-rc2
+
+Question:
+
+FF-A initialisation can occur at late_initcall. Because it may be deferred,
+some FF-A requests cannot be serviced at that stage.
+A typical example is the EFI runtime variable service using DIRECT_MSG_REQ.
+
+Depending on the platform, the EFI runtime variable service runs with StandaloneMm
+and uses FF-A DIRECT_REQ. However, when pKVM is enabled, FF-A initialisation
+may be deferred to late_initcall. In this case, load_uefi_certs()
+can fail if it is invoked before the FF-A driver is initialised
+via deferred_probe_initcall().
+
+Moving load_uefi_certs() to late_initcall_sync, as in the third patch,
+seems not to have any problem since late_initcall and
+late_initcall_sync are both of do_basic_setup() and it's before loading
+init process. However, it is still unclear whether
+it would be better to allow DIRECT_MSG_REQ in kvm_host_ffa_handler()
+even before FF-A version negotiation since handler’s purpose seems to hook
+certain memory operations, and DIRECT_MSG_REQ has been available
+since FF-A specification v1.0.
+
+Any feedback or alternative suggestions would be appreciated!
+
+Link: https://lore.kernel.org/all/20260422162449.1814615-1-yeoreum.yun@arm.com/ [0]
+
+Yeoreum Yun (3):
+  arm64: KVM: defer kvm_init() to finalise_pkvm() when pKVM is enabled
+  firmware: arm_ffa: initialise ff-a after finalising pKVM
+    initialisation
+  security: integrity: call load_uefi_certs() at late_initcall_sync
+
+ arch/arm64/kvm/arm.c                          |   8 +-
+ arch/arm64/kvm/pkvm.c                         |  15 ++-
+ drivers/firmware/arm_ffa/bus.c                | 125 +++++++++++++++++-
+ drivers/firmware/arm_ffa/common.h             |  13 +-
+ drivers/firmware/arm_ffa/driver.c             |  21 ++-
+ drivers/firmware/arm_ffa/smccc.c              |   2 +-
+ security/integrity/platform_certs/load_uefi.c |   2 +-
+ 7 files changed, 166 insertions(+), 20 deletions(-)
+
+
+base-commit: 7fd2df204f342fc17d1a0bfcd474b24232fb0f32
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+LEVI:{C3F47F37-75D8-414A-A8BA-3980EC8A46D7}
+
