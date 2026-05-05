@@ -1,35 +1,36 @@
-Received: from foss.arm.com (foss.arm.com [217.140.110.172])
-	by smtp.subspace.kernel.org (Postfix) with ESMTP id 725743246E8;
-	Tue,  5 May 2026 11:33:35 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=217.140.110.172
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+	(No client certificate requested)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EFDDC3624C9;
+	Tue,  5 May 2026 14:39:33 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1777980817; cv=none; b=WB1osZk++vbpS4SOm4XyJQ82GACUkeYCYyYXVAYOlPCcC1i9NKgIE+LiB+dd+c3qGHiZJKhBW+7dqSNDb/bNUdjrLfu/AEd27JXdRKypwqygHVhICQcUewq5xeJCYTDaaGznMXpnVO6pAG+w66Td3i/0VzpEz9/H5BXWG+T58oQ=
+	t=1777991974; cv=none; b=fRAKN2qdaVJPQSqYEG4gm1YnoHvieMt+VQ3EAaSpDR9IejZ/WppJhUZtZ9dLYDK9LgLsQXJKvvG4zAEiD/Vd956/OMci6mF71uDaRkfkLBQ6z0oP4D/0wCSlYDHKZGjOG+pYZBjAFPt53A3cz4NZ4ma5pQgOe1MdAllE3zG1KeE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1777980817; c=relaxed/simple;
-	bh=+DyxopJqusF4nqX/vk76jN9/BMcxqhGKLl2pzrxql/o=;
+	s=arc-20240116; t=1777991974; c=relaxed/simple;
+	bh=NgwaOYYhwkJoidvqP9ynAMiAuhZHiTJ5mxPCuvHYbM4=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=la+UxRiFqw0cS0Di+GpEi5bYtZEcVOFh00xHPZ0jFtSkQ6svkNAJXUdmCtpC+nRKiQGMhlYt5gyfZGUdosukTLvaGwmdj/aVwPYHc3loqTZa3BubK/yLcM8HzDfVDUHdtBtaI5WbhXBk9W5MlEjsXSr+NFop8VNUeiv0YWWbWVM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=arm.com; spf=pass smtp.mailfrom=arm.com; dkim=pass (1024-bit key) header.d=arm.com header.i=@arm.com header.b=PgllxUh/; arc=none smtp.client-ip=217.140.110.172
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=arm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=arm.com
+	 Content-Type:Content-Disposition:In-Reply-To; b=W2Z/Lqx+1zbaEMV3abj7Fztm7l5ur8oREW9jCLyHt+9OPIzQLy7n8AYXWEtKTfJg+BfIelFJVZ8BKREM3gx5qB+fuz0xgHXtz5796C/b5OPI/HsWA7kfEDpORtmMjCPBlBXZlAm1nRpjbhgnsleViECXjNxwPUBU+YBVY4ilEJ8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=bvYfCPdE; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=arm.com header.i=@arm.com header.b="PgllxUh/"
-Received: from usa-sjc-imap-foss1.foss.arm.com (unknown [10.121.207.14])
-	by usa-sjc-mx-foss1.foss.arm.com (Postfix) with ESMTP id 72A3C28FA;
-	Tue,  5 May 2026 04:33:29 -0700 (PDT)
-Received: from e129823.arm.com (e129823.arm.com [10.1.197.6])
-	by usa-sjc-imap-foss1.foss.arm.com (Postfix) with ESMTPSA id 153CD3F836;
-	Tue,  5 May 2026 04:33:30 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=arm.com; s=foss;
-	t=1777980814; bh=+DyxopJqusF4nqX/vk76jN9/BMcxqhGKLl2pzrxql/o=;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="bvYfCPdE"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id E2880C2BCB4;
+	Tue,  5 May 2026 14:39:29 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=k20201202; t=1777991973;
+	bh=NgwaOYYhwkJoidvqP9ynAMiAuhZHiTJ5mxPCuvHYbM4=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=PgllxUh/+rurhDG4ZVlwOUR1EM62YW/bBUT1vPkk63CPw+4peA3MGi7r9FWwhkxdL
-	 csld+6LN4XrOrnBZAEG1WbKfU9RqC983hgOWrbsOs6u5R1rcsp1oQnVKqpRIZPX4/7
-	 Wrz6e8KbA3Y/ywZQtIDwzL+0NQ9iz/5L/asRAqhU=
-Date: Tue, 5 May 2026 12:33:28 +0100
-From: Yeoreum Yun <yeoreum.yun@arm.com>
-To: Ben Horgan <ben.horgan@arm.com>
+	b=bvYfCPdEURheb7BU5RKgPvIL+Vd0jex98+FTp1gb0vtK2vTkS8ONmY2bBZDIshbB9
+	 z2FEbM5CHxGKeDHpIl/bU28tnETNo8/UupR8KVhyLLEzi0LkCW99D9wh8WAhak/pFo
+	 zfaxYthB9lMPsbzd20eSvu2+0A+IhuJAmaHwO/XQLh57NsDpPxBED3q3tWggEIt2cC
+	 U1S7jFYiUt1Lz6hu5sQDX3ra2cAI0KVEc7c8CbrfoGdMLFRlLN0CFkMJLHt0K9+Tov
+	 o2+fcoWTCpsacPoeehvuyfcDGsXMr6CWbkJAtkD2vJKx/CDY+kB9dMjVblusWkL7Kc
+	 Zbi+jt7w3hYTA==
+Date: Tue, 5 May 2026 15:39:27 +0100
+From: Sudeep Holla <sudeep.holla@kernel.org>
+To: Yeoreum Yun <yeoreum.yun@arm.com>
 Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+	Sudeep Holla <sudeep.holla@kernel.org>,
 	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
 	linux-arm-kernel@lists.infradead.org, kvmarm@lists.linux.dev,
 	jarkko@kernel.org, zohar@linux.ibm.com, roberto.sassu@huawei.com,
@@ -37,129 +38,51 @@ Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
 	paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
 	maz@kernel.org, oupton@kernel.org, joey.gouly@arm.com,
 	suzuki.poulose@arm.com, yuzenghui@huawei.com,
-	catalin.marinas@arm.com, will@kernel.org, sudeep.holla@kernel.org
-Subject: Re: [RFC PATCH 0/3] initalise ff-a after finalising pKVM
-Message-ID: <afnViPP84393BvTI@e129823.arm.com>
+	catalin.marinas@arm.com, will@kernel.org
+Subject: Re: [RFC PATCH 2/3] firmware: arm_ffa: initialise ff-a after
+ finalising pKVM initialisation
+Message-ID: <20260505-super-gecko-of-argument-655030@sudeepholla>
 References: <20260505095409.1948371-1-yeoreum.yun@arm.com>
- <8942c12e-6315-493e-98c5-d55f4e6341f4@arm.com>
- <afnLpG4osopTzpip@e129823.arm.com>
- <afnRptWilWr7nABJ@e129823.arm.com>
- <9dd2b09b-cfb1-40e5-9fdd-1e004ad784c0@arm.com>
+ <20260505095409.1948371-3-yeoreum.yun@arm.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9dd2b09b-cfb1-40e5-9fdd-1e004ad784c0@arm.com>
+In-Reply-To: <20260505095409.1948371-3-yeoreum.yun@arm.com>
 
-> Hi Levi,
+On Tue, May 05, 2026 at 10:54:08AM +0100, Yeoreum Yun wrote:
+> When pKVM is enabled, the FF-A driver must be initialised after pKVM.
+> Otherwise, pKVM cannot negotiate the FF-A version or obtain the RX/TX
+> buffer information, leading to failures in FF-A calls.
 > 
-> On 5/5/26 12:16, Yeoreum Yun wrote:
-> >> Hi Ben,
-> >>
-> >>> Hi Levi,
-> >>>
-> >>> On 5/5/26 10:54, Yeoreum Yun wrote:
-> >>>> This patch is split out from the patchset [0] --
-> >>>> fix FF-A call failure with pKVM when the FF-A driver is built-in,
-> >>>> specifically the IMA-related part.
-> >>>>
-> >>>> When pKVM is enabled, the FF-A driver must be initialised after pKVM.
-> >>>> Otherwise, pKVM cannot negotiate the FF-A version or obtain the RX/TX
-> >>>> buffer information, leading to failures in FF-A calls.
-> >>>>
-> >>>> Currently, pKVM initialisation completes at device_initcall_sync,
-> >>>> while ffa_init() runs at the device_initcall level.
-> >>>>
-> >>>> So far, linker deployes kvm_arm_init() before ffa_init(), and SMCs can
-> >>>> still be trapped even before finalise_pkvm() is invoked.
-> >>>> As a result, this issue has not been observed.
-> >>>>
-> >>>> However, relying on above stuff is fragile.
-> >>>> Therefore, when pKVM is enabled, the FF-A infrastructure should be
-> >>>> initialised only after pKVM initialisation has been fully finalised.
-> >>>>
-> >>>> To achieve this, introduce an ffa_root_dev ("arm-ffa") and
-> >>>> a corresponding driver to defer initialisation of the FF-A infrastructure
-> >>>> until pKVM initialisation is complete, and to defer probing of all FF-A devices until then
-> >>>> when pKVM is enabled.
-> >>>>
-> >>>> This patch is based on v7.1-rc2
-> >>>>
-> >>>> Question:
-> >>>>
-> >>>> FF-A initialisation can occur at late_initcall. Because it may be deferred,
-> >>>> some FF-A requests cannot be serviced at that stage.
-> >>>> A typical example is the EFI runtime variable service using DIRECT_MSG_REQ.
-> >>>>
-> >>>> Depending on the platform, the EFI runtime variable service runs with StandaloneMm
-> >>>> and uses FF-A DIRECT_REQ. However, when pKVM is enabled, FF-A initialisation
-> >>>> may be deferred to late_initcall. In this case, load_uefi_certs()
-> >>>> can fail if it is invoked before the FF-A driver is initialised
-> >>>> via deferred_probe_initcall().
-> >>>>
-> >>>> Moving load_uefi_certs() to late_initcall_sync, as in the third patch,
-> >>>> seems not to have any problem since late_initcall and
-> >>>> late_initcall_sync are both of do_basic_setup() and it's before loading
-> >>>> init process. However, it is still unclear whether
-> >>>> it would be better to allow DIRECT_MSG_REQ in kvm_host_ffa_handler()
-> >>>
-> >>> The spec doesn't allow this. Looking at DEN0077A 1.2 REL0:
-> >>>
-> >>> Section 13.2.2 says:
-> >>>
-> >>> "If they are compatible, it enables them to determine which Framework functionalities can be used. Hence, negotiation of
-> >>> the version must happen before an invocation of any other FF-A ABI."
-> >>>
-> >>> and a bit further down
-> >>>
-> >>> "Once the caller invokes any FF-A ABI other than FFA_VERSION, the version negotiation phase is complete."
-> >>>
-> >>> I would have thought that an SP would only go into the waiting state once the version negotiation is done.
-> >>
-> >> I mean the negotiation between hypervisor and ff-a driver.
-> >> actually the version negotiation is done with SPMC in
-> >> hyp_ffa_init() but the negotiaion between hypervisor and ff-a driver
-> >> just choose the lower version between version requested from ff-a driver
-> >> and negotiated version with hypervisor and SPMC.
-> > 
-> > Sorry. re-parse the word, not choose "re-negotiate" when
-> > FF-A driver request lowever version.
-> > 
-> >>
-> >> So, the version negotiation is already done with SPMC
-> >> but with FF-A driver with hypervisor is not yet.
-> >> However, DIRECT_MSG_REQ has supported from v1.0 
-> >> In this situation, is there any reason not to send DIRECT_REQ_MSG?
-> > 
-> > IOW, question is that some of ff-a request can be allowed
-> > before version negotiation with FF-A driver but
-> > using negotiated version via hyp_ffa_init() first or not.
+> Currently, pKVM initialisation completes at device_initcall_sync,
+> while ffa_init() runs at the device_initcall level.
 > 
-> I don't think so. Isn't it more a continuation of the negotiation rather than a re-negotiation?
+> So far, linker deployes kvm_arm_init() before ffa_init(), and SMCs can
+> still be trapped even before finalise_pkvm() is invoked.
+> As a result, this issue has not been observed.
+> 
+> However, relying on above stuff is fragile.
+> Therefore, when pKVM is enabled, the FF-A infrastructure should be
+> initialised only after pKVM initialisation has been fully finalised.
+> 
+> To achieve this, introduce an ffa_root_dev ("arm-ffa") and
+> a corresponding driver to defer initialisation of the FF-A infrastructure
+> until pKVM initialisation is complete, and to defer probing of all FF-A devices until then
+> when pKVM is enabled.
+> 
 
-Might be. However, in the case I mentioned, I’m asking because
-it’s somewhat unusual in that the FF-A request occurs without an “FF-A driver.”
-
-If the FF-A request goes through the FF-A driver, then as you said,
-it can reasonably be considered a continuation of the negotiation.
-But in this case, I was wondering whether it would be acceptable to
-introduce additional exception handling for situations
-where an FF-A request occurs without the FF-A driver.
-
-From that perspective, even if the FF-A request does not go through
-the FF-A driver, it would ultimately still have to wait until
-the FF-A driver initialization is complete.
-
-So my question was whether certain operations could be handled
-as exceptions in such cases.
-
-Thanks.
+I don't like this whole ffa root device design.
+Two question for now:
+1. Can FF-A be a module on systems with pKVM which removes the need for all
+   this dance done here ?
+2. If it is a requirement to have this built-in, I prefer to add a probe
+   and defer it instead of this root ffa device.
 
 -- 
-Sincerely,
-Yeoreum Yun
+Regards,
+Sudeep
