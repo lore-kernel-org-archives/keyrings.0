@@ -1,47 +1,47 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 548CD3DA7D3;
-	Fri,  8 May 2026 17:59:38 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2245E31715F;
+	Fri,  8 May 2026 21:21:05 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1778263178; cv=none; b=FwIuD1DK2imLFMYjZTPwo9ZR9cL7cAz2Q/EmOJ+xXTIOhVuzPntSHM8B8cwHnCROn5srShK2VJn54BzGe3PzHHWU8b/OGB20G+tD4oz58KnpW8r8W/YgDxKDgezjmfY+stDjxDmCiNz7ab2A+4OXb7cB/ur/igaiqYeuOY+9hl8=
+	t=1778275266; cv=none; b=Ky0drbaOqVVdWsppktqfLniMmsV0eQCijv2sfgqzS9Iq9epnYP9sOt3ViObuYXvMtco8fsKgTzGu5t1rH+Z5k0vxRwSCxm3ee5VfaPC4Pn6y4JIDix3XMkjXeVdgvZhjCZXN2DEEXHi4eiFSbD/znOFWmfKOu9N3lFAyaJbOGlg=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1778263178; c=relaxed/simple;
-	bh=f+C6+Is1XDoPUTJlfzjwfJtrygH27kCkd9+va+Q5+wQ=;
+	s=arc-20240116; t=1778275266; c=relaxed/simple;
+	bh=/4xLVTYRRJmOtJBRufc46FWoiGaSuJOkh/bI92mmbZ0=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=R3M12kNAD9gI0lnJkYF54CoLDppsktUJAYlba5kuO+AwJtq54KiepBdsoGK2BzYlin7YSxeUClMKZh7AFElaIYA035ZyDYi+h7THF0tn7CCkojU58JJkTpwn4ONEfniyZoPCzKlVcqkOaDAW10wSrNMO29spB3XFFfJOWYZha18=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=JWAWPDvG; arc=none smtp.client-ip=10.30.226.201
+	 Content-Type:Content-Disposition:In-Reply-To; b=DN8dRy2+sQk4elETAmlxKLVAFX36P3Sqvq1D7y+36LBwEPEsRn12u69n1IzC1Edv3msbByVDCMXGkwb9YWFR8aqq+xnysSHRfq51OpxXKThWYyB6YWraNosMThey7JqcXzcaGBDCYtkZN0lx2y7hLzzTrbf8VxlrmGokOGA3k8A=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=hgJevPmx; arc=none smtp.client-ip=10.30.226.201
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="JWAWPDvG"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 58D32C2BCB0;
-	Fri,  8 May 2026 17:59:34 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="hgJevPmx"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 252A6C2BCB0;
+	Fri,  8 May 2026 21:21:04 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=k20201202; t=1778263178;
-	bh=f+C6+Is1XDoPUTJlfzjwfJtrygH27kCkd9+va+Q5+wQ=;
+	s=k20201202; t=1778275265;
+	bh=/4xLVTYRRJmOtJBRufc46FWoiGaSuJOkh/bI92mmbZ0=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=JWAWPDvGtq97KDoBUrMNVn9jGLtr0S6yU0SmNcoAoyE2s2EAXBMnXtXMka60FpLeN
-	 TOFqpirW5UGbw7mPrCRrkHf7mSHljwAahNBB4PpxRGUlk0zsQ3JGvXACFJ5JagLcJa
-	 4aKx4OzboqGUMVOH29tprYlLnrAKRc9M0h6jp8Xu8JsIc4Uaf4/vQHPH4DD7ofsEMj
-	 jZdY4bHynb3dvCv3fYpWYT3cG0WJTIIb1kWp1Cv5pqgdvE3ayQNdJh6xbZnAynDj73
-	 8QhrF5OUcnvkDluYPJUNvNH+/1hLDYGVcoY+ThxaAG4VaOG/iLDTGcoig4HtjCMQZY
-	 tIoUF86YTBl3A==
-Date: Fri, 8 May 2026 18:59:32 +0100
-From: Sudeep Holla <sudeep.holla@kernel.org>
-To: Yeoreum Yun <yeoreum.yun@arm.com>
-Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-	Sudeep Holla <sudeep.holla@kernel.org>,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, kvmarm@lists.linux.dev,
-	jarkko@kernel.org, zohar@linux.ibm.com, roberto.sassu@huawei.com,
-	dmitry.kasatkin@gmail.com, eric.snowberg@oracle.com,
-	paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
-	maz@kernel.org, oupton@kernel.org, joey.gouly@arm.com,
-	suzuki.poulose@arm.com, yuzenghui@huawei.com,
-	catalin.marinas@arm.com, will@kernel.org
-Subject: Re: [RFC PATCH 0/3] initalise ff-a after finalising pKVM
-Message-ID: <20260508-ubiquitous-sexy-robin-b1ca51@sudeepholla>
-References: <20260505095409.1948371-1-yeoreum.yun@arm.com>
+	b=hgJevPmx3gxDzL+KNlNmrujQDe7HQ4xEn2AndsI+qvlXYJGXMmhqT9E9hmG+TOmuO
+	 E0EPqd84ewmcqxQ7UMtozzuj95tsnTAeWmAqH0ZE+pgJ9ZWSVDLYb81hzycY7GYAIE
+	 o6udnN3/UGBpsvbeQQBKVq1AwNxBIlzpCvaCH5Fv0BDDInulX//JR2Hki4QJrZoJFR
+	 i+ukNsb+kMk9lOsLb9fQkVoTkgTEgTXigW3JCtJKerFnY8nKOn5a8uwuWCsaudblPu
+	 TolfU5JF4ejNc60rSuc7yP6cyYwE9s4e/ZYU+jSX+5q2iHeDzMJ58woXulso8SS/DZ
+	 9itUvskTX9Fgg==
+Date: Sat, 9 May 2026 00:21:01 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Thorsten Blum <thorsten.blum@linux.dev>
+Cc: David Howells <dhowells@redhat.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Eric Dumazet <edumazet@google.com>,
+	Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>,
+	Simon Horman <horms@kernel.org>, Kees Cook <kees@kernel.org>,
+	"Gustavo A. R. Silva" <gustavoars@kernel.org>,
+	Tim Bird <tim.bird@sony.com>, keyrings@vger.kernel.org,
+	linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+	linux-hardening@vger.kernel.org
+Subject: Re: [PATCH net-next v3 1/2] keys, dns: drop unused upayload->data
+ NUL terminator
+Message-ID: <af5TvSZHwBH0N8Jq@kernel.org>
+References: <20260427114422.313356-3-thorsten.blum@linux.dev>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -50,42 +50,72 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260505095409.1948371-1-yeoreum.yun@arm.com>
+In-Reply-To: <20260427114422.313356-3-thorsten.blum@linux.dev>
 
-On Tue, May 05, 2026 at 10:54:06AM +0100, Yeoreum Yun wrote:
-> This patch is split out from the patchset [0] --
-> fix FF-A call failure with pKVM when the FF-A driver is built-in,
-> specifically the IMA-related part.
+On Mon, Apr 27, 2026 at 01:44:23PM +0200, Thorsten Blum wrote:
+> ->data includes an extra NUL terminator despite never being used as a C
+> string and only accessing ->datalen bytes. Remove the redundant NUL
+> terminator and allocate one byte less in dns_resolver_preparse().
 > 
-> When pKVM is enabled, the FF-A driver must be initialised after pKVM.
-> Otherwise, pKVM cannot negotiate the FF-A version or obtain the RX/TX
-> buffer information, leading to failures in FF-A calls.
-> 
-> Currently, pKVM initialisation completes at device_initcall_sync,
-> while ffa_init() runs at the device_initcall level.
-> 
-> So far, linker deployes kvm_arm_init() before ffa_init(), and SMCs can
-> still be trapped even before finalise_pkvm() is invoked.
-> As a result, this issue has not been observed.
-> 
-> However, relying on above stuff is fragile.
-> Therefore, when pKVM is enabled, the FF-A infrastructure should be
-> initialised only after pKVM initialisation has been fully finalised.
-> 
-> To achieve this, introduce an ffa_root_dev ("arm-ffa") and
-> a corresponding driver to defer initialisation of the FF-A infrastructure
-> until pKVM initialisation is complete, and to defer probing of all FF-A devices until then
-> when pKVM is enabled.
->
+> Signed-off-by: Thorsten Blum <thorsten.blum@linux.dev>
 
-I have posted an alternative based on all the discussion in this thread
-@[1]. I have not cc-ed all the people as the changes are contained in
-FF-A driver and not sure if all the cc-ed here are much interested.
-All the lists are included I assume and one can always provide feedback
-referring to the link.
+Never being used where?
 
--- 
-Regards,
-Sudeep
+Let me go this through.
 
-[1] https://lore.kernel.org/all/20260508-b4-ffa_plat_dev-v1-0-c5a30f8cf7b8@kernel.org/
+I read this from the documentation:
+
+  /*
+   * Preparse instantiation data for a dns_resolver key.
+   *
+   * For normal hostname lookups, the data must be a NUL-terminated string, with
+   * the NUL char accounted in datalen.
+
+So what is confusing here for me is that should upayload, which is
+original data with options and '\0'.
+
+So my question is which is the regression here:
+
+1. Incorrect length. Then the fix would be simply setting length as
+   'result_len + 1', which aligns also with the snippet of documentation
+   I pasted.
+2. Unnecessary '\0'.
+
+If there is an issue, your commit is lacking fixes tag and cc tag to the
+author of potentially failing commit.
+
+> ---
+> Changes in v3:
+> - Update commit message
+> - v2: https://lore.kernel.org/lkml/20260409225703.158552-4-thorsten.blum@linux.dev/
+> 
+> Changes in v2:
+> - No changes in patch 1/2
+> - v1: https://lore.kernel.org/lkml/20260406175810.1018681-3-thorsten.blum@linux.dev/
+> ---
+>  net/dns_resolver/dns_key.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+> index c3c8c3240ef9..451247864a63 100644
+> --- a/net/dns_resolver/dns_key.c
+> +++ b/net/dns_resolver/dns_key.c
+> @@ -203,7 +203,7 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+>  	kdebug("store result");
+>  	prep->quotalen = result_len;
+>  
+> -	upayload = kmalloc_flex(*upayload, data, result_len + 1);
+> +	upayload = kmalloc_flex(*upayload, data, result_len);
+>  	if (!upayload) {
+>  		kleave(" = -ENOMEM");
+>  		return -ENOMEM;
+> @@ -211,7 +211,6 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+>  
+>  	upayload->datalen = result_len;
+>  	memcpy(upayload->data, data, result_len);
+> -	upayload->data[result_len] = '\0';
+>  
+>  	prep->payload.data[dns_key_data] = upayload;
+>  	kleave(" = 0");
+
+BR, Jarkko
