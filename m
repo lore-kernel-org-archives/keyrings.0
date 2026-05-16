@@ -1,140 +1,168 @@
-Received: from mail-ej1-f50.google.com (mail-ej1-f50.google.com [209.85.218.50])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mout.gmx.net (mout.gmx.net [212.227.17.20])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 70EAE44102C
-	for <keyrings@vger.kernel.org>; Fri, 15 May 2026 10:37:59 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.218.50
-ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1778841480; cv=pass; b=TcWmp7NRZA8g/KmXce3iPHwOOg/fHlJI6MQ27AY0lnqBoB7GTrwVBosq9DOrGYBdbUp5Yjt2rZZMLKs80bi8gwwOxJfeHiBh06zTVEpBguWdRQWp2nbMlC3OHXrZ+VLVrYHILpAxfoXaPA9vXHw27G466OqZD+zBiq6QpUgYde4=
-ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1778841480; c=relaxed/simple;
-	bh=Mg37Wy3KRnUM1ONATbgQfacA9HiWz4ji3AcGoZ9aFz4=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=k7OQYpRRf6LxkkPgUIW10+1DC+FXV3p+QrkLEDYbYgUmZXLdJjQ63R/ZHFtY0wgjeWZikin8U/9mEhil+Dio5P01Y19OHZQZ0nsXZNb2hYhjsijcJLWTRgL5U6dzOTNjFM3Xefo2uSfTwcnEBgf/KtZq4Ltki7m5zy/2eTdcCZ8=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=QtOjj7YD; arc=pass smtp.client-ip=209.85.218.50
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3528C3E3C59;
+	Sat, 16 May 2026 15:23:20 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=212.227.17.20
+ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1778945003; cv=none; b=d9bUtToHk1fogep8KnaJk9SQiAMFV4ABNYbybtrLj9RLQ6fQc8XF752/uFuBHWzhnI/eyWx1SPzx19UMdC9MraLqPWX2/ZZcHAJnQ1/NtrPZrk/g+IhEZ2KAu3JE1Ml2Nztjn0lxB9M1ZgbPVIEtl2PMVJz71vMOFekTmhQBjgs=
+ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1778945003; c=relaxed/simple;
+	bh=AMPt2Opsx1Qcvut9w/XuBiufSBpKYV1Bw/QS6GomWkY=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=MVw3cZ+XG70blGMCeyIWW34S71v2fBQAOlblvv/pAMyf1NfGBzam7JNoCNr5SBvaouF+kEc3FREn3rtWc3SCNlD3KySHJZRD5q454X2LXGI+ZPqwxiFgvK0UtVugQHwPC5qOiNXpkDdfse9bFpRosAvm0peQ798wLTH47LAxIos=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gmx.us; spf=pass smtp.mailfrom=gmx.us; dkim=pass (2048-bit key) header.d=gmx.us header.i=len.bao@gmx.us header.b=VizOfTUJ; arc=none smtp.client-ip=212.227.17.20
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gmx.us
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmx.us
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="QtOjj7YD"
-Received: by mail-ej1-f50.google.com with SMTP id a640c23a62f3a-b9358dd7f79so1449601066b.1
-        for <keyrings@vger.kernel.org>; Fri, 15 May 2026 03:37:59 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1778841478; cv=none;
-        d=google.com; s=arc-20240605;
-        b=XjZtdF41/jillvdrUTVHdfOqNMoWsuXhhXzHM76hZIAHzew4++2oagdaOHAfhqI8ho
-         92fKVGKM7GFtRhSfB0DOFV9EumLto2PAhMI2sCe5Ck00c4ejBTGNBFG/ng5eUjMpZrvY
-         aAhz1sFHBqAsujDGLEbMn5myZZa7pXLy31OH8Q06OMbjf5lckdroFtwu0QSuAO/oMPo8
-         MpQzybxVz5BU6SEihbXw43W7pE9svoWaQWGtIZyLNzoE+O9LdYbXCTWwpn4joAi2ZFvU
-         Iv53lKfo2glScadOIpqi5bSwE+Dh8RA5GUHYq5fLUI+/uAwDUQVjADdvMqvb6R0MaIeR
-         YZRw==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:dkim-signature;
-        bh=y2Yl47ee8MtjXEIcxqYtsCZZAToZXmE/PsXL+BkUBMc=;
-        fh=JxkzF6YF6VohfWbLHlms+tJd6OcW48D5/NqmNKET3mw=;
-        b=UaHm2AoEjGpHYWNiLVtHRoKqyk67Dx5DMxRLMbw3Gb6sOFzft4Bvyb0Sl9zrbsM8e/
-         YVqPGvi6fD7deOiL0mPSYxVRkrkEehpONFF6DyIamArrvEBPrI9aDfbT+03qaf0s5lpB
-         SFRfeiEVFyepxT7GWX5n33wbHtvoA4oIHPWAgURmj/Pte+aC3VoO3KIwVPANspD9oaQG
-         MdIUNg64XNMxs04RT/yN8Utyxjzjtuz6/YwnSZ+EfJlRudrJZZ1XyFQOo/LhOFzd/bVX
-         m6u5oy03OenRxkkU+L24rak3xcYzxPQ6732Zt5IuJWORvct1Uq1qgGxIYJLnyqC8M65/
-         kniQ==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1778841478; x=1779446278; darn=vger.kernel.org;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=y2Yl47ee8MtjXEIcxqYtsCZZAToZXmE/PsXL+BkUBMc=;
-        b=QtOjj7YDHKJ71LWW+HRX01pb/fw1kJ/REbbmui3Ew7YYeR5NOqun8NP8GPgCc+er37
-         8SlfEgB0mPjU4liUknohOzApFEoVQv6s8tK48oGg0475lHWBsa0mrJYqZDfgSHZPZ9B9
-         BhwjSyKQ/xE1dF/4K1HHTZAR2gAlBpTL0r/DSvf6TXGLatLPQOUnNPYoLpNNXhZXwNV3
-         ovki0YEwo+Yin0nZKSmFq5qHd6uq8kyQr+1RiE4OE7dQbnc3UnXNOE6TByJmYde6Fz6t
-         Ag6sA38HE7uvw1SyB+m3Lw2+eLTQc37wU4gvtyaWwSvuopDpbIjty617mscGnP/goD+W
-         015w==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1778841478; x=1779446278;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to;
-        bh=y2Yl47ee8MtjXEIcxqYtsCZZAToZXmE/PsXL+BkUBMc=;
-        b=ffpwlMbYIZ1KlrdWyv8lo4o/HqAHfUpF96GXFiTKFWQt7x8BHlw4aaktg4RzlB2Ukq
-         mAz4OFaqIh1F9028/YzyKtVhnwaxO30LCKuZwpaFTKCMQMimLw9MkqISz+Qfw6p9kcyh
-         MkzDyMtZfdmWXOP0wT8AwYzomArU1niy1fOfEvcNrUHzF4IXl86A8W4K/KqKlfy4rovy
-         5l0sU7C7DZi3oqmoS3GUplxBvyPrRIqutDyXfaWn9ep5sy9Eb/9McZINu90dmOui1a/n
-         XUQKFskpAgRSmU1gwU5kB3NmFVwPRIcs80pqiJ9vnb5QC4eP2b7XE7knHz1oIpPD2Zyv
-         3DgA==
-X-Forwarded-Encrypted: i=1; AFNElJ9osX4wdNs1J7Vqa+TsX57qToyD425FuU3hMBdB4jvRfRE3zXS51eS5ncNeYToAmBcymE5kWH+tuQ==@vger.kernel.org
-X-Gm-Message-State: AOJu0Yze96NxT9vxLI/LirIh/xJ8hcWDfH305rcomB/7KRjqBrSWguvy
-	C9hPlGXZKDoD/ZBhy6bpcyHsOEmlRreLZQ2k/DSGSYq8PxvFIwGOL/sOgLGCf2UBKIH++4Zv+VZ
-	jf48z97r3+dMspVCIfLLFLdeAOxNay/A=
-X-Gm-Gg: Acq92OF4E/V3MaBx5EYLSUDbcVQ5QkML8/CTG6SEWJdVkhIFUwLXl1yRqiZHHsJZzOc
-	X5sG3E9MGMiVqjwc9MvwEO67pHluLRRxXAGjelcDvtyT6OPpHxDeo0irOZS04WQRVT/lvjAMM4x
-	SC7BCcnSIQ5FR2IcVucawDFz0bI1ckMi4T6AeSXPg4rcSf9zU5cfOrQGvn7ZS9IUtP6ck29Nrbd
-	sONjlsCbv0wUDw50YgrOFOka4PYR+0j3aRFc4IWgeySg/nf6IzOOp5SI38UnxGp/DLWhJ/caNQG
-	LWE6m+rg
-X-Received: by 2002:a17:907:c486:b0:bd5:7a3:a590 with SMTP id
- a640c23a62f3a-bd51797a605mr162534266b.47.1778841477716; Fri, 15 May 2026
- 03:37:57 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmx.us header.i=len.bao@gmx.us header.b="VizOfTUJ"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmx.us;
+	s=s31663417; t=1778944999; x=1779549799; i=len.bao@gmx.us;
+	bh=OlDVaQiVAv4LonFHoh8IBv9FleSYpWSLLMGDOXEebZk=;
+	h=X-UI-Sender-Class:From:To:Cc:Subject:Date:Message-ID:
+	 MIME-Version:Content-Transfer-Encoding:cc:
+	 content-transfer-encoding:content-type:date:from:message-id:
+	 mime-version:reply-to:subject:to;
+	b=VizOfTUJaAIul7j0ZUo7lXeFKNgdQYLOG1/+4noyIPgbGY5zJyuTSkKByggrkR67
+	 59G91CYcg90BWvjfa9Y5TAhVQqbBc9Vg41uFX2+sN1D/g3GNIUf/n1mEhDP6ZK2cF
+	 BLbBZJ4o4TO6PBU5EHqA38woj5hDbTLE71wqFryT+hkaD+PD9I9Z37EwsGYc7avB/
+	 9DpdCFeq6GIL6ydWQ6cfg9LbK26WgmckPkEzSci7mdrDncGRdTe6EbC2AlIxDUkDA
+	 fmu5OshKf6zUxXAPc83KcAsx/gRIo8A4jwe5MfmcMKIlkmScnnLb4wbmOaomPRiYK
+	 sOQ8EA3eTkS8jldwJQ==
+X-UI-Sender-Class: 724b4f7f-cbec-4199-ad4e-598c01a50d3a
+Received: from client.hidden.invalid by mail.gmx.net (mrgmx105
+ [212.227.17.174]) with ESMTPSA (Nemesis) id 1MRTNF-1wljWs07gD-00TeDX; Sat, 16
+ May 2026 17:23:19 +0200
+From: Len Bao <len.bao@gmx.us>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>
+Cc: Len Bao <len.bao@gmx.us>,
+	linux-integrity@vger.kernel.org,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Subject: [PATCH] keys/trusted_keys: mark 'migratable' as __ro_after_init
+Date: Sat, 16 May 2026 15:22:47 +0000
+Message-ID: <20260516152249.41851-1-len.bao@gmx.us>
+X-Mailer: git-send-email 2.43.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <782bc59d5939aa69b58cad42f71946f1c0a6dccb.1778741457.git.lukas@wunner.de>
-In-Reply-To: <782bc59d5939aa69b58cad42f71946f1c0a6dccb.1778741457.git.lukas@wunner.de>
-From: Alistair Francis <alistair23@gmail.com>
-Date: Fri, 15 May 2026 20:37:29 +1000
-X-Gm-Features: AVHnY4J6Fk9yBInmPYPIDVgxM9398Q03MJN3uwc9o-hhnM1187xvX0jLlEj4EeM
-Message-ID: <CAKmqyKP=UuH4LGZC+HwDa8C9178b3345xo6GECxQw-dx8CUphg@mail.gmail.com>
-Subject: Re: [PATCH] X.509: Fix validation of ASN.1 certificate header
-To: Lukas Wunner <lukas@wunner.de>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, 
-	David Howells <dhowells@redhat.com>, Ignat Korchagin <ignat@linux.win>, keyrings@vger.kernel.org, 
-	linux-crypto@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
+X-Provags-ID: V03:K1:FQzpIx/Y3nw5KpiKdweU5V3vM0sz7Bh+mQvUvGBIXRwjpK7d1Dp
+ ldWiavXKbZ/LMk/IvgzMCCairrw1bjb0FsPaaZrgHMNCintbvKp/RU8/AUMPxhPGnMmDlTy
+ vK/85eaKPRv/aXgtotMBR8HCv2z2gYmOLQmAAHw69c38VDD2etiLJo9FT1WS0/tNifcmIst
+ xd09i1LbC22d03s/Uugjw==
+X-Spam-Flag: NO
+UI-OutboundReport: notjunk:1;M01:P0:LQ1Ab4yqilY=;YVggcY4DOfftjAS2HfeFc02B3rZ
+ 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
+ hIvSwe7X2HTSGSA==
 
-On Thu, May 14, 2026 at 4:57=E2=80=AFPM Lukas Wunner <lukas@wunner.de> wrot=
-e:
->
-> x509_load_certificate_list() seeks to enforce that a certificate starts
-> with 0x30 0x82 (ASN.1 SEQUENCE tag followed by a length of more than 256
-> and less than 65535 bytes).
->
-> But it only enforces that *either* of those two byte values are present,
-> instead of checking for the *conjunction* of the two values.  Fix it.
->
-> Fixes: 631cc66eb9ea ("MODSIGN: Provide module signing public keys to the =
-kernel")
-> Reported-by: Sashiko <sashiko-bot@kernel.org>
-> Closes: https://lore.kernel.org/r/20260508033917.B5873C2BCB0@smtp.kernel.=
-org/
-> Signed-off-by: Lukas Wunner <lukas@wunner.de>
-> Cc: stable@vger.kernel.org # v3.7+
+The 'migratable' variable is initialized only during the init phase
+in the 'init_trusted' function and never changed. So, mark it as
+__ro_after_init.
 
-Reviewed-by: Alistair Francis <alistair.francis@wdc.com>
+Signed-off-by: Len Bao <len.bao@gmx.us>
+=2D--
+ security/keys/trusted-keys/trusted_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Alistair
+diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/tru=
+sted-keys/trusted_core.c
+index 0b142d941..433579365 100644
+=2D-- a/security/keys/trusted-keys/trusted_core.c
++++ b/security/keys/trusted-keys/trusted_core.c
+@@ -59,7 +59,7 @@ DEFINE_STATIC_CALL_NULL(trusted_key_unseal,
+ DEFINE_STATIC_CALL_NULL(trusted_key_get_random,
+ 			*trusted_key_sources[0].ops->get_random);
+ static void (*trusted_key_exit)(void);
+-static unsigned char migratable;
++static unsigned char migratable __ro_after_init;
+=20
+ enum {
+ 	Opt_err,
+=2D-=20
+2.43.0
 
-> ---
->  crypto/asymmetric_keys/x509_loader.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/crypto/asymmetric_keys/x509_loader.c b/crypto/asymmetric_key=
-s/x509_loader.c
-> index a417413..0d516c7 100644
-> --- a/crypto/asymmetric_keys/x509_loader.c
-> +++ b/crypto/asymmetric_keys/x509_loader.c
-> @@ -20,7 +20,7 @@ int x509_load_certificate_list(const u8 cert_list[],
->                  */
->                 if (end - p < 4)
->                         goto dodgy_cert;
-> -               if (p[0] !=3D 0x30 &&
-> +               if (p[0] !=3D 0x30 ||
->                     p[1] !=3D 0x82)
->                         goto dodgy_cert;
->                 plen =3D (p[2] << 8) | p[3];
-> --
-> 2.51.0
->
