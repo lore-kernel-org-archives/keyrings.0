@@ -1,168 +1,117 @@
-Received: from mout.gmx.net (mout.gmx.net [212.227.17.20])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-dy1-f180.google.com (mail-dy1-f180.google.com [74.125.82.180])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3528C3E3C59;
-	Sat, 16 May 2026 15:23:20 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=212.227.17.20
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AFDCC48BD41
+	for <keyrings@vger.kernel.org>; Mon, 18 May 2026 16:44:51 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.82.180
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1778945003; cv=none; b=d9bUtToHk1fogep8KnaJk9SQiAMFV4ABNYbybtrLj9RLQ6fQc8XF752/uFuBHWzhnI/eyWx1SPzx19UMdC9MraLqPWX2/ZZcHAJnQ1/NtrPZrk/g+IhEZ2KAu3JE1Ml2Nztjn0lxB9M1ZgbPVIEtl2PMVJz71vMOFekTmhQBjgs=
+	t=1779122693; cv=none; b=Yn1VErfuAGEx5Of3qlGml9TfDDIBESoiUfDCiTd/P+aT1MRmlpJ/xa9Rw70dTbk28pV0Q5qpD/KejWfk4EpTP1SmQZvQGAL/2e6UHmkpPZYj5vaECmNYCfHgmppFgvY5JWwmfTHt5Vxu7XCH85vk/YWEoVnMToXyuoM5NvV68lI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1778945003; c=relaxed/simple;
-	bh=AMPt2Opsx1Qcvut9w/XuBiufSBpKYV1Bw/QS6GomWkY=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=MVw3cZ+XG70blGMCeyIWW34S71v2fBQAOlblvv/pAMyf1NfGBzam7JNoCNr5SBvaouF+kEc3FREn3rtWc3SCNlD3KySHJZRD5q454X2LXGI+ZPqwxiFgvK0UtVugQHwPC5qOiNXpkDdfse9bFpRosAvm0peQ798wLTH47LAxIos=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gmx.us; spf=pass smtp.mailfrom=gmx.us; dkim=pass (2048-bit key) header.d=gmx.us header.i=len.bao@gmx.us header.b=VizOfTUJ; arc=none smtp.client-ip=212.227.17.20
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gmx.us
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmx.us
+	s=arc-20240116; t=1779122693; c=relaxed/simple;
+	bh=cq2a7uQ8jpApJSDrbP3reomZGBn5KZ1p0V/+4eYXqWA=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=ZSKhe4AG0MV0Rfs65Uz4v9PpWI+5uDRcEfAqqTzHExBowMzUL5giGCJ7+eA3iPuIY1/rP1NaeSxXM2GTbuY7LsJojl8SS8UFZyDmTTPMBP8Yh3j+FA3mD8t+BJtYXGMFbFkKmawcNWodTwvPfAdYW0fZp++qe8PTDwlJhfb0FWQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=PZGNEhYz; arc=none smtp.client-ip=74.125.82.180
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmx.us header.i=len.bao@gmx.us header.b="VizOfTUJ"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmx.us;
-	s=s31663417; t=1778944999; x=1779549799; i=len.bao@gmx.us;
-	bh=OlDVaQiVAv4LonFHoh8IBv9FleSYpWSLLMGDOXEebZk=;
-	h=X-UI-Sender-Class:From:To:Cc:Subject:Date:Message-ID:
-	 MIME-Version:Content-Transfer-Encoding:cc:
-	 content-transfer-encoding:content-type:date:from:message-id:
-	 mime-version:reply-to:subject:to;
-	b=VizOfTUJaAIul7j0ZUo7lXeFKNgdQYLOG1/+4noyIPgbGY5zJyuTSkKByggrkR67
-	 59G91CYcg90BWvjfa9Y5TAhVQqbBc9Vg41uFX2+sN1D/g3GNIUf/n1mEhDP6ZK2cF
-	 BLbBZJ4o4TO6PBU5EHqA38woj5hDbTLE71wqFryT+hkaD+PD9I9Z37EwsGYc7avB/
-	 9DpdCFeq6GIL6ydWQ6cfg9LbK26WgmckPkEzSci7mdrDncGRdTe6EbC2AlIxDUkDA
-	 fmu5OshKf6zUxXAPc83KcAsx/gRIo8A4jwe5MfmcMKIlkmScnnLb4wbmOaomPRiYK
-	 sOQ8EA3eTkS8jldwJQ==
-X-UI-Sender-Class: 724b4f7f-cbec-4199-ad4e-598c01a50d3a
-Received: from client.hidden.invalid by mail.gmx.net (mrgmx105
- [212.227.17.174]) with ESMTPSA (Nemesis) id 1MRTNF-1wljWs07gD-00TeDX; Sat, 16
- May 2026 17:23:19 +0200
-From: Len Bao <len.bao@gmx.us>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="PZGNEhYz"
+Received: by mail-dy1-f180.google.com with SMTP id 5a478bee46e88-2c15849aa2cso2595448eec.0
+        for <keyrings@vger.kernel.org>; Mon, 18 May 2026 09:44:51 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1779122691; x=1779727491; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to;
+        bh=CFll4KsJtYpY+ISlE5pnvUV/L033WJ6tSQssCbb7nlE=;
+        b=PZGNEhYzlKD0oKB7huLCcVmzcVhmrRiEoqhLIJH0E0JWm9J19kB52OZM990S/yAhZl
+         TZunz/evWxacWy0bGU3Emk5EqrdJ6t0m2iGrEJX+Viovs0WFnjnSpwnMoVI2+xI1T4I+
+         Zr8EHs5n3vIjfm6XMWrwWbfsOkQDATs78NyLga8wHTEXyXmTH4qKR2YjmT8w2LwpOsxj
+         53NhVIYZlKytXIeNRvsPPTs74xM20M+ZiJXkuI6suGhRReL6eTJynZzACXQWmWZwGl/G
+         LuUy4cvEp/SvZg8ume4FUY0IiuyjErxiul0FKv3Fd8QJIDv/biOIzEp7MlBmbadBYKHb
+         L2Gw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1779122691; x=1779727491;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=CFll4KsJtYpY+ISlE5pnvUV/L033WJ6tSQssCbb7nlE=;
+        b=ZCcj/SbRxALk7T3rJkWG+DxgcgfJ7CQSKrmcxiZj9j2rR/1Uu0OIpxdWI9LPiz0x3a
+         XPiaf8qZDjoUQeWjJdjonFdadOfBqI6R/m3FsZA+P6lua+Fd+ekfpo7w32nOoFnr6AcC
+         Ub1hhCfX1vYeuEWzW59goZPXLY2V4ad42sgTWJ42HRKyDPm5U9hYI6Hua+ac7d0fB1U5
+         LOTlgNz/jpvn/quZHKloSMi3QvkGhyHs4rzNdi8fYZAqJ/f1x1tqQ9L5aGGmENwmHJwX
+         uktpGXaTETJRSINdkdNRgMherZkY1UIzzO4yiYn5nh6ZE/j2RT+ckwYr5Gkci643pTod
+         +QEA==
+X-Gm-Message-State: AOJu0YzRRWT2eUyeQXo57dES2qR5q8M8H0qioUBAsYd3VmepzIpXQiCu
+	trStwraWyTIqbVF4CM7hFQC3E3UVgoMhCnf37Ol12dIo6UE3A0JN9qFsyhkMeh6bmK8=
+X-Gm-Gg: Acq92OGkfL0qnTnUPRI/PigpxiQx5ZYgswSca09lBNW0EUwOA9gAHNwGc5wu7K61hQt
+	mdAGUonwMC7/BuvXdak2rviFl70dsRnKiI8r6nNh8c1BwhiUQ9upi4v9RX6sh25yua4SE2j/MGv
+	Eoqf8fOsfwnWmoc24GNo+EsEL/i9pSVEZ9asY0R2CxR6xZbyEbDQtcdp5EisfvslG+CC/cx8p6t
+	Vbap9ZTlAJGPODutlcGloAPEQ1AdV6E3/Pq8t0uIoI1zaeaBJ9djJmmZdNOfHF6NVr8BC8GqsQr
+	7y+WiCFM84Q0Bp0seh5M6h8lidHDiLrsm0rROFJSZcpojhkvpA0Ia9cuyqE8JYy5LLeWgNsqXf8
+	AHwY7TduS3iFJYJ/J1HJg4qXs8Lpn99Ap7ehABDRpeqspnp+0BV6MQWVKtlzoDwosRJlYjyc5uK
+	KgTbrVYGT7yT5HSmJB/tpwChr2KQvn96OdICAl98/wb2MhhjYZ
+X-Received: by 2002:a05:7301:6884:b0:2ea:5057:a2f9 with SMTP id 5a478bee46e88-3039867f58bmr6060520eec.16.1779122690693;
+        Mon, 18 May 2026 09:44:50 -0700 (PDT)
+Received: from localhost.localdomain ([148.135.103.3])
+        by smtp.gmail.com with ESMTPSA id 5a478bee46e88-302944ffdf0sm14812937eec.8.2026.05.18.09.44.48
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 18 May 2026 09:44:50 -0700 (PDT)
+From: Shaomin Chen <eeesssooo020@gmail.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>,
 	Jarkko Sakkinen <jarkko@kernel.org>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>
-Cc: Len Bao <len.bao@gmx.us>,
-	linux-integrity@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: [PATCH] keys/trusted_keys: mark 'migratable' as __ro_after_init
-Date: Sat, 16 May 2026 15:22:47 +0000
-Message-ID: <20260516152249.41851-1-len.bao@gmx.us>
-X-Mailer: git-send-email 2.43.0
+	Shaomin Chen <eeesssooo020@gmail.com>
+Subject: [PATCH keyutils] dns: Limit AFSDB/SRV records to MAX_VLS
+Date: Tue, 19 May 2026 00:44:35 +0800
+Message-ID: <20260518164435.3875488-1-eeesssooo020@gmail.com>
+X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-X-Provags-ID: V03:K1:FQzpIx/Y3nw5KpiKdweU5V3vM0sz7Bh+mQvUvGBIXRwjpK7d1Dp
- ldWiavXKbZ/LMk/IvgzMCCairrw1bjb0FsPaaZrgHMNCintbvKp/RU8/AUMPxhPGnMmDlTy
- vK/85eaKPRv/aXgtotMBR8HCv2z2gYmOLQmAAHw69c38VDD2etiLJo9FT1WS0/tNifcmIst
- xd09i1LbC22d03s/Uugjw==
-X-Spam-Flag: NO
-UI-OutboundReport: notjunk:1;M01:P0:LQ1Ab4yqilY=;YVggcY4DOfftjAS2HfeFc02B3rZ
- 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
- hIvSwe7X2HTSGSA==
+Content-Transfer-Encoding: 8bit
 
-The 'migratable' variable is initialized only during the init phase
-in the 'init_trusted' function and never changed. So, mark it as
-__ro_after_init.
+afsdb_hosts_to_addrs() and srv_hosts_to_addrs() store server names in
+vllist[MAX_VLS], but iterate over all DNS answers without checking whether
+vlsnum has reached MAX_VLS. A response with more than MAX_VLS usable records
+can therefore write past the end of the array.
 
-Signed-off-by: Len Bao <len.bao@gmx.us>
-=2D--
- security/keys/trusted-keys/trusted_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ignore additional records once MAX_VLS entries have been collected.
 
-diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/tru=
-sted-keys/trusted_core.c
-index 0b142d941..433579365 100644
-=2D-- a/security/keys/trusted-keys/trusted_core.c
-+++ b/security/keys/trusted-keys/trusted_core.c
-@@ -59,7 +59,7 @@ DEFINE_STATIC_CALL_NULL(trusted_key_unseal,
- DEFINE_STATIC_CALL_NULL(trusted_key_get_random,
- 			*trusted_key_sources[0].ops->get_random);
- static void (*trusted_key_exit)(void);
--static unsigned char migratable;
-+static unsigned char migratable __ro_after_init;
-=20
- enum {
- 	Opt_err,
-=2D-=20
-2.43.0
+Signed-off-by: Shaomin Chen <eeesssooo020@gmail.com>
+---
+ dns.afsdb.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/dns.afsdb.c b/dns.afsdb.c
+index 986c0f3..983e7cd 100644
+--- a/dns.afsdb.c
++++ b/dns.afsdb.c
+@@ -61,6 +61,11 @@ static void afsdb_hosts_to_addrs(ns_msg handle, ns_sect section)
+ 
+ 		/* We're only interested in AFSDB records */
+ 		if (ns_rr_type(rr) == ns_t_afsdb) {
++			if (vlsnum >= MAX_VLS) {
++				debug("Too many AFSDB records, ignoring extra record");
++				continue;
++			}
++
+ 			vllist[vlsnum] = malloc(MAXDNAME);
+ 			if (!vllist[vlsnum])
+ 				error("Out of memory");
+@@ -141,6 +146,11 @@ static void srv_hosts_to_addrs(ns_msg handle, ns_sect section)
+ 		}
+ 
+ 		if (ns_rr_type(rr) == ns_t_srv) {
++			if (vlsnum >= MAX_VLS) {
++				debug("Too many SRV records, ignoring extra record");
++				continue;
++			}
++
+ 			vllist[vlsnum] = malloc(MAXDNAME);
+ 			if (!vllist[vlsnum])
+ 				error("Out of memory");
+-- 
+2.47.3
 
