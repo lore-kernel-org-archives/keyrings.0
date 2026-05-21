@@ -1,43 +1,42 @@
-Received: from foss.arm.com (foss.arm.com [217.140.110.172])
-	by smtp.subspace.kernel.org (Postfix) with ESMTP id D90ED26B756;
-	Wed, 20 May 2026 16:02:36 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=217.140.110.172
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+	(No client certificate requested)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 78FE03A05F5;
+	Thu, 21 May 2026 23:52:09 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779292958; cv=none; b=O/rmhA40cpqFh7fFiYr1a2hon8hpqjfh8IT+k2ZgtjQOwVz/kzY7tZt6+KTSV5DNY3UINtszFKa7lU0KrvbdcZl82NWOk9x3ZcdqV4uWpqqCzqfAHxJtSwcAmo2ODU3OBejT+S1+qkBX9jX6WtEGbZBZi9TnWLzLQgCBMDyhw8M=
+	t=1779407536; cv=none; b=t2RhPII0pAl0/GLgOV3nmdeu/bZJkzn8gTONe5e2IzrVhSXXT21sfYL9G05aCajr+BwQ6ozeOxifrT9Mf4LjjASJAHGCOmjpyOwQlzcU7eEcn8EI1dDsfJVNGvzYr5lRZF6fHcCOAs9n9B/GBvrnStt+KI+vgrPf4teusDb3IcI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779292958; c=relaxed/simple;
-	bh=AtY0GJJwVfndUQFWPnJqYcZDVgByNpAotUryadSop/g=;
+	s=arc-20240116; t=1779407536; c=relaxed/simple;
+	bh=tz3ezQBVDltP1kB3kwmcDAkU1eDO8kgyzTCLUyyi9c4=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=Eh1wI6O79p+YC1xQySCzg1sSjDXPYYF/eOLr3+GdY9MS1QWXSANbZ8VXF7ep/4qLjAt9/DpZodVJVrMU21+Q14h1cdsjST9PSFvcoN2/Z/UnIUQmaXuYoZjAQWABTN+VBelsCytqiJmBOgDhHlAAwRm4zjYvLAFe1ovRgm1jErU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=arm.com; spf=pass smtp.mailfrom=arm.com; dkim=pass (1024-bit key) header.d=arm.com header.i=@arm.com header.b=lCrLgjNF; arc=none smtp.client-ip=217.140.110.172
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=arm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=arm.com
+	 Content-Type:Content-Disposition:In-Reply-To; b=PPFhGmpYoqMbcgM7oq0ZYL4WMXYPUNKNjyap2c1ORSjK484AHppUMBL6It7cyQ6xGLINT1UlziO1ZFmGX9UyR+oy0z8YnPaaqcG4mP5Jjq4GJ7S7vH2CUevIwHfhM2kQLpPkGYyxh3fFGGDO5aTphJD7KDY42tQMSOZ644wpcIw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=GjUP4IWN; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=arm.com header.i=@arm.com header.b="lCrLgjNF"
-Received: from usa-sjc-imap-foss1.foss.arm.com (unknown [10.121.207.14])
-	by usa-sjc-mx-foss1.foss.arm.com (Postfix) with ESMTP id 1953D2936;
-	Wed, 20 May 2026 09:02:31 -0700 (PDT)
-Received: from e129823.arm.com (e129823.arm.com [10.1.197.6])
-	by usa-sjc-imap-foss1.foss.arm.com (Postfix) with ESMTPSA id 033F93F632;
-	Wed, 20 May 2026 09:02:33 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=arm.com; s=foss;
-	t=1779292956; bh=AtY0GJJwVfndUQFWPnJqYcZDVgByNpAotUryadSop/g=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=lCrLgjNFsVIs1fRYCpAUnl8XxeNQXzyc8rnLssz6yIk4U30W1ro3/TuHxyy3oJMtB
-	 tTRkTAOvYpza3I4+1XUpjWsYCGQ7h+lO79ul/gUGF7w6rBUMtwkggJQ5qSBLAyH7Mi
-	 4B4R28hvGS9n686RbfBauLTcpEo6otUkNWlbPRe4=
-Date: Wed, 20 May 2026 17:02:31 +0100
-From: Yeoreum Yun <yeoreum.yun@arm.com>
-To: linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org,
-	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: zohar@linux.ibm.com, roberto.sassu@huawei.com, ardb@kernel.org,
-	jarkko@kernel.org, dhowells@redhat.com, dwmw2@infradead.org,
-	serge@hallyn.com, jmorris@namei.org, paul@paul-moore.com,
-	sami.mujawar@arm.com, pierre.gondois@arm.com
-Subject: Re: [QUESTION] move load_uefi_certs() and keyring initcall to
- earlier initcall
-Message-ID: <ag3bF9HbBTVQD/oy@e129823.arm.com>
-References: <agXP3ZyE18pAiy77@e129823.arm.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="GjUP4IWN"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 0A4E21F000E9;
+	Thu, 21 May 2026 23:52:06 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1779407527;
+	bh=OjHPZWUTTpJlkidgtJaarjkG4HDrR93m+TvK13ZJYK8=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=GjUP4IWNakKuqZS7d+dA+z8T73VsVl4Ozs13Z9aedz0XHp1k47ATPWsEkdI2btEed
+	 ERfYKSpl/SC7g43BJM1zurLObDTvIPDKzG3vnBfXHjPgiSWNeTXAuvwkph7/XRbi2e
+	 0aalYtcRoKeIKhKLYpmhQ9XPpz+S+6OtIq1IXUNHoYpRvK3LYKw+qDP4J2UOyvzSZa
+	 3r/AGHVTn4cKh6+AcStMkPGAR/QrnLdR2cyLf2kud8FITjCxi4g/FMqZjs7AxDOmct
+	 sZeAxkYM1EJ+uGx+fRi+nm3myIK+sJ4T39utJ38sHjPW5r+7kzCoUsjA35NyTmnxDn
+	 MYF6gUWYaKD0w==
+Date: Fri, 22 May 2026 02:52:03 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Shaomin Chen <eeesssooo020@gmail.com>
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [bug report] keys: request_key_auth payload use-after-free in
+ keyctl_instantiate_key_common()
+Message-ID: <ag-ao2V-mcUqjx53@kernel.org>
+References: <20260519144403.436694-1-eeesssooo020@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -46,71 +45,72 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <agXP3ZyE18pAiy77@e129823.arm.com>
+In-Reply-To: <20260519144403.436694-1-eeesssooo020@gmail.com>
 
-> Hi all,
+On Tue, May 19, 2026 at 10:44:03PM +0800, Shaomin Chen wrote:
+> Hi,
 > 
-> Recently, I've found possible module load failure via
-> request_module() in device_initcall() for absent of certificate loaded by
-> load_uefi_certs() in below exemplary case:
+> keyctl_instantiate_key_common() can use a stale request_key_auth payload after
+> the current request-key authorisation key has been revoked.
 > 
->   - MokListTrustedRT is created.
->   - one module is signed with trust-chain with one cert of MokListRT and
->     contained in initramfs.
->   - loading the above module in device_initcall() get failure since
->     relavent certs didn't loaded yet -- load_uefi_certs() is called at 
->     late_inicall()
+> The relevant code pattern is:
 > 
-> I don't think calling request_module() in the initcall is not a problem
-> if it's after root_initcall (from device_initcall) where initrd
-> population is requested when I see the commit e7cb072eb988
-> ("init/initramfs.c: do unpacking asynchronously").
+> 	rka = instkey->payload.data[0];
+> 	...
+> 	copy_from_iter_full(payload, plen, from);   /* can fault and sleep */
+> 	...
+> 	get_instantiation_keyring(ringid, rka, &dest_keyring);
+> 	key_instantiate_and_link(rka->target_key, payload, plen,
+> 				 dest_keyring, instkey);
 > 
-> IOW, to address this -- signature verification failure for late loading
-> of certificates, It seems to movce load_uefi_certs() or other relevant
-> init functions requires to move to "rootfs_initcall()".
+> keyctl_instantiate_key_common() does not hold authkey->sem, an RCU read-side
+> critical section, or a reference to the request_key_auth payload across the
+> sleeping copy and later rka dereferences.
 > 
-> Unfortunately, Moving the load_uefi_certs() doesn't seems easy because
-> keyring infrastructure is initailised at device_initcall() via
-> relevant init functions.
+> One race sequence is:
 > 
-> So, I would like to introduce two initcalls macro which using pre-exist
-> initcall macro to address above situation --
+> 	Task A: request-key helper child        Task B: original request_key path
+> 	-------------------------------        ---------------------------------
+> 	assume request-key authority
+> 	enter KEYCTL_INSTANTIATE_IOV
+> 	rka = instkey->payload.data[0]
+> 	block in copy_from_iter_full()
+> 	                                      helper parent instantiates target key
+> 	                                      helper returns to kernel
+> 	                                      complete_request_key(authkey, 0)
+> 	                                      key_revoke(authkey)
+> 	                                      request_key_auth_revoke(authkey)
+> 	                                      rcu_assign_keypointer(authkey, NULL)
+> 	                                      call_rcu(&rka->rcu, ...)
+> 	                                      request_key_auth_rcu_disposal()
+> 	                                      free_request_key_auth(rka)
+> 	resume from copy_from_iter_full()
+> 	get_instantiation_keyring(..., rka, ...)
+> 	key_instantiate_and_link(rka->target_key, ...)
 > 
->   - keyring_initcall() (which is wrapper of subsys_initcall()).
->   - cert_initcall() (which is wrapper of rootfs_initcall()).
+> I reproduced this on a current upstream v7.1-rc3 based tree,
+> HEAD ab5fce87a778c, with KASAN enabled:
 > 
-> so that for init functions which initalise keyring infrastructure,
-> for example, the function where calls keyring_alloc() like:
->    - system_trusted_keyring_init()
->    - blacklist_init()
->    - machine_keyring_init()
->    - platform_keyring_init()
->    - ima_mok_init()
+> 	BUG: KASAN: slab-use-after-free in keyctl_instantiate_key_common+0x1dc/0x2a0
+> 	Read of size 8
+> 	Allocated by task:
+> 	  request_key_auth_new+0xe0/0x4d0
+> 	Freed by task:
+> 	  key_revoke+0x62/0xc0
+> 	  call_sbin_request_key+0x6cb/0x740
 > 
-> to be replaced from device_initcall() to subsys_initcall() with keyring_initcall()
+> The reproducer uses a request-key helper that forks a second process with the
+> request-key authority.  The second process enters KEYCTL_INSTANTIATE_IOV and
+> blocks in copy_from_iter_full() on a user fault after rka has been loaded.  The
+> original helper then instantiates the target key and returns, which revokes the
+> auth key and queues the request_key_auth payload for RCU freeing.  When the
+> blocked instantiate path resumes, it dereferences the stale rka pointer.
 > 
-> and for functions which load certificates or late init relevant keyring
-> like:
->    - load_system_certificate_list()
->    - load_uefi_certs()
->    - load_powerpc_certs()
->    - load_ipl_certs()
->    - big_key_init()
->    - init_root_keyring()
->    - init_trusted()
->    - init_encrypted()
+> I can provide the reproducer and a candidate patch.
 > 
-> to be called from late_initcall() to rootfs_initcall() with cert_initcall().
-> 
-> Am I missing something, or is there perhaps a better idea?
->
+> Regards,
+> Shaomin Chen
 
-I'd appreciate it if someone could let me know whether I might be
-missing something.
+Please, just send them and we go from there. On surface looks legit.
 
-Thanks!
-
--- 
-Sincerely,
-Yeoreum Yun
+BR, Jarkko
