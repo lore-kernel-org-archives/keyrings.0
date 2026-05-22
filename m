@@ -1,1405 +1,2134 @@
-Received: from mgamail.intel.com (mgamail.intel.com [192.198.163.7])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 911451E49F;
-	Fri, 22 May 2026 00:34:02 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=192.198.163.7
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A03C3246788;
+	Fri, 22 May 2026 01:36:04 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779410048; cv=none; b=lV8Gc4/WXs7SLsoCFEkZse4mJFp0z3VhYoSf+AUtsP5rJepwDXiyZA8t/Xyai3iELF7WhVovwoZ6pFRgK304ksN85XhMibZJug80++JSYxIwvDWxt+R0Mybtb+9z2y7YDxm9OWhFMQ+JhBEKw6ourz7/BzkdR9HWVjlmoBh8Ino=
+	t=1779413767; cv=none; b=hzGENx8twWIo7xcnakgVZRngMikE5xjmM/kjjfO5/6+IbX2YhTeJcm47rVyRsOgmR1y/jHngWjKkk1phgjdb2NFks5k0Qd45fsAejXLNfuJDvrTthC+cgSxltoogKopRW38IfaAwDPJobTmsS39RgH3HbaTXgbkRUx0aBa5eJoo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779410048; c=relaxed/simple;
-	bh=r1xUBXluIgV8O6LXapirGIrJa02+P2xK9qYwBVmvKFw=;
-	h=Date:From:To:Cc:Subject:Message-ID; b=WKd+u7vvv9tFUrzt7Z5et+sND7j3Lb1UADoH4oLinphXZ9X35yqPT+2m0xDt4bk+zUv72UCSNy18lnHBOS5X135KboEPvsfXuDtUdEdWCXmEy/qYUk5Ej2eiQlHHlbyqPWVdqpJCdIIW/KR8UvLx5EuvqOECmArp9k+y885DMsI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=intel.com; spf=pass smtp.mailfrom=intel.com; dkim=pass (2048-bit key) header.d=intel.com header.i=@intel.com header.b=jp54G9KF; arc=none smtp.client-ip=192.198.163.7
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=intel.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=intel.com
+	s=arc-20240116; t=1779413767; c=relaxed/simple;
+	bh=hDwpwtzo5MfCSN/Eqgg0lrKuOap9YKgbkUi4jCSiVYo=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=amdex0jOduRoaY/bkN9EPb8tSvQMZH4T/J0k5UTVS2c+p14oTyLT8rKBOnZVXbMlbrUBgW7DV6v+Ap+MTowiC/viJXyTXBCeNqT8x9s2hah0ezxAkSSy98BQ3fv4KuFrZ/5wQcSB1hRXiU+QnRxxFxouYtbVFQVMkMbVI/+7v8w=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Y+P7yTs+; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=intel.com header.i=@intel.com header.b="jp54G9KF"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
-  t=1779410043; x=1810946043;
-  h=date:from:to:cc:subject:message-id;
-  bh=r1xUBXluIgV8O6LXapirGIrJa02+P2xK9qYwBVmvKFw=;
-  b=jp54G9KFZDl+aHfokTqUmn6ATopWT36cmWNfUYoY254DlLFK9CTgtSVv
-   NmCMPHGrs3XRddAK6ag69EsOqwBY3qnLaoNVNcmFekRhTadbYxMkBJ/iH
-   9oJkEKovMrOPVCY55LBUECF6RcsMVoqfZmYtihbpjzCn+fVTwbbK4uPwo
-   LMnC6ktpi8NnAgFrrplZpIagPAV6A7Fi5OaoDKbPI//x1aFJx9oQHhoVo
-   LKIZurMkJSD/VeD8sceEuGYah+sEbnIx8iG7KHt7YUmCgVJjGufl05nkX
-   TfTcZS8x7w4Y62SFXu+bTbACroaJMJUaq/b1F7gBxP7RC3xTJQyKtqUkd
-   Q==;
-X-CSE-ConnectionGUID: ktPxY8oCSNKZlBfKVxvjAQ==
-X-CSE-MsgGUID: TcQyefAATFueS6VBKQ6BBw==
-X-IronPort-AV: E=McAfee;i="6800,10657,11793"; a="105803378"
-X-IronPort-AV: E=Sophos;i="6.24,161,1774335600"; 
-   d="scan'208";a="105803378"
-Received: from fmviesa005.fm.intel.com ([10.60.135.145])
-  by fmvoesa101.fm.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 21 May 2026 17:34:01 -0700
-X-CSE-ConnectionGUID: +fORRaL0TbuBc92UEGQa1w==
-X-CSE-MsgGUID: JtSUS+S4TC6ZEi3SMqvMoQ==
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="6.24,161,1774335600"; 
-   d="scan'208";a="245772703"
-Received: from lkp-server01.sh.intel.com (HELO fdb68b0ce653) ([10.239.97.150])
-  by fmviesa005.fm.intel.com with ESMTP; 21 May 2026 17:33:56 -0700
-Received: from kbuild by fdb68b0ce653 with local (Exim 4.98.2)
-	(envelope-from <lkp@intel.com>)
-	id 1wQDpp-000000001TN-1FOt;
-	Fri, 22 May 2026 00:33:53 +0000
-Date: Fri, 22 May 2026 08:33:24 +0800
-From: kernel test robot <lkp@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
- amd-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
- kexec@lists.infradead.org, keyrings@vger.kernel.org,
- linux-aio@kvack.org, linux-block@vger.kernel.org,
- linux-fsdevel@vger.kernel.org, linux-gpio@vger.kernel.org,
- linux-hexagon@vger.kernel.org, linux-modules@vger.kernel.org,
- linux-nfs@vger.kernel.org, linux-perf-users@vger.kernel.org,
- linux-riscv@lists.infradead.org, linux-security-module@vger.kernel.org,
- linux-serial@vger.kernel.org, linux-um@lists.infradead.org,
- linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
- sparclinux@vger.kernel.org, Mark Brown <broonie@kernel.org>
-Subject: [linux-next:master] BUILD REGRESSION
- 550604d6c9b9efc8d068aff94dc301694a7afdee
-Message-ID: <202605220843.g8Ikcqqz-lkp@intel.com>
-User-Agent: s-nail v14.9.25
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Y+P7yTs+"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5D2D61F000E9;
+	Fri, 22 May 2026 01:36:03 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1779413764;
+	bh=lIIA55+17S5FCFhm4Tb5s42FyGFvJECGTANDeiFZpLU=;
+	h=From:To:Cc:Subject:Date;
+	b=Y+P7yTs+kvVFLNEhfzGuouzceMerJTPCQzUY0n+a/ZpxrziKPW+PntsGcTdxbzKra
+	 JMTfdzduyD4mz2+iVqNcOvrMJWn/Cl9vDJh3SHErfemMm5p5jEG03TY52JcBRGKWHu
+	 xEt1+kb/QFcbiwMMGBerRhUoIW+isXt2GGOv3p1ur5o0STj4z1zQjVQoLw8XCZw7JB
+	 k81DVjHt3Ah4PpfkEowkzo/IIyKnXLP78rjhYNd3tjYkHZHKKonOQMrrTQJAE7mDYn
+	 UM4yEoN7i9b6WV27GSAzlaKw/JkonT2nrw+uD4fAOeWdGNcLZ29SVKVD2/ed9qCik7
+	 kJf1pnmgWmDlQ==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: linux-integrity@vger.kernel.org
+Cc: Jarkko Sakkinen <jarkko.sakkinen@opinsys.com>,
+	Arun Menon <armenon@redhat.com>,
+	"Daniel P. Smith" <dpsmith@apertussolutions.com>,
+	Alec Brown <alec.r.brown@oracle.com>,
+	Ross Philipson <ross.philipson@gmail.com>,
+	Stefan Berger <stefanb@linux.ibm.com>,
+	Peter Huewe <peterhuewe@gmx.de>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Jason Gunthorpe <jgg@ziepe.ca>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	linux-kernel@vger.kernel.org,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org
+Subject: [PATCH] tpm-buf: memory-safe allocations
+Date: Fri, 22 May 2026 04:35:51 +0300
+Message-ID: <20260522013555.1063716-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-tree/branch: https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-branch HEAD: 550604d6c9b9efc8d068aff94dc301694a7afdee  Add linux-next specific files for 20260521
+From: Jarkko Sakkinen <jarkko.sakkinen@opinsys.com>
 
-Error/Warning (recently discovered and may have been fixed):
+Decouple kzalloc from buffer creation, so that a managed allocation can be
+used:
 
-    https://lore.kernel.org/oe-kbuild-all/202605212104.SAIMqegX-lkp@intel.com
-    https://lore.kernel.org/oe-kbuild-all/202605220247.dQAHslyv-lkp@intel.com
-    https://lore.kernel.org/oe-kbuild-all/202605220312.Pu7UO05u-lkp@intel.com
-    https://lore.kernel.org/oe-kbuild-all/202605220631.ugDr2VPb-lkp@intel.com
+	struct tpm_buf *buf __free(kfree) buf = kzalloc(TPM_BUFSIZE,
+						GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
 
-    /usr/bin/ld: sound/soc/codecs/es9356.o:(.rodata+0x2c30): undefined reference to `sdca_asoc_q78_get_volsw'
-    /usr/bin/ld: sound/soc/codecs/es9356.o:(.rodata+0x2c38): undefined reference to `sdca_asoc_q78_put_volsw'
-    arch/hexagon/kernel/syscalltab.c:19:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/powerpc/kernel/pci_64.c:226:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/powerpc/kernel/rtas.c:1850:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/powerpc/kernel/signal_32.c:990:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/powerpc/kernel/signal_64.c:657:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/powerpc/kernel/sys_ppc32.c:70:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/powerpc/kernel/syscalls.c:52:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/riscv/kernel/sys_hwprobe.c:606:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/riscv/kernel/sys_riscv.c:43:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/sparc/kernel/sys_sparc32.c:54:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/sparc/kernel/sys_sparc_64.c:351:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    arch/x86/um/syscalls_64.c:43:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    block/ioprio.c:65:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    drivers/gpu/drm/amd/amdgpu/../amdkfd/kfd_crat.c:1830:26: error: cannot take the address of an rvalue of type 'int'
-    drivers/gpu/drm/amd/amdgpu/../amdkfd/kfd_crat.c:1830:27: error: call to undeclared function 'cpu_data'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
-    drivers/gpu/drm/amd/amdgpu/../amdkfd/kfd_crat.c:1833:23: error: use of undeclared identifier 'X86_VENDOR_AMD'
-    drivers/gpu/drm/amd/amdgpu/../amdkfd/kfd_crat.c:1833:7: error: incomplete definition of type 'struct cpuinfo_x86'
-    drivers/gpu/drm/amd/amdgpu/../amdkfd/kfd_topology.c:2353:41: error: member reference base type 'int' is not a structure or union
-    drivers/gpu/drm/amd/amdgpu/../amdkfd/kfd_topology.c:2353:9: error: call to undeclared function 'cpu_data'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
-    drivers/gpu/drm/amd/amdgpu/jpeg_v2_5.c:152:68: warning: '%d' directive output may be truncated writing between 1 and 11 bytes into a region of size 7 [-Wformat-truncation=]
-    drivers/gpu/drm/scheduler/tests/tests_scheduler.c:675:10: error: initializer element is not a compile-time constant
-    drivers/pinctrl/pinctrl-generic.c:130:5: error: redefinition of 'pinctrl_generic_pins_function_dt_node_to_map'
-    drivers/pinctrl/pinctrl-generic.c:20:5: error: conflicting types for 'pinctrl_generic_to_map'; have 'int(struct pinctrl_dev *, struct device_node *, struct device_node *, struct pinctrl_map **, unsigned int *, unsigned int *, const char **, unsigned int,  const char **, unsigned int *, unsigned int)'
-    fs/aio.c:1436:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/d_path.c:413:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/eventfd.c:414:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/eventpoll.c:2200:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/eventpoll.c:2483:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/exec.c:1924:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/exec.c:1925:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/fcntl.c:587:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/fhandle.c:129:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/file.c:818:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/file.c:819:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/file_attr.c:374:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/fsopen.c:120:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/ioctl.c:583:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/locks.c:2214:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/locks.c:2280:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/namei.c:5186:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/namei.c:5197:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/namespace.c:2068:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/namespace.c:2073:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/notify/inotify/inotify_user.c:720:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/open.c:152:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/pipe.c:1054:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/pipe.c:1055:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/read_write.c:412:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/readdir.c:215:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/readdir.c:304:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/select.c:722:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/select.c:733:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/signalfd.c:299:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/splice.c:1578:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/stat.c:420:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/stat.c:505:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/statfs.c:191:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/sync.c:148:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/timerfd.c:394:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/timerfd.c:424:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/utimes.c:142:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/xattr.c:732:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    fs/xattr.c:735:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    ipc/msg.c:315:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    ipc/sem.c:624:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    ipc/shm.c:847:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    ipc/shm.c:849:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/capability.c:137:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/events/core.c:13844:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/events/core.c:13853:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/exec_domain.c:38:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/exit.c:1082:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/exit.c:1112:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/fork.c:1785:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/fork.c:1808:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/futex/syscalls.c:28:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/groups.c:161:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/kcmp.c:135:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/kexec.c:242:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/module/main.c:804:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/nsproxy.c:569:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/nstree.c:763:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/pid.c:695:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/printk/printk.c:1853:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/ptrace.c:1388:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/ptrace.c:1415:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/reboot.c:728:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/rseq.c:547:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/sched/membarrier.c:634:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/sched/membarrier.c:636:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/sched/syscalls.c:132:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/seccomp.c:2126:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/signal.c:3319:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/sys.c:259:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/hrtimer.c:2381:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/hrtimer.c:2466:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/hrtimer.c:2487:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/itimer.c:113:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/posix-stubs.c:26:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/posix-timers.c:566:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/posix-timers.c:574:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/time.c:105:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/time.c:140:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/time/time.c:62:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    kernel/uid16.c:23:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    ld.lld: error: undefined symbol: sdca_asoc_q78_get_volsw
-    ld.lld: error: undefined symbol: sdca_asoc_q78_put_volsw
-    mm/fadvise.c:200:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/filemap.c:4713:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/filemap.c:4718:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/madvise.c:2013:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/madvise.c:2029:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/memfd.c:505:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/mincore.c:292:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/mlock.c:665:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/mmap.c:116:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/mprotect.c:985:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/mremap.c:2023:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/msync.c:32:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/oom_kill.c:1195:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/process_vm_access.c:292:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/readahead.c:736:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/readahead.c:760:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/swapfile.c:2903:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    mm/swapfile.c:3124:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    net/socket.c:1818:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    net/socket.c:1833:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    security/keys/compat.c:17:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    security/keys/keyctl.c:74:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    security/landlock/syscalls.c:203:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
-    security/lsm_syscalls.c:57:1: error: unknown warning group '-Wattribute-alias', ignored [-Werror,-Wunknown-warning-option]
+	tpm_buf_init(buf, TPM_BUFSIZE);
 
-Unverified Error/Warning (likely false positive, kindly check if interested):
+Alternatively, stack allocations are also possible:
 
-    Warning: block/blk-map.c:366 Excess function parameter 'op' description in 'bio_copy_kern'
-    csky-linux-ld: sound/soc/codecs/es9356.o:(.rodata+0x16c8): undefined reference to `sdca_asoc_q78_get_volsw'
-    csky-linux-ld: sound/soc/codecs/es9356.o:(.rodata+0x16cc): undefined reference to `sdca_asoc_q78_put_volsw'
-    drivers/android/binder_alloc.c:389:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/auxdisplay/panel.c:1508:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/base/regmap/regmap-debugfs.c:180:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/char/xillybus/xillybus_core.c:425:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/dma/qcom/hidma.c:389:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/gpu/drm/amd/amdgpu/dce_v10_0.c:2853:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/gpu/drm/nouveau/nvkm/subdev/acr/base.c:357:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/gpu/drm/nouveau/nvkm/subdev/iccsense/base.c:295:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/gpu/drm/udl/udl_main.c:260:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/gpu/drm/xe/xe_sched_job.c:162:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/greybus/es2.c:1428:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/hwmon/ibmpex.c:433:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/media/i2c/ds90ub960.c:4790:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/mtd/parsers/redboot.c:304:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/mtd/spi-nor/core.c:1645:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/net/ethernet/mellanox/mlx5/core/cmd.c:1508:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/scsi/aacraid/commsup.c:1928:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/scsi/aacraid/dpcsup.c:216:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/thunderbolt/stream.c:1388:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/tty/serial/max310x.c:1727:24: error: incompatible pointer types passing 'struct i2c_driver *' to parameter of type 'struct spi_driver *' [-Wincompatible-pointer-types]
-    drivers/tty/serial/max310x.c:1727:25: error: use of undeclared identifier 'max310x_spi_driver'; did you mean 'max310x_i2c_driver'?
-    drivers/tty/serial/max310x.c:1727:32: error: 'max310x_spi_driver' undeclared (first use in this function); did you mean 'max310x_i2c_driver'?
-    drivers/tty/serial/max310x.c:1745:25: error: 'max310x_spi_driver' undeclared (first use in this function); did you mean 'max310x_i2c_driver'?
-    drivers/tty/serial/max310x.c:1745:32: error: 'max310x_spi_driver' undeclared (first use in this function); did you mean 'max310x_i2c_driver'?
-    drivers/usb/host/xhci-mem.c:866:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/usb/misc/usbtest.c:1416:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    drivers/usb/serial/usb_wwan.c:501:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    fs/btrfs/file.c:3288:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    fs/btrfs/inode.c:8975:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    fs/isofs/inode.c:1267:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    fs/nilfs2/recovery.c:397:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    fs/xfs/scrub/bitmap.c:116:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    kernel/bpf/syscall.c:3797:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    kernel/events/core.c:12131:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    kernel/trace/ring_buffer.c:2348:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
-    ld.lld: error: call to __compiletime_assert_537 marked "dontcall-error": BUILD_BUG_ON failed: 21 - 1 != HWEIGHT32( (VALID_OPENAT2_FLAGS & ~(O_NONBLOCK | O_NDELAY)) | __FMODE_EXEC)
-    lib/raid/raid6/powerpc/altivec1.c:37:16: sparse: sparse: Trying to use reserved word 'signed' as identifier
-    lib/raid/raid6/powerpc/altivec1.c:37:16: sparse: sparse: two or more data types in declaration specifiers
-    lib/raid/raid6/powerpc/altivec2.c:37:16: sparse: sparse: Trying to use reserved word 'signed' as identifier
-    lib/raid/raid6/powerpc/altivec2.c:37:16: sparse: sparse: two or more data types in declaration specifiers
-    lib/raid/raid6/powerpc/altivec4.c:37:16: sparse: sparse: Trying to use reserved word 'signed' as identifier
-    lib/raid/raid6/powerpc/altivec4.c:37:16: sparse: sparse: two or more data types in declaration specifiers
-    lib/raid/raid6/powerpc/altivec8.c:37:16: sparse: sparse: Trying to use reserved word 'signed' as identifier
-    lib/raid/raid6/powerpc/altivec8.c:37:16: sparse: sparse: two or more data types in declaration specifiers
-    net/bluetooth/mgmt.c:4400:1: internal compiler error: in final_scan_insn_1, at final.cc:2813
+	u8 buf_data[512];
+	struct tpm_buf *buf = (struct tpm_buf *)buf_data;
+	tpm_buf_init(buf, sizeof(buf_data));
 
-Error/Warning ids grouped by kconfigs:
+This is achieved by embedding buffer's header inside the allocated blob,
+instead of having an outer wrapper.
 
-recent_errors
-|-- alpha-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- alpha-allyesconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- alpha-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- alpha-randconfig-r052-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arc-allmodconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arc-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arc-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm-allyesconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm-defconfig
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- block-ioprio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-aio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-d_path.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventpoll.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-exec.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fcntl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fhandle.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file_attr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fsopen.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-ioctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-locks.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namei.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namespace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-notify-inotify-inotify_user.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-open.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-pipe.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-read_write.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-readdir.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-select.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-signalfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-splice.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-stat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-statfs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-sync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-timerfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-utimes.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-xattr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-msg.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-sem.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-shm.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-capability.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-events-core.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exec_domain.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exit.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-fork.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-futex-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-groups.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-kcmp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-kexec.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-module-main.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nsproxy.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nstree.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-pid.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-printk-printk.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-ptrace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-reboot.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-rseq.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-membarrier.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-seccomp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-signal.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sys.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-hrtimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-itimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-posix-timers.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-time.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-uid16.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-fadvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-filemap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-madvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-memfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mincore.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mlock.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mmap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mprotect.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mremap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-msync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-oom_kill.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-process_vm_access.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-readahead.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-swapfile.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- net-socket.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- security-keys-keyctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- arm-randconfig-001-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- block-ioprio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- arm-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm-randconfig-004-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm-randconfig-r062-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- block-ioprio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-d_path.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventpoll.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-exec.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fcntl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file_attr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fsopen.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-ioctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namei.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namespace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-notify-inotify-inotify_user.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-open.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-pipe.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-read_write.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-readdir.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-select.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-signalfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-splice.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-stat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-statfs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-sync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-utimes.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-xattr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-msg.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-sem.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-shm.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-capability.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-events-core.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exec_domain.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exit.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-fork.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-futex-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-groups.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-module-main.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nsproxy.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nstree.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-pid.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-printk-printk.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-ptrace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-reboot.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-rseq.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-membarrier.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-signal.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sys.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-hrtimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-itimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-posix-timers.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-time.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-uid16.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-fadvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-filemap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-madvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-memfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mincore.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mlock.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mmap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mprotect.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mremap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-msync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-oom_kill.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-process_vm_access.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-readahead.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- net-socket.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- security-keys-keyctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- arm64-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm64-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm64-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm64-randconfig-003-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm64-randconfig-004
-|   |-- ld.lld:error:undefined-symbol:sdca_asoc_q78_get_volsw
-|   `-- ld.lld:error:undefined-symbol:sdca_asoc_q78_put_volsw
-|-- arm64-randconfig-004-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- arm64-randconfig-r072-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- csky-allmodconfig
-|   `-- drivers-thunderbolt-stream.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|-- csky-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- csky-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- csky-randconfig-001-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- drivers-base-regmap-regmap-debugfs.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-gpu-drm-nouveau-nvkm-subdev-acr-base.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-gpu-drm-nouveau-nvkm-subdev-iccsense-base.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-gpu-drm-udl-udl_main.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-gpu-drm-xe-xe_sched_job.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-greybus-es2.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-mtd-parsers-redboot.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-scsi-aacraid-commsup.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-scsi-aacraid-dpcsup.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-usb-host-xhci-mem.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-usb-misc-usbtest.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-usb-serial-usb_wwan.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- fs-btrfs-file.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- fs-btrfs-inode.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- fs-isofs-inode.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- fs-nilfs2-recovery.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   `-- fs-xfs-scrub-bitmap.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|-- csky-randconfig-002-20260521
-|   |-- csky-linux-ld:sound-soc-codecs-es9356.o:(.rodata):undefined-reference-to-sdca_asoc_q78_get_volsw
-|   |-- csky-linux-ld:sound-soc-codecs-es9356.o:(.rodata):undefined-reference-to-sdca_asoc_q78_put_volsw
-|   |-- drivers-android-binder_alloc.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-auxdisplay-panel.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-char-xillybus-xillybus_core.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-hwmon-ibmpex.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-media-i2c-ds90ub960.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-mtd-spi-nor-core.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- kernel-events-core.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   `-- kernel-trace-ring_buffer.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|-- csky-randconfig-r062-20260521
-|   |-- drivers-dma-qcom-hidma.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-gpu-drm-amd-amdgpu-dce_v10_0.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- drivers-net-ethernet-mellanox-mlx5-core-cmd.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   |-- kernel-bpf-syscall.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|   `-- net-bluetooth-mgmt.c:internal-compiler-error:in-final_scan_insn_1-at-final.cc
-|-- hexagon-allmodconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- hexagon-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- hexagon-defconfig
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- arch-hexagon-kernel-syscalltab.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- hexagon-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- hexagon-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-buildonly-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-buildonly-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-buildonly-randconfig-003
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-buildonly-randconfig-003-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-tty-serial-max31.c:error:use-of-undeclared-identifier-max31_spi_driver
-|-- i386-buildonly-randconfig-004
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-buildonly-randconfig-005-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-buildonly-randconfig-006-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-003-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-004
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-005
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-006-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-007
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-051-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-052-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-054-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-tty-serial-max31.c:error:max31_spi_driver-undeclared-(first-use-in-this-function)
-|-- i386-randconfig-062-20260522
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- i386-randconfig-063-20260522
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- loongarch-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- loongarch-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- loongarch-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- loongarch-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- m68k-allmodconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- m68k-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- m68k-allyesconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- m68k-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- microblaze-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- microblaze-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- microblaze-randconfig-r061-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- mips-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- mips-randconfig-r071-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- kernel-time-posix-stubs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- security-keys-keyctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- nios2-allmodconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- nios2-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- nios2-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- nios2-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- nios2-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- nios2-randconfig-r054-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- openrisc-allmodconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- openrisc-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- parisc-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- parisc-allyesconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- parisc-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- parisc-randconfig-r073-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- parisc64-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- powerpc-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- powerpc-randconfig-r063-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- powerpc-randconfig-r064-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- powerpc-sam440ep_defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- powerpc64-randconfig-r061-20260522
-|   |-- arch-powerpc-kernel-pci_64.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- arch-powerpc-kernel-rtas.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- arch-powerpc-kernel-signal_32.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- arch-powerpc-kernel-signal_64.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- arch-powerpc-kernel-sys_ppc32.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- arch-powerpc-kernel-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- powerpc64-randconfig-r131-20260521
-|   |-- lib-raid-raid6-powerpc-altivec1.c:sparse:sparse:Trying-to-use-reserved-word-signed-as-identifier
-|   |-- lib-raid-raid6-powerpc-altivec1.c:sparse:sparse:two-or-more-data-types-in-declaration-specifiers
-|   |-- lib-raid-raid6-powerpc-altivec2.c:sparse:sparse:Trying-to-use-reserved-word-signed-as-identifier
-|   |-- lib-raid-raid6-powerpc-altivec2.c:sparse:sparse:two-or-more-data-types-in-declaration-specifiers
-|   |-- lib-raid-raid6-powerpc-altivec4.c:sparse:sparse:Trying-to-use-reserved-word-signed-as-identifier
-|   |-- lib-raid-raid6-powerpc-altivec4.c:sparse:sparse:two-or-more-data-types-in-declaration-specifiers
-|   |-- lib-raid-raid6-powerpc-altivec8.c:sparse:sparse:Trying-to-use-reserved-word-signed-as-identifier
-|   `-- lib-raid-raid6-powerpc-altivec8.c:sparse:sparse:two-or-more-data-types-in-declaration-specifiers
-|-- riscv-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- riscv-allyesconfig
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-gpu-drm-scheduler-tests-tests_scheduler.c:error:initializer-element-is-not-a-compile-time-constant
-|-- riscv-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- riscv-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- riscv-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- riscv-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- riscv-randconfig-r131-20260521
-|   |-- arch-riscv-kernel-sys_hwprobe.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- arch-riscv-kernel-sys_riscv.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- ld.lld:error:call-to-__compiletime_assert_NNN-marked-dontcall-error:BUILD_BUG_ON-failed:HWEIGHT32(-(VALID_OPENAT2_FLAGS-(O_NONBLOCK-O_NDELAY))-__FMODE_EXEC)
-|-- s390-allmodconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- s390-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- s390-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- s390-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- s390-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- s390-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- s390-randconfig-r064-20260522
-|   `-- drivers-tty-serial-max31.c:error:incompatible-pointer-types-passing-struct-i2c_driver-to-parameter-of-type-struct-spi_driver
-|-- sh-allmodconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sh-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sh-allyesconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sh-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sh-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sh-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sh-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sh-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc64-allmodconfig
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- arch-sparc-kernel-sys_sparc32.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- arch-sparc-kernel-sys_sparc_64.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- block-ioprio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-aio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-d_path.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventpoll.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-exec.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fcntl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fhandle.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file_attr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fsopen.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-ioctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-locks.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namei.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namespace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-notify-inotify-inotify_user.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-open.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-pipe.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-read_write.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-readdir.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-select.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-signalfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-splice.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-stat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-statfs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-sync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-timerfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-utimes.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-xattr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-msg.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-sem.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- ipc-shm.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-capability.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-events-core.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exec_domain.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exit.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-fork.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-futex-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-groups.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-kcmp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-module-main.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nsproxy.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nstree.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-pid.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-printk-printk.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-ptrace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-reboot.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-membarrier.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-seccomp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-signal.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sys.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-hrtimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-itimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-posix-timers.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-time.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-uid16.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-fadvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-filemap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-madvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-memfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mincore.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mlock.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mmap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mprotect.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mremap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-msync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-oom_kill.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-process_vm_access.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-readahead.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-swapfile.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- net-socket.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- security-keys-compat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- security-landlock-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- security-lsm_syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- sparc64-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc64-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- sparc64-randconfig-001-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-tty-serial-max31.c:error:max31_spi_driver-undeclared-(first-use-in-this-function)
-|-- sparc64-randconfig-002
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- arch-sparc-kernel-sys_sparc32.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- arch-sparc-kernel-sys_sparc_64.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- block-ioprio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-aio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-d_path.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventpoll.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-exec.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fcntl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fhandle.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file_attr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fsopen.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-ioctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-locks.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namei.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namespace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-notify-inotify-inotify_user.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-open.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-pipe.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-read_write.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-readdir.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-select.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-signalfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-splice.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-stat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-statfs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-sync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-timerfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-utimes.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-xattr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-capability.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-events-core.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exec_domain.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exit.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-fork.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-futex-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-groups.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-kcmp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nsproxy.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nstree.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-pid.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-printk-printk.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-ptrace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-reboot.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-membarrier.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-seccomp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-signal.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sys.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-hrtimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-itimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-posix-timers.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-time.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-uid16.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-fadvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-filemap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-madvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mincore.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mlock.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mmap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mprotect.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mremap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-msync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-oom_kill.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-process_vm_access.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-readahead.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- net-socket.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- security-keys-compat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- security-keys-keyctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- security-lsm_syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- sparc64-randconfig-002-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-tty-serial-max31.c:error:max31_spi_driver-undeclared-(first-use-in-this-function)
-|-- um-allmodconfig
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- drivers-gpu-drm-amd-amdgpu-..-amdkfd-kfd_crat.c:error:call-to-undeclared-function-cpu_data-ISO-C99-and-later-do-not-support-implicit-function-declarations
-|   |-- drivers-gpu-drm-amd-amdgpu-..-amdkfd-kfd_crat.c:error:cannot-take-the-address-of-an-rvalue-of-type-int
-|   |-- drivers-gpu-drm-amd-amdgpu-..-amdkfd-kfd_crat.c:error:incomplete-definition-of-type-struct-cpuinfo_x86
-|   |-- drivers-gpu-drm-amd-amdgpu-..-amdkfd-kfd_crat.c:error:use-of-undeclared-identifier-X86_VENDOR_AMD
-|   |-- drivers-gpu-drm-amd-amdgpu-..-amdkfd-kfd_topology.c:error:call-to-undeclared-function-cpu_data-ISO-C99-and-later-do-not-support-implicit-function-declarations
-|   `-- drivers-gpu-drm-amd-amdgpu-..-amdkfd-kfd_topology.c:error:member-reference-base-type-int-is-not-a-structure-or-union
-|-- um-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- um-allyesconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- um-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- um-i386_defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- um-randconfig-001
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- block-ioprio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-d_path.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventpoll.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-exec.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fcntl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fhandle.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file_attr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fsopen.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-ioctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namei.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namespace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-open.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-pipe.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-read_write.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-readdir.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-select.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-splice.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-stat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-statfs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-sync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-timerfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-utimes.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-xattr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exec_domain.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exit.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-fork.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-kcmp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nsproxy.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nstree.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-pid.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-printk-printk.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-ptrace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-reboot.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-signal.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sys.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-hrtimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-posix-stubs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-time.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mincore.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mlock.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mmap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mprotect.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mremap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-msync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-oom_kill.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-process_vm_access.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-readahead.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- net-socket.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- security-keys-keyctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- um-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- um-randconfig-002
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- arch-x86-um-syscalls_64.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- block-ioprio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-aio.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-d_path.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-eventpoll.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-exec.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fcntl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fhandle.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-file_attr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-fsopen.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-ioctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-locks.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namei.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-namespace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-notify-inotify-inotify_user.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-open.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-pipe.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-read_write.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-readdir.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-select.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-signalfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-splice.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-stat.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-statfs.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-sync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-timerfd.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-utimes.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- fs-xattr.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-capability.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exec_domain.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-exit.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-fork.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-futex-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-groups.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-module-main.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nsproxy.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-nstree.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-pid.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-printk-printk.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-ptrace.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-reboot.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-membarrier.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sched-syscalls.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-seccomp.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-signal.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-sys.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-hrtimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-itimer.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-posix-timers.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-time-time.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- kernel-uid16.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-fadvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-filemap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-madvise.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mincore.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mlock.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mmap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mprotect.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-mremap.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-msync.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-oom_kill.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-process_vm_access.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-readahead.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   |-- mm-swapfile.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|   `-- security-keys-keyctl.c:error:unknown-warning-group-Wattribute-alias-ignored-Werror-Wunknown-warning-option
-|-- um-randconfig-002-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- drivers-tty-serial-max31.c:error:max31_spi_driver-undeclared-(first-use-in-this-function)
-|   |-- usr-bin-ld:sound-soc-codecs-es9356.o:(.rodata):undefined-reference-to-sdca_asoc_q78_get_volsw
-|   `-- usr-bin-ld:sound-soc-codecs-es9356.o:(.rodata):undefined-reference-to-sdca_asoc_q78_put_volsw
-|-- um-randconfig-r053-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- um-x86_64_defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-buildonly-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-buildonly-randconfig-003-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-buildonly-randconfig-004-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   |-- drivers-gpu-drm-amd-amdgpu-jpeg_v2_5.c:warning:d-directive-output-may-be-truncated-writing-between-and-bytes-into-a-region-of-size
-|   |-- drivers-pinctrl-pinctrl-generic.c:error:conflicting-types-for-pinctrl_generic_to_map-have-int(struct-pinctrl_dev-struct-device_node-struct-device_node-struct-pinctrl_map-unsigned-int-unsigned-int-cons
-|   |-- drivers-pinctrl-pinctrl-generic.c:error:redefinition-of-pinctrl_generic_pins_function_dt_node_to_map
-|   `-- drivers-tty-serial-max31.c:error:max31_spi_driver-undeclared-(first-use-in-this-function)
-|-- x86_64-buildonly-randconfig-005-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-defconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-kexec
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-001-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-002-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-004-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-006-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-011-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-012-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-013-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-014-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-015-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-016-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-071
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-071-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-pinctrl-pinctrl-generic.c:error:redefinition-of-pinctrl_generic_pins_function_dt_node_to_map
-|-- x86_64-randconfig-072
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-072-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-073-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-074
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-074-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-075
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-076
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-076-20260521
-|   `-- drivers-pinctrl-pinctrl-generic.c:error:redefinition-of-pinctrl_generic_pins_function_dt_node_to_map
-|-- x86_64-randconfig-101
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-101-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-102
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-102-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-103
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-104
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-104-20260521
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-121-20260522
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-122-20260522
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-randconfig-123-20260522
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-pinctrl-pinctrl-generic.c:error:redefinition-of-pinctrl_generic_pins_function_dt_node_to_map
-|-- x86_64-randconfig-161
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-rhel-9.4
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-rhel-9.4-bpf
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-rhel-9.4-func
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-rhel-9.4-kselftests
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-rhel-9.4-kunit
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- x86_64-rhel-9.4-ltp
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- xtensa-allnoconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- xtensa-allyesconfig
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- xtensa-randconfig-001
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|-- xtensa-randconfig-001-20260521
-|   |-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-|   `-- drivers-tty-serial-max31.c:error:max31_spi_driver-undeclared-(first-use-in-this-function)
-|-- xtensa-randconfig-002
-|   `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
-`-- xtensa-randconfig-002-20260521
-    `-- Warning:block-blk-map.c-Excess-function-parameter-op-description-in-bio_copy_kern
+Cc: Arun Menon <armenon@redhat.com>
+Cc: Daniel P. Smith <dpsmith@apertussolutions.com>
+Cc: Alec Brown <alec.r.brown@oracle.com>
+Cc: Ross Philipson <ross.philipson@gmail.com>
+Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@opinsys.com>
+---
+Rebased the managed allocations patch, which has been probably like a
+year in circulation.
+ drivers/char/tpm/tpm-buf.c                | 122 ++++++----
+ drivers/char/tpm/tpm-sysfs.c              |  17 +-
+ drivers/char/tpm/tpm.h                    |   1 -
+ drivers/char/tpm/tpm1-cmd.c               | 150 ++++++------
+ drivers/char/tpm/tpm2-cmd.c               | 277 +++++++++++-----------
+ drivers/char/tpm/tpm2-sessions.c          | 149 ++++++------
+ drivers/char/tpm/tpm2-space.c             |  44 ++--
+ drivers/char/tpm/tpm_vtpm_proxy.c         |  30 +--
+ include/linux/tpm.h                       |  18 +-
+ security/keys/trusted-keys/trusted_tpm1.c |  44 ++--
+ security/keys/trusted-keys/trusted_tpm2.c | 165 ++++++-------
+ 11 files changed, 505 insertions(+), 512 deletions(-)
 
-elapsed time: 724m
+diff --git a/drivers/char/tpm/tpm-buf.c b/drivers/char/tpm/tpm-buf.c
+index dc882fc9fa9e..b16d824ef0af 100644
+--- a/drivers/char/tpm/tpm-buf.c
++++ b/drivers/char/tpm/tpm-buf.c
+@@ -7,82 +7,110 @@
+ #include <linux/module.h>
+ #include <linux/tpm.h>
 
-configs tested: 282
-configs skipped: 11
+-/**
+- * tpm_buf_init() - Allocate and initialize a TPM command
+- * @buf:	A &tpm_buf
+- * @tag:	TPM_TAG_RQU_COMMAND, TPM2_ST_NO_SESSIONS or TPM2_ST_SESSIONS
+- * @ordinal:	A command ordinal
+- *
+- * Return: 0 or -ENOMEM
+- */
+-int tpm_buf_init(struct tpm_buf *buf, u16 tag, u32 ordinal)
++static void __tpm_buf_size_invariant(struct tpm_buf *buf, u16 buf_size)
+ {
+-	buf->data = (u8 *)__get_free_page(GFP_KERNEL);
+-	if (!buf->data)
+-		return -ENOMEM;
+-
+-	tpm_buf_reset(buf, tag, ordinal);
+-	return 0;
++	u32 buf_size_2 = (u32)buf->capacity + (u32)sizeof(*buf);
++
++	if (!buf->capacity) {
++		if (buf_size > TPM_BUFSIZE) {
++			WARN(1, "%s: size overflow: %u\n", __func__, buf_size);
++			buf->flags |= TPM_BUF_OVERFLOW;
++		}
++	} else {
++		if (buf_size != buf_size_2) {
++			WARN(1, "%s: size mismatch: %u != %u\n", __func__,
++			     buf_size, buf_size_2);
++			buf->flags |= TPM_BUF_OVERFLOW;
++		}
++	}
+ }
+-EXPORT_SYMBOL_GPL(tpm_buf_init);
 
-tested configs:
-alpha                             allnoconfig    gcc-15.2.0
-alpha                            allyesconfig    gcc-15.2.0
-alpha                               defconfig    gcc-15.2.0
-arc                              allmodconfig    clang-16
-arc                              allmodconfig    gcc-15.2.0
-arc                               allnoconfig    gcc-15.2.0
-arc                              allyesconfig    clang-23
-arc                              allyesconfig    gcc-15.2.0
-arc                                 defconfig    gcc-15.2.0
-arc                            randconfig-001    gcc-8.5.0
-arc                   randconfig-001-20260521    gcc-13.4.0
-arc                   randconfig-001-20260521    gcc-8.5.0
-arc                            randconfig-002    gcc-8.5.0
-arc                   randconfig-002-20260521    gcc-12.5.0
-arc                   randconfig-002-20260521    gcc-8.5.0
-arm                               allnoconfig    clang-23
-arm                               allnoconfig    gcc-15.2.0
-arm                              allyesconfig    clang-16
-arm                              allyesconfig    gcc-15.2.0
-arm                                 defconfig    clang-23
-arm                                 defconfig    gcc-15.2.0
-arm                            randconfig-001    gcc-8.5.0
-arm                   randconfig-001-20260521    clang-23
-arm                   randconfig-001-20260521    gcc-8.5.0
-arm                            randconfig-002    gcc-11.5.0
-arm                   randconfig-002-20260521    gcc-12.5.0
-arm                   randconfig-002-20260521    gcc-8.5.0
-arm                            randconfig-003    clang-20
-arm                   randconfig-003-20260521    gcc-13.4.0
-arm                   randconfig-003-20260521    gcc-8.5.0
-arm                            randconfig-004    gcc-14.3.0
-arm                   randconfig-004-20260521    gcc-8.5.0
-arm64                            allmodconfig    clang-19
-arm64                            allmodconfig    clang-23
-arm64                             allnoconfig    gcc-15.2.0
-arm64                               defconfig    gcc-15.2.0
-arm64                 randconfig-001-20260521    clang-23
-arm64                 randconfig-001-20260521    gcc-8.5.0
-arm64                 randconfig-002-20260521    gcc-8.5.0
-arm64                 randconfig-003-20260521    gcc-8.5.0
-arm64                 randconfig-004-20260521    gcc-8.5.0
-csky                             allmodconfig    gcc-15.2.0
-csky                              allnoconfig    gcc-15.2.0
-csky                                defconfig    gcc-15.2.0
-csky                  randconfig-001-20260521    gcc-15.2.0
-csky                  randconfig-001-20260521    gcc-8.5.0
-csky                  randconfig-002-20260521    gcc-15.2.0
-csky                  randconfig-002-20260521    gcc-8.5.0
-hexagon                          allmodconfig    clang-17
-hexagon                          allmodconfig    gcc-15.2.0
-hexagon                           allnoconfig    clang-23
-hexagon                           allnoconfig    gcc-15.2.0
-hexagon                             defconfig    clang-23
-hexagon                             defconfig    gcc-15.2.0
-hexagon                        randconfig-001    gcc-11.5.0
-hexagon               randconfig-001-20260521    clang-23
-hexagon               randconfig-001-20260521    gcc-11.5.0
-hexagon                        randconfig-002    gcc-11.5.0
-hexagon               randconfig-002-20260521    clang-23
-hexagon               randconfig-002-20260521    gcc-11.5.0
-i386                             allmodconfig    clang-20
-i386                             allmodconfig    gcc-14
-i386                              allnoconfig    gcc-14
-i386                              allnoconfig    gcc-15.2.0
-i386                             allyesconfig    clang-20
-i386                             allyesconfig    gcc-14
-i386                 buildonly-randconfig-001    clang-20
-i386        buildonly-randconfig-001-20260521    clang-20
-i386        buildonly-randconfig-001-20260522    clang-20
-i386                 buildonly-randconfig-002    clang-20
-i386        buildonly-randconfig-002-20260521    clang-20
-i386        buildonly-randconfig-002-20260522    gcc-14
-i386                 buildonly-randconfig-003    clang-20
-i386        buildonly-randconfig-003-20260521    clang-20
-i386        buildonly-randconfig-003-20260522    clang-20
-i386                 buildonly-randconfig-004    clang-20
-i386        buildonly-randconfig-004-20260521    clang-20
-i386        buildonly-randconfig-004-20260522    gcc-14
-i386                 buildonly-randconfig-005    clang-20
-i386        buildonly-randconfig-005-20260521    clang-20
-i386        buildonly-randconfig-005-20260522    clang-20
-i386                 buildonly-randconfig-006    clang-20
-i386        buildonly-randconfig-006-20260521    clang-20
-i386        buildonly-randconfig-006-20260522    gcc-13
-i386                                defconfig    clang-20
-i386                                defconfig    gcc-15.2.0
-i386                  randconfig-001-20260521    clang-20
-i386                  randconfig-002-20260521    gcc-14
-i386                  randconfig-003-20260521    clang-20
-i386                  randconfig-004-20260521    gcc-14
-i386                  randconfig-005-20260521    clang-20
-i386                  randconfig-006-20260521    clang-20
-i386                  randconfig-007-20260521    clang-20
-i386                  randconfig-011-20260521    gcc-14
-i386                  randconfig-012-20260521    clang-20
-i386                  randconfig-013-20260521    gcc-13
-i386                  randconfig-014-20260521    gcc-14
-i386                  randconfig-015-20260521    gcc-14
-i386                  randconfig-016-20260521    clang-20
-i386                  randconfig-017-20260521    clang-20
-loongarch                        allmodconfig    clang-19
-loongarch                        allmodconfig    clang-23
-loongarch                         allnoconfig    clang-23
-loongarch                         allnoconfig    gcc-15.2.0
-loongarch                           defconfig    clang-19
-loongarch                      randconfig-001    gcc-11.5.0
-loongarch             randconfig-001-20260521    gcc-11.5.0
-loongarch             randconfig-001-20260521    gcc-12.5.0
-loongarch                      randconfig-002    gcc-11.5.0
-loongarch             randconfig-002-20260521    gcc-11.5.0
-loongarch             randconfig-002-20260521    gcc-15.2.0
-m68k                             allmodconfig    gcc-15.2.0
-m68k                              allnoconfig    gcc-15.2.0
-m68k                             allyesconfig    clang-16
-m68k                             allyesconfig    gcc-15.2.0
-m68k                                defconfig    clang-19
-m68k                                defconfig    gcc-15.2.0
-microblaze                        allnoconfig    gcc-15.2.0
-microblaze                       allyesconfig    gcc-15.2.0
-microblaze                          defconfig    clang-19
-microblaze                          defconfig    gcc-15.2.0
-mips                             allmodconfig    gcc-15.2.0
-mips                              allnoconfig    gcc-15.2.0
-mips                             allyesconfig    gcc-15.2.0
-nios2                            allmodconfig    clang-23
-nios2                            allmodconfig    gcc-11.5.0
-nios2                             allnoconfig    clang-23
-nios2                             allnoconfig    gcc-11.5.0
-nios2                               defconfig    clang-19
-nios2                               defconfig    gcc-11.5.0
-nios2                          randconfig-001    gcc-11.5.0
-nios2                 randconfig-001-20260521    gcc-11.5.0
-nios2                          randconfig-002    gcc-11.5.0
-nios2                 randconfig-002-20260521    gcc-11.5.0
-openrisc                         allmodconfig    clang-23
-openrisc                         allmodconfig    gcc-15.2.0
-openrisc                          allnoconfig    clang-23
-openrisc                          allnoconfig    gcc-15.2.0
-openrisc                            defconfig    gcc-15.2.0
-parisc                           allmodconfig    gcc-15.2.0
-parisc                            allnoconfig    clang-23
-parisc                            allnoconfig    gcc-15.2.0
-parisc                           allyesconfig    clang-19
-parisc                           allyesconfig    gcc-15.2.0
-parisc                              defconfig    gcc-15.2.0
-parisc                randconfig-001-20260521    gcc-12.5.0
-parisc                randconfig-002-20260521    gcc-15.2.0
-parisc64                            defconfig    clang-19
-parisc64                            defconfig    gcc-15.2.0
-powerpc                          allmodconfig    gcc-15.2.0
-powerpc                           allnoconfig    clang-23
-powerpc                           allnoconfig    gcc-15.2.0
-powerpc               randconfig-001-20260521    clang-23
-powerpc               randconfig-002-20260521    clang-17
-powerpc                    sam440ep_defconfig    gcc-15.2.0
-powerpc64             randconfig-001-20260521    clang-23
-powerpc64             randconfig-002-20260521    gcc-12.5.0
-riscv                            allmodconfig    clang-23
-riscv                             allnoconfig    clang-23
-riscv                             allnoconfig    gcc-15.2.0
-riscv                            allyesconfig    clang-16
-riscv                               defconfig    gcc-15.2.0
-riscv                          randconfig-001    gcc-15.2.0
-riscv                 randconfig-001-20260521    clang-23
-riscv                 randconfig-001-20260521    gcc-15.2.0
-riscv                          randconfig-002    gcc-15.2.0
-riscv                 randconfig-002-20260521    gcc-13.4.0
-riscv                 randconfig-002-20260521    gcc-15.2.0
-s390                             allmodconfig    clang-18
-s390                             allmodconfig    clang-19
-s390                              allnoconfig    clang-23
-s390                             allyesconfig    gcc-15.2.0
-s390                                defconfig    gcc-15.2.0
-s390                           randconfig-001    gcc-15.2.0
-s390                  randconfig-001-20260521    gcc-15.2.0
-s390                  randconfig-001-20260521    gcc-8.5.0
-s390                           randconfig-002    gcc-15.2.0
-s390                  randconfig-002-20260521    clang-17
-s390                  randconfig-002-20260521    gcc-15.2.0
-sh                               allmodconfig    gcc-15.2.0
-sh                                allnoconfig    clang-23
-sh                                allnoconfig    gcc-15.2.0
-sh                               allyesconfig    clang-19
-sh                               allyesconfig    gcc-15.2.0
-sh                                  defconfig    gcc-14
-sh                                  defconfig    gcc-15.2.0
-sh                             randconfig-001    gcc-15.2.0
-sh                    randconfig-001-20260521    gcc-15.2.0
-sh                             randconfig-002    gcc-15.2.0
-sh                    randconfig-002-20260521    gcc-12.5.0
-sh                    randconfig-002-20260521    gcc-15.2.0
-sh                          rsk7264_defconfig    gcc-15.2.0
-sparc                             allnoconfig    clang-23
-sparc                             allnoconfig    gcc-15.2.0
-sparc                               defconfig    gcc-15.2.0
-sparc                          randconfig-001    gcc-8.5.0
-sparc                 randconfig-001-20260521    gcc-8.5.0
-sparc                          randconfig-002    gcc-8.5.0
-sparc                 randconfig-002-20260521    gcc-8.5.0
-sparc64                          allmodconfig    clang-23
-sparc64                             defconfig    clang-20
-sparc64                             defconfig    gcc-14
-sparc64                        randconfig-001    gcc-8.5.0
-sparc64               randconfig-001-20260521    gcc-8.5.0
-sparc64                        randconfig-002    gcc-8.5.0
-sparc64               randconfig-002-20260521    gcc-8.5.0
-um                               allmodconfig    clang-19
-um                                allnoconfig    clang-23
-um                               allyesconfig    gcc-14
-um                               allyesconfig    gcc-15.2.0
-um                                  defconfig    clang-23
-um                                  defconfig    gcc-14
-um                             i386_defconfig    gcc-14
-um                             randconfig-001    gcc-8.5.0
-um                    randconfig-001-20260521    gcc-14
-um                    randconfig-001-20260521    gcc-8.5.0
-um                             randconfig-002    gcc-8.5.0
-um                    randconfig-002-20260521    gcc-14
-um                    randconfig-002-20260521    gcc-8.5.0
-um                           x86_64_defconfig    clang-23
-um                           x86_64_defconfig    gcc-14
-x86_64                           allmodconfig    clang-20
-x86_64                            allnoconfig    clang-20
-x86_64                            allnoconfig    clang-23
-x86_64                           allyesconfig    clang-20
-x86_64      buildonly-randconfig-001-20260521    clang-20
-x86_64      buildonly-randconfig-001-20260521    gcc-12
-x86_64      buildonly-randconfig-002-20260521    clang-20
-x86_64      buildonly-randconfig-002-20260521    gcc-14
-x86_64      buildonly-randconfig-003-20260521    clang-20
-x86_64      buildonly-randconfig-004-20260521    clang-20
-x86_64      buildonly-randconfig-004-20260521    gcc-14
-x86_64      buildonly-randconfig-005-20260521    clang-20
-x86_64      buildonly-randconfig-006-20260521    clang-20
-x86_64                              defconfig    gcc-14
-x86_64                                  kexec    clang-20
-x86_64                randconfig-001-20260521    clang-20
-x86_64                randconfig-002-20260521    clang-20
-x86_64                randconfig-003-20260521    clang-20
-x86_64                randconfig-003-20260521    gcc-14
-x86_64                randconfig-004-20260521    clang-20
-x86_64                randconfig-005-20260521    clang-20
-x86_64                randconfig-006-20260521    clang-20
-x86_64                randconfig-011-20260521    clang-20
-x86_64                randconfig-011-20260521    gcc-14
-x86_64                randconfig-012-20260521    clang-20
-x86_64                randconfig-012-20260521    gcc-14
-x86_64                randconfig-013-20260521    clang-20
-x86_64                randconfig-013-20260521    gcc-14
-x86_64                randconfig-014-20260521    clang-20
-x86_64                randconfig-014-20260521    gcc-14
-x86_64                randconfig-015-20260521    clang-20
-x86_64                randconfig-015-20260521    gcc-14
-x86_64                randconfig-016-20260521    gcc-14
-x86_64                         randconfig-071    gcc-14
-x86_64                randconfig-071-20260521    clang-20
-x86_64                         randconfig-072    gcc-14
-x86_64                randconfig-072-20260521    clang-20
-x86_64                         randconfig-073    clang-20
-x86_64                randconfig-073-20260521    clang-20
-x86_64                         randconfig-074    gcc-14
-x86_64                randconfig-074-20260521    gcc-14
-x86_64                         randconfig-075    gcc-13
-x86_64                randconfig-075-20260521    clang-20
-x86_64                         randconfig-076    clang-20
-x86_64                randconfig-076-20260521    clang-20
-x86_64                               rhel-9.4    clang-20
-x86_64                           rhel-9.4-bpf    gcc-14
-x86_64                          rhel-9.4-func    clang-20
-x86_64                    rhel-9.4-kselftests    clang-20
-x86_64                         rhel-9.4-kunit    gcc-14
-x86_64                           rhel-9.4-ltp    gcc-14
-x86_64                          rhel-9.4-rust    clang-20
-xtensa                            allnoconfig    clang-23
-xtensa                            allnoconfig    gcc-15.2.0
-xtensa                           allyesconfig    clang-23
-xtensa                           allyesconfig    gcc-15.2.0
-xtensa                         randconfig-001    gcc-8.5.0
-xtensa                randconfig-001-20260521    gcc-8.5.0
-xtensa                         randconfig-002    gcc-8.5.0
-xtensa                randconfig-002-20260521    gcc-11.5.0
-xtensa                randconfig-002-20260521    gcc-8.5.0
+-/**
+- * tpm_buf_reset() - Initialize a TPM command
+- * @buf:	A &tpm_buf
+- * @tag:	TPM_TAG_RQU_COMMAND, TPM2_ST_NO_SESSIONS or TPM2_ST_SESSIONS
+- * @ordinal:	A command ordinal
+- */
+-void tpm_buf_reset(struct tpm_buf *buf, u16 tag, u32 ordinal)
++static void __tpm_buf_reset(struct tpm_buf *buf, u16 buf_size, u16 tag,
++			    u32 ordinal)
+ {
+ 	struct tpm_header *head = (struct tpm_header *)buf->data;
+
++	__tpm_buf_size_invariant(buf, buf_size);
++
++	if (buf->flags & TPM_BUF_OVERFLOW)
++		return;
++
+ 	WARN_ON(tag != TPM_TAG_RQU_COMMAND && tag != TPM2_ST_NO_SESSIONS &&
+ 		tag != TPM2_ST_SESSIONS && tag != 0);
+
+ 	buf->flags = 0;
+ 	buf->length = sizeof(*head);
++	buf->capacity = buf_size - sizeof(*buf);
++	buf->handles = 0;
+ 	head->tag = cpu_to_be16(tag);
+ 	head->length = cpu_to_be32(sizeof(*head));
+ 	head->ordinal = cpu_to_be32(ordinal);
++}
++
++static void __tpm_buf_reset_sized(struct tpm_buf *buf, u16 buf_size)
++{
++	__tpm_buf_size_invariant(buf, buf_size);
++
++	if (buf->flags & TPM_BUF_OVERFLOW)
++		return;
++
++	buf->flags = TPM_BUF_TPM2B;
++	buf->length = 2;
++	buf->capacity = buf_size - sizeof(*buf);
+ 	buf->handles = 0;
++	buf->data[0] = 0;
++	buf->data[1] = 0;
+ }
+-EXPORT_SYMBOL_GPL(tpm_buf_reset);
+
+ /**
+- * tpm_buf_init_sized() - Allocate and initialize a sized (TPM2B) buffer
+- * @buf:	A @tpm_buf
+- *
+- * Return: 0 or -ENOMEM
++ * tpm_buf_init() - Initialize a TPM command
++ * @buf:	A &tpm_buf
++ * @buf_size:	Size of the buffer.
+  */
+-int tpm_buf_init_sized(struct tpm_buf *buf)
++void tpm_buf_init(struct tpm_buf *buf, u16 buf_size)
+ {
+-	buf->data = (u8 *)__get_free_page(GFP_KERNEL);
+-	if (!buf->data)
+-		return -ENOMEM;
++	memset(buf, 0, buf_size);
++	__tpm_buf_reset(buf, buf_size, TPM_TAG_RQU_COMMAND, 0);
++}
++EXPORT_SYMBOL_GPL(tpm_buf_init);
+
+-	tpm_buf_reset_sized(buf);
+-	return 0;
++/**
++ * tpm_buf_init_sized() - Initialize a sized buffer
++ * @buf:	A &tpm_buf
++ * @buf_size:	Size of the buffer.
++ */
++void tpm_buf_init_sized(struct tpm_buf *buf, u16 buf_size)
++{
++	memset(buf, 0, buf_size);
++	__tpm_buf_reset_sized(buf, buf_size);
+ }
+ EXPORT_SYMBOL_GPL(tpm_buf_init_sized);
+
+ /**
+- * tpm_buf_reset_sized() - Initialize a sized buffer
++ * tpm_buf_reset() - Re-initialize a TPM command
+  * @buf:	A &tpm_buf
++ * @tag:	TPM_TAG_RQU_COMMAND, TPM2_ST_NO_SESSIONS or TPM2_ST_SESSIONS
++ * @ordinal:	A command ordinal
+  */
+-void tpm_buf_reset_sized(struct tpm_buf *buf)
++void tpm_buf_reset(struct tpm_buf *buf, u16 tag, u32 ordinal)
+ {
+-	buf->flags = TPM_BUF_TPM2B;
+-	buf->length = 2;
+-	buf->data[0] = 0;
+-	buf->data[1] = 0;
++	u16 buf_size = buf->capacity + sizeof(*buf);
++
++	__tpm_buf_reset(buf, buf_size, tag, ordinal);
+ }
+-EXPORT_SYMBOL_GPL(tpm_buf_reset_sized);
++EXPORT_SYMBOL_GPL(tpm_buf_reset);
+
+-void tpm_buf_destroy(struct tpm_buf *buf)
++/**
++ * tpm_buf_reset_sized() - Re-initialize a sized buffer
++ * @buf:	A &tpm_buf
++ */
++void tpm_buf_reset_sized(struct tpm_buf *buf)
+ {
+-	free_page((unsigned long)buf->data);
++	u16 buf_size = buf->capacity + sizeof(*buf);
++
++	__tpm_buf_reset_sized(buf, buf_size);
+ }
+-EXPORT_SYMBOL_GPL(tpm_buf_destroy);
++EXPORT_SYMBOL_GPL(tpm_buf_reset_sized);
+
+ /**
+  * tpm_buf_length() - Return the number of bytes consumed by the data
+@@ -90,7 +118,7 @@ EXPORT_SYMBOL_GPL(tpm_buf_destroy);
+  *
+  * Return: The number of bytes consumed by the buffer
+  */
+-u32 tpm_buf_length(struct tpm_buf *buf)
++u16 tpm_buf_length(struct tpm_buf *buf)
+ {
+ 	return buf->length;
+ }
+@@ -104,11 +132,13 @@ EXPORT_SYMBOL_GPL(tpm_buf_length);
+  */
+ void tpm_buf_append(struct tpm_buf *buf, const u8 *new_data, u16 new_length)
+ {
++	u32 total_length = (u32)buf->length + (u32)new_length;
++
+ 	/* Return silently if overflow has already happened. */
+ 	if (buf->flags & TPM_BUF_OVERFLOW)
+ 		return;
+
+-	if ((buf->length + new_length) > PAGE_SIZE) {
++	if (total_length > (u32)buf->capacity) {
+ 		WARN(1, "tpm_buf: write overflow\n");
+ 		buf->flags |= TPM_BUF_OVERFLOW;
+ 		return;
+diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
+index 94231f052ea7..1de03cf340b3 100644
+--- a/drivers/char/tpm/tpm-sysfs.c
++++ b/drivers/char/tpm/tpm-sysfs.c
+@@ -32,28 +32,31 @@ struct tpm_readpubek_out {
+ static ssize_t pubek_show(struct device *dev, struct device_attribute *attr,
+ 			  char *buf)
+ {
+-	struct tpm_buf tpm_buf;
+ 	struct tpm_readpubek_out *out;
+ 	int i;
+ 	char *str = buf;
+ 	struct tpm_chip *chip = to_tpm_chip(dev);
+ 	char anti_replay[20];
++	struct tpm_buf *tpm_buf __free(kfree) = NULL;
+
+ 	memset(&anti_replay, 0, sizeof(anti_replay));
+
+ 	if (tpm_try_get_ops(chip))
+ 		return 0;
+
+-	if (tpm_buf_init(&tpm_buf, TPM_TAG_RQU_COMMAND, TPM_ORD_READPUBEK))
++	tpm_buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!tpm_buf)
+ 		goto out_ops;
+
+-	tpm_buf_append(&tpm_buf, anti_replay, sizeof(anti_replay));
++	tpm_buf_init(tpm_buf, TPM_BUFSIZE);
++	tpm_buf_reset(tpm_buf, TPM_TAG_RQU_COMMAND, TPM_ORD_READPUBEK);
++	tpm_buf_append(tpm_buf, anti_replay, sizeof(anti_replay));
+
+-	if (tpm_transmit_cmd(chip, &tpm_buf, READ_PUBEK_RESULT_MIN_BODY_SIZE,
++	if (tpm_transmit_cmd(chip, tpm_buf, READ_PUBEK_RESULT_MIN_BODY_SIZE,
+ 			     "attempting to read the PUBEK"))
+-		goto out_buf;
++		goto out_ops;
+
+-	out = (struct tpm_readpubek_out *)&tpm_buf.data[10];
++	out = (struct tpm_readpubek_out *)&tpm_buf->data[10];
+ 	str +=
+ 	    sprintf(str,
+ 		    "Algorithm: %4ph\n"
+@@ -71,8 +74,6 @@ static ssize_t pubek_show(struct device *dev, struct device_attribute *attr,
+ 	for (i = 0; i < 256; i += 16)
+ 		str += sprintf(str, "%16ph\n", &out->modulus[i]);
+
+-out_buf:
+-	tpm_buf_destroy(&tpm_buf);
+ out_ops:
+ 	tpm_put_ops(chip);
+ 	return str - buf;
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 87d68ddf270a..03f5346343ab 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -33,7 +33,6 @@
+ #endif
+
+ #define TPM_MINOR		224	/* officially assigned */
+-#define TPM_BUFSIZE		4096
+ #define TPM_NUM_DEVICES		65536
+ #define TPM_RETRY		50
+
+diff --git a/drivers/char/tpm/tpm1-cmd.c b/drivers/char/tpm/tpm1-cmd.c
+index b49a790f1bd5..6facc3de2c46 100644
+--- a/drivers/char/tpm/tpm1-cmd.c
++++ b/drivers/char/tpm/tpm1-cmd.c
+@@ -323,20 +323,18 @@ unsigned long tpm1_calc_ordinal_duration(struct tpm_chip *chip, u32 ordinal)
+  */
+ static int tpm1_startup(struct tpm_chip *chip)
+ {
+-	struct tpm_buf buf;
+-	int rc;
++	struct tpm_buf *buf __free(kfree) = NULL;
+
+ 	dev_info(&chip->dev, "starting up the TPM manually\n");
+
+-	rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_STARTUP);
+-	if (rc < 0)
+-		return rc;
+-
+-	tpm_buf_append_u16(&buf, TPM_ST_CLEAR);
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+
+-	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting to start the TPM");
+-	tpm_buf_destroy(&buf);
+-	return rc;
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_STARTUP);
++	tpm_buf_append_u16(buf, TPM_ST_CLEAR);
++	return tpm_transmit_cmd(chip, buf, 0, "attempting to start the TPM");
+ }
+
+ int tpm1_get_timeouts(struct tpm_chip *chip)
+@@ -463,50 +461,47 @@ int tpm1_get_timeouts(struct tpm_chip *chip)
+ int tpm1_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash,
+ 		    const char *log_msg)
+ {
+-	struct tpm_buf buf;
+-	int rc;
+-
+-	rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_PCR_EXTEND);
+-	if (rc)
+-		return rc;
+-
+-	tpm_buf_append_u32(&buf, pcr_idx);
+-	tpm_buf_append(&buf, hash, TPM_DIGEST_SIZE);
+-
+-	rc = tpm_transmit_cmd(chip, &buf, TPM_DIGEST_SIZE, log_msg);
+-	tpm_buf_destroy(&buf);
+-	return rc;
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_PCR_EXTEND);
++	tpm_buf_append_u32(buf, pcr_idx);
++	tpm_buf_append(buf, hash, TPM_DIGEST_SIZE);
++	return tpm_transmit_cmd(chip, buf, TPM_DIGEST_SIZE, log_msg);
+ }
+
+ #define TPM_ORD_GET_CAP 101
+ ssize_t tpm1_getcap(struct tpm_chip *chip, u32 subcap_id, cap_t *cap,
+ 		    const char *desc, size_t min_cap_length)
+ {
+-	struct tpm_buf buf;
+ 	int rc;
+
+-	rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_GET_CAP);
+-	if (rc)
+-		return rc;
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_GET_CAP);
+
+ 	if (subcap_id == TPM_CAP_VERSION_1_1 ||
+ 	    subcap_id == TPM_CAP_VERSION_1_2) {
+-		tpm_buf_append_u32(&buf, subcap_id);
+-		tpm_buf_append_u32(&buf, 0);
++		tpm_buf_append_u32(buf, subcap_id);
++		tpm_buf_append_u32(buf, 0);
+ 	} else {
+ 		if (subcap_id == TPM_CAP_FLAG_PERM ||
+ 		    subcap_id == TPM_CAP_FLAG_VOL)
+-			tpm_buf_append_u32(&buf, TPM_CAP_FLAG);
++			tpm_buf_append_u32(buf, TPM_CAP_FLAG);
+ 		else
+-			tpm_buf_append_u32(&buf, TPM_CAP_PROP);
++			tpm_buf_append_u32(buf, TPM_CAP_PROP);
+
+-		tpm_buf_append_u32(&buf, 4);
+-		tpm_buf_append_u32(&buf, subcap_id);
++		tpm_buf_append_u32(buf, 4);
++		tpm_buf_append_u32(buf, subcap_id);
+ 	}
+-	rc = tpm_transmit_cmd(chip, &buf, min_cap_length, desc);
++	rc = tpm_transmit_cmd(chip, buf, min_cap_length, desc);
+ 	if (!rc)
+-		*cap = *(cap_t *)&buf.data[TPM_HEADER_SIZE + 4];
+-	tpm_buf_destroy(&buf);
++		*cap = *(cap_t *)&buf->data[TPM_HEADER_SIZE + 4];
+ 	return rc;
+ }
+ EXPORT_SYMBOL_GPL(tpm1_getcap);
+@@ -530,21 +525,24 @@ struct tpm1_get_random_out {
+ int tpm1_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ {
+ 	struct tpm1_get_random_out *out;
++	struct tpm_buf *buf __free(kfree) = NULL;
+ 	u32 num_bytes =  min_t(u32, max, TPM_MAX_RNG_DATA);
+-	struct tpm_buf buf;
+ 	u32 total = 0;
+ 	int retries = 5;
+ 	u32 recd;
+ 	int rc;
+
+-	rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_GET_RANDOM);
+-	if (rc)
+-		return rc;
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_GET_RANDOM);
+
+ 	do {
+-		tpm_buf_append_u32(&buf, num_bytes);
++		tpm_buf_append_u32(buf, num_bytes);
+
+-		rc = tpm_transmit_cmd(chip, &buf, sizeof(out->rng_data_len),
++		rc = tpm_transmit_cmd(chip, buf, sizeof(out->rng_data_len),
+ 				      "attempting get random");
+ 		if (rc) {
+ 			if (rc > 0)
+@@ -552,7 +550,7 @@ int tpm1_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ 			goto out;
+ 		}
+
+-		out = (struct tpm1_get_random_out *)&buf.data[TPM_HEADER_SIZE];
++		out = (struct tpm1_get_random_out *)&buf->data[TPM_HEADER_SIZE];
+
+ 		recd = be32_to_cpu(out->rng_data_len);
+ 		if (recd > num_bytes) {
+@@ -560,8 +558,8 @@ int tpm1_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ 			goto out;
+ 		}
+
+-		if (tpm_buf_length(&buf) < TPM_HEADER_SIZE +
+-					   sizeof(out->rng_data_len) + recd) {
++		if (tpm_buf_length(buf) < TPM_HEADER_SIZE +
++					  sizeof(out->rng_data_len) + recd) {
+ 			rc = -EFAULT;
+ 			goto out;
+ 		}
+@@ -571,41 +569,36 @@ int tpm1_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ 		total += recd;
+ 		num_bytes -= recd;
+
+-		tpm_buf_reset(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_GET_RANDOM);
++		tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_GET_RANDOM);
+ 	} while (retries-- && total < max);
+
+ 	rc = total ? (int)total : -EIO;
+ out:
+-	tpm_buf_destroy(&buf);
+ 	return rc;
+ }
+
+ #define TPM_ORD_PCRREAD 21
+ int tpm1_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
+ {
+-	struct tpm_buf buf;
+ 	int rc;
+
+-	rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_PCRREAD);
+-	if (rc)
+-		return rc;
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+
+-	tpm_buf_append_u32(&buf, pcr_idx);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_PCRREAD);
++	tpm_buf_append_u32(buf, pcr_idx);
+
+-	rc = tpm_transmit_cmd(chip, &buf, TPM_DIGEST_SIZE,
++	rc = tpm_transmit_cmd(chip, buf, TPM_DIGEST_SIZE,
+ 			      "attempting to read a pcr value");
+ 	if (rc)
+-		goto out;
+-
+-	if (tpm_buf_length(&buf) < TPM_DIGEST_SIZE) {
+-		rc = -EFAULT;
+-		goto out;
+-	}
++		return rc;
+
+-	memcpy(res_buf, &buf.data[TPM_HEADER_SIZE], TPM_DIGEST_SIZE);
++	if (tpm_buf_length(buf) < TPM_DIGEST_SIZE)
++		return -EFAULT;
+
+-out:
+-	tpm_buf_destroy(&buf);
++	memcpy(res_buf, &buf->data[TPM_HEADER_SIZE], TPM_DIGEST_SIZE);
+ 	return rc;
+ }
+
+@@ -619,16 +612,13 @@ int tpm1_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
+  */
+ static int tpm1_continue_selftest(struct tpm_chip *chip)
+ {
+-	struct tpm_buf buf;
+-	int rc;
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+
+-	rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_CONTINUE_SELFTEST);
+-	if (rc)
+-		return rc;
+-
+-	rc = tpm_transmit_cmd(chip, &buf, 0, "continue selftest");
+-	tpm_buf_destroy(&buf);
+-	return rc;
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_CONTINUE_SELFTEST);
++	return tpm_transmit_cmd(chip, buf, 0, "continue selftest");
+ }
+
+ /**
+@@ -742,22 +732,24 @@ int tpm1_auto_startup(struct tpm_chip *chip)
+ int tpm1_pm_suspend(struct tpm_chip *chip, u32 tpm_suspend_pcr)
+ {
+ 	u8 dummy_hash[TPM_DIGEST_SIZE] = { 0 };
+-	struct tpm_buf buf;
+ 	unsigned int try;
++	struct tpm_buf *buf __free(kfree) = NULL;
+ 	int rc;
+
+-
+ 	/* for buggy tpm, flush pcrs with extend to selected dummy */
+ 	if (tpm_suspend_pcr)
+ 		rc = tpm1_pcr_extend(chip, tpm_suspend_pcr, dummy_hash,
+ 				     "extending dummy pcr before suspend");
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_SAVESTATE);
+
+-	rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_SAVESTATE);
+-	if (rc)
+-		return rc;
+ 	/* now do the actual savestate */
+ 	for (try = 0; try < TPM_RETRY; try++) {
+-		rc = tpm_transmit_cmd(chip, &buf, 0, NULL);
++		rc = tpm_transmit_cmd(chip, buf, 0, NULL);
+ 		/*
+ 		 * If the TPM indicates that it is too busy to respond to
+ 		 * this command then retry before giving up.  It can take
+@@ -772,7 +764,7 @@ int tpm1_pm_suspend(struct tpm_chip *chip, u32 tpm_suspend_pcr)
+ 			break;
+ 		tpm_msleep(TPM_TIMEOUT_RETRY);
+
+-		tpm_buf_reset(&buf, TPM_TAG_RQU_COMMAND, TPM_ORD_SAVESTATE);
++		tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_SAVESTATE);
+ 	}
+
+ 	if (rc)
+@@ -782,8 +774,6 @@ int tpm1_pm_suspend(struct tpm_chip *chip, u32 tpm_suspend_pcr)
+ 		dev_warn(&chip->dev, "TPM savestate took %dms\n",
+ 			 try * TPM_TIMEOUT_RETRY);
+
+-	tpm_buf_destroy(&buf);
+-
+ 	return rc;
+ }
+
+diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+index 52ee350da867..f619ce390f6d 100644
+--- a/drivers/char/tpm/tpm2-cmd.c
++++ b/drivers/char/tpm/tpm2-cmd.c
+@@ -119,12 +119,13 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
+ {
+ 	int i;
+ 	int rc;
+-	struct tpm_buf buf;
+ 	struct tpm2_pcr_read_out *out;
+ 	u8 pcr_select[TPM2_PCR_SELECT_MIN] = {0};
+ 	u16 digest_size;
+ 	u16 expected_digest_size = 0;
+
++	struct tpm_buf *buf __free(kfree) = NULL;
++
+ 	if (pcr_idx >= TPM2_PLATFORM_PCR)
+ 		return -EINVAL;
+
+@@ -139,36 +140,35 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
+ 		expected_digest_size = chip->allocated_banks[i].digest_size;
+ 	}
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_PCR_READ);
+-	if (rc)
+-		return rc;
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_PCR_READ);
+
+ 	pcr_select[pcr_idx >> 3] = 1 << (pcr_idx & 0x7);
+
+-	tpm_buf_append_u32(&buf, 1);
+-	tpm_buf_append_u16(&buf, digest->alg_id);
+-	tpm_buf_append_u8(&buf, TPM2_PCR_SELECT_MIN);
+-	tpm_buf_append(&buf, (const unsigned char *)pcr_select,
++	tpm_buf_append_u32(buf, 1);
++	tpm_buf_append_u16(buf, digest->alg_id);
++	tpm_buf_append_u8(buf, TPM2_PCR_SELECT_MIN);
++	tpm_buf_append(buf, (const unsigned char *)pcr_select,
+ 		       sizeof(pcr_select));
+
+-	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting to read a pcr value");
++	rc = tpm_transmit_cmd(chip, buf, 0, "attempting to read a pcr value");
+ 	if (rc)
+-		goto out;
++		return rc;
+
+-	out = (struct tpm2_pcr_read_out *)&buf.data[TPM_HEADER_SIZE];
++	out = (struct tpm2_pcr_read_out *)&buf->data[TPM_HEADER_SIZE];
+ 	digest_size = be16_to_cpu(out->digest_size);
+ 	if (digest_size > sizeof(digest->digest) ||
+-	    (!digest_size_ptr && digest_size != expected_digest_size)) {
+-		rc = -EINVAL;
+-		goto out;
+-	}
++	    (!digest_size_ptr && digest_size != expected_digest_size))
++		return -EINVAL;
+
+ 	if (digest_size_ptr)
+ 		*digest_size_ptr = digest_size;
+
+ 	memcpy(digest->digest, out->digest, digest_size);
+-out:
+-	tpm_buf_destroy(&buf);
+ 	return rc;
+ }
+
+@@ -184,56 +184,54 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
+ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
+ 		    struct tpm_digest *digests)
+ {
+-	struct tpm_buf buf;
+ 	int rc;
+ 	int i;
+
++	struct tpm_buf *buf __free(kfree) = NULL;
++
+ 	if (!disable_pcr_integrity) {
+ 		rc = tpm2_start_auth_session(chip);
+ 		if (rc)
+ 			return rc;
+ 	}
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_PCR_EXTEND);
+-	if (rc) {
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
+ 		if (!disable_pcr_integrity)
+ 			tpm2_end_auth_session(chip);
+-		return rc;
++		return -ENOMEM;
+ 	}
+
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_SESSIONS, TPM2_CC_PCR_EXTEND);
++
+ 	if (!disable_pcr_integrity) {
+-		rc = tpm_buf_append_name(chip, &buf, pcr_idx, NULL);
+-		if (rc) {
+-			tpm_buf_destroy(&buf);
++		rc = tpm_buf_append_name(chip, buf, pcr_idx, NULL);
++		if (rc)
+ 			return rc;
+-		}
+-		tpm_buf_append_hmac_session(chip, &buf, 0, NULL, 0);
++		tpm_buf_append_hmac_session(chip, buf, 0, NULL, 0);
+ 	} else {
+-		tpm_buf_append_handle(chip, &buf, pcr_idx);
+-		tpm_buf_append_auth(chip, &buf, NULL, 0);
++		tpm_buf_append_handle(chip, buf, pcr_idx);
++		tpm_buf_append_auth(chip, buf, NULL, 0);
+ 	}
+
+-	tpm_buf_append_u32(&buf, chip->nr_allocated_banks);
++	tpm_buf_append_u32(buf, chip->nr_allocated_banks);
+
+ 	for (i = 0; i < chip->nr_allocated_banks; i++) {
+-		tpm_buf_append_u16(&buf, digests[i].alg_id);
+-		tpm_buf_append(&buf, (const unsigned char *)&digests[i].digest,
++		tpm_buf_append_u16(buf, digests[i].alg_id);
++		tpm_buf_append(buf, (const unsigned char *)&digests[i].digest,
+ 			       chip->allocated_banks[i].digest_size);
+ 	}
+
+ 	if (!disable_pcr_integrity) {
+-		rc = tpm_buf_fill_hmac_session(chip, &buf);
+-		if (rc) {
+-			tpm_buf_destroy(&buf);
++		rc = tpm_buf_fill_hmac_session(chip, buf);
++		if (rc)
+ 			return rc;
+-		}
+ 	}
+
+-	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting extend a PCR value");
++	rc = tpm_transmit_cmd(chip, buf, 0, "attempting extend a PCR value");
+ 	if (!disable_pcr_integrity)
+-		rc = tpm_buf_check_hmac_response(chip, &buf, rc);
+-
+-	tpm_buf_destroy(&buf);
++		rc = tpm_buf_check_hmac_response(chip, buf, rc);
+
+ 	return rc;
+ }
+@@ -258,7 +256,6 @@ int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ {
+ 	struct tpm2_get_random_out *out;
+ 	struct tpm_header *head;
+-	struct tpm_buf buf;
+ 	u32 recd;
+ 	u32 num_bytes = max;
+ 	int err;
+@@ -267,6 +264,8 @@ int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ 	u8 *dest_ptr = dest;
+ 	off_t offset;
+
++	struct tpm_buf *buf __free(kfree) = NULL;
++
+ 	if (!num_bytes || max > TPM_MAX_RNG_DATA)
+ 		return -EINVAL;
+
+@@ -274,50 +273,52 @@ int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ 	if (err)
+ 		return err;
+
+-	err = tpm_buf_init(&buf, 0, 0);
+-	if (err) {
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
+ 		tpm2_end_auth_session(chip);
+-		return err;
++		return -ENOMEM;
+ 	}
+
++	tpm_buf_init(buf, TPM_BUFSIZE);
++
+ 	do {
+-		tpm_buf_reset(&buf, TPM2_ST_SESSIONS, TPM2_CC_GET_RANDOM);
++		tpm_buf_reset(buf, TPM2_ST_SESSIONS, TPM2_CC_GET_RANDOM);
+ 		if (tpm2_chip_auth(chip)) {
+-			tpm_buf_append_hmac_session(chip, &buf,
++			tpm_buf_append_hmac_session(chip, buf,
+ 						    TPM2_SA_ENCRYPT |
+ 						    TPM2_SA_CONTINUE_SESSION,
+ 						    NULL, 0);
+ 		} else  {
+-			offset = buf.handles * 4 + TPM_HEADER_SIZE;
+-			head = (struct tpm_header *)buf.data;
+-			if (tpm_buf_length(&buf) == offset)
++			offset = buf->handles * 4 + TPM_HEADER_SIZE;
++			head = (struct tpm_header *)buf->data;
++			if (tpm_buf_length(buf) == offset)
+ 				head->tag = cpu_to_be16(TPM2_ST_NO_SESSIONS);
+ 		}
+-		tpm_buf_append_u16(&buf, num_bytes);
+-		err = tpm_buf_fill_hmac_session(chip, &buf);
++		tpm_buf_append_u16(buf, num_bytes);
++		err = tpm_buf_fill_hmac_session(chip, buf);
+ 		if (err)
+ 			goto out;
+
+-		err = tpm_transmit_cmd(chip, &buf,
++		err = tpm_transmit_cmd(chip, buf,
+ 				       offsetof(struct tpm2_get_random_out,
+ 						buffer),
+ 				       "attempting get random");
+-		err = tpm_buf_check_hmac_response(chip, &buf, err);
++		err = tpm_buf_check_hmac_response(chip, buf, err);
+ 		if (err) {
+ 			if (err > 0)
+ 				err = -EIO;
+ 			goto out;
+ 		}
+
+-		head = (struct tpm_header *)buf.data;
++		head = (struct tpm_header *)buf->data;
+ 		offset = TPM_HEADER_SIZE;
+ 		/* Skip the parameter size field: */
+ 		if (be16_to_cpu(head->tag) == TPM2_ST_SESSIONS)
+ 			offset += 4;
+
+-		out = (struct tpm2_get_random_out *)&buf.data[offset];
++		out = (struct tpm2_get_random_out *)&buf->data[offset];
+ 		recd = min_t(u32, be16_to_cpu(out->size), num_bytes);
+-		if (tpm_buf_length(&buf) <
++		if (tpm_buf_length(buf) <
+ 		    TPM_HEADER_SIZE +
+ 		    offsetof(struct tpm2_get_random_out, buffer) +
+ 		    recd) {
+@@ -331,11 +332,8 @@ int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ 		num_bytes -= recd;
+ 	} while (retries-- && total < max);
+
+-	tpm_buf_destroy(&buf);
+-
+ 	return total ? total : -EIO;
+ out:
+-	tpm_buf_destroy(&buf);
+ 	tpm2_end_auth_session(chip);
+ 	return err;
+ }
+@@ -347,20 +345,18 @@ int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+  */
+ void tpm2_flush_context(struct tpm_chip *chip, u32 handle)
+ {
+-	struct tpm_buf buf;
+-	int rc;
+-
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_FLUSH_CONTEXT);
+-	if (rc) {
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
+ 		dev_warn(&chip->dev, "0x%08x was not flushed, out of memory\n",
+ 			 handle);
+ 		return;
+ 	}
+
+-	tpm_buf_append_u32(&buf, handle);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_FLUSH_CONTEXT);
++	tpm_buf_append_u32(buf, handle);
+
+-	tpm_transmit_cmd(chip, &buf, 0, "flushing context");
+-	tpm_buf_destroy(&buf);
++	tpm_transmit_cmd(chip, buf, 0, "flushing context");
+ }
+ EXPORT_SYMBOL_GPL(tpm2_flush_context);
+
+@@ -387,19 +383,21 @@ ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,  u32 *value,
+ 			const char *desc)
+ {
+ 	struct tpm2_get_cap_out *out;
+-	struct tpm_buf buf;
+ 	int rc;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
+-	if (rc)
+-		return rc;
+-	tpm_buf_append_u32(&buf, TPM2_CAP_TPM_PROPERTIES);
+-	tpm_buf_append_u32(&buf, property_id);
+-	tpm_buf_append_u32(&buf, 1);
+-	rc = tpm_transmit_cmd(chip, &buf, 0, NULL);
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
++	tpm_buf_append_u32(buf, TPM2_CAP_TPM_PROPERTIES);
++	tpm_buf_append_u32(buf, property_id);
++	tpm_buf_append_u32(buf, 1);
++	rc = tpm_transmit_cmd(chip, buf, 0, NULL);
+ 	if (!rc) {
+ 		out = (struct tpm2_get_cap_out *)
+-			&buf.data[TPM_HEADER_SIZE];
++			&buf->data[TPM_HEADER_SIZE];
+ 		/*
+ 		 * To prevent failing boot up of some systems, Infineon TPM2.0
+ 		 * returns SUCCESS on TPM2_Startup in field upgrade mode. Also
+@@ -411,7 +409,6 @@ ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,  u32 *value,
+ 		else
+ 			rc = -ENODATA;
+ 	}
+-	tpm_buf_destroy(&buf);
+ 	return rc;
+ }
+ EXPORT_SYMBOL_GPL(tpm2_get_tpm_pt);
+@@ -428,15 +425,14 @@ EXPORT_SYMBOL_GPL(tpm2_get_tpm_pt);
+  */
+ void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
+ {
+-	struct tpm_buf buf;
+-	int rc;
+-
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_SHUTDOWN);
+-	if (rc)
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
+ 		return;
+-	tpm_buf_append_u16(&buf, shutdown_type);
+-	tpm_transmit_cmd(chip, &buf, 0, "stopping the TPM");
+-	tpm_buf_destroy(&buf);
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_SHUTDOWN);
++	tpm_buf_append_u16(buf, shutdown_type);
++	tpm_transmit_cmd(chip, buf, 0, "stopping the TPM");
+ }
+
+ /**
+@@ -454,20 +450,21 @@ void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
+  */
+ static int tpm2_do_selftest(struct tpm_chip *chip)
+ {
+-	struct tpm_buf buf;
+ 	int full;
+ 	int rc;
+
+ 	for (full = 0; full < 2; full++) {
+-		rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_SELF_TEST);
+-		if (rc)
+-			return rc;
++		struct tpm_buf *buf __free(kfree) = NULL;
+
+-		tpm_buf_append_u8(&buf, full);
+-		rc = tpm_transmit_cmd(chip, &buf, 0,
+-				      "attempting the self test");
+-		tpm_buf_destroy(&buf);
++		buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++		if (!buf)
++			return -ENOMEM;
+
++		tpm_buf_init(buf, TPM_BUFSIZE);
++		tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_SELF_TEST);
++		tpm_buf_append_u8(buf, full);
++		rc = tpm_transmit_cmd(chip, buf, 0,
++				      "attempting the self test");
+ 		if (rc == TPM2_RC_TESTING)
+ 			rc = TPM2_RC_SUCCESS;
+ 		if (rc == TPM2_RC_INITIALIZE || rc == TPM2_RC_SUCCESS)
+@@ -492,23 +489,24 @@ static int tpm2_do_selftest(struct tpm_chip *chip)
+ int tpm2_probe(struct tpm_chip *chip)
+ {
+ 	struct tpm_header *out;
+-	struct tpm_buf buf;
+ 	int rc;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
+-	if (rc)
+-		return rc;
+-	tpm_buf_append_u32(&buf, TPM2_CAP_TPM_PROPERTIES);
+-	tpm_buf_append_u32(&buf, TPM_PT_TOTAL_COMMANDS);
+-	tpm_buf_append_u32(&buf, 1);
+-	rc = tpm_transmit_cmd(chip, &buf, 0, NULL);
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
++	tpm_buf_append_u32(buf, TPM2_CAP_TPM_PROPERTIES);
++	tpm_buf_append_u32(buf, TPM_PT_TOTAL_COMMANDS);
++	tpm_buf_append_u32(buf, 1);
++	rc = tpm_transmit_cmd(chip, buf, 0, NULL);
+ 	/* We ignore TPM return codes on purpose. */
+ 	if (rc >=  0) {
+-		out = (struct tpm_header *)buf.data;
++		out = (struct tpm_header *)buf->data;
+ 		if (be16_to_cpu(out->tag) == TPM2_ST_NO_SESSIONS)
+ 			chip->flags |= TPM_CHIP_FLAG_TPM2;
+ 	}
+-	tpm_buf_destroy(&buf);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(tpm2_probe);
+@@ -548,7 +546,6 @@ struct tpm2_pcr_selection {
+ ssize_t tpm2_get_pcr_allocation(struct tpm_chip *chip)
+ {
+ 	struct tpm2_pcr_selection pcr_selection;
+-	struct tpm_buf buf;
+ 	void *marker;
+ 	void *end;
+ 	void *pcr_select_offset;
+@@ -560,20 +557,22 @@ ssize_t tpm2_get_pcr_allocation(struct tpm_chip *chip)
+ 	int rc;
+ 	int i = 0;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
+-	if (rc)
+-		return rc;
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+
+-	tpm_buf_append_u32(&buf, TPM2_CAP_PCRS);
+-	tpm_buf_append_u32(&buf, 0);
+-	tpm_buf_append_u32(&buf, 1);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
++	tpm_buf_append_u32(buf, TPM2_CAP_PCRS);
++	tpm_buf_append_u32(buf, 0);
++	tpm_buf_append_u32(buf, 1);
+
+-	rc = tpm_transmit_cmd(chip, &buf, 9, "get tpm pcr allocation");
++	rc = tpm_transmit_cmd(chip, buf, 9, "get tpm pcr allocation");
+ 	if (rc)
+ 		goto out;
+
+ 	nr_possible_banks = be32_to_cpup(
+-		(__be32 *)&buf.data[TPM_HEADER_SIZE + 5]);
++		(__be32 *)&buf->data[TPM_HEADER_SIZE + 5]);
+ 	if (nr_possible_banks > TPM2_MAX_PCR_BANKS) {
+ 		pr_err("tpm: out of bank capacity: %u > %u\n",
+ 		       nr_possible_banks, TPM2_MAX_PCR_BANKS);
+@@ -581,10 +580,10 @@ ssize_t tpm2_get_pcr_allocation(struct tpm_chip *chip)
+ 		goto out;
+ 	}
+
+-	marker = &buf.data[TPM_HEADER_SIZE + 9];
++	marker = &buf->data[TPM_HEADER_SIZE + 9];
+
+-	rsp_len = be32_to_cpup((__be32 *)&buf.data[2]);
+-	end = &buf.data[rsp_len];
++	rsp_len = be32_to_cpup((__be32 *)&buf->data[2]);
++	end = &buf->data[rsp_len];
+
+ 	for (i = 0; i < nr_possible_banks; i++) {
+ 		pcr_select_offset = marker +
+@@ -617,20 +616,19 @@ ssize_t tpm2_get_pcr_allocation(struct tpm_chip *chip)
+
+ 	chip->nr_allocated_banks = nr_alloc_banks;
+ out:
+-	tpm_buf_destroy(&buf);
+-
+ 	return rc;
+ }
+
+ int tpm2_get_cc_attrs_tbl(struct tpm_chip *chip)
+ {
+-	struct tpm_buf buf;
+ 	u32 nr_commands;
+ 	__be32 *attrs;
+ 	u32 cc;
+ 	int i;
+ 	int rc;
+
++	struct tpm_buf *buf __free(kfree) = NULL;
++
+ 	rc = tpm2_get_tpm_pt(chip, TPM_PT_TOTAL_COMMANDS, &nr_commands, NULL);
+ 	if (rc)
+ 		goto out;
+@@ -647,30 +645,31 @@ int tpm2_get_cc_attrs_tbl(struct tpm_chip *chip)
+ 		goto out;
+ 	}
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
+-	if (rc)
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
++		rc = -ENOMEM;
+ 		goto out;
++	}
+
+-	tpm_buf_append_u32(&buf, TPM2_CAP_COMMANDS);
+-	tpm_buf_append_u32(&buf, TPM2_CC_FIRST);
+-	tpm_buf_append_u32(&buf, nr_commands);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
++	tpm_buf_append_u32(buf, TPM2_CAP_COMMANDS);
++	tpm_buf_append_u32(buf, TPM2_CC_FIRST);
++	tpm_buf_append_u32(buf, nr_commands);
+
+-	rc = tpm_transmit_cmd(chip, &buf, 9 + 4 * nr_commands, NULL);
+-	if (rc) {
+-		tpm_buf_destroy(&buf);
++	rc = tpm_transmit_cmd(chip, buf, 9 + 4 * nr_commands, NULL);
++	if (rc)
+ 		goto out;
+-	}
+
+ 	if (nr_commands !=
+-	    be32_to_cpup((__be32 *)&buf.data[TPM_HEADER_SIZE + 5])) {
++	    be32_to_cpup((__be32 *)&buf->data[TPM_HEADER_SIZE + 5])) {
+ 		rc = -EFAULT;
+-		tpm_buf_destroy(&buf);
+ 		goto out;
+ 	}
+
+ 	chip->nr_commands = nr_commands;
+
+-	attrs = (__be32 *)&buf.data[TPM_HEADER_SIZE + 9];
++	attrs = (__be32 *)&buf->data[TPM_HEADER_SIZE + 9];
+ 	for (i = 0; i < nr_commands; i++, attrs++) {
+ 		chip->cc_attrs_tbl[i] = be32_to_cpup(attrs);
+ 		cc = chip->cc_attrs_tbl[i] & 0xFFFF;
+@@ -682,8 +681,6 @@ int tpm2_get_cc_attrs_tbl(struct tpm_chip *chip)
+ 		}
+ 	}
+
+-	tpm_buf_destroy(&buf);
+-
+ out:
+ 	if (rc > 0)
+ 		rc = -ENODEV;
+@@ -704,20 +701,18 @@ EXPORT_SYMBOL_GPL(tpm2_get_cc_attrs_tbl);
+
+ static int tpm2_startup(struct tpm_chip *chip)
+ {
+-	struct tpm_buf buf;
+-	int rc;
++	struct tpm_buf *buf __free(kfree) = NULL;
+
+ 	dev_info(&chip->dev, "starting up the TPM manually\n");
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_STARTUP);
+-	if (rc < 0)
+-		return rc;
+-
+-	tpm_buf_append_u16(&buf, TPM2_SU_CLEAR);
+-	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting to start the TPM");
+-	tpm_buf_destroy(&buf);
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+
+-	return rc;
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_STARTUP);
++	tpm_buf_append_u16(buf, TPM2_SU_CLEAR);
++	return tpm_transmit_cmd(chip, buf, 0, "attempting to start the TPM");
+ }
+
+ /**
+diff --git a/drivers/char/tpm/tpm2-sessions.c b/drivers/char/tpm/tpm2-sessions.c
+index 795cd99dc6fe..b6a93db5a5ee 100644
+--- a/drivers/char/tpm/tpm2-sessions.c
++++ b/drivers/char/tpm/tpm2-sessions.c
+@@ -167,8 +167,8 @@ static int tpm2_read_public(struct tpm_chip *chip, u32 handle, void *name)
+ {
+ 	u32 mso = tpm2_handle_mso(handle);
+ 	off_t offset = TPM_HEADER_SIZE;
++	struct tpm_buf *buf __free(kfree) = NULL;
+ 	int rc, name_size_alg;
+-	struct tpm_buf buf;
+
+ 	if (mso != TPM2_MSO_PERSISTENT && mso != TPM2_MSO_VOLATILE &&
+ 	    mso != TPM2_MSO_NVRAM) {
+@@ -176,50 +176,40 @@ static int tpm2_read_public(struct tpm_chip *chip, u32 handle, void *name)
+ 		return sizeof(u32);
+ 	}
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_READ_PUBLIC);
+-	if (rc)
+-		return rc;
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+
+-	tpm_buf_append_u32(&buf, handle);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_READ_PUBLIC);
++	tpm_buf_append_u32(buf, handle);
+
+-	rc = tpm_transmit_cmd(chip, &buf, 0, "TPM2_ReadPublic");
+-	if (rc) {
+-		tpm_buf_destroy(&buf);
++	rc = tpm_transmit_cmd(chip, buf, 0, "TPM2_ReadPublic");
++	if (rc)
+ 		return tpm_ret_to_err(rc);
+-	}
+
+ 	/* Skip TPMT_PUBLIC: */
+-	offset += tpm_buf_read_u16(&buf, &offset);
++	offset += tpm_buf_read_u16(buf, &offset);
+
+ 	/*
+ 	 * Ensure space for the length field of TPM2B_NAME and hashAlg field of
+ 	 * TPMT_HA (the extra four bytes).
+ 	 */
+-	if (offset + 4 > tpm_buf_length(&buf)) {
+-		tpm_buf_destroy(&buf);
++	if (offset + 4 > tpm_buf_length(buf))
+ 		return -EIO;
+-	}
+-
+-	rc = tpm_buf_read_u16(&buf, &offset);
+-	name_size_alg = name_size(&buf.data[offset]);
+
+-	if (name_size_alg < 0) {
+-		tpm_buf_destroy(&buf);
++	rc = tpm_buf_read_u16(buf, &offset);
++	name_size_alg = name_size(&buf->data[offset]);
++	if (name_size_alg < 0)
+ 		return name_size_alg;
+-	}
+
+-	if (rc != name_size_alg) {
+-		tpm_buf_destroy(&buf);
++	if (rc != name_size_alg)
+ 		return -EIO;
+-	}
+
+-	if (offset + rc > tpm_buf_length(&buf)) {
+-		tpm_buf_destroy(&buf);
++	if (offset + rc > tpm_buf_length(buf))
+ 		return -EIO;
+-	}
+
+-	memcpy(name, &buf.data[offset], rc);
+-	tpm_buf_destroy(&buf);
++	memcpy(name, &buf->data[offset], rc);
+ 	return name_size_alg;
+ }
+ #endif /* CONFIG_TCG_TPM2_HMAC */
+@@ -987,8 +977,8 @@ static int tpm2_load_null(struct tpm_chip *chip, u32 *null_key)
+  */
+ int tpm2_start_auth_session(struct tpm_chip *chip)
+ {
++	struct tpm_buf *buf __free(kfree) = NULL;
+ 	struct tpm2_auth *auth;
+-	struct tpm_buf buf;
+ 	u32 null_key;
+ 	int rc;
+
+@@ -1007,41 +997,43 @@ int tpm2_start_auth_session(struct tpm_chip *chip)
+
+ 	auth->session = TPM_HEADER_SIZE;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_START_AUTH_SESS);
+-	if (rc)
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
++		rc = -ENOMEM;
+ 		goto out;
++	}
+
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_NO_SESSIONS, TPM2_CC_START_AUTH_SESS);
+ 	/* salt key handle */
+-	tpm_buf_append_u32(&buf, null_key);
++	tpm_buf_append_u32(buf, null_key);
+ 	/* bind key handle */
+-	tpm_buf_append_u32(&buf, TPM2_RH_NULL);
++	tpm_buf_append_u32(buf, TPM2_RH_NULL);
+ 	/* nonce caller */
+ 	get_random_bytes(auth->our_nonce, sizeof(auth->our_nonce));
+-	tpm_buf_append_u16(&buf, sizeof(auth->our_nonce));
+-	tpm_buf_append(&buf, auth->our_nonce, sizeof(auth->our_nonce));
++	tpm_buf_append_u16(buf, sizeof(auth->our_nonce));
++	tpm_buf_append(buf, auth->our_nonce, sizeof(auth->our_nonce));
+
+ 	/* append encrypted salt and squirrel away unencrypted in auth */
+-	tpm_buf_append_salt(&buf, chip, auth);
++	tpm_buf_append_salt(buf, chip, auth);
+ 	/* session type (HMAC, audit or policy) */
+-	tpm_buf_append_u8(&buf, TPM2_SE_HMAC);
++	tpm_buf_append_u8(buf, TPM2_SE_HMAC);
+
+ 	/* symmetric encryption parameters */
+ 	/* symmetric algorithm */
+-	tpm_buf_append_u16(&buf, TPM_ALG_AES);
++	tpm_buf_append_u16(buf, TPM_ALG_AES);
+ 	/* bits for symmetric algorithm */
+-	tpm_buf_append_u16(&buf, AES_KEY_BITS);
++	tpm_buf_append_u16(buf, AES_KEY_BITS);
+ 	/* symmetric algorithm mode (must be CFB) */
+-	tpm_buf_append_u16(&buf, TPM_ALG_CFB);
++	tpm_buf_append_u16(buf, TPM_ALG_CFB);
+ 	/* hash algorithm for session */
+-	tpm_buf_append_u16(&buf, TPM_ALG_SHA256);
++	tpm_buf_append_u16(buf, TPM_ALG_SHA256);
+
+-	rc = tpm_ret_to_err(tpm_transmit_cmd(chip, &buf, 0, "StartAuthSession"));
++	rc = tpm_ret_to_err(tpm_transmit_cmd(chip, buf, 0, "StartAuthSession"));
+ 	tpm2_flush_context(chip, null_key);
+
+ 	if (rc == TPM2_RC_SUCCESS)
+-		rc = tpm2_parse_start_auth_session(auth, &buf);
+-
+-	tpm_buf_destroy(&buf);
++		rc = tpm2_parse_start_auth_session(auth, buf);
+
+ 	if (rc == TPM2_RC_SUCCESS) {
+ 		chip->auth = auth;
+@@ -1262,19 +1254,21 @@ static int tpm2_parse_create_primary(struct tpm_chip *chip, struct tpm_buf *buf,
+ static int tpm2_create_primary(struct tpm_chip *chip, u32 hierarchy,
+ 			       u32 *handle, u8 *name)
+ {
++	struct tpm_buf *template __free(kfree) = NULL;
++	struct tpm_buf *buf __free(kfree) = NULL;
+ 	int rc;
+-	struct tpm_buf buf;
+-	struct tpm_buf template;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE_PRIMARY);
+-	if (rc)
+-		return rc;
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+
+-	rc = tpm_buf_init_sized(&template);
+-	if (rc) {
+-		tpm_buf_destroy(&buf);
+-		return rc;
+-	}
++	template = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!template)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE_PRIMARY);
++	tpm_buf_init_sized(template, TPM_BUFSIZE);
+
+ 	/*
+ 	 * create the template.  Note: in order for userspace to
+@@ -1286,75 +1280,72 @@ static int tpm2_create_primary(struct tpm_chip *chip, u32 hierarchy,
+ 	 */
+
+ 	/* key type */
+-	tpm_buf_append_u16(&template, TPM_ALG_ECC);
++	tpm_buf_append_u16(template, TPM_ALG_ECC);
+
+ 	/* name algorithm */
+-	tpm_buf_append_u16(&template, TPM_ALG_SHA256);
++	tpm_buf_append_u16(template, TPM_ALG_SHA256);
+
+ 	/* object properties */
+-	tpm_buf_append_u32(&template, TPM2_OA_NULL_KEY);
++	tpm_buf_append_u32(template, TPM2_OA_NULL_KEY);
+
+ 	/* sauth policy (empty) */
+-	tpm_buf_append_u16(&template, 0);
++	tpm_buf_append_u16(template, 0);
+
+ 	/* BEGIN parameters: key specific; for ECC*/
+
+ 	/* symmetric algorithm */
+-	tpm_buf_append_u16(&template, TPM_ALG_AES);
++	tpm_buf_append_u16(template, TPM_ALG_AES);
+
+ 	/* bits for symmetric algorithm */
+-	tpm_buf_append_u16(&template, AES_KEY_BITS);
++	tpm_buf_append_u16(template, AES_KEY_BITS);
+
+ 	/* algorithm mode (must be CFB) */
+-	tpm_buf_append_u16(&template, TPM_ALG_CFB);
++	tpm_buf_append_u16(template, TPM_ALG_CFB);
+
+ 	/* scheme (NULL means any scheme) */
+-	tpm_buf_append_u16(&template, TPM_ALG_NULL);
++	tpm_buf_append_u16(template, TPM_ALG_NULL);
+
+ 	/* ECC Curve ID */
+-	tpm_buf_append_u16(&template, TPM2_ECC_NIST_P256);
++	tpm_buf_append_u16(template, TPM2_ECC_NIST_P256);
+
+ 	/* KDF Scheme */
+-	tpm_buf_append_u16(&template, TPM_ALG_NULL);
++	tpm_buf_append_u16(template, TPM_ALG_NULL);
+
+ 	/* unique: key specific; for ECC it is two zero size points */
+-	tpm_buf_append_u16(&template, 0);
+-	tpm_buf_append_u16(&template, 0);
++	tpm_buf_append_u16(template, 0);
++	tpm_buf_append_u16(template, 0);
+
+ 	/* END parameters */
+
+ 	/* primary handle */
+-	tpm_buf_append_u32(&buf, hierarchy);
+-	tpm_buf_append_empty_auth(&buf, TPM2_RS_PW);
++	tpm_buf_append_u32(buf, hierarchy);
++	tpm_buf_append_empty_auth(buf, TPM2_RS_PW);
+
+ 	/* sensitive create size is 4 for two empty buffers */
+-	tpm_buf_append_u16(&buf, 4);
++	tpm_buf_append_u16(buf, 4);
+
+ 	/* sensitive create auth data (empty) */
+-	tpm_buf_append_u16(&buf, 0);
++	tpm_buf_append_u16(buf, 0);
+
+ 	/* sensitive create sensitive data (empty) */
+-	tpm_buf_append_u16(&buf, 0);
++	tpm_buf_append_u16(buf, 0);
+
+ 	/* the public template */
+-	tpm_buf_append(&buf, template.data, template.length);
+-	tpm_buf_destroy(&template);
++	tpm_buf_append(buf, template->data, template->length);
+
+ 	/* outside info (empty) */
+-	tpm_buf_append_u16(&buf, 0);
++	tpm_buf_append_u16(buf, 0);
+
+ 	/* creation PCR (none) */
+-	tpm_buf_append_u32(&buf, 0);
++	tpm_buf_append_u32(buf, 0);
+
+-	rc = tpm_transmit_cmd(chip, &buf, 0,
++	rc = tpm_transmit_cmd(chip, buf, 0,
+ 			      "attempting to create NULL primary");
+
+ 	if (rc == TPM2_RC_SUCCESS)
+-		rc = tpm2_parse_create_primary(chip, &buf, handle, hierarchy,
++		rc = tpm2_parse_create_primary(chip, buf, handle, hierarchy,
+ 					       name);
+
+-	tpm_buf_destroy(&buf);
+-
+ 	return rc;
+ }
+
+diff --git a/drivers/char/tpm/tpm2-space.c b/drivers/char/tpm/tpm2-space.c
+index 60354cd53b5c..cbf86ff5931f 100644
+--- a/drivers/char/tpm/tpm2-space.c
++++ b/drivers/char/tpm/tpm2-space.c
+@@ -71,24 +71,25 @@ void tpm2_del_space(struct tpm_chip *chip, struct tpm_space *space)
+ int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
+ 		      unsigned int *offset, u32 *handle)
+ {
+-	struct tpm_buf tbuf;
+ 	struct tpm2_context *ctx;
+ 	unsigned int body_size;
+ 	int rc;
+
+-	rc = tpm_buf_init(&tbuf, TPM2_ST_NO_SESSIONS, TPM2_CC_CONTEXT_LOAD);
+-	if (rc)
+-		return rc;
++	struct tpm_buf *tbuf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!tbuf)
++		return -ENOMEM;
++
++	tpm_buf_init(tbuf, TPM_BUFSIZE);
++	tpm_buf_reset(tbuf, TPM2_ST_NO_SESSIONS, TPM2_CC_CONTEXT_LOAD);
+
+ 	ctx = (struct tpm2_context *)&buf[*offset];
+ 	body_size = sizeof(*ctx) + be16_to_cpu(ctx->blob_size);
+-	tpm_buf_append(&tbuf, &buf[*offset], body_size);
++	tpm_buf_append(tbuf, &buf[*offset], body_size);
+
+-	rc = tpm_transmit_cmd(chip, &tbuf, 4, NULL);
++	rc = tpm_transmit_cmd(chip, tbuf, 4, NULL);
+ 	if (rc < 0) {
+ 		dev_warn(&chip->dev, "%s: failed with a system error %d\n",
+ 			 __func__, rc);
+-		tpm_buf_destroy(&tbuf);
+ 		return -EFAULT;
+ 	} else if (tpm2_rc_value(rc) == TPM2_RC_HANDLE ||
+ 		   rc == TPM2_RC_REFERENCE_H0) {
+@@ -103,64 +104,55 @@ int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
+ 		 * flushed outside the space
+ 		 */
+ 		*handle = 0;
+-		tpm_buf_destroy(&tbuf);
+ 		return -ENOENT;
+ 	} else if (tpm2_rc_value(rc) == TPM2_RC_INTEGRITY) {
+-		tpm_buf_destroy(&tbuf);
+ 		return -EINVAL;
+ 	} else if (rc > 0) {
+ 		dev_warn(&chip->dev, "%s: failed with a TPM error 0x%04X\n",
+ 			 __func__, rc);
+-		tpm_buf_destroy(&tbuf);
+ 		return -EFAULT;
+ 	}
+
+-	*handle = be32_to_cpup((__be32 *)&tbuf.data[TPM_HEADER_SIZE]);
++	*handle = be32_to_cpup((__be32 *)&tbuf->data[TPM_HEADER_SIZE]);
+ 	*offset += body_size;
+-
+-	tpm_buf_destroy(&tbuf);
+ 	return 0;
+ }
+
+ int tpm2_save_context(struct tpm_chip *chip, u32 handle, u8 *buf,
+ 		      unsigned int buf_size, unsigned int *offset)
+ {
+-	struct tpm_buf tbuf;
+ 	unsigned int body_size;
+ 	int rc;
+
+-	rc = tpm_buf_init(&tbuf, TPM2_ST_NO_SESSIONS, TPM2_CC_CONTEXT_SAVE);
+-	if (rc)
+-		return rc;
++	struct tpm_buf *tbuf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!tbuf)
++		return -ENOMEM;
+
+-	tpm_buf_append_u32(&tbuf, handle);
++	tpm_buf_init(tbuf, TPM_BUFSIZE);
++	tpm_buf_reset(tbuf, TPM2_ST_NO_SESSIONS, TPM2_CC_CONTEXT_SAVE);
++	tpm_buf_append_u32(tbuf, handle);
+
+-	rc = tpm_transmit_cmd(chip, &tbuf, 0, NULL);
++	rc = tpm_transmit_cmd(chip, tbuf, 0, NULL);
+ 	if (rc < 0) {
+ 		dev_warn(&chip->dev, "%s: failed with a system error %d\n",
+ 			 __func__, rc);
+-		tpm_buf_destroy(&tbuf);
+ 		return -EFAULT;
+ 	} else if (tpm2_rc_value(rc) == TPM2_RC_REFERENCE_H0) {
+-		tpm_buf_destroy(&tbuf);
+ 		return -ENOENT;
+ 	} else if (rc) {
+ 		dev_warn(&chip->dev, "%s: failed with a TPM error 0x%04X\n",
+ 			 __func__, rc);
+-		tpm_buf_destroy(&tbuf);
+ 		return -EFAULT;
+ 	}
+
+-	body_size = tpm_buf_length(&tbuf) - TPM_HEADER_SIZE;
++	body_size = tpm_buf_length(tbuf) - TPM_HEADER_SIZE;
+ 	if ((*offset + body_size) > buf_size) {
+ 		dev_warn(&chip->dev, "%s: out of backing storage\n", __func__);
+-		tpm_buf_destroy(&tbuf);
+ 		return -ENOMEM;
+ 	}
+
+-	memcpy(&buf[*offset], &tbuf.data[TPM_HEADER_SIZE], body_size);
++	memcpy(&buf[*offset], &tbuf->data[TPM_HEADER_SIZE], body_size);
+ 	*offset += body_size;
+-	tpm_buf_destroy(&tbuf);
+ 	return 0;
+ }
+
+diff --git a/drivers/char/tpm/tpm_vtpm_proxy.c b/drivers/char/tpm/tpm_vtpm_proxy.c
+index 7bb0f4d4a2ed..b81fd2a537df 100644
+--- a/drivers/char/tpm/tpm_vtpm_proxy.c
++++ b/drivers/char/tpm/tpm_vtpm_proxy.c
+@@ -395,40 +395,36 @@ static bool vtpm_proxy_tpm_req_canceled(struct tpm_chip  *chip, u8 status)
+
+ static int vtpm_proxy_request_locality(struct tpm_chip *chip, int locality)
+ {
+-	struct tpm_buf buf;
+ 	int rc;
+ 	const struct tpm_header *header;
+ 	struct proxy_dev *proxy_dev = dev_get_drvdata(&chip->dev);
+
++	struct tpm_buf *buf __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	tpm_buf_init(buf, TPM_BUFSIZE);
+ 	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+-		rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS,
+-				  TPM2_CC_SET_LOCALITY);
++		tpm_buf_reset(buf, TPM2_ST_SESSIONS, TPM2_CC_SET_LOCALITY);
+ 	else
+-		rc = tpm_buf_init(&buf, TPM_TAG_RQU_COMMAND,
+-				  TPM_ORD_SET_LOCALITY);
+-	if (rc)
+-		return rc;
+-	tpm_buf_append_u8(&buf, locality);
++		tpm_buf_reset(buf, TPM_TAG_RQU_COMMAND, TPM_ORD_SET_LOCALITY);
++
++	tpm_buf_append_u8(buf, locality);
+
+ 	proxy_dev->state |= STATE_DRIVER_COMMAND;
+
+-	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting to set locality");
++	rc = tpm_transmit_cmd(chip, buf, 0, "attempting to set locality");
+
+ 	proxy_dev->state &= ~STATE_DRIVER_COMMAND;
+
+-	if (rc < 0) {
+-		locality = rc;
+-		goto out;
+-	}
++	if (rc < 0)
++		return rc;
+
+-	header = (const struct tpm_header *)buf.data;
++	header = (const struct tpm_header *)buf->data;
+ 	rc = be32_to_cpu(header->return_code);
+ 	if (rc)
+ 		locality = -1;
+
+-out:
+-	tpm_buf_destroy(&buf);
+-
+ 	return locality;
+ }
+
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 202da079d500..14d75c1482d6 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -26,6 +26,7 @@
+ #include <crypto/aes.h>
+
+ #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
++#define TPM_BUFSIZE		4096
+
+ #define TPM2_MAX_DIGEST_SIZE	SHA512_DIGEST_SIZE
+ #define TPM2_MAX_PCR_BANKS	8
+@@ -378,13 +379,15 @@ enum tpm_buf_flags {
+ };
+
+ /*
+- * A string buffer type for constructing TPM commands.
++ * A buffer for constructing and parsing TPM commands, responses and sized
++ * (TPM2B) buffers.
+  */
+ struct tpm_buf {
+-	u32 flags;
+-	u32 length;
+-	u8 *data;
++	u8 flags;
++	u16 length;
++	u16 capacity;
+ 	u8 handles;
++	u8 data[];
+ };
+
+ enum tpm2_object_attributes {
+@@ -415,12 +418,11 @@ struct tpm2_hash {
+ 	unsigned int tpm_id;
+ };
+
+-int tpm_buf_init(struct tpm_buf *buf, u16 tag, u32 ordinal);
++void tpm_buf_init(struct tpm_buf *buf, u16 buf_size);
++void tpm_buf_init_sized(struct tpm_buf *buf, u16 buf_size);
+ void tpm_buf_reset(struct tpm_buf *buf, u16 tag, u32 ordinal);
+-int tpm_buf_init_sized(struct tpm_buf *buf);
+ void tpm_buf_reset_sized(struct tpm_buf *buf);
+-void tpm_buf_destroy(struct tpm_buf *buf);
+-u32 tpm_buf_length(struct tpm_buf *buf);
++u16 tpm_buf_length(struct tpm_buf *buf);
+ void tpm_buf_append(struct tpm_buf *buf, const u8 *new_data, u16 new_length);
+ void tpm_buf_append_u8(struct tpm_buf *buf, const u8 value);
+ void tpm_buf_append_u16(struct tpm_buf *buf, const u16 value);
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index 13513819991e..6e03fa7227e4 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -317,9 +317,8 @@ static int TSS_checkhmac2(unsigned char *buffer,
+  * For key specific tpm requests, we will generate and send our
+  * own TPM command packets using the drivers send function.
+  */
+-static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
++static int trusted_tpm_send(struct tpm_buf *buf)
+ {
+-	struct tpm_buf buf;
+ 	int rc;
+
+ 	if (!chip)
+@@ -329,12 +328,9 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 	if (rc)
+ 		return rc;
+
+-	buf.flags = 0;
+-	buf.length = buflen;
+-	buf.data = cmd;
+-	dump_tpm_buf(cmd);
+-	rc = tpm_transmit_cmd(chip, &buf, 4, "sending data");
+-	dump_tpm_buf(cmd);
++	dump_tpm_buf(buf->data);
++	rc = tpm_transmit_cmd(chip, buf, 4, "sending data");
++	dump_tpm_buf(buf->data);
+
+ 	if (rc > 0)
+ 		/* TPM error */
+@@ -380,7 +376,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ 	tpm_buf_append_u32(tb, handle);
+ 	tpm_buf_append(tb, ononce, TPM_NONCE_SIZE);
+
+-	ret = trusted_tpm_send(tb->data, tb->length);
++	ret = trusted_tpm_send(tb);
+ 	if (ret < 0)
+ 		return ret;
+
+@@ -404,7 +400,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ 		return -ENODEV;
+
+ 	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OIAP);
+-	ret = trusted_tpm_send(tb->data, tb->length);
++	ret = trusted_tpm_send(tb);
+ 	if (ret < 0)
+ 		return ret;
+
+@@ -513,7 +509,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+ 	tpm_buf_append_u8(tb, cont);
+ 	tpm_buf_append(tb, td->pubauth, SHA1_DIGEST_SIZE);
+
+-	ret = trusted_tpm_send(tb->data, tb->length);
++	ret = trusted_tpm_send(tb);
+ 	if (ret < 0)
+ 		goto out;
+
+@@ -604,7 +600,7 @@ static int tpm_unseal(struct tpm_buf *tb,
+ 	tpm_buf_append_u8(tb, cont);
+ 	tpm_buf_append(tb, authdata2, SHA1_DIGEST_SIZE);
+
+-	ret = trusted_tpm_send(tb->data, tb->length);
++	ret = trusted_tpm_send(tb);
+ 	if (ret < 0) {
+ 		pr_info("authhmac failed (%d)\n", ret);
+ 		return ret;
+@@ -631,23 +627,23 @@ static int tpm_unseal(struct tpm_buf *tb,
+ static int key_seal(struct trusted_key_payload *p,
+ 		    struct trusted_key_options *o)
+ {
+-	struct tpm_buf tb;
+ 	int ret;
+
+-	ret = tpm_buf_init(&tb, 0, 0);
+-	if (ret)
+-		return ret;
++	struct tpm_buf *tb __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!tb)
++		return -ENOMEM;
++
++	tpm_buf_init(tb, TPM_BUFSIZE);
+
+ 	/* include migratable flag at end of sealed key */
+ 	p->key[p->key_len] = p->migratable;
+
+-	ret = tpm_seal(&tb, o->keytype, o->keyhandle, o->keyauth,
++	ret = tpm_seal(tb, o->keytype, o->keyhandle, o->keyauth,
+ 		       p->key, p->key_len + 1, p->blob, &p->blob_len,
+ 		       o->blobauth, o->pcrinfo, o->pcrinfo_len);
+ 	if (ret < 0)
+ 		pr_info("srkseal failed (%d)\n", ret);
+
+-	tpm_buf_destroy(&tb);
+ 	return ret;
+ }
+
+@@ -657,14 +653,15 @@ static int key_seal(struct trusted_key_payload *p,
+ static int key_unseal(struct trusted_key_payload *p,
+ 		      struct trusted_key_options *o)
+ {
+-	struct tpm_buf tb;
+ 	int ret;
+
+-	ret = tpm_buf_init(&tb, 0, 0);
+-	if (ret)
+-		return ret;
++	struct tpm_buf *tb __free(kfree) = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!tb)
++		return -ENOMEM;
++
++	tpm_buf_init(tb, TPM_BUFSIZE);
+
+-	ret = tpm_unseal(&tb, o->keyhandle, o->keyauth, p->blob, p->blob_len,
++	ret = tpm_unseal(tb, o->keyhandle, o->keyauth, p->blob, p->blob_len,
+ 			 o->blobauth, p->key, &p->key_len);
+ 	if (ret < 0)
+ 		pr_info("srkunseal failed (%d)\n", ret);
+@@ -672,7 +669,6 @@ static int key_unseal(struct trusted_key_payload *p,
+ 		/* pull migratable flag out of sealed key */
+ 		p->migratable = p->key[--p->key_len];
+
+-	tpm_buf_destroy(&tb);
+ 	return ret;
+ }
+
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index 6340823f8b53..6f5c34b885fb 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -234,7 +234,8 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		      struct trusted_key_options *options)
+ {
+ 	off_t offset = TPM_HEADER_SIZE;
+-	struct tpm_buf buf, sized;
++	struct tpm_buf *buf __free(kfree) = NULL;
++	struct tpm_buf *sized __free(kfree) = NULL;
+ 	int blob_len = 0;
+ 	int hash;
+ 	u32 flags;
+@@ -255,97 +256,100 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	if (rc)
+ 		goto out_put;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE);
+-	if (rc) {
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
++		rc = -ENOMEM;
+ 		tpm2_end_auth_session(chip);
+ 		goto out_put;
+ 	}
+
+-	rc = tpm_buf_init_sized(&sized);
+-	if (rc) {
+-		tpm_buf_destroy(&buf);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE);
++
++	sized = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!sized) {
++		rc = -ENOMEM;
+ 		tpm2_end_auth_session(chip);
+ 		goto out_put;
+ 	}
+
+-	rc = tpm_buf_append_name(chip, &buf, options->keyhandle, NULL);
++	tpm_buf_init_sized(sized, TPM_BUFSIZE);
++
++	rc = tpm_buf_append_name(chip, buf, options->keyhandle, NULL);
+ 	if (rc)
+ 		goto out;
+
+-	tpm_buf_append_hmac_session(chip, &buf, TPM2_SA_DECRYPT,
++	tpm_buf_append_hmac_session(chip, buf, TPM2_SA_DECRYPT,
+ 				    options->keyauth, TPM_DIGEST_SIZE);
+
+ 	/* sensitive */
+-	tpm_buf_append_u16(&sized, options->blobauth_len);
++	tpm_buf_append_u16(sized, options->blobauth_len);
+
+ 	if (options->blobauth_len)
+-		tpm_buf_append(&sized, options->blobauth, options->blobauth_len);
++		tpm_buf_append(sized, options->blobauth, options->blobauth_len);
+
+-	tpm_buf_append_u16(&sized, payload->key_len);
+-	tpm_buf_append(&sized, payload->key, payload->key_len);
+-	tpm_buf_append(&buf, sized.data, sized.length);
++	tpm_buf_append_u16(sized, payload->key_len);
++	tpm_buf_append(sized, payload->key, payload->key_len);
++	tpm_buf_append(buf, sized->data, sized->length);
+
+ 	/* public */
+-	tpm_buf_reset_sized(&sized);
+-	tpm_buf_append_u16(&sized, TPM_ALG_KEYEDHASH);
+-	tpm_buf_append_u16(&sized, hash);
++	tpm_buf_reset_sized(sized);
++	tpm_buf_append_u16(sized, TPM_ALG_KEYEDHASH);
++	tpm_buf_append_u16(sized, hash);
+
+ 	/* key properties */
+ 	flags = 0;
+ 	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
+ 	flags |= payload->migratable ? 0 : (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT);
+-	tpm_buf_append_u32(&sized, flags);
++	tpm_buf_append_u32(sized, flags);
+
+ 	/* policy */
+-	tpm_buf_append_u16(&sized, options->policydigest_len);
++	tpm_buf_append_u16(sized, options->policydigest_len);
+ 	if (options->policydigest_len)
+-		tpm_buf_append(&sized, options->policydigest, options->policydigest_len);
++		tpm_buf_append(sized, options->policydigest, options->policydigest_len);
+
+ 	/* public parameters */
+-	tpm_buf_append_u16(&sized, TPM_ALG_NULL);
+-	tpm_buf_append_u16(&sized, 0);
++	tpm_buf_append_u16(sized, TPM_ALG_NULL);
++	tpm_buf_append_u16(sized, 0);
+
+-	tpm_buf_append(&buf, sized.data, sized.length);
++	tpm_buf_append(buf, sized->data, sized->length);
+
+ 	/* outside info */
+-	tpm_buf_append_u16(&buf, 0);
++	tpm_buf_append_u16(buf, 0);
+
+ 	/* creation PCR */
+-	tpm_buf_append_u32(&buf, 0);
++	tpm_buf_append_u32(buf, 0);
+
+-	if (buf.flags & TPM_BUF_OVERFLOW) {
++	if (buf->flags & TPM_BUF_OVERFLOW) {
+ 		rc = -E2BIG;
+ 		tpm2_end_auth_session(chip);
+ 		goto out;
+ 	}
+
+-	rc = tpm_buf_fill_hmac_session(chip, &buf);
++	rc = tpm_buf_fill_hmac_session(chip, buf);
+ 	if (rc)
+ 		goto out;
+
+-	rc = tpm_transmit_cmd(chip, &buf, 4, "sealing data");
+-	rc = tpm_buf_check_hmac_response(chip, &buf, rc);
++	rc = tpm_transmit_cmd(chip, buf, 4, "sealing data");
++	rc = tpm_buf_check_hmac_response(chip, buf, rc);
+ 	if (rc)
+ 		goto out;
+
+-	blob_len = tpm_buf_read_u32(&buf, &offset);
+-	if (blob_len > MAX_BLOB_SIZE || buf.flags & TPM_BUF_BOUNDARY_ERROR) {
++	blob_len = tpm_buf_read_u32(buf, &offset);
++	if (blob_len > MAX_BLOB_SIZE || buf->flags & TPM_BUF_BOUNDARY_ERROR) {
+ 		rc = -E2BIG;
+ 		goto out;
+ 	}
+-	if (buf.length - offset < blob_len) {
++	if (buf->length - offset < blob_len) {
+ 		rc = -EFAULT;
+ 		goto out;
+ 	}
+
+-	blob_len = tpm2_key_encode(payload, options, &buf.data[offset], blob_len);
++	blob_len = tpm2_key_encode(payload, options, &buf->data[offset], blob_len);
+ 	if (blob_len < 0)
+ 		rc = blob_len;
+
+ out:
+-	tpm_buf_destroy(&sized);
+-	tpm_buf_destroy(&buf);
+-
+ 	if (!rc)
+ 		payload->blob_len = blob_len;
+
+@@ -373,7 +377,7 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 			 u32 *blob_handle)
+ {
+ 	u8 *blob_ref __free(kfree) = NULL;
+-	struct tpm_buf buf;
++	struct tpm_buf *buf __free(kfree) = NULL;
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
+@@ -427,39 +431,38 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	if (rc)
+ 		return rc;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_LOAD);
+-	if (rc) {
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
+ 		tpm2_end_auth_session(chip);
+-		return rc;
++		return -ENOMEM;
+ 	}
+
+-	rc = tpm_buf_append_name(chip, &buf, options->keyhandle, NULL);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_SESSIONS, TPM2_CC_LOAD);
++
++	rc = tpm_buf_append_name(chip, buf, options->keyhandle, NULL);
+ 	if (rc)
+-		goto out;
++		return rc;
+
+-	tpm_buf_append_hmac_session(chip, &buf, 0, options->keyauth,
++	tpm_buf_append_hmac_session(chip, buf, 0, options->keyauth,
+ 				    TPM_DIGEST_SIZE);
+
+-	tpm_buf_append(&buf, blob, blob_len);
++	tpm_buf_append(buf, blob, blob_len);
+
+-	if (buf.flags & TPM_BUF_OVERFLOW) {
+-		rc = -E2BIG;
++	if (buf->flags & TPM_BUF_OVERFLOW) {
+ 		tpm2_end_auth_session(chip);
+-		goto out;
++		return -E2BIG;
+ 	}
+
+-	rc = tpm_buf_fill_hmac_session(chip, &buf);
++	rc = tpm_buf_fill_hmac_session(chip, buf);
+ 	if (rc)
+-		goto out;
++		return rc;
+
+-	rc = tpm_transmit_cmd(chip, &buf, 4, "loading blob");
+-	rc = tpm_buf_check_hmac_response(chip, &buf, rc);
++	rc = tpm_transmit_cmd(chip, buf, 4, "loading blob");
++	rc = tpm_buf_check_hmac_response(chip, buf, rc);
+ 	if (!rc)
+ 		*blob_handle = be32_to_cpup(
+-			(__be32 *) &buf.data[TPM_HEADER_SIZE]);
+-
+-out:
+-	tpm_buf_destroy(&buf);
++			(__be32 *)&buf->data[TPM_HEADER_SIZE]);
+
+ 	return tpm_ret_to_err(rc);
+ }
+@@ -482,7 +485,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 			   u32 blob_handle)
+ {
+ 	struct tpm_header *head;
+-	struct tpm_buf buf;
++	struct tpm_buf *buf __free(kfree) = NULL;
+ 	u16 data_len;
+ 	int offset;
+ 	u8 *data;
+@@ -492,18 +495,21 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	if (rc)
+ 		return rc;
+
+-	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_UNSEAL);
+-	if (rc) {
++	buf = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
++	if (!buf) {
+ 		tpm2_end_auth_session(chip);
+-		return rc;
++		return -ENOMEM;
+ 	}
+
+-	rc = tpm_buf_append_name(chip, &buf, blob_handle, NULL);
++	tpm_buf_init(buf, TPM_BUFSIZE);
++	tpm_buf_reset(buf, TPM2_ST_SESSIONS, TPM2_CC_UNSEAL);
++
++	rc = tpm_buf_append_name(chip, buf, blob_handle, NULL);
+ 	if (rc)
+-		goto out;
++		return rc;
+
+ 	if (!options->policyhandle) {
+-		tpm_buf_append_hmac_session(chip, &buf, TPM2_SA_ENCRYPT,
++		tpm_buf_append_hmac_session(chip, buf, TPM2_SA_ENCRYPT,
+ 					    options->blobauth,
+ 					    options->blobauth_len);
+ 	} else {
+@@ -518,39 +524,36 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		 * could repeat our actions with the exfiltrated
+ 		 * password.
+ 		 */
+-		tpm2_buf_append_auth(&buf, options->policyhandle,
++		tpm2_buf_append_auth(buf, options->policyhandle,
+ 				     NULL /* nonce */, 0, 0,
+ 				     options->blobauth, options->blobauth_len);
+ 		if (tpm2_chip_auth(chip)) {
+-			tpm_buf_append_hmac_session(chip, &buf, TPM2_SA_ENCRYPT, NULL, 0);
++			tpm_buf_append_hmac_session(chip, buf, TPM2_SA_ENCRYPT,
++						    NULL, 0);
+ 		} else  {
+-			offset = buf.handles * 4 + TPM_HEADER_SIZE;
+-			head = (struct tpm_header *)buf.data;
+-			if (tpm_buf_length(&buf) == offset)
++			offset = buf->handles * 4 + TPM_HEADER_SIZE;
++			head = (struct tpm_header *)buf->data;
++			if (tpm_buf_length(buf) == offset)
+ 				head->tag = cpu_to_be16(TPM2_ST_NO_SESSIONS);
+ 		}
+ 	}
+
+-	rc = tpm_buf_fill_hmac_session(chip, &buf);
++	rc = tpm_buf_fill_hmac_session(chip, buf);
+ 	if (rc)
+-		goto out;
++		return rc;
+
+-	rc = tpm_transmit_cmd(chip, &buf, 6, "unsealing");
+-	rc = tpm_buf_check_hmac_response(chip, &buf, rc);
++	rc = tpm_transmit_cmd(chip, buf, 6, "unsealing");
++	rc = tpm_buf_check_hmac_response(chip, buf, rc);
+
+ 	if (!rc) {
+ 		data_len = be16_to_cpup(
+-			(__be16 *) &buf.data[TPM_HEADER_SIZE + 4]);
+-		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE) {
+-			rc = -EFAULT;
+-			goto out;
+-		}
++			(__be16 *)&buf->data[TPM_HEADER_SIZE + 4]);
++		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE)
++			return -EFAULT;
+
+-		if (tpm_buf_length(&buf) < TPM_HEADER_SIZE + 6 + data_len) {
+-			rc = -EFAULT;
+-			goto out;
+-		}
+-		data = &buf.data[TPM_HEADER_SIZE + 6];
++		if (tpm_buf_length(buf) < TPM_HEADER_SIZE + 6 + data_len)
++			return -EFAULT;
++		data = &buf->data[TPM_HEADER_SIZE + 6];
+
+ 		if (payload->old_format) {
+ 			/* migratable flag is at the end of the key */
+@@ -567,8 +570,6 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		}
+ 	}
+
+-out:
+-	tpm_buf_destroy(&buf);
+ 	return tpm_ret_to_err(rc);
+ }
 
 --
-0-DAY CI Kernel Test Service
-https://github.com/intel/lkp-tests/wiki
+2.47.3
+
