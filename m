@@ -1,32 +1,32 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F0A99299943;
-	Sun, 24 May 2026 05:20:13 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 178202F8E81;
+	Sun, 24 May 2026 23:18:04 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779600015; cv=none; b=KI+ujy79Jf70BGoreBPI7DblzTaGgkH6YCP0KJOR2uXS+ds9o+nZLPNxSoECKCC5gDTsCevf2EjDULcoMFc1PoSfGgqBqqszxD3E49983rKaHmKpFJZG3AN+zGZdvotnly+rYPlLJXyktExca/1eRCCtEiGgGLpcosAIxD23KVU=
+	t=1779664686; cv=none; b=M4KMtKI3g3BrPymYWYJDzVcI7F1tL2yZqbpLqVAg7pJRq+3yh5Bx0Q9NB6ZUKv/VEL2UnMqGPF78lkOeSOXt+Kjpp61vaKlZaMsKmnUwXkdXvNdTXwAjDGdQBX5zdX0m9r9IaFtY459PTRj/+ZdGbNykwL6NBT/V1Xu5uHST9t4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779600015; c=relaxed/simple;
-	bh=nUk/or31ZcblcYRwbmyWvZEzsmOMAvxw8SC3x0CpR3w=;
+	s=arc-20240116; t=1779664686; c=relaxed/simple;
+	bh=YJhg6GOqfyRedY5GFa5yafRycTGCF64EpHZC5q7jRUE=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=e+z5dUPblxeY6wukGjT1q5jeV9SbvUHKRNKYqdwzHZqj80zOrZA6NmKjdo4Ihh1Ib6aHQOeiaUiT14ePZ200OOWD577K4uvMJIENcETWS/z8MfVTgrtEyG+U1Tuj4K8jVwfrUNmr6cr0c/1Jp+SlbFsTPpnjb033HU++DoEHw5Y=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=JIMeYT2t; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=VLeNZxhzl+v7Qrgg+oTFn+xOk0n/XtGX3+wvD1zdNVpp25SehGnF41udTEayc5JgJ6dsj0n6WsskihijhzBi7TrGaC8+98WDHRWfKDYFseOyAU6ywOX6m2C6w0ehs13NHDdG+DHTdAZdiy1m/qHStPVPbxU+dh+uLMbWWHigOHs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=hT0ORmQh; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="JIMeYT2t"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 1A28C1F000E9;
-	Sun, 24 May 2026 05:20:12 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="hT0ORmQh"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 248DA1F000E9;
+	Sun, 24 May 2026 23:18:03 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1779600013;
-	bh=YcuWooOWqE1a2Oivr+lPqrNpS1vi6j7CJ0wzXBRkecc=;
+	s=k20260515; t=1779664684;
+	bh=1xKIl/BuAuJsq4s2VZpmIoNUIWA260ZKZNWVIohy8/8=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=JIMeYT2tFZ7SD2DMmH3HrRFpzYagXdYGswGtNnbkROo1dLSmY5oM5uQXYlbQAUpAT
-	 CgJZ4Aj+iS5vMSd+pKUXLP9ElmpUmD00zGFVOKoZWbfRDBF8peltrjUbgXxm1FzV58
-	 q463qJkh57SF1T6I3M0zO9RH3yvzV7s5ABtm61dgb+hIMBIhwD3teUMIbKDNrUesQ9
-	 CPDa6sYvPCTh6Ds/CcGktSQVjNiQuNTBi+zhlkX+nZpnSgbsItMWaVq71ZYIXYlAmh
-	 z72AC8P098XI9enzzXt5Bmx+m/MxnaASSGhJWRyeKs5OysIQXnJgjLxmf4qwccvb9z
-	 cFhhEaYJ2fwZA==
-Date: Sun, 24 May 2026 08:20:10 +0300
+	b=hT0ORmQhFD00JDG5rjED9RwJyvhDpVhAoSRhyuD7Zmgdox8/45CLciCiffcc8e5SA
+	 zOoipZJe6mLbCUK1ABJj7/0VWlzt8BXeiIwjoNyq9lbSphGiaxUUr52b4r7+1KdceM
+	 RYAhtBtNtyll1Ojd/7Rb1z6KT9aKvMU7bbWEENFlqd5rhe999C3CWC0jJSjPA2xb8R
+	 myNOAJzuINvbtmXXNLNilOShBa5P+Fv5PU6Zg+gj/w+sqSPWq/UWL0FG/UibnGbazM
+	 BDmkZf+uJwUHholZuiQBjhL/z5Fv2/6M7axWSjou9xV8X7LU9e6U/Jaa253wP1WEyd
+	 /y9Y7m04vew3A==
+Date: Mon, 25 May 2026 02:18:00 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: keyrings@vger.kernel.org
 Cc: David Howells <dhowells@redhat.com>, linux-crypto@vger.kernel.org,
@@ -41,7 +41,7 @@ Cc: David Howells <dhowells@redhat.com>, linux-crypto@vger.kernel.org,
 	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
 	open list <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH v8 0/3]
-Message-ID: <ahKKikSt249xjoqK@kernel.org>
+Message-ID: <ahOHKJOllqX5dxym@kernel.org>
 References: <20260524051519.3708075-1-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
@@ -111,10 +111,6 @@ On Sun, May 24, 2026 at 08:15:11AM +0300, Jarkko Sakkinen wrote:
 > 2.47.3
 > 
 
-There's some initial test code for this too:
-
-https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd-test.git/tree/overlay/usr/local/bin/tpmdd_tpm2_asymmetric.sh?h=main
-
-Ugh, that's one hell of an url...
+Oops, I deleted the subject line, it was unintentional :-)
 
 BR, Jarkko
