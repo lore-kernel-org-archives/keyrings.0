@@ -1,100 +1,281 @@
-Received: from lamorak.hansenpartnership.com (lamorak.hansenpartnership.com [198.37.111.173])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-dl1-f52.google.com (mail-dl1-f52.google.com [74.125.82.52])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1D8A18462;
-	Mon, 25 May 2026 17:50:53 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=198.37.111.173
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6995627BF7C
+	for <keyrings@vger.kernel.org>; Tue, 26 May 2026 02:48:58 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.82.52
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779731456; cv=none; b=fIIHAqhdNTQ32cqJo6yxts5Rlm4vKzAsFPyA+r+izjVFfiQNR0m4lbFF8KDT139F919banQ9xbK15lGnXRUpY9ohkWaT8Gi1SrWhWJOlBtsfFVmqPekghSIZDS36/dcPhTonraz3Bg7eY4O4siHhu3cQi7JFLO1kkJUC2dp2CNA=
+	t=1779763740; cv=none; b=K069iFhz4emPG+Anh4wo5BM2dBLHxU3TYcwSEbdno4FEmD45IEFSPIWyda5zutxPa4+5VMgm/mellFIEfPl6BgTXYpnG0HUGptJBkgq5nyZGd6Xh0qJFieZwJ1Zo9xcpM8eNXZjl5x98I6bjvOcLoOxlKbgeMrG/Zyni2w9suRc=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779731456; c=relaxed/simple;
-	bh=FedhdqjTFv1/zylSSzRxEuWjsfGN3FMNd+XweK+qnRQ=;
-	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
-	 Content-Type:MIME-Version; b=sEWRUmt5g/0QGKoJlifDTRTQLiqcFOaViTitdtgtlbtCB/j2fHPbbjn7REEs6eA25x5C76TLsWbRxg46udzTA1IF4iG+93lBP0zPLyuzeaU4QFMc9twPSw2aIMAHmgXJc72mivlvpbUVuNPui7fiDcNFp9F92HQ4tleQW1zU4l8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com; spf=pass smtp.mailfrom=HansenPartnership.com; dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b=U20FpC4f; arc=none smtp.client-ip=198.37.111.173
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=HansenPartnership.com
+	s=arc-20240116; t=1779763740; c=relaxed/simple;
+	bh=saJVcll0Fh8M/y0WbTryiZRy3NgEFSzD4VO3x9LoqEw=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=B37Nj3Lh7UV3HoS8mC87QdQSZviv6HFpVSXy6KYf5Olb5uyF97jYl0LQ4bHQ0+oVlwZy+1oRFAE1cS7h1E23INwm6PGHdHGHX4mDAAW7ZkFhHf3vO74kjOzikjzp2pUD8n5LeKX7IttHuxWQl5kG5hfzbrimjQSmwBfV4F55SyA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=EmOBljky; arc=none smtp.client-ip=74.125.82.52
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="U20FpC4f"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-	d=hansenpartnership.com; s=20151216; t=1779731452;
-	bh=FedhdqjTFv1/zylSSzRxEuWjsfGN3FMNd+XweK+qnRQ=;
-	h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-	b=U20FpC4fKR09EMjwqesTU9eyM3IqM7q+yifvHOv/rA+5cWSIYDeQJRdgvjEYebllg
-	 YV0mVnlSia6k4cQ+EVVcJOIuJ9O7Z1wob8PHegoTVYh3xR34SK0UeFP4DuQN8WesgR
-	 aXyk+K0H2MPDV/JjTqsAPUN4hjLW0CEfYunN8Y9w=
-Received: from lingrow.int.hansenpartnership.com (unknown [IPv6:2601:5c4:4300:d341::8c71])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange x25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id 348B51C0260;
-	Mon, 25 May 2026 13:50:52 -0400 (EDT)
-Message-ID: <33b4a34ceea0934e238c08e0256b975511ef99c8.camel@HansenPartnership.com>
-Subject: Re: [PATCH] tpm-buf: memory-safe allocations
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>, linux-integrity@vger.kernel.org
-Cc: Jarkko Sakkinen <jarkko.sakkinen@opinsys.com>, Arun Menon
- <armenon@redhat.com>, "Daniel P. Smith" <dpsmith@apertussolutions.com>,
- Alec Brown <alec.r.brown@oracle.com>, Ross Philipson
- <ross.philipson@gmail.com>, Stefan Berger <stefanb@linux.ibm.com>, Peter
- Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Mimi Zohar
- <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>, Paul Moore
- <paul@paul-moore.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn"
- <serge@hallyn.com>,  linux-kernel@vger.kernel.org,
- keyrings@vger.kernel.org,  linux-security-module@vger.kernel.org
-Date: Mon, 25 May 2026 13:50:51 -0400
-In-Reply-To: <20260522013555.1063716-1-jarkko@kernel.org>
-References: <20260522013555.1063716-1-jarkko@kernel.org>
-Autocrypt: addr=James.Bottomley@HansenPartnership.com;
- keydata=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
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-User-Agent: Evolution 3.50.3 
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="EmOBljky"
+Received: by mail-dl1-f52.google.com with SMTP id a92af1059eb24-13721dfd471so259535c88.1
+        for <keyrings@vger.kernel.org>; Mon, 25 May 2026 19:48:58 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1779763737; x=1780368537; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to;
+        bh=SciWLg3wzcud7J8i5XeFD4dn/8ICJfCrpXZP4khWrC0=;
+        b=EmOBljkyKxelXrPDjI+MQMYG4PQDe+UVF0T0FMhkdT4MGjY+BGJ2BWXD5K6zzn80Dw
+         iVYAbwPq1V//kCIonEiNFmTy0vcba9GtFTFtcWfyGe/teP/OBz7D+u+U5gnhmbpwX/2j
+         cFmJ6Nx3oIhJPEd3iQBReAG7jlI4RF3kMvtKQaExS4OE03b0Kz+X+V9h170p5ro5UC4O
+         cFSGjHn5phGhstbn2d+aEUAKWIOVpOFzz0gCocwfZ2hfoVbpwqop8FS6c58zCM9/ea4K
+         BhfS0LF/usWr8X66gegyuIawhtL+ME28U0w1wHmjC8X37GExyYfI0Qa2b2F0lZj5JhdJ
+         zJhA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1779763737; x=1780368537;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=SciWLg3wzcud7J8i5XeFD4dn/8ICJfCrpXZP4khWrC0=;
+        b=AZD5I1rwfSSOvSVk/uJfaT05gaGAcRh3dHm8z3/y4cIQzUgUsB1iHOv8SzXcxhaSvx
+         8iqLWFoiJtcS/VQHc2PofXkMsB5cUN0SDtWJVX2bc1raW+xrOasY5DHK2dr3TF+mktXx
+         4R6xfRSjPAoNI1JAemy6cXuyGzzkBd+9Xc8OFu2rPGhK3pUqHZy6A5YbzLcA/TZQYtov
+         Y9gOpejkVXBZv3sBQjx+R4O97etTqDShd6dRL5vvl6DCrNTpTHaq8lbY4dyAdWq8LcsO
+         083MrcwxBvNmscBQcYpqTXddaZ9mbs6g83F5+RIFRUJIvWOTK62HeopYmjVrY6JYXDw1
+         1byA==
+X-Gm-Message-State: AOJu0Yw1hZe9bo0u9x0HWX8aer0T7WX65Cfh5bxmZ8dhL2kggN2r8JRU
+	98fWNbojEJo3JJDh5rm8Yx5Gk1IXxEMZYjS3rzzwO6pzNF369PSUk8Qo9OkUMQ==
+X-Gm-Gg: Acq92OEr6xOUaPKNi5e/9OvoPQpO8XHmSPtQyWg/UHD3RUTXXorBe5EKUbbrXSE8ooX
+	cjHwrfjDS4I02oYQgyNPenU+9zjnvIoykru984iZLNL7jnKR8HCTU9t06k8B8z3i+JNhZzT8fto
+	vM8iQRA+IG2EAlvfJP2bm8gzuLsjBejzawByy2m/BPSgr2nfirWavpaGYiYNqY9SS0AdkbeWg/2
+	Nm/jY0IX+ZiqwhZL4fcIlQiRkk1ViYQ41nyoZCNgZvJK9fteXbSFqxGBVtB34h8LeoA22gvKSVR
+	QIgWpYzGXHvwDj2rxF9twVYjR3HcHNG2N3YaVjJ5H6oBM63jofxIWT0EJe3hmJr0jPrQ/5iajHW
+	4BF8AbLN9h5+ng/a2ssE/FUFO1x0q6GroYZKEM3Mfq4+LzJ5E23PEMFZKthVYer5Y6d6bv9J/yk
+	AIN//faGbsARkkhG2PIL0jQuZzlkxHWvc1V5mZ1g==
+X-Received: by 2002:a05:7022:f401:b0:12d:de3f:f3d9 with SMTP id a92af1059eb24-1365fb62422mr5967399c88.35.1779763737313;
+        Mon, 25 May 2026 19:48:57 -0700 (PDT)
+Received: from localhost.localdomain ([148.135.103.3])
+        by smtp.gmail.com with ESMTPSA id a92af1059eb24-1366aa9a8b2sm8652900c88.12.2026.05.25.19.48.53
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 25 May 2026 19:48:56 -0700 (PDT)
+From: Shaomin Chen <eeesssooo020@gmail.com>
+To: keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>
+Subject: [PATCH] keys: Pin request_key_auth payload in instantiate paths
+Date: Tue, 26 May 2026 10:48:38 +0800
+Message-ID: <20260526024838.3368409-1-eeesssooo020@gmail.com>
+X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-On Fri, 2026-05-22 at 04:35 +0300, Jarkko Sakkinen wrote:
-> Decouple kzalloc from buffer creation, so that a managed allocation
-> can be
-> used:
->=20
-> 	struct tpm_buf *buf __free(kfree) buf =3D kzalloc(TPM_BUFSIZE,
-> 						GFP_KERNEL);
-> 	if (!buf)
-> 		return -ENOMEM;
->=20
-> 	tpm_buf_init(buf, TPM_BUFSIZE);
->=20
-> Alternatively, stack allocations are also possible:
->=20
-> 	u8 buf_data[512];
-> 	struct tpm_buf *buf =3D (struct tpm_buf *)buf_data;
-> 	tpm_buf_init(buf, sizeof(buf_data));
+keyctl_instantiate_key_common() reads request_key_auth from the assumed
+auth key before copying an instantiation payload from userspace.  The copy
+can fault and sleep.  If the request completes and revokes the auth key in
+that window, the auth payload can be detached and freed before the
+instantiate path uses it again.
 
-This isn't really a good idea from a security point of view. =C2=A0Remember
-the buffer has to be big enough for both the sent and the received
-data.  Today we simply set TPM_BUFSIZE to the maximum amount a TPM
-requires and all the send and receives just work.  If we let callers
-set this size, we're asking for them to get it wrong (or at least
-forget about the receive part) and for us to get a DMA overrun from the
-TPM ... which might be potentially exploitable depending on how it
-occurs (think of an unseal of user chosen data overrunning).
+A request-key helper reproducer can trigger this race.  One helper child
+blocks in KEYCTL_INSTANTIATE_IOV while the original helper instantiates the
+requested key and returns.  KASAN then reports a use-after-free from the
+stale request_key_auth payload in keyctl_instantiate_key_common().
 
-I get the desire to support some of the newer chunked commands, but
-since none of them is yet present in the kernel, why not introduce an
-API that works only for them to avoid the risk of a security cockup in
-existing code?
+Give request_key_auth payloads a refcount.  Take a payload reference while
+authkey->sem stabilizes the payload and revocation state.  Hold that
+reference across the instantiate and reject paths.  Drop the auth key
+owning reference from revoke and destroy.
 
-Regards,
+Reported-by: Shaomin Chen <eeesssooo020@gmail.com>
+Closes: https://lore.kernel.org/r/20260519144403.436694-1-eeesssooo020@gmail.com
+Signed-off-by: Shaomin Chen <eeesssooo020@gmail.com>
+---
+ include/keys/request_key_auth-type.h |  2 ++
+ security/keys/internal.h             |  2 ++
+ security/keys/keyctl.c               | 24 +++++++++++++++-----
+ security/keys/request_key_auth.c     | 33 ++++++++++++++++++++++++++--
+ 4 files changed, 53 insertions(+), 8 deletions(-)
 
-James
-
+diff --git a/include/keys/request_key_auth-type.h b/include/keys/request_key_auth-type.h
+index 36b89a933310..01e42ee5f409 100644
+--- a/include/keys/request_key_auth-type.h
++++ b/include/keys/request_key_auth-type.h
+@@ -9,12 +9,14 @@
+ #define _KEYS_REQUEST_KEY_AUTH_TYPE_H
+ 
+ #include <linux/key.h>
++#include <linux/refcount.h>
+ 
+ /*
+  * Authorisation record for request_key().
+  */
+ struct request_key_auth {
+ 	struct rcu_head		rcu;
++	refcount_t		usage;
+ 	struct key		*target_key;
+ 	struct key		*dest_keyring;
+ 	const struct cred	*cred;
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 2cffa6dc8255..b7b622bc36a1 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -208,6 +208,8 @@ extern struct key *request_key_auth_new(struct key *target,
+ 					const void *callout_info,
+ 					size_t callout_len,
+ 					struct key *dest_keyring);
++struct request_key_auth *request_key_auth_get(struct key *authkey);
++void request_key_auth_put(struct request_key_auth *rka);
+ 
+ extern struct key *key_get_instantiation_authkey(key_serial_t target_id);
+ 
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index ef855d69c97a..d14ace88e529 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1197,9 +1197,13 @@ static long keyctl_instantiate_key_common(key_serial_t id,
+ 	if (!instkey)
+ 		goto error;
+ 
+-	rka = instkey->payload.data[0];
+-	if (rka->target_key->serial != id)
++	rka = request_key_auth_get(instkey);
++	if (!rka) {
++		ret = -EKEYREVOKED;
+ 		goto error;
++	}
++	if (rka->target_key->serial != id)
++		goto error_put_rka;
+ 
+ 	/* pull the payload in if one was supplied */
+ 	payload = NULL;
+@@ -1208,7 +1212,7 @@ static long keyctl_instantiate_key_common(key_serial_t id,
+ 		ret = -ENOMEM;
+ 		payload = kvmalloc(plen, GFP_KERNEL);
+ 		if (!payload)
+-			goto error;
++			goto error_put_rka;
+ 
+ 		ret = -EFAULT;
+ 		if (!copy_from_iter_full(payload, plen, from))
+@@ -1234,6 +1238,8 @@ static long keyctl_instantiate_key_common(key_serial_t id,
+ 
+ error2:
+ 	kvfree_sensitive(payload, plen);
++error_put_rka:
++	request_key_auth_put(rka);
+ error:
+ 	return ret;
+ }
+@@ -1358,15 +1364,19 @@ long keyctl_reject_key(key_serial_t id, unsigned timeout, unsigned error,
+ 	if (!instkey)
+ 		goto error;
+ 
+-	rka = instkey->payload.data[0];
+-	if (rka->target_key->serial != id)
++	rka = request_key_auth_get(instkey);
++	if (!rka) {
++		ret = -EKEYREVOKED;
+ 		goto error;
++	}
++	if (rka->target_key->serial != id)
++		goto error_put_rka;
+ 
+ 	/* find the destination keyring if present (which must also be
+ 	 * writable) */
+ 	ret = get_instantiation_keyring(ringid, rka, &dest_keyring);
+ 	if (ret < 0)
+-		goto error;
++		goto error_put_rka;
+ 
+ 	/* instantiate the key and link it into a keyring */
+ 	ret = key_reject_and_link(rka->target_key, timeout, error,
+@@ -1379,6 +1389,8 @@ long keyctl_reject_key(key_serial_t id, unsigned timeout, unsigned error,
+ 	if (ret == 0)
+ 		keyctl_change_reqkey_auth(NULL);
+ 
++error_put_rka:
++	request_key_auth_put(rka);
+ error:
+ 	return ret;
+ }
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index a7d7538c1f70..282e09d8fa46 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -23,6 +23,7 @@ static void request_key_auth_describe(const struct key *, struct seq_file *);
+ static void request_key_auth_revoke(struct key *);
+ static void request_key_auth_destroy(struct key *);
+ static long request_key_auth_read(const struct key *, char *, size_t);
++static void request_key_auth_rcu_disposal(struct rcu_head *);
+ 
+ /*
+  * The request-key authorisation key type definition.
+@@ -115,6 +116,31 @@ static void free_request_key_auth(struct request_key_auth *rka)
+ 	kfree(rka);
+ }
+ 
++/*
++ * Take a reference to the request-key authorisation payload so callers can
++ * drop authkey->sem before doing operations that may sleep.
++ */
++struct request_key_auth *request_key_auth_get(struct key *authkey)
++{
++	struct request_key_auth *rka;
++
++	down_read(&authkey->sem);
++	rka = dereference_key_locked(authkey);
++	if (rka && !test_bit(KEY_FLAG_REVOKED, &authkey->flags))
++		refcount_inc(&rka->usage);
++	else
++		rka = NULL;
++	up_read(&authkey->sem);
++
++	return rka;
++}
++
++void request_key_auth_put(struct request_key_auth *rka)
++{
++	if (rka && refcount_dec_and_test(&rka->usage))
++		call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
++}
++
+ /*
+  * Dispose of the request_key_auth record under RCU conditions
+  */
+@@ -136,8 +162,10 @@ static void request_key_auth_revoke(struct key *key)
+ 	struct request_key_auth *rka = dereference_key_locked(key);
+ 
+ 	kenter("{%d}", key->serial);
++	if (!rka)
++		return;
+ 	rcu_assign_keypointer(key, NULL);
+-	call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
++	request_key_auth_put(rka);
+ }
+ 
+ /*
+@@ -150,7 +178,7 @@ static void request_key_auth_destroy(struct key *key)
+ 	kenter("{%d}", key->serial);
+ 	if (rka) {
+ 		rcu_assign_keypointer(key, NULL);
+-		call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
++		request_key_auth_put(rka);
+ 	}
+ }
+ 
+@@ -174,6 +202,7 @@ struct key *request_key_auth_new(struct key *target, const char *op,
+ 	rka = kzalloc_obj(*rka);
+ 	if (!rka)
+ 		goto error;
++	refcount_set(&rka->usage, 1);
+ 	rka->callout_info = kmemdup(callout_info, callout_len, GFP_KERNEL);
+ 	if (!rka->callout_info)
+ 		goto error_free_rka;
+-- 
+2.47.3
