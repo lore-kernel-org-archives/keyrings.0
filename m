@@ -1,378 +1,155 @@
-Received: from MEUPR01CU001.outbound.protection.outlook.com (mail-australiasoutheastazolkn19010011.outbound.protection.outlook.com [52.103.73.11])
+Received: from lamorak.hansenpartnership.com (lamorak.hansenpartnership.com [198.37.111.173])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 36D8A38CFEF;
-	Fri, 29 May 2026 04:54:58 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=fail smtp.client-ip=52.103.73.11
-ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1780030503; cv=fail; b=dccIuPa644zOUkWlCZdRSlMeHco5uPsHHTj+yR4uq6zmAvBWmW8Mjd6esdWyneTAApxPO46unY+ZJV232CHmfkc5tjWI7/euyqpItRJP0wLpL1X8nDmG8sLJlDw67nUUCULmQdvZyDND/4RaNsIgrfZwAV5minawsn8IaCRST2M=
-ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1780030503; c=relaxed/simple;
-	bh=haQ3ik24LElYaQkUqCumt4PnaP5BenGcdVfnNA0OVtg=;
-	h=From:To:CC:Subject:Date:Message-ID:Content-Type:MIME-Version; b=akRJ5z+gleAPo4euzTWrmb0s/VjF/bWG29nakRc5OnHNazc3veM82aZHbicvcLe1ZLB0JiuPJ3LV2Zhtk3rP/6EV1SW7TM6R0WIl36Vf0nK22ZTjM0ZivDMfBCPypWVGaKobG7ctP2DOM6Zp/JdHsFdftKBb6RNpjR8fH/4eEEE=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=outlook.com; spf=pass smtp.mailfrom=outlook.com; dkim=pass (2048-bit key) header.d=outlook.com header.i=@outlook.com header.b=c6QSs8OD; arc=fail smtp.client-ip=52.103.73.11
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=outlook.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=outlook.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7B6E83403FD;
+	Fri, 29 May 2026 14:08:55 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=198.37.111.173
+ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1780063737; cv=none; b=ZRBVApCdVZNdgg3C7N05iUjTDCTGrWHyHgb8iGwcaPHaq1RG24TON8bFUCy879si2TNtlZmIFg8P1rmLHO6cXZImB3q8+ciZG1u9AagowvC+cPY1KghgXOOLkV7Q+h1Bj5RoOi8YLANV7nUU0n+3v7IqrdWV7B64aPOsFZGI/mI=
+ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1780063737; c=relaxed/simple;
+	bh=Bmm7xx0AU1UJVdCUceNEBHC2cQOLU9KmXpJK3I0DQzU=;
+	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
+	 Content-Type:MIME-Version; b=N3UoUWlGpk6eN4gxtbcWKPHil92Zt08MeZCR+MX+HQZKrGlGywwe+MhQWvBnHK/qnbAkSnNFRoBBwGXNfxuNYUIERsnLVT8pZLgYjejYvShW95Xe9dgQykIJdtO8lPambOnJnnYOULyLbUJK6NAWhK2Z2X0rPbWRC49k9fmNKX0=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com; spf=pass smtp.mailfrom=HansenPartnership.com; dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b=Ffu1Tcoi; arc=none smtp.client-ip=198.37.111.173
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=HansenPartnership.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=outlook.com header.i=@outlook.com header.b="c6QSs8OD"
-ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
- b=OsnUTrWMZlPK7OF+AGgkXznTr0wQCfZeciiT5HSGyJ/BzHouKtyQ0ZqKb2Bma+InL2E12xJVmZXI/8BPAszkaVS9N5SJl321eMvHPTrXNirYsEe0AQZ5f3dFOXbwKqIy8+msTOaIHPNJHUmyTHGXmdQ5XAqivGt6tY6BL+LHO5YXcfHctE2Kdv6ZHOUYQcSoRxCc3yCPRgiJkAWLV3ov58+pwsFTITHT/BWOTnvyuUk+/E6WesipEt4aFFcPTBf1hnb3PqFSEnS10OvQ0ufRX2gD8uLZjAOskSlURv0rjfIZ+zMUnP8MAlFuUaI6QJa1VAHEedyp03tvlcSeeyDpxQ==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
- s=arcselector10001;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
- bh=FGsYKgtOm6MW89nmTbhp4mXiXM+H9baCJJJJjaGYKQk=;
- b=X5j3P1frhSRhcDLpWDOeWtT5xVZf12EzOv5nLMAp9RxvpCy2tAlvtaanPudRpug5scr+CyJQOIXdTQwzKgf4bTLwPGO6SM3H0RpUEnQVRbZRT4YfzCfLecQKEgR9txl1lGx52Sj6lqxPXnmtsQIJ6uuiXUC/rtloiE5o26uA7uaCNgsJWg5vNWEsE5Xwv31N0xt4w5/qeLhYLQ+NQ9gmORUS/TaDom7XyyRDku0VgiSYXLVTF+g4KLWWpzGMbUz5HCY+CNuNKT+gfzciPZc+QC87WrBbGehN2VUlmlnrGxOQJQO5cQBI8SgATNj4+DxLNXYd3JNOwuAUFHTWFI4oIQ==
-ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=none; dmarc=none;
- dkim=none; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=outlook.com;
- s=selector1;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=FGsYKgtOm6MW89nmTbhp4mXiXM+H9baCJJJJjaGYKQk=;
- b=c6QSs8ODd+E21Lcf+xuppAXYoDberoUNjeSkmH+X2ZqCvhurFhi1bq3JPvb552mrzyBxaOrMegPSDp4xCVtprhrB8MPIMpG6vohZ/dMSX0S+5y0hbrW3JrfdA8mtzaiyl3GkyDbx651Tdw+16ckFIcpK7HPJcXWrJQ1FlGbOsh43NgCRktNWoB6z/teOztKymFeJSJy6zNAvj9LGQbdFqg9LzTsR/IVnLjy35kJnXpM/ILVA0mAh2A0cO96U+Em/pb6ccfOJr6O8hcHDgQuA8Y4bgCw8nMok2wwrgfzhJlS2ctPxy60z8grpAmAlYRYGTp7FbFcE/NpmoXnqeg1B6w==
-Received: from ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM (2603:10c6:220:22c::12)
- by SY7P300MB0588.AUSP300.PROD.OUTLOOK.COM (2603:10c6:10:28d::18) with
- Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.21.71.14; Fri, 29 May
- 2026 04:54:53 +0000
-Received: from ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM
- ([fe80::40c:1bbb:6484:38c]) by ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM
- ([fe80::40c:1bbb:6484:38c%6]) with mapi id 15.21.0071.011; Fri, 29 May 2026
- 04:54:53 +0000
-From: Liu Mingyu <Edwardliu0214@outlook.com>
-To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>
-CC: "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, Eric Biggers
-	<ebiggers@kernel.org>, Kees Cook <kees@kernel.org>, Mimi Zohar
-	<zohar@linux.ibm.com>, Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH] keys: Enforce keep guard when moving keys
-Thread-Topic: [PATCH] keys: Enforce keep guard when moving keys
-Thread-Index: AQHc7ydJVu7ZEHqX90Gw0GA2lfel6w==
-Date: Fri, 29 May 2026 04:54:52 +0000
-Message-ID:
- <ME0P300MB0618CDE63E5F370D2790CDE9AA162@ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach:
-X-MS-TNEF-Correlator:
-x-ms-publictraffictype: Email
-x-ms-traffictypediagnostic: ME0P300MB0618:EE_|SY7P300MB0588:EE_
-x-ms-office365-filtering-correlation-id: ac0f815b-21d6-4e1f-ba77-08debd3e6bf6
-x-ms-exchange-slblob-mailprops:
- gMiuAN0LASJuslsDKkdgU55RNSDSFMYZJ6kIic94OnO/KcWt+I0zLokbaTmcjaJsw5d8Mzp8sT9gDdiZMC68M4N6ZWnblgsPy1BgJs02keAmJIA4Z4pr0jMoISnzRbWpbZeMVuQBkRNBJ1avLs/Jh5RTWobxc60juYewxW8Abco6Nsdt2VKJ8W/SFtfHrlBv/b8DrqWukbI+yDobYH0AgOoCElWY5J+SoEZTuh13Q1dbpzDrdXXkFP5ady3dvJ92+Hc6OTFJ3YwNgdioKRzUbALWqYtJf5I6xnS/zq6VMZohr5g46ieaVovkHSEHllaw5UrXh2k+eIaZ28LCoxfCcjgy5UWTRv6ozVqyM57jcNV2Ux92aUgvZ8058/NiArIUCVq95nekNDuheVS60gjvU1FLw7A3CZFniAJx9V5atn5nJKieLnKmxU2CBGaFqUZ0ZULJ41dxGZ+QF48upXsOJaiF4ii82eFNAstpCYE1HSAN4FbPcIXrPOA8rjtgGYDcKCP2J1n3T/v25Tr1ZMi+5rhyk6i3JQUaOz0IVEUh2UsAN1JzYnbcKDzqrCQS9QLe55E2FMDhOSL38xawtfBWUEAvBKjXPEIexctf4/7gn555qfdx8VsIgqHujOZ5/BitewJTWsevbI/4DIaRiWXwNaHwFSH/v6Lw4UYjUyDr/PZmXhLvpe//spAFGRbGLrmjEpmPxJ/e3DAqEqQlgwc1rQ==
-x-microsoft-antispam:
- BCL:0;ARA:14566002|41001999006|24021099003|20031999006|39105399006|38102599003|12121999013|15080799012|31061999003|19110799012|8062599012|8060799015|40105399003|3412199025|440099028|102099032;
-x-microsoft-antispam-message-info:
- =?iso-8859-1?Q?o47FQASGdJZqfxPcYWPpBR0Do6pzSHMClaCa7JCLr9wRwui1NdwoABYemL?=
- =?iso-8859-1?Q?1E3Izh7cMEXSpR3H5KezofdiuRG658swFg5y8C5fXL0mQ22CJEpN9QY1jt?=
- =?iso-8859-1?Q?voJlbilzp2e02Zbyp5pvbFnIXkaEf5r+gz3dv9fZ+TcDk7UrS7hFwlalR8?=
- =?iso-8859-1?Q?duMYM49g4QQs/hWAtIB3sWcV0zHMf2vsgn3G9N93OozWDoSP4qm+de74dS?=
- =?iso-8859-1?Q?+Oy2JMLwrW8gzbwE102snw0tVkUKzh1ZXeffzWY5sFMB4vuo+ELzgMIEXO?=
- =?iso-8859-1?Q?FQrAVVpJN+hYpl44BvFlBTQL2N1uSWKi3I6tDiRtK14L9y5Q87JBab6NFb?=
- =?iso-8859-1?Q?O1sz9mNGJE3oiFdu4ZT7hk+ZAho1wUjNdcs4+Vz6bYB2LXGMp202NWreMF?=
- =?iso-8859-1?Q?Lw73cfy1yt9vUXWMSFhdLHCTGLaexlUqSwyHNbG0Smsxab5EDRd29JYpyB?=
- =?iso-8859-1?Q?yBu8BMFnexuyXmJ/osHexLFS06zvP5Y8Apgoz7q9czi13woSLBZKtpGhUF?=
- =?iso-8859-1?Q?VGCDbKc+ySCQDtmUYLHPqWjXAuWl0nnGSqdYQiCfuvMw7q/3tW45tWmPLo?=
- =?iso-8859-1?Q?44UJIpR1foM4/pZ+N6L95G8AXkqZ9mo4RBFL512oOoxejhu5ly2v0AddHq?=
- =?iso-8859-1?Q?MDvim9VTsoYx/n9mA1fwEVj6beBXiSpQjY3/flVS0+bGggUpXT3N1W0h9l?=
- =?iso-8859-1?Q?8vbippqgufbiI8YuRky94p7LrV6Gjxgi6ZkSWBqShEDe8I+KYv4hZ88FmF?=
- =?iso-8859-1?Q?/pwbBf1ymTXlTQqyB/zZOvZ5U3z1Hps7ixCwpczMdu24obEW5CA8Q6yA4n?=
- =?iso-8859-1?Q?iVBHnzwQerm1xzWIC7yVDavyiCR31OZv7sXQZ0++t8Ub6NUc9SzZrybGtn?=
- =?iso-8859-1?Q?ap7QZjYPhH1+BifRbyhrTFVZhEyrnIw3MgVoqVNcR2QQcyqhwRQPBplF3c?=
- =?iso-8859-1?Q?a6WK0d8KfnkDaFeaOtQa/ObiRxCJe08ecqBjpZIm7cUU0PaHvqquSrGPSu?=
- =?iso-8859-1?Q?mLWwrGETpfYLKMsfUUpueEXBHJ+FfEooZ+nLBZjQ7PyX24Wd2vV8j/ruP+?=
- =?iso-8859-1?Q?z3qz71ymDwHROW3C4IFd5HDESUdffd3+cgXToaDP1S/2?=
-x-ms-exchange-antispam-messagedata-chunkcount: 1
-x-ms-exchange-antispam-messagedata-0:
- =?iso-8859-1?Q?gqI4etbSzeZSBY15/8aDYeTFBriJQ+wcegLBlzd5i38AInIIOG8Q/vAHvj?=
- =?iso-8859-1?Q?NgWpYNf2qeqX9SCw8uzdVj3haVohWVdgSNp6SpP9KSxVHkhIdCeLMawvVs?=
- =?iso-8859-1?Q?z0/xnT1V+oGCUZ5Zyjwmmw+YBCciqJ68WIExYADI8JErjMTzbQcdl6w9AT?=
- =?iso-8859-1?Q?8NIucHHmO6OXls+NWF+p4cKeDxIBb5EikftxE15ms+iuuWzAToFV+OhlWI?=
- =?iso-8859-1?Q?VJy3zjxqKAG8zrOfL5gyNd5ZRegNqhWxqNe8rEcptcYxEwtIiHOmd6oX+O?=
- =?iso-8859-1?Q?Oi2EzWvxOe1n2Lq7C2ItynMSHw+J5a33JUtRebo+PZJoEAk/7JU/C3H38o?=
- =?iso-8859-1?Q?vCb4Bh1vzL0kQzKPMFbn6xee58ew74RPoraJPxPy6xHgHlCIsYyRAFyZLf?=
- =?iso-8859-1?Q?K58VMPg8IJ+qZW3OCe/EJPOSStC5xNIEbQ453MvK5KxAvXit1204aMdIQ2?=
- =?iso-8859-1?Q?hAFxz9IsVlI7R0wTGp3m9m/yL7xltYOS7klIBUCxoscGDfByoL4q81N2yp?=
- =?iso-8859-1?Q?vpZRnA+2ZNHDsas37WFJCJpKAIRJ1oh4dd257/kGBYnS3M4tmi+sw/KCjM?=
- =?iso-8859-1?Q?ccpg/z1EicMSxwdnGkn0l0AF+Pj/mCO341OxwQh9S3+PYadcz/fZ/M1M4f?=
- =?iso-8859-1?Q?LDcJTMx7Q1GXjI75NrUDVGma3KU0ymcaFH/ke8wRBDR+xZA4hAZ7zklUnF?=
- =?iso-8859-1?Q?W+452rq4l/KfxGJA4FHiWx7+nSxC2yd/4Dq5y42Dxt09VHDz7XgWm+xk6j?=
- =?iso-8859-1?Q?eca6q0SLU1hoLiZ+hV2dxh/FjCeRH1w9uCKb4qeZ13cxGfUXX63H33Q2CV?=
- =?iso-8859-1?Q?feJPH+5qUYBzIGQcAr1Zhk6cVFifmilux+oCjlf+g8Te9ioJG+rEWsSucH?=
- =?iso-8859-1?Q?DbGOjwJgdjqXa4iZWimNV2bpDMhqqZ6y31E+KIMpPOktlAVbLawUzDd/ok?=
- =?iso-8859-1?Q?lj4cOSqv9VbMataeBK5ks7yDw11GJPUKV8XmO9JZx2bgsIzBIZOkVwrzVN?=
- =?iso-8859-1?Q?ngwk20MdV+XQgWzsnyOEogcpeGHvL3vYpROEmKJ5Iwxn+1iMP2l9fuJrqc?=
- =?iso-8859-1?Q?kXzfv9AnYqwEe7ecFI3SnNNa9KaeESOr5j+mA/HGL4Zj64eSQDMyQGwlTe?=
- =?iso-8859-1?Q?o4QZNdkSKksP/OLpPFzcRwKzsRgjF3o928dK7uP+ItrKq0EeyMh300xMnw?=
- =?iso-8859-1?Q?pYLAXoY42OmIq7u41xEzHnn/Zol7EhgroKzAPmPm1gnQg80MiA344WhfzP?=
- =?iso-8859-1?Q?vH2zwvy3BcbedSuRxulqu9ghGbHrjKjYuOVr6L8cMH/Qp9dZRCoXFBSJqr?=
- =?iso-8859-1?Q?s4LjAXsRvdifdBMFjH5pTQDH6GlbEOacUg1eY68j71C+f9n5WfpxAjoxWu?=
- =?iso-8859-1?Q?nJl4LwBjA6PAaWsHFRX+CkGnAgf5FIrSl0gmdSswL0BX7PulnlnbNSyzxx?=
- =?iso-8859-1?Q?yz4fzCk2vN3JsBkw?=
-Content-Type: text/plain; charset="iso-8859-1"
+	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="Ffu1Tcoi"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+	d=hansenpartnership.com; s=20151216; t=1780063733;
+	bh=Bmm7xx0AU1UJVdCUceNEBHC2cQOLU9KmXpJK3I0DQzU=;
+	h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
+	b=Ffu1TcoiiHvUQIS/XhIaiVlQN0ts6wlg6x4vmT/+aqJpN3TZwRnTqlqTIN6oe0J/Y
+	 Loraq1S09iiPreTV54Qq30lto6NJNek0TspAL4+yDR+zWP3egmbOkBoLcdyUETSq1k
+	 z2Ikep27s0flQMetpJgJkUMNLznRFZzIv4w6GB6g=
+Received: from lingrow.int.hansenpartnership.com (unknown [IPv6:2601:5c4:4300:d341::8c71])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange x25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id 5A3611C01C5;
+	Fri, 29 May 2026 10:08:53 -0400 (EDT)
+Message-ID: <27db53d88a44e057c2f0ed5a637f65e4e18c8c3d.camel@HansenPartnership.com>
+Subject: Re: [PATCH] tpm-buf: memory-safe allocations
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: linux-integrity@vger.kernel.org, Jarkko Sakkinen
+ <jarkko.sakkinen@opinsys.com>, Arun Menon <armenon@redhat.com>, "Daniel P.
+ Smith" <dpsmith@apertussolutions.com>, Alec Brown
+ <alec.r.brown@oracle.com>, Ross Philipson <ross.philipson@gmail.com>,
+ Stefan Berger <stefanb@linux.ibm.com>, Peter Huewe <peterhuewe@gmx.de>,
+ Jason Gunthorpe <jgg@ziepe.ca>, Mimi Zohar <zohar@linux.ibm.com>, David
+ Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>, James
+ Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+ linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, 
+ linux-security-module@vger.kernel.org
+Date: Fri, 29 May 2026 10:08:52 -0400
+In-Reply-To: <ahVRefyT4BTKOu0m@kernel.org>
+References: <20260522013555.1063716-1-jarkko@kernel.org>
+	 <33b4a34ceea0934e238c08e0256b975511ef99c8.camel@HansenPartnership.com>
+	 <ahVRefyT4BTKOu0m@kernel.org>
+Autocrypt: addr=James.Bottomley@HansenPartnership.com;
+ keydata=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
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.50.3 
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-OriginatorOrg: outlook.com
-X-MS-Exchange-CrossTenant-AuthAs: Internal
-X-MS-Exchange-CrossTenant-AuthSource: ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM
-X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg: 00000000-0000-0000-0000-000000000000
-X-MS-Exchange-CrossTenant-Network-Message-Id: ac0f815b-21d6-4e1f-ba77-08debd3e6bf6
-X-MS-Exchange-CrossTenant-originalarrivaltime: 29 May 2026 04:54:52.9890
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
-X-MS-Exchange-CrossTenant-rms-persistedconsumerorg: 00000000-0000-0000-0000-000000000000
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: SY7P300MB0588
 
-KEYCTL_MOVE removes the source link as part of moving a key
-between keyrings. key_unlink() rejects removal of a
-KEY_FLAG_KEEP-protected key from a KEY_FLAG_KEEP-protected keyring,
-but key_move() did not enforce the same rule.
-
-Reject such moves with -EPERM when both the source keyring and key
-are protected. Leave same-keyring moves as a no-op so callers can
-continue to use KEYCTL_MOVE idempotently. Document the errno and add
-KUnit coverage for the normal move, protected rejection and no-op paths.
-
-Fixes: ed0ac5c7ec37 ("keys: Add a keyctl to move a key between keyrings")
-Signed-off-by: Mingyu Liu <edwardliu0214@outlook.com>
----
- Documentation/security/keys/core.rst |   1 +
- security/keys/Kconfig                |  13 +++
- security/keys/Makefile               |   1 +
- security/keys/keyctl.c               |   2 +
- security/keys/keyring.c              |   7 +-
- security/keys/keyring_test.c         | 121 +++++++++++++++++++++++++++
- 6 files changed, 144 insertions(+), 1 deletion(-)
- create mode 100644 security/keys/keyring_test.c
-
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/=
-keys/core.rst
-index 326b8a973828..6096ce6c63da 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -600,6 +600,7 @@ The keyctl syscall functions are:
-      A process must have link permission on the key for this function to b=
+On Tue, 2026-05-26 at 10:53 +0300, Jarkko Sakkinen wrote:
+> On Mon, May 25, 2026 at 01:50:51PM -0400, James Bottomley wrote:
+> > On Fri, 2026-05-22 at 04:35 +0300, Jarkko Sakkinen wrote:
+> > > Decouple kzalloc from buffer creation, so that a managed
+> > > allocation
+> > > can be
+> > > used:
+> > >=20
+> > > 	struct tpm_buf *buf __free(kfree) buf =3D
+> > > kzalloc(TPM_BUFSIZE,
+> > > 						GFP_KERNEL);
+> > > 	if (!buf)
+> > > 		return -ENOMEM;
+> > >=20
+> > > 	tpm_buf_init(buf, TPM_BUFSIZE);
+> > >=20
+> > > Alternatively, stack allocations are also possible:
+> > >=20
+> > > 	u8 buf_data[512];
+> > > 	struct tpm_buf *buf =3D (struct tpm_buf *)buf_data;
+> > > 	tpm_buf_init(buf, sizeof(buf_data));
+> >=20
+> > This isn't really a good idea from a security point of view.
+> > =C2=A0Remember the buffer has to be big enough for both the sent and th=
 e
-      successful and write permission on both keyrings.  Any errors that ca=
-n
-      occur from KEYCTL_LINK also apply on the destination keyring here.
-+     If the key and source keyring are protected, EPERM will be returned.
-=20
-=20
-   *  Unlink a key or keyring from another keyring::
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 84f39e50ca36..acffb5f7385c 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -129,4 +129,17 @@ config KEY_NOTIFICATIONS
- 	  This makes use of pipes to handle the notification buffer and
- 	  provides KEYCTL_WATCH_KEY to enable/disable watches.
-=20
-+config KEYS_KUNIT_TEST
-+	tristate "KUnit tests for keyrings" if !KUNIT_ALL_TESTS
-+	depends on KUNIT
-+	default KUNIT_ALL_TESTS
-+	help
-+	  Build KUnit tests for keyring operations.
-+	  These tests exercise keyring link and move behavior, including
-+	  protection of KEY_FLAG_KEEP entries.
-+	  They are intended for KUnit runs on developer kernels and are not
-+	  needed for normal systems.
-+
-+	  If you are unsure how to answer this question, answer N.
-+
- endif # KEYS
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 5f40807f05b3..fa583a4ea945 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -23,6 +23,7 @@ obj-$(CONFIG_SYSCTL) +=3D sysctl.o
- obj-$(CONFIG_PERSISTENT_KEYRINGS) +=3D persistent.o
- obj-$(CONFIG_KEY_DH_OPERATIONS) +=3D dh.o
- obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) +=3D keyctl_pkey.o
-+obj-$(CONFIG_KEYS_KUNIT_TEST) +=3D keyring_test.o
-=20
- #
- # Key types
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index ef855d69c97a..b37bf1505ec5 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -590,6 +590,8 @@ long keyctl_keyring_unlink(key_serial_t id, key_serial_=
-t ringid)
-  * the caller Write permission.  There must also be a link in the from key=
-ring
-  * to the key.  If both keyrings are the same, nothing is done.
-  *
-+ * If the key and source keyring are protected, -EPERM will be returned.
-+ *
-  * If successful, 0 will be returned.
-  */
- long keyctl_keyring_move(key_serial_t id, key_serial_t from_ringid,
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 5a9887d6b7be..60c184bd9a8d 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -1582,7 +1582,8 @@ EXPORT_SYMBOL(key_unlink);
-  *
-  * Returns 0 if successful, -ENOTDIR if either keyring isn't a keyring,
-  * -EKEYREVOKED if either keyring has been revoked, -ENFILE if the second
-- * keyring is full, -EDQUOT if there is insufficient key data quota remain=
-ing
-+ * keyring is full, -EPERM if this would remove a protected key from a
-+ * protected keyring, -EDQUOT if there is insufficient key data quota rema=
-ining
-  * to add another link or -ENOMEM if there's insufficient memory.  If
-  * KEYCTL_MOVE_EXCL is set, then -EEXIST will be returned if there's alrea=
-dy a
-  * matching key in @to_keyring.
-@@ -1608,6 +1609,10 @@ int key_move(struct key *key,
- 	key_check(from_keyring);
- 	key_check(to_keyring);
-=20
-+	if (test_bit(KEY_FLAG_KEEP, &from_keyring->flags) &&
-+	    test_bit(KEY_FLAG_KEEP, &key->flags))
-+		return -EPERM;
-+
- 	ret =3D __key_move_lock(from_keyring, to_keyring, &key->index_key);
- 	if (ret < 0)
- 		goto out;
-diff --git a/security/keys/keyring_test.c b/security/keys/keyring_test.c
-new file mode 100644
-index 000000000000..0055b50224e9
---- /dev/null
-+++ b/security/keys/keyring_test.c
-@@ -0,0 +1,121 @@
-+// SPDX-License-Identifier: GPL-2.0-or-later
-+/*
-+ * KUnit tests for keyring operations.
-+ */
-+
-+#include <keys/user-type.h>
-+#include <kunit/test.h>
-+#include <linux/cred.h>
-+#include <linux/err.h>
-+#include <linux/key.h>
-+#include <linux/key-type.h>
-+#include <linux/keyctl.h>
-+#include <linux/module.h>
-+#include <linux/uidgid.h>
-+
-+static void keyring_test_key_put(void *data)
-+{
-+	key_put(data);
-+}
-+
-+static struct key *test_keyring_alloc(struct kunit *test, const char *desc=
-,
-+				      unsigned long flags)
-+{
-+	struct key *keyring;
-+
-+	keyring =3D keyring_alloc(desc, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
-+				current_cred(), KEY_POS_ALL | KEY_USR_ALL,
-+				KEY_ALLOC_NOT_IN_QUOTA | flags, NULL, NULL);
-+	KUNIT_ASSERT_NOT_ERR_OR_NULL(test, keyring);
-+	KUNIT_ASSERT_EQ(test, kunit_add_action_or_reset(test,
-+							keyring_test_key_put,
-+							keyring), 0);
-+
-+	return keyring;
-+}
-+
-+static struct key *test_user_key_alloc(struct kunit *test, const char *des=
-c,
-+				       struct key *keyring,
-+				       unsigned long flags)
-+{
-+	static const char payload[] =3D "payload";
-+	struct key *key;
-+	int ret;
-+
-+	key =3D key_alloc(&key_type_user, desc, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
-+			current_cred(), KEY_POS_ALL | KEY_USR_ALL,
-+			KEY_ALLOC_NOT_IN_QUOTA | flags, NULL);
-+	KUNIT_ASSERT_NOT_ERR_OR_NULL(test, key);
-+	KUNIT_ASSERT_EQ(test, kunit_add_action_or_reset(test,
-+							keyring_test_key_put,
-+							key), 0);
-+
-+	ret =3D key_instantiate_and_link(key, payload, sizeof(payload),
-+				       keyring, NULL);
-+	KUNIT_ASSERT_EQ(test, ret, 0);
-+
-+	return key;
-+}
-+
-+static void keyring_move_user_key(struct kunit *test)
-+{
-+	struct key *from, *to, *key;
-+	int ret;
-+
-+	from =3D test_keyring_alloc(test, "move-from", 0);
-+	to =3D test_keyring_alloc(test, "move-to", 0);
-+	key =3D test_user_key_alloc(test, "move-key", from, 0);
-+
-+	ret =3D key_move(key, from, to, 0);
-+	KUNIT_EXPECT_EQ(test, ret, 0);
-+
-+	ret =3D key_move(key, to, from, 0);
-+	KUNIT_EXPECT_EQ(test, ret, 0);
-+}
-+
-+static void keyring_move_keep_key_fails(struct kunit *test)
-+{
-+	struct key *from, *to, *key;
-+	int ret;
-+
-+	from =3D test_keyring_alloc(test, "keep-from", KEY_ALLOC_SET_KEEP);
-+	to =3D test_keyring_alloc(test, "keep-to", 0);
-+	key =3D test_user_key_alloc(test, "keep-key", from, 0);
-+
-+	KUNIT_ASSERT_TRUE(test, test_bit(KEY_FLAG_KEEP, &from->flags));
-+	KUNIT_ASSERT_TRUE(test, test_bit(KEY_FLAG_KEEP, &key->flags));
-+
-+	ret =3D key_move(key, from, to, 0);
-+	KUNIT_EXPECT_EQ(test, ret, -EPERM);
-+
-+	ret =3D key_move(key, to, from, 0);
-+	KUNIT_EXPECT_EQ(test, ret, -ENOENT);
-+}
-+
-+static void keyring_move_keep_same_keyring(struct kunit *test)
-+{
-+	struct key *keyring, *key;
-+	int ret;
-+
-+	keyring =3D test_keyring_alloc(test, "keep-same", KEY_ALLOC_SET_KEEP);
-+	key =3D test_user_key_alloc(test, "keep-same-key", keyring, 0);
-+
-+	ret =3D key_move(key, keyring, keyring, 0);
-+	KUNIT_EXPECT_EQ(test, ret, 0);
-+}
-+
-+static struct kunit_case keyring_test_cases[] =3D {
-+	KUNIT_CASE(keyring_move_user_key),
-+	KUNIT_CASE(keyring_move_keep_key_fails),
-+	KUNIT_CASE(keyring_move_keep_same_keyring),
-+	{}
-+};
-+
-+static struct kunit_suite keyring_test_suite =3D {
-+	.name =3D "keyring",
-+	.test_cases =3D keyring_test_cases,
-+};
-+
-+kunit_test_suite(keyring_test_suite);
-+
-+MODULE_LICENSE("GPL");
+> > received data.=C2=A0 Today we simply set TPM_BUFSIZE to the maximum
+> > amount a TPM requires and all the send and receives just work.=C2=A0 If
+> > we let callers set this size, we're asking for them to get it wrong
+> > (or at least forget about the receive part) and for us to get a DMA
+> > overrun from the TPM ... which might be potentially exploitable
+> > depending on how it occurs (think of an unseal of user chosen data
+> > overrunning).
+>=20
+> It's one patch so you're free to remark the call sites where this
+> happens. This is not a majorn concern at all.
 
-base-commit: 8fde5d1d47f69db6082dfa34500c27f8485389a5
---=20
-2.51.2.windows.1
+Nearly twenty years ago, when the kernel was a lot smaller, a then
+kernel luminary called Rusty Russell realized we needed to pay much
+more attention to how we design APIs inside the kernel if we wanted it
+to grow successfully.  He published his initial thoughts and gave talks
+at both the kernel summit and OLS on it:
+
+https://ozlabs.org/~rusty/index.cgi/tech/2008-03-18.html
+
+The key point that's always stuck with me is "hard to misuse beats easy
+to use". Later he came up with a rating scale (now known as the Rusty
+API classification):
+
+https://ozlabs.org/~rusty/index.cgi/tech/2008-03-30.html
+
+and for chuckles and grins on April fools day he came up with a
+negative rating ridiculing some of our dafter API choices:
+
+https://ozlabs.org/~rusty/index.cgi/tech/2008-04-01.html
+
+The point for this patch set is that the sizing of the original tpm_buf
+interface scores 10/10 on the Rusty scale (it's impossible to get
+wrong).  Simply threading size through the whole API, as this patch
+does, may look like the right answer, but it causes a massive reduction
+in API score.  In fact, since the buffer has to be sized not only
+according to what goes in, but also what gets returned and this is
+nowhere mentioned in the new documentation it scores -3 (read the
+documentation and you can still get it wrong).  Now by mentioning the
+sizing problems in the doc, you can probably get it up to +3 (read the
+documentation and you'll get it right) but my question was not if you
+got it wrong somewhere in the patch but whether we couldn't do a whole
+lot better in terms of API score by designing a better API.
+
+A key point about the 185 version of the TPM spec is that it's really
+only a few commands that need larger buffers (the Post Quantum ML-KEM
+keys) which doesn't apply to most of the in-kernel TPM callsites.=20
+Since tpm_buf_init takes the ordinal, we can actually tell at runtime
+(or compile time if the ordinal is a constant) if the command would
+need a larger buffer.  We can also tell from the TPM properties whether
+the TPM itself can take a larger buffer, so for every current TPM we
+could retain the original score 10/10 API and warn at runtime if there
+might be a problem.  Then the larger keys seem to fit into 8k, so we
+could still retain most of the original API properties of being
+difficult to misuse simply by having an 8k size flag (which we could
+ignore if the TPM doesn't support it) and warn at runtime if
+tpm_buf_init sends an ordinal which might need a larger buffer.  At
+worst we should be able to get to an API which scores 5/10 (do it right
+or it will break at runtime).
+
+Regards,
+
+James
 
