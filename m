@@ -1,42 +1,43 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D67A733987F;
-	Fri, 29 May 2026 22:53:22 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AA95F2D7380;
+	Sat, 30 May 2026 00:49:40 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1780095204; cv=none; b=SdFa21Gv3A2nG/a3b9yq5yhPPx/HHI+W8Uon+wmRA/sK7DhaJqlYJ+IRPL1dbtb9j4+bzceM2Np0QM/eYPlrukD+tmQu1x1hVuu+RX7FTimVkqugrNTP5243VMx9Vr7e74bKlkHnrCKqu+vGjRQgJCv9MeccPEd3Fbw2f8F2bX4=
+	t=1780102181; cv=none; b=fzhumanY26DXr+5IUTNxPE6YT15ILUqgG13EMdtVHbqywFRP3bFBa2DK71FjeYhj5dBiowsVlAJw+8PWQ0BRv133okSg1sI8ZzZ8pbpBlQpqz7ls6pXBDjf42yBDadc0aJtkyuSz0zp+Aq/O5JvFx+scx2LYJsjxeHlM8QAYtvY=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1780095204; c=relaxed/simple;
-	bh=NJ+ZghJQxxSjxdXLDtyN2fOCHET1T8bJd1adB+MpPj8=;
+	s=arc-20240116; t=1780102181; c=relaxed/simple;
+	bh=35KOIQbjEoSeh+1qGzA3Ip30rURFMu/I+G+2pGv7BTU=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=ZtG7P+WeD4witz8OQ0vsm3ZIq+XXmzAuD0Kr/j7eGvTuUkG5EPnhwUnA/I3q1NTkkNpiYZI9mtXV8Io5tgFcIXvoDk2orU7YLD0aqXP6epvABPDInC9JF8wa6bILVlGb2USgfQPf2pFv1Z9CMAAjpw/lDx2Lq7YpNsoCt7tK7IY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Gr6arABP; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=koOEosEEbg6tVz2drDqGCq2IxA6zauVGmGE9afMcyYBIf44YLiZldpzgKDQNTYGAydr0CF7XB/TZY/KZVHgwlU3eFyBxZRBRXr1+vRkZnYeWM94XnBxSqf07UHRPuwnZcKrnGI3aGlnNVmqHyDMnRe38nU0HqIEejTXiKLgv5gI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=CR+tr/fQ; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Gr6arABP"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E4FE91F00893;
-	Fri, 29 May 2026 22:53:21 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="CR+tr/fQ"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E1A8F1F00893;
+	Sat, 30 May 2026 00:49:39 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1780095202;
-	bh=1ekoC4I8YNMaYPhMknnuPjOqb1Wv6UIWVRdNWrjav7M=;
+	s=k20260515; t=1780102180;
+	bh=lT4mfvZMRgUMeqUuX+o0Wy/QrmIbIfiVQ04RemgOQ7M=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=Gr6arABPOFes6YAJ2v4bKgBHJ6jQxGMIUYorwf2fjm5pOgE+1cxWxbRAhAudpYFl/
-	 NvKM1hSBBx7n+y7pBLV2MadeczdUAHycCF23QvIkzecuqrsiXRfE55Rm/EWKNmfJPH
-	 1Xqoyrq7fY8LsI3xigL1WnwF8M1cQGVtVYwpT1rnsizrIvHqPHMVWwQDHtfxdGLCYb
-	 64DYqsZH6P7JT5pX8vZYqgjwlIZ9LQ3rYxABqCTDJCWYX7+mMO3f6LzG7qEKJqRCh1
-	 /xAOI05MDkzx1SebcdrLP/7vtDnqO5yydO2/fvUKqWQcTll3eM73AzDnTnMOyn/HO2
-	 s5iT9liH/6iPQ==
-Date: Sat, 30 May 2026 01:53:18 +0300
+	b=CR+tr/fQ1STZPvL/bibRKFMiDNHiN+hxzy1rXTJ2lxm/2l8qZ5FJ99+4Zwn6W+ZZn
+	 9HgOQsATff9tO3j2WxMw/fG/wCflNXEWuuzGiGFDI5Yo/1tFMfwh6eixgtCYWNMEIs
+	 j1579nk9jmsFYrh8+NngUbBAEr0Ymcs3g6dPBLv1AVmcNNXF6AwmEIjRDETd01+fXq
+	 fWjPgYJr8XS5NV1M+shIjj1g2yYOilRHYsJMiCu5ytzBZpgfQXlax4yev9kyrvIol/
+	 Vpr7Qr+3Pw5RHh5yI1XYXCRzz8pKFpPehbua56nbnwj+6rSJFiZdQcdZhwYRYFWnUi
+	 dtlPUAAWJks2Q==
+Date: Sat, 30 May 2026 03:49:36 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Shaomin Chen <eeesssooo020@gmail.com>,
-	David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH] keys: Pin request_key_auth payload in instantiate paths
-Message-ID: <ahoY3mRUf5cF-tr3@kernel.org>
-References: <20260526024838.3368409-1-eeesssooo020@gmail.com>
+To: Liu Mingyu <Edwardliu0214@outlook.com>
+Cc: David Howells <dhowells@redhat.com>,
+	"keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Eric Biggers <ebiggers@kernel.org>, Kees Cook <kees@kernel.org>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH] keys: Enforce keep guard when moving keys
+Message-ID: <aho0IDYyV4B81KZq@kernel.org>
+References: <ME0P300MB0618CDE63E5F370D2790CDE9AA162@ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -45,217 +46,254 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260526024838.3368409-1-eeesssooo020@gmail.com>
+In-Reply-To: <ME0P300MB0618CDE63E5F370D2790CDE9AA162@ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM>
 
-On Tue, May 26, 2026 at 10:48:38AM +0800, Shaomin Chen wrote:
-> keyctl_instantiate_key_common() reads request_key_auth from the assumed
-> auth key before copying an instantiation payload from userspace.  The copy
-> can fault and sleep.  If the request completes and revokes the auth key in
-> that window, the auth payload can be detached and freed before the
-> instantiate path uses it again.
+On Fri, May 29, 2026 at 04:54:52AM +0000, Liu Mingyu wrote:
+> KEYCTL_MOVE removes the source link as part of moving a key
+> between keyrings. key_unlink() rejects removal of a
+> KEY_FLAG_KEEP-protected key from a KEY_FLAG_KEEP-protected keyring,
+> but key_move() did not enforce the same rule.
+
+Got it.
+
 > 
-> A request-key helper reproducer can trigger this race.  One helper child
-> blocks in KEYCTL_INSTANTIATE_IOV while the original helper instantiates the
-> requested key and returns.  KASAN then reports a use-after-free from the
-> stale request_key_auth payload in keyctl_instantiate_key_common().
+> Reject such moves with -EPERM when both the source keyring and key
+> are protected. Leave same-keyring moves as a no-op so callers can
+> continue to use KEYCTL_MOVE idempotently. Document the errno and add
+> KUnit coverage for the normal move, protected rejection and no-op paths.
 > 
-> Give request_key_auth payloads a refcount.  Take a payload reference while
-> authkey->sem stabilizes the payload and revocation state.  Hold that
-> reference across the instantiate and reject paths.  Drop the auth key
-> owning reference from revoke and destroy.
-> 
-> Reported-by: Shaomin Chen <eeesssooo020@gmail.com>
-> Closes: https://lore.kernel.org/r/20260519144403.436694-1-eeesssooo020@gmail.com
-> Signed-off-by: Shaomin Chen <eeesssooo020@gmail.com>
+> Fixes: ed0ac5c7ec37 ("keys: Add a keyctl to move a key between keyrings")
+> Signed-off-by: Mingyu Liu <edwardliu0214@outlook.com>
+
+It'd be better to split kunit into separate patch as otherwise this is
+not too fluid to backport.
+
+
 > ---
->  include/keys/request_key_auth-type.h |  2 ++
->  security/keys/internal.h             |  2 ++
->  security/keys/keyctl.c               | 24 +++++++++++++++-----
->  security/keys/request_key_auth.c     | 33 ++++++++++++++++++++++++++--
->  4 files changed, 53 insertions(+), 8 deletions(-)
+>  Documentation/security/keys/core.rst |   1 +
+>  security/keys/Kconfig                |  13 +++
+>  security/keys/Makefile               |   1 +
+>  security/keys/keyctl.c               |   2 +
+>  security/keys/keyring.c              |   7 +-
+>  security/keys/keyring_test.c         | 121 +++++++++++++++++++++++++++
+>  6 files changed, 144 insertions(+), 1 deletion(-)
+>  create mode 100644 security/keys/keyring_test.c
 > 
-> diff --git a/include/keys/request_key_auth-type.h b/include/keys/request_key_auth-type.h
-> index 36b89a933310..01e42ee5f409 100644
-> --- a/include/keys/request_key_auth-type.h
-> +++ b/include/keys/request_key_auth-type.h
-> @@ -9,12 +9,14 @@
->  #define _KEYS_REQUEST_KEY_AUTH_TYPE_H
+> diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+> index 326b8a973828..6096ce6c63da 100644
+> --- a/Documentation/security/keys/core.rst
+> +++ b/Documentation/security/keys/core.rst
+> @@ -600,6 +600,7 @@ The keyctl syscall functions are:
+>       A process must have link permission on the key for this function to be
+>       successful and write permission on both keyrings.  Any errors that can
+>       occur from KEYCTL_LINK also apply on the destination keyring here.
+> +     If the key and source keyring are protected, EPERM will be returned.
 >  
->  #include <linux/key.h>
-> +#include <linux/refcount.h>
 >  
->  /*
->   * Authorisation record for request_key().
->   */
->  struct request_key_auth {
->  	struct rcu_head		rcu;
-> +	refcount_t		usage;
->  	struct key		*target_key;
->  	struct key		*dest_keyring;
->  	const struct cred	*cred;
-> diff --git a/security/keys/internal.h b/security/keys/internal.h
-> index 2cffa6dc8255..b7b622bc36a1 100644
-> --- a/security/keys/internal.h
-> +++ b/security/keys/internal.h
-> @@ -208,6 +208,8 @@ extern struct key *request_key_auth_new(struct key *target,
->  					const void *callout_info,
->  					size_t callout_len,
->  					struct key *dest_keyring);
-> +struct request_key_auth *request_key_auth_get(struct key *authkey);
-> +void request_key_auth_put(struct request_key_auth *rka);
+>    *  Unlink a key or keyring from another keyring::
+> diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+> index 84f39e50ca36..acffb5f7385c 100644
+> --- a/security/keys/Kconfig
+> +++ b/security/keys/Kconfig
+> @@ -129,4 +129,17 @@ config KEY_NOTIFICATIONS
+>  	  This makes use of pipes to handle the notification buffer and
+>  	  provides KEYCTL_WATCH_KEY to enable/disable watches.
 >  
->  extern struct key *key_get_instantiation_authkey(key_serial_t target_id);
+> +config KEYS_KUNIT_TEST
+> +	tristate "KUnit tests for keyrings" if !KUNIT_ALL_TESTS
+> +	depends on KUNIT
+> +	default KUNIT_ALL_TESTS
+> +	help
+> +	  Build KUnit tests for keyring operations.
+> +	  These tests exercise keyring link and move behavior, including
+> +	  protection of KEY_FLAG_KEEP entries.
+> +	  They are intended for KUnit runs on developer kernels and are not
+> +	  needed for normal systems.
+> +
+> +	  If you are unsure how to answer this question, answer N.
+> +
+>  endif # KEYS
+> diff --git a/security/keys/Makefile b/security/keys/Makefile
+> index 5f40807f05b3..fa583a4ea945 100644
+> --- a/security/keys/Makefile
+> +++ b/security/keys/Makefile
+> @@ -23,6 +23,7 @@ obj-$(CONFIG_SYSCTL) += sysctl.o
+>  obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
+>  obj-$(CONFIG_KEY_DH_OPERATIONS) += dh.o
+>  obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
+> +obj-$(CONFIG_KEYS_KUNIT_TEST) += keyring_test.o
 >  
+>  #
+>  # Key types
 > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> index ef855d69c97a..d14ace88e529 100644
+> index ef855d69c97a..b37bf1505ec5 100644
 > --- a/security/keys/keyctl.c
 > +++ b/security/keys/keyctl.c
-> @@ -1197,9 +1197,13 @@ static long keyctl_instantiate_key_common(key_serial_t id,
->  	if (!instkey)
->  		goto error;
->  
-> -	rka = instkey->payload.data[0];
-> -	if (rka->target_key->serial != id)
-> +	rka = request_key_auth_get(instkey);
-> +	if (!rka) {
-> +		ret = -EKEYREVOKED;
->  		goto error;
-> +	}
-> +	if (rka->target_key->serial != id)
-> +		goto error_put_rka;
->  
->  	/* pull the payload in if one was supplied */
->  	payload = NULL;
-> @@ -1208,7 +1212,7 @@ static long keyctl_instantiate_key_common(key_serial_t id,
->  		ret = -ENOMEM;
->  		payload = kvmalloc(plen, GFP_KERNEL);
->  		if (!payload)
-> -			goto error;
-> +			goto error_put_rka;
->  
->  		ret = -EFAULT;
->  		if (!copy_from_iter_full(payload, plen, from))
-> @@ -1234,6 +1238,8 @@ static long keyctl_instantiate_key_common(key_serial_t id,
->  
->  error2:
->  	kvfree_sensitive(payload, plen);
-> +error_put_rka:
-> +	request_key_auth_put(rka);
->  error:
->  	return ret;
->  }
-> @@ -1358,15 +1364,19 @@ long keyctl_reject_key(key_serial_t id, unsigned timeout, unsigned error,
->  	if (!instkey)
->  		goto error;
->  
-> -	rka = instkey->payload.data[0];
-> -	if (rka->target_key->serial != id)
-> +	rka = request_key_auth_get(instkey);
-> +	if (!rka) {
-> +		ret = -EKEYREVOKED;
->  		goto error;
-> +	}
-> +	if (rka->target_key->serial != id)
-> +		goto error_put_rka;
->  
->  	/* find the destination keyring if present (which must also be
->  	 * writable) */
->  	ret = get_instantiation_keyring(ringid, rka, &dest_keyring);
->  	if (ret < 0)
-> -		goto error;
-> +		goto error_put_rka;
->  
->  	/* instantiate the key and link it into a keyring */
->  	ret = key_reject_and_link(rka->target_key, timeout, error,
-> @@ -1379,6 +1389,8 @@ long keyctl_reject_key(key_serial_t id, unsigned timeout, unsigned error,
->  	if (ret == 0)
->  		keyctl_change_reqkey_auth(NULL);
->  
-> +error_put_rka:
-> +	request_key_auth_put(rka);
->  error:
->  	return ret;
->  }
-> diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-> index a7d7538c1f70..282e09d8fa46 100644
-> --- a/security/keys/request_key_auth.c
-> +++ b/security/keys/request_key_auth.c
-> @@ -23,6 +23,7 @@ static void request_key_auth_describe(const struct key *, struct seq_file *);
->  static void request_key_auth_revoke(struct key *);
->  static void request_key_auth_destroy(struct key *);
->  static long request_key_auth_read(const struct key *, char *, size_t);
-> +static void request_key_auth_rcu_disposal(struct rcu_head *);
->  
->  /*
->   * The request-key authorisation key type definition.
-> @@ -115,6 +116,31 @@ static void free_request_key_auth(struct request_key_auth *rka)
->  	kfree(rka);
->  }
->  
-> +/*
-> + * Take a reference to the request-key authorisation payload so callers can
-> + * drop authkey->sem before doing operations that may sleep.
-> + */
-> +struct request_key_auth *request_key_auth_get(struct key *authkey)
-> +{
-> +	struct request_key_auth *rka;
-> +
-> +	down_read(&authkey->sem);
-> +	rka = dereference_key_locked(authkey);
-> +	if (rka && !test_bit(KEY_FLAG_REVOKED, &authkey->flags))
-> +		refcount_inc(&rka->usage);
-> +	else
-> +		rka = NULL;
-> +	up_read(&authkey->sem);
-> +
-> +	return rka;
-> +}
-> +
-> +void request_key_auth_put(struct request_key_auth *rka)
-> +{
-> +	if (rka && refcount_dec_and_test(&rka->usage))
-> +		call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
-> +}
-> +
->  /*
->   * Dispose of the request_key_auth record under RCU conditions
+> @@ -590,6 +590,8 @@ long keyctl_keyring_unlink(key_serial_t id, key_serial_t ringid)
+>   * the caller Write permission.  There must also be a link in the from keyring
+>   * to the key.  If both keyrings are the same, nothing is done.
+>   *
+> + * If the key and source keyring are protected, -EPERM will be returned.
+> + *
+>   * If successful, 0 will be returned.
 >   */
-> @@ -136,8 +162,10 @@ static void request_key_auth_revoke(struct key *key)
->  	struct request_key_auth *rka = dereference_key_locked(key);
+>  long keyctl_keyring_move(key_serial_t id, key_serial_t from_ringid,
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index 5a9887d6b7be..60c184bd9a8d 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -1582,7 +1582,8 @@ EXPORT_SYMBOL(key_unlink);
+>   *
+>   * Returns 0 if successful, -ENOTDIR if either keyring isn't a keyring,
+>   * -EKEYREVOKED if either keyring has been revoked, -ENFILE if the second
+> - * keyring is full, -EDQUOT if there is insufficient key data quota remaining
+> + * keyring is full, -EPERM if this would remove a protected key from a
+> + * protected keyring, -EDQUOT if there is insufficient key data quota remaining
+>   * to add another link or -ENOMEM if there's insufficient memory.  If
+>   * KEYCTL_MOVE_EXCL is set, then -EEXIST will be returned if there's already a
+>   * matching key in @to_keyring.
+> @@ -1608,6 +1609,10 @@ int key_move(struct key *key,
+>  	key_check(from_keyring);
+>  	key_check(to_keyring);
 >  
->  	kenter("{%d}", key->serial);
-> +	if (!rka)
-> +		return;
->  	rcu_assign_keypointer(key, NULL);
-> -	call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
-> +	request_key_auth_put(rka);
->  }
->  
->  /*
-> @@ -150,7 +178,7 @@ static void request_key_auth_destroy(struct key *key)
->  	kenter("{%d}", key->serial);
->  	if (rka) {
->  		rcu_assign_keypointer(key, NULL);
-> -		call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
-> +		request_key_auth_put(rka);
->  	}
->  }
->  
-> @@ -174,6 +202,7 @@ struct key *request_key_auth_new(struct key *target, const char *op,
->  	rka = kzalloc_obj(*rka);
->  	if (!rka)
->  		goto error;
-> +	refcount_set(&rka->usage, 1);
->  	rka->callout_info = kmemdup(callout_info, callout_len, GFP_KERNEL);
->  	if (!rka->callout_info)
->  		goto error_free_rka;
+> +	if (test_bit(KEY_FLAG_KEEP, &from_keyring->flags) &&
+> +	    test_bit(KEY_FLAG_KEEP, &key->flags))
+> +		return -EPERM;
+> +
+>  	ret = __key_move_lock(from_keyring, to_keyring, &key->index_key);
+>  	if (ret < 0)
+>  		goto out;
+> diff --git a/security/keys/keyring_test.c b/security/keys/keyring_test.c
+> new file mode 100644
+> index 000000000000..0055b50224e9
+> --- /dev/null
+> +++ b/security/keys/keyring_test.c
+> @@ -0,0 +1,121 @@
+> +// SPDX-License-Identifier: GPL-2.0-or-later
+> +/*
+> + * KUnit tests for keyring operations.
+> + */
+> +
+> +#include <keys/user-type.h>
+> +#include <kunit/test.h>
+> +#include <linux/cred.h>
+> +#include <linux/err.h>
+> +#include <linux/key.h>
+> +#include <linux/key-type.h>
+> +#include <linux/keyctl.h>
+> +#include <linux/module.h>
+> +#include <linux/uidgid.h>
+> +
+> +static void keyring_test_key_put(void *data)
+> +{
+> +	key_put(data);
+> +}
+> +
+> +static struct key *test_keyring_alloc(struct kunit *test, const char *desc,
+> +				      unsigned long flags)
+> +{
+> +	struct key *keyring;
+> +
+> +	keyring = keyring_alloc(desc, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
+> +				current_cred(), KEY_POS_ALL | KEY_USR_ALL,
+> +				KEY_ALLOC_NOT_IN_QUOTA | flags, NULL, NULL);
+> +	KUNIT_ASSERT_NOT_ERR_OR_NULL(test, keyring);
+> +	KUNIT_ASSERT_EQ(test, kunit_add_action_or_reset(test,
+> +							keyring_test_key_put,
+> +							keyring), 0);
+> +
+> +	return keyring;
+> +}
+> +
+> +static struct key *test_user_key_alloc(struct kunit *test, const char *desc,
+> +				       struct key *keyring,
+> +				       unsigned long flags)
+> +{
+> +	static const char payload[] = "payload";
+> +	struct key *key;
+> +	int ret;
+> +
+> +	key = key_alloc(&key_type_user, desc, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
+> +			current_cred(), KEY_POS_ALL | KEY_USR_ALL,
+> +			KEY_ALLOC_NOT_IN_QUOTA | flags, NULL);
+> +	KUNIT_ASSERT_NOT_ERR_OR_NULL(test, key);
+> +	KUNIT_ASSERT_EQ(test, kunit_add_action_or_reset(test,
+> +							keyring_test_key_put,
+> +							key), 0);
+> +
+> +	ret = key_instantiate_and_link(key, payload, sizeof(payload),
+> +				       keyring, NULL);
+> +	KUNIT_ASSERT_EQ(test, ret, 0);
+> +
+> +	return key;
+> +}
+> +
+> +static void keyring_move_user_key(struct kunit *test)
+> +{
+> +	struct key *from, *to, *key;
+> +	int ret;
+> +
+> +	from = test_keyring_alloc(test, "move-from", 0);
+> +	to = test_keyring_alloc(test, "move-to", 0);
+> +	key = test_user_key_alloc(test, "move-key", from, 0);
+> +
+> +	ret = key_move(key, from, to, 0);
+> +	KUNIT_EXPECT_EQ(test, ret, 0);
+> +
+> +	ret = key_move(key, to, from, 0);
+> +	KUNIT_EXPECT_EQ(test, ret, 0);
+> +}
+> +
+> +static void keyring_move_keep_key_fails(struct kunit *test)
+> +{
+> +	struct key *from, *to, *key;
+> +	int ret;
+> +
+> +	from = test_keyring_alloc(test, "keep-from", KEY_ALLOC_SET_KEEP);
+> +	to = test_keyring_alloc(test, "keep-to", 0);
+> +	key = test_user_key_alloc(test, "keep-key", from, 0);
+> +
+> +	KUNIT_ASSERT_TRUE(test, test_bit(KEY_FLAG_KEEP, &from->flags));
+> +	KUNIT_ASSERT_TRUE(test, test_bit(KEY_FLAG_KEEP, &key->flags));
+> +
+> +	ret = key_move(key, from, to, 0);
+> +	KUNIT_EXPECT_EQ(test, ret, -EPERM);
+> +
+> +	ret = key_move(key, to, from, 0);
+> +	KUNIT_EXPECT_EQ(test, ret, -ENOENT);
+> +}
+> +
+> +static void keyring_move_keep_same_keyring(struct kunit *test)
+> +{
+> +	struct key *keyring, *key;
+> +	int ret;
+> +
+> +	keyring = test_keyring_alloc(test, "keep-same", KEY_ALLOC_SET_KEEP);
+> +	key = test_user_key_alloc(test, "keep-same-key", keyring, 0);
+> +
+> +	ret = key_move(key, keyring, keyring, 0);
+> +	KUNIT_EXPECT_EQ(test, ret, 0);
+> +}
+> +
+> +static struct kunit_case keyring_test_cases[] = {
+> +	KUNIT_CASE(keyring_move_user_key),
+> +	KUNIT_CASE(keyring_move_keep_key_fails),
+> +	KUNIT_CASE(keyring_move_keep_same_keyring),
+> +	{}
+> +};
+> +
+> +static struct kunit_suite keyring_test_suite = {
+> +	.name = "keyring",
+> +	.test_cases = keyring_test_cases,
+> +};
+> +
+> +kunit_test_suite(keyring_test_suite);
+> +
+> +MODULE_LICENSE("GPL");
+> 
+> base-commit: 8fde5d1d47f69db6082dfa34500c27f8485389a5
 > -- 
-> 2.47.3
-
-I get the approach and for it makes sense but I'd really like to hear
-David's feedback on this before moving forward.
-
-In the meanwhile, were you able to do a script or similar as a
-reproducer?
+> 2.51.2.windows.1
+> 
 
 BR, Jarkko
