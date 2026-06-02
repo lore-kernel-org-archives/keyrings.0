@@ -1,239 +1,169 @@
-Received: from SY2PR01CU004.outbound.protection.outlook.com (mail-australiaeastazolkn19011031.outbound.protection.outlook.com [52.103.72.31])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-oi1-f172.google.com (mail-oi1-f172.google.com [209.85.167.172])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0A84A369D79;
-	Sun, 31 May 2026 20:51:55 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=fail smtp.client-ip=52.103.72.31
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 91FC93C5850
+	for <keyrings@vger.kernel.org>; Tue,  2 Jun 2026 09:42:35 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.167.172
 ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1780260716; cv=fail; b=ph0lVGqKgAdE6iUW0gcY7zBlspj1re5W88CjkUpE1gwBoyYv/SXT505vNkVY1SRS6bB9cPst4MqFW2IqWhZwSaBVVGVYYWYIjGcv+FGIEcc2ITR00hwzJ9rJ3VZG0ikt0I4LrdLVDNi948BI9RVLENNoiHhpJCEWZVjvR/ZlThg=
+	t=1780393357; cv=pass; b=CBky7VEEQMvDfHwt9mTFeWPEMtiQ9TFfYt2K+VgsianHmlOPd9fQXzb0WockdQFwINyBLOr3rv9VKYl6mBMhEiF/F2ICt01eoNPr4CHDnveRewZJmUKbkoObRH496TtE5aKphEDSlEHu76aEhi6wXuttaXRwDhDG0d+6HpkX3aI=
 ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1780260716; c=relaxed/simple;
-	bh=BGz7aA3Uw1Y0v8ZgmPswroJhFpl0jaQFtEEPkXgnjMo=;
-	h=From:To:CC:Subject:Date:Message-ID:References:In-Reply-To:
-	 Content-Type:MIME-Version; b=If7zvnFFF60DqsOLFyCtmjMBQ5XXW/S4o3LBKdBy+Z1fIuC3+EExU55ZXVDpNTjCJBN96HKvtpFiWuM02fHpRj5rgb+a0FO9fwByF09fiUIz2ublM43dgM68wJmCxeWGgupIYyhzFkh4LJJfBh/3SFsfTtn5HTn95I83NqTGe2U=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=outlook.com; spf=pass smtp.mailfrom=outlook.com; dkim=pass (2048-bit key) header.d=outlook.com header.i=@outlook.com header.b=gsNruSX8; arc=fail smtp.client-ip=52.103.72.31
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=outlook.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=outlook.com
+	s=arc-20240116; t=1780393357; c=relaxed/simple;
+	bh=AhL326c1YdAwbi5q6PvrTRQ6TefqA6HxsocAsD+zo5U=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=Lp077cKj0Uyz7ZTqimFCOU1LZxuawzU0/V8yR2Ea0HZz1zevBDq5o0NySREtNGuRVP26FBhIHPQZ4AmNsvSXHMPO8WXGPqnmKeRp8PHttXisp87ueztDMWffQwaVAF7BcpdoDwnjgQO68bZhRJE5fsg9mkoc4KBE79CGpllfQvw=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=ctWka/32; arc=pass smtp.client-ip=209.85.167.172
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=outlook.com header.i=@outlook.com header.b="gsNruSX8"
-ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
- b=Tob86ckTZ4zTtqoPqR1unud9JMl0/IFoTm3TDHLXf8L9KAA7KX+Xj7HlpFEAtj5v/wYlPsPCJfg9noIFcsH2xh+/6tzf2JCEjYnII8TsMatl/ROMWrLLnzGcZKWhz418M0TeZ1AIjcwkwT+lXJJf+MNNoc3qrf2l/w/oOS2utSryVPFTtyebdqTRGPcEhRdcLW3p+E/HMt88wYztqxUwo4M/BuPmIkj/jqlgFohk3u7ZnXJp+eX4lQplewIYcW5CWeZKDW3tlcFQSKwaXvkYlB+RRyHWKspnAgl3s/id3bj0LuhKbXlg2dq8HUe66ZnRVsHMQzx8eIOzShXd7/R9vA==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
- s=arcselector10001;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
- bh=BGz7aA3Uw1Y0v8ZgmPswroJhFpl0jaQFtEEPkXgnjMo=;
- b=ieBpcggMOhwBYpmt7Fel4nV7pUEu06NtXbtbrXXL7XRoLygBjxGn/x13xBrVsPoeMC2pyg+QLlvR5UN3Qrb0bP38M+eIH0kvSAkCTO0mNY+I5pThByHOs6RtKjzldPuZj+UId8cx88okWmGfKzP0VuEJj2epELfuM4i/sXkwAp3q84w6g+/iORjNR5KJ5pTXUrs7JWkW2zJgHw+vNcNT8C9Krki6843chXm+A9fulBHtvn3kMFt7tVEJVsaBP/6zFpPn3ls/1a9OVxoEILJ/6STSwwZuwdDPq/biwB0YPZ0f9N/e7AjCg72PTbT1z1FlHldw2WKNu7akjcFuoA1KRA==
-ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=none; dmarc=none;
- dkim=none; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=outlook.com;
- s=selector1;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=BGz7aA3Uw1Y0v8ZgmPswroJhFpl0jaQFtEEPkXgnjMo=;
- b=gsNruSX8l/ROyQjidn5PlylnLD5N1kYfRTP7+esSt0iTsdvYYWv+d77IXSS4pQxFr0G1ohwEqNz+MKPXDvDq0a2WIy8DMZ/5vDF+WwYTKvK2+DV6TxZf0JFdtso9LuZNjHpBUrh3zzKRbeztCkbKDLu1cku9VF0dIVBsXE9b0rVs4Zbvkv23Hwj8JMEFLwLuMCVc0t7NWppVzAMKpvxmcZyx6RBjnOQ7xxV2Th+HVs5X8GzDYn5M1r7IOxwcot0TJ4R5Hd98/kUO2fo1ImZC5nFHej9xZBYy4s8jZ+AWYnW8Lif1hZn3dsJIknNvs9A8uCAmZa8LFlJLQBo+uuw8eQ==
-Received: from ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM (2603:10c6:220:22c::12)
- by SY8P300MB0252.AUSP300.PROD.OUTLOOK.COM (2603:10c6:10:265::14) with
- Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.21.71.17; Sun, 31 May
- 2026 20:51:52 +0000
-Received: from ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM
- ([fe80::40c:1bbb:6484:38c]) by ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM
- ([fe80::40c:1bbb:6484:38c%6]) with mapi id 15.21.0071.015; Sun, 31 May 2026
- 20:51:52 +0000
-From: Liu Mingyu <Edwardliu0214@outlook.com>
-To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>
-CC: "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, Eric Biggers
-	<ebiggers@kernel.org>, Kees Cook <kees@kernel.org>, Mimi Zohar
-	<zohar@linux.ibm.com>, Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH v2 2/2] keys: Add KUnit coverage for KEYCTL_MOVE keep guard
-Thread-Topic: [PATCH v2 2/2] keys: Add KUnit coverage for KEYCTL_MOVE keep
- guard
-Thread-Index: AQHc8T9OOvSg23XrRUKn32oBM2MpFQ==
-Date: Sun, 31 May 2026 20:51:51 +0000
-Message-ID: <20260531205059.mliu-keyrings-v2-2@outlook.com>
-References: <20260531205059.mliu-keyrings-v2-0@outlook.com>
-In-Reply-To: <20260531205059.mliu-keyrings-v2-0@outlook.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach:
-X-MS-TNEF-Correlator:
-x-ms-publictraffictype: Email
-x-ms-traffictypediagnostic: ME0P300MB0618:EE_|SY8P300MB0252:EE_
-x-ms-office365-filtering-correlation-id: ae397894-ebed-499d-b376-08debf567132
-x-microsoft-antispam:
- BCL:0;ARA:14566002|31061999003|51005399006|24021099003|38102599003|41001999006|8060799015|15080799012|8062599012|19110799012|40105399003|3412199025|440099028|102099032;
-x-microsoft-antispam-message-info:
- =?utf-8?B?eXBKcVBUSjhEVkVURGRCK3czanB6WE1jMmx4ZE9YU2JwU1o4ZStZYk5INUhN?=
- =?utf-8?B?Vm5XZjJkVjlYQnhuNDB3dVBVOE54RTFYNzZEa0VjMlg1L0t6cUoyWURoQWEv?=
- =?utf-8?B?NmJDeGtld2E1c3NRQnViZXpwQmpJdm5od1kxYXl1aUEvZnJzekprMkxPM1o3?=
- =?utf-8?B?U1VYMFQ2c3RhNitQQ2JPSklYY1dUbVZXM0lIQmtKWWg5Tk5EZFpKQjlGb1ZQ?=
- =?utf-8?B?dytpcTduOFVXWncvM2ZiSm5YZ3ZkZFBmRmx6Z0EyL1NzaHpWSllEWFlJWFpN?=
- =?utf-8?B?eDM4QXNWdjNpcHZFcnJIM1FlZkU5d200NmQ4OC9VOHNVaFYveXhtT3J3QkUr?=
- =?utf-8?B?Mkl2NHR3ZHExeU52enVTbTNJVHpBN1NhN3NWM2x2MkEwV2I5dWlZTklGY3ha?=
- =?utf-8?B?eHhWOEMxdVRiSE9rVWcvY3YzZ3MrWmxUTFdGUzZsQysxanlWUUt0NDY0Z2JF?=
- =?utf-8?B?eGVkWE4vWWc3QktERlYyQnhyZ0hLNy9rdEVJbmJYWVlnUm1PU3FuSllHTnhP?=
- =?utf-8?B?Z2lFbTlRWUFTYjV3ZlhxTjZNa204MEd5YitycTJNOXpQOEpoTytUZnVYcFBV?=
- =?utf-8?B?UUNNR3E5UWNWZUJBdTJ5TnJSNC9QUlkwSGphV3ZZVWo4REhYVnBDZis3ZU5l?=
- =?utf-8?B?UVZMVkthOEkwUS9maHZCZEJqVy9yY0EzOXR0THNBTjBMRmtqc2taT25UOUhq?=
- =?utf-8?B?a0JJcm1hUDFSV0M5RVlOekxadytWSHN2Zk5Fa2dmMUJoYnpIcGdRZmNna0k0?=
- =?utf-8?B?THZ4M0NSL1haQk8ydWdiaDFNNWZLZlRhTTdOL1JSSnpaOXVkMDl2T2xYbU5S?=
- =?utf-8?B?Tll0dDJSUTVLNFJxaFVaZEIvMGp3TjA3NG1ZbS9YNWZYNVNuSXljaWRheXpS?=
- =?utf-8?B?ZkFFM0srUVFJMUQ0UUlIb2hCS04rT1h6Uk1KYzhhUjhlMHFodG81UGxtTnE2?=
- =?utf-8?B?REhMYzVwYnQ2ME94ajBrQ1NnNi8wbFBjZFFnM2wxczdDbExteWhwbHlNbnh3?=
- =?utf-8?B?a0Q5QmJLMm96QkdlUjRSTjJ6OU5BRk9henlPN2ZkSTFrbnl0NVNxOHpFdjNO?=
- =?utf-8?B?RVJhU1RmSXo2Nk4ycjlaK3B3V1UvMWZkRXA1NTY0bDFxajUrVVJqd0pDMi9D?=
- =?utf-8?B?RzRvZFY0SmpUL0wvNGNVQ25aWDVmcXBvK0FJYnFQVTQ3NURiZ1VtdEdZUkwr?=
- =?utf-8?B?UUh4ODNRY0JVY1ZCTmduM2lYcGNGdjdwUHFFZVJxTmNXaUZsbS8ybVJXN0tY?=
- =?utf-8?B?dlk2T2xWMThaczMzdThEbjQ2QWMzZWtnK0NycFliRkJCeDZLR2VMNnFrUUE4?=
- =?utf-8?Q?8VAX8hZEHr4vJRwlXFCqaIG+b9a9d9Gu45?=
-x-ms-exchange-antispam-messagedata-chunkcount: 1
-x-ms-exchange-antispam-messagedata-0:
- =?utf-8?B?UHMyazVVT1VTcWJkNk52WTlhZFBDTXRoWm9VaGRsTDRMY2xGM1owM0N0NUlj?=
- =?utf-8?B?dkVOcC9aZDhPajlRZjhpbGhvWjRsV2lrK2FTUDBJQ0tsZktkR1UxSEg4Qmpj?=
- =?utf-8?B?K2dQY1JhOE9NWHk3ZTF0a1I4SU1zaUJGNTVpTFk1WTVCaVFEZWwxZHhveE5N?=
- =?utf-8?B?SVp2UDlIRk5JTng0TUVib1lDUjR1b00vSEpJcEg0RDBEY0xhU0RwQm5obFUx?=
- =?utf-8?B?cXI2UHFBbUNtMk4xUjRYWklYdXROVjZEY2YyM05yRTg5SjNMV2gzS28wbGpj?=
- =?utf-8?B?M05GdVBzODlVa2tSVHU0WUx6T1JHd3lGNzhZcGtXRzFvUjlZK0N5L00rSkdm?=
- =?utf-8?B?aDhIWkFLdnJZeDFXakNqa3hqZWQ1akJ1S2lMNGg3VGdmSHNsZUhSbWxzRytI?=
- =?utf-8?B?L1hBOWdvc2dxOUI0OWJTc3lqZ3NhaGV0RVUyQnZJb0NwZnlFSWRXYWNMSzZq?=
- =?utf-8?B?eU1JV1UwRnJidkpFazc3TDNLQjE1blNyQU00SFBTdXA2MWxQSWhtMlYySnpa?=
- =?utf-8?B?OEcyZytNUVBQR2diR2tLajRMaHNaZERwVGJZRi92R0Zwck5qQnNaY3dQTkkw?=
- =?utf-8?B?d0NzUFhrWWVRSk9sNnhvMm5EOG5sUWZHUnhvY1hhRXdKSWxzM0JVR3ppQzMx?=
- =?utf-8?B?NUNlWkJZVUdNWll5VjllSFpJWGdLTlBGekR1b1I2UCtyVkJLdFMvZTdjcHRC?=
- =?utf-8?B?VzNUaTgwT2kxNlJFWis5cW0zNEhWaWYyT1ptVks1cnVlZUsyQmlLMGF5YjVN?=
- =?utf-8?B?NGp2ZmROcEZoR0IzdUUwZ0YweHU1dnF0U3NBY1BoREgzbjhicjdrVHJYRGVj?=
- =?utf-8?B?N2ZpbXRQRDVLeFI3cUhCZWJWaVZuVCtFN2dBempVeGtBNm1NNU92bEhCYUlm?=
- =?utf-8?B?cGptZmxhdmJOVFB4YnRBdjk4TlMyTnBrNTR4MlFLMTNUTnJXMmoxdjV3UThr?=
- =?utf-8?B?L3MzODNhMHQrcVA2MDg0SG1Ja1crZWNZRHoycDZGWXBaYlZ0dGpTUmh4TWc3?=
- =?utf-8?B?Ni82UXFsR0Z1YWloc2d0dmdvei9YdlVmd1RGaklMVlZkNTlkUGxJUXhPemhw?=
- =?utf-8?B?OVdMVDVFZVFVT2VCZEZEUTRHbGw2UVkrWFhOeXAzOUZnMm01NnlpbDNHUWJS?=
- =?utf-8?B?WVdBQzhiWURQTnprUExIL0tJWGhFQ0RYemNBSCtjYXh2UWVvaThrd283YzAr?=
- =?utf-8?B?TGVuSm1KRUtYeVgwNkVoUnhxL3ZqeTVaVkEvcXMxN3U5dENvaFl4dnhpRS93?=
- =?utf-8?B?ZU82OWNHOFlvV1hjdTJqWWVpbndCRmR2eCt3UUtsRHBBUk51OWVCd2V1a1dF?=
- =?utf-8?B?bGRZK2VHNWlTL1JEeVFuNUp3NmRFR3JaOUMzRUVsMGp6eGtodU1tRUxGcnBz?=
- =?utf-8?B?bzd6eWdmbHNSR2RXclFTTDZlWDJGTzV5VTR2SW5MdnY5bWI1TDdjSml2UUVa?=
- =?utf-8?B?K1Qvb0lwRmoyeFJxUGMvUU5hZk1rZXF4Mm5LQlNiQXpwVlFadjlJZTlkckRI?=
- =?utf-8?B?VDJaSGkwQUZkdnBXUml0RnlBNmVqVTJxck9mcEZONFJqelFrWkEwQXp4QXVx?=
- =?utf-8?B?UWc1WFlVSWNNVDFDTWkzWjdyczk5SElXS09weENxZ3lwdHRXblVkK3pWRmxq?=
- =?utf-8?B?Y1liYVEydCt1dkY4VWoyQi92NlR1SmdVY0k5SFZueHBzc3ZKSWE1aHpqR1Vl?=
- =?utf-8?B?SUVoa1k1N1B0NDloWUkyc01GM2FvdE9IOTFldkFhYUE4ak5XemJLOEJEWG1B?=
- =?utf-8?B?VlZsREpycmYzOEc3WUVuMGM4aG1PZEl6TmdRQW83U0hZT1V4SlZic1U1N2tr?=
- =?utf-8?B?clQ4Q2V4MDFWQlNraTNFWC9HclFaNmx2RkhTYWloK1hlcS9HSHpWVXdGVHNi?=
- =?utf-8?Q?J4YKHvM45S8G5?=
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <F223676743803F44A31AC412C8F7F1A7@AUSP300.PROD.OUTLOOK.COM>
-Content-Transfer-Encoding: base64
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="ctWka/32"
+Received: by mail-oi1-f172.google.com with SMTP id 5614622812f47-4863cd41330so635280b6e.1
+        for <keyrings@vger.kernel.org>; Tue, 02 Jun 2026 02:42:35 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1780393354; cv=none;
+        d=google.com; s=arc-20240605;
+        b=hjJo0+NTPVhigcVx2NehSSG0emsiKuLOYSpvql3TxzhmApFVThyCDmwr/UT2FS5+Ab
+         SGUeMiIBTEhU1kMkI6GWChiHyY2UZmACqqhNsYPktfWyo5B+J6l6evwTQm69gtwv3wKT
+         t3v72de91VLGB7UTZJONjysKI9dOdkoc7OBuQ4z2g+WcDkypKSAmJ3QOmrYhI/dn02jg
+         hdUJMXIIP/jW+bdwd/k2wgbYqcxAlb/Tw9a4L9V7/VDwB/wO/U2xFbe3M0Oi+02JX78U
+         ShIFMWFiIN7uit2HKLVoFvYTToHiC17FpFBzzhyc7wQ8mul1r/18shLbuuhaZBCQlIzV
+         5niA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:dkim-signature;
+        bh=2WN709sXoGtblvRyrImhrRUuQENQMA3uMpblskCxCeI=;
+        fh=x0Avp0yHKkWbYaLpKySTs7JdRaCmjd9Uk78hwJO4J+Y=;
+        b=fNcf5rTQjfx/voroP0tgav9QbNHr93O1uIMF3Lu6t9SaRmIpV+ZoX2Lbg+PAfUrVOc
+         +PHunND/MhVK3czQJpJFCG4ghMyFQSv8fTwkBBgwB9Mop9TZSnudTVpVKvYV8+UVq6ED
+         1hYZNs89UyiW7iDTtBAXoPiWGtihCiTbeO0li1C3M8GRI3X1IIhpwHm2HC2xflrYkyIO
+         +H1/5qoNSVFWMd68mdC6l5M1xEjeFIfpgyn721qGPvs2nzgalKS8sbLCtI8fohu4Ynb/
+         XkHU9Kh9+mpvFwjm0VAdYXpj6VI32sR4nza5WsH1mOq0Cn5AVR6qPvWrZkYsOMqfWJRi
+         nxug==;
+        darn=vger.kernel.org
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1780393354; x=1780998154; darn=vger.kernel.org;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=2WN709sXoGtblvRyrImhrRUuQENQMA3uMpblskCxCeI=;
+        b=ctWka/32L0p9k9rRF89Abbcq4eFeaMTFfzDIYlQ1ye1U7jMF80LqjJqMFlFUf2Esaf
+         7bA02vZfCW0AkXNgJMGBzlbmv2Z4i1bXrhWR8jbjd9WQv1JKE1w2XJk06P3xuWB1zR2v
+         JoaGqOrwEJuTrFPJLXAe1tG7tb2ircWgiRdqqDFS7MkE3z65hAzJMIPab4B5JMzCe/QH
+         tKYdCeX4aWK904g0qxJuoic5LwlHDAJvsEgTguYTHqhqEcfOsmXTFLoZw2N0er8d9THx
+         ZzrXfzojP4kiTcLMRquOIuytExLNseKC5zX6JOQXuEv2+kJ5LA7AjLI8mLAFiS8EiHQH
+         0P2A==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1780393354; x=1780998154;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to;
+        bh=2WN709sXoGtblvRyrImhrRUuQENQMA3uMpblskCxCeI=;
+        b=OZFJEKlM0i6kyQPsBGKPexdZRtjq4aRMRbDo02rk+UHiyhHMbZ7lvgBE/xzsEeBxQW
+         X5wrlXEJO9vRH3og1mZFtL4/xyazIze+AvOLUSyuLPcP202wJynlhGg1d7lDiM7WzJzZ
+         CY5XOR2Il+YagsciLly9TxucjI6SFxQHYNPu2YanJdk7Tky7geW/IfvAQCazC3wOWTwk
+         88C2WOoQv2LQIOrys5Q38KM7qZQ4Q7rbiYzqWaeybtGu9tg7/oAMNXmk/yzOMo4w9kBL
+         RHxsZ/KC8kiWxsVWdCrojbx3MaLQel1UsNTg96IamgZtKNYVjyPvDLt/rEKlXV6khLDu
+         w4mg==
+X-Forwarded-Encrypted: i=1; AFNElJ/Py6y3lxn2V708hUANgpC7PZyRWyLQNNfTq+gXV+ZxdenNYFI98+sgx7CUvO8y93sL/Ju3v3Iz6A==@vger.kernel.org
+X-Gm-Message-State: AOJu0YzYjXqPFHg+FurL7ekxCdVpE2r7EcMsYzRH0L2cSdvgLQYL5y9O
+	5CmPFI/+ZfQblYhUj5nVSbJra44aeyqDqClsP8QIpHke1ur8Gbm4x3sld3qUBXsHm68HTnXdP8w
+	81eVgHhdvQK7AyFchHEsgO47uIR9wPG0=
+X-Gm-Gg: Acq92OFZXsxtmV8zimMVd9ilMoc/tZGDer8v7MocCPb07Wn/lAt7PE4Z21ORZKCmuF5
+	TkhD+HmHqG9wgk2KTd2u95kdsNdmj7UiabarVddEU6kVCMnGpme71CW5JCuzMAepC7uEOmFbSxW
+	2F4GLIHFUxQK8P5YWEUV932H2SIwNtlm0mseS4/BsydUUawtuDVH2KL+GRUAJXnrE3o49IxaF68
+	IKgIIlZeh4Ti8/uRnQRFoqECGRZaw16u2TMq6xNZPMXxabxy8vzDvpacbsFsuuxMCPmDJr1rhSR
+	Nu9skwrMkKraNP2wE0OHA8Xrd7sZN4Ci4RYILseu2++WHo3Y3VFCkB3E1DquA99eddih1YldpDO
+	7lnNAXi2ZCm51vI65Lecs3FE9A6+i1CI=
+X-Received: by 2002:a05:6808:e86:b0:46a:17b8:bd7f with SMTP id
+ 5614622812f47-4863e7c2d94mr1611036b6e.19.1780393354616; Tue, 02 Jun 2026
+ 02:42:34 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-OriginatorOrg: outlook.com
-X-MS-Exchange-CrossTenant-AuthAs: Internal
-X-MS-Exchange-CrossTenant-AuthSource: ME0P300MB0618.AUSP300.PROD.OUTLOOK.COM
-X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg: 00000000-0000-0000-0000-000000000000
-X-MS-Exchange-CrossTenant-Network-Message-Id: ae397894-ebed-499d-b376-08debf567132
-X-MS-Exchange-CrossTenant-originalarrivaltime: 31 May 2026 20:51:51.9908
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
-X-MS-Exchange-CrossTenant-rms-persistedconsumerorg: 00000000-0000-0000-0000-000000000000
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: SY8P300MB0252
+References: <20260529033406.20673-1-hanguidong02@gmail.com> <aho3CYdv8lQd2s85@kernel.org>
+In-Reply-To: <aho3CYdv8lQd2s85@kernel.org>
+From: Gui-Dong Han <hanguidong02@gmail.com>
+Date: Tue, 2 Jun 2026 17:42:26 +0800
+X-Gm-Features: AVHnY4J3U44_QK8F7qYis9j67ueNmOkF5BG_lTDT6BBkwq5FJDnvTbsRP1vkKJE
+Message-ID: <CALbr=LYaca4+=hTsZJORQfrtzyUAGo8c+4ZEgkzgkFWQDWNJBA@mail.gmail.com>
+Subject: Re: [PATCH] KEYS: Use acquire when reading state in keyring search
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, ebiggers@google.com, 
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, 
+	baijiaju1990@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-QWRkIGtleXJpbmcgS1VuaXQgdGVzdHMgdGhhdCBleGVyY2lzZSBzdWNjZXNzZnVsIGtleV9tb3Zl
-KCksIHJlamVjdGlvbg0Kb2YgbW92aW5nIGEgcHJvdGVjdGVkIGtleSBvdXQgb2YgYSBwcm90ZWN0
-ZWQgc291cmNlIGtleXJpbmcsIGFuZCB0aGUNCnNhbWUta2V5cmluZyBuby1vcCBwYXRoLg0KDQpL
-ZWVwIHRoZSB0ZXN0LW9ubHkgaW5mcmFzdHJ1Y3R1cmUgc2VwYXJhdGUgZnJvbSB0aGUgS0VZQ1RM
-X01PVkUgZml4IHNvDQp0aGUgZml4IGNhbiBiZSBiYWNrcG9ydGVkIHdpdGhvdXQgcHVsbGluZyBp
-biB0aGUgS1VuaXQgbW9kdWxlLg0KDQpTaWduZWQtb2ZmLWJ5OiBNaW5neXUgTGl1IDxlZHdhcmRs
-aXUwMjE0QG91dGxvb2suY29tPg0KLS0tDQogc2VjdXJpdHkva2V5cy9LY29uZmlnICAgICAgICB8
-ICAxMyArKysrDQogc2VjdXJpdHkva2V5cy9NYWtlZmlsZSAgICAgICB8ICAgMSArDQogc2VjdXJp
-dHkva2V5cy9rZXlyaW5nX3Rlc3QuYyB8IDEyMSArKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKw0KIDMgZmlsZXMgY2hhbmdlZCwgMTM1IGluc2VydGlvbnMoKykNCiBjcmVhdGUgbW9k
-ZSAxMDA2NDQgc2VjdXJpdHkva2V5cy9rZXlyaW5nX3Rlc3QuYw0KDQpkaWZmIC0tZ2l0IGEvc2Vj
-dXJpdHkva2V5cy9LY29uZmlnIGIvc2VjdXJpdHkva2V5cy9LY29uZmlnDQppbmRleCA4NGYzOWU1
-MGNhMzYuLmFjZmZiNWY3Mzg1YyAxMDA2NDQNCi0tLSBhL3NlY3VyaXR5L2tleXMvS2NvbmZpZw0K
-KysrIGIvc2VjdXJpdHkva2V5cy9LY29uZmlnDQpAQCAtMTI5LDQgKzEyOSwxNyBAQCBjb25maWcg
-S0VZX05PVElGSUNBVElPTlMNCiAJICBUaGlzIG1ha2VzIHVzZSBvZiBwaXBlcyB0byBoYW5kbGUg
-dGhlIG5vdGlmaWNhdGlvbiBidWZmZXIgYW5kDQogCSAgcHJvdmlkZXMgS0VZQ1RMX1dBVENIX0tF
-WSB0byBlbmFibGUvZGlzYWJsZSB3YXRjaGVzLg0KIA0KK2NvbmZpZyBLRVlTX0tVTklUX1RFU1QN
-CisJdHJpc3RhdGUgIktVbml0IHRlc3RzIGZvciBrZXlyaW5ncyIgaWYgIUtVTklUX0FMTF9URVNU
-Uw0KKwlkZXBlbmRzIG9uIEtVTklUDQorCWRlZmF1bHQgS1VOSVRfQUxMX1RFU1RTDQorCWhlbHAN
-CisJICBCdWlsZCBLVW5pdCB0ZXN0cyBmb3Iga2V5cmluZyBvcGVyYXRpb25zLg0KKwkgIFRoZXNl
-IHRlc3RzIGV4ZXJjaXNlIGtleXJpbmcgbGluayBhbmQgbW92ZSBiZWhhdmlvciwgaW5jbHVkaW5n
-DQorCSAgcHJvdGVjdGlvbiBvZiBLRVlfRkxBR19LRUVQIGVudHJpZXMuDQorCSAgVGhleSBhcmUg
-aW50ZW5kZWQgZm9yIEtVbml0IHJ1bnMgb24gZGV2ZWxvcGVyIGtlcm5lbHMgYW5kIGFyZSBub3QN
-CisJICBuZWVkZWQgZm9yIG5vcm1hbCBzeXN0ZW1zLg0KKw0KKwkgIElmIHlvdSBhcmUgdW5zdXJl
-IGhvdyB0byBhbnN3ZXIgdGhpcyBxdWVzdGlvbiwgYW5zd2VyIE4uDQorDQogZW5kaWYgIyBLRVlT
-DQpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkva2V5cy9NYWtlZmlsZSBiL3NlY3VyaXR5L2tleXMvTWFr
-ZWZpbGUNCmluZGV4IDVmNDA4MDdmMDViMy4uZmE1ODNhNGVhOTQ1IDEwMDY0NA0KLS0tIGEvc2Vj
-dXJpdHkva2V5cy9NYWtlZmlsZQ0KKysrIGIvc2VjdXJpdHkva2V5cy9NYWtlZmlsZQ0KQEAgLTIz
-LDYgKzIzLDcgQEAgb2JqLSQoQ09ORklHX1NZU0NUTCkgKz0gc3lzY3RsLm8NCiBvYmotJChDT05G
-SUdfUEVSU0lTVEVOVF9LRVlSSU5HUykgKz0gcGVyc2lzdGVudC5vDQogb2JqLSQoQ09ORklHX0tF
-WV9ESF9PUEVSQVRJT05TKSArPSBkaC5vDQogb2JqLSQoQ09ORklHX0FTWU1NRVRSSUNfS0VZX1RZ
-UEUpICs9IGtleWN0bF9wa2V5Lm8NCitvYmotJChDT05GSUdfS0VZU19LVU5JVF9URVNUKSArPSBr
-ZXlyaW5nX3Rlc3Qubw0KIA0KICMNCiAjIEtleSB0eXBlcw0KZGlmZiAtLWdpdCBhL3NlY3VyaXR5
-L2tleXMva2V5cmluZ190ZXN0LmMgYi9zZWN1cml0eS9rZXlzL2tleXJpbmdfdGVzdC5jDQpuZXcg
-ZmlsZSBtb2RlIDEwMDY0NA0KaW5kZXggMDAwMDAwMDAwMDAwLi4wMDU1YjUwMjI0ZTkNCi0tLSAv
-ZGV2L251bGwNCisrKyBiL3NlY3VyaXR5L2tleXMva2V5cmluZ190ZXN0LmMNCkBAIC0wLDAgKzEs
-MTIxIEBADQorLy8gU1BEWC1MaWNlbnNlLUlkZW50aWZpZXI6IEdQTC0yLjAtb3ItbGF0ZXINCisv
-Kg0KKyAqIEtVbml0IHRlc3RzIGZvciBrZXlyaW5nIG9wZXJhdGlvbnMuDQorICovDQorDQorI2lu
-Y2x1ZGUgPGtleXMvdXNlci10eXBlLmg+DQorI2luY2x1ZGUgPGt1bml0L3Rlc3QuaD4NCisjaW5j
-bHVkZSA8bGludXgvY3JlZC5oPg0KKyNpbmNsdWRlIDxsaW51eC9lcnIuaD4NCisjaW5jbHVkZSA8
-bGludXgva2V5Lmg+DQorI2luY2x1ZGUgPGxpbnV4L2tleS10eXBlLmg+DQorI2luY2x1ZGUgPGxp
-bnV4L2tleWN0bC5oPg0KKyNpbmNsdWRlIDxsaW51eC9tb2R1bGUuaD4NCisjaW5jbHVkZSA8bGlu
-dXgvdWlkZ2lkLmg+DQorDQorc3RhdGljIHZvaWQga2V5cmluZ190ZXN0X2tleV9wdXQodm9pZCAq
-ZGF0YSkNCit7DQorCWtleV9wdXQoZGF0YSk7DQorfQ0KKw0KK3N0YXRpYyBzdHJ1Y3Qga2V5ICp0
-ZXN0X2tleXJpbmdfYWxsb2Moc3RydWN0IGt1bml0ICp0ZXN0LCBjb25zdCBjaGFyICpkZXNjLA0K
-KwkJCQkgICAgICB1bnNpZ25lZCBsb25nIGZsYWdzKQ0KK3sNCisJc3RydWN0IGtleSAqa2V5cmlu
-ZzsNCisNCisJa2V5cmluZyA9IGtleXJpbmdfYWxsb2MoZGVzYywgR0xPQkFMX1JPT1RfVUlELCBH
-TE9CQUxfUk9PVF9HSUQsDQorCQkJCWN1cnJlbnRfY3JlZCgpLCBLRVlfUE9TX0FMTCB8IEtFWV9V
-U1JfQUxMLA0KKwkJCQlLRVlfQUxMT0NfTk9UX0lOX1FVT1RBIHwgZmxhZ3MsIE5VTEwsIE5VTEwp
-Ow0KKwlLVU5JVF9BU1NFUlRfTk9UX0VSUl9PUl9OVUxMKHRlc3QsIGtleXJpbmcpOw0KKwlLVU5J
-VF9BU1NFUlRfRVEodGVzdCwga3VuaXRfYWRkX2FjdGlvbl9vcl9yZXNldCh0ZXN0LA0KKwkJCQkJ
-CQlrZXlyaW5nX3Rlc3Rfa2V5X3B1dCwNCisJCQkJCQkJa2V5cmluZyksIDApOw0KKw0KKwlyZXR1
-cm4ga2V5cmluZzsNCit9DQorDQorc3RhdGljIHN0cnVjdCBrZXkgKnRlc3RfdXNlcl9rZXlfYWxs
-b2Moc3RydWN0IGt1bml0ICp0ZXN0LCBjb25zdCBjaGFyICpkZXNjLA0KKwkJCQkgICAgICAgc3Ry
-dWN0IGtleSAqa2V5cmluZywNCisJCQkJICAgICAgIHVuc2lnbmVkIGxvbmcgZmxhZ3MpDQorew0K
-KwlzdGF0aWMgY29uc3QgY2hhciBwYXlsb2FkW10gPSAicGF5bG9hZCI7DQorCXN0cnVjdCBrZXkg
-KmtleTsNCisJaW50IHJldDsNCisNCisJa2V5ID0ga2V5X2FsbG9jKCZrZXlfdHlwZV91c2VyLCBk
-ZXNjLCBHTE9CQUxfUk9PVF9VSUQsIEdMT0JBTF9ST09UX0dJRCwNCisJCQljdXJyZW50X2NyZWQo
-KSwgS0VZX1BPU19BTEwgfCBLRVlfVVNSX0FMTCwNCisJCQlLRVlfQUxMT0NfTk9UX0lOX1FVT1RB
-IHwgZmxhZ3MsIE5VTEwpOw0KKwlLVU5JVF9BU1NFUlRfTk9UX0VSUl9PUl9OVUxMKHRlc3QsIGtl
-eSk7DQorCUtVTklUX0FTU0VSVF9FUSh0ZXN0LCBrdW5pdF9hZGRfYWN0aW9uX29yX3Jlc2V0KHRl
-c3QsDQorCQkJCQkJCWtleXJpbmdfdGVzdF9rZXlfcHV0LA0KKwkJCQkJCQlrZXkpLCAwKTsNCisN
-CisJcmV0ID0ga2V5X2luc3RhbnRpYXRlX2FuZF9saW5rKGtleSwgcGF5bG9hZCwgc2l6ZW9mKHBh
-eWxvYWQpLA0KKwkJCQkgICAgICAga2V5cmluZywgTlVMTCk7DQorCUtVTklUX0FTU0VSVF9FUSh0
-ZXN0LCByZXQsIDApOw0KKw0KKwlyZXR1cm4ga2V5Ow0KK30NCisNCitzdGF0aWMgdm9pZCBrZXly
-aW5nX21vdmVfdXNlcl9rZXkoc3RydWN0IGt1bml0ICp0ZXN0KQ0KK3sNCisJc3RydWN0IGtleSAq
-ZnJvbSwgKnRvLCAqa2V5Ow0KKwlpbnQgcmV0Ow0KKw0KKwlmcm9tID0gdGVzdF9rZXlyaW5nX2Fs
-bG9jKHRlc3QsICJtb3ZlLWZyb20iLCAwKTsNCisJdG8gPSB0ZXN0X2tleXJpbmdfYWxsb2ModGVz
-dCwgIm1vdmUtdG8iLCAwKTsNCisJa2V5ID0gdGVzdF91c2VyX2tleV9hbGxvYyh0ZXN0LCAibW92
-ZS1rZXkiLCBmcm9tLCAwKTsNCisNCisJcmV0ID0ga2V5X21vdmUoa2V5LCBmcm9tLCB0bywgMCk7
-DQorCUtVTklUX0VYUEVDVF9FUSh0ZXN0LCByZXQsIDApOw0KKw0KKwlyZXQgPSBrZXlfbW92ZShr
-ZXksIHRvLCBmcm9tLCAwKTsNCisJS1VOSVRfRVhQRUNUX0VRKHRlc3QsIHJldCwgMCk7DQorfQ0K
-Kw0KK3N0YXRpYyB2b2lkIGtleXJpbmdfbW92ZV9rZWVwX2tleV9mYWlscyhzdHJ1Y3Qga3VuaXQg
-KnRlc3QpDQorew0KKwlzdHJ1Y3Qga2V5ICpmcm9tLCAqdG8sICprZXk7DQorCWludCByZXQ7DQor
-DQorCWZyb20gPSB0ZXN0X2tleXJpbmdfYWxsb2ModGVzdCwgImtlZXAtZnJvbSIsIEtFWV9BTExP
-Q19TRVRfS0VFUCk7DQorCXRvID0gdGVzdF9rZXlyaW5nX2FsbG9jKHRlc3QsICJrZWVwLXRvIiwg
-MCk7DQorCWtleSA9IHRlc3RfdXNlcl9rZXlfYWxsb2ModGVzdCwgImtlZXAta2V5IiwgZnJvbSwg
-MCk7DQorDQorCUtVTklUX0FTU0VSVF9UUlVFKHRlc3QsIHRlc3RfYml0KEtFWV9GTEFHX0tFRVAs
-ICZmcm9tLT5mbGFncykpOw0KKwlLVU5JVF9BU1NFUlRfVFJVRSh0ZXN0LCB0ZXN0X2JpdChLRVlf
-RkxBR19LRUVQLCAma2V5LT5mbGFncykpOw0KKw0KKwlyZXQgPSBrZXlfbW92ZShrZXksIGZyb20s
-IHRvLCAwKTsNCisJS1VOSVRfRVhQRUNUX0VRKHRlc3QsIHJldCwgLUVQRVJNKTsNCisNCisJcmV0
-ID0ga2V5X21vdmUoa2V5LCB0bywgZnJvbSwgMCk7DQorCUtVTklUX0VYUEVDVF9FUSh0ZXN0LCBy
-ZXQsIC1FTk9FTlQpOw0KK30NCisNCitzdGF0aWMgdm9pZCBrZXlyaW5nX21vdmVfa2VlcF9zYW1l
-X2tleXJpbmcoc3RydWN0IGt1bml0ICp0ZXN0KQ0KK3sNCisJc3RydWN0IGtleSAqa2V5cmluZywg
-KmtleTsNCisJaW50IHJldDsNCisNCisJa2V5cmluZyA9IHRlc3Rfa2V5cmluZ19hbGxvYyh0ZXN0
-LCAia2VlcC1zYW1lIiwgS0VZX0FMTE9DX1NFVF9LRUVQKTsNCisJa2V5ID0gdGVzdF91c2VyX2tl
-eV9hbGxvYyh0ZXN0LCAia2VlcC1zYW1lLWtleSIsIGtleXJpbmcsIDApOw0KKw0KKwlyZXQgPSBr
-ZXlfbW92ZShrZXksIGtleXJpbmcsIGtleXJpbmcsIDApOw0KKwlLVU5JVF9FWFBFQ1RfRVEodGVz
-dCwgcmV0LCAwKTsNCit9DQorDQorc3RhdGljIHN0cnVjdCBrdW5pdF9jYXNlIGtleXJpbmdfdGVz
-dF9jYXNlc1tdID0gew0KKwlLVU5JVF9DQVNFKGtleXJpbmdfbW92ZV91c2VyX2tleSksDQorCUtV
-TklUX0NBU0Uoa2V5cmluZ19tb3ZlX2tlZXBfa2V5X2ZhaWxzKSwNCisJS1VOSVRfQ0FTRShrZXly
-aW5nX21vdmVfa2VlcF9zYW1lX2tleXJpbmcpLA0KKwl7fQ0KK307DQorDQorc3RhdGljIHN0cnVj
-dCBrdW5pdF9zdWl0ZSBrZXlyaW5nX3Rlc3Rfc3VpdGUgPSB7DQorCS5uYW1lID0gImtleXJpbmci
-LA0KKwkudGVzdF9jYXNlcyA9IGtleXJpbmdfdGVzdF9jYXNlcywNCit9Ow0KKw0KK2t1bml0X3Rl
-c3Rfc3VpdGUoa2V5cmluZ190ZXN0X3N1aXRlKTsNCisNCitNT0RVTEVfTElDRU5TRSgiR1BMIik7
-DQotLSANCjIuNTEuMi53aW5kb3dzLjENCg0K
+On Sat, May 30, 2026 at 9:02=E2=80=AFAM Jarkko Sakkinen <jarkko@kernel.org>=
+ wrote:
+>
+> On Fri, May 29, 2026 at 11:34:06AM +0800, Gui-Dong Han wrote:
+> > The negative-key race fix added release/acquire ordering for key use.
+> >
+> > Publish payload before state; read state before payload.
+> >
+> > keyring_search_iterator() still uses READ_ONCE() before match callbacks=
+.
+> > An asymmetric match callback calls asymmetric_key_ids(), which reads
+> > key->payload.data[asym_key_ids].
+> >
+> > Use key_read_state() there to complete that ordering.
+>
+> OK, so... I'm having a bit trouble understanding the exact concurrency
+> scenario you're trying to describe despite I think I get the fix itself
+> i.e. it is not pairing with mark_key_instantiated?
+
+Yes, it is intended to pair with mark_key_instantiated().
+
+>
+> I'm a bit puzzled too why this was not done already in the original
+> commit despite introducing all the primitives.
+
+The original commit added the right primitives, but this site was easy to
+miss because the payload access is hidden behind ctx->match_data.cmp().
+For example, the asymmetric match callbacks call asymmetric_key_ids(),
+which reads key->payload.data[asym_key_ids].
+
+I also checked the two pre-existing issues reported by Sashiko [1].
+The uninitialized-read case does not look possible from the code, but the
+cached-error issue is real and was dynamically reproduced.  I can send a
+separate patch for that if useful.
+
+Thanks.
+
+[1] https://sashiko.dev/#/patchset/20260529033406.20673-1-hanguidong02%40gm=
+ail.com
+
+>
+> >
+> > Fixes: 363b02dab09b ("KEYS: Fix race between updating and finding a neg=
+ative key")
+> > Signed-off-by: Gui-Dong Han <hanguidong02@gmail.com>
+> > ---
+> > Found by auditing READ_ONCE() used for synchronization.
+> > A similar fix can be found in 8df672bfe3ec.
+> > ---
+> >  security/keys/keyring.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> > index b39038f7dd31..243fb1636f10 100644
+> > --- a/security/keys/keyring.c
+> > +++ b/security/keys/keyring.c
+> > @@ -576,7 +576,7 @@ static int keyring_search_iterator(const void *obje=
+ct, void *iterator_data)
+> >       struct keyring_search_context *ctx =3D iterator_data;
+> >       const struct key *key =3D keyring_ptr_to_key(object);
+> >       unsigned long kflags =3D READ_ONCE(key->flags);
+> > -     short state =3D READ_ONCE(key->state);
+> > +     short state =3D key_read_state(key);
+> >
+> >       kenter("{%d}", key->serial);
+> >
+> > --
+> > 2.34.1
+> >
+>
+> BR, Jarkko
