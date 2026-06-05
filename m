@@ -1,33 +1,51 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-wm1-f44.google.com (mail-wm1-f44.google.com [209.85.128.44])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 039C62B9BA;
-	Fri,  5 Jun 2026 12:16:03 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 397DA30B501
+	for <keyrings@vger.kernel.org>; Fri,  5 Jun 2026 21:33:05 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.128.44
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1780661765; cv=none; b=g3yfzxKpMnZY21WHrLk3/1/O70/oSEF1JQ3HDr8244hQP5rRR5UG25E1xzqszageJd4WRq3oX7iDfHVoV+COh6+6/JKH8F880EOf2iqO0vaNR5MMoBvYC+lO1+FrnZj7bFO/Lru8TUFEctibmcOhNvG6xGLTqbpwqI2cbrQLDvY=
+	t=1780695186; cv=none; b=QlEyeZDkmF4whsqpIiUPPIQ4xPB4OWUedEgYr+jroOtg0l/982iu5Dd4ggiXJ5b8jH6qA2Ur1zFmlDEvVuwZfXjnnEfsbvXwnbKUDJVU/uBphf1x0IFOZIwPmOaGbd4NccareWlEKVkcaOE4tQ1FuNhXHSJMBYJjdmg7Ihdyd3c=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1780661765; c=relaxed/simple;
-	bh=M1RLUPjQMkUazGK5E9j4rCdECXoPVJZ/G4Z0NlllhDM=;
+	s=arc-20240116; t=1780695186; c=relaxed/simple;
+	bh=yB8i6L7KoJ6YeQ5x5SkEb3TWEe2vEfLFo8gyBr/eSF0=;
 	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=D68y2l5FxOmTOOt72J+CLkV/7CM8iz+jEvOaEm0B1vJe1gyQJiLDcmXJC5cHnWbaRWMPUiNDca6J8lkk9jvbSggheysmxSfExr3K6hyJLnhVX8cKaZt5ND5EWuGphqCJfgvJfzfI12sR6XjkOHsZxABDOEH1ZCM7Imu7LdVOitE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TBTzWS6l; arc=none smtp.client-ip=100.103.45.18
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TBTzWS6l"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 6AFF81F00893;
-	Fri,  5 Jun 2026 12:16:01 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1780661763;
-	bh=beptNeEzJHYQ+94+I0PQKTOh5JgCPrdUPqAq2RLiN3U=;
-	h=Date:Subject:To:Cc:References:From:In-Reply-To;
-	b=TBTzWS6lRNEwNkUDoBT0wNjbMt5k+ani9mSxO7Ld9Djhx/+L5Cl5oShp9gA69YFWq
-	 JN8qr7qbtXCQeGPG8paeMz7NQ4wsiFgMjqcuXY5wW4fgvXCO4237v3aUXQRRHxVcAU
-	 AwBUpeFyCHlWJJs1/RYRCVK1AaSOz0O7ymqLEDBYW0oom309b3UCNjdCJLHZ/i+biP
-	 egVR7v4mXRTTKxXq/uvndoxK7FaUnqm+Z4mAAUzA1TAnD5QSTVdV1T6ymKqcwIj7kz
-	 fhFIWe5/x6U3kaQ4i5+u10Eevk3Wg/hIuQM8AGskZhKATFSqeIlYgvimchxzrQ/eWs
-	 f/mM/FESXe1XA==
-Message-ID: <19fb9d38-fe02-4653-bbad-58806e55ca84@kernel.org>
-Date: Fri, 5 Jun 2026 14:16:00 +0200
+	 In-Reply-To:Content-Type; b=sqVfxUI+tFDaa6P9rIZ5J3M4s1r1M1XHioOgWCfjPh1M1gqVGAcsCnGmZDsh5LvhvPcnViRTeEA6TK3gMyFYHOyLPJ5MVVMi4pIXcEg/SUDtXQyLIFC/SF8GnpA74usamaPcD3gx3FgwMfmfDSIo9aDCOSFNULGeZS33oVpM7eQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=grimberg.me; spf=pass smtp.mailfrom=gmail.com; arc=none smtp.client-ip=209.85.128.44
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=grimberg.me
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+Received: by mail-wm1-f44.google.com with SMTP id 5b1f17b1804b1-490a765d410so24869355e9.1
+        for <keyrings@vger.kernel.org>; Fri, 05 Jun 2026 14:33:04 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1780695184; x=1781299984;
+        h=content-transfer-encoding:in-reply-to:from:content-language
+         :references:cc:to:subject:user-agent:mime-version:date:message-id
+         :x-gm-gg:x-gm-message-state:from:to:cc:subject:date:message-id
+         :reply-to;
+        bh=yB8i6L7KoJ6YeQ5x5SkEb3TWEe2vEfLFo8gyBr/eSF0=;
+        b=Sof50u49ntOtwQLwMLZ1qZJIrW9tSg3YaHGErXqfmeVFZoakZru+TfK7lulhrMoEh8
+         iL8e7yzWazo6gq1BrWEvqwXsYf0JNmwynsTd875CmcflqzGMliud5b+WHuJC5LqsAhGx
+         CNHHtRYI9vc1IdnWLtbg713HhvSqsTqfabtv+65wvE1+4/gJ+fN20t4osCvPtlO7X2w3
+         tBmRHR7ldRHWqmlJveGwz6vJowTZ4zlMcRy7Q5OyWRUX8QCrFpIIgi8ReqPcYh9JvTei
+         ADGCHljysGc5tTpjJA6/9pHWlyTOeDA/spun5duA7qf/MhCwaM/mX8tuBvMPAIhm7ruv
+         XdoQ==
+X-Gm-Message-State: AOJu0YyEZ2imF6pTWE0vGTlTTKfC7h7aka14r0NWUAOollIo2k5S//As
+	FpaHDoV/k3tGY+zB1Mzb0VooZEOr/+A84ARnKHWmBg4tYfgnuogbX/tg
+X-Gm-Gg: Acq92OEClkdORcc6Ou2Czphw/6inZKNJC3KflBscfMMWj495dKe7u/wrHXE4IUYbZ46
+	wBLdDo9sVGhMemR+uNSK80G8XsLa7HKRoTCAZEyoAR4YTtVbxL+8w9D8Zyvhi41sNffv3caJ43V
+	TjqZxeHQLrbc8z3aJ+Gp1/6wUAGlOTzdH+LgO2yMlgkKjT1ey1LAqw2CzR/tULwnQVcjtUZzQlw
+	YVludXLTnED+X+wjXCCKe6G+ygpMAmSS3/FV1YC/FKzfRj9VLfRWEddAvLqM3Ub+ZlevnNB41NA
+	ZyaY5ftPdwTzVTJsnBbr1sidojEPgxLaHi9pdWRW69vqj/32e1G8i0NMEjzDs2XQM5GWRwCvLAJ
+	i7wecKPkLuUi7fLknjg6ETRNBrH9RkfeJh/23eb2EZax4ToVuw3XK3UhFpdTjflWJPSovTGtSYd
+	9eAyXmknYlPqUzOKSlTSnwFXW6jTpOZgyomrjTpHzanWmXVbpoFmiLhN0TVoXyrbk=
+X-Received: by 2002:a05:600c:8183:b0:488:a882:c7 with SMTP id 5b1f17b1804b1-490c25c6625mr78070045e9.25.1780695183438;
+        Fri, 05 Jun 2026 14:33:03 -0700 (PDT)
+Received: from [10.100.102.74] (89-138-67-1.bb.netvision.net.il. [89.138.67.1])
+        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-490c2d52e5esm48030115e9.2.2026.06.05.14.33.00
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Fri, 05 Jun 2026 14:33:01 -0700 (PDT)
+Message-ID: <ab767baf-aa94-4ff7-81fb-c19804a7883d@grimberg.me>
+Date: Sat, 6 Jun 2026 00:32:59 +0300
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -35,107 +53,59 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH] keys: prevent slab cache merging for key_jar
-Content-Language: en-US
-To: Mohammed EL Kadiri <med08elkadiri@gmail.com>,
+Subject: Re: [RFC] NFS: named client identities for mTLS mounts and a
+ per-namespace .nfs keyring
+To: Chuck Lever <cel@kernel.org>, Hannes Reinecke <hare@suse.de>,
+ linux-nfs@vger.kernel.org
+Cc: keyrings@vger.kernel.org, kernel-tls-handshake@lists.linux.dev,
+ netdev@vger.kernel.org, Trond Myklebust <trondmy@kernel.org>,
+ Anna Schumaker <anna@kernel.org>, Christoph Hellwig <hch@lst.de>,
  David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
- "Serge E . Hallyn" <serge@hallyn.com>, Kees Cook <kees@kernel.org>,
- Vlastimil Babka <vbabka@suse.cz>, keyrings@vger.kernel.org,
- linux-security-module@vger.kernel.org, linux-hardening@vger.kernel.org,
- linux-kernel@vger.kernel.org
-References: <20260604125034.13757-1-med08elkadiri@gmail.com>
-From: "Vlastimil Babka (SUSE)" <vbabka@kernel.org>
-Autocrypt: addr=vbabka@kernel.org; keydata=
- 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
-In-Reply-To: <20260604125034.13757-1-med08elkadiri@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+References: <20260602154740.49861-1-cel@kernel.org>
+ <bb9a872a-d4aa-467a-b4c9-7bca174a6bbc@suse.de>
+ <b38b0983-7a63-4e77-a549-2d8859752cb9@app.fastmail.com>
+Content-Language: en-US
+From: Sagi Grimberg <sagi@grimberg.me>
+In-Reply-To: <b38b0983-7a63-4e77-a549-2d8859752cb9@app.fastmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 
-On 6/4/26 14:50, Mohammed EL Kadiri wrote:
-> The key_jar slab cache holds struct key objects containing cryptographic
-> keys, authentication tokens, and keyring linkage. This cache currently
-> lacks merge prevention, allowing the SLUB allocator to merge it with
-> other similarly-sized caches.
-> 
-> On a default Ubuntu 6.17.0-23-generic system, key_jar has 5 aliases,
-> meaning 5 unrelated object types share its slab pages. struct key is
-> 224 bytes, placed in 256-byte slabs alongside biovec-16, maple_node,
-> ip6_dst_cache, task_delay_info, and kmalloc-256 users.
-> 
-> Cross-cache heap exploitation is a well-documented attack class
-> (CVE-2022-29582, CVE-2022-2588, CVE-2021-22555) where slab cache
-> merging enables type confusion between unrelated kernel objects. A
-> use-after-free in any subsystem sharing slab pages with key_jar could
-> allow an attacker to reclaim a freed slot as a struct key, or corrupt
-> an existing key through a dangling pointer to a different type.
-> 
-> Add SLAB_NO_MERGE to ensure key_jar receives dedicated slab pages,
-> eliminating cross-cache attacks targeting struct key. The memory
-> overhead is minimal: with 32 objects per slab page and typical key
-> usage bounded by system keyring size, the cost of dedicated pages is
-> negligible. There is zero performance impact on the allocation hot
-> path.
-> 
-> This follows the precedent set by skbuff_head_cache (net/core/skbuff.c)
-> which uses SLAB_NO_MERGE for similar isolation requirements.
-> 
-> Signed-off-by: Mohammed EL Kadiri <med08elkadiri@gmail.com>
 
-Acked-by: Vlastimil Babka (SUSE) <vbabka@kernel.org>
 
-> ---
->  security/keys/key.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/security/keys/key.c b/security/keys/key.c
-> index 3bbdde778631..592b65cf8539 100644
-> --- a/security/keys/key.c
-> +++ b/security/keys/key.c
-> @@ -1275,7 +1275,7 @@ void __init key_init(void)
->  {
->  	/* allocate a slab in which we can store keys */
->  	key_jar = kmem_cache_create("key_jar", sizeof(struct key),
-> -			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
-> +			0, SLAB_HWCACHE_ALIGN | SLAB_PANIC | SLAB_NO_MERGE, NULL);
->  
->  	/* add the special key types */
->  	list_add_tail(&key_type_keyring.link, &key_types_list);
+On 03/06/2026 17:27, Chuck Lever wrote:
+> On Tue, Jun 2, 2026, at 6:39 PM, Hannes Reinecke wrote:
+>> I am all for making keyrings namespace-aware. Logically I _think_ they
+>> should be tagged per user-namespace, as this really is about the
+>> filesystem (and as such would warrant to be tagged per mount ns).
+>> Tagging it per net-namespace is not a great fit (well, for me, at
+>> least), as also block devices might require keys to present the
+>> bdev (eg nvme authentication)
+> My understanding of the proposal is that there is one keyring on the
+> system for .nfs and the keys in it are visible only in the namespace
+> where they were created.
+>
+> Therefore the consumer (say, NFS, or NFSD) is running in a particular
+> network namespace. It will create keys on the one .nfs keyring, but
+> only the tlshd in that same network namespace will have access to
+> those keys.
+
+Can tlshd run in multiple network namesapces today?
+
+>
+>
+>> I might be okay to have it tagged per net-namespace, though, as all
+>> current users are in some shape or form being network related.
+>> But I'm not sure if that stays that way, so I am worried if we're
+>> not restricting ourselves to much by that choice.
+>> As really, the question is: what is the driving the namespace selection?
+>> Is it the _requesting_ layer, ie the layer issuing the mount() call?
+>> Or is it the _providing_ layer, ie the layer providing the
+>> devices/interfaces where the mount() call is operating on?
+>> If it's the former, then we need to tag is as
+>> net-namespace. If it's the latter, then we need to tag it as a
+>> user-namespace / mount-ns.
+> tlshd is a network layer service, so it doesn't make sense to bind
+> it to a user or mount namespace, IMHO.
+
+I agree with network namespace isolation.
 
