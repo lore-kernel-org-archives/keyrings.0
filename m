@@ -1,46 +1,41 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 878CD2771B;
-	Mon,  8 Jun 2026 04:47:03 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0EDF72771B;
+	Mon,  8 Jun 2026 04:50:02 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1780894024; cv=none; b=AtjzLU4onZWAn4la7f+zVbotcTVcEfdyL1XjsbVrschvB3EEgAeyYC//bFJLH6oKSM4wQmFWg4hO5Cf92RvAtPd5k1+v+Q3iVzfLOiI0GtoN/TekkOZ5+i/H7fLh4wilaf4iUCnD7NpezIBjlODUSqmp0p2S+rUMSaFNE8Y0J0g=
+	t=1780894204; cv=none; b=dGDLLbhaUmzLvix+o/KLbjk6nNHYeVtsipsp0sTYGeopurnlHsSS0Pn5gk22rMdY3Fa+gXnEJMzy5WLB81e7j8DXB+J79b2ihGIwXwygwECkMoXtt75SI6/Cbwhrw/LIOhxNprHjCReGGWu1IUgXawwRXInKDqr4qj1w3X5E0/Q=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1780894024; c=relaxed/simple;
-	bh=HzhYmRX2nopKAccHM1GYw7/eum7CLQA7DD37+lke6xw=;
+	s=arc-20240116; t=1780894204; c=relaxed/simple;
+	bh=BzR93OugnK/UHYsy0BXGO0X+GUsvO7oDw5TNuFrhnDI=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=OobJh1b5KS1Ivlj3o7faP6dQrJM2LzYJH5Oso8P0dnfwQZZ0YbFFn+L8Fk2desfqw5++yT/9rCVbWVmyx4C/6isX/vvDIIdx/J3xlmtFXd5Bf59ul1dxtQsFJm6gZhDJikZhIbgdwFDnxSrzFlclAyHhjxVqYToGlodDkkEzn8o=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=IS6uXbf2; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=iQNWyi0zPh5GnQ/Xaxmy32J15caP5/b4LtHuN4IDqlyyloVhNriEK7lOM3as2Tevg5EfbGvwgbl7mzKqAc7XcCCKl6Eg11JlDi2hwhBqMEPx4o4KMWy+S07l821iARotdUl2A9oK2ykeh806E74ztAsK7x7YoBuVLspzGVXLPK8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=QDqkEQ2t; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="IS6uXbf2"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D703E1F00893;
-	Mon,  8 Jun 2026 04:47:02 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="QDqkEQ2t"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 21E351F00898;
+	Mon,  8 Jun 2026 04:50:01 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1780894023;
-	bh=AiC6IPztEYJ/u86CgpttLslDsUBS7Wl8BsHG5skCcSg=;
+	s=k20260515; t=1780894202;
+	bh=D7bR2Actc04Wu/D+QtrZit8ZhjBDPmXURUdiAB0RO08=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=IS6uXbf2oJsprQtKgtX7Mkv4xqoLTi9uAQBokpcM8YDBfmVAdwSPBn1qW6bYu6G1o
-	 V4SEyxju5kl593oG5Fg8/kHWjrn129nU7rlcuzV1zo1FCDn1h2Rzu8lwGy+ljYOjB3
-	 5DKfrcdJT+j5UUUtys7Jk0AbxN4gfTqrD/FQlzLZEEd3LpZytGt4neBwDmJNHeHJGv
-	 saR6bQA13dda+ZJVTrmwLaAp+Dc4OGf6P7kQrXffx6Q+Ig8XYMgGqSG8lDCBvCKvgV
-	 TnxGPkQtNu/MxVJN0BTAUMIbaG6IRZ1XJ25zg9E2nu54/HbU/X8nDQVoHnjmtBcvPl
-	 SKy+299c4THmw==
-Date: Mon, 8 Jun 2026 07:46:59 +0300
+	b=QDqkEQ2t4umebVk9IE06l0QpQVoJM+Qsh/lsZyqrPgCib0N+LIeLFhBFr7BeZLclc
+	 e+WSeptrkNiH4XLc8nlW4958/1WD7BeKsD28PhPwrOCe3WmRYK1lpcBUpEK4y4lZoT
+	 dMELE/T5NQJ3/d4IhbRvR91sxD7QQ1qBzW3UXv74UqOu88vjTFUGs23YxMmGNeaN+d
+	 21ttot1MEkf9uhAoRYO+Ie146AITTMUl8/Q9ZPPNkztcP4UrTxdyqJBiBfob1yaSEw
+	 ztT3ikSRiJ1Ttp7IkgAkwIPh6Xh7pP5VFm13gpLlGXVpxPovFUAxlaULLuwxseq04G
+	 D8Zu3gnnOZt8g==
+Date: Mon, 8 Jun 2026 07:49:59 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: david.laight.linux@gmail.com
-Cc: Kees Cook <kees@kernel.org>, linux-hardening@vger.kernel.org,
-	Arnd Bergmann <arnd@kernel.org>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	David Howells <dhowells@redhat.com>,
-	James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.ibm.com>,
-	Paul Moore <paul@paul-moore.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH next] keys: Replace strcpy(derived_buf, "AUTH_KEY") with
- strscpy(..., HASH_SIZE)
-Message-ID: <aiZJQ71se4x4d9Bh@kernel.org>
-References: <20260606202633.5018-9-david.laight.linux@gmail.com>
+To: Gary Guo <gary@garyguo.net>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] keys: allow request-key path to be configured via Kconfig
+Message-ID: <aiZJ94eugtNHcILD@kernel.org>
+References: <20260607134928.2832202-1-gary@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -49,64 +44,76 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260606202633.5018-9-david.laight.linux@gmail.com>
+In-Reply-To: <20260607134928.2832202-1-gary@kernel.org>
 
-On Sat, Jun 06, 2026 at 09:26:03PM +0100, david.laight.linux@gmail.com wrote:
-> From: David Laight <david.laight.linux@gmail.com>
+On Sun, Jun 07, 2026 at 02:49:27PM +0100, Gary Guo wrote:
+> From: Gary Guo <gary@garyguo.net>
 > 
-> derived_buf is guaranteed to be HASH_SIZE - and it is more than enough.
-> The strscpy() degenerates into an memcpy() (as did the strcpy()).
-> Do the same for the associated "ENC_KEY" copy.
+> Some Linux distributions (e.g. NixOS) does not have /sbin present, and they
+> currently carry patches to replace /sbin/request-key to some other path.
+
+Sorry but no configuration for introducing API divergence.
+
+
 > 
-> Removes a possibly unbounded strcpy().
+> Follow the way modprobe handles this by making this a Kconfig option which
+> defaults to the current /sbin/request-key.
 > 
-> Signed-off-by: David Laight <david.laight.linux@gmail.com>
+> Also changed "char const" to "const char" as checkpatch complains
+> otherwise.
+> 
+> Link: https://github.com/NixOS/nixpkgs/blob/6b316287bae2ee04c9b93c8c858d930fd07d7338/pkgs/os-specific/linux/kernel/request-key-helper.patch
+> Signed-off-by: Gary Guo <gary@garyguo.net>
 > ---
-> This is one of a group of patches that remove potentially unbounded
-> strcpy() calls.
+> I did not update mentions of /sbin/request-key in documentation and
+> elsewhere, as "/sbin/request-key" is concise while "request-key UMH" is
+> more mouthful and less clear.
 > 
-> They are mostly replaced by strscpy() or, when strlen() has just been
-> called, with memcpy() (usually including the '\0').
+> Number of distros that doesn't have /sbin is limited so I think it wouldn't
+> create much confusion. Similarly, there are a lot of places where
+> /sbin/modprobe is mentioned despite it is technically configurable.
+> ---
+>  security/keys/Kconfig       | 9 +++++++++
+>  security/keys/request_key.c | 2 +-
+>  2 files changed, 10 insertions(+), 1 deletion(-)
 > 
-> Calls with copy string literals into arrays are left unchanged.
-> They are safe and easily detected as such.
-> 
-> The changes were made by getting the compiler to detect the calls and
-> then fixing the code by hand.
-> 
-> Note that all the changes are only compile tested.
-> 
-> Some Makefiles were changed to allow files to contain strcpy().
-> As well as 'difficult to fix' files, this included 'show' functions
-> as they really need to use sysfs_emit() or seq_printf().
-> 
-> All the patches are being sent individually to avoid very long cc lists.
-> Apologies for the terse commit messages and likely unexpected tags.
-> (There are about 100 patches in total.)
-> 
->  security/keys/encrypted-keys/encrypted.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-> index 56b531587a1e..59cb77b237b3 100644
-> --- a/security/keys/encrypted-keys/encrypted.c
-> +++ b/security/keys/encrypted-keys/encrypted.c
-> @@ -343,9 +343,9 @@ static int get_derived_key(u8 *derived_key, enum derived_key_type key_type,
->  		return -ENOMEM;
+> diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+> index f4510d8cb485..ee3c3d85fc03 100644
+> --- a/security/keys/Kconfig
+> +++ b/security/keys/Kconfig
+> @@ -40,6 +40,15 @@ config KEYS_REQUEST_CACHE
+>  	  key.  Pathwalk will call multiple methods for each dentry traversed
+>  	  (permission, d_revalidate, lookup, getxattr, getacl, ...).
 >  
->  	if (key_type)
-> -		strcpy(derived_buf, "AUTH_KEY");
-> +		strscpy(derived_buf, "AUTH_KEY", HASH_SIZE);
->  	else
-> -		strcpy(derived_buf, "ENC_KEY");
-> +		strscpy(derived_buf, "ENC_KEY", HASH_SIZE);
->  
->  	memcpy(derived_buf + strlen(derived_buf) + 1, master_key,
->  	       master_keylen);
+> +config REQUEST_KEY_PATH
+> +	string "Path to the request-key binary"
+> +	default "/sbin/request-key"
+> +	help
+> +	  Path of the request-key usermode helper binary.
+> +
+> +	  This program is invoked by the kernel when the kernel is asked for
+> +	  a key that it doesn't have immediately available.
+> +
+>  config PERSISTENT_KEYRINGS
+>  	bool "Enable register of persistent per-UID keyrings"
+>  	help
+> diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+> index a7673ad86d18..ac8f9d1a87ad 100644
+> --- a/security/keys/request_key.c
+> +++ b/security/keys/request_key.c
+> @@ -117,7 +117,7 @@ static int call_usermodehelper_keys(const char *path, char **argv, char **envp,
+>   */
+>  static int call_sbin_request_key(struct key *authkey, void *aux)
+>  {
+> -	static char const request_key[] = "/sbin/request-key";
+> +	static const char request_key[] = CONFIG_REQUEST_KEY_PATH;
+>  	struct request_key_auth *rka = get_request_key_auth(authkey);
+>  	const struct cred *cred = current_cred();
+>  	key_serial_t prkey, sskey;
+> 
+> base-commit: 6e845bcb78c95af935094040bd4edc3c2b6dd784
 > -- 
-> 2.39.5
+> 2.54.0
 > 
-
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
 BR, Jarkko
