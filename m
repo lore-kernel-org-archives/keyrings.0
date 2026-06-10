@@ -1,45 +1,44 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 701ED3ADB91;
-	Wed, 10 Jun 2026 10:16:05 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D5EC73F7AAD;
+	Wed, 10 Jun 2026 12:57:37 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1781086566; cv=none; b=YhlCrcrJBlkVZ4EvGOBn7Ag7iKIwMyyE+2GiQQVawxZZUN1ltWx4RLPaOTCV7gWrnf2lbO7g6BGvxlBaphw1e9RWIeGxYxSkfxyu8+pItOaHszCTx6K9CYKsSSh2SkN/vUae0u9m10ujlWCinWTC2oDB4aSrSAVdUPtrBLKMNsw=
+	t=1781096259; cv=none; b=gH9yCl82EQj2V3E+xb+E4TPGBmK30hcEly6bL7dCyPddhRoadceLX0vJpXRxvfk9p57n0tn5X7zDvDNK0xE0mQvDoPc5GZ9HVps83LgdoW5r12Ax/AnJMoeRZFnOHsfCg4ML6GcwJdsHVZaqcBJpihR7G9qEENwC2XFUOr4Vu1Q=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1781086566; c=relaxed/simple;
-	bh=FNiTdK69TNUQGB81tkMbvoZ37LnItlD7NCeRPZ56pjQ=;
+	s=arc-20240116; t=1781096259; c=relaxed/simple;
+	bh=rX5QU15US32yxIiCgALS4vBm9CepGbvL7E9czqWnXes=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=Skp1OVwmx2gf0zWLW1kbThI9si8Dkcag86UwcBrtyoKAETrKYRIaqWuMN4HIx70DfPtpQl8cxu0seH8Zs+K4ajdPegmbEGgzFv/yyfw0upyqZQBEy0fYEooZrQKhTEhG+zKZ6cHvfaV+ScPghLbbaBEF/vmfp5nIpOqPNb/K/dY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=ROjL0uC1; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=C5DRHEpyHOhT9lAognaL2+SUZavXxpxEMKAwcHco7aA+YvceQMGxbXQE0qgj00kJAPbHvaIqv+TVTTyvV9w2C4HF1spNk6vitgLNyn2vKw2SEvOkzxdxfdKr6YVSyWZE7aah/7NFbIl5MnmcCi5LvpXAL/nYRFqjU+9FZaTaRQs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TNCWWD6K; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="ROjL0uC1"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 813A61F00893;
-	Wed, 10 Jun 2026 10:16:04 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TNCWWD6K"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id EC3E21F00893;
+	Wed, 10 Jun 2026 12:57:36 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1781086565;
-	bh=Or2fJ7T9cAuRX9ik0h7DCz18HSGAhicD0zNsjsIdS3I=;
+	s=k20260515; t=1781096257;
+	bh=tEYaHXrRqCvq6E6fVASIjjRaj98jMtDAkDG0c3ruJAg=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=ROjL0uC17+gw8Z5bnynQltQPIVjr9BgAE7X+3EQzTNQcK2q3dsFk2uojwAKiB792E
-	 4Mm3RQKFf5gj5T7pEsUT802WMGS45iXp/Kx0h7Obk7xyY56I8dpSg/EaYCL8feFuKu
-	 VohpwepB5PpRoXDS/2e8O+CUsFjcoU8khx9cNPEjgkTsOqIKoIWq9zLU1CaBLrs+tR
-	 R1Tw3aVjzcqM+6XA4qLxcakD6WyBs4x1SThs+1r6wBiYA9RfztCd9N8ym18h2svhjy
-	 jEZpze7MC7fqX3XOtVuGg+kv9mjrQHpBiNrs4kX/UfwWu44vM/8fHLkEQmwTcHTc37
-	 d+6R6z1QQ88jQ==
-Date: Wed, 10 Jun 2026 13:16:01 +0300
+	b=TNCWWD6KAd4Nt97Sz7rlpErxlApdcI523waf07ej0Nt0eHnaOQb6eOnMc62grV7nY
+	 MLldULFUKUXbL4wn45CPM1DpjpKHZlmOITkNSINR84w7fy85qI1lzaRWOhcG7uf6Nj
+	 GKk2C7AYUeYPGdvxP1BoTS2ubXZuVcz1qV1AtZtG/E7fzgJ/NiY4Fzwc/VgmQFkFTq
+	 MLWX2e/qaIomZXAvPE15RJnBdS3dhoIQqitnvqfC6oxPKXrIiIn31n0z5uCpMdwP9U
+	 FFPalZBbK1ppPMQ077Eheis++2N0uyNBS75y0kkEfLRA1PjrmGuPZqyK4NvYvzD5zN
+	 XgFZRm+Qd0/1A==
+Date: Wed, 10 Jun 2026 15:57:33 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Shaomin Chen <eeesssooo020@gmail.com>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH] keys: Pin request_key_auth payload in instantiate paths
-Message-ID: <aik5YaJhjRuOKE7I@kernel.org>
-References: <20260526024838.3368409-1-eeesssooo020@gmail.com>
- <aiYxqTyfHwrDOTCs@kernel.org>
- <aiYynOxFk3LuK4LA@kernel.org>
- <aiZTIzGg_peDVo1M@kernel.org>
- <aiZWPSJZyFq4nmxf@kernel.org>
+To: Gary Guo <gary@garyguo.net>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] keys: allow request-key path to be configured via Kconfig
+Message-ID: <ailfPUbn8gbUqB1D@kernel.org>
+References: <20260607134928.2832202-1-gary@kernel.org>
+ <aiZJ94eugtNHcILD@kernel.org>
+ <aiZMT5UYhVDlLVHq@kernel.org>
+ <DJ3LJFFPMAOW.QA3EZSAB2S5A@garyguo.net>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -48,111 +47,90 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <aiZWPSJZyFq4nmxf@kernel.org>
+In-Reply-To: <DJ3LJFFPMAOW.QA3EZSAB2S5A@garyguo.net>
 
-On Mon, Jun 08, 2026 at 08:42:21AM +0300, Jarkko Sakkinen wrote:
-> On Mon, Jun 08, 2026 at 08:29:11AM +0300, Jarkko Sakkinen wrote:
-> > On Mon, Jun 08, 2026 at 06:10:23AM +0300, Jarkko Sakkinen wrote:
-> > > On Mon, Jun 08, 2026 at 06:06:21AM +0300, Jarkko Sakkinen wrote:
-> > > > On Tue, May 26, 2026 at 10:48:38AM +0800, Shaomin Chen wrote:
-> > > > > keyctl_instantiate_key_common() reads request_key_auth from the assumed
-> > > > > auth key before copying an instantiation payload from userspace.  The copy
-> > > > > can fault and sleep.  If the request completes and revokes the auth key in
-> > > > > that window, the auth payload can be detached and freed before the
-> > > > > instantiate path uses it again.
-> > > > > 
-> > > > > A request-key helper reproducer can trigger this race.  One helper child
-> > > > > blocks in KEYCTL_INSTANTIATE_IOV while the original helper instantiates the
-> > > > > requested key and returns.  KASAN then reports a use-after-free from the
-> > > > > stale request_key_auth payload in keyctl_instantiate_key_common().
-> > > > > 
-> > > > > Give request_key_auth payloads a refcount.  Take a payload reference while
-> > > > 
-> > > > Please, name concrete things accurately. I.e. 'usage' in this case. If
-> > > > you have a name, use it instead of obfuscating generalizations.
-> > > > 
-> > > > > authkey->sem stabilizes the payload and revocation state.  Hold that
-> > > > > reference across the instantiate and reject paths.  Drop the auth key
-> > > > > owning reference from revoke and destroy.
-> > > > > 
-> > > > > Reported-by: Shaomin Chen <eeesssooo020@gmail.com>
-> > > > > Closes: https://lore.kernel.org/r/20260519144403.436694-1-eeesssooo020@gmail.com
-> > > > > Signed-off-by: Shaomin Chen <eeesssooo020@gmail.com>
-> > > > > ---
-> > > > >  include/keys/request_key_auth-type.h |  2 ++
-> > > > >  security/keys/internal.h             |  2 ++
-> > > > >  security/keys/keyctl.c               | 24 +++++++++++++++-----
-> > > > >  security/keys/request_key_auth.c     | 33 ++++++++++++++++++++++++++--
-> > > > >  4 files changed, 53 insertions(+), 8 deletions(-)
-> > > > 
-> > > > So first, couple of things.
-> > > > 
-> > > > I'm not going to test not that well documented involving OOT driver.
-> > > 
-> > > Oops, sorry typo. "not that well documented reproducer" :-)
-> > > 
-> > > But it is cool we just then need to draw the picture.
-> > 
-> > I think I got this:
-> > 
-> > A: request_key()       B: KEYCTL_INSTANTIATE_IOV
-> > ----------------       -------------------------
-> > create auth key
-> > store rka in auth key
-> > wait for helper
-> >                        get auth key
-> >                        load rka from auth key
-> >                        copy user payload
-> >                        sleep on #PF
-> > helper completed
-> > detach and free rka
-> > destroy auth key
-> >                        wake up
-> >                        use rka->target_key
-> >                        **USE-AFTER-FREE**
-> > 
-> > So nothing really complicated here, is there?
+On Mon, Jun 08, 2026 at 11:30:06AM +0100, Gary Guo wrote:
+> On Mon Jun 8, 2026 at 5:59 AM BST, Jarkko Sakkinen wrote:
+> > On Mon, Jun 08, 2026 at 07:50:03AM +0300, Jarkko Sakkinen wrote:
+> >> On Sun, Jun 07, 2026 at 02:49:27PM +0100, Gary Guo wrote:
+> >> > From: Gary Guo <gary@garyguo.net>
+> >> > 
+> >> > Some Linux distributions (e.g. NixOS) does not have /sbin present, and they
+> >> > currently carry patches to replace /sbin/request-key to some other path.
+> >> 
+> >> Sorry but no configuration for introducing API divergence.
 > 
-> Send v2 with the code changes that I proposed as we want to the change
-> as ergonomic as possible.
-> 
-> Use this as the commit message:
-> 
->     keys: Pin request_key_auth payload in instantiate paths
-> 
->     A: request_key()       B: KEYCTL_INSTANTIATE_IOV
->     ----------------       -------------------------
->     create auth key
->     store rka in auth key
->     wait for helper
->                            get auth key
->                            load rka from auth key
->                            copy user payload
->                            sleep on #PF
-> 
->     helper completed
->     detach and free rka
->     destroy auth key
->                            wake up
->                            use rka->target_key
->                            **USE-AFTER-FREE**
-> 
->     Give request_key_auth payloads a refcount.  Take a payload reference while
->     authkey->sem stabilizes the payload and revocation state.  Hold that
->     reference across the instantiate and reject paths.  Drop the auth key
->     owning reference from revoke and destroy.
-> 
->     [jarkko: Replaced the first two paragraphs of text with a concurrency scenario.]
-> 
-> And it includes also the remark at the end.
-> 
-> BR, Jarkko
+> What is the API divergence here? Distros can already patch the kernel or place a
+> different binary there, so I don't see what's being gained on not allowing to
+> change this with Kconfig.
 
+There's lot of out-of-tree drivers too that distributions. I'm not
+finding anything usefel in this argument.
 
-Nothing heard so I pushed:
+> 
+> Also to note, the actual binary being called can already be swapped out by
+> CONFIG_STATIC_USERMODEHELPER_PATH, although for the NixOS this is not the proper
+> mechanism as it affects coredump too which isn't a fixed path binary in /sbin.
 
-https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git/commit/?h=for-next-keys&id=9feb0bb3468e863b2b82a2eabfaeec4c7c44b90c
+I have not seen actual uses of CONFIG_STATIC_USERMODEHELPER_PATH. You
+could probably use it with busybox?
 
-It has the commit message change.
+> 
+> This is really just for distros to be able to configure where /sbin is located.
+> Given usr merge and (some distros) bin/sbin merge, the canonical path of
+> request-key binary is very likely not /sbin/request-key anymore, so it seems to
+> make sense to me to allow this to be changed rather than always go through
+> compatibility symlinks.
+
+I doubt there's a huge demand other than NixOS. Just basing this on that
+no other noise have been made so far.
+
+> 
+> How about a something like CONFIG_DEFAULT_USERMODEHELPER_PATH which defaults to
+> /sbin, and then request-key uses that concatenated with "/request-key"?
+> 
+> >
+> > Not sure right now but one option might kernel command-line. Then it is
+> > known at run-time, can be signed etc. Compiled value has no identity in
+> > the same way.
+> >
+> > And I don't care if NixOS has such a problem as I've not have any stake
+> > making of those decisions.
+> >
+> > You really should explain why it makes sense to have such feature i.e.,
+> > why is it useful. And if NixOS considered, why is it useful for NixOS.
+> >
+> > This all should be in  the commit message.
+> 
+> Sure, if you need some more detailed explaination on how NixOS works.
+> 
+> NixOS intentionally not use FHS directory paths, so packages refers to their
+> dependencies via cryptographical hashes in rather than fixed paths for build-time
+> known dependencies, and themselves also live in a path with hashes in them (so
+> two different versions of the same package are in different paths). E.g.
+> /nix/store/wjzk0s5dwk0i7swh3rmh1pl10k6v1w6d-keyutils-1.6.3/bin/request-key
+> 
+> The full system is also built as a package with all installed binaries in
+> $pkg/sw/bin, configuration in $pkg/etc, etc.. The current system is symlinked to
+> /run/current-system, and when a new system is activated this symlink is swapped
+> out and therefore all paths are updated atomically. For request-key, this is
+> symlinked to
+> /run/current-system/sw/bin/request-key
+> 
+> NixOS carries a patch which uses this path instead of /sbin (which does not
+> exist on NixOS at all).
+> 
+> The motivation is really "be able to switch /sbin". I feel that all the above are
+> secondary motivations and is too verbose to include in the commit message.
+> 
+> I am not a maintainer for NixOS's kernel; I use NixOS and just want to develop
+> kernel and test out kernel on my machines without having to patch them.
+
+I don't frankly care how NixOS works per se in details. Scope this into
+message to problem that it addresses.
+
+> 
+> Best,
+> Gary
 
 BR, Jarkko
