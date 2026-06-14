@@ -1,116 +1,181 @@
-Received: from smtp153-166.sina.com.cn (smtp153-166.sina.com.cn [61.135.153.166])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-oo1-f71.google.com (mail-oo1-f71.google.com [209.85.161.71])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F029F296BBA
-	for <keyrings@vger.kernel.org>; Sun, 14 Jun 2026 21:51:37 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=61.135.153.166
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 777781D6BB
+	for <keyrings@vger.kernel.org>; Sun, 14 Jun 2026 22:06:04 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.161.71
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1781473904; cv=none; b=nBBwmpQCgNMkkdVrJp9q4mBUAUQPmQj+0beAHBP+ZWALA3WORursM/7oR3FTzcfgOAKQRHziylxKqfbFLVbzVzJuA8Wz1CDBQSluWBh4FQ6cxEsOZfv7iI/JAu/VT4/6Ol/R/qqjeYEToKFZEpbmPRm4GF38UOOmHk8qI3rapfM=
+	t=1781474765; cv=none; b=b0lK/DDQT0uoj8u4nNvPfgz7pIMzU5OmIKlCgXO8Pnv+BVZz0+50uHbWi5S2jGWYvLXkXcsncly6YZUvQmVKloQO0MEYI8aIPO/3Zcc0tvIHY4zCS42dO88fHzfi3HewcsjgJqq5HERUpY/h8l2AfqncLdxb4qH3Dkbb2ov8BEM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1781473904; c=relaxed/simple;
-	bh=navlVoBp1kQky6qKHwqTrj7fZXVVpB0aQ4+B0v/QQL4=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=OQv1E6K54nF5F7a5XACaVxDYLy3vwObaLsSgOoBKOMJWKxSUDsNy5iBxLqaYGpRD88T/N5iLMKFz/B2G2ERkOQ4hfRQjYIW4+TBtV7VGVyOpgzPSfMTegUaL9QjVEbSEOglFJpb4qfVbREmvPpUzXqQBDJf1BOAOX2sg8HdDUm8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sina.com; spf=pass smtp.mailfrom=sina.com; dkim=pass (1024-bit key) header.d=sina.com header.i=@sina.com header.b=xakN2n9U; arc=none smtp.client-ip=61.135.153.166
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sina.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=sina.com
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=sina.com header.i=@sina.com header.b="xakN2n9U"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=sina.com; s=201208; t=1781473898;
-	bh=MxEzgnVaJJNN8RKQtn+yY2RRWYcWvNqZBHZWDQPhb4o=;
-	h=From:Subject:Date:Message-ID;
-	b=xakN2n9Uoif3tYWyjFysBo2/RSMRfTYD3VSQrFCyiTxODy4kNS9VQ+yiBqEimkC8v
-	 Z7v/uqmgXOvUazb4DRBZlyvYWTg7p8bRyiCQGE4q+kkBe9y+o6ssRqMz5JAdlF0jGs
-	 BkJxP1gBrqBB9jxvyf3fKWt3S0Zwq7F1sQhS43BE=
-X-SMAIL-HELO: localhost.localdomain
-Received: from unknown (HELO localhost.localdomain)([114.249.62.144])
-	by sina.com (10.54.253.33) with ESMTP
-	id 6A2F2026000049F1; Sun, 15 Jun 2026 05:41:59 +0800 (CST)
-X-Sender: hdanton@sina.com
-X-Auth-ID: hdanton@sina.com
-Authentication-Results: sina.com;
-	 spf=none smtp.mailfrom=hdanton@sina.com;
-	 dkim=none header.i=none;
-	 dmarc=none action=none header.from=hdanton@sina.com
-X-SMAIL-MID: 6070456685379
-X-SMAIL-UIID: 9BEF5C9187CE499A8DE2736CA6569A98-20260615-054159-1
-From: Hillf Danton <hdanton@sina.com>
-To: syzbot <syzbot+f55b043dacf43776b50c@syzkaller.appspotmail.com>
-Cc: Mohammed EL Kadiri <med08elkadiri@gmail.com>,
-	dhowells@redhat.com,
-	keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	syzkaller-bugs@googlegroups.com,
-	stable@vger.kernel.org
-Subject: Re: [PATCH] KEYS: avoid filesystem reclaim while holding keyring->sem
-Date: Mon, 15 Jun 2026 05:41:49 +0800
-Message-ID: <20260614214150.1791-1-hdanton@sina.com>
-In-Reply-To: <20260614150041.21172-1-med08elkadiri@gmail.com>
-References: 
+	s=arc-20240116; t=1781474765; c=relaxed/simple;
+	bh=VOGjGxYzqa8UO0a2TvxCyI4oO8Y3YUS//HdkrU1sDK4=;
+	h=MIME-Version:Date:In-Reply-To:Message-ID:Subject:From:To:
+	 Content-Type; b=OS/xhGSjk637WS1SV+6DqAQmb+wgb+w5t+M5aeMugPkuNTNtY0WfFTOLV0g4XnKHcC8B3fkeupu/9Mhr6Ms/OclrNOEvkkdf4xRwPHJuBC9/faPgmTMSLNgiInoNXrxgUkCr8bCaXqyBQvr+B5jjorvIqu1Q+mP03MVm+HVmbe8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=syzkaller.appspotmail.com; spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com; arc=none smtp.client-ip=209.85.161.71
+Authentication-Results: smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=syzkaller.appspotmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com
+Received: by mail-oo1-f71.google.com with SMTP id 006d021491bc7-69e1eb09b3aso2402762eaf.2
+        for <keyrings@vger.kernel.org>; Sun, 14 Jun 2026 15:06:04 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1781474763; x=1782079563;
+        h=content-transfer-encoding:to:from:subject:message-id:in-reply-to
+         :date:mime-version:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=XvJhKDchvA8MuraLz/XfqkV+65Vr39S/XOxyKvZf2D4=;
+        b=piVJu76ajWz5l1DWCARloVGYKz6exKH+ZrlCiIborbKdTp4lIvO3q71quTz3eLpKse
+         HZb3SH+82l1HHz7hG5og3yjcW3sdOur/b6oulGl5bLOeHaMkuIQPdQDwsyOx1NQIBdpQ
+         pWvqLriLWuQ8YJyYFcA/VgKXvMYTHI7OdQZkQzjxTejDQr5x2qf5TkUNw/UXJq2Yl89J
+         uCiKxJk3OsMkvIGpt2LBgM3ROAk3BaEHaVPf5mx0uyvRPIXJ9/+Xf9C4fjqAF8Umi+4t
+         CVmdPSN5SRMlkT9m+ajNkTvoGEJugw21eVpG18985f42PSbXvvgZhxkPAKgNNqibFDk7
+         NmEA==
+X-Forwarded-Encrypted: i=1; AFNElJ9BIuKKCRKEnDSvSZbzCvjJ5pYgI4V6ukObRlboglcc1znEe+cAcD32nwF3zyC841/wBBuEkONaYQ==@vger.kernel.org
+X-Gm-Message-State: AOJu0YyqYt7AWXBShL5o6ey33BmlS+XMXEuogCPC+wZ20uFw0l0Qc01q
+	Q+dutSJz1pkLNxeHipLwZKH8fj/HR22dZFFOBiHBY4sMKUP/zqNhB7FvAvhjpI3PDeqAB8J5TLF
+	rwzRl7vtmnw1BVTjSSvQFrxJbUe73a87022MsoUt2Q7x9eOpJg9YeYSFsd38=
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+X-Received: by 2002:a05:6808:11ca:b0:467:1941:1f0d with SMTP id
+ 5614622812f47-487419a2c14mr5589691b6e.11.1781474763605; Sun, 14 Jun 2026
+ 15:06:03 -0700 (PDT)
+Date: Sun, 14 Jun 2026 15:06:03 -0700
+In-Reply-To: <20260614214150.1791-1-hdanton@sina.com>
+X-Google-Appengine-App-Id: s~syzkaller
+X-Google-Appengine-App-Id-Alias: syzkaller
+Message-ID: <6a2f25cb.be3f099c.2836ae.0011.GAE@google.com>
+Subject: Re: [syzbot] [keyrings?] [lsm?] possible deadlock in keyring_clear (3)
+From: syzbot <syzbot+f55b043dacf43776b50c@syzkaller.appspotmail.com>
+To: dhowells@redhat.com, hdanton@sina.com, keyrings@vger.kernel.org, 
+	linux-kernel@vger.kernel.org, med08elkadiri@gmail.com, stable@vger.kernel.org, 
+	syzkaller-bugs@googlegroups.com
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> On Sun, 14 Jun 2026 16:00:41 +0100 Mohammed EL Kadiri wrote:
->
-#syz test upstream master
+Hello,
 
-__key_link_begin() runs with keyring->sem held and calls
-assoc_array_insert(), which does GFP_KERNEL allocations.  Those
-allocations may enter filesystem reclaim, evict an fscrypt-protected
-inode, and reach keyring_clear() via fscrypt_put_master_key() --
-taking a keyring semaphore of the same lockdep class and closing a
-keyring->sem -> fs_reclaim -> keyring->sem cycle reported by syzbot.
+syzbot tried to test the proposed patch but the build/boot failed:
 
-Wrap the assoc_array_insert() call with memalloc_nofs_save() /
-memalloc_nofs_restore() so reclaim cannot recurse into the keys
-subsystem while keyring->sem is held.
+failed to copy syz-execprog to VM: scp failed: failed to run ["scp" "-P" "3=
+8817" "-F" "/dev/null" "-o" "UserKnownHostsFile=3D/dev/null" "-o" "Identiti=
+esOnly=3Dyes" "-o" "BatchMode=3Dyes" "-o" "StrictHostKeyChecking=3Dno" "-o"=
+ "ConnectTimeout=3D10" "-v" "-O" "/syzkaller/jobs/linux/gopath/src/github.c=
+om/google/syzkaller/bin/linux_amd64/syz-execprog" "root@localhost:/syz-exec=
+prog"]: exit status 1
 
-Reported-by: syzbot+f55b043dacf43776b50c@syzkaller.appspotmail.com
-Closes: https://syzkaller.appspot.com/bug?extid=f55b043dacf43776b50c
-Fixes: d7e7b9af104c ("fscrypt: stop using keyrings subsystem for fscrypt_master_key")
-Cc: stable@vger.kernel.org
-Signed-off-by: Mohammed EL Kadiri <med08elkadiri@gmail.com>
----
- security/keys/keyring.c | 4 ++++
- 1 file changed, 4 insertions(+)
 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 5a9887d6b7be..21bb2e7e7cca 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -12,6 +12,7 @@
- #include <linux/security.h>
- #include <linux/seq_file.h>
- #include <linux/err.h>
-+#include <linux/sched/mm.h>
- #include <linux/user_namespace.h>
- #include <linux/nsproxy.h>
- #include <keys/keyring-type.h>
-@@ -1298,6 +1299,7 @@ int __key_link_begin(struct key *keyring,
- 		     struct assoc_array_edit **_edit)
- {
- 	struct assoc_array_edit *edit;
-+	unsigned int nofs_flags;
- 	int ret;
- 
- 	kenter("%d,%s,%s,",
-@@ -1315,10 +1317,12 @@ int __key_link_begin(struct key *keyring,
- 	/* Create an edit script that will insert/replace the key in the
- 	 * keyring tree.
- 	 */
-+	nofs_flags = memalloc_nofs_save();
- 	edit = assoc_array_insert(&keyring->keys,
- 				  &keyring_assoc_array_ops,
- 				  index_key,
- 				  NULL);
-+	memalloc_nofs_restore(nofs_flags);
- 	if (IS_ERR(edit)) {
- 		ret = PTR_ERR(edit);
- 		goto error;
--- 
-2.43.0
+
+syzkaller build log:
+go env (err=3D<nil>)
+AR=3D'ar'
+CC=3D'gcc'
+CGO_CFLAGS=3D'-O2 -g'
+CGO_CPPFLAGS=3D''
+CGO_CXXFLAGS=3D'-O2 -g'
+CGO_ENABLED=3D'1'
+CGO_FFLAGS=3D'-O2 -g'
+CGO_LDFLAGS=3D'-O2 -g'
+CXX=3D'g++'
+GCCGO=3D'gccgo'
+GO111MODULE=3D'auto'
+GOAMD64=3D'v1'
+GOARCH=3D'amd64'
+GOAUTH=3D'netrc'
+GOBIN=3D''
+GOCACHE=3D'/syzkaller/.cache/go-build'
+GOCACHEPROG=3D''
+GODEBUG=3D''
+GOENV=3D'/syzkaller/.config/go/env'
+GOEXE=3D''
+GOEXPERIMENT=3D''
+GOFIPS140=3D'off'
+GOFLAGS=3D''
+GOGCCFLAGS=3D'-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=3D0=
+ -ffile-prefix-map=3D/tmp/go-build2355215050=3D/tmp/go-build -gno-record-gc=
+c-switches'
+GOHOSTARCH=3D'amd64'
+GOHOSTOS=3D'linux'
+GOINSECURE=3D''
+GOMOD=3D'/syzkaller/jobs/linux/gopath/src/github.com/google/syzkaller/go.mo=
+d'
+GOMODCACHE=3D'/syzkaller/jobs/linux/gopath/pkg/mod'
+GONOPROXY=3D''
+GONOSUMDB=3D''
+GOOS=3D'linux'
+GOPATH=3D'/syzkaller/jobs/linux/gopath'
+GOPRIVATE=3D''
+GOPROXY=3D'https://proxy.golang.org,direct'
+GOROOT=3D'/usr/local/go'
+GOSUMDB=3D'sum.golang.org'
+GOTELEMETRY=3D'local'
+GOTELEMETRYDIR=3D'/syzkaller/.config/go/telemetry'
+GOTMPDIR=3D''
+GOTOOLCHAIN=3D'auto'
+GOTOOLDIR=3D'/usr/local/go/pkg/tool/linux_amd64'
+GOVCS=3D''
+GOVERSION=3D'go1.26.0'
+GOWORK=3D''
+PKG_CONFIG=3D'pkg-config'
+
+git status (err=3D<nil>)
+HEAD detached at d1b870e1003b
+nothing to commit, working tree clean
+
+
+tput: No value for $TERM and no -T specified
+tput: No value for $TERM and no -T specified
+Makefile:31: run command via tools/syz-env for best compatibility, see:
+Makefile:32: https://github.com/google/syzkaller/blob/master/docs/contribut=
+ing.md#using-syz-env
+go list -f '{{.Stale}}' -ldflags=3D"-s -w -X github.com/google/syzkaller/pr=
+og.GitRevision=3Dd1b870e1003b52891d2196c1e2ee42fe905010ba -X github.com/goo=
+gle/syzkaller/prog.gitRevisionDate=3D20251128-125159"  ./sys/syz-sysgen | g=
+rep -q false || go install -ldflags=3D"-s -w -X github.com/google/syzkaller=
+/prog.GitRevision=3Dd1b870e1003b52891d2196c1e2ee42fe905010ba -X github.com/=
+google/syzkaller/prog.gitRevisionDate=3D20251128-125159"  ./sys/syz-sysgen
+make .descriptions
+tput: No value for $TERM and no -T specified
+tput: No value for $TERM and no -T specified
+Makefile:31: run command via tools/syz-env for best compatibility, see:
+Makefile:32: https://github.com/google/syzkaller/blob/master/docs/contribut=
+ing.md#using-syz-env
+bin/syz-sysgen
+touch .descriptions
+GOOS=3Dlinux GOARCH=3Damd64 go build -ldflags=3D"-s -w -X github.com/google=
+/syzkaller/prog.GitRevision=3Dd1b870e1003b52891d2196c1e2ee42fe905010ba -X g=
+ithub.com/google/syzkaller/prog.gitRevisionDate=3D20251128-125159"  -o ./bi=
+n/linux_amd64/syz-execprog github.com/google/syzkaller/tools/syz-execprog
+mkdir -p ./bin/linux_amd64
+g++ -o ./bin/linux_amd64/syz-executor executor/executor.cc \
+	-m64 -O2 -pthread -Wall -Werror -Wparentheses -Wunused-const-variable -Wfr=
+ame-larger-than=3D16384 -Wno-stringop-overflow -Wno-array-bounds -Wno-forma=
+t-overflow -Wno-unused-but-set-variable -Wno-unused-command-line-argument -=
+static-pie -std=3Dc++17 -I. -Iexecutor/_include   -DGOOS_linux=3D1 -DGOARCH=
+_amd64=3D1 \
+	-DHOSTGOOS_linux=3D1 -DGIT_REVISION=3D\"d1b870e1003b52891d2196c1e2ee42fe90=
+5010ba\"
+/usr/bin/ld: /tmp/ccw08xaS.o: in function `Connection::Connect(char const*,=
+ char const*)':
+executor.cc:(.text._ZN10Connection7ConnectEPKcS1_[_ZN10Connection7ConnectEP=
+KcS1_]+0x386): warning: Using 'gethostbyname' in statically linked applicat=
+ions requires at runtime the shared libraries from the glibc version used f=
+or linking
+./tools/check-syzos.sh 2>/dev/null
+
+
+
+Tested on:
+
+commit:         8cd9520d Linux 7.1
+git tree:       upstream
+kernel config:  https://syzkaller.appspot.com/x/.config?x=3Dcfff134d62ee3b9=
+7
+dashboard link: https://syzkaller.appspot.com/bug?extid=3Df55b043dacf43776b=
+50c
+compiler:       Debian clang version 22.1.6 (++20260514074242+fc4aad7b5db3-=
+1~exp1~20260514074407.73), Debian LLD 22.1.6
+patch:          https://syzkaller.appspot.com/x/patch.diff?x=3D1400e8ae5800=
+00
+
