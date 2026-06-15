@@ -1,181 +1,83 @@
-Received: from mail-oo1-f71.google.com (mail-oo1-f71.google.com [209.85.161.71])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 777781D6BB
-	for <keyrings@vger.kernel.org>; Sun, 14 Jun 2026 22:06:04 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.161.71
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A607133065D;
+	Mon, 15 Jun 2026 11:49:57 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1781474765; cv=none; b=b0lK/DDQT0uoj8u4nNvPfgz7pIMzU5OmIKlCgXO8Pnv+BVZz0+50uHbWi5S2jGWYvLXkXcsncly6YZUvQmVKloQO0MEYI8aIPO/3Zcc0tvIHY4zCS42dO88fHzfi3HewcsjgJqq5HERUpY/h8l2AfqncLdxb4qH3Dkbb2ov8BEM=
+	t=1781524198; cv=none; b=RhlLwgsMeblo+TTutaSGSjoZUSeDmORUKslKzIAEpeDPm98BJrql3OCKS80ht5ShhS2fbhIda7CX9PVp8mDgq/vvIlIguFnPfbiUgC/u35JYwdvm+zkIx/8wdReS3Z6/l5SRjzrDBF8yS6SOSUrVyIcb/edRwmCNChUTU8Ao4U4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1781474765; c=relaxed/simple;
-	bh=VOGjGxYzqa8UO0a2TvxCyI4oO8Y3YUS//HdkrU1sDK4=;
-	h=MIME-Version:Date:In-Reply-To:Message-ID:Subject:From:To:
-	 Content-Type; b=OS/xhGSjk637WS1SV+6DqAQmb+wgb+w5t+M5aeMugPkuNTNtY0WfFTOLV0g4XnKHcC8B3fkeupu/9Mhr6Ms/OclrNOEvkkdf4xRwPHJuBC9/faPgmTMSLNgiInoNXrxgUkCr8bCaXqyBQvr+B5jjorvIqu1Q+mP03MVm+HVmbe8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=syzkaller.appspotmail.com; spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com; arc=none smtp.client-ip=209.85.161.71
-Authentication-Results: smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=syzkaller.appspotmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com
-Received: by mail-oo1-f71.google.com with SMTP id 006d021491bc7-69e1eb09b3aso2402762eaf.2
-        for <keyrings@vger.kernel.org>; Sun, 14 Jun 2026 15:06:04 -0700 (PDT)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1781474763; x=1782079563;
-        h=content-transfer-encoding:to:from:subject:message-id:in-reply-to
-         :date:mime-version:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=XvJhKDchvA8MuraLz/XfqkV+65Vr39S/XOxyKvZf2D4=;
-        b=piVJu76ajWz5l1DWCARloVGYKz6exKH+ZrlCiIborbKdTp4lIvO3q71quTz3eLpKse
-         HZb3SH+82l1HHz7hG5og3yjcW3sdOur/b6oulGl5bLOeHaMkuIQPdQDwsyOx1NQIBdpQ
-         pWvqLriLWuQ8YJyYFcA/VgKXvMYTHI7OdQZkQzjxTejDQr5x2qf5TkUNw/UXJq2Yl89J
-         uCiKxJk3OsMkvIGpt2LBgM3ROAk3BaEHaVPf5mx0uyvRPIXJ9/+Xf9C4fjqAF8Umi+4t
-         CVmdPSN5SRMlkT9m+ajNkTvoGEJugw21eVpG18985f42PSbXvvgZhxkPAKgNNqibFDk7
-         NmEA==
-X-Forwarded-Encrypted: i=1; AFNElJ9BIuKKCRKEnDSvSZbzCvjJ5pYgI4V6ukObRlboglcc1znEe+cAcD32nwF3zyC841/wBBuEkONaYQ==@vger.kernel.org
-X-Gm-Message-State: AOJu0YyqYt7AWXBShL5o6ey33BmlS+XMXEuogCPC+wZ20uFw0l0Qc01q
-	Q+dutSJz1pkLNxeHipLwZKH8fj/HR22dZFFOBiHBY4sMKUP/zqNhB7FvAvhjpI3PDeqAB8J5TLF
-	rwzRl7vtmnw1BVTjSSvQFrxJbUe73a87022MsoUt2Q7x9eOpJg9YeYSFsd38=
+	s=arc-20240116; t=1781524198; c=relaxed/simple;
+	bh=OQ5HvODVnmopJa7d4VK6L/T/SWRPhMJ8Xgu5e9hVisc=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=n3gIMU5KxirBUH69/A/drwbR2eTsrc1mGh0EuNwzmpo/R2Ax2y2BvkmNYJRr1YZg3LFXo4gM+KcaDU9hinGfb3raJ+aCfdnQU60jEj7j/aPLlW6GrqUUnDgSrQO1uNdUgtLLiFoZjbWgFWN4DX43wW5fMSj1z5LK5Q4JzbVF4e4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=AKo1BzUX; arc=none smtp.client-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="AKo1BzUX"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id BB0661F000E9;
+	Mon, 15 Jun 2026 11:49:56 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1781524197;
+	bh=LVL8fBjSIGxZf9QPFsVEA2k93KAySQM8VorbCXzgt1c=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=AKo1BzUXICbzsWUpk8seVrxj/oVw/XFdXBHz6F48colNV+SbuhHAow5LIgRbivHar
+	 0XC9mIRZV6KSDF6Bl4EqA0oYKmpRmissTpoHq46NFrAifhgPiNg3r9PW6EyzqE1/el
+	 XzxFmENo9gWh4zIqFrnHkj2gDBar6BEDdOEI5GkfCQifgHMZ6zhUqqnFdR2hDDCk3T
+	 MooKW64NYjKEnDpHqJd/2n2mHo4hxFuQaB22Z5axrkHTZ6oqoehntFEpJJ8/YkC/Hf
+	 uUFCFaAYbuyYEScaTqy4FVqE0dCP9TtkZl2CfUmPNOoj0cc4wbILrwffKu/0cDTuSu
+	 /zXIZStx0tt4Q==
+Date: Mon, 15 Jun 2026 14:49:53 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Gary Guo <gary@garyguo.net>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] keys: allow request-key path to be configured via Kconfig
+Message-ID: <ai_m4RPDpT1N75if@kernel.org>
+References: <20260607134928.2832202-1-gary@kernel.org>
+ <aiZJ94eugtNHcILD@kernel.org>
+ <aiZMT5UYhVDlLVHq@kernel.org>
+ <DJ3LJFFPMAOW.QA3EZSAB2S5A@garyguo.net>
+ <ailfPUbn8gbUqB1D@kernel.org>
+ <DJ5ES5DZ15W8.2KLL7VS1JMQOE@garyguo.net>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-Received: by 2002:a05:6808:11ca:b0:467:1941:1f0d with SMTP id
- 5614622812f47-487419a2c14mr5589691b6e.11.1781474763605; Sun, 14 Jun 2026
- 15:06:03 -0700 (PDT)
-Date: Sun, 14 Jun 2026 15:06:03 -0700
-In-Reply-To: <20260614214150.1791-1-hdanton@sina.com>
-X-Google-Appengine-App-Id: s~syzkaller
-X-Google-Appengine-App-Id-Alias: syzkaller
-Message-ID: <6a2f25cb.be3f099c.2836ae.0011.GAE@google.com>
-Subject: Re: [syzbot] [keyrings?] [lsm?] possible deadlock in keyring_clear (3)
-From: syzbot <syzbot+f55b043dacf43776b50c@syzkaller.appspotmail.com>
-To: dhowells@redhat.com, hdanton@sina.com, keyrings@vger.kernel.org, 
-	linux-kernel@vger.kernel.org, med08elkadiri@gmail.com, stable@vger.kernel.org, 
-	syzkaller-bugs@googlegroups.com
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DJ5ES5DZ15W8.2KLL7VS1JMQOE@garyguo.net>
 
-Hello,
+On Wed, Jun 10, 2026 at 02:37:41PM +0100, Gary Guo wrote:
+> On Wed Jun 10, 2026 at 1:57 PM BST, Jarkko Sakkinen wrote:
+> > On Mon, Jun 08, 2026 at 11:30:06AM +0100, Gary Guo wrote:
+> >> 
+> >> This is really just for distros to be able to configure where /sbin is located.
+> >> Given usr merge and (some distros) bin/sbin merge, the canonical path of
+> >> request-key binary is very likely not /sbin/request-key anymore, so it seems to
+> >> make sense to me to allow this to be changed rather than always go through
+> >> compatibility symlinks.
+> >
+> > I doubt there's a huge demand other than NixOS. Just basing this on that
+> > no other noise have been made so far.
+> 
+> Just to add on this, both Fedora and openSUSE for example changes their
+> CONFIG_MODPROBE_PATH to be /usr/sbin/modprobe after /usr merge. They still have
+> the /sbin -> /usr/sbin symlink available, so it's not like they cannot work with
+> /sbin/request-key, but I would think that if the option is available then they
+> might switch to use /usr/sbin/request-key, too.
+> 
+> After all, why would one perform a symlink walk for no reason?
+> 
+> Best,
+> Gary
 
-syzbot tried to test the proposed patch but the build/boot failed:
+It's not who is right or who is wrong. "The representation
+of the argument" is not working here.
 
-failed to copy syz-execprog to VM: scp failed: failed to run ["scp" "-P" "3=
-8817" "-F" "/dev/null" "-o" "UserKnownHostsFile=3D/dev/null" "-o" "Identiti=
-esOnly=3Dyes" "-o" "BatchMode=3Dyes" "-o" "StrictHostKeyChecking=3Dno" "-o"=
- "ConnectTimeout=3D10" "-v" "-O" "/syzkaller/jobs/linux/gopath/src/github.c=
-om/google/syzkaller/bin/linux_amd64/syz-execprog" "root@localhost:/syz-exec=
-prog"]: exit status 1
+Back to the drawing board...
 
-
-
-syzkaller build log:
-go env (err=3D<nil>)
-AR=3D'ar'
-CC=3D'gcc'
-CGO_CFLAGS=3D'-O2 -g'
-CGO_CPPFLAGS=3D''
-CGO_CXXFLAGS=3D'-O2 -g'
-CGO_ENABLED=3D'1'
-CGO_FFLAGS=3D'-O2 -g'
-CGO_LDFLAGS=3D'-O2 -g'
-CXX=3D'g++'
-GCCGO=3D'gccgo'
-GO111MODULE=3D'auto'
-GOAMD64=3D'v1'
-GOARCH=3D'amd64'
-GOAUTH=3D'netrc'
-GOBIN=3D''
-GOCACHE=3D'/syzkaller/.cache/go-build'
-GOCACHEPROG=3D''
-GODEBUG=3D''
-GOENV=3D'/syzkaller/.config/go/env'
-GOEXE=3D''
-GOEXPERIMENT=3D''
-GOFIPS140=3D'off'
-GOFLAGS=3D''
-GOGCCFLAGS=3D'-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=3D0=
- -ffile-prefix-map=3D/tmp/go-build2355215050=3D/tmp/go-build -gno-record-gc=
-c-switches'
-GOHOSTARCH=3D'amd64'
-GOHOSTOS=3D'linux'
-GOINSECURE=3D''
-GOMOD=3D'/syzkaller/jobs/linux/gopath/src/github.com/google/syzkaller/go.mo=
-d'
-GOMODCACHE=3D'/syzkaller/jobs/linux/gopath/pkg/mod'
-GONOPROXY=3D''
-GONOSUMDB=3D''
-GOOS=3D'linux'
-GOPATH=3D'/syzkaller/jobs/linux/gopath'
-GOPRIVATE=3D''
-GOPROXY=3D'https://proxy.golang.org,direct'
-GOROOT=3D'/usr/local/go'
-GOSUMDB=3D'sum.golang.org'
-GOTELEMETRY=3D'local'
-GOTELEMETRYDIR=3D'/syzkaller/.config/go/telemetry'
-GOTMPDIR=3D''
-GOTOOLCHAIN=3D'auto'
-GOTOOLDIR=3D'/usr/local/go/pkg/tool/linux_amd64'
-GOVCS=3D''
-GOVERSION=3D'go1.26.0'
-GOWORK=3D''
-PKG_CONFIG=3D'pkg-config'
-
-git status (err=3D<nil>)
-HEAD detached at d1b870e1003b
-nothing to commit, working tree clean
-
-
-tput: No value for $TERM and no -T specified
-tput: No value for $TERM and no -T specified
-Makefile:31: run command via tools/syz-env for best compatibility, see:
-Makefile:32: https://github.com/google/syzkaller/blob/master/docs/contribut=
-ing.md#using-syz-env
-go list -f '{{.Stale}}' -ldflags=3D"-s -w -X github.com/google/syzkaller/pr=
-og.GitRevision=3Dd1b870e1003b52891d2196c1e2ee42fe905010ba -X github.com/goo=
-gle/syzkaller/prog.gitRevisionDate=3D20251128-125159"  ./sys/syz-sysgen | g=
-rep -q false || go install -ldflags=3D"-s -w -X github.com/google/syzkaller=
-/prog.GitRevision=3Dd1b870e1003b52891d2196c1e2ee42fe905010ba -X github.com/=
-google/syzkaller/prog.gitRevisionDate=3D20251128-125159"  ./sys/syz-sysgen
-make .descriptions
-tput: No value for $TERM and no -T specified
-tput: No value for $TERM and no -T specified
-Makefile:31: run command via tools/syz-env for best compatibility, see:
-Makefile:32: https://github.com/google/syzkaller/blob/master/docs/contribut=
-ing.md#using-syz-env
-bin/syz-sysgen
-touch .descriptions
-GOOS=3Dlinux GOARCH=3Damd64 go build -ldflags=3D"-s -w -X github.com/google=
-/syzkaller/prog.GitRevision=3Dd1b870e1003b52891d2196c1e2ee42fe905010ba -X g=
-ithub.com/google/syzkaller/prog.gitRevisionDate=3D20251128-125159"  -o ./bi=
-n/linux_amd64/syz-execprog github.com/google/syzkaller/tools/syz-execprog
-mkdir -p ./bin/linux_amd64
-g++ -o ./bin/linux_amd64/syz-executor executor/executor.cc \
-	-m64 -O2 -pthread -Wall -Werror -Wparentheses -Wunused-const-variable -Wfr=
-ame-larger-than=3D16384 -Wno-stringop-overflow -Wno-array-bounds -Wno-forma=
-t-overflow -Wno-unused-but-set-variable -Wno-unused-command-line-argument -=
-static-pie -std=3Dc++17 -I. -Iexecutor/_include   -DGOOS_linux=3D1 -DGOARCH=
-_amd64=3D1 \
-	-DHOSTGOOS_linux=3D1 -DGIT_REVISION=3D\"d1b870e1003b52891d2196c1e2ee42fe90=
-5010ba\"
-/usr/bin/ld: /tmp/ccw08xaS.o: in function `Connection::Connect(char const*,=
- char const*)':
-executor.cc:(.text._ZN10Connection7ConnectEPKcS1_[_ZN10Connection7ConnectEP=
-KcS1_]+0x386): warning: Using 'gethostbyname' in statically linked applicat=
-ions requires at runtime the shared libraries from the glibc version used f=
-or linking
-./tools/check-syzos.sh 2>/dev/null
-
-
-
-Tested on:
-
-commit:         8cd9520d Linux 7.1
-git tree:       upstream
-kernel config:  https://syzkaller.appspot.com/x/.config?x=3Dcfff134d62ee3b9=
-7
-dashboard link: https://syzkaller.appspot.com/bug?extid=3Df55b043dacf43776b=
-50c
-compiler:       Debian clang version 22.1.6 (++20260514074242+fc4aad7b5db3-=
-1~exp1~20260514074407.73), Debian LLD 22.1.6
-patch:          https://syzkaller.appspot.com/x/patch.diff?x=3D1400e8ae5800=
-00
-
+BR, Jarkko
