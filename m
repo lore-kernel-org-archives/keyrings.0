@@ -1,40 +1,47 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+Received: from abb.hmeau.com (abb.hmeau.com [180.181.231.80])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A471340D595;
-	Sun, 21 Jun 2026 01:23:53 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 68C0A28504D;
+	Mon, 22 Jun 2026 04:16:25 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=180.181.231.80
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1782005034; cv=none; b=YrFcYoXNc1gzAsV6jGBRLi7O3JQuHI12fWIFp2IeebbCPKtVY5E9wDpPwmtu5fru4vt8syBZUm14rvMVv5/2foyLVs06YFAkz3fkDYFA/BhTHHvz4FJra0Oo89pUqWmJJxVPmMgDvoZITaancNDabNv6pgHG6C2PCPUg4pXsNd0=
+	t=1782101789; cv=none; b=mltqBlKdGlRhhezQnqQAzxm2fh67b6dbm8Q8GRoNmOT+9EupOrbQMHzqLJYQHbELyD7dsIMUKvPO6N+JZkX6LvRpJLEsJ49P43Dw5761CCKP9Xq2yZM9ktW6+cvWdQuWlqqpg20IizDV8dKI8BUKJcLPwEZUCh/mlPz99yh6fFo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1782005034; c=relaxed/simple;
-	bh=RjR4V0FnbOzKHuVxmkc0X1qrF+6v0IgALUMrcpOeJHw=;
+	s=arc-20240116; t=1782101789; c=relaxed/simple;
+	bh=Wc3nj1o1R4JX3m0fQLeVr4lnI/t8wNwAtg+ad8CSLmk=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=FOAu9UxN3Y6ZI63bcDSAoOZWPiGyvxJyl8uz7Bxi4yO6LNlJhO3le6dnYCrkAsdu7s4w5yh9FaUXNJpl8EhZymjROed5oUsPUs2ghOmZIJIVRUAdu38EBLsACavsP6kmo9hqY2RO2QKy+P70ePIDDCxexqgWM4a/q2Me0PUVyzw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=GGqSKorz; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=F7NhNDyo9+9o8zsmZ9y8OzprN29hP0mp7E9pdBagtCwVuBLMWilXYletIjxlTt0jjanMAuAwldLw+seJOi5O31Th91W/m55MD5BZG/f3BLHTwpOCW/GxdN7K+6HYjp4Fsm28QTLkPCA1nqnYxb2IE/nLtf0rZs88XJKkALr5C8c=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au; spf=pass smtp.mailfrom=gondor.apana.org.au; dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b=Vg1aPjhz; arc=none smtp.client-ip=180.181.231.80
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gondor.apana.org.au
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="GGqSKorz"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 996091F000E9;
-	Sun, 21 Jun 2026 01:23:52 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1782005033;
-	bh=PikqGyKLwsErDbc1EGIJzx1OfeDbs2tT2lKzEWxMkr0=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=GGqSKorzx9WRnj7GcACPYJ6aCD65TI7O8WonzD742DSEK+DozFA/qdEN7HU61SUTk
-	 fUy+gT4G6bO8RyjQfsDL4yDJpvjoFLQr6szeCOIuLIdla7W9BL3zfXglILo7sSqKrq
-	 kP+GAPEcN4Z0z/42XTaCttILwpxHcTv8FnTJSwfxb3Uz2WMw5cP0LFlfJxsUAlnpu7
-	 59ZGqcvbEjaNfETXKNcRzYx4dnJ7zL1QSIBdEoHeRS/vYCbsbC8QrKfkbZkUpKQ9+4
-	 tQs9eR1kOWPTrZRmzdIG7FTGvurbaY6mGbCmrF+8c21sBZdGlYZAYmJVuHPWdNSNcK
-	 Vz0VCd73x4dtA==
-Date: Sun, 21 Jun 2026 04:23:49 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
-	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-7.2-rc1
-Message-ID: <ajc9JcxcH8eGqxbX@kernel.org>
-References: <ajboiUkyqgZxHpZS@kernel.org>
+	dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b="Vg1aPjhz"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=gondor.apana.org.au; s=h01; h=In-Reply-To:Content-Type:MIME-Version:
+	References:Message-ID:Subject:Cc:To:From:Date:cc:to:subject:message-id:date:
+	from:content-type:reply-to; bh=8jW7hVwajH1st81Raf8Po4Ho1/83pEkyfqSVqxkvxW4=; 
+	b=Vg1aPjhzPtEhSjlTuroTmkyRS/iCUGwDW5sp5WnFMCtiM/9W9XVjl1LbnDgHnbpfGjkPaSpsER3
+	L7U5M/pzKFzTbP0FOGRK1LyDgUq4knny64xYqL+2eWIU5Q1exJ9xxbwnFGgtqs8XNiOGtW+6rk8H2
+	Qq4Y2WTMhToxcx1ePn3CDUZEXmschAb9PmjhlK7UEj3iOaxXe6d5CWKDUEfP8EV/INxgVs2LHQlxJ
+	N1BsRMhUdB60ocBQrLMvoIvJE3c9n6EThjgf4mEWFZpsURhXL+E5fzoevSPlktb7vcZMogBSs9al5
+	bYDhb1z8DVUYXojFmsXXUCIQfFnScS2qFW7Q==;
+Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
+	by formenos.hmeau.com with smtp (Exim 4.98.2 #2 (Debian))
+	id 1wbW4t-000000078pb-3Qzi;
+	Mon, 22 Jun 2026 12:16:08 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Mon, 22 Jun 2026 12:16:07 +0800
+Date: Mon, 22 Jun 2026 12:16:07 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Weiming Shi <bestswngs@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
+	Ignat Korchagin <ignat@linux.win>,
+	"David S . Miller" <davem@davemloft.net>,
+	Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+	linux-crypto@vger.kernel.org, Xiang Mei <xmei5@asu.edu>
+Subject: Re: [PATCH v2] asymmetric_keys: check asymmetric_key_ids() for NULL
+ before dereference
+Message-ID: <aji3B9a72VEAOu03@gondor.apana.org.au>
+References: <20260502163328.696098-2-bestswngs@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -43,112 +50,85 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ajboiUkyqgZxHpZS@kernel.org>
+In-Reply-To: <20260502163328.696098-2-bestswngs@gmail.com>
 
-Oh crap, sorry.
+On Sat, May 02, 2026 at 09:33:29AM -0700, Weiming Shi wrote:
+>
+> diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
+> index 16a7ae16593c..22f04656d529 100644
+> --- a/crypto/asymmetric_keys/asymmetric_type.c
+> +++ b/crypto/asymmetric_keys/asymmetric_type.c
+> @@ -109,6 +109,8 @@ struct key *find_asymmetric_key(struct key *keyring,
+>  	if (id_0 && id_1) {
+>  		const struct asymmetric_key_ids *kids = asymmetric_key_ids(key);
+>  
+> +		if (!kids)
+> +			goto reject;
 
-I'll resend with new tag for-next-tpm-7.2-rc1-2.
+This check is actually unnecessary because we've already matched
+the key against the kid so it must be present.
 
-Discard.
+I'd get rid of this check or perhaps add a comment instead.
 
-BR, Jarkko
+>  		if (!kids->id[1]) {
+>  			pr_debug("First ID matches, but second is missing\n");
+>  			goto reject;
+> diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
+> index 86292965f493..ccf1084f720e 100644
+> --- a/crypto/asymmetric_keys/restrict.c
+> +++ b/crypto/asymmetric_keys/restrict.c
+> @@ -243,10 +243,14 @@ static int key_or_keyring_common(struct key *dest_keyring,
+>  			if (IS_ERR(key))
+>  				key = NULL;
+>  		} else if (trusted->type == &key_type_asymmetric) {
+> +			const struct asymmetric_key_ids *kids;
+>  			const struct asymmetric_key_id **signer_ids;
+>  
+> -			signer_ids = (const struct asymmetric_key_id **)
+> -				asymmetric_key_ids(trusted)->id;
+> +			kids = asymmetric_key_ids(trusted);
+> +			if (!kids)
+> +				goto skip_trusted;
 
-On Sat, Jun 20, 2026 at 10:22:49PM +0300, Jarkko Sakkinen wrote:
-> The following changes since commit 0e0611827f3349d0a2ac121c023a6d3260dcecdb:
-> 
->   Merge tag 'pull-fixes' of gitolite.kernel.org:pub/scm/linux/kernel/git/viro/vfs (2026-06-15 15:53:57 +0530)
-> 
-> are available in the Git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.2-rc1
-> 
-> for you to fetch changes up to 67c53887ebcd425f0003e7068de12eab511f80a9:
-> 
->   tpm: fix event_size output in tpm1_binary_bios_measurements_show (2026-06-15 15:19:45 +0300)
-> 
-> ----------------------------------------------------------------
-> Hi,
-> 
-> Please, pull. This pull request contains only bug fixes.
-> 
-> BR, Jarkko
-> 
-> ----------------------------------------------------------------
-> Baoli Zhang (1):
->       tpm: restore timeout for key creation commands
-> 
-> David Laight (1):
->       keys: Replace strcpy(derived_buf, "AUTH_KEY") with strscpy(..., HASH_SIZE)
-> 
-> David Windsor (1):
->       tpm: svsm: constify tpm_chip_ops
-> 
-> Eric Biggers (1):
->       KEYS: encrypted: Remove unnecessary selection of CRYPTO_RNG
-> 
-> Gui-Dong Han (1):
->       KEYS: Use acquire when reading state in keyring search
-> 
-> Gunnar Kudrjavets (1):
->       tpm: Initialize name_size_alg for non-NULL name in tpm_buf_append_name()
-> 
-> Jarkko Sakkinen (3):
->       KEYS: fix overflow in keyctl_pkey_params_get_2()
->       KEYS: trusted: Debugging as a feature
->       tpm: tpm_tis_spi: Use wait_woken() in wait_for_tmp_stat()
-> 
-> Jim Broadus (2):
->       tpm: tpm_tis: store entire did_vid
->       tpm: tpm_tis: Add settle time for some TPMs
-> 
-> Len Bao (1):
->       keys/trusted_keys: mark 'migratable' as __ro_after_init
-> 
-> Michael Bommarito (1):
->       tpm: tpm2-sessions: wait for async KPP completion in tpm_buf_append_salt
-> 
-> Mohammed EL Kadiri (3):
->       keys: prevent slab cache merging for key_jar
->       keys: request_key: replace BUG with return -EINVAL
->       keys: keyctl_pkey: replace BUG with return -EOPNOTSUPP
-> 
-> Rafael J. Wysocki (1):
->       tpm_crb: Check ACPI_COMPANION() against NULL during probe
-> 
-> Shaomin Chen (1):
->       keys: Pin request_key_auth payload in instantiate paths
-> 
-> Thorsten Blum (2):
->       keys: use kmalloc_flex in user_preparse
->       tpm: fix event_size output in tpm1_binary_bios_measurements_show
-> 
-> Yeoreum Yun (1):
->       tpm: tpm_crb_ffa: revert defered_probed when tpm_crb_ffa is built-in
-> 
->  Documentation/admin-guide/kernel-parameters.txt | 16 +++++++
->  drivers/char/tpm/eventlog/tpm1.c                |  4 +-
->  drivers/char/tpm/tpm2-cmd.c                     |  6 +--
->  drivers/char/tpm/tpm2-sessions.c                | 56 ++++++++++++++++------
->  drivers/char/tpm/tpm_crb.c                      |  6 ++-
->  drivers/char/tpm/tpm_crb_ffa.c                  | 18 ++-----
->  drivers/char/tpm/tpm_svsm.c                     |  2 +-
->  drivers/char/tpm/tpm_tis_core.c                 | 63 ++++++++++++++++---------
->  drivers/char/tpm/tpm_tis_core.h                 |  3 +-
->  include/keys/request_key_auth-type.h            |  2 +
->  include/keys/trusted-type.h                     | 21 +++++----
->  security/keys/Kconfig                           |  1 -
->  security/keys/encrypted-keys/encrypted.c        |  4 +-
->  security/keys/internal.h                        |  2 +
->  security/keys/key.c                             |  2 +-
->  security/keys/keyctl.c                          | 24 +++++++---
->  security/keys/keyctl_pkey.c                     | 14 ++++--
->  security/keys/keyring.c                         |  2 +-
->  security/keys/request_key.c                     |  2 +-
->  security/keys/request_key_auth.c                | 33 ++++++++++++-
->  security/keys/trusted-keys/Kconfig              | 23 +++++++++
->  security/keys/trusted-keys/trusted_caam.c       |  7 ++-
->  security/keys/trusted-keys/trusted_core.c       |  8 +++-
->  security/keys/trusted-keys/trusted_tpm1.c       | 44 +++++++++--------
->  security/keys/user_defined.c                    |  2 +-
->  25 files changed, 256 insertions(+), 109 deletions(-)
+Yes this is definitely buggy.
 
+I think it was introduced by these two commits:
+
+commit 3c58b2362ba828ee2970c66c6a6fd7b04fde4413
+Author: David Howells <dhowells@redhat.com>
+Date:   Tue Oct 9 17:47:46 2018 +0100
+
+    KEYS: Implement PKCS#8 RSA Private Key parser [ver #2]
+
+and
+
+commit 7e3c4d22083f6e7316c5229b6197ca2d5335aa35
+Author: Mat Martineau <martineau@kernel.org>
+Date:   Mon Jun 27 16:45:16 2016 -0700
+
+    KEYS: Restrict asymmetric key linkage using a specific keychain
+
+So the Fixes header should point to them.
+
+> @@ -290,6 +294,7 @@ static int key_or_keyring_common(struct key *dest_keyring,
+>  		}
+>  	}
+>  
+> +skip_trusted:
+>  	if (check_dest && !key) {
+>  		/* See if the destination has a key that signed this one. */
+>  		key = find_asymmetric_key(dest_keyring, sig->auth_ids[0],
+
+I'm not sure continuing here is a good idea.  Having a private key
+here makes no sense whatsoever and we should just bail out right
+away.
+
+I would recommend returning an error of some sort if kids is NULL.
+
+David/Lukas/Ignat, any opinions?
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
