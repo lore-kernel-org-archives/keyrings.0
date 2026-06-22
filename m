@@ -1,146 +1,99 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4A11A30F958;
-	Mon, 22 Jun 2026 14:56:16 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E796832F757;
+	Mon, 22 Jun 2026 15:24:15 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1782140177; cv=none; b=IyQYUi+cFAz+xGa0SnY49FlBZL4pORWR/nHP1HspeL0+Dn2gGPRcCo8yD70jeHltigNGVkP2zL5Hxwe8Hf3Mmg18w3HQ0WQ26eDa2ROyUNSOAhNkaD5s8LD0Q/IA7xp0kBh6kiQgR4YrVbMDrYg3MnYzJtJT7DbGfrRzZlhZK8w=
+	t=1782141856; cv=none; b=JZQnmoKhynL5JZOoLuz2XYzPD6cMaGhWz1zF6WrOO+nbRR+sWtjctd88hZcWtJzsmpJJAnIhIpX8xgFbvSzMDDvAONPDXJ1S8Ffz6xYA6bQFgnRTNQkmX36nM02VpBmFsc6JjRkRVWVuzkjuFe/6q5nFc+rRHgoxofWGKVSelII=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1782140177; c=relaxed/simple;
-	bh=Q8cnKTr5Gh+ig4y7XghOSKCucx5F1OW3eLFRGxBdlLc=;
+	s=arc-20240116; t=1782141856; c=relaxed/simple;
+	bh=hu4TQQQ2kLY6TbupZJ5UTBdHViF2xsQDWC075aCoRvM=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=aoeq5pXBe8kX9Y3h8Wzoe7lK+VSWP49Pkch9HkybfHy588+cktmCvgfDYQ/YefvWC5PKm3c+gPWZtbMnCLNAbQG4g8tBpjAqu+ZvzEvXdoS66lnb50bzWrB3ZiGlgpvgyMeSc/lgvjb9jZEfOVnYBILBh36OEIJSVAvA6NtNw/o=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=IihDIC4+; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=pdn3JUOV97pQEKCvMk4vc/B+TJVVYfswZz5g04Os8SfDnUZLMMfDKH3DhSv+IoPBhdKubwFXQeKhIn4lA86rtXEhpfHJynU65FsQo0oaivxsp1hF3e3sV5/u1OsDxM58Gd9wkIUM3tEGJjS5ugaXSpSfavmzQYpG9om8E0KmuzA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=FSqJJySf; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="IihDIC4+"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 6047D1F000E9;
-	Mon, 22 Jun 2026 14:56:15 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="FSqJJySf"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 1321D1F00A3A;
+	Mon, 22 Jun 2026 15:24:14 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1782140175;
-	bh=7+xd5/DgJYlCExSOQuRhC1KD3huRFMoCoOulZj4XDjQ=;
+	s=k20260515; t=1782141855;
+	bh=biMhVOMPH5LjI+s0O7L7liAdmt3BubRONcx2Lql16Y0=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=IihDIC4++KdDUXuTnvp5AEW5NknSpDvcZJHhB587L6oJB9fmkKd4xlUKTS5au+gm2
-	 sD32z5LLUzXrXh6gc0r7e7gcJ9O7L91SOtGB44LTdqF9JB7eYhFkeOcQb38bFglbb7
-	 hGk6uyRl8XmkAf3AvxTKId6MetM23KPxRougzaxE41CiDdBXGZIgGwh45zU0KelZPI
-	 KDmkCup23wast1juNCETYR388CwcGs7i4qKj8P/AlHSA79HVvCY0dtOtdjxSRZERxS
-	 vIwxAla9uLbxdsFvosKOEcm5kRj2Kn11V1EIKKlt0zaFngdM1nLbitG9+XIE0axonE
-	 e7+GSSMd5bbfA==
-Date: Mon, 22 Jun 2026 17:56:11 +0300
+	b=FSqJJySfoHfmMKS8iGU1nmAFVW1O/eGfi/dBXXQKSFmP8wzktIpivvTbdGoTXUfq8
+	 rcqL3VFOn8K6mc75TQmLUK0snL7a6tPY/ujVeBIOTFTiU6nSUK/gSHv+eq60wnE2ri
+	 rXgPd2vWRkz5liZ7gLgK53DZiF7l+552SYJRl1ZXWpUCguXYW2RlWwetm0wSokrxC7
+	 h9eyqC2jD7sXj1Xeq7dvFJPVsventHRlvu5KUZjT7CCUCjQbECP26aCQit4UQo1TYz
+	 teSsSXCh4V2XdHg3z6y1dwbYfYG3AmBHrAoY74Rj2KCuIcWnf8C0WNPgXZ4tqf9MRv
+	 FrgYA9uzkKT4g==
+Date: Mon, 22 Jun 2026 18:24:11 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Weiming Shi <bestswngs@gmail.com>, David Howells <dhowells@redhat.com>,
-	Lukas Wunner <lukas@wunner.de>, Ignat Korchagin <ignat@linux.win>,
-	"David S . Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
-	linux-crypto@vger.kernel.org, Xiang Mei <xmei5@asu.edu>
-Subject: Re: [PATCH v2] asymmetric_keys: check asymmetric_key_ids() for NULL
- before dereference
-Message-ID: <ajlNCxltXkuWfIw-@kernel.org>
-References: <20260502163328.696098-2-bestswngs@gmail.com>
- <aji3B9a72VEAOu03@gondor.apana.org.au>
+To: Berkay =?iso-8859-1?Q?Y=FCrekli?= <ps1296@owsa.nl>
+Cc: david@sigma-star.at, upstream+dcp@sigma-star.at,
+	James.Bottomley@hansenpartnership.com, zohar@linux.ibm.com,
+	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] keys: trusted: dcp: Make dcp_trusted_key_ops const
+Message-ID: <ajlTmzEigwaLxadN@kernel.org>
+References: <CAMyZDTsA-m0R1Ziy74Ck0EPj8UFJhUw-vE0_ACrQ3hiLLaNaKQ@mail.gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <aji3B9a72VEAOu03@gondor.apana.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMyZDTsA-m0R1Ziy74Ck0EPj8UFJhUw-vE0_ACrQ3hiLLaNaKQ@mail.gmail.com>
 
-On Mon, Jun 22, 2026 at 12:16:07PM +0800, Herbert Xu wrote:
-> On Sat, May 02, 2026 at 09:33:29AM -0700, Weiming Shi wrote:
-> >
-> > diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-> > index 16a7ae16593c..22f04656d529 100644
-> > --- a/crypto/asymmetric_keys/asymmetric_type.c
-> > +++ b/crypto/asymmetric_keys/asymmetric_type.c
-> > @@ -109,6 +109,8 @@ struct key *find_asymmetric_key(struct key *keyring,
-> >  	if (id_0 && id_1) {
-> >  		const struct asymmetric_key_ids *kids = asymmetric_key_ids(key);
-> >  
-> > +		if (!kids)
-> > +			goto reject;
+On Sun, Jun 21, 2026 at 09:05:40PM -0400, Berkay Yürekli wrote:
+> Mark the dcp_trusted_key_ops structure as const to improve kernel
+> self-protection. This structure contains function pointers that are
+> initialized once during module initialization and never modified.
 > 
-> This check is actually unnecessary because we've already matched
-> the key against the kid so it must be present.
+> Making function pointers read-only protects against memory corruption
+> attacks where an attacker might overwrite these pointers to redirect
+> execution flow, as recommended in Documentation/security/self-protection.rst.
 > 
-> I'd get rid of this check or perhaps add a comment instead.
+> Signed-off-by: mcss <ps1296@owsa.nl>
 
-+1
+full name please
 
 > 
-> >  		if (!kids->id[1]) {
-> >  			pr_debug("First ID matches, but second is missing\n");
-> >  			goto reject;
-> > diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
-> > index 86292965f493..ccf1084f720e 100644
-> > --- a/crypto/asymmetric_keys/restrict.c
-> > +++ b/crypto/asymmetric_keys/restrict.c
-> > @@ -243,10 +243,14 @@ static int key_or_keyring_common(struct key *dest_keyring,
-> >  			if (IS_ERR(key))
-> >  				key = NULL;
-> >  		} else if (trusted->type == &key_type_asymmetric) {
-> > +			const struct asymmetric_key_ids *kids;
-> >  			const struct asymmetric_key_id **signer_ids;
-> >  
-> > -			signer_ids = (const struct asymmetric_key_id **)
-> > -				asymmetric_key_ids(trusted)->id;
-> > +			kids = asymmetric_key_ids(trusted);
-> > +			if (!kids)
-> > +				goto skip_trusted;
+> ---
+>  include/keys/trusted_dcp.h          | 2 +-
+>  security/keys/trusted-keys/trusted_dcp.c | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Yes this is definitely buggy.
+> diff --git a/include/keys/trusted_dcp.h b/include/keys/trusted_dcp.h
+> index 9aaa42075b40..8ee24f2d21ff 100644
+> --- a/include/keys/trusted_dcp.h
+> +++ b/include/keys/trusted_dcp.h
+> @@ -6,6 +6,6 @@
+>  #ifndef TRUSTED_DCP_H
+>  #define TRUSTED_DCP_H
+>  
+> -extern struct trusted_key_ops dcp_trusted_key_ops;
+> +extern const struct trusted_key_ops dcp_trusted_key_ops;
+>  
+>  #endif
+> diff --git a/security/keys/trusted-keys/trusted_dcp.c b/security/keys/
+> trusted-keys/trusted_dcp.c
+> index 7b6eb655df0c..f638078640f9 100644
+> --- a/security/keys/trusted-keys/trusted_dcp.c
+> +++ b/security/keys/trusted-keys/trusted_dcp.c
+> @@ -347,7 +347,7 @@ static void trusted_dcp_exit(void)
+>   unregister_key_type(&key_type_trusted);
+>  }
+>  
+> -struct trusted_key_ops dcp_trusted_key_ops = {
+> +const struct trusted_key_ops dcp_trusted_key_ops = {
+>   .exit = trusted_dcp_exit,
+>   .init = trusted_dcp_init,
+>   .seal = trusted_dcp_seal,
+> --
+> 2.54.0
 > 
-> I think it was introduced by these two commits:
-> 
-> commit 3c58b2362ba828ee2970c66c6a6fd7b04fde4413
-> Author: David Howells <dhowells@redhat.com>
-> Date:   Tue Oct 9 17:47:46 2018 +0100
-> 
->     KEYS: Implement PKCS#8 RSA Private Key parser [ver #2]
-> 
-> and
-> 
-> commit 7e3c4d22083f6e7316c5229b6197ca2d5335aa35
-> Author: Mat Martineau <martineau@kernel.org>
-> Date:   Mon Jun 27 16:45:16 2016 -0700
-> 
->     KEYS: Restrict asymmetric key linkage using a specific keychain
-> 
-> So the Fixes header should point to them.
-
-+1
-
-> 
-> > @@ -290,6 +294,7 @@ static int key_or_keyring_common(struct key *dest_keyring,
-> >  		}
-> >  	}
-> >  
-> > +skip_trusted:
-> >  	if (check_dest && !key) {
-> >  		/* See if the destination has a key that signed this one. */
-> >  		key = find_asymmetric_key(dest_keyring, sig->auth_ids[0],
-> 
-> I'm not sure continuing here is a good idea.  Having a private key
-> here makes no sense whatsoever and we should just bail out right
-> away.
-> 
-> I would recommend returning an error of some sort if kids is NULL.
-> 
-> David/Lukas/Ignat, any opinions?
-
-I think with a quick skim that you are right. I'll work on this area
-for the next version.
-
-> 
-> Thanks,
-> -- 
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
-
-Thanks for the review!
 
 BR, Jarkko
-
