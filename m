@@ -1,105 +1,190 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-ej1-f53.google.com (mail-ej1-f53.google.com [209.85.218.53])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B58E41F151C;
-	Mon, 22 Jun 2026 15:31:23 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7363334B43F
+	for <keyrings@vger.kernel.org>; Mon, 22 Jun 2026 20:21:19 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.218.53
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1782142284; cv=none; b=uqdauaQ/YuhXojJBwdWL3co4PGkvuIainxocRkqi7Emah+4J0bjbvGy4borluMFA22QlqQnt0BoYFeQPt2O+YPw+5KQXzJyYbGUUvyQep81+d0wLwun77pzlpTql+rVfX+6V5VW5DLp0ajACibUvMI8idjiJLcEV2z6gr3XRppg=
+	t=1782159681; cv=none; b=oBh2J8/qds41b/hH/pO2muM3nlEHiX5MHzel6qBuaAnE3L64LuUe29gX9wgiLgEybG2h36QhDrO/f9Rvj6LeuCpl9/mb4+A/UjIVurRjC9rFaBFcjpXg861F4RyMwNQxlC/yMcziRLnCiJ2OiGhMPcvEThcwz4rAPnJLa0OvPYo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1782142284; c=relaxed/simple;
-	bh=nOSR3j5FtVV9AKW4o7HzuDHxgqC4/BPOOUeUig4T5d8=;
-	h=Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:
-	 Content-Disposition; b=PuDIdSZu7oaK9Rn18y6irH7lTgPTsBT19WmXYFc28Upy+5bSrpUTT5b69Rswo33V5Jd8QidndaokVHbeB+TX/M+G/w/Hq3hXPukyiyUWLQw+vW2dqFC2SvKOJfBvlkovxoJhwDbHmkSED/u/9oEISk3CGZiHMviKWDTE+bUBn+4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Cz5P5+aI; arc=none smtp.client-ip=100.103.45.18
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Cz5P5+aI"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DA5301F000E9;
-	Mon, 22 Jun 2026 15:31:22 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1782142283;
-	bh=Tc41Au4Xtg2NZoKNYu/BD/sn49z5aSGF+nPwhYFldMU=;
-	h=Date:From:To:Cc:Subject;
-	b=Cz5P5+aIml/tmeaHiL5z32Ug5Vj0Gu3yCMQ4On16srjQ+wM4TXIoO4Yv38jvmGbZF
-	 c9SwmsqFRMZV9ghZ/RIGTc/B9IZWjKQAARaM6KeI0Nu8RNWUDPFJSMHdF1gmb+Sk3o
-	 zzampgasZP4vVg+o6IQd3maewFuKo2cHH+kcZV04XecFeRhbBkLY8GHHC4KaxqCn/X
-	 CECEbG6D9XR8Iv+eRt+9I/D6J9LL2aAiWKay58T3RPCXiaQnoHqKSBZh8PE3OnQZRp
-	 MWhJwXdK4bpgHH4DO+oaiHLseCjX8+LEujDgNlJHNMox6nK8iIqNSmZVV+NLpfKRtm
-	 vJ8MzbTcvXb1Q==
-Date: Mon, 22 Jun 2026 18:31:19 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
-	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-7.2-rc1-fixed
-Message-ID: <ajlVR8okpQirKw5-@kernel.org>
+	s=arc-20240116; t=1782159681; c=relaxed/simple;
+	bh=nnx1Bky1wAIRaB3zi2foM2fegfU+yLHj+NalW3CIDc0=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=hq9ymS95+qDDKWBTGq2Ca6Fyh/rBIZ4fMUUNeOWqvgrvRUkQNd0t01j3iKeSmrLu3ou2QjY5VXTwuQ2dL3PExEBTwMm5VFsRGkq57Oup3NBU4hdux3LeCtMLRY6dWL7oV5g6lAa+tL/i1hHnaAbrxrnMUE0y95DPpBmeKxr1PC8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win; spf=pass smtp.mailfrom=gmail.com; arc=none smtp.client-ip=209.85.218.53
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+Received: by mail-ej1-f53.google.com with SMTP id a640c23a62f3a-c0c5d170ad4so312060666b.3
+        for <keyrings@vger.kernel.org>; Mon, 22 Jun 2026 13:21:19 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1782159678; x=1782764478;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to;
+        bh=jVlFfRpn9UntpPh6Z18ZIlYWvmrIqOtd+zdy9KzVAtA=;
+        b=d7nn0v7PfULG+cJ1gx82eENkWHPu3i/ub9CS8H8SyzA3m6Z8k8Q5G4nrj0by0e3ELX
+         ehEN4CAlfr+X5efYqoXMrSOlMmDw3Jay+Aiy1L+QRtZRS3DhS5B2OrhXpNdVbI+O3EOp
+         fHcwZ+hWRcz8CJYhXvxj/NI1/kUDPyErEqAs0QEEVA0F2Yip272KPrYmcOh4gvN1HFg0
+         SQvpXMxfutEOjy/wTlKm/piyVlmrxfErgDwyYq09x1FTYEJwew7YG9vxi/RzfgEk9wNv
+         qLYFrLuQsszP/mcnbZTOkayY3RCIJm7+0sNlHgfu+uV3bZ+q0muU96FCiPmSv0jv//ge
+         E7Bw==
+X-Forwarded-Encrypted: i=1; AFNElJ8PfTQUO1CFx1iwPAHGm9mF4g5XnSJjzVqVlzVYewPe0kHWo/4NplNWsRzWYT+taa1eRvkgaAyjKQ==@vger.kernel.org
+X-Gm-Message-State: AOJu0Yz2Id0/TfIJ3Jk8JxMzZxMMB04X0lWIsuXs8oTHH5ARgybmVAu0
+	8RJTghziiqPFK2Tq7g9ATj+Py4kbAITMWd5Eag2lb2lbMT9T9mWVooMe/FbvmfeGBoU=
+X-Gm-Gg: AfdE7cmyJb7WZoiWREWnT03LefwnoWyI479sLuRhsqsxTSj4WULZjG9Bs/65NgZUC1o
+	2z+y2vuoruYKCgoSXOe4gG3SwyLM7W2Bl0dec3Y1Dj285LxMqU4FAV3BtvOufNe/0gYUKpOgIgB
+	gCKiH6qlDbjpYSBwklAyhKgCdk844/LB7bDK8sdBMIAsKgot7PTFKPz7+QNk2HGTLL+8uZZX7qS
+	mN2j4LiS4ZkSw0PIu1bhla2sl9CZ5hl1O/P01iMdNWcWjcHJmTQkCuKnV63719kmWWP0yqEIOLL
+	K57+iE6GiYxCEO9c8Vx907KinzDTw5hT4zUzDXhVW4s8s3VCo2lhrcpGAk2yXez8v9MaC4jQTOQ
+	Vm6AU5+cnqiNFeYJMq7JAaRHl9IhumnIksgsjrnBZxuXVzsTPCeBRz4AG9TeU9AUuIpul5eXEsq
+	05KxHKeU2CdMC+w3Sc4lX9L3BPKN2WVyXL95SCuqsEQio=
+X-Received: by 2002:a17:907:26c2:b0:beb:8ab8:30ce with SMTP id a640c23a62f3a-c097ae4b6ebmr789478466b.20.1782159677537;
+        Mon, 22 Jun 2026 13:21:17 -0700 (PDT)
+Received: from mail-ed1-f41.google.com (mail-ed1-f41.google.com. [209.85.208.41])
+        by smtp.gmail.com with ESMTPSA id a640c23a62f3a-c1002d6c5f6sm60598866b.49.2026.06.22.13.21.16
+        for <keyrings@vger.kernel.org>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Mon, 22 Jun 2026 13:21:16 -0700 (PDT)
+Received: by mail-ed1-f41.google.com with SMTP id 4fb4d7f45d1cf-697ad7f663cso2439159a12.1
+        for <keyrings@vger.kernel.org>; Mon, 22 Jun 2026 13:21:16 -0700 (PDT)
+X-Forwarded-Encrypted: i=1; AFNElJ8EOBqIGSfb5zuQhQYQV2NoMMSKNER4OUiExN3Y4+vVM8CfxBh058cenr5FhvmEiQaZHSM+SbeABA==@vger.kernel.org
+X-Received: by 2002:a17:907:a03:b0:c0d:7573:7256 with SMTP id
+ a640c23a62f3a-c0d7573740amr435737666b.51.1782159676483; Mon, 22 Jun 2026
+ 13:21:16 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+References: <20260502163328.696098-2-bestswngs@gmail.com> <aji3B9a72VEAOu03@gondor.apana.org.au>
+ <ajlNCxltXkuWfIw-@kernel.org>
+In-Reply-To: <ajlNCxltXkuWfIw-@kernel.org>
+From: Ignat Korchagin <ignat@linux.win>
+Date: Mon, 22 Jun 2026 21:21:04 +0100
+X-Gmail-Original-Message-ID: <CAOs+rJVutdn6vqjSxidx-fA_R8PYsqJbbpMRUW+ijJeXoavCYA@mail.gmail.com>
+X-Gm-Features: AVVi8CcdlgikvHr2XETEkUfuG_HaLob-n6pc__1dO-GEG4Nf3-J3r6h8h6TyyI4
+Message-ID: <CAOs+rJVutdn6vqjSxidx-fA_R8PYsqJbbpMRUW+ijJeXoavCYA@mail.gmail.com>
+Subject: Re: [PATCH v2] asymmetric_keys: check asymmetric_key_ids() for NULL
+ before dereference
+To: Herbert Xu <herbert@gondor.apana.org.au>, Weiming Shi <bestswngs@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, 
+	Lukas Wunner <lukas@wunner.de>, "David S . Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, 
+	linux-crypto@vger.kernel.org, Xiang Mei <xmei5@asu.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The following changes since commit 1a3746ccbb0a97bed3c06ccde6b880013b1dddc1:
+On Mon, Jun 22, 2026 at 3:56=E2=80=AFPM Jarkko Sakkinen <jarkko@kernel.org>=
+ wrote:
+>
+> On Mon, Jun 22, 2026 at 12:16:07PM +0800, Herbert Xu wrote:
+> > On Sat, May 02, 2026 at 09:33:29AM -0700, Weiming Shi wrote:
+> > >
+> > > diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymme=
+tric_keys/asymmetric_type.c
+> > > index 16a7ae16593c..22f04656d529 100644
+> > > --- a/crypto/asymmetric_keys/asymmetric_type.c
+> > > +++ b/crypto/asymmetric_keys/asymmetric_type.c
+> > > @@ -109,6 +109,8 @@ struct key *find_asymmetric_key(struct key *keyri=
+ng,
+> > >     if (id_0 && id_1) {
+> > >             const struct asymmetric_key_ids *kids =3D asymmetric_key_=
+ids(key);
+> > >
+> > > +           if (!kids)
+> > > +                   goto reject;
+> >
+> > This check is actually unnecessary because we've already matched
+> > the key against the kid so it must be present.
+> >
+> > I'd get rid of this check or perhaps add a comment instead.
+>
+> +1
+>
+> >
+> > >             if (!kids->id[1]) {
+> > >                     pr_debug("First ID matches, but second is missing=
+\n");
+> > >                     goto reject;
+> > > diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_ke=
+ys/restrict.c
+> > > index 86292965f493..ccf1084f720e 100644
+> > > --- a/crypto/asymmetric_keys/restrict.c
+> > > +++ b/crypto/asymmetric_keys/restrict.c
+> > > @@ -243,10 +243,14 @@ static int key_or_keyring_common(struct key *de=
+st_keyring,
+> > >                     if (IS_ERR(key))
+> > >                             key =3D NULL;
+> > >             } else if (trusted->type =3D=3D &key_type_asymmetric) {
+> > > +                   const struct asymmetric_key_ids *kids;
+> > >                     const struct asymmetric_key_id **signer_ids;
+> > >
+> > > -                   signer_ids =3D (const struct asymmetric_key_id **=
+)
+> > > -                           asymmetric_key_ids(trusted)->id;
+> > > +                   kids =3D asymmetric_key_ids(trusted);
+> > > +                   if (!kids)
+> > > +                           goto skip_trusted;
+> >
+> > Yes this is definitely buggy.
+> >
+> > I think it was introduced by these two commits:
+> >
+> > commit 3c58b2362ba828ee2970c66c6a6fd7b04fde4413
+> > Author: David Howells <dhowells@redhat.com>
+> > Date:   Tue Oct 9 17:47:46 2018 +0100
+> >
+> >     KEYS: Implement PKCS#8 RSA Private Key parser [ver #2]
+> >
+> > and
+> >
+> > commit 7e3c4d22083f6e7316c5229b6197ca2d5335aa35
+> > Author: Mat Martineau <martineau@kernel.org>
+> > Date:   Mon Jun 27 16:45:16 2016 -0700
+> >
+> >     KEYS: Restrict asymmetric key linkage using a specific keychain
+> >
+> > So the Fixes header should point to them.
+>
+> +1
+>
+> >
+> > > @@ -290,6 +294,7 @@ static int key_or_keyring_common(struct key *dest=
+_keyring,
+> > >             }
+> > >     }
+> > >
+> > > +skip_trusted:
+> > >     if (check_dest && !key) {
+> > >             /* See if the destination has a key that signed this one.=
+ */
+> > >             key =3D find_asymmetric_key(dest_keyring, sig->auth_ids[0=
+],
+> >
+> > I'm not sure continuing here is a good idea.  Having a private key
+> > here makes no sense whatsoever and we should just bail out right
+> > away.
+> >
+> > I would recommend returning an error of some sort if kids is NULL.
+> >
+> > David/Lukas/Ignat, any opinions?
 
-  Merge tag 'strncpy-removal-v7.2-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux (2026-06-19 14:56:45 -0700)
+As I reread the original submission (somehow I never got the V2) it
+seems we're restricting a keyring with a private key?! Which indeed
+does not make sense.
 
-are available in the Git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.2-rc1-fixed
-
-for you to fetch changes up to 1a58f6115bfb34eabcc7de8a3a9745b219179781:
-
-  tpm: fix event_size output in tpm1_binary_bios_measurements_show (2026-06-21 04:25:28 +0300)
-
-----------------------------------------------------------------
-Hi
-
-Correctly rebased version of [1] now that for-next-tpm was mirrored
-today to linux-next by Mark today. Contains only bug fixes.
-
-[1] https://lore.kernel.org/linux-integrity/ajc9JcxcH8eGqxbX@kernel.org/T/#t
-
-BR, Jarkko
-
-----------------------------------------------------------------
-Baoli Zhang (1):
-      tpm: restore timeout for key creation commands
-
-David Windsor (1):
-      tpm: svsm: constify tpm_chip_ops
-
-Gunnar Kudrjavets (1):
-      tpm: Initialize name_size_alg for non-NULL name in tpm_buf_append_name()
-
-Jarkko Sakkinen (1):
-      tpm: tpm_tis_spi: Use wait_woken() in wait_for_tmp_stat()
-
-Jim Broadus (2):
-      tpm: tpm_tis: store entire did_vid
-      tpm: tpm_tis: Add settle time for some TPMs
-
-Michael Bommarito (1):
-      tpm: tpm2-sessions: wait for async KPP completion in tpm_buf_append_salt
-
-Rafael J. Wysocki (1):
-      tpm_crb: Check ACPI_COMPANION() against NULL during probe
-
-Thorsten Blum (1):
-      tpm: fix event_size output in tpm1_binary_bios_measurements_show
-
-Yeoreum Yun (1):
-      tpm: tpm_crb_ffa: revert defered_probed when tpm_crb_ffa is built-in
-
- drivers/char/tpm/eventlog/tpm1.c |  4 +--
- drivers/char/tpm/tpm2-cmd.c      |  6 ++--
- drivers/char/tpm/tpm2-sessions.c | 56 +++++++++++++++++++++++++----------
- drivers/char/tpm/tpm_crb.c       |  6 +++-
- drivers/char/tpm/tpm_crb_ffa.c   | 18 ++----------
- drivers/char/tpm/tpm_svsm.c      |  2 +-
- drivers/char/tpm/tpm_tis_core.c  | 63 ++++++++++++++++++++++++++--------------
- drivers/char/tpm/tpm_tis_core.h  |  3 +-
- 8 files changed, 98 insertions(+), 60 deletions(-)
+> I think with a quick skim that you are right. I'll work on this area
+> for the next version.
+>
+> >
+> > Thanks,
+> > --
+> > Email: Herbert Xu <herbert@gondor.apana.org.au>
+> > Home Page: http://gondor.apana.org.au/~herbert/
+> > PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+>
+> Thanks for the review!
+>
+> BR, Jarkko
+>
+>
