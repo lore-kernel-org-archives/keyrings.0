@@ -1,106 +1,63 @@
-Received: from mailout1.hostsharing.net (mailout1.hostsharing.net [83.223.95.204])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2F36D3644A4;
-	Tue, 23 Jun 2026 09:26:13 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=83.223.95.204
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A27862DF3D1;
+	Tue, 23 Jun 2026 15:40:47 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1782206779; cv=none; b=avtLKFp7rj1v3J0PR57vBc8FstUR+fwHGVkNM+uwnZlf/yQapzJVxYoAlpo3d/TE4bScRAQ4b51HSCcfSgatfMQXTtrrmKuBmRUzN+nJlVPFJ/Wtc1CyH0SDj4ksKvsYB8pTFmvqycCvrYhhQb99tIxTSwZqsEIgpd3IEqjU2Zs=
+	t=1782229248; cv=none; b=ICs15PIhCodVosmcaGXMV0CE1NkvI3MZiNpqkUVBng44uOy6jb1b+a+FOR0P67GHmCmegBOtvLunOPG8Y8NhZI2LHIJhG3mNQVGM86FKdW2i39UZESMoLvWJ7RMi9J8ptKkZXl5HFAE889evZ6LwFpriuoYtdEZPMn5F1uD5MdI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1782206779; c=relaxed/simple;
-	bh=3G+s78ZGaE4w/7G+m2+1z/grM1j3s1Or94a6zPTLhgE=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=D6wmKyUCzr9m+QKiYNcXOc+tU+6lyLuJZscK5W4GnX444d3/1eAaKupzeA8T5xOrwPRjwzYoAB9xBmFnw/whbPc2jlSrqGWbQePe+Dh46hZc4QeGlfTFDcnEqQKADMubc90l1v0ZixvagM038pA381dhL4j/dmxm/0I8kjB6NXM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=wunner.de; spf=pass smtp.mailfrom=wunner.de; arc=none smtp.client-ip=83.223.95.204
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=wunner.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=wunner.de
-Received: from h08.hostsharing.net (h08.hostsharing.net [IPv6:2a01:37:1000::53df:5f1c:0])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange x25519 server-signature ECDSA (secp384r1) server-digest SHA384
-	 client-signature ECDSA (secp384r1) client-digest SHA384)
-	(Client CN "*.hostsharing.net", Issuer "GlobalSign GCC R6 AlphaSSL CA 2025" (verified OK))
-	by mailout1.hostsharing.net (Postfix) with ESMTPS id AB164367;
-	Tue, 23 Jun 2026 11:26:05 +0200 (CEST)
-Received: by h08.hostsharing.net (Postfix, from userid 100393)
-	id A3B1A602090D; Tue, 23 Jun 2026 11:26:05 +0200 (CEST)
-Date: Tue, 23 Jun 2026 11:26:05 +0200
-From: Lukas Wunner <lukas@wunner.de>
-To: azraelxuemo <eilaimemedsnaimel@gmail.com>
-Cc: linux-crypto@vger.kernel.org, herbert@gondor.apana.org.au,
-	dhowells@redhat.com, Ignat Korchagin <ignat@linux.win>,
-	Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Subject: Re: [PATCH] KEYS: asymmetric: fix OOB read in KEYCTL_PKEY_DECRYPT on
- zero-length message
-Message-ID: <ajpRLY4unsqxS46e@wunner.de>
-References: <20260622025002.798934-1-xuemo@xuemo.com>
+	s=arc-20240116; t=1782229248; c=relaxed/simple;
+	bh=pt860OH5AR6ZKdljKEMygXqw/2q2D1hmbbqO7RLzuL0=;
+	h=Subject:From:In-Reply-To:References:Message-Id:Date:To:Cc; b=mBMTY/yA2ST/fJKSbVgXvFlerRyPRv8nuLPcwQ1utm7suMjN7JEv19RbCXJaAAZAieeKQLwtKadSjRiCeRAN5jD6x5tWp7oyb8esfwv++gx4IX2IRQLbjYDJFPN/bJefheWQp+bRIzOzWK+GaSdMulpMFCU+DO8gHczzhzDcirw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=k5bpv2l6; arc=none smtp.client-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="k5bpv2l6"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id EA9771F000E9;
+	Tue, 23 Jun 2026 15:40:46 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1782229247;
+	bh=8++o3UlhYjCRomaPFfXNVU9p520aUgRcPkwLbZixhh8=;
+	h=Subject:From:In-Reply-To:References:Date:To:Cc;
+	b=k5bpv2l6+KpAjxdzxrdJ/EBl8cYgh0fCyjoVXZlpPXq1AmkrGhKyB+rgiUGdOduk1
+	 JdmK+yvqkdRDi1SJzNhcULBV9XdbQzVpx8dDVEf8V/Kl8GXef/6r6BrrszaQnOjCWv
+	 8dvUVNpvFPzTejASt7MWKZxcUKHdbqYaQnVzZGy5a1glUn/ld285fbDyVCPyyTv2w5
+	 a4x5cZyQwq4UJQOpA9XaYHyKbcGjxCUW+Z2a9McxVmTQMfN7qtmhW05xwZUDq86xjh
+	 kKslnN6PT+w8CUDzMiZz1bdhEsuHTwFRmGP9Gif/J0URsb9ef6lwbAPkEZvCI5ORQ/
+	 mvCB+blWYD6UA==
+Received: from [10.30.226.235] (localhost [IPv6:::1])
+	by aws-us-west-2-korg-oddjob-rhel9-1.codeaurora.org (Postfix) with ESMTP id D0ADA3930E57;
+	Tue, 23 Jun 2026 15:40:37 +0000 (UTC)
+Subject: Re: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-7.2-rc1-fixed
+From: pr-tracker-bot@kernel.org
+In-Reply-To: <ajlVR8okpQirKw5-@kernel.org>
+References: <ajlVR8okpQirKw5-@kernel.org>
+X-PR-Tracked-List-Id: <linux-kernel.vger.kernel.org>
+X-PR-Tracked-Message-Id: <ajlVR8okpQirKw5-@kernel.org>
+X-PR-Tracked-Remote: git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.2-rc1-fixed
+X-PR-Tracked-Commit-Id: 1a58f6115bfb34eabcc7de8a3a9745b219179781
+X-PR-Merge-Tree: torvalds/linux.git
+X-PR-Merge-Refname: refs/heads/master
+X-PR-Merge-Commit-Id: 16b2087efdddd0bf042accdbdcc8eedc21bf9227
+Message-Id: <178222923646.2291728.13119683741727809136.pr-tracker-bot@kernel.org>
+Date: Tue, 23 Jun 2026 15:40:36 +0000
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260622025002.798934-1-xuemo@xuemo.com>
 
-[cc += Ignat, Jarkko, keyrings; start of thread is here:
-https://lore.kernel.org/r/20260622025002.798934-1-xuemo@xuemo.com
-]
+The pull request you sent on Mon, 22 Jun 2026 18:31:19 +0300:
 
-On Mon, Jun 22, 2026 at 02:50:02AM +0000, azraelxuemo wrote:
-> When ret is replaced with maxsize, the caller keyctl_pkey_e_d_s()
-> does copy_to_user(_out, out, ret) with ret = key_size (e.g. 256
-> for RSA-2048) on a buffer allocated with kmalloc(params.out_len),
-> which can be as small as 1 byte.  This reads key_size - out_len
-> bytes beyond the allocation.
+> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-tpm-7.2-rc1-fixed
 
-It would probably make sense to tighten security in keyctl_pkey_e_d_s()
-by using kzalloc() instead of kmalloc() and by capping the amount of
-data copied with min(ret, params.out_len).
+has been merged into torvalds/linux.git:
+https://git.kernel.org/torvalds/c/16b2087efdddd0bf042accdbdcc8eedc21bf9227
 
-> Fixes: 63ba4d67594a ("KEYS: asymmetric: Use new crypto interface without scatterlists")
-> Signed-off-by: HanQuan <eilaimemedsnaimel@gmail.com>
+Thank you!
 
-Please add:
-
-Cc: stable@vger.kernel.org # v6.5+
-
-You don't need to cc that address when submitting the patch,
-but including the tag in the commit message helps stable
-maintainers identify patches that need backporting.
-
-> +++ b/crypto/asymmetric_keys/public_key.c
-> @@ -358,7 +358,10 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
->  		BUG();
->  	}
->  
-> -	if (!issig && ret == 0)
-> +	/* Decrypt may legitimately return 0 (zero-length message); only
-> +	 * replace ret with maxsize for encrypt, which returns 0 on success.
-> +	 */
-> +	if (!issig && ret == 0 && params->op == kernel_pkey_encrypt)
->  		ret = crypto_akcipher_maxsize(tfm);
-
-Given that out of 3 operations (encrypt, decrypt, sign),
-2 already return the size, I think a better approach would be
-to let crypto_akcipher_sync_encrypt() return crypto_akcipher_maxsize()
-on success, i.e.:
-
-	return crypto_akcipher_sync_prep(&data) ?:
-	       crypto_akcipher_sync_post(&data,
--					 crypto_akcipher_encrypt(data.req));
-+					 crypto_akcipher_encrypt(data.req)) ?:
-+	       crypto_akcipher_maxsize(tfm);
-
-and then remove the if-clause in software_key_eds_op() altogether
-which overwrites ret with the maxsize.
-
-Do you agree?
-
-Your patch wasn't cc'ed to all maintainers of this file.
-Please double-check that you've checked out Linus' current
-master when running scripts/get_maintainer.pl.
-
-Thanks,
-
-Lukas
+-- 
+Deet-doot-dot, I am a bot.
+https://korg.docs.kernel.org/prtracker.html
