@@ -1,212 +1,200 @@
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+Received: from CWXP265CU010.outbound.protection.outlook.com (mail-ukwestazon11022132.outbound.protection.outlook.com [52.101.101.132])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 341D63DBD5B
-	for <keyrings@vger.kernel.org>; Fri, 10 Jul 2026 09:39:14 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.129.124
-ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783676356; cv=none; b=TA8ubyySMInLJxg7pqpsCQUNbInCB1XFyeky5MnWmvfmmSphvymezAllrjjkgKWKUTzczLd3Ua++cq3eNdqnGTEbuj4QoQ5Xl9xweVgE5UHD5bSkrRQKnZt/XUi7lF86tjWjX1/pwgYr7cRQPp1y0I/VhZH4yAeEnjWmyPiuwb4=
-ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783676356; c=relaxed/simple;
-	bh=tMcFLGQQp6kEB4sPtUNZgVVh+m9JR0FwtLdYZracIC8=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=J9SMf+wGn43WMAEDsppjSUGYl4cpsr8wsrTdiBDlkF6zLuCB2EcGEd4zlTVQZuH4xxYMI094Ffk7qCcV9MC65tiX0IV7DE0wtZ5WwM0R+06ALCwbSRfgpkz+Yb48L1BTE4JqmLq4jSi7IZi97/c1znLNZopbsbq96DTSfqUpUCw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=AP6GEjb4; dkim=pass (2048-bit key) header.d=redhat.com header.i=@redhat.com header.b=htrIYytj; arc=none smtp.client-ip=170.10.129.124
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="AP6GEjb4";
-	dkim=pass (2048-bit key) header.d=redhat.com header.i=@redhat.com header.b="htrIYytj"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1783676354;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=SXg0+wcS9DBXi+xElmyf+7VX+3uK9Wykzq5J/dCPMos=;
-	b=AP6GEjb490rkM1XnT5ict1sV72yymoKZS9lqWkb5UHv9017VjoZGVpJPbnfGDPeUlhKA0k
-	SvzRd+A9sDK6FAC3m3Yh+9rtVmDD7EWR2tLI72A7cbHcZ1cvZh7etn6Tbfljo3NwQmiOP8
-	tLBFvc1fz048DU3LCYNGMfk3Br/fUvg=
-Received: from mail-wr1-f70.google.com (mail-wr1-f70.google.com
- [209.85.221.70]) by relay.mimecast.com with ESMTP with STARTTLS
- (version=TLSv1.3, cipher=TLS_AES_256_GCM_SHA384) id
- us-mta-663-tsjCNos6M5qi3UaZ4nA0fQ-1; Fri, 10 Jul 2026 05:39:12 -0400
-X-MC-Unique: tsjCNos6M5qi3UaZ4nA0fQ-1
-X-Mimecast-MFC-AGG-ID: tsjCNos6M5qi3UaZ4nA0fQ_1783676351
-Received: by mail-wr1-f70.google.com with SMTP id ffacd0b85a97d-47f24a50f0cso479605f8f.3
-        for <keyrings@vger.kernel.org>; Fri, 10 Jul 2026 02:39:12 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=redhat.com; s=google; t=1783676351; x=1784281151; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:in-reply-to:content-language
-         :from:references:cc:to:subject:user-agent:mime-version:date
-         :message-id:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=SXg0+wcS9DBXi+xElmyf+7VX+3uK9Wykzq5J/dCPMos=;
-        b=htrIYytjmnFUBerwB057efRfFPOADomWjSj4yawSx6mVdxeqWVJ2QTfoQG1N+Zbv3Z
-         KSCTnS7uKRnd7pQN757mTQbwyIKkyM7lq6OxkU9EiGepuScwM/YS5hYzXLeyNgk0xfMC
-         zNox7q+LHtWe8aBWAqGd1i8oHIMHLxA+GTjRuIXGBhIGJvjvfaalnZtdo8JoPped2JFG
-         zkXB3/lxVxKoDIYt3tIepR2RUCP0ROVXwxb1P4tQWyXhICQCdo69DS4tD4xdoNO7Si+I
-         ov2GYxKXiX4dAU5Q1omSqGi7iskWrXQLBjkdWKWzLe4vC8FUVtiT0qxpIgDj+1ILFDe1
-         nIMA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1783676351; x=1784281151;
-        h=content-transfer-encoding:content-type:in-reply-to:content-language
-         :from:references:cc:to:subject:user-agent:mime-version:date
-         :message-id:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=SXg0+wcS9DBXi+xElmyf+7VX+3uK9Wykzq5J/dCPMos=;
-        b=qhQRjykuLEFMkFCVo5mmqq9VzCnbVEvGnz2QgPgoOcrgB94vzUh7QmRMLxHZKqnnHw
-         +be2iwWIAi/BfQVbfBQIZlMTSX+YnV2+6F1W+QkGCuF7KHdwUHSTPRuiL4VGu0G19lqa
-         nVNy8spsDiPFT8nwwZfgR5NARGY5DefHfoEN/gAxtJwLNTQWA9AsqWTOfY8Nvj8QkhNw
-         hj5IACXTkJNSnwsZ36Jw56Gz/H8haFgrTyz6wL8I6pZ6md7zqaIsSTn30nDWqmzM7n9O
-         18BkcuY3+zI2ABnOnW8tny5VV9Y9VNIpBabCtFu6vFkYLX9+bLMv6n7IvClWqDMKm94x
-         +a+A==
-X-Forwarded-Encrypted: i=1; AHgh+RprjO7qquolY2hg0JbxxA2/a2mkNxlZx1Pdd7ytX4fnGMNVLirKY3k/mw/uUMLltmOC4uTHqlsNjA==@vger.kernel.org
-X-Gm-Message-State: AOJu0YyDmWDgFQDql3vlwZE30a6srdqqjgP3maadb8L24Ej6q/whQgB/
-	/IanS33K0xzqI8A20aazvo6xSWGa6RpyYS0zBRIWsutwv+cZswrCBaa6C5N4IjVTXsSpnD6jgUE
-	2InWCwi4itfCkf9f952neLd9nxo0jlJfU5FioBdcpzmYGX7b6YgWhkh7SVNsO
-X-Gm-Gg: AfdE7ckLgzGNXBpRh55b4GqRnZixMbsNON7iv7XYkE9QCManLK9Ztl4JkH6Kdtf2Xlv
-	hl9SBxNNWhfzBkrzW9ZEMaGZRowH1U29lCv8uhF65URkESiHEtV9yzeTU1zLnTnT4tJL7MCRHDq
-	3VYLLiH+q9Zh4yPTe5a2J65MpryVHeXleVpGf/v+QvUEYpA39G1lamqNBw5ZydsU7oNMdCKmxHy
-	bMcjCPMjFv4UYJiklQS56mL5X/pRIA2d9MFh+tW4Q3QOkRtcHIgM1/S81xjsn/pI1TkN3CHtz8K
-	c+JvAGSUcnoz3tavCi+bFCqYmwoxvQpRZTe03Yp4dl6oFX7oUBwQ5Ion22xFiqCRmMhL0t1AL5S
-	oFOhM5mOUU8OGoyYrnwmgb1JPdoFLvtAKA3lLEfLE0K2oidJWWn4gFBTJgtLvpqZF977hLmnyEF
-	x3KMI/Rvt7sMJd
-X-Received: by 2002:a05:600c:6286:b0:493:cc25:85cb with SMTP id 5b1f17b1804b1-493e6892d8bmr105299435e9.8.1783676351406;
-        Fri, 10 Jul 2026 02:39:11 -0700 (PDT)
-X-Received: by 2002:a05:600c:6286:b0:493:cc25:85cb with SMTP id 5b1f17b1804b1-493e6892d8bmr105299095e9.8.1783676350840;
-        Fri, 10 Jul 2026 02:39:10 -0700 (PDT)
-Received: from ?IPV6:2a0d:3344:5521:6b10:58fd:68f:7756:389d? ([2a0d:3344:5521:6b10:58fd:68f:7756:389d])
-        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-47a9e4d6e4csm55755378f8f.10.2026.07.10.02.39.08
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Fri, 10 Jul 2026 02:39:10 -0700 (PDT)
-Message-ID: <6d6388c9-cdeb-4b91-b393-125f4a5b7e0c@redhat.com>
-Date: Fri, 10 Jul 2026 11:39:07 +0200
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CB8BC264617;
+	Fri, 10 Jul 2026 13:58:04 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=fail smtp.client-ip=52.101.101.132
+ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1783691889; cv=fail; b=VyVOlZ5GtoNiN4KKPH3tiqvKbd+JwsYCPLfGWty3Xpak+mugJVE8Fo48Oq0oReMrU2f7GygS9f/YuzpPZ16x/duuAOgsgl51xWT69vUf96fvvaljJem7IvzZmGkyBsbHNtl3oMras18YViM6WIdb7270ghJ4RjhepE47+lsMeKc=
+ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1783691889; c=relaxed/simple;
+	bh=6eJeERqTvv+GRnv6l7TjuRzD7mM+GPY1jDfugYDmxoc=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:Content-Type:
+	 Content-Disposition:In-Reply-To:MIME-Version; b=gwSBWujab0UrgUo51G1wKDp6fP9vc1C72Oj6mrVtVEPZbdjdFQYW+lT37HRoraMY0QNMxtTFQtene1dPp4+G9MARwooRGVo8NllcQTwv/GIS1Y4BX+GSl0oa7IiCy7eikZaT+fv8TIsn0uQML4UcL9t12ojlQujaU2fh5Q/Wx/c=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=atomlin.com; spf=pass smtp.mailfrom=atomlin.com; arc=fail smtp.client-ip=52.101.101.132
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=atomlin.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=atomlin.com
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=d/UKidZW2yROLKPKhG9FiE0erou4BUfd55Lpt15BZFxg3TnBGnPR22WFAO/P5qeCVZTzla5KVq7FF2+sjL6f/eVU9L8aCA+A9v13lM7J79ByPmXSV1PYBna1DtAaik2hyvjy4laCdRgbioUBXLC4Bsu2FYtS2jE/miouPSlyxPK+PWGvq/gh5oAy2LFEA/OyCKON1T89HSNizgicj4ayd1GVsKNL29AbgMGn+1pZmeJZWElXC7d3/pe/6Caasr/n9gIAbTycOxszYbJr8ToI/OPQ+pXCdVJAgoMz6QcAAWjkwqgACnT6Jgx7VIaRM0WWyH5Es/f/W462mD6eVXlvmw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001; h=From:Date:Subject:Message-ID:MIME-Version;
+ bh=dNuOHlrDEIkjKR9dIyVx0dXJKses962YAhpOz5OyCDA=;
+ b=lphhwxzK+2YMMezx9gCXFikFc8fh60GNYaqcn/uEgPvULionwet/ks1XZC7WgoRlikuNW5mSEDb4KmGWpSwzIhMuODYrOIi6Xi3xBIfHxr4SdkXkiG5rN2rTw+K6NcA4NrXKAs4GCMeLI7tFU5m5cHu9uTxcYHS8WL0PcIEUUk0FkC8GQb+iqBYIqDjRoozdWdRSwDKF4ZwfA+s4scYNhGqfrTHkg41Ilg7LyYc8436wws/Pbl5yXn/QJafbHF6quEKi4CKj7OfdOKQWPXIq1gtW4Wy9LHOU5pUKhMsGhMSTui32I02vQ9zI7XwIroAjHT4OCrtT7okIPgJZm1C8Tg==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=atomlin.com; dmarc=pass action=none header.from=atomlin.com;
+ dkim=pass header.d=atomlin.com; arc=none
+Authentication-Results: dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=atomlin.com;
+Received: from CWLP123MB6607.GBRP123.PROD.OUTLOOK.COM (2603:10a6:400:183::5)
+ by LO0P123MB6878.GBRP123.PROD.OUTLOOK.COM (2603:10a6:600:30b::9) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.21.181.17; Fri, 10 Jul
+ 2026 13:57:59 +0000
+Received: from CWLP123MB6607.GBRP123.PROD.OUTLOOK.COM
+ ([fe80::cec4:77ab:262e:d230]) by CWLP123MB6607.GBRP123.PROD.OUTLOOK.COM
+ ([fe80::cec4:77ab:262e:d230%4]) with mapi id 15.21.0181.014; Fri, 10 Jul 2026
+ 13:57:59 +0000
+Date: Fri, 10 Jul 2026 09:57:55 -0400
+From: Aaron Tomlin <atomlin@atomlin.com>
+To: Petr Pavlu <petr.pavlu@suse.com>
+Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>, 
+	Thomas Gleixner <tglx@kernel.org>, Ingo Molnar <mingo@redhat.com>, 
+	Dave Hansen <dave.hansen@linux.intel.com>, x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>, 
+	Philipp Reisner <philipp.reisner@linbit.com>, Lars Ellenberg <lars.ellenberg@linbit.com>, 
+	Christoph =?utf-8?Q?B=C3=B6hmwalder?= <christoph.boehmwalder@linbit.com>, Jens Axboe <axboe@kernel.dk>, Johan Hovold <johan@kernel.org>, 
+	Alex Elder <elder@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, 
+	"Rafael J. Wysocki" <rafael@kernel.org>, Michal Januszewski <spock@gentoo.org>, 
+	Helge Deller <deller@gmx.de>, Alexander Viro <viro@zeniv.linux.org.uk>, 
+	Christian Brauner <brauner@kernel.org>, Jan Kara <jack@suse.cz>, Trond Myklebust <trondmy@kernel.org>, 
+	Anna Schumaker <anna@kernel.org>, Chuck Lever <cel@kernel.org>, Jeff Layton <jlayton@kernel.org>, 
+	NeilBrown <neil@brown.name>, Olga Kornievskaia <okorniev@redhat.com>, 
+	Dai Ngo <Dai.Ngo@oracle.com>, Tom Talpey <tom@talpey.com>, Mark Fasheh <mark@fasheh.com>, 
+	Joel Becker <jlbec@evilplan.org>, Joseph Qi <joseph.qi@linux.alibaba.com>, 
+	Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>, 
+	Michal =?utf-8?Q?Koutn=C3=BD?= <mkoutny@suse.com>, Luis Chamberlain <mcgrof@kernel.org>, 
+	Daniel Gomez <da.gomez@kernel.org>, Sami Tolvanen <samitolvanen@google.com>, 
+	Pavel Machek <pavel@kernel.org>, Len Brown <lenb@kernel.org>, 
+	Andrew Morton <akpm@linux-foundation.org>, Danilo Krummrich <dakr@kernel.org>, 
+	Nikolay Aleksandrov <razor@blackwall.org>, Ido Schimmel <idosch@nvidia.com>, 
+	"David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>, 
+	Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>, Simon Horman <horms@kernel.org>, 
+	David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, 
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, 
+	"Serge E. Hallyn" <serge@hallyn.com>, Kentaro Takeda <takedakn@nttdata.co.jp>, 
+	Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org, 
+	drbd-dev@lists.linux.dev, linux-block@vger.kernel.org, greybus-dev@lists.linaro.org, 
+	linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org, linux-fbdev@vger.kernel.org, 
+	dri-devel@lists.freedesktop.org, linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org, 
+	ocfs2-devel@lists.linux.dev, cgroups@vger.kernel.org, linux-modules@vger.kernel.org, 
+	linux-pm@vger.kernel.org, driver-core@lists.linux.dev, bridge@lists.linux.dev, 
+	netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/2] module: Bring includes in linux/kmod.h up to date
+Message-ID: <xihlbspozbgwhez2byjatscslutapi3j4rjhpzxebtn2wjmk5a@qf62xs6lyd6q>
+References: <20260708154510.6794-1-petr.pavlu@suse.com>
+ <20260708154510.6794-3-petr.pavlu@suse.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20260708154510.6794-3-petr.pavlu@suse.com>
+X-ClientProxiedBy: MN2PR07CA0020.namprd07.prod.outlook.com
+ (2603:10b6:208:1a0::30) To CWLP123MB6607.GBRP123.PROD.OUTLOOK.COM
+ (2603:10a6:400:183::5)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH net 4/4] rxrpc: Fix CHALLENGE packet overqueuing and
- simplify RESPONSE generation
-To: David Howells <dhowells@redhat.com>, netdev@vger.kernel.org
-Cc: Marc Dionne <marc.dionne@auristor.com>, Jakub Kicinski <kuba@kernel.org>,
- "David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
- Simon Horman <horms@kernel.org>, linux-afs@lists.infradead.org,
- linux-kernel@vger.kernel.org, Jeffrey Altman <jaltman@auristor.com>,
- Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
- stable@kernel.org
-References: <20260702144919.172295-1-dhowells@redhat.com>
- <20260702144919.172295-5-dhowells@redhat.com>
-From: Paolo Abeni <pabeni@redhat.com>
-Content-Language: en-US
-In-Reply-To: <20260702144919.172295-5-dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: CWLP123MB6607:EE_|LO0P123MB6878:EE_
+X-MS-Office365-Filtering-Correlation-Id: 8889c9a4-a311-464f-0f29-08dede8b401e
+X-MS-Exchange-SenderADCheck: 1
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam:
+	BCL:0;ARA:13230040|7416014|376014|1800799024|23010399003|366016|56012099006|4143699003|6133799003|3023799007|18002099003|22082099003;
+X-Microsoft-Antispam-Message-Info:
+	mnyvn741YVrPSaa0hwDbGrVtBRz+LIw95ja24e6zj7PbDMuYmcaDImgwK2HHFUGJbbEcU/o/lI/aj1VwebZpFhYjn4UNBPq0Wo0aBJiBiHe3jP82n7XKJZaaOP7aQSDCZkIHBBQoRitq/qc/ChGsRVhQZlLuO2WYFbdcf8mxHWu7lyFgatYFUByozN4BGDpucV3Z22SM6P1zRo1UfSTaESZ0Ck2YBy/WwQwcv7s6DVvTKZAUA4umAJCvnwKcMsWOIgi08wNl8E1PsoN2/mL8YDyYDnpKFa6J8iHkbsvfPLYe2jW/d9HrRHB6z62o53M9QTUxNAUefCfoiuWv9y1twRBkQvwlbble7/lJ+bawqZzE8wkMXVxr8aNr3u9oKAx0C9bxaVT8M6uKiA2rFfEScIE1kEubJz/zDxRHlnnN1Z2P+YER/lissTD9b+xKmRg/Sf8q5f8gDV5IQbo1LzG2awcxOlVf/+PlVTFLkqNRWBCpyhv8+9ohJ1AO+/UjiNB3LydrS89QDbi2A/4WcsSDaUxIIBrD5FuHSS2xZ90O6OvPaDYDeRdk4jD2z7K0DIogiyfS9zQitJX/zxK9aOCKHnmB+56lZ73lkP6/8l4ePv2jmJZnAppaQ4FxeFV4zYMyj/IYVUm0ykOl7VLAcDafxE8hRLZtvkgf9+Z4/XhYakQ=
+X-Forefront-Antispam-Report:
+	CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:CWLP123MB6607.GBRP123.PROD.OUTLOOK.COM;PTR:;CAT:NONE;SFS:(13230040)(7416014)(376014)(1800799024)(23010399003)(366016)(56012099006)(4143699003)(6133799003)(3023799007)(18002099003)(22082099003);DIR:OUT;SFP:1102;
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-MessageData-0:
+	=?utf-8?B?ZjM4c0FxdHRFbVA2ZVNRdS80bFp5SDQxY3RQYjlGbTB1dDBzUG5zdEhFU2xK?=
+ =?utf-8?B?KzFiM2M3a0QvNHptNUlwYzdNVWZIcWs4dlFteHVzSWczWWduUWNUejBmdEZm?=
+ =?utf-8?B?aVNBdG1BcWpnd215UjYrb2J4TEc0cFFndzJVdURzdHJWV252bjNPdkh6Nnkx?=
+ =?utf-8?B?ODVCN2pHanhmMzVKeXhMM3YyYXhZdExWQzJzdWl0YnhxcERtbUMvaFdvZm5x?=
+ =?utf-8?B?aG0xdmk1cGRwNlNTRzJTajFMU1NzcityMERFQWJDL0NZdDhla09yaERpVlNq?=
+ =?utf-8?B?UjhKbE1DdVdJZS9zMmZXMGQyNjkwK2dhZ2luUU13Z0J3eWowTUhEeTRqcFRq?=
+ =?utf-8?B?elBCS0pTWlhvQWI5K3g0ckRHZU1CQkp0TGx6bk8yNUpWZmRIczB1b2hqYVQr?=
+ =?utf-8?B?WkR5VnB4M2R2MGNwaFo5NkdlQUhVQXd5ZWEvYjVxc1l1dU9hUkcvZ29SOWpK?=
+ =?utf-8?B?c0JrS0E1ZW1BVkNWNjdZYkZHNHljWW9lR3VHWENzcHY1empXbXNPb3ZwOG5I?=
+ =?utf-8?B?aHRiN3JXQTNTQWNnZk1LS0N2RGVNOWMxOHhXWGRsUkxhK3REUG54M21lR0Jr?=
+ =?utf-8?B?WjRra2JCeEVZRzhJNFlteExCZ0lacys2MUNXc0lDUnZ2cVVVT0JiMUpqWXJ2?=
+ =?utf-8?B?VExGdTFVNHM2azlSek5WczR0SDdOVlZseGhmYmlJQmZ1M2plMFExeHhVRG4v?=
+ =?utf-8?B?bytaWFdiSjdWL1dIbGpTNEkxL3FwWjRVdDRXZTBGNFlZNTUyNzJjSXFBNWlk?=
+ =?utf-8?B?a3RvQS9GYTV2T0tzZ3h5RGZDcFplb0NHeXExOVl4M2IybkNVSktIbXJCMmM2?=
+ =?utf-8?B?eU4vWDZrR29CcFlnZVdCd0tRV2J2TzBoeHBqbmtvTWdwZ3RndUl1ZUJ6Tk1q?=
+ =?utf-8?B?ajVVRDIyRHNGTEJ5c3hsQ0N6aEdlaTk0VDZUZDBLeExBVDk3UTlzcmpHdVQr?=
+ =?utf-8?B?cUhmdlNiTlhHUGRSUW96S1pGazVTbjBseTVCY0tqY1ViRjVkNEd6USs1WGUv?=
+ =?utf-8?B?emhDcW5PTitrNGFCK3N4SG1vNXpCR2dwY212SVJYK3VjaTZEZUM5UzVUcjYv?=
+ =?utf-8?B?TXp6bVRoU3BSdWVzaC8rQU95Nndubnd5eFUxQnFyb0JraWZxbTRkVWtLNmpL?=
+ =?utf-8?B?VWRqMnhRRkRsVlJ5VWREeUNZWmFRbnFBMEk2VW9rSmpNem1hWisyTVplREIv?=
+ =?utf-8?B?akFQbEhzVmt5ZjN5VC9wQThQV29uV1pqYlE4dVh5bE85SnRhQmRHbS9wMzdL?=
+ =?utf-8?B?c1NzM1E4UU9iQWlaWUNGSkZUWWVwZDhTMmw2VWcxWjZOZmx5UnBmM3BGb2NW?=
+ =?utf-8?B?ejRXR2FGVlFMR0lzQ3NOUFJCZUVlMmhIOGJweE5oSkhBRGx3b2ZOSXdnVnU5?=
+ =?utf-8?B?ZEFPckdDcTJqNitIYkVjQTZ6VG90WGNUOGlNS3d3MGsrRktMd2V0Vk1qN0Fz?=
+ =?utf-8?B?enovZGxLWWhYdEZMcCswcEtEODZHeWIzZFVPeE9qcWEraUpqR1U4TVd5Q3JE?=
+ =?utf-8?B?OGJJUWdDaldocGhIb21FMURjQ2w4dUZYZ21RNmQzMkNWQkVJR0x2anF3RFJt?=
+ =?utf-8?B?YVVlV01DaFpUVnBIZXA4SGZhdVVBbnFnVEtieWNQRERwZExPNzZpT1ZNQUFO?=
+ =?utf-8?B?dFlyMEh4MEJKTjIzb2NreFFOMTB5MjVQSkpkYUdLekpLc0owbHJPN3RmaW5P?=
+ =?utf-8?B?Y2poRGNsbmlWVGJwN3IxUXlZM3o3UDFQQVVIWkdVNitsZDJIaWlTWGliU3RB?=
+ =?utf-8?B?VTZnbzNRK3IxMnM0ejFJMEwyM0F2TlhHRTVrOWJpUit5VWF4R2VSQmNMd0t0?=
+ =?utf-8?B?Vm9LNStCbTRiYU9xMkdNYVMwR3dCcWx4QnhKMmorcDRYb2xSbkhpUFkxZldC?=
+ =?utf-8?B?WEZmMTUxV1pNdHE5cTFUcFkveklZOW1CM1JWSHdFWGpxVUp3OFpvZ0pYVG4v?=
+ =?utf-8?B?eWpkK20rb1BOUEZHUFdIUjJucHZ0cjQwNHZIMHRJaEZPbUlzRXE4OHV4STN3?=
+ =?utf-8?B?a24zTWlLYnR5QzMyL3FnaWdpVWVmZldHNStkWjNkaUVHaWNidVNNM2tVK1Nx?=
+ =?utf-8?B?cHVJMkNYbE5zOElrY24rSy92V1VlWTh3S2lVTWE5S1ZQQU50SzJmbVdsaThK?=
+ =?utf-8?B?Q096SWdvQlRSNHMvZWpBSncyM2ZnUk1UU3BJNFZDY01kS00wOS9hNncxWHZH?=
+ =?utf-8?B?amtYNmRidWJwVkNNangwdWNXWUxxUitDSjVwM3RaWHBOVkt5S2VHWUQ4cDU3?=
+ =?utf-8?B?OGZ6OHhHRVFzaWE0dmdPMkZWNlZsN2ZFQklMcFhCRmdWc0pqM3djSjNPSEh6?=
+ =?utf-8?B?eGpaS05KTWFBZ2xBZ2xuU3VWWHVyaVpteWI2UXByMW5EYlVXZ01LUT09?=
+X-OriginatorOrg: atomlin.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 8889c9a4-a311-464f-0f29-08dede8b401e
+X-MS-Exchange-CrossTenant-AuthSource: CWLP123MB6607.GBRP123.PROD.OUTLOOK.COM
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 10 Jul 2026 13:57:59.3246
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: e6a32402-7d7b-4830-9a2b-76945bbbcb57
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: hDwfhxFpj9eN2nNEFrA5KAidckTs70TyYQaw5oNwhBSjWpXN0ngpfIvW4gAKhWaf72JIUvICyafxXZ+msFt7yQ==
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: LO0P123MB6878
 
-On 7/2/26 4:49 PM, David Howells wrote:
-> Currently, when a CHALLENGE packet comes in, it's queued in an OOB queue on
-> the AF_RXRPC socket that generated one of the calls on that connection for
-> the application (which might be in userspace) to service.  The application
-> then picks up the CHALLENGE and requests a RESPONSE packet be generated,
-> allowing the app to include app-specific data in it if appropriate.  There
-> is, however, no actual limit on the capacity of the CHALLENGE queue, and
-> this could be abused remotely - and also getting the OOB mechanism right
-> has proven tricky.
+On Wed, Jul 08, 2026 at 05:44:30PM +0200, Petr Pavlu wrote:
+> Including linux/kmod.h alone results in 1.5 MB of preprocessed output, even
+> though it provides only a few functions and macros.
 > 
-> Further, by analogy with other AFS codebases, it's not actually necessary
-> to generate the application data in response to the CHALLENGE.  The reason
-> I did this was to set the encryption on the app-data to be the same as that
-> specified in the CHALLENGE as the server must be able to handle that.
-> However, it's sufficient to use the encoding type set in the token that is
-> going to be sent to the server; presumably the kerberos server knows that
-> the fileserver can handle that type - otherwise why tell the client to use
-> it?
+> The header currently depends on:
 > 
-> With this in mind, make the following changes to the rxrpc server:
+> * __printf() -> linux/compiler_attributes.h,
+> * ENOSYS -> linux/errno.h,
+> * bool -> linux/types.h.
 > 
->  (1) Remove the OOB queuing stuff and retire the related CMSG values and
->      sockopt.
+> Include only these files, reducing the preprocessed output to 10 kB.
 > 
->  (2) Revert to making the connection event processor work item parse the
->      CHALLENGE and generate the RESPONSE directly.
-> 
->  (3) Add another (optional) parameter that is passed in when an rxrpc
->      client call is created and ends up attached to the connection bundle
->      and is a user-type key containing the application data.
-> 
->  (4) RESPONSE generation looks at the bundle and if the app-data is there,
->      it will include it (if the security class is YFS-RxGK; RxKAD ignores
->      it).
-> 
->  (5) The AFS filesystem driver will create an app-data key when it probes a
->      fileserver and will attach it to the afs_server struct.  This is then
->      picked up when a call is made to that server and passed to rxrpc.
-> 
->  (6) Direct userspace users of AF_RXRPC can partake by creating a user-type
->      key containing the app-data they want to use and passing its serial ID
->      in a CMSG of type RXRPC_RESPONSE_APPDATA in the initial sendmsg() of a
->      call.
-> 
-> To support this, I've made a change outside of afs and rxrc:
-> 
->  (7) Add a refcount to the user-type key payload.  The problem is that the
->      RESPONSE packet generator needs to look at the length of the app-data,
->      allocate a buffer for the packet and then copy the app-data in - but
->      the RCU read lock cannot be held across the allocation and the key
->      might get updated.  To get around this, a ref is taken on the payload
->      before the allocation and then put afterwards.
-> 
->  (8) Since the DNS resolver makes use of the user-defined type's code, but
->      allocates the payload itself, make it initialise the refcount.
-> 
-> Fixes: 5800b1cf3fd8 ("rxrpc: Allow CHALLENGEs to the passed to the app for a RESPONSE")
-> Link: https://sashiko.dev/#/patchset/20260624163819.3017002-1-dhowells%40redhat.com
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Marc Dionne <marc.dionne@auristor.com>
-> cc: Jeffrey Altman <jaltman@auristor.com>
-> cc: Eric Dumazet <edumazet@google.com>
-> cc: "David S. Miller" <davem@davemloft.net>
-> cc: Jakub Kicinski <kuba@kernel.org>
-> cc: Paolo Abeni <pabeni@redhat.com>
-> cc: Simon Horman <horms@kernel.org>
-> cc: Jarkko Sakkinen <jarkko@kernel.org>
-> cc: linux-afs@lists.infradead.org
-> cc: keyrings@vger.kernel.org
-> cc: stable@kernel.org
+> Signed-off-by: Petr Pavlu <petr.pavlu@suse.com>
 > ---
->  fs/afs/cm_security.c         | 151 ++++++--------
->  fs/afs/fs_probe.c            |   5 +
->  fs/afs/internal.h            |  37 ++--
->  fs/afs/main.c                |   1 -
->  fs/afs/rxrpc.c               |  39 ++--
->  fs/afs/server.c              |   2 +-
->  include/keys/user-type.h     |   2 +
->  include/net/af_rxrpc.h       |  20 +-
->  include/trace/events/afs.h   |   1 +
->  include/trace/events/rxrpc.h |   2 -
->  include/uapi/linux/rxrpc.h   |   6 +-
->  net/dns_resolver/dns_key.c   |   1 +
->  net/rxrpc/Makefile           |   1 -
->  net/rxrpc/af_rxrpc.c         |  49 +----
->  net/rxrpc/ar-internal.h      |  22 +-
->  net/rxrpc/call_object.c      |   4 +-
->  net/rxrpc/conn_client.c      |   2 +
->  net/rxrpc/conn_event.c       |  68 +-----
->  net/rxrpc/key.c              |  36 ++++
->  net/rxrpc/oob.c              | 387 -----------------------------------
->  net/rxrpc/recvmsg.c          |  84 +-------
->  net/rxrpc/rxgk.c             | 128 +++---------
->  net/rxrpc/rxkad.c            |  27 ---
->  net/rxrpc/sendmsg.c          |  15 ++
->  net/rxrpc/server_key.c       |  40 ----
->  security/keys/user_defined.c |  23 ++-
->  26 files changed, 238 insertions(+), 915 deletions(-)
->  delete mode 100644 net/rxrpc/oob.c
+>  include/linux/kmod.h | 12 ++----------
+>  1 file changed, 2 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+> index 9a07c3215389..b9474a62a568 100644
+> --- a/include/linux/kmod.h
+> +++ b/include/linux/kmod.h
+> @@ -2,17 +2,9 @@
+>  #ifndef __LINUX_KMOD_H__
+>  #define __LINUX_KMOD_H__
+>  
+> -/*
+> - *	include/linux/kmod.h
+> - */
+> -
+> -#include <linux/umh.h>
+> -#include <linux/gfp.h>
+> -#include <linux/stddef.h>
+> +#include <linux/compiler_attributes.h>
+>  #include <linux/errno.h>
+> -#include <linux/compiler.h>
+> -#include <linux/workqueue.h>
+> -#include <linux/sysctl.h>
+> +#include <linux/types.h>
+>  
+>  #ifdef CONFIG_MODULES
+>  /* modprobe exit status on success, -ve on error.  Return value
+> -- 
+> 2.54.0
+> 
 
-This is quite big and difficult to review, could you please someout
-break it in smaller chunk?
+LGTM. Thank you.
 
-/P
-
+Reviewed-by: Aaron Tomlin <atomlin@atomlin.com>
+-- 
+Aaron Tomlin
