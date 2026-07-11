@@ -1,420 +1,189 @@
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 653C137EFE6
-	for <keyrings@vger.kernel.org>; Fri, 10 Jul 2026 19:24:50 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 66E771EEE6;
+	Sat, 11 Jul 2026 17:51:23 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783711492; cv=none; b=UAoBrAkyzyJy40LNbGcjAMI6m2Z0zX+B5e+40Z0fC5b3A5jAAR80FNKTMBvFA4Gory5L2JmWceDChjtN+2Zak5xF5ApHWLBbo8mXEvj+NBF9tUjg8023f36O+XxTZ0TXpb1iE4zVcvyrfU7MZ2LmCVYro1hNgT8QVux+aeEF1LU=
+	t=1783792284; cv=none; b=oFeZ3AlYOn3hIrVlYoDRcvYH3VNzsshv0e+g7smzruESNV3ASz4HcvhhZPcu4mL0gL7gIu+cQKTig8nhU2Iuuclca6WE0t7kNtVOlc/TokGU4RfexqxK5XmYs3m3eu5ESEMDXqVUqim/1/fvNOk2Qf3mOFMmc90CCGdNPiiL36M=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783711492; c=relaxed/simple;
-	bh=IhBWH75vXntx/ZkKPo+HOmWb/gIuko7Fh9fzuNFfVJM=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=tjbgteNtdu9lsTSwQIDOMEdee3e9r4m2lXyS1khBLhznaQEOjD+CW56vzTixAKd1g5rvco+NaY5e8MlBhxZfuPPkI3jizxpuyb5ZfYCbeukFBBbiKtegwI6q4PpLCb/moyBXLGikGbyHgiUWaHvPG0rs4dpcchKqQoxDf2tQtM4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=ga0wSEjC; arc=none smtp.client-ip=170.10.133.124
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
+	s=arc-20240116; t=1783792284; c=relaxed/simple;
+	bh=zaKpWoHaCf4pF+Yu0sfRk8Zn8BkHZ8NLoQ4atNFHbxg=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=NWLy6mkAlLE9mrCgwifK3cschL3lNnUoRN9w3tpirh2tA6CYYxYH1nxhzgcR/3OivK0lInISjsxW3+qUcDm/c85KVajxEfaimE0z+nYoZM7hL8e0dyPapFzd9cc777R+jv1LdKaQzBnO5C+t7pRVOzp2a+ORkZsgVnmonWA39C8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=QP+7VmGK; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="ga0wSEjC"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1783711489;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=xgJ5MeF8m/MnV7sJ9zze4soezhzCc1rKO72g0pxKlsw=;
-	b=ga0wSEjC6pWkZ2NV9jPlVqiTvsXvNlgRXKyWDUTfFbY7mBBAuWt3mUcawXnW987Dz6aMh7
-	ajE7FH4O4ZK5Gy+MKOetxZn8q23BYEv6haJnf/kEFLfzKdR8uQUOuyCRd/97evcbEVnEt9
-	eZqqzEOfLYPvj9jr9FfE2WxgC60iZkA=
-Received: from mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com
- (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
- relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-520-AhplN7BpM-SALNmI8x3czw-1; Fri,
- 10 Jul 2026 15:23:39 -0400
-X-MC-Unique: AhplN7BpM-SALNmI8x3czw-1
-X-Mimecast-MFC-AGG-ID: AhplN7BpM-SALNmI8x3czw_1783711417
-Received: from mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.93])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 9BE15180025F;
-	Fri, 10 Jul 2026 19:23:37 +0000 (UTC)
-Received: from warthog.procyon.org.com (unknown [10.44.33.159])
-	by mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id D77231800594;
-	Fri, 10 Jul 2026 19:23:33 +0000 (UTC)
-From: David Howells <dhowells@redhat.com>
-To: netdev@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>,
-	Marc Dionne <marc.dionne@auristor.com>,
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="QP+7VmGK"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 6C9921F000E9;
+	Sat, 11 Jul 2026 17:51:22 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1783792283;
+	bh=XQRZEWXvNsb0JpMQf3ZcxvFfvyQw4c/6LvW/dLlfKXk=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=QP+7VmGKLbE6e8x7/DQrajjLKlSe0ODihAjNcqiqJxL0ho7cnuejEePIamw99n1u0
+	 cJqF3OgXJStAckZT1MqNmmNeGrZ4EMzB/PEYifUIxRKq35UMZ9XBKdBRdHuAYAkV4D
+	 wtGy4cFwMaWxvQKeyf/9zdxApetZ9D6rDXLkg64IlGeJsSBC73yPeu46TQVyqf5PNY
+	 MUG8rgZobjATkhpahlJF4745ZOOClva5awtFLJU+bClczl5D7VCqpmoV5OLgDcKqlQ
+	 sL/t9RWNkI7z6gEkieR/qWkqa1GFuK349eqTGr7AwGkLHH11W2SO4kxCOCS+u0ejNO
+	 vJy7IlIDu2m2w==
+Date: Sat, 11 Jul 2026 20:51:19 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: netdev@vger.kernel.org, Marc Dionne <marc.dionne@auristor.com>,
 	Jakub Kicinski <kuba@kernel.org>,
 	"David S. Miller" <davem@davemloft.net>,
-	Eric Dumazet <edumazet@google.com>,
-	Paolo Abeni <pabeni@redhat.com>,
-	Simon Horman <horms@kernel.org>,
-	linux-afs@lists.infradead.org,
-	linux-kernel@vger.kernel.org,
-	Jeffrey Altman <jaltman@auristor.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	keyrings@vger.kernel.org,
-	stable@kernel.org
-Subject: [PATCH net v2 14/16] rxrpc: Pass appdata key to rxrpc_call and thence to rxrpc_bundle
-Date: Fri, 10 Jul 2026 20:22:16 +0100
-Message-ID: <20260710192220.1922433-15-dhowells@redhat.com>
-In-Reply-To: <20260710192220.1922433-1-dhowells@redhat.com>
+	Eric Dumazet <edumazet@google.com>, Paolo Abeni <pabeni@redhat.com>,
+	Simon Horman <horms@kernel.org>, linux-afs@lists.infradead.org,
+	linux-kernel@vger.kernel.org, Jeffrey Altman <jaltman@auristor.com>,
+	keyrings@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH net v2 12/16] keys: Add refcounting to user-defined key
+ type payload
+Message-ID: <alKCl7ZxPIeTyHHD@kernel.org>
 References: <20260710192220.1922433-1-dhowells@redhat.com>
+ <20260710192220.1922433-13-dhowells@redhat.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.93
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20260710192220.1922433-13-dhowells@redhat.com>
 
-Currently, when a CHALLENGE packet comes in, it's queued in an OOB queue on
-the AF_RXRPC socket that generated one of the calls on that connection for
-the application (which might be in userspace) to service.  The application
-then picks up the CHALLENGE and requests a RESPONSE packet be generated,
-allowing the app to include app-specific data in it if appropriate.  There
-is, however, no actual limit on the capacity of the CHALLENGE queue, and
-this could be abused remotely - and also getting the OOB mechanism right
-has proven tricky.
+On Fri, Jul 10, 2026 at 08:22:14PM +0100, David Howells wrote:
+> Add refcounting to user-defined key type payload so that a kernel service
+> wanting to use such a key can hold onto the payload without the RCU read
+> lock held in order that it can do an allocation without having to be
+> concerned with the key getting updated.
+> 
+> This is the first part of the fix for the AF_RXRPC challenge response
+> generation code.
+> 
+> Fixes: 5800b1cf3fd8 ("rxrpc: Allow CHALLENGEs to the passed to the app for a RESPONSE")
 
-Further, by analogy with other AFS codebases, it's not actually necessary
-to generate the application data in response to the CHALLENGE.  The reason
-I did this was to set the encryption on the app-data to be the same as that
-specified in the CHALLENGE as the server must be able to handle that.
-However, it's sufficient to use the encoding type set in the token that is
-going to be sent to the server; presumably the kerberos server knows that
-the fileserver can handle that type - otherwise why tell the client to use
-it?
+I get the relaxing part when it comes to RCU read lock but why does it
+carry fixes tag? The commit message does not do a great job on
+explaining this part.
 
-This is a part of the fix.  With this, the appdata key created by the AFS
-filesystem or passed in via sendmsg CMSG to a user AF_RXRPC socket is added
-to an rxrpc_call struct and will then be added to an rxrpc_bundle struct.
+> Link: https://sashiko.dev/#/patchset/20260624163819.3017002-1-dhowells%40redhat.com
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: Marc Dionne <marc.dionne@auristor.com>
+> cc: Jeffrey Altman <jaltman@auristor.com>
+> cc: Eric Dumazet <edumazet@google.com>
+> cc: "David S. Miller" <davem@davemloft.net>
+> cc: Jakub Kicinski <kuba@kernel.org>
+> cc: Paolo Abeni <pabeni@redhat.com>
+> cc: Simon Horman <horms@kernel.org>
+> cc: Jarkko Sakkinen <jarkko@kernel.org>
+> cc: linux-afs@lists.infradead.org
+> cc: keyrings@vger.kernel.org
+> cc: stable@kernel.org
+> ---
+>  include/keys/user-type.h     |  2 ++
+>  net/dns_resolver/dns_key.c   |  1 +
+>  security/keys/user_defined.c | 23 ++++++++++++++++-------
+>  3 files changed, 19 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/keys/user-type.h b/include/keys/user-type.h
+> index 386c31432789..7002a993a472 100644
+> --- a/include/keys/user-type.h
+> +++ b/include/keys/user-type.h
+> @@ -26,6 +26,7 @@
+>   */
+>  struct user_key_payload {
+>  	struct rcu_head	rcu;		/* RCU destructor */
+> +	refcount_t	ref;
+>  	unsigned short	datalen;	/* length of this data */
+>  	char		data[] __aligned(__alignof__(u64)); /* actual data */
+>  };
+> @@ -37,6 +38,7 @@ struct key_preparsed_payload;
+>  
+>  extern int user_preparse(struct key_preparsed_payload *prep);
+>  extern void user_free_preparse(struct key_preparsed_payload *prep);
+> +void put_user_key_payload(struct user_key_payload *payload);
+>  extern int user_update(struct key *key, struct key_preparsed_payload *prep);
+>  extern void user_revoke(struct key *key);
+>  extern void user_destroy(struct key *key);
+> diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+> index c3c8c3240ef9..aa3c058f4095 100644
+> --- a/net/dns_resolver/dns_key.c
+> +++ b/net/dns_resolver/dns_key.c
+> @@ -208,6 +208,7 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+>  		kleave(" = -ENOMEM");
+>  		return -ENOMEM;
+>  	}
+> +	refcount_set(&upayload->ref, 1);
+>  
+>  	upayload->datalen = result_len;
+>  	memcpy(upayload->data, data, result_len);
+> diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+> index 6f88b507f927..90c1bd5d7dfe 100644
+> --- a/security/keys/user_defined.c
+> +++ b/security/keys/user_defined.c
+> @@ -67,6 +67,7 @@ int user_preparse(struct key_preparsed_payload *prep)
+>  	upayload = kmalloc_flex(*upayload, data, datalen);
+>  	if (!upayload)
+>  		return -ENOMEM;
+> +	refcount_set(&upayload->ref, 1);
+>  
+>  	/* attach the data */
+>  	prep->quotalen = datalen;
+> @@ -88,12 +89,22 @@ EXPORT_SYMBOL_GPL(user_free_preparse);
+>  
+>  static void user_free_payload_rcu(struct rcu_head *head)
+>  {
+> -	struct user_key_payload *payload;
+> +	struct user_key_payload *payload =
+> +		container_of(head, struct user_key_payload, rcu);
+>  
+> -	payload = container_of(head, struct user_key_payload, rcu);
+>  	kfree_sensitive(payload);
+>  }
+>  
+> +/*
+> + * Free a user defined key payload.
+> + */
+> +void put_user_key_payload(struct user_key_payload *payload)
+> +{
+> +	if (payload && refcount_dec_and_test(&payload->ref))
+> +		call_rcu(&payload->rcu, user_free_payload_rcu);
+> +}
+> +EXPORT_SYMBOL_GPL(put_user_key_payload);
+> +
+>  /*
+>   * update a user defined key
+>   * - the key's semaphore is write-locked
+> @@ -115,8 +126,7 @@ int user_update(struct key *key, struct key_preparsed_payload *prep)
+>  	rcu_assign_keypointer(key, prep->payload.data[0]);
+>  	prep->payload.data[0] = NULL;
+>  
+> -	if (zap)
+> -		call_rcu(&zap->rcu, user_free_payload_rcu);
+> +	put_user_key_payload(zap);
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(user_update);
+> @@ -134,7 +144,7 @@ void user_revoke(struct key *key)
+>  
+>  	if (upayload) {
+>  		rcu_assign_keypointer(key, NULL);
+> -		call_rcu(&upayload->rcu, user_free_payload_rcu);
+> +		put_user_key_payload(upayload);
+>  	}
+>  }
+>  
+> @@ -147,9 +157,8 @@ void user_destroy(struct key *key)
+>  {
+>  	struct user_key_payload *upayload = key->payload.data[0];
+>  
+> -	kfree_sensitive(upayload);
+> +	put_user_key_payload(upayload);
+>  }
+> -
+>  EXPORT_SYMBOL_GPL(user_destroy);
+>  
+>  /*
+> 
 
-Note that afs_make_op_call() has to be moved so that it can call
-afs_use_server().  afs_operation-based calls did not heretofore 'use' the
-server and server will be 'un-used' by afs_free_call().
-
-Fixes: 5800b1cf3fd8 ("rxrpc: Allow CHALLENGEs to the passed to the app for a RESPONSE")
-Link: https://sashiko.dev/#/patchset/20260624163819.3017002-1-dhowells%40redhat.com
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Marc Dionne <marc.dionne@auristor.com>
-cc: Jeffrey Altman <jaltman@auristor.com>
-cc: Eric Dumazet <edumazet@google.com>
-cc: "David S. Miller" <davem@davemloft.net>
-cc: Jakub Kicinski <kuba@kernel.org>
-cc: Paolo Abeni <pabeni@redhat.com>
-cc: Simon Horman <horms@kernel.org>
-cc: Jarkko Sakkinen <jarkko@kernel.org>
-cc: linux-afs@lists.infradead.org
-cc: keyrings@vger.kernel.org
-cc: stable@kernel.org
----
- fs/afs/internal.h          | 33 +++++++++++++++++----------------
- fs/afs/rxrpc.c             | 21 ++++++++++++++++++++-
- include/net/af_rxrpc.h     |  1 +
- include/trace/events/afs.h |  1 +
- include/uapi/linux/rxrpc.h |  1 +
- net/rxrpc/af_rxrpc.c       |  3 +++
- net/rxrpc/ar-internal.h    |  3 +++
- net/rxrpc/call_object.c    |  2 ++
- net/rxrpc/conn_client.c    |  2 ++
- net/rxrpc/sendmsg.c        | 25 ++++++++++++++++++++++++-
- 10 files changed, 74 insertions(+), 18 deletions(-)
-
-diff --git a/fs/afs/internal.h b/fs/afs/internal.h
-index 738d529ec97b..228c7012013d 100644
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -1415,22 +1415,6 @@ static inline void afs_see_call(struct afs_call *call, enum afs_call_trace why)
- 		       atomic_read(&call->net->nr_outstanding_calls));
- }
- 
--static inline void afs_make_op_call(struct afs_operation *op, struct afs_call *call,
--				    gfp_t gfp)
--{
--	struct afs_addr_list *alist = op->estate->addresses;
--
--	op->call	= afs_get_call(call, afs_call_trace_get_op_call);
--	op->type	= call->type;
--	call->op	= op;
--	call->key	= op->key;
--	call->intr	= !(op->flags & AFS_OPERATION_UNINTR);
--	call->peer	= rxrpc_kernel_get_peer(alist->addrs[op->addr_index].peer);
--	call->service_id = op->server->service_id;
--	afs_make_call(call, gfp);
--	afs_put_call(call, afs_call_trace_put_made_call);
--}
--
- static inline void afs_extract_begin(struct afs_call *call, void *buf, size_t size)
- {
- 	call->iov_len = size;
-@@ -1750,6 +1734,23 @@ static inline struct inode *AFS_VNODE_TO_I(struct afs_vnode *vnode)
- 	return &vnode->netfs.inode;
- }
- 
-+static inline void afs_make_op_call(struct afs_operation *op, struct afs_call *call,
-+				    gfp_t gfp)
-+{
-+	struct afs_addr_list *alist = op->estate->addresses;
-+
-+	op->call	= afs_get_call(call, afs_call_trace_get_op_call);
-+	op->type	= call->type;
-+	call->op	= op;
-+	call->server	= afs_use_server(op->server, false, afs_server_trace_use_call);
-+	call->key	= op->key;
-+	call->intr	= !(op->flags & AFS_OPERATION_UNINTR);
-+	call->peer	= rxrpc_kernel_get_peer(alist->addrs[op->addr_index].peer);
-+	call->service_id = op->server->service_id;
-+	afs_make_call(call, gfp);
-+	afs_put_call(call, afs_call_trace_put_made_call);
-+}
-+
- /*
-  * Note that a dentry got changed.  We need to set d_fsdata to the data version
-  * number derived from the result of the operation.  It doesn't matter if
-diff --git a/fs/afs/rxrpc.c b/fs/afs/rxrpc.c
-index 6dc6fd853832..1a110448dbdb 100644
---- a/fs/afs/rxrpc.c
-+++ b/fs/afs/rxrpc.c
-@@ -312,6 +312,7 @@ void afs_make_call(struct afs_call *call, gfp_t gfp)
- 	struct msghdr msg;
- 	struct kvec iov[1];
- 	unsigned int debug_id = call->debug_id;
-+	struct key *app_data = NULL;
- 	size_t len;
- 	bool write_iter = call->write_iter;
- 	s64 tx_total_len;
-@@ -342,8 +343,26 @@ void afs_make_call(struct afs_call *call, gfp_t gfp)
- 	if (call->async)
- 		afs_get_call(call, afs_call_trace_get_make_async_call);
- 
-+	if (call->key && call->server) {
-+		u32 krb5_enctype = 0;
-+		u8 security_index = 0;
-+
-+		rxrpc_kernel_query_key(call->key, &security_index, &krb5_enctype);
-+		switch (security_index) {
-+#ifdef CONFIG_RXGK
-+		case RXRPC_SECURITY_YFS_RXGK:
-+			/* Read the key pointer before the appdata */
-+			app_data = smp_load_acquire(&call->server->yfs_rxgk_appdata);
-+			break;
-+#endif
-+		default:
-+			break;
-+		}
-+	}
-+
- 	/* create a call */
--	rxcall = rxrpc_kernel_begin_call(call->net->socket, call->peer, call->key,
-+	rxcall = rxrpc_kernel_begin_call(call->net->socket, call->peer,
-+					 call->key, app_data,
- 					 (unsigned long)call,
- 					 tx_total_len,
- 					 call->max_lifespan,
-diff --git a/include/net/af_rxrpc.h b/include/net/af_rxrpc.h
-index c4b68049c06f..19c61a2f5af3 100644
---- a/include/net/af_rxrpc.h
-+++ b/include/net/af_rxrpc.h
-@@ -55,6 +55,7 @@ void rxrpc_kernel_set_notifications(struct socket *sock,
- struct rxrpc_call *rxrpc_kernel_begin_call(struct socket *sock,
- 					   struct rxrpc_peer *peer,
- 					   struct key *key,
-+					   struct key *app_data,
- 					   unsigned long user_call_ID,
- 					   s64 tx_total_len,
- 					   u32 hard_timeout,
-diff --git a/include/trace/events/afs.h b/include/trace/events/afs.h
-index a1963e21f034..a4f57414d527 100644
---- a/include/trace/events/afs.h
-+++ b/include/trace/events/afs.h
-@@ -160,6 +160,7 @@ enum yfs_cm_operation {
- 	EM(afs_server_trace_unuse_slist_isort,	"UNU isort") \
- 	EM(afs_server_trace_update,		"UPDATE   ") \
- 	EM(afs_server_trace_use_by_uuid,	"USE uuid ") \
-+	EM(afs_server_trace_use_call,		"USE call ") \
- 	EM(afs_server_trace_use_cm_call,	"USE cm-cl") \
- 	EM(afs_server_trace_use_get_caps,	"USE gcaps") \
- 	EM(afs_server_trace_use_give_up_cb,	"USE gvupc") \
-diff --git a/include/uapi/linux/rxrpc.h b/include/uapi/linux/rxrpc.h
-index d9735abd4c79..bcdfdf9c67a1 100644
---- a/include/uapi/linux/rxrpc.h
-+++ b/include/uapi/linux/rxrpc.h
-@@ -63,6 +63,7 @@ enum rxrpc_cmsg_type {
- 	RXRPC_RESPOND		= 17,	/* Cs-: Respond to a challenge */
- 	RXRPC_RESPONDED		= 18,	/* S-r: Data received in RESPONSE */
- 	RXRPC_RESP_RXGK_APPDATA	= 19,	/* Cs-: RESPONSE: RxGK app data to include */
-+	RXRPC_RESPONSE_APPDATA	= 20,	/* Cs-: User key holding app data for RESPONSE */
- 	RXRPC__SUPPORTED
- };
- 
-diff --git a/net/rxrpc/af_rxrpc.c b/net/rxrpc/af_rxrpc.c
-index 9ab0f22c881e..a19c0fd3c51a 100644
---- a/net/rxrpc/af_rxrpc.c
-+++ b/net/rxrpc/af_rxrpc.c
-@@ -318,6 +318,7 @@ EXPORT_SYMBOL(rxrpc_kernel_put_peer);
-  * @sock: The socket on which to make the call
-  * @peer: The peer to contact
-  * @key: The security context to use (defaults to socket setting)
-+ * @app_data: The security response application data (or NULL)
-  * @user_call_ID: The ID to use
-  * @tx_total_len: Total length of data to transmit during the call (or -1)
-  * @hard_timeout: The maximum lifespan of the call in sec
-@@ -340,6 +341,7 @@ EXPORT_SYMBOL(rxrpc_kernel_put_peer);
- struct rxrpc_call *rxrpc_kernel_begin_call(struct socket *sock,
- 					   struct rxrpc_peer *peer,
- 					   struct key *key,
-+					   struct key *app_data,
- 					   unsigned long user_call_ID,
- 					   s64 tx_total_len,
- 					   u32 hard_timeout,
-@@ -368,6 +370,7 @@ struct rxrpc_call *rxrpc_kernel_begin_call(struct socket *sock,
- 		key = NULL; /* a no-security key */
- 
- 	memset(&p, 0, sizeof(p));
-+	p.app_data		= app_data;
- 	p.user_call_ID		= user_call_ID;
- 	p.tx_total_len		= tx_total_len;
- 	p.interruptibility	= interruptibility;
-diff --git a/net/rxrpc/ar-internal.h b/net/rxrpc/ar-internal.h
-index b6e7e8c5e96f..20c10428a50e 100644
---- a/net/rxrpc/ar-internal.h
-+++ b/net/rxrpc/ar-internal.h
-@@ -516,6 +516,7 @@ struct rxrpc_bundle {
- 	struct rxrpc_local	*local;		/* Representation of local endpoint */
- 	struct rxrpc_peer	*peer;		/* Remote endpoint */
- 	struct key		*key;		/* Security details */
-+	struct key		*app_data;	/* Security response app data */
- 	struct list_head	proc_link;	/* Link in net->bundle_proc_list */
- 	const struct rxrpc_security *security;	/* applied security module */
- 	refcount_t		ref;
-@@ -720,6 +721,7 @@ struct rxrpc_call {
- 	struct rxrpc_sock __rcu	*socket;	/* socket responsible */
- 	struct rxrpc_net	*rxnet;		/* Network namespace to which call belongs */
- 	struct key		*key;		/* Security details */
-+	struct key		*app_data;	/* Security response app data */
- 	const struct rxrpc_security *security;	/* applied security module */
- 	struct mutex		user_mutex;	/* User access mutex */
- 	struct sockaddr_rxrpc	dest_srx;	/* Destination address */
-@@ -914,6 +916,7 @@ enum rxrpc_command {
- };
- 
- struct rxrpc_call_params {
-+	struct key		*app_data;	/* Security response app data */
- 	s64			tx_total_len;	/* Total Tx data length (if send data) */
- 	unsigned long		user_call_ID;	/* User's call ID */
- 	struct {
-diff --git a/net/rxrpc/call_object.c b/net/rxrpc/call_object.c
-index 817ed9acb91e..9f6130d90c4c 100644
---- a/net/rxrpc/call_object.c
-+++ b/net/rxrpc/call_object.c
-@@ -211,6 +211,7 @@ static struct rxrpc_call *rxrpc_alloc_client_call(struct rxrpc_sock *rx,
- 	call->interruptibility	= p->interruptibility;
- 	call->tx_total_len	= p->tx_total_len;
- 	call->key		= key_get(cp->key);
-+	call->app_data		= key_get(p->app_data);
- 	call->peer		= rxrpc_get_peer(cp->peer, rxrpc_peer_get_call);
- 	call->local		= rxrpc_get_local(cp->local, rxrpc_local_get_call);
- 	call->security_level	= cp->security_level;
-@@ -697,6 +698,7 @@ static void rxrpc_destroy_call(struct work_struct *work)
- 	rxrpc_put_peer(call->peer, rxrpc_peer_put_call);
- 	rxrpc_put_local(call->local, rxrpc_local_put_call);
- 	key_put(call->key);
-+	key_put(call->app_data);
- 	call_rcu(&call->rcu, rxrpc_rcu_free_call);
- }
- 
-diff --git a/net/rxrpc/conn_client.c b/net/rxrpc/conn_client.c
-index 48519f0de185..5cbfa7b223e0 100644
---- a/net/rxrpc/conn_client.c
-+++ b/net/rxrpc/conn_client.c
-@@ -81,6 +81,7 @@ static struct rxrpc_bundle *rxrpc_alloc_bundle(struct rxrpc_call *call,
- 		bundle->local		= call->local;
- 		bundle->peer		= rxrpc_get_peer(call->peer, rxrpc_peer_get_bundle);
- 		bundle->key		= key_get(call->key);
-+		bundle->app_data	= key_get(call->app_data);
- 		bundle->security	= call->security;
- 		bundle->exclusive	= test_bit(RXRPC_CALL_EXCLUSIVE, &call->flags);
- 		bundle->upgrade		= test_bit(RXRPC_CALL_UPGRADE, &call->flags);
-@@ -118,6 +119,7 @@ static void rxrpc_free_bundle(struct rxrpc_bundle *bundle)
- 	write_unlock(&bundle->local->rxnet->conn_lock);
- 	rxrpc_put_peer(bundle->peer, rxrpc_peer_put_bundle);
- 	key_put(bundle->key);
-+	key_put(bundle->app_data);
- 	kfree(bundle);
- }
- 
-diff --git a/net/rxrpc/sendmsg.c b/net/rxrpc/sendmsg.c
-index 71343998b87d..cdf35440317d 100644
---- a/net/rxrpc/sendmsg.c
-+++ b/net/rxrpc/sendmsg.c
-@@ -12,6 +12,7 @@
- #include <linux/skbuff.h>
- #include <linux/export.h>
- #include <linux/sched/signal.h>
-+#include <keys/user-type.h>
- 
- #include <net/sock.h>
- #include <net/af_rxrpc.h>
-@@ -530,6 +531,8 @@ static int rxrpc_send_data(struct rxrpc_sock *rx,
- static int rxrpc_sendmsg_cmsg(struct msghdr *msg, struct rxrpc_send_params *p)
- {
- 	struct cmsghdr *cmsg;
-+	key_serial_t key_id;
-+	key_ref_t key;
- 	bool got_user_ID = false;
- 	int len;
- 
-@@ -614,6 +617,22 @@ static int rxrpc_sendmsg_cmsg(struct msghdr *msg, struct rxrpc_send_params *p)
- 				return -ERANGE;
- 			break;
- 
-+		case RXRPC_RESPONSE_APPDATA:
-+			if (len != sizeof(key_serial_t))
-+				return -EINVAL;
-+			if (p->call.app_data)
-+				return -EINVAL;
-+			key_id = *(key_serial_t *)CMSG_DATA(cmsg);
-+			key = lookup_user_key(key_id, 0, KEY_NEED_SEARCH);
-+			if (IS_ERR(key))
-+				return PTR_ERR(key);
-+			if (key_ref_to_ptr(key)->type == &key_type_user) {
-+				key_ref_put(key);
-+				return -EINVAL;
-+			}
-+			p->call.app_data = key_ref_to_ptr(key);
-+			break;
-+
- 		default:
- 			return -EINVAL;
- 		}
-@@ -722,8 +741,10 @@ int rxrpc_do_sendmsg(struct rxrpc_sock *rx, struct msghdr *msg, size_t len)
- 			goto error_release_sock;
- 		call = rxrpc_new_client_call_for_sendmsg(rx, msg, &p);
- 		/* The socket is now unlocked... */
--		if (IS_ERR(call))
-+		if (IS_ERR(call)) {
-+			key_put(p.call.app_data);
- 			return PTR_ERR(call);
-+		}
- 		/* ... and we have the call lock. */
- 		p.call.nr_timeouts = 0;
- 		ret = 0;
-@@ -808,11 +829,13 @@ int rxrpc_do_sendmsg(struct rxrpc_sock *rx, struct msghdr *msg, size_t len)
- 		mutex_unlock(&call->user_mutex);
- error_put:
- 	rxrpc_put_call(call, rxrpc_call_put_sendmsg);
-+	key_put(p.call.app_data);
- 	_leave(" = %d", ret);
- 	return ret;
- 
- error_release_sock:
- 	release_sock(&rx->sk);
-+	key_put(p.call.app_data);
- 	return ret;
- }
- 
-
+BR, Jarkko
