@@ -1,189 +1,117 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-qk1-f173.google.com (mail-qk1-f173.google.com [209.85.222.173])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 66E771EEE6;
-	Sat, 11 Jul 2026 17:51:23 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3F2CF2C11CF
+	for <keyrings@vger.kernel.org>; Sun, 12 Jul 2026 01:45:18 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.222.173
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783792284; cv=none; b=oFeZ3AlYOn3hIrVlYoDRcvYH3VNzsshv0e+g7smzruESNV3ASz4HcvhhZPcu4mL0gL7gIu+cQKTig8nhU2Iuuclca6WE0t7kNtVOlc/TokGU4RfexqxK5XmYs3m3eu5ESEMDXqVUqim/1/fvNOk2Qf3mOFMmc90CCGdNPiiL36M=
+	t=1783820719; cv=none; b=cQ8Xx37ixQErgMmOcMul12Q3Y91swlKvceUFid+MztDW95FR0vOHPDmZL1eCPwUTSXlEk3n2REohj8mgnwvq3vwEuo4ThpwutbsfbQDo6TzXjIjLYpTwnsgpa2xSOE7YpuxdDzNAR8u7DRGoFmNZHWhMkpHMqw8L3VVThUG9bCY=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783792284; c=relaxed/simple;
-	bh=zaKpWoHaCf4pF+Yu0sfRk8Zn8BkHZ8NLoQ4atNFHbxg=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=NWLy6mkAlLE9mrCgwifK3cschL3lNnUoRN9w3tpirh2tA6CYYxYH1nxhzgcR/3OivK0lInISjsxW3+qUcDm/c85KVajxEfaimE0z+nYoZM7hL8e0dyPapFzd9cc777R+jv1LdKaQzBnO5C+t7pRVOzp2a+ORkZsgVnmonWA39C8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=QP+7VmGK; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1783820719; c=relaxed/simple;
+	bh=SiXG3Vl6tdyaZKcYbxpybRYANDdC5zL6iyKWoX1ZfWM=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=lS3fZVa+3Mz0nSNxHXztFW2H1iSw1HLRNkN5fK9EhXbIlZ3h3FpbnxObFXVVfR3GHiKgplQ5REiNPoOMuMxYfU1zr7g5nxNmhijmDLZLKbtUzS9keRyJqYx2oGVaAtMOLWg2DE+4dB1WXLeu3aIMOgT/1zNsH0YUJrB3qn8QeCM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=X5aRUcCR; arc=none smtp.client-ip=209.85.222.173
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="QP+7VmGK"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 6C9921F000E9;
-	Sat, 11 Jul 2026 17:51:22 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1783792283;
-	bh=XQRZEWXvNsb0JpMQf3ZcxvFfvyQw4c/6LvW/dLlfKXk=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=QP+7VmGKLbE6e8x7/DQrajjLKlSe0ODihAjNcqiqJxL0ho7cnuejEePIamw99n1u0
-	 cJqF3OgXJStAckZT1MqNmmNeGrZ4EMzB/PEYifUIxRKq35UMZ9XBKdBRdHuAYAkV4D
-	 wtGy4cFwMaWxvQKeyf/9zdxApetZ9D6rDXLkg64IlGeJsSBC73yPeu46TQVyqf5PNY
-	 MUG8rgZobjATkhpahlJF4745ZOOClva5awtFLJU+bClczl5D7VCqpmoV5OLgDcKqlQ
-	 sL/t9RWNkI7z6gEkieR/qWkqa1GFuK349eqTGr7AwGkLHH11W2SO4kxCOCS+u0ejNO
-	 vJy7IlIDu2m2w==
-Date: Sat, 11 Jul 2026 20:51:19 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: netdev@vger.kernel.org, Marc Dionne <marc.dionne@auristor.com>,
-	Jakub Kicinski <kuba@kernel.org>,
-	"David S. Miller" <davem@davemloft.net>,
-	Eric Dumazet <edumazet@google.com>, Paolo Abeni <pabeni@redhat.com>,
-	Simon Horman <horms@kernel.org>, linux-afs@lists.infradead.org,
-	linux-kernel@vger.kernel.org, Jeffrey Altman <jaltman@auristor.com>,
-	keyrings@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH net v2 12/16] keys: Add refcounting to user-defined key
- type payload
-Message-ID: <alKCl7ZxPIeTyHHD@kernel.org>
-References: <20260710192220.1922433-1-dhowells@redhat.com>
- <20260710192220.1922433-13-dhowells@redhat.com>
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="X5aRUcCR"
+Received: by mail-qk1-f173.google.com with SMTP id af79cd13be357-92e855da580so164353485a.1
+        for <keyrings@vger.kernel.org>; Sat, 11 Jul 2026 18:45:18 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1783820717; x=1784425517; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=uW6fI+83ucGhBzlzhMQZhfNKo2rTn+HYkdwfVzxP5Vg=;
+        b=X5aRUcCRnLVnkImg0aEXL20czK6e+vtn6l9f57H0Gun8KWUxU68QOZeEpIWkMLPwcf
+         vbgpHXFBsjumJZaQ3tCaQDSHB1NIAYl6vLaXhPt1GCTVHJdNO7wsx7ip5qubZ5U8i3F4
+         hEylView1ohjgn3l8TKfTdZPtUpUWdpzdyosJ93W83v41p/P1zel6gdkVW46HB43u00j
+         Z0Ycq1c1yR/Zfb7SEWQppSbF3jPRT369zNjTHVrbhUOhW4vyVxM6vbJ8ZRjSQ2Cdl1xV
+         fm6jMG3RMgg7tQwvWOVoaBVVYxSfIEqAx5j+rntIxg+2E2t8tCHUygWm+wJuBHNqW0iH
+         OVdg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1783820717; x=1784425517;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=uW6fI+83ucGhBzlzhMQZhfNKo2rTn+HYkdwfVzxP5Vg=;
+        b=FUbzw17nL4ccjdrBZCW7NGKffc78cDR5uJ1P2zld2DX/qZtuipe4zJRKTaocpjT/th
+         ypNLkKsOCiOsU3OJqQGRTQKfYGtjhl2/Acu8IDdkbyU/ID9UTtNn+5D4TPlD++Ygj+pM
+         +uG/dpFbSiHije8QwznW7NRoB2MK/3vYXAHPdSdJ8WsIdpkSbJz2hX020hGkS262O76G
+         10HDFt1iuIhIc05lMb5BFSnckYvSi2Vu+9jtv8I8I/3Ubcb9j0NZB89K8fzryhHdSXTF
+         6W3mZHE4VkK6Bxwhp0R/ziFGW/o/I/N+5x+lS4WzHb4N1YGurxP2F9SQkHABJWMk50BL
+         M2pQ==
+X-Forwarded-Encrypted: i=1; AHgh+RrZOSwmpJ/7ysqyowA8z+zIo73yGCwgXfTAWE2vTMLPCYUwXXVvU5nYnV7ZBeGFlgsd5CaV9KC/rg==@vger.kernel.org
+X-Gm-Message-State: AOJu0YzOiSyZSyIH4t0HHqVG5I75hTfnXjQJdgWw3a51dauFm+1+esdU
+	FXLNeRJ/DlNaHIQLWlu0MYRXorMRpHJDjbU4wu27IRwt4UrKhtv5JgvljCw4/x5gUkw=
+X-Gm-Gg: AfdE7cnbpApaGKxI9KxzhPxyXIvl2IfbuqrZwtH6tfs+BjJQbvQ1cGFXfcxTSxq+6G8
+	9fOGhjw3FEocA2MYIODrKEAHU31D/9tCmIbSXOe7i7Nua37QbqdrwoMZcBq8/WSXPZVFk0OQTjs
+	ql4B81gBz0nJpOVnWleWXYqUiClxcgp/4KXrP/WA2snw8lA4WwQs9IdgC1xjTAyTU4ybd0fbvhs
+	8LtSWWqtOkHHjPix6KJLbZR5qfBBYttz8SJ+iJ7khi6lslcHPtcLgRupqGdqFSBAZ9DufAgM6Tz
+	DMF9uqOy4AvH6U+SIXFUkybUz0SOhmmCgt4ByKlveBi1tJuUsBjfgtisUT31OtcnPTNOiQo+INb
+	5avWEyxwp402KqrXBme7roeb/pTK423/sTghjQqxAf4v4rzaz+ClhFSTWvnTSDY13SE52lSWPGq
+	HRz5bm3xS7HATeBFqGsVE55FnLHzweBvm9vrtTA25Iq6jdonGHkH1Ga/t25wl+dA/MPxXez8w4t
+	Mo3KljrXA==
+X-Received: by 2002:a05:620a:2a07:b0:92e:70a4:2c5b with SMTP id af79cd13be357-92ef2d00d41mr475600985a.69.1783820717092;
+        Sat, 11 Jul 2026 18:45:17 -0700 (PDT)
+Received: from server0 (c-68-48-65-54.hsd1.mi.comcast.net. [68.48.65.54])
+        by smtp.gmail.com with ESMTPSA id af79cd13be357-92ee5b492ebsm624902185a.9.2026.07.11.18.45.15
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 11 Jul 2026 18:45:16 -0700 (PDT)
+From: Michael Bommarito <michael.bommarito@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] keys: fix keyring assoc-array out-of-bounds read and index inconsistency
+Date: Sat, 11 Jul 2026 21:44:57 -0400
+Message-ID: <20260712014500.480410-1-michael.bommarito@gmail.com>
+X-Mailer: git-send-email 2.53.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260710192220.1922433-13-dhowells@redhat.com>
+Content-Transfer-Encoding: 7bit
 
-On Fri, Jul 10, 2026 at 08:22:14PM +0100, David Howells wrote:
-> Add refcounting to user-defined key type payload so that a kernel service
-> wanting to use such a key can hold onto the payload without the RCU read
-> lock held in order that it can do an allocation without having to be
-> concerned with the key getting updated.
-> 
-> This is the first part of the fix for the AF_RXRPC challenge response
-> generation code.
-> 
-> Fixes: 5800b1cf3fd8 ("rxrpc: Allow CHALLENGEs to the passed to the app for a RESPONSE")
+keyring_get_key_chunk() advances the description read pointer by
+level * sizeof(long) past the inline prefix but only bounds-checks the
+prefix, so once the associative-array walk reaches a description-level
+chunk it reads past the kmemdup(desc, desc_len + 1) description
+allocation.  Reaching that depth needs two keys that collide through the
+hash, x, type and domain_tag chunks, which an unprivileged add_key(2)
+can arrange with a crafted pair of same-type keys.
 
-I get the relaxing part when it comes to RCU read lock but why does it
-carry fixes tag? The commit message does not do a great job on
-explaining this part.
+An unprivileged user can thus read up to sizeof(long) bytes past a
+keyring key's description; on kernels built without init-on-alloc the
+same collision, read back with KEYCTL_READ, returns uninitialized kernel
+slab.
 
-> Link: https://sashiko.dev/#/patchset/20260624163819.3017002-1-dhowells%40redhat.com
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Marc Dionne <marc.dionne@auristor.com>
-> cc: Jeffrey Altman <jaltman@auristor.com>
-> cc: Eric Dumazet <edumazet@google.com>
-> cc: "David S. Miller" <davem@davemloft.net>
-> cc: Jakub Kicinski <kuba@kernel.org>
-> cc: Paolo Abeni <pabeni@redhat.com>
-> cc: Simon Horman <horms@kernel.org>
-> cc: Jarkko Sakkinen <jarkko@kernel.org>
-> cc: linux-afs@lists.infradead.org
-> cc: keyrings@vger.kernel.org
-> cc: stable@kernel.org
-> ---
->  include/keys/user-type.h     |  2 ++
->  net/dns_resolver/dns_key.c   |  1 +
->  security/keys/user_defined.c | 23 ++++++++++++++++-------
->  3 files changed, 19 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/keys/user-type.h b/include/keys/user-type.h
-> index 386c31432789..7002a993a472 100644
-> --- a/include/keys/user-type.h
-> +++ b/include/keys/user-type.h
-> @@ -26,6 +26,7 @@
->   */
->  struct user_key_payload {
->  	struct rcu_head	rcu;		/* RCU destructor */
-> +	refcount_t	ref;
->  	unsigned short	datalen;	/* length of this data */
->  	char		data[] __aligned(__alignof__(u64)); /* actual data */
->  };
-> @@ -37,6 +38,7 @@ struct key_preparsed_payload;
->  
->  extern int user_preparse(struct key_preparsed_payload *prep);
->  extern void user_free_preparse(struct key_preparsed_payload *prep);
-> +void put_user_key_payload(struct user_key_payload *payload);
->  extern int user_update(struct key *key, struct key_preparsed_payload *prep);
->  extern void user_revoke(struct key *key);
->  extern void user_destroy(struct key *key);
-> diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-> index c3c8c3240ef9..aa3c058f4095 100644
-> --- a/net/dns_resolver/dns_key.c
-> +++ b/net/dns_resolver/dns_key.c
-> @@ -208,6 +208,7 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
->  		kleave(" = -ENOMEM");
->  		return -ENOMEM;
->  	}
-> +	refcount_set(&upayload->ref, 1);
->  
->  	upayload->datalen = result_len;
->  	memcpy(upayload->data, data, result_len);
-> diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
-> index 6f88b507f927..90c1bd5d7dfe 100644
-> --- a/security/keys/user_defined.c
-> +++ b/security/keys/user_defined.c
-> @@ -67,6 +67,7 @@ int user_preparse(struct key_preparsed_payload *prep)
->  	upayload = kmalloc_flex(*upayload, data, datalen);
->  	if (!upayload)
->  		return -ENOMEM;
-> +	refcount_set(&upayload->ref, 1);
->  
->  	/* attach the data */
->  	prep->quotalen = datalen;
-> @@ -88,12 +89,22 @@ EXPORT_SYMBOL_GPL(user_free_preparse);
->  
->  static void user_free_payload_rcu(struct rcu_head *head)
->  {
-> -	struct user_key_payload *payload;
-> +	struct user_key_payload *payload =
-> +		container_of(head, struct user_key_payload, rcu);
->  
-> -	payload = container_of(head, struct user_key_payload, rcu);
->  	kfree_sensitive(payload);
->  }
->  
-> +/*
-> + * Free a user defined key payload.
-> + */
-> +void put_user_key_payload(struct user_key_payload *payload)
-> +{
-> +	if (payload && refcount_dec_and_test(&payload->ref))
-> +		call_rcu(&payload->rcu, user_free_payload_rcu);
-> +}
-> +EXPORT_SYMBOL_GPL(put_user_key_payload);
-> +
->  /*
->   * update a user defined key
->   * - the key's semaphore is write-locked
-> @@ -115,8 +126,7 @@ int user_update(struct key *key, struct key_preparsed_payload *prep)
->  	rcu_assign_keypointer(key, prep->payload.data[0]);
->  	prep->payload.data[0] = NULL;
->  
-> -	if (zap)
-> -		call_rcu(&zap->rcu, user_free_payload_rcu);
-> +	put_user_key_payload(zap);
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(user_update);
-> @@ -134,7 +144,7 @@ void user_revoke(struct key *key)
->  
->  	if (upayload) {
->  		rcu_assign_keypointer(key, NULL);
-> -		call_rcu(&upayload->rcu, user_free_payload_rcu);
-> +		put_user_key_payload(upayload);
->  	}
->  }
->  
-> @@ -147,9 +157,8 @@ void user_destroy(struct key *key)
->  {
->  	struct user_key_payload *upayload = key->payload.data[0];
->  
-> -	kfree_sensitive(upayload);
-> +	put_user_key_payload(upayload);
->  }
-> -
->  EXPORT_SYMBOL_GPL(user_destroy);
->  
->  /*
-> 
+Patch 1 is the memory-safety fix and stands alone.  Patches 2 and 3 fix
+two index-key consistency bugs that let the crafted keys collide into a
+single malformed node in the first place, which is what enables the
+KEYCTL_READ disclosure.
 
-BR, Jarkko
+The KASAN reproduction is on patch 1. Trigger is available off-list.
+
+Michael Bommarito (3):
+  keys: fix out-of-bounds read in keyring_get_key_chunk()
+  keys: make keyring key-chunk byte order agree with
+    keyring_diff_objects()
+  assoc_array: trim the final shortcut word when skip_to_level is
+    chunk-aligned
+
+ lib/assoc_array.c       |  2 +-
+ security/keys/keyring.c | 15 ++++++++-------
+ 2 files changed, 9 insertions(+), 8 deletions(-)
+
+
+base-commit: 2c7c88a412aa6d09cd04b414211b4ef8553b5309
+--
+2.53.0
+
