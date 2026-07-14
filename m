@@ -1,64 +1,64 @@
-Received: from mail-qv1-f54.google.com (mail-qv1-f54.google.com [209.85.219.54])
+Received: from mail-qv1-f48.google.com (mail-qv1-f48.google.com [209.85.219.48])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AB54E336EF8
-	for <keyrings@vger.kernel.org>; Tue, 14 Jul 2026 11:54:58 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.219.54
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C97F438B125
+	for <keyrings@vger.kernel.org>; Tue, 14 Jul 2026 11:54:59 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.219.48
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1784030100; cv=none; b=pj7/2YNsoRf1u5R55EorhnkkEKmubq1hWSTYWh0ApQPG1+l//QEQRRh7BTXG/F7BgieTKHs2JrDTGtqKAcKKh31ufaT4yESz4tmG0pPBE4b5cVkXkMRnOnn7H08IoUkTLjG0dbE9MtKpJCTzGXJBNqAIJ4EUe34mPGTFvRuGbsc=
+	t=1784030101; cv=none; b=E8nkzQxUwwOrv+ssrlY9ldfB4wKr5oleiVCoFqYl/jb0iMgutOqAE/VvoX4uVKGp1Is/Gn+3f3KTAz/OHsJFSIkyTD6kf2GIBFzs9xrOel8ct55VempLaoUYQaI+60THVCToOAxlb3eNDUP0su2QrUS2zFs0MrsIpFPcqzeHN1Y=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1784030100; c=relaxed/simple;
-	bh=9RRZcFgrtBWsMm88TekPA+n+ES8ipoI28R2xVaJ1owk=;
+	s=arc-20240116; t=1784030101; c=relaxed/simple;
+	bh=UHv1T3fOghMVYFifd053Xj7nHxiOMCVDbE/j9zIifYE=;
 	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=YtOgphM0K6LAcaYqJcxlCTxFaKkbfzGBljxQG+dgZehslLTVIgQHQXVjPOCxV9wBUShFrcwKuZ2EaCdWYRIzIhgpNsZ+n2wi4tHrOhoQ1X2ln+dfMciGaElaV9EyoqQGRN06R118CDsdKPwyJ7RNRoE696rpPYmfRruLQlLxb7U=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=gpClXGEf; arc=none smtp.client-ip=209.85.219.54
+	 MIME-Version; b=SRX4h/jAqJrSLwQ2pj/n/LHQDa/AQJZvEmCfNvRlFAItgZNfumegMr4v1WYypBEhRwnnYaoVNf2vsJrrY0vf7cx09WOUljpOoaDM4rtPyGuNIG5IMQrm2glQH0Omz8uXg8C3cdVUz1QXddPXhVee8V5APwiZGnt3EKVuP6bwRgQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=g+KwXu9m; arc=none smtp.client-ip=209.85.219.48
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="gpClXGEf"
-Received: by mail-qv1-f54.google.com with SMTP id 6a1803df08f44-8efcef23d21so38707696d6.2
-        for <keyrings@vger.kernel.org>; Tue, 14 Jul 2026 04:54:58 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="g+KwXu9m"
+Received: by mail-qv1-f48.google.com with SMTP id 6a1803df08f44-90327237340so6381836d6.1
+        for <keyrings@vger.kernel.org>; Tue, 14 Jul 2026 04:54:59 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1784030097; x=1784634897; darn=vger.kernel.org;
+        d=gmail.com; s=20251104; t=1784030098; x=1784634898; darn=vger.kernel.org;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:from:to:cc:subject:date
          :message-id:reply-to:content-type;
-        bh=qTYC4WZ/uNDWSHxkWtJkYAaxtQ+BheOgFcuFhfNnJxk=;
-        b=gpClXGEfxfL7j2nFBXqFrw0r99d9aHViGFW9h2OF+0ObBXOMJrajp0tORuZ34Q2iJq
-         l6/G99oDTrxrphhEYPQm5kFN8odf8T/9xttT7kjhrqbLqbL/sIQZaK/+gLbYCnCpaQRg
-         209Di8tAmiouJhVJBhMzDNGgyaHsXapJ/tuThpLX3QpjJTYZew1vAImSNuyKC9iqf7Ok
-         lZt2zoHLiWmZ8YDKbZ8AohszsxwSybYtQQXVVNfeGYUNfOBhXPz9ZGvNhRztkuij5k0U
-         y86KLuMhrutMFql276OFQ50pssoM7SLeZG9ndO6TFFQ/qITo7WzPLTHdeSywor7W7n88
-         AGLg==
+        bh=Vn9mpDo3PjDMuGJGUk3sc9YpQTuMN47dq6Ned6oNhVo=;
+        b=g+KwXu9mLrVue1LvNa/U7KpkwXgik8sQ1yu7xyyUWS5baaMo3+v2qUn2G9L6i4Uehf
+         MMdfnMn7LcDzDONhRoIytX0RMfuyimN1lQ7VA0NT0myW3iViRACxTRCWMSx4RwCBDcGf
+         QAeS9PHT5d6fD79sqzvvyZjxuD9MyXwRoyW84RCpGrVrlJwbriWowBzWt8bDUW79cihS
+         e27uHbZ/2/G/6QoTfxCptX089r3sHiWDmazUpTgbCuhqDcxMwmxaEGg6AjXNbtq3M8Gq
+         V1flFNnqgxZm3ihrFbbYTIyTQiHVtW25sdphOudXUnMrBJTEx3U2zw+5OGU/9Pi+ghIX
+         C9QA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1784030097; x=1784634897;
+        d=1e100.net; s=20251104; t=1784030098; x=1784634898;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
          :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=qTYC4WZ/uNDWSHxkWtJkYAaxtQ+BheOgFcuFhfNnJxk=;
-        b=odiS6xE/JA/dJ6pvZw+axupFp84UX/4/QX1RfGO0f/3zDGrARY6VVH2pKVPVx4v5h9
-         5yT6LOFsy0qWRGDT4Dnue68xPZ+s3fJFX/bd9lD7qMt5D2XNNfidSIodFJik9lUjrcos
-         CYx89873j6oG3NkOnAHCZkH/I1QGpCSLQVRqlLnKNu3YQSg8cPku48asJFFiqKePqaKx
-         xdQTfcgfPAquLRSFM8mrkjZk1ORCAaAaZxVnmzewlbfII3tB7ZJFS/DZ4LyfgIuEPwEC
-         ZAlQAM3XVK+zb9XwinwSZYtRLiyWKojAXVlSgmAn7+IZT6M7JWgcUeU70mA8aHY7ml0N
-         2v0A==
-X-Forwarded-Encrypted: i=1; AHgh+Row2L6uE6UQOJ/SYBbO+zbv/d/GjIenUIwOqnc0TeDH7ij0sSdFF1rFUcIIg3yAxOujRHRXTFNKlw==@vger.kernel.org
-X-Gm-Message-State: AOJu0YzU6E1yIN86N9OL9qPiEREt0YTtXoMauIr07dS6ZDJ4yNmXraAI
-	Rq9rPv80TNhgVoB+OUU934vI8CEfWsE8Sb6VfxLP4D/sgS498k0+k1PR
-X-Gm-Gg: AfdE7cn4FMyUOyYMqZPiEYvytsLEy6mcwb1gZcmdexo3tTM1ddVjsFi/osAWq3E5WXr
-	eT1592fBZx5CaVkktjtAKRTokqeR5KZ4E/Wbq2V3/7Nh77V3p3LDjyHPPH3ys8LLZxL5Xl01CkB
-	vKWcF00tdhJMRiJiA3TRlSpXeFChglb0oCOOIAxlYx/LSrjqwM0X8u7EHXyqZnw6cGoz4F5cmY5
-	JJbyntil5lGcbj58j4WjcLdcluZ6uZnz7TL9S1eWn8LkdvecJKZaxSze4UPMAZLgnFvz3kaMBOP
-	rgeNQpXTJzV2UEL0i/FDHgHAgidPqA15tdo/iTcYuFW/S43Q7MDhcSLhjzjnLX0WsT3Oh15J/Zw
-	vlYXfFnP2y6tM/bGphPp7Bkt7fNHFS4PSFO59n3L3TMSH3+MU7ApkchXjAuO82YCGp9L70/rwFv
-	eX6cL70aKhWMFgXiefncNfQi745fWTr/P2y++YCxjv1dGnnmY1E8ZIcCygDbC5jYY6kb1SJRIwt
-	YyOcdnCmg==
-X-Received: by 2002:a05:6214:21e7:b0:8fd:6de3:dd7d with SMTP id 6a1803df08f44-9074c8b3fbdmr17351196d6.63.1784030097559;
-        Tue, 14 Jul 2026 04:54:57 -0700 (PDT)
+        bh=Vn9mpDo3PjDMuGJGUk3sc9YpQTuMN47dq6Ned6oNhVo=;
+        b=bDPBlCsRGuw89gtnUu2XioDcQbcfpCGCllMIefy8h62hl40IK0mXgtRM0BuLVsVFAU
+         vp8dJbIfQt1jsrEEbi46Jd/wSOVTSG1RfzDW+ifyIO02NEzUKWXc6n6Kcrsms3NjIOAn
+         Uw83TNUL1Iil2ezbV2Q3sMTQ836F7p/OE9LBPotjO3FcQSlNEy4cMqpKQX/mMmXGULxP
+         h4CQt949X3kvMbIoZC6t4qGVaV9Kj3RpTIDvXEKM28DYwFCwwyt+elanZAhN0EhIMQrQ
+         ye0DJqt7Ylb3syLQMTGBXTFQcO4mXUVhVnF9dR82JOEo47qAUMH9Ha6CY1aPyGjmwQXM
+         6NEQ==
+X-Forwarded-Encrypted: i=1; AHgh+RpJ5cT28xV6ppHp6hgoBNll+OUG3QO5PC5HS5yDrpSOusgEillQM/co32WLj/o0T1WJGsjHfMhhMw==@vger.kernel.org
+X-Gm-Message-State: AOJu0Ywlr+a2eVvqc8YeUSO3I11Ej/x9B1QkikakzLVrEqtKE9THQO9/
+	zokHbgNiEH4hhrjdubm29Qa2z6lIRZszTGTKvM++ZgMoY8QGO4VVZbntJXVVDnVfX9M=
+X-Gm-Gg: AfdE7clT8j2Mm/PGfS5eJmeClIyUAxFx4a/hDdMg7HaFKCkuAPOqMh1+VBGWMiZgREX
+	D4jAZ+dPOLLWCwfGLMHhvXQiNKQDGtyPErb6UKywOytuFo/eTVsEwNh1SJpwQYKE2J4kQ9TjUH/
+	WPUPErwl6xgW9MuTcR0PdZ6h4z1EfrKeNHd+9Xx+hQS73opzMpcJeudN7dFZ1Cpl9nXye+h3MW2
+	36psEFQ8kJZtivuAqWHYj8In/YedWLcRLHfbAiAqsZ1QNyUjYZRDWgusGs1xApA/pqzbVbiArVv
+	eC8Y67rg86c3mwxeRI6Yp3HGawqahdzbELkHTU/jr0P2Av5+Rt4FX1wdSYyW28DRBNj/kGsjz4B
+	K0pRKYVPtLbrmR+BXh321gEmN8/gsk7cvRGMC+s3eN4E+YP0uiC8ImuSQOGgXjFY2sy8iEHSAmM
+	v49X57K+FD91QxqIrwS6lSgGUhjfo0zWsqdvcThJmk3BLR87H8HdL75eWPFwNbmhQ5E8SWOy2QS
+	7vY8qkH8A==
+X-Received: by 2002:a05:6214:2583:b0:8fd:6e22:6634 with SMTP id 6a1803df08f44-904172f8cf4mr150704096d6.32.1784030098556;
+        Tue, 14 Jul 2026 04:54:58 -0700 (PDT)
 Received: from server0 (c-68-48-65-54.hsd1.mi.comcast.net. [68.48.65.54])
-        by smtp.gmail.com with ESMTPSA id 6a1803df08f44-8ffd80fd492sm185100576d6.34.2026.07.14.04.54.56
+        by smtp.gmail.com with ESMTPSA id 6a1803df08f44-8ffd80fd492sm185100576d6.34.2026.07.14.04.54.57
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 14 Jul 2026 04:54:57 -0700 (PDT)
+        Tue, 14 Jul 2026 04:54:58 -0700 (PDT)
 From: Michael Bommarito <michael.bommarito@gmail.com>
 To: David Howells <dhowells@redhat.com>,
 	Jarkko Sakkinen <jarkko@kernel.org>
@@ -69,9 +69,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
 	keyrings@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
 	linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] keys: make keyring key-chunk byte order agree with keyring_diff_objects()
-Date: Tue, 14 Jul 2026 07:54:50 -0400
-Message-ID: <20260714115451.3773164-3-michael.bommarito@gmail.com>
+Subject: [PATCH v2 3/3] assoc_array: trim the final shortcut word using the current chunk end
+Date: Tue, 14 Jul 2026 07:54:51 -0400
+Message-ID: <20260714115451.3773164-4-michael.bommarito@gmail.com>
 X-Mailer: git-send-email 2.53.0
 In-Reply-To: <20260714115451.3773164-1-michael.bommarito@gmail.com>
 References: <20260714115451.3773164-1-michael.bommarito@gmail.com>
@@ -83,51 +83,55 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
-keyring_get_key_chunk() loads description bytes into the index chunk low
-address first, while keyring_diff_objects() numbers the first differing
-bit from the low end and folds the absolute byte index into the level
-without removing the inline-prefix offset the level already carries.
-The two disagree on byte order and bit position, so the array can be
-told two keys first differ at a bit that does not differ in the chunk
-the walker uses, letting crafted descriptions collide into one node.
+assoc_array_walk() masks off the bits past shortcut->skip_to_level in the
+word that contains skip_to_level, gated on
+round_up(sc_level, ASSOC_ARRAY_KEY_CHUNK_SIZE) > skip_to_level.
 
-Load the chunk in the order keyring_diff_objects() assumes and drop the
-inline-prefix length when folding the byte index into the level.  This
-only changes the in-memory ordering used to place keys within a keyring;
-add, search and read of non-colliding keys are unaffected.
+That guard is wrong in two opposite ways:
 
-Fixes: f771fde82051 ("keys: Simplify key description management")
+ - When sc_level is word-aligned (every word after the first) round_up()
+   is a no-op, so the guard is sc_level > skip_to_level and never fires for
+   the word that holds skip_to_level.  A shortcut that spans more than one
+   word and ends in the middle of its last word leaves that word untrimmed,
+   and its stale high bits leak into the dissimilarity word and can steer
+   the walk down the wrong descendant.
+
+ - When sc_level is unaligned (the first word) and skip_to_level sits on
+   the next chunk boundary, sc_level + CHUNK would exceed skip_to_level and
+   fire the trim with shift = skip_to_level & CHUNK_MASK == 0, which clears
+   the whole dissimilarity word and makes a differing shortcut compare
+   equal.
+
+Use the end of the chunk that contains sc_level instead:
+
+	skip_to_level < round_down(sc_level, CHUNK) + CHUNK
+
+For an aligned sc_level whose word holds skip_to_level this now fires (the
+first bug); for an unaligned sc_level with skip_to_level on the following
+boundary it does not, so shift is never 0 when the branch runs and the trim
+never clears the whole word.
+
+Fixes: 3cb989501c26 ("Add a generic associative array implementation.")
 Assisted-by: Claude:claude-opus-4-8
 Signed-off-by: Michael Bommarito <michael.bommarito@gmail.com>
 ---
- security/keys/keyring.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ lib/assoc_array.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 1739373172ad5..e7066893e6ffc 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -292,9 +292,10 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
- 		desc_len -= offset;
- 		if (desc_len > n)
- 			desc_len = n;
-+		d += desc_len;
- 		do {
- 			chunk <<= 8;
--			chunk |= *d++;
-+			chunk |= *--d;
- 		} while (--desc_len > 0);
- 		return chunk;
- 	}
-@@ -375,7 +376,7 @@ static int keyring_diff_objects(const void *object, const void *data)
- 	return -1;
+diff --git a/lib/assoc_array.c b/lib/assoc_array.c
+index bcc6e0a013eb8..b6c9723e12ced 100644
+--- a/lib/assoc_array.c
++++ b/lib/assoc_array.c
+@@ -255,7 +255,8 @@ assoc_array_walk(const struct assoc_array *array,
+ 		sc_segments = shortcut->index_key[sc_level >> ASSOC_ARRAY_KEY_CHUNK_SHIFT];
+ 		dissimilarity = segments ^ sc_segments;
  
- differ_plus_i:
--	level += i;
-+	level += i - (int)sizeof(a->desc);
- differ:
- 	i = level * 8 + __ffs(seg_a ^ seg_b);
- 	return i;
+-		if (round_up(sc_level, ASSOC_ARRAY_KEY_CHUNK_SIZE) > shortcut->skip_to_level) {
++		if (shortcut->skip_to_level < round_down(sc_level,
++				ASSOC_ARRAY_KEY_CHUNK_SIZE) + ASSOC_ARRAY_KEY_CHUNK_SIZE) {
+ 			/* Trim segments that are beyond the shortcut */
+ 			int shift = shortcut->skip_to_level & ASSOC_ARRAY_KEY_CHUNK_MASK;
+ 			dissimilarity &= ~(ULONG_MAX << shift);
 -- 
 2.53.0
 
