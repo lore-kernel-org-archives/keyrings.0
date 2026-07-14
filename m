@@ -1,75 +1,73 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+Received: from ns1.suksangroup.com (ns1.suksangroup.com [103.13.31.55])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 33EB937A488;
-	Tue, 14 Jul 2026 02:11:39 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 51D1531E821
+	for <keyrings@vger.kernel.org>; Tue, 14 Jul 2026 05:23:29 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=103.13.31.55
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783995102; cv=none; b=LfGkQD2YqjtcvehViH2oVXs4+GXjdJioBnTJ5Agyl6UsFEYg4SHSbTvv9l93gwYllqzYfKYjEzITP/TlBppCMKplvy2F7VMm4TNlwRKyRHrkA5VIYOfZ6CT5zQ/P4eZ7zNoENgkj0eIC/WQ4dDvcqqVaUowwzMNwNRA4EqHW7bs=
+	t=1784006610; cv=none; b=DabSaIKHgBeeWQDLTG6iFsOxCIvJgcG3Igyc8UgCaZipDYV1EO39u/JBBKPmiWB1pbjfX6MiFWwmxkypj1iN8mj7TT6dW6uJuWt/jD6LiqeI0Ub5iyqQEi8ASc4zRE3lFiNepmFKwcOTnk60zvopEcy6PO9jboteqc1NlMJ8ZxQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783995102; c=relaxed/simple;
-	bh=LH+ncc5W13z4uTGckXw/G1PC1R9Rv+kGZf1Nh/B79v4=;
-	h=Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:
-	 Mime-Version:Content-Type; b=lLzHCbIpbHQ7+hHcQT7J08OawAouPZvbG1cskBiDBEIYICzq4F5r2E6vy3foRTXonZXuh2lsNo9x2BxDafB8otmNqGqqfO3p875jZnS3oml1H39gE5LqKPz/IdwOZiZndT8sJ3qWj//mw3Di2/mMBGMCeUVxX5HCLLGjoDc7Ecw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (1024-bit key) header.d=linux-foundation.org header.i=@linux-foundation.org header.b=2rZEf+jv; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1784006610; c=relaxed/simple;
+	bh=/5nII9hAzPmxBBZ1IvEV/9Qdq0kNnpt8n1fJ6pQ7dc0=;
+	h=From:To:Subject:Date:Message-ID:MIME-Version:Content-Type; b=A/BwvdVrb6GmbH72u3icJEhOLmzZebUCWpdOdGoHi1KqbUpFpD2Do/Q4ffz+v8LO200846nNM73DFvGRQtpSm4Hy6bAwFqPtipEqOmsDjmsvFVgdMMT67BGZu7WneCBReN5caLJTECIFkt5inc4p2BTy6b7akpiKmNXlPwNKFw4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=inbox.org; spf=fail smtp.mailfrom=inbox.org; dkim=pass (2048-bit key) header.d=suksangroup.co.th header.i=@suksangroup.co.th header.b=r0HoDAx+; arc=none smtp.client-ip=103.13.31.55
+Authentication-Results: smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=inbox.org
+Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=inbox.org
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=linux-foundation.org header.i=@linux-foundation.org header.b="2rZEf+jv"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 732601F000E9;
-	Tue, 14 Jul 2026 02:11:39 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-	d=linux-foundation.org; s=korg; t=1783995099;
-	bh=UQLpreAualYM+lqCE/YvZ08vdZF7/8FsjDWQ1qmwzXw=;
-	h=Date:From:To:Cc:Subject:In-Reply-To:References;
-	b=2rZEf+jvnGWLNXCvfUizyWGL0sifgZDbAmWr+FGyJL36Kwx+dQt5hofpFv9PV/zf0
-	 c2OOZEbkGRTCBZGTH+dPrq93nTwxoriNw9yYYceoOnY/KIwP/FlUsnwVCZ8XazhQ+S
-	 9XbMiTOcxp3+Q9Fk6hnrK7PGEeYKQ85Igf9GAy58=
-Date: Mon, 13 Jul 2026 19:11:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michael Bommarito <michael.bommarito@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Jarkko Sakkinen
- <jarkko@kernel.org>, Paul Moore <paul@paul-moore.com>, James Morris
- <jmorris@namei.org>, "Serge E . Hallyn" <serge@hallyn.com>,
- keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
- linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] keys: fix keyring assoc-array out-of-bounds read
- and index inconsistency
-Message-Id: <20260713191139.bd71035dcfda958452cb425b@linux-foundation.org>
-In-Reply-To: <20260712014500.480410-1-michael.bommarito@gmail.com>
-References: <20260712014500.480410-1-michael.bommarito@gmail.com>
-X-Mailer: Sylpheed 3.8.0beta1 (GTK+ 2.24.33; x86_64-pc-linux-gnu)
+	dkim=pass (2048-bit key) header.d=suksangroup.co.th header.i=@suksangroup.co.th header.b="r0HoDAx+"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=suksangroup.co.th; s=default; h=Content-Transfer-Encoding:Content-Type:
+	MIME-Version:Message-ID:Date:Subject:To:From:Reply-To:Sender:Cc:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
+	List-Subscribe:List-Post:List-Owner:List-Archive;
+	bh=/5nII9hAzPmxBBZ1IvEV/9Qdq0kNnpt8n1fJ6pQ7dc0=; b=r0HoDAx+kcocz5jDCPCZ9yYSom
+	OLad/2PFEt5jMJgKPFjC6gyv5YzXRBeIg+Gwy9jCL3Adk5jZwSjy6puhy9WEIWvCHj8NNY0TxucQ6
+	YsnT0GbB3RlTqQcTmofeZSLQ2auH47Vrp5UHelkbH64y+tyfdGn83JTLAd8MnrTjJVEmfOcOjThIl
+	TQHWYzP7UGeVic/y4SJ7Sdi+rkICBdu8ZcS7gVgAqKAIC+E8jUnI/rwv4D3CcQqgvYeqZiOPYJGpV
+	t1z5NjARUMYXw8ldCq2Bd/WA7JeVlCruLV5CHff6sKXnk3o9Gqwgm5MV5Fl/UO/Agq5hjgR6Sieuu
+	5jIzuQcg==;
+Received: from [207.189.26.187] (port=62995)
+	by ns1.suksangroup.com with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.4)
+	(envelope-from <info@inbox.org>)
+	id 1wjVc8-0000000FwZH-16zs
+	for keyrings@vger.kernel.org;
+	Tue, 14 Jul 2026 12:23:27 +0700
+Reply-To: hanns.schofield@lexcapitalgrowth.com
+From: Harry Schofield ESQ <info@inbox.org>
+To: keyrings@vger.kernel.org
+Subject: Dear keyrings@vger.kernel.org, 
+Date: 14 Jul 2026 00:23:24 -0500
+Message-ID: <20260714002324.20B80E0658173974@inbox.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - ns1.suksangroup.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - inbox.org
+X-Get-Message-Sender-Via: ns1.suksangroup.com: authenticated_id: smtp@suksangroup.co.th
+X-Authenticated-Sender: ns1.suksangroup.com: smtp@suksangroup.co.th
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 
-On Sat, 11 Jul 2026 21:44:57 -0400 Michael Bommarito <michael.bommarito@gmail.com> wrote:
 
-> keyring_get_key_chunk() advances the description read pointer by
-> level * sizeof(long) past the inline prefix but only bounds-checks the
-> prefix, so once the associative-array walk reaches a description-level
-> chunk it reads past the kmemdup(desc, desc_len + 1) description
-> allocation.  Reaching that depth needs two keys that collide through the
-> hash, x, type and domain_tag chunks, which an unprivileged add_key(2)
-> can arrange with a crafted pair of same-type keys.
-> 
-> An unprivileged user can thus read up to sizeof(long) bytes past a
-> keyring key's description; on kernels built without init-on-alloc the
-> same collision, read back with KEYCTL_READ, returns uninitialized kernel
-> slab.
-> 
-> Patch 1 is the memory-safety fix and stands alone.  Patches 2 and 3 fix
-> two index-key consistency bugs that let the crafted keys collide into a
-> single malformed node in the first place, which is what enables the
-> KEYCTL_READ disclosure.
-> 
-> The KASAN reproduction is on patch 1. Trigger is available off-list.
+Re:Good day keyrings,
 
-fyi, AI review might have found things, some pre-existing:
-	https://sashiko.dev/#/patchset/20260712014500.480410-1-michael.bommarito@gmail.com
+Please let me know if this is best email to send you the project=20
+info.
 
-David, you might wish to take a look at the first assoc_array.c issue.
+Kind regards,
+
+Harry Schofield, ceMBA
+
 
