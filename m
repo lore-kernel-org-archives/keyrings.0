@@ -1,117 +1,148 @@
-Received: from mail-yw1-f178.google.com (mail-yw1-f178.google.com [209.85.128.178])
+Received: from mail-wr1-f45.google.com (mail-wr1-f45.google.com [209.85.221.45])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2A81435E1A7
-	for <keyrings@vger.kernel.org>; Sat, 18 Jul 2026 20:35:29 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.128.178
-ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1784406930; cv=pass; b=qCyCS0j53mEu44fTeW4kiV7A3sTnRXLWt8epGUfmqtzYhuFcwoH7YSiOc4NJmMMaXuALW6Lf/GUE2q/r94r7pk0uVQtyYDY8S9P4mpWwa5eeuZt5Y9/TYqu8TUfS9vlWU84cMdtY9qHcGYz0c96MbBQ08WNUQVRMlm2M/Z6VMOE=
-ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1784406930; c=relaxed/simple;
-	bh=L4R3GSXsdF+KHdVEA142jPzPE6lMiiTCY9x+aQGKhtA=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=WNHbQqE+4E2JMFWUasOK4kskXZsGmarIUjQjEtOjpb3eMZIkEqrUu3PoarViOg3YLyZwVVFT5rQ/cMZyA5nX1solIsg8VX2VFZKCtOJjQA+skCXI018O9jHWl0kKWuOiuFYqz12UtXZQcnHQrvOzfjheEBSggO85XtlfHuvCPqM=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=qbXWwlwX; arc=pass smtp.client-ip=209.85.128.178
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3C15E3563F6
+	for <keyrings@vger.kernel.org>; Sat, 18 Jul 2026 21:12:40 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.221.45
+ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1784409165; cv=none; b=aHxOMbRgNh2sN4bhlzvmD6Dx9YSQ/ASFWCbnnXiIMGv4RMMZ5pHvOBJDcsLSwPKMagSP/lyWxWaS9jGXQJxU3KSbHlVESDJdxJeXrmy7ADGOiV5gsvP4sFWrj3kRmZmFIEYChn3Ax0q4FQ8SXj+AaBHAffjjowWZUN6EDRYdI/s=
+ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1784409165; c=relaxed/simple;
+	bh=LxGy/tYK8BUgw19Ra5uaZ5Z048rp47XY/zVlg7ubi+g=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version:Content-Type; b=DAIpLL6LFygxmIId3KfQwKiuPls/YQUWo7v7QwmGVNxmJGzCqtz+VbWhHSitNIiPYAvT417kG74MBNbj/wOelKfu5JqjhKElOul4tnVU0F1gqblk/ZjF4pzq9tPaSnzlQk+eIMmkcWn+kR2YBFfclfHCFljfazLUpeUbvIuNWcY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sigma-star.at; spf=pass smtp.mailfrom=sigma-star.at; dkim=pass (2048-bit key) header.d=sigma-star.at header.i=@sigma-star.at header.b=lHZqAkyy; arc=none smtp.client-ip=209.85.221.45
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=sigma-star.at
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=sigma-star.at
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="qbXWwlwX"
-Received: by mail-yw1-f178.google.com with SMTP id 00721157ae682-81ed2a00f12so62315157b3.2
-        for <keyrings@vger.kernel.org>; Sat, 18 Jul 2026 13:35:28 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1784406928; cv=none;
-        d=google.com; s=arc-20260327;
-        b=NtaiEaRIkpuV5HjAkWsABRmTHD2DWkWufeUDU86a1kCSB0rsLNP5QhF/p1Y11HvnwN
-         s+hjiqDHlAV8hmyQsUgxKYdnNxv0smD+dp6BuK1u8AD2u+P7vEU045jsq4aqhaAtSJaT
-         WJFr1fxOAH56sF2lfrckxTZboDKTH6OvFnnz/R3GaZtZS8AEAyoPHN8T8Tatrmc2o6kl
-         u+PR+vWmrzzlhIXG8Kb1K0J4GVPYjsDMyym9iimOD07dDuFCzNmeG9QcEIscDTTGw1ya
-         cv1yNaV7KUU4muw3gECYKQN/VJfVB2AucD5EA+VF6t8ei/wLmvQI+b/2yXpK+Eu6kOqs
-         2f1Q==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:dkim-signature;
-        bh=ANaq4uxSilcneb8rgahEYkQ/Kfssn+e8OiW7uLYST90=;
-        fh=H0p/XAwQ+zoV6rGjPYpCMXHFbjKm2uDleglsRVnkKr4=;
-        b=cpTTjn1JfiBkDLik9cAamdsiHAXzpgQ4KsITd22785V84bZ7igeMCbWTi+NZ7ADwox
-         KxhGooSi7ILTAl9AJVeVvjAiisCf+RbbsAxtmcTioex6cr0fAdtzrWcUfalptSSKIm6D
-         YqCXaTob3TEKow4UGvPZ98ZDj4KwVgg+MsqBTyvGqjRC1SZhe7zRvPYT686Ysw/VV8eK
-         PCvb3tIQ1CG2EcKYo9RY79tw5XC1JAlLvHqrfLWgRTpLIxvv3hwr8eDeCMde4sj6oZb/
-         Kx6Vi91ipY93dMV/U6jQ25oWsvPrTbSD4FdOQO51pFPfyQN71twsAec3lLvyAs9R1umB
-         bKaQ==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
+	dkim=pass (2048-bit key) header.d=sigma-star.at header.i=@sigma-star.at header.b="lHZqAkyy"
+Received: by mail-wr1-f45.google.com with SMTP id ffacd0b85a97d-47f7027ca11so173265f8f.3
+        for <keyrings@vger.kernel.org>; Sat, 18 Jul 2026 14:12:40 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1784406928; x=1785011728; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
+        d=sigma-star.at; s=google; t=1784409159; x=1785013959; darn=vger.kernel.org;
+        h=content-type:content-transfer-encoding:mime-version:references
+         :in-reply-to:message-id:date:subject:cc:to:from:from:to:cc:subject
          :date:message-id:reply-to:content-type;
-        bh=ANaq4uxSilcneb8rgahEYkQ/Kfssn+e8OiW7uLYST90=;
-        b=qbXWwlwXkFBO+XQKdl06XjSeJHinrg2BLUgkGYd0u253dljCMdJuk0j6S7p8faqHSo
-         8SHaAB5EenfyNrt2kl3I0z7az9dAM5kPvimX9mHH8FovlytRgC8B5fO8BTL1GFDXyA/u
-         yxkJuD1iZECUVumBHtjCGmKeutcG5yOxpxviPWYQ0fvg6zPgCN2++QX6Bhm/i0o+o/L3
-         e1NwfxgifUPR1H87sWTKo0hCvNgjCB1sieSibKE3zId7lc8Q4jxhyd3DLOLHQP1Wk7u6
-         gNPKIOzqeQWZxSmqNDVk+z9GBD7vf8gg4ormDSMkg1HDu91HSDNEMpvMKNrQ3evBsmG3
-         Psyw==
+        bh=dVGy0sev0QssIzSTWqjH08ibmvVKTeq7MtvW4xlr5Vk=;
+        b=lHZqAkyyLwrOKpJ32BlibiNw1cCRmgmcNQOBsgdfNUsNZQS4uxkNfhcva6I6rihGBc
+         OHUZdj2VwUnAphNe4T6avnQqcrpAZ88vRxnLuhwD4WEKQ8dGaki9U2mk9kHvowxGRgPZ
+         EtIlKSIFSFWC4TXPUMwLEO2yLMcrfZJ8Fq2E2lKQw2phQk5A05IjdkPKh13EaShWQ8Oh
+         uWxFql2IQasJPiefmK5sSbGsZETWxeSgaosoyItnGv7kYaNlUwKHHvYtLCa2UIuDZUNn
+         Caq3HL/EbhA+YjiF6vkJfcgcXykUiLwDDFGNjdix68wT7HXrZQdk49s/QiFBmdXqxL5z
+         T4UA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1784406928; x=1785011728;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
+        d=1e100.net; s=20251104; t=1784409159; x=1785013959;
+        h=content-type:content-transfer-encoding:mime-version:references
+         :in-reply-to:message-id:date:subject:cc:to:from:x-gm-gg
          :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
          :content-type;
-        bh=ANaq4uxSilcneb8rgahEYkQ/Kfssn+e8OiW7uLYST90=;
-        b=jU4Jm551bWwPpQ813ee4Vv3CV3KbNXCFB1isGGfbKkCSiD1xakn10nIIp3OPxeWHXn
-         HZybW6KeTGYgAdqZ67EpRNZ+s/O9cq+S6th+FDi7jb/OGAyyhqHe22begvmdHaeFTCM+
-         LrF0P9qW3u52HdvBNypBjAM+VEqc04jfN7/2BxFwTpfkH8rD0tqwV6M3gcjExC4WGHDY
-         BRKJWDaS0Ogkgw5Y62Ry5qOX34afhqM6v6hvAvy/jJQaIrBehJP8/e+Sa0EY1jcS2VE1
-         bL3FyTmb+kR8T/tlNhr20HgwnOc9ssuiWLAlpHfEs+f4WuI8M7IFEpFSXawwnebiEvVM
-         P5BA==
-X-Forwarded-Encrypted: i=1; AHgh+RrQB/hto3Z+K2CzDKH9OnPKoB0n6xczNoqYTkjbEMuPD8BMwPHtGnUsxlxzXHQL+Ux0+UD/2p9ieA==@vger.kernel.org
-X-Gm-Message-State: AOJu0YxH0uV4Zp7/RXBELMC3hfZZi2oCU1p0VbvWFdkEJl2SVk8c9O0b
-	QkYKNBpbZ+RCPc/yJ9PX/vpUEM/N1hcidhKyjwW/uAKH3qRU7gLaO3qVv9Sqkswk2GrbGpGC4ja
-	zX1UfRHH92CKHqhliftz8FWGk++7ig5s=
-X-Gm-Gg: AfdE7ckH+6x9C4FUvS3d1dra04IBKeE6Plf0hXgHr6sOen1MTfAo6PaIA5a1iXACjcn
-	fdlI/iLMNidfzOv/sKvCsPm8xgH/33Y7AH388+AiSsyPqtsNAZ7Y5ZzAWbKgN+bSPJzxfl2n/J4
-	MSNBY3UJwCERZlxSK/s7SbffDSf/FuEFcCuBagjwza1L29bF75O8gosguldbxMaGjBk3+eBjsu4
-	ZItzZHGQllbFxV2tTKhQHlE0/NftIYY35Zfx10VX+vX+nNco3Y3V5ODLHwHIMoXDm1oJw6nP6C/
-	CxwSKyADWXiV6To=
-X-Received: by 2002:a05:690e:43cf:b0:660:54e4:5db5 with SMTP id
- 956f58d0204a3-6683bcc5c09mr1712064d50.56.1784406928154; Sat, 18 Jul 2026
- 13:35:28 -0700 (PDT)
+        bh=dVGy0sev0QssIzSTWqjH08ibmvVKTeq7MtvW4xlr5Vk=;
+        b=QtJmzlqrstpYvatpfsAevCCQCjhJbuL+CCMrwEivRs+gpWXws5wvTL96efKA7ToFXO
+         XUTKVEJCBAb8kQg2g6sMQrBnVNjBISMb58f8EYNVLfpJtOitZRCz1KxahuOtVPB3IAgn
+         slqXuH4VQMH98PxvWtFVV22RSAATMIDqoFuw3RSxArPqTJqTDZe6K89c2E/jb2o6Q64T
+         mvAINd16GT4MDE8eooq3ZvV2SHRlPJe5Ac0vtmwndYMF02SBoF7rkNy69H2lAUMdEyWp
+         07y9gBWt9c3XeJ2v8lrjP8sL0nUF66U+zIvKQXQ1hCHyCWW9ojhp5hizYpTKYLuIEQXI
+         dBLA==
+X-Gm-Message-State: AOJu0YxxLP8cF1+j3RAdpB8995Mxi4VPQuJGll16Eiq2AIDzjkWOSTin
+	iMlaS5fxbjO0Gbn1oZ4nFrprGT3YPC1lMect+l4QC3rLbpkjT+HYHrdZjhh2gARR/ambhI7t4jN
+	k84Fw
+X-Gm-Gg: AfdE7cn7/1nuFgRAkBys4m4ASZIK8JUxkZ6n18+x59FKBnktG0pv6uqNPX17FunYDpy
+	XSRvfayaiENsr48rm06wr22J41NL+AK1uq2hr4C/DRchlDPuG1fp39F2crvy4YhG/SpcbMS7y8n
+	3CcrLgoGwIhFFQr0pFAq7REttiGNwiNq0Q1PGelJlORNljZRZDlS2Xup81p+AlhK0q37rS6ljM6
+	PecJScyons2/0JVcWXRPM6qMzomrhzciYxbPRcJHLGT5HYmOk2D5O7Onjt6Fbhlq8sUkdyT8BOf
+	AEeG91uZQ5G5p2o1mpGOK7qZWAM1QpR2/lQI1j/BQwE70nfCvRd9yjKsacbUPEE6sptFtVlcCdW
+	K/53neMjAGVpcqhsWhqm8LHWw9wdenr/eRtTPKH4s2ea4MEgOJrljHz3SAdkxElYZb/fDL7PDa/
+	ynqP64UCUqt++DNl3OBBX96eMnlAFLiFRzXqMgqX0yGYI=
+X-Received: by 2002:a05:6000:2083:b0:47f:5d5c:1ca3 with SMTP id ffacd0b85a97d-47f623052dcmr9245874f8f.8.1784409158800;
+        Sat, 18 Jul 2026 14:12:38 -0700 (PDT)
+Received: from somecomputer (85-127-105-26.dsl.dynamic.surfer.at. [85.127.105.26])
+        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-47f63eea8afsm15995668f8f.33.2026.07.18.14.12.38
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 18 Jul 2026 14:12:38 -0700 (PDT)
+From: Richard Weinberger <richard@sigma-star.at>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org,
+ upstream@sigma-star.at, Fabrice Derepas <fabrice.derepas@canonical.com>
+Cc: Fabrice Derepas <fabrice.derepas@canonical.com>, david@sigma-star.at,
+ upstream+dcp@sigma-star.at, jarkko@kernel.org, zohar@linux.ibm.com,
+ dhowells@redhat.com
+Subject:
+ Re: [PATCH] KEYS: trusted: dcp: fix key_len validation and calc_blob_len()
+ return type
+Date: Sat, 18 Jul 2026 23:12:37 +0200
+Message-ID: <13677245.WldNEQ4yK6@nailgun>
+In-Reply-To: <20260718202820.1890313-1-fabrice.derepas@canonical.com>
+References: <20260718202820.1890313-1-fabrice.derepas@canonical.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <20260714115451.3773164-1-michael.bommarito@gmail.com>
- <20260714115451.3773164-4-michael.bommarito@gmail.com> <alvIBm3Po_1gX6g_@kernel.org>
- <alvKED66fSFFcl1Z@kernel.org>
-In-Reply-To: <alvKED66fSFFcl1Z@kernel.org>
-From: Michael Bommarito <michael.bommarito@gmail.com>
-Date: Sat, 18 Jul 2026 16:35:17 -0400
-X-Gm-Features: AUfX_myY7jKb26VYe4sNdbzD9c138J4SlvnBQsoBTRGFhUo80gRTiHM4mVVVlu4
-Message-ID: <CAJJ9bXyHopjhwusu=yK5HzrF31N5QX0uU-WTRN0g=aSMc9HJmw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] assoc_array: trim the final shortcut word using
- the current chunk end
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, 
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, 
-	"Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, 
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
-On Sat, Jul 18, 2026 at 2:46=E2=80=AFPM Jarkko Sakkinen <jarkko@kernel.org>=
- wrote:
-> Were you able to reproduce this with basic command-line tools? The
-> patches are verifiable by reading the code but asking this just in
-> case if you had a snippet at hand (not interested on complex
-> reproducers).
+On Samstag, 18. Juli 2026 22:28 'Fabrice Derepas' via upstream wrote:
+> Two defects in trusted_dcp_unseal() combine to allow a heap
+> out-of-bounds write in kernel context.
+>=20
+> The primary defect is a missing upper-bound check:
+> trusted_dcp_unseal() reads p->key_len from an attacker-supplied blob
+> with no validation that it is at most MAX_KEY_SIZE (128).  It then
+> passes p->key_len + DCP_BLOB_AUTHLEN to do_aead_crypto() as the
+> operation length.  Because p->key is only MAX_KEY_SIZE + 1 =3D 129
+> bytes, any payload_len above 128 in the blob overruns p->key.  On
+> implementations where AES-128-GCM decryption writes plaintext before
+> verifying the authentication tag, up to 330 bytes of out-of-bounds
+> heap overwrite can occur before -EBADMSG is returned.
 
-No, it's a little tricky to hit, definitely not just a few keyctl
-commands.  I can send offlist if you'd like but it requires at least
-~50 or so lines of C/python
+Hmm, but this will only overflow p->blob[], which is the attacker input.
+p->blob[] is at least 512 bytes long.
+So an attacker is only able to overwrite it's own provided input?
+=20
+> The secondary defect is an integer overflow in calc_blob_len(), which
+> computes its sum in size_t but returns unsigned int, truncating the
+> result on 64-bit platforms.  This allows a crafted blob with
+> payload_len near UINT_MAX to bypass the sanity check
+> (blen !=3D p->blob_len).  Due to a second wrap in the expression
+> p->key_len + DCP_BLOB_AUTHLEN (computed in unsigned int at the call
+> site), the len value that reaches do_aead_crypto() via this path is
+> at most 15 bytes and does not directly amplify the OOB write, but
+> the integrity check bypass must be fixed.
 
-PS - I'll send v3 with the nit fixed and carry your tags today/tomorrow
+Since the DCP engine is only found on tiny 32-bits NXP i.MX systems,
+I don't consider this a real issue.
+
+> Fix the primary OOB by validating p->key_len against MIN_KEY_SIZE
+> and MAX_KEY_SIZE immediately after reading it from the blob, matching
+> the validation already performed in trusted_core.c on the Opt_new
+> path.  Fix the overflow by changing the return type of calc_blob_len()
+> to size_t; update the two blen declarations from int to size_t to
+> avoid narrowing-conversion warnings, and update the pr_err format
+> specifier for blen accordingly.
+>=20
+> The seal path is not affected: p->key_len is validated by
+> trusted_core.c before trusted_dcp_seal() is called, and the
+> blen > MAX_BLOB_SIZE guard provides defence in depth there.
+>=20
+> Exploitation requires high privileges.  The unseal path is reached
+> via add_key("trusted", ..., KEY_SPEC_*) with the Opt_load command,
+> which requires write permission to a keyring that accepts trusted
+> keys -- in practice CAP_SYS_ADMIN.  Additionally,
+> CONFIG_TRUSTED_KEYS_DCP must be enabled. The attacker must also supply
+> a crafted sealed blob, which in the typical dm-crypt use case means
+> either physical access to modify on-disk key material or a prior
+> compromise of a privileged process that writes the blob.
+
+While I welcome the proposed changes as they make the code more clear
+and will other tools happy, I don't think it's a security issue.
+So the commit message needs rewording.
 
 Thanks,
-Mike
+//richard
+
+=2D-=20
+=E2=80=8B=E2=80=8B=E2=80=8B=E2=80=8B=E2=80=8Bsigma star gmbh | Eduard-Bodem=
+=2DGasse 6, 6020 Innsbruck, AUT UID/VAT Nr:
+ATU 66964118 | FN: 374287y
+
+
