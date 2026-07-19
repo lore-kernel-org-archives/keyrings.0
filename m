@@ -1,118 +1,113 @@
-Received: from smtp-relay-internal-0.canonical.com (smtp-relay-internal-0.canonical.com [185.125.188.122])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-qk1-f170.google.com (mail-qk1-f170.google.com [209.85.222.170])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1EAE92628D
-	for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 13:46:32 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=185.125.188.122
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D896518CC13
+	for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 16:15:17 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.222.170
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1784468796; cv=none; b=jbg9s1AMmz+G9yvlF7/IAOueFecOs5m3ich938sq6rKJgdOlAHbsjVs19+3yGVNaVWwJIGt3xX6EcvbEJ6UCO+DpWGNVaHy6AlynBau0vdyyWstZFsLpKX9451aa7KRMwZHJk1+hQkkUoHLJMAtbSxbPyRSwpky1GbhKqikehH8=
+	t=1784477719; cv=none; b=iFGEgjQqMazpYbSG6y0mmG4aIxL3VED1X3QBHRteVC269OFEyDlUsRsrHJ5eTk3xpU8PZ/GpY/rVtaH9Pg2ESRF6+OnDloutv6vX1owhEznqVmFjd4kJpH7jgINbwKKf4TYglCGQEAH+1mbwDF6hFAHCUuSLFEMQePgQ9U4iByw=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1784468796; c=relaxed/simple;
-	bh=yuSs65kmHYr77xDwVpF4Dy3q5+xnqgRpHPWIHPWI4BI=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=Nx2K7yrPWMwNRcYWr8syEMkr4CWQUl8wWJ66w9wQnPP4v/NQZIJ06xX3fgimczxLmgU2NFax/AMMSV9RX0U8OcL6iFnZvKvEhZL9uVkggW0JRrPmcEdLiJQvY4nH+xFo3lY/t2dVMUOfuWT8CmzdMDuM1ZVsSJBCdja/0161I44=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=canonical.com; spf=pass smtp.mailfrom=canonical.com; dkim=pass (4096-bit key) header.d=canonical.com header.i=@canonical.com header.b=WN7bSlcS; arc=none smtp.client-ip=185.125.188.122
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=canonical.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=canonical.com
+	s=arc-20240116; t=1784477719; c=relaxed/simple;
+	bh=Yvse8VC1UYLx9y86Yf8NbIWA81h7Jj4tNdZnPVJqC/Q=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=GqYQuWZEXCdRBCmIe4Od9gOObLE7hvBXLT8+XIbI32jeqgbLD+UINNcTWgjhFovwcgPBcW9Lwt/XsgQCU8ciI4MbY02atW4eHSeSy9UwfQ2M4llV7fNKOKeH9YMMwj7WwJrg91PDZATOeIKD8XGXE18MSdvybNErK02ehxWK1MM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=QhdWTf1P; arc=none smtp.client-ip=209.85.222.170
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (4096-bit key) header.d=canonical.com header.i=@canonical.com header.b="WN7bSlcS"
-Received: from mail-wr1-f69.google.com (mail-wr1-f69.google.com [209.85.221.69])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-relay-internal-0.canonical.com (Postfix) with ESMTPS id C9A403FBDB
-	for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 13:46:30 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=canonical.com;
-	s=20251003; t=1784468790;
-	bh=uze8fnz61OwWI97EkVILqYaHqEWDohgXqld8ghdnvzI=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version;
-	b=WN7bSlcSuCiomU1z/KveXFjFOzBLn96ihy/p/P5Os8tvcPYRCh4L7zSHmvTT7VGjw
-	 DtFAgqe8N0cvVg067GIQk9AS/Mb1eJGrGGrm7puybIGd78BMoHj3SadSppjKtJuHN5
-	 s6IIiltSBbX+te0TdKCbly3E/rXz8DbPZf3PesVde0CAEKIEkqR9g5cxE15A6G8dt+
-	 l7IeoAt2LHl2fRxWowkswSY2PU3rPYXDoOEDAGdz/dyHsSHDjdWeE2lTZmW10e0T0T
-	 TLAnDtLwdYwep4R3RUuXNtgXnQeNoGuIfjJAB5S/8gwHw7YnQCqcOCntPEsPuYisCR
-	 E+7FoB9DhcITILuztedsc7yeHDkId1cmR2JOuoScqjwPOKEYVY2Hf5Ut062JyS7M3F
-	 1i4m5v8pdlMeQW8lLWfcFxjIsAJ/0JWRgM1zJvA5j6OhCcIQwnHX0+ba/Yroz3BwKS
-	 H8TtFJEd8zJ/1K4QP6e9cRHstOS2GGhIFqR1G1zyxTlZYnVae2YQpFLdcGGl3rtMvy
-	 k/PDC3kr2raPBMt9/6XbmClgB/5JKm8444EBfD1Xnc3MOBYWAhpAzK6KHkMImMtxrw
-	 l74woXUmKcGOz8Ha9Bvy7TSFK77wPjDH/i/N1+8i+5S/WMgty8V43x/Np2BUSnpCdx
-	 6+GjwsBYqf/QInEjQnGYuiJY=
-Received: by mail-wr1-f69.google.com with SMTP id ffacd0b85a97d-4629f312a67so8268248f8f.2
-        for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 06:46:30 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="QhdWTf1P"
+Received: by mail-qk1-f170.google.com with SMTP id af79cd13be357-92e5cb052edso483109285a.2
+        for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 09:15:17 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1784477716; x=1785082516; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=5cILNu4i+m7g0yLV7J3HcTDkOZjWz0qa1KZvBiPAHsc=;
+        b=QhdWTf1PZ5bTH1iQfK/l/BKmidcts0aKyOxHXCEZ5xjmDOjAgi869nDD6nhfPGeAbN
+         qLag9UNy76SSgIATdY6624ngSQ7X2r7S8m/LdxwWpcXtM78EOdnAqScVKN88l8kQaAu2
+         6qCaFwOdHB12lxJiueDITARqWkjJMlpjZbrlx6YkQGh5j9EwxU64m7r0zOsWzt2hxsMO
+         SCvY8xB23t3VGXKu86SR+vnCKkS9sDjXS5DVYlf9lel74o2901/R7a4yML4GrLMbiZxz
+         ASBizNuJk638/S7rwqMd0VLcxfeeB5zSxFoCtOgzmFoimUQpmi5kbXi6cGc2n2XzZhGL
+         8RCQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1784468790; x=1785073590;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=uze8fnz61OwWI97EkVILqYaHqEWDohgXqld8ghdnvzI=;
-        b=itnHVcKakYiqIpCQzknwrY3rJhpWwNXZkVSRI3n/3BpxdyRSA1ANL26j7eQVWIV3aD
-         QW7p6oJcv26udWwMLXPzBbnsSaAbkmIm2301t0CMBNgwZJWktqT89jfuZ6oV/ZxLJXQe
-         5pGPM8liM/SIaLvl65xkWNOFTTMwB2SWgr77BmGQvNOWxsLDIJG68N+bGDv8HgnHDN46
-         lvzfxyBQPJk1eHsEwTWf24qZcam2IwkJXgsCMwP3AwZcyppholaM+kYK3M7JGF+M7g3+
-         aPXLz4FdfT+dCQcQZicKUbQ+KhxeP35CQqiF7GBpBXcItTqguZEj0ziT9RasemdfCcWO
-         mUKg==
-X-Forwarded-Encrypted: i=1; AHgh+Rp2NL80Z9/HAyqOfxddlad6EsdTyLtZlvkkNXxd4thh2T842RZOE0PcqWFcb4PAQoI6T/xFX7oCVA==@vger.kernel.org
-X-Gm-Message-State: AOJu0Yz4ieoEAT12Qihil3Tu5l/XgK4YQvBCBzFyLgpMk4JmwnAAoHPV
-	qS+EWba9DI1AaOk1G9HZyJEVFHbeFdHYPDoflVwiJIuLhQPlfzFVKL0SXSdvkPi4qoPlpX+JaRX
-	R0Tlb2tuDZVO6SbTI4Sn9TSfiOtfB3msEV5X/rXIrcuPWY1d495dT1i04MrYT97gAEQ+ZRj3991
-	RB
-X-Gm-Gg: AfdE7cl44eLYbxxElb0yj7WlcZGSp9jvNMlRXldlKwn8kGkxBqFt9igV7GWd/PeeSCB
-	l4q0vn1BZlzl5pszjdjUPW8J2+HqwBK5+tAkFM8RFkCA4cGiiWxDRyHlhJvVes32Qji2qNjJAcW
-	YCvll7UW/Ai6Nu/hrTM0xRihTaCWxE9mKmil7i6p/9LqwMfWc8fsF4czMrU9bFbsrdVxLsIU+i0
-	tNr7k2HHlSfZJvsXrp8amKNFtvKjYR0ugGPQhfLqVgsenRUNHrvHyDfZEDFeUcMmhtuBC+Kv3Yy
-	0OmTXUY2416LTGX2u+9rf7tFHTQkoHx1FxsaEkqa/OOqP7WeqtYFHACjK7H7Zv3pO78AkVHpkxu
-	PDyQ+Gb40MgDHbN1q61Agl22XvZoyW8axFU8cRqe+0qKq6lmmshRC7wSJTqKr9BebcoMWtrovA5
-	jctoGfEHrH
-X-Received: by 2002:a05:6000:4916:b0:478:2698:72f8 with SMTP id ffacd0b85a97d-47f62335823mr10580114f8f.49.1784468790271;
-        Sun, 19 Jul 2026 06:46:30 -0700 (PDT)
-X-Received: by 2002:a05:6000:4916:b0:478:2698:72f8 with SMTP id ffacd0b85a97d-47f62335823mr10580088f8f.49.1784468789897;
-        Sun, 19 Jul 2026 06:46:29 -0700 (PDT)
-Received: from t-14 (lfbn-idf1-1-452-109.w86-242.abo.wanadoo.fr. [86.242.159.109])
-        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-47f63ed244asm19771318f8f.20.2026.07.19.06.46.29
+        d=1e100.net; s=20251104; t=1784477716; x=1785082516;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=5cILNu4i+m7g0yLV7J3HcTDkOZjWz0qa1KZvBiPAHsc=;
+        b=a1C08Pex3kf1x1TtpS4cYWq8/LGJ+Ukwk77XoWkAlmVe5JCowJYwLTLGOn5eDaUGSh
+         3xb+XT+SrAtFHuazmVuH6kaQd86f1Bqb8F33jUZ0zNJfLY1YOuMDzfnNX0hrnoke6jLu
+         pfcVNx/mipdZ3oUTn+ynrFTjX6Vb1+KR3ULUQ9X8rHlfx7lNqfVEDoZYNuMoysl0FuJG
+         45bwX/91kRbknJuNHdDn7to2G2Ky8gS4z58toeG7Jh2oebYHN5ru3yAwXh6Cp2ZoYVYb
+         KEGItStyCIkIDZvXpKx590dETq9LLSM5UyoKM9AZsAeD+eqyAGyxaD4VdUktduYpB5gh
+         sRqQ==
+X-Forwarded-Encrypted: i=1; AHgh+RojWqCR1rfW4Hl0i5p4ZnBEM0eUBPRfdBn39saFobFgOCI75U3iNq9giuU1wASBmcLtHo1JBqOyHA==@vger.kernel.org
+X-Gm-Message-State: AOJu0YyQA6ThVTXRf5dvQ3zgogFtiShVV1qpV82BgA22uZmsmtcc4Y34
+	HVZhfiKnjIglZ5wz/2LweZ0McEdNJQKlAVProMqKqDkjglYDX9uA20i0IJ+lSNw/
+X-Gm-Gg: AfdE7cm46IBKZnjDR8csEhpbbfSlTAVO4QL0ZnfHYatnx8d7N7p55E/jHuETzB68VrC
+	pab8K36jM7UPF7wqZTOWs3GL+QtXo693FgWhfNzfl7n+mDZcXmNk/I3I7hxb47qLHk5WBS8iMnl
+	lrzKiw0fMnxEJxJEDQMaX2l07f5ZP6w2X2j1xZZdr89YIrz/kJMWR9eLTQ50PtsJt8tHZSh09if
+	PuTfDTnPqmUebZeF+IlJWuhTz4J30JZrd2YrgfAqKzKLDis0rxXFr7PjvWwxa+fPidEYm+/ECWn
+	kPPf/6dxD/fv30cgRo4coOQJs1ZK3HZ3ZWBbans3YoHZXRtjAAW0hMXK+vKT0dgIRSGUkhtJucu
+	6KmnGmbZFuq77BzpwVpWPkxZDYYH9M8TxtzVP6rjPtW9rNH/7i9ZvKklI0LSixG4z0CLsEfYKsg
+	oPRUvMRSdnDf1xEOUjFBhK824h4ZOA0jgykC++togHiZQK6eL82x25LcA5SjCoZS43IQ310p2vA
+	KylxxR2/BRpUqyW/t4Vjg==
+X-Received: by 2002:a05:620a:2585:b0:92b:6805:917e with SMTP id af79cd13be357-930b41f9bcamr1041279485a.70.1784477716549;
+        Sun, 19 Jul 2026 09:15:16 -0700 (PDT)
+Received: from server0.tail6e7dd.ts.net (c-68-48-65-54.hsd1.mi.comcast.net. [68.48.65.54])
+        by smtp.gmail.com with ESMTPSA id af79cd13be357-930b52fe271sm672374185a.16.2026.07.19.09.15.13
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sun, 19 Jul 2026 06:46:29 -0700 (PDT)
-From: Fabrice Derepas <fabrice.derepas@canonical.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Richard Weinberger <richard@nod.at>,
+        Sun, 19 Jul 2026 09:15:13 -0700 (PDT)
+From: Michael Bommarito <michael.bommarito@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
 	keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org,
-	david@sigma-star.at,
-	upstream+dcp@sigma-star.at,
-	zohar@linux.ibm.com,
-	dhowells@redhat.com
-Subject: Re: [PATCH] KEYS: trusted: dcp: fix key_len validation and calc_blob_len() return type
-Date: Sun, 19 Jul 2026 15:44:07 +0200
-Message-ID: <20260719134409.3336365-1-fabrice.derepas@canonical.com>
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/3] keys: fix keyring assoc-array out-of-bounds read and index inconsistency
+Date: Sun, 19 Jul 2026 12:15:02 -0400
+Message-ID: <20260719161505.2423935-1-michael.bommarito@gmail.com>
 X-Mailer: git-send-email 2.53.0
-In-Reply-To: <alv7LVoTQJOMyk2J@kernel.org>
-References: 
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 
-On Sun, Jul 19, 2026, Jarkko Sakkinen wrote:
-> As said, code changes themselves look reasonable but the commit message
-> is painting a picture of impact that this bug really does not have.
->
-> If possible strip down the paragraph and add fixes tags (if possible,
-> I can dig it up too). With those requests send v2.
+An unprivileged keyring whose keys collide through the description-chunk
+path can drive assoc_array node splitting into an out-of-bounds slot write.
+Patch 1 stops the out-of-bounds read in keyring_get_key_chunk(); patch 2
+makes the chunk byte order agree with keyring_diff_objects(); patch 3 fixes
+the shortcut-walk trim so the walk cannot be steered down the wrong
+descendant.
 
-Agreed, thanks. You and Richard are right that this is not an
-exploitable OOB due to the struct layout. 
+v3 changes (patch 1 only; patches 2 and 3 are unchanged):
+Per Jarkko's review, patch 1 no longer extends the existing
+keyring_get_key_chunk() declaration line; the new offset is declared on its
+own line as unsigned int.  No functional change.
 
-For v2 I'll:
-  - reframe the commit message as a correctness/hardening fix and drop
-    the exploitation and "how this was found" paragraphs;
-  - add the Fixes: tags myself (they both trace to the DCP trusted-keys
-    introduction) so you don't have to dig them up;
-  - keep the code changes as-is.
+Patches 2 and 3 are unchanged from v2 and carry Jarkko's Reviewed-by.
 
-Will send v2 shortly.
+v2: https://lore.kernel.org/keyrings/20260714115451.3773164-1-michael.bommarito@gmail.com/
+v1: https://lore.kernel.org/keyrings/20260712014500.480410-1-michael.bommarito@gmail.com/
 
-Thanks,
-Fabrice
+Michael Bommarito (3):
+  keys: fix out-of-bounds read in keyring_get_key_chunk()
+  keys: make keyring key-chunk byte order agree with
+    keyring_diff_objects()
+  assoc_array: trim the final shortcut word using the current chunk end
+
+ lib/assoc_array.c       |  3 ++-
+ security/keys/keyring.c | 14 ++++++++------
+ 2 files changed, 10 insertions(+), 7 deletions(-)
+
+
+base-commit: 2c7c88a412aa6d09cd04b414211b4ef8553b5309
+-- 
+2.53.0
+
