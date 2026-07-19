@@ -1,62 +1,64 @@
-Received: from mail-qk1-f170.google.com (mail-qk1-f170.google.com [209.85.222.170])
+Received: from mail-qk1-f177.google.com (mail-qk1-f177.google.com [209.85.222.177])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D896518CC13
-	for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 16:15:17 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.222.170
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 40218277C96
+	for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 16:15:19 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.222.177
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1784477719; cv=none; b=iFGEgjQqMazpYbSG6y0mmG4aIxL3VED1X3QBHRteVC269OFEyDlUsRsrHJ5eTk3xpU8PZ/GpY/rVtaH9Pg2ESRF6+OnDloutv6vX1owhEznqVmFjd4kJpH7jgINbwKKf4TYglCGQEAH+1mbwDF6hFAHCUuSLFEMQePgQ9U4iByw=
+	t=1784477720; cv=none; b=BOERLFFeUohJFoAO5h03V2bqJ8d63KvAm2t2b4rQmpsCv8gSEwdb8jsbeXWcpF85YeIedcrlmb7687tvDSdHICLee3TCCfQ0eJBbPzcDAkbzp0laPt8Pmo1V3vfYMVnjc5q7oqRIXXqaNyiK29K6+ia/faaKJCSdvaNYQQwMQJI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1784477719; c=relaxed/simple;
-	bh=Yvse8VC1UYLx9y86Yf8NbIWA81h7Jj4tNdZnPVJqC/Q=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=GqYQuWZEXCdRBCmIe4Od9gOObLE7hvBXLT8+XIbI32jeqgbLD+UINNcTWgjhFovwcgPBcW9Lwt/XsgQCU8ciI4MbY02atW4eHSeSy9UwfQ2M4llV7fNKOKeH9YMMwj7WwJrg91PDZATOeIKD8XGXE18MSdvybNErK02ehxWK1MM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=QhdWTf1P; arc=none smtp.client-ip=209.85.222.170
+	s=arc-20240116; t=1784477720; c=relaxed/simple;
+	bh=z7iFnYhuNkpMKfpkGAHIAltacElFBDKQMCZumHmuODE=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=G9TJpxslpWdrWf4EB9/5Sz1IitIpdSllvLPdmXANBqHBVTrgRdBE0C7HXRM4pUfrVQaLF97CTBaLzqxGmrK58e7+5RCsZIv1ZrynQh0yYBkpZJXpfz1uyVmuvCTeCq57o4qNPfqX0oCdyuaYbqCMlpj3v66g4HxuODp0quKpfnM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=KK10IMqq; arc=none smtp.client-ip=209.85.222.177
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="QhdWTf1P"
-Received: by mail-qk1-f170.google.com with SMTP id af79cd13be357-92e5cb052edso483109285a.2
-        for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 09:15:17 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="KK10IMqq"
+Received: by mail-qk1-f177.google.com with SMTP id af79cd13be357-92ea24a2dbfso791744485a.0
+        for <keyrings@vger.kernel.org>; Sun, 19 Jul 2026 09:15:19 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1784477716; x=1785082516; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=5cILNu4i+m7g0yLV7J3HcTDkOZjWz0qa1KZvBiPAHsc=;
-        b=QhdWTf1PZ5bTH1iQfK/l/BKmidcts0aKyOxHXCEZ5xjmDOjAgi869nDD6nhfPGeAbN
-         qLag9UNy76SSgIATdY6624ngSQ7X2r7S8m/LdxwWpcXtM78EOdnAqScVKN88l8kQaAu2
-         6qCaFwOdHB12lxJiueDITARqWkjJMlpjZbrlx6YkQGh5j9EwxU64m7r0zOsWzt2hxsMO
-         SCvY8xB23t3VGXKu86SR+vnCKkS9sDjXS5DVYlf9lel74o2901/R7a4yML4GrLMbiZxz
-         ASBizNuJk638/S7rwqMd0VLcxfeeB5zSxFoCtOgzmFoimUQpmi5kbXi6cGc2n2XzZhGL
-         8RCQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1784477716; x=1785082516;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+        d=gmail.com; s=20251104; t=1784477718; x=1785082518; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
          :message-id:reply-to:content-type;
-        bh=5cILNu4i+m7g0yLV7J3HcTDkOZjWz0qa1KZvBiPAHsc=;
-        b=a1C08Pex3kf1x1TtpS4cYWq8/LGJ+Ukwk77XoWkAlmVe5JCowJYwLTLGOn5eDaUGSh
-         3xb+XT+SrAtFHuazmVuH6kaQd86f1Bqb8F33jUZ0zNJfLY1YOuMDzfnNX0hrnoke6jLu
-         pfcVNx/mipdZ3oUTn+ynrFTjX6Vb1+KR3ULUQ9X8rHlfx7lNqfVEDoZYNuMoysl0FuJG
-         45bwX/91kRbknJuNHdDn7to2G2Ky8gS4z58toeG7Jh2oebYHN5ru3yAwXh6Cp2ZoYVYb
-         KEGItStyCIkIDZvXpKx590dETq9LLSM5UyoKM9AZsAeD+eqyAGyxaD4VdUktduYpB5gh
-         sRqQ==
-X-Forwarded-Encrypted: i=1; AHgh+RojWqCR1rfW4Hl0i5p4ZnBEM0eUBPRfdBn39saFobFgOCI75U3iNq9giuU1wASBmcLtHo1JBqOyHA==@vger.kernel.org
-X-Gm-Message-State: AOJu0YyQA6ThVTXRf5dvQ3zgogFtiShVV1qpV82BgA22uZmsmtcc4Y34
-	HVZhfiKnjIglZ5wz/2LweZ0McEdNJQKlAVProMqKqDkjglYDX9uA20i0IJ+lSNw/
-X-Gm-Gg: AfdE7cm46IBKZnjDR8csEhpbbfSlTAVO4QL0ZnfHYatnx8d7N7p55E/jHuETzB68VrC
-	pab8K36jM7UPF7wqZTOWs3GL+QtXo693FgWhfNzfl7n+mDZcXmNk/I3I7hxb47qLHk5WBS8iMnl
-	lrzKiw0fMnxEJxJEDQMaX2l07f5ZP6w2X2j1xZZdr89YIrz/kJMWR9eLTQ50PtsJt8tHZSh09if
-	PuTfDTnPqmUebZeF+IlJWuhTz4J30JZrd2YrgfAqKzKLDis0rxXFr7PjvWwxa+fPidEYm+/ECWn
-	kPPf/6dxD/fv30cgRo4coOQJs1ZK3HZ3ZWBbans3YoHZXRtjAAW0hMXK+vKT0dgIRSGUkhtJucu
-	6KmnGmbZFuq77BzpwVpWPkxZDYYH9M8TxtzVP6rjPtW9rNH/7i9ZvKklI0LSixG4z0CLsEfYKsg
-	oPRUvMRSdnDf1xEOUjFBhK824h4ZOA0jgykC++togHiZQK6eL82x25LcA5SjCoZS43IQ310p2vA
-	KylxxR2/BRpUqyW/t4Vjg==
-X-Received: by 2002:a05:620a:2585:b0:92b:6805:917e with SMTP id af79cd13be357-930b41f9bcamr1041279485a.70.1784477716549;
-        Sun, 19 Jul 2026 09:15:16 -0700 (PDT)
+        bh=sv09Y2zV5fntrZQk40NqD/qbsVElT2FYKTtooq7g6h8=;
+        b=KK10IMqq0Ej7p10MaQR4YYnt3Iv8anpcpvUcl5gj692/UEiKDpQS1VFq9657BayI47
+         +hXQZDKACY9YreHeZVU/JKZndADrs17BOxd9SZCyGKIkFhdRsmUZaEgX65aK4Myf7mn6
+         rqax2ajIFwrAttED0TN616MOl3N71WYt8lyU3JKmNHjYX5CDObZiiBHZfC11Qc25Djlu
+         Ar4+oP5duGpP1XTqpLmgWMTHILbCWzpmUvVqsNjGs7Z/sLIQDgnDvotMkBFQjsvGwaWI
+         ujeG+btvkJI09WANODVjSg/n7+LaDeq02T4spElnhnMRHlh4UDTHICn8FW1R6I3U++DQ
+         SRrQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1784477718; x=1785082518;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to:content-type;
+        bh=sv09Y2zV5fntrZQk40NqD/qbsVElT2FYKTtooq7g6h8=;
+        b=TLCkLFsUCcemutQhk/r9NB8vA6/AoT1aP0q1lslof3sm7X15qBEI3akJAJFgDe74pR
+         IqyYsjU9ozk/ApbaIVPjfeyF8WSCH9YZfOjm9gblBCOB0FAqT6Tb6IejSJm/FtIuOGxi
+         oOiEiy/XuLL4Lxg3Qmv4uG9l/yXV1hEgxVMA8CWFnuSEMs1md8Ub69AmOVHsQdR36bS7
+         zo6XZuPi1sB8v8xdL/UDp7+se+XkprxqcD644v+VLbQ5XtoDdcoOAIQUnu/kJzCjUJsz
+         hPOATR/Ky/TZVLX0IOkaPIr4ZTVvPJvQmrWuUAi0SHdPMjaQAa9wNLvTJy9/oGIUTJ9m
+         AIzw==
+X-Forwarded-Encrypted: i=1; AHgh+Ro5y+yrm9A1C2Ics8ZD7QmUeNWSzBj82KYHVFPRtJBfzlD0b4CqJARvjxEnBFm+vXI46WnSosM79g==@vger.kernel.org
+X-Gm-Message-State: AOJu0YxEQcjV4URuTcSM/E82gbe5puKeYA4DXcqA/UGqhNlxynAvjfvH
+	MRPUWXU1ESbeh+ROcCRryj2bN4bEgrKiqllxP43iZ17C+0xWmNdks9A2
+X-Gm-Gg: AfdE7cm0WsANXO5dDurBkpsf1xIwASa183es6E31e28O5IV5sk2cEu0iR27OPttEV1b
+	yEiAkwr7EhyeIzChEE0F0dVxtIA7VkJqY8dXA3C5hrBdSdGgZIYw6XilKFvSIaZWax1NlcCFt2f
+	5XLlIAUi58dIZpOYi8komdY1jjYYkn4riCT9WYTMEw57Qzlg8CbrVpoP2p60TejQXSizenWVpZ8
+	I8a9E5cnFanVJlQZV2W5kn3O4VpASsntSlqu0Yl1ccB12bLwVPOCuCXkD9Lzg0Q6hUegJtdiVDF
+	T3qjErwIDPLe69PCggiTGdVepggh2LvH6DD1fk7ae1Inhld3Ut8X+NS9cNmmbNILN8+Dhjv91H8
+	mTzUPyq/7A+0r35RzhNjfrjDL7bTZnW4afIVLf93fMIi3uZCMvF+XGOq7EKt8FUMLubDXouotFy
+	i/3NbTLYHOx2318FcF1NDnj57FwuLqDUOlfG04UrcCfUiIX6rqXkiHuSvWdQ5ekQS6xByUTgVYM
+	CoDwx6mL2tCA1O3UokMcDCv6iN2m8bl
+X-Received: by 2002:a05:620a:29c4:b0:92e:bc32:8ca7 with SMTP id af79cd13be357-930b3ef7168mr1108379385a.33.1784477717968;
+        Sun, 19 Jul 2026 09:15:17 -0700 (PDT)
 Received: from server0.tail6e7dd.ts.net (c-68-48-65-54.hsd1.mi.comcast.net. [68.48.65.54])
-        by smtp.gmail.com with ESMTPSA id af79cd13be357-930b52fe271sm672374185a.16.2026.07.19.09.15.13
+        by smtp.gmail.com with ESMTPSA id af79cd13be357-930b52fe271sm672374185a.16.2026.07.19.09.15.16
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sun, 19 Jul 2026 09:15:13 -0700 (PDT)
+        Sun, 19 Jul 2026 09:15:17 -0700 (PDT)
 From: Michael Bommarito <michael.bommarito@gmail.com>
 To: David Howells <dhowells@redhat.com>,
 	Jarkko Sakkinen <jarkko@kernel.org>
@@ -67,10 +69,12 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
 	keyrings@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
 	linux-kernel@vger.kernel.org
-Subject: [PATCH v3 0/3] keys: fix keyring assoc-array out-of-bounds read and index inconsistency
-Date: Sun, 19 Jul 2026 12:15:02 -0400
-Message-ID: <20260719161505.2423935-1-michael.bommarito@gmail.com>
+Subject: [PATCH v3 1/3] keys: fix out-of-bounds read in keyring_get_key_chunk()
+Date: Sun, 19 Jul 2026 12:15:03 -0400
+Message-ID: <20260719161505.2423935-2-michael.bommarito@gmail.com>
 X-Mailer: git-send-email 2.53.0
+In-Reply-To: <20260719161505.2423935-1-michael.bommarito@gmail.com>
+References: <20260719161505.2423935-1-michael.bommarito@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -79,35 +83,53 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
-An unprivileged keyring whose keys collide through the description-chunk
-path can drive assoc_array node splitting into an out-of-bounds slot write.
-Patch 1 stops the out-of-bounds read in keyring_get_key_chunk(); patch 2
-makes the chunk byte order agree with keyring_diff_objects(); patch 3 fixes
-the shortcut-walk trim so the walk cannot be steered down the wrong
-descendant.
+For description-level chunks keyring_get_key_chunk() advances the read
+pointer by level * sizeof(long) past the inline prefix but only
+bounds-checks the prefix, so a long enough key description is read past
+its kmemdup(desc, desc_len + 1) allocation.  Compute the full byte
+offset and bounds-check the description against it before reading.
 
-v3 changes (patch 1 only; patches 2 and 3 are unchanged):
-Per Jarkko's review, patch 1 no longer extends the existing
-keyring_get_key_chunk() declaration line; the new offset is declared on its
-own line as unsigned int.  No functional change.
+The walk only reaches a description-level chunk when two keys collide
+through the hash, x, type and domain_tag chunks, so this is reached from
+an unprivileged add_key(2) with a crafted pair of same-type keys whose
+index hashes collide; KASAN reports a slab-out-of-bounds read.
 
-Patches 2 and 3 are unchanged from v2 and carry Jarkko's Reviewed-by.
+Fixes: f771fde82051 ("keys: Simplify key description management")
+Assisted-by: Claude:claude-opus-4-8
+Signed-off-by: Michael Bommarito <michael.bommarito@gmail.com>
+---
+ security/keys/keyring.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-v2: https://lore.kernel.org/keyrings/20260714115451.3773164-1-michael.bommarito@gmail.com/
-v1: https://lore.kernel.org/keyrings/20260712014500.480410-1-michael.bommarito@gmail.com/
-
-Michael Bommarito (3):
-  keys: fix out-of-bounds read in keyring_get_key_chunk()
-  keys: make keyring key-chunk byte order agree with
-    keyring_diff_objects()
-  assoc_array: trim the final shortcut word using the current chunk end
-
- lib/assoc_array.c       |  3 ++-
- security/keys/keyring.c | 14 ++++++++------
- 2 files changed, 10 insertions(+), 7 deletions(-)
-
-
-base-commit: 2c7c88a412aa6d09cd04b414211b4ef8553b5309
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 7a2ee0ded7c93..085f7a743354c 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -271,6 +271,7 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
+ 	unsigned long chunk = 0;
+ 	const u8 *d;
+ 	int desc_len = index_key->desc_len, n = sizeof(chunk);
++	unsigned int offset;
+ 
+ 	level /= ASSOC_ARRAY_KEY_CHUNK_SIZE;
+ 	switch (level) {
+@@ -284,12 +285,12 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
+ 		return (unsigned long)index_key->domain_tag;
+ 	default:
+ 		level -= 4;
+-		if (desc_len <= sizeof(index_key->desc))
++		offset = sizeof(index_key->desc) + level * sizeof(long);
++		if (desc_len <= offset)
+ 			return 0;
+ 
+-		d = index_key->description + sizeof(index_key->desc);
+-		d += level * sizeof(long);
+-		desc_len -= sizeof(index_key->desc);
++		d = index_key->description + offset;
++		desc_len -= offset;
+ 		if (desc_len > n)
+ 			desc_len = n;
+ 		do {
 -- 
 2.53.0
 
