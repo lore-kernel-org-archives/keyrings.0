@@ -1,196 +1,326 @@
-Received: from mail-wr1-f46.google.com (mail-wr1-f46.google.com [209.85.221.46])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A184934E762
-	for <keyrings@vger.kernel.org>; Tue, 21 Jul 2026 13:12:46 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.221.46
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9EC4C367B60;
+	Tue, 21 Jul 2026 15:29:28 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1784639571; cv=none; b=HiIMgu3200q8YEs7I1daVMW8XpJMiGYLZxFhNTpzuFZQHIBefuziKwuZh5d59LhkwDjA53ZnXKK8g6o9Ame2bij8Wsg2SfuOY0rvKpk37224yuJ6sApW29EQRXFxH/mKB71iI5gbDcNZ8gqaepdmtE7BFK+b7ytnR0UkEpi4idM=
+	t=1784647769; cv=none; b=F0vmhPAAGOtDe+WLtcinpNv/JOkt/R77B0pvulpHRu4zAh6v96Zy3Wzbzi+0Luh4Ct/2kLDRvlmkZTgpShm6LIBSObQO72SSh+WtAfsxB9XPQrB5kloQw4weT434IUdiFc7k0h/5yYSFHrG5Otw8swB6o/aKcWZV/grVT+IwBVs=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1784639571; c=relaxed/simple;
-	bh=roviBJb1B7iQhUITwXosnTCAe4xvx3i/dIY5PCDwenw=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=Kw1fM9qMItMtoA69XG/R1/k8Z9lUNE1V9UJUIFzLg6z6qI7aSsz1byRC6PryNQfyZwbw01gN+NIUB724L/zTn2XELHQvq04kPsQ8N+yh3ZSMWmTY8c2C+zj6L1UdZceqXZ1ncZiATW00quHndS01ZA+delbHLNP52qB1TnR+NDE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=suse.com; spf=pass smtp.mailfrom=suse.com; dkim=pass (2048-bit key) header.d=suse.com header.i=@suse.com header.b=LoGxvBpD; arc=none smtp.client-ip=209.85.221.46
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=suse.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.com
+	s=arc-20240116; t=1784647769; c=relaxed/simple;
+	bh=6YNNZIFpa1OsYiAePENW2CYKRSiDbIY4qh/xUvVrYXo=;
+	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
+	 In-Reply-To:Content-Type; b=gzXhe0Wq7LxTmPVipYCxRbTNzTwEtxkygUwGEZHXft0UIBbBr7NhTiG5TQu1ONqihSjJmu5wXtmr86FzMXkZGt1Obt2R04ILVvxXJG91R3gOMegCwDTAhoZ5NOivn+a3M094t7zc3qLXOiH6XbTsy4UQAkz1xcES5s1JfQQmOeQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=P5GtKRfC; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=suse.com header.i=@suse.com header.b="LoGxvBpD"
-Received: by mail-wr1-f46.google.com with SMTP id ffacd0b85a97d-47f752b3423so1874753f8f.3
-        for <keyrings@vger.kernel.org>; Tue, 21 Jul 2026 06:12:46 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=suse.com; s=google; t=1784639565; x=1785244365; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=LZcY8JywvKXANV4b4Y/mnnGxXAY43BzjPnwULQV05KI=;
-        b=LoGxvBpDEU586mANHKg0AlOVLSwjxUwcerLWqBCuDTqB3BKr12xDPuAeaITf0OJ5u7
-         pW5MXZkNE0Spz9kUiB9YFRowyZ0wzFTcuAQcWOmZNSNocM1lGunteIJ6qMNsP+7LQHCn
-         K9g4hWqiodIzksvb86yTlUcAOgIE59cm3keL138dQdp2+Aqm72Oe/K9ovJombOHk9b77
-         q7K21gZoQ5BwAZI8RwxdUwRFZcTCvQniV3IZouqx83co77jWHl0m4ZIhqH83wfbTdKJo
-         gJdyjf/44/40tPfp4ckSZbjo5gpkBplWyQ2sI3AVC3OjkfeUBdeeMBulLolpi/ubh9oF
-         H8Aw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1784639565; x=1785244365;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=LZcY8JywvKXANV4b4Y/mnnGxXAY43BzjPnwULQV05KI=;
-        b=k5ClrGWTl7odcLoCyZQfZhKfNEdD4l9V+6+XFh/KRxti1GCqEtQVN/3nW+UZ+d052H
-         vPCRUX0l3qx4s4JJLqCt/K4JZUoYeOLV5Ocpi7XywmHrJ+c/R7uxado5kuS2LpMc/QNx
-         lc8Evg5DGKtk51T09YKTYvfGAMSr7sD9crwWRe+FlkKdCwNISEInkzNmPBX6h/ra3l6W
-         BQPpmfZCLYycGCcjAkcr5BSV2BrJkex5Bwl+3qQCsW4Lh+LK0RGNgO3wIrc86ThvuaEL
-         yrz4eHnWdFyIwmtb+mC1IaV1Zc/5+lJxCRZzwGcXHLGYTNon5nSzqf6rA4lQi0I2bvtT
-         CnmQ==
-X-Forwarded-Encrypted: i=1; AHgh+RrdKL2onT8wS0hjpOAKwv125gkMJvj+UvreGKZ8eHQReeFM6Mm76ykweyYAqYb1GgG5r6ta1OYqDA==@vger.kernel.org
-X-Gm-Message-State: AOJu0YwZ5RSnXjh/mfTrBVH8mP4O3V8oZlSHZMYQeS3iQoWZgnEdfUFe
-	TrlBXEQWU6ut9qu0GtRyL30qVeBg5weHzP49B0jm8CV5FPUfvyjodqdpteAnQFXTQQk=
-X-Gm-Gg: AR+sD12SqX6L6WKju1lJbStv289olDY1htmSB9FZJZa7uS8m0oL7PIIz4OSNERtW40E
-	3wnqMGu/uqLU8kmVd2JHHoUMrGsv2vnq6FzEnxphFskJUpaDbTw4VyhEY6/aNNmgjgOnz0+6QHz
-	imxnovxsNkrq64RHL4GHJ6NzYmYt7qtAmCHl1qcAos4QDRuHqjBspydsEBhwHa6lvodJZE0vB5J
-	eeXqVw7qbdSX2InhHI8VXZRgtkDPLT4zNIQw4y9bKoVGK051GwsEh6B8Qy3qDblpAD8cGvrSNF0
-	DqqmvVi+mW5Mks5OG1TBE5mxKin3vtgLV/XCLST553uglxpkfj+tsV3DHwTqcZHMG6dewCc5S2N
-	2LT/btqu/e9nD14YIZc67G1EzNfbaGh92yh8x4qCiwywekMwTaU0nFv6ulusTxica81mNsxJlHg
-	==
-X-Received: by 2002:a5d:64e8:0:b0:47f:6fbd:8a17 with SMTP id ffacd0b85a97d-47f6fbd8e65mr15616435f8f.59.1784639564680;
-        Tue, 21 Jul 2026 06:12:44 -0700 (PDT)
-Received: from zovi.suse.cz ([2001:af0:8000:1409:193:86:92:181])
-        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-47f63ee9281sm42070938f8f.36.2026.07.21.06.12.42
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 21 Jul 2026 06:12:44 -0700 (PDT)
-From: Petr Pavlu <petr.pavlu@suse.com>
-To: Tony Luck <tony.luck@intel.com>,
-	Borislav Petkov <bp@alien8.de>,
-	Thomas Gleixner <tglx@kernel.org>,
-	Ingo Molnar <mingo@redhat.com>,
-	Dave Hansen <dave.hansen@linux.intel.com>,
-	x86@kernel.org,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Philipp Reisner <philipp.reisner@linbit.com>,
-	Lars Ellenberg <lars.ellenberg@linbit.com>,
-	=?UTF-8?q?Christoph=20B=C3=B6hmwalder?= <christoph.boehmwalder@linbit.com>,
-	Jens Axboe <axboe@kernel.dk>,
-	Johan Hovold <johan@kernel.org>,
-	Alex Elder <elder@kernel.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	"Rafael J. Wysocki" <rafael@kernel.org>,
-	Michal Januszewski <spock@gentoo.org>,
-	Helge Deller <deller@gmx.de>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Christian Brauner <brauner@kernel.org>,
-	Jan Kara <jack@suse.cz>,
-	Trond Myklebust <trondmy@kernel.org>,
-	Anna Schumaker <anna@kernel.org>,
-	Chuck Lever <cel@kernel.org>,
-	Jeff Layton <jlayton@kernel.org>,
-	NeilBrown <neil@brown.name>,
-	Olga Kornievskaia <okorniev@redhat.com>,
-	Dai Ngo <Dai.Ngo@oracle.com>,
-	Tom Talpey <tom@talpey.com>,
-	Mark Fasheh <mark@fasheh.com>,
-	Joel Becker <jlbec@evilplan.org>,
-	Joseph Qi <joseph.qi@linux.alibaba.com>,
-	Tejun Heo <tj@kernel.org>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	=?UTF-8?q?Michal=20Koutn=C3=BD?= <mkoutny@suse.com>,
-	Luis Chamberlain <mcgrof@kernel.org>,
-	Petr Pavlu <petr.pavlu@suse.com>,
-	Daniel Gomez <da.gomez@kernel.org>,
-	Sami Tolvanen <samitolvanen@google.com>,
-	Aaron Tomlin <atomlin@atomlin.com>,
-	Pavel Machek <pavel@kernel.org>,
-	Len Brown <lenb@kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Danilo Krummrich <dakr@kernel.org>,
-	Nikolay Aleksandrov <razor@blackwall.org>,
-	Ido Schimmel <idosch@nvidia.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Eric Dumazet <edumazet@google.com>,
-	Jakub Kicinski <kuba@kernel.org>,
-	Paolo Abeni <pabeni@redhat.com>,
-	Simon Horman <horms@kernel.org>,
-	David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Kentaro Takeda <takedakn@nttdata.co.jp>,
-	Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-edac@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	drbd-dev@lists.linux.dev,
-	linux-block@vger.kernel.org,
-	greybus-dev@lists.linaro.org,
-	linuxppc-dev@lists.ozlabs.org,
-	linux-acpi@vger.kernel.org,
-	linux-fbdev@vger.kernel.org,
-	dri-devel@lists.freedesktop.org,
-	linux-fsdevel@vger.kernel.org,
-	linux-nfs@vger.kernel.org,
-	ocfs2-devel@lists.linux.dev,
-	cgroups@vger.kernel.org,
-	linux-modules@vger.kernel.org,
-	linux-pm@vger.kernel.org,
-	driver-core@lists.linux.dev,
-	bridge@lists.linux.dev,
-	netdev@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org
-Subject: [PATCH v2 3/3] module: Bring includes in linux/kmod.h up to date
-Date: Tue, 21 Jul 2026 15:11:27 +0200
-Message-ID: <20260721131207.803760-4-petr.pavlu@suse.com>
-X-Mailer: git-send-email 2.54.0
-In-Reply-To: <20260721131207.803760-1-petr.pavlu@suse.com>
-References: <20260721131207.803760-1-petr.pavlu@suse.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="P5GtKRfC"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 642351F00A3A;
+	Tue, 21 Jul 2026 15:29:23 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1784647768;
+	bh=vKR0zlu4bK2eye4JJSxzjC3UQbyoedFDIfb+cFpF7yI=;
+	h=Date:Subject:To:Cc:References:From:In-Reply-To;
+	b=P5GtKRfCBc3xqCC+TlINJzdnXVxCjDemORr98LEM7iXwLwu4yz4RT8DrZSjAtEFoU
+	 3kA0E7mWKVBNs/9BurxF5ZwULBFcnTvqN6jR75eYS9VlJPFA8316RTtLVSvXT+Fcsc
+	 3QvzzKNYPzS/VCtbrXkbtrg0gmMfttl2OM4JhsNEWMdlkOAl6px66BrylVDE4esJlT
+	 qV46lU8gq9rhUGeWqnKL3yEQhPs5rkqnG85TzZKgTE2mpcT5zcR5UaUYISXXuhMv07
+	 WoNj0TAYsg6k2OMZnI5Qf8ZwIMqx6M+PUQjKKGD76fxuxgG/5rEiDZhTT98iHEPPfa
+	 lZs01SJgzeajQ==
+Message-ID: <e74d963c-8cf0-42ee-8b83-86e8c65dd0c7@kernel.org>
+Date: Tue, 21 Jul 2026 17:29:22 +0200
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH v3 1/2] treewide: Add a flag to detect the Apple T2 chip
+To: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@kernel.org>,
+ Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>,
+ Dave Hansen <dave.hansen@linux.intel.com>, x86@kernel.org,
+ "H. Peter Anvin" <hpa@zytor.com>, Andreas Noever <andreas.noever@gmail.com>,
+ Mika Westerberg <westeri@kernel.org>, Yehezkel Bernat
+ <YehezkelShB@gmail.com>, =?UTF-8?Q?Ilpo_J=C3=A4rvinen?=
+ <ilpo.jarvinen@linux.intel.com>, Jarkko Sakkinen <jarkko@kernel.org>,
+ Mimi Zohar <zohar@linux.ibm.com>, Roberto Sassu <roberto.sassu@huawei.com>,
+ Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+ Eric Snowberg <eric.snowberg@oracle.com>, Paul Moore <paul@paul-moore.com>,
+ James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+ linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+ linux-usb@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+ linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+ linux-security-module@vger.kernel.org
+References: <20260721063412.11588-1-atharvatiwarilinuxdev@gmail.com>
+ <20260721063412.11588-2-atharvatiwarilinuxdev@gmail.com>
+From: Hans de Goede <hansg@kernel.org>
+Content-Language: en-US, nl
+In-Reply-To: <20260721063412.11588-2-atharvatiwarilinuxdev@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-Including linux/kmod.h alone results in 1.5 MB of preprocessed output, even
-though it provides only a few functions and macros.
+Hi,
 
-The header currently depends on:
+On 21-Jul-26 08:34, Atharva Tiwari wrote:
+> Add a flag to detect Apple T2 chips on Intel Macs.
+> Cache the result to avoid repeated checks. That will
+> be used in upcoming patches.
+> 
+> Signed-off-by: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>
+> ---
+>  arch/x86/kernel/quirks.c                      | 105 ++++++++++++++++++
+>  include/linux/platform_data/x86/apple.h       |   5 +
+>  .../platform_certs/keyring_handler.h          |   8 --
+>  security/integrity/platform_certs/load_uefi.c |  38 ++-----
+>  4 files changed, 118 insertions(+), 38 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+> index a92f18db9610..300d6436060d 100644
+> --- a/arch/x86/kernel/quirks.c
+> +++ b/arch/x86/kernel/quirks.c
+> @@ -664,8 +664,113 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x2083, quirk_intel_purley_xeon_ras
+>  bool x86_apple_machine;
+>  EXPORT_SYMBOL(x86_apple_machine);
+>  
+> +bool has_apple_t2_chip;
+> +EXPORT_SYMBOL(has_apple_t2_chip);
+> +
+> +static const struct dmi_system_id apple_t2_devices[] __initconst = {
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,1"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,2"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,3"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,4"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,1"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,2"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,3"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,4"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir8,1"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir8,2"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir9,1"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Macmini8,1"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacPro7,1"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "iMac20,1"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "iMac20,2"),
+> +		},
+> +	},
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "iMacPro1,1"),
+> +		},
+> +	},
+> +	{ }
+> +};
+> +
 
-* __printf() -> linux/compiler_attributes.h,
-* ENOSYS -> linux/errno.h,
-* bool -> linux/types.h.
+This takes quite a bit of storage, struct dmi_system_id is not
+very efficient.
 
-Include only these files, reducing the preprocessed output to 10 kB.
+How about making this a NULL terminated array of strings:
 
-Signed-off-by: Petr Pavlu <petr.pavlu@suse.com>
-Reviewed-by: Aaron Tomlin <atomlin@atomlin.com>
----
- include/linux/kmod.h | 12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+const char *apple_t2_devices[] __initconst = {
+	"MacBookPro15,1",
+	...
+	"iMacPro1,1",
+	NULL
+};
 
-diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-index 9a07c3215389..b9474a62a568 100644
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -2,17 +2,9 @@
- #ifndef __LINUX_KMOD_H__
- #define __LINUX_KMOD_H__
- 
--/*
-- *	include/linux/kmod.h
-- */
--
--#include <linux/umh.h>
--#include <linux/gfp.h>
--#include <linux/stddef.h>
-+#include <linux/compiler_attributes.h>
- #include <linux/errno.h>
--#include <linux/compiler.h>
--#include <linux/workqueue.h>
--#include <linux/sysctl.h>
-+#include <linux/types.h>
- 
- #ifdef CONFIG_MODULES
- /* modprobe exit status on success, -ve on error.  Return value
--- 
-2.54.0
+>  void __init early_platform_quirks(void)
+>  {
+>  	x86_apple_machine = dmi_match(DMI_SYS_VENDOR, "Apple Inc.") ||
+>  			    dmi_match(DMI_SYS_VENDOR, "Apple Computer, Inc.");
+> +
+> +	has_apple_t2_chip = dmi_check_system(apple_t2_devices);
+
+and then here:
+
+	for (int i = 0; x86_apple_machine && apple_t2_devices[i]; i++)
+		if (dmi_match(DMI_PRODUCT_NAME, apple_t2_devices[i])) {
+			has_apple_t2_chip = true;
+			break;
+		}
+
+This should save some space and IMHO just having a compact list of
+product-names is more readable too.
+
+Regards,
+
+Hans
+
+
+>  }
+> diff --git a/include/linux/platform_data/x86/apple.h b/include/linux/platform_data/x86/apple.h
+> index 079e816c3c21..47b27dceab18 100644
+> --- a/include/linux/platform_data/x86/apple.h
+> +++ b/include/linux/platform_data/x86/apple.h
+> @@ -6,8 +6,13 @@
+>   * x86_apple_machine - whether the machine is an x86 Apple Macintosh
+>   */
+>  extern bool x86_apple_machine;
+> +/**
+> + * has_apple_t2_chip - whether the machine has the Apple T2 chip
+> + */
+> +extern bool has_apple_t2_chip;
+>  #else
+>  #define x86_apple_machine false
+> +#define has_apple_t2_chip false
+>  #endif
+>  
+>  #endif
+> diff --git a/security/integrity/platform_certs/keyring_handler.h b/security/integrity/platform_certs/keyring_handler.h
+> index f92895cc50f6..a355f4400179 100644
+> --- a/security/integrity/platform_certs/keyring_handler.h
+> +++ b/security/integrity/platform_certs/keyring_handler.h
+> @@ -45,11 +45,3 @@ efi_element_handler_t get_handler_for_code_signing_keys(const efi_guid_t *sig_ty
+>  efi_element_handler_t get_handler_for_dbx(const efi_guid_t *sig_type);
+>  
+>  #endif
+> -
+> -#ifndef UEFI_QUIRK_SKIP_CERT
+> -#define UEFI_QUIRK_SKIP_CERT(vendor, product) \
+> -		 .matches = { \
+> -			DMI_MATCH(DMI_BOARD_VENDOR, vendor), \
+> -			DMI_MATCH(DMI_PRODUCT_NAME, product), \
+> -		},
+> -#endif
+> diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
+> index c0d6948446c3..b4096d4c828d 100644
+> --- a/security/integrity/platform_certs/load_uefi.c
+> +++ b/security/integrity/platform_certs/load_uefi.c
+> @@ -3,42 +3,16 @@
+>  #include <linux/kernel.h>
+>  #include <linux/sched.h>
+>  #include <linux/cred.h>
+> -#include <linux/dmi.h>
+>  #include <linux/err.h>
+>  #include <linux/efi.h>
+>  #include <linux/slab.h>
+>  #include <linux/ima.h>
+> +#include <linux/platform_data/x86/apple.h>
+>  #include <keys/asymmetric-type.h>
+>  #include <keys/system_keyring.h>
+>  #include "../integrity.h"
+>  #include "keyring_handler.h"
+>  
+> -/*
+> - * On T2 Macs reading the db and dbx efi variables to load UEFI Secure Boot
+> - * certificates causes occurrence of a page fault in Apple's firmware and
+> - * a crash disabling EFI runtime services. The following quirk skips reading
+> - * these variables.
+> - */
+> -static const struct dmi_system_id uefi_skip_cert[] = {
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,1") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,2") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,3") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,4") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,1") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,2") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,3") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,4") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir8,1") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir8,2") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir9,1") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "Macmini8,1") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacPro7,1") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMac20,1") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMac20,2") },
+> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMacPro1,1") },
+> -	{ }
+> -};
+> -
+>  /*
+>   * Look to see if a UEFI variable called MokIgnoreDB exists and return true if
+>   * it does.
+> @@ -165,10 +139,14 @@ static int __init load_uefi_certs(void)
+>  	unsigned long dbsize = 0, dbxsize = 0, mokxsize = 0;
+>  	efi_status_t status;
+>  	int rc = 0;
+> -	const struct dmi_system_id *dmi_id;
+>  
+> -	dmi_id = dmi_first_match(uefi_skip_cert);
+> -	if (dmi_id) {
+> +	/*
+> +	 * On T2 Macs reading the db and dbx efi variables to load UEFI Secure Boot
+> +	 * certificates causes occurrence of a page fault in Apple's firmware and
+> +	 * a crash disabling EFI runtime services. The following quirk skips reading
+> +	 * these variables.
+> +	 */
+> +	if (has_apple_t2_chip) {
+>  		pr_err("Reading UEFI Secure Boot Certs is not supported on T2 Macs.\n");
+>  		return false;
+>  	}
 
