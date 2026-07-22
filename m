@@ -1,326 +1,158 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9EC4C367B60;
-	Tue, 21 Jul 2026 15:29:28 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0590645A292;
+	Wed, 22 Jul 2026 15:29:33 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1784647769; cv=none; b=F0vmhPAAGOtDe+WLtcinpNv/JOkt/R77B0pvulpHRu4zAh6v96Zy3Wzbzi+0Luh4Ct/2kLDRvlmkZTgpShm6LIBSObQO72SSh+WtAfsxB9XPQrB5kloQw4weT434IUdiFc7k0h/5yYSFHrG5Otw8swB6o/aKcWZV/grVT+IwBVs=
+	t=1784734181; cv=none; b=ePklpJGU43oSEkSpfBXGyYxhRhXsPWPVHTXa4pLUZWKCo+p6nXwO7XD9u1RnhSRaZjQuRwpekmJYicoqPL8LgrWrjD15Hs1QvOUV4K97nb/AVgD41CubgdS4/rOQ71RJ1oauRbYPLMW2E0gXK2AbFjCD7CjYp3xBxD4bxo3vLrE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1784647769; c=relaxed/simple;
-	bh=6YNNZIFpa1OsYiAePENW2CYKRSiDbIY4qh/xUvVrYXo=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=gzXhe0Wq7LxTmPVipYCxRbTNzTwEtxkygUwGEZHXft0UIBbBr7NhTiG5TQu1ONqihSjJmu5wXtmr86FzMXkZGt1Obt2R04ILVvxXJG91R3gOMegCwDTAhoZ5NOivn+a3M094t7zc3qLXOiH6XbTsy4UQAkz1xcES5s1JfQQmOeQ=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=P5GtKRfC; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1784734181; c=relaxed/simple;
+	bh=KRZ7jSVXPG07u3iEJwh2GqUvHVhdlj7HV1kHpA0w7FA=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=u3Lv1HJ5vpuB173t0WFSzPhWxVvEYOPw0y8OhAs9ge30+6ntRs55n4QqT72CEuvNfd02DEIT51I4mkQg14Iogux5lM8JMVz1Z/pT+NxHizGBM/G7Y5D8dvftqck3f4eg4ZUbbRQKfO0rPFStf7jNDP6hjpHH75FvS+Gh6FE/ZOI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=LmiPnMdd; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="P5GtKRfC"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 642351F00A3A;
-	Tue, 21 Jul 2026 15:29:23 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="LmiPnMdd"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D2A211F000E9;
+	Wed, 22 Jul 2026 15:29:30 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1784647768;
-	bh=vKR0zlu4bK2eye4JJSxzjC3UQbyoedFDIfb+cFpF7yI=;
-	h=Date:Subject:To:Cc:References:From:In-Reply-To;
-	b=P5GtKRfCBc3xqCC+TlINJzdnXVxCjDemORr98LEM7iXwLwu4yz4RT8DrZSjAtEFoU
-	 3kA0E7mWKVBNs/9BurxF5ZwULBFcnTvqN6jR75eYS9VlJPFA8316RTtLVSvXT+Fcsc
-	 3QvzzKNYPzS/VCtbrXkbtrg0gmMfttl2OM4JhsNEWMdlkOAl6px66BrylVDE4esJlT
-	 qV46lU8gq9rhUGeWqnKL3yEQhPs5rkqnG85TzZKgTE2mpcT5zcR5UaUYISXXuhMv07
-	 WoNj0TAYsg6k2OMZnI5Qf8ZwIMqx6M+PUQjKKGD76fxuxgG/5rEiDZhTT98iHEPPfa
-	 lZs01SJgzeajQ==
-Message-ID: <e74d963c-8cf0-42ee-8b83-86e8c65dd0c7@kernel.org>
-Date: Tue, 21 Jul 2026 17:29:22 +0200
+	s=k20260515; t=1784734171;
+	bh=1dG8/slgIIsIELLRRrEi2KjmBulSNoH2tpSJ0p9eyWQ=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=LmiPnMdd1GTcVxlNPpUXh05t3vsLvr4eHjFlCUQAujjCz2mwcCYkaBG+tKej/aMwl
+	 +VdMco9hVDAHwcrRyF/gtRahov8SfTH+Ym8hzYqPcNXcE0m64pL/08Usfati7GGaLJ
+	 6UebPOvOmDSesK7mDefL+pXNEvtFN087FF3sd6nQGUOMQfdjoFSDsbhHVIT/++VFL0
+	 2Rh3H+R3assGfeXk8w1hqjNBSoKn4mjiDaUhW79JguDjjvZmYEh+hYXFCzh3Mb9Bp3
+	 euxsHM8SWGD3ciERwI4FGy+1b6aVniPHK1trj/55KFti5rMsPnhJZB6fln5mJi1v5u
+	 4EeOlxffozk2Q==
+Date: Wed, 22 Jul 2026 18:29:27 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Gstir <david@sigma-star.at>
+Cc: Fabrice Derepas <fabrice.derepas@canonical.com>,
+	keyrings@vger.kernel.org, linux-integrity@vger.kernel.org,
+	upstream+dcp@sigma-star.at, zohar@linux.ibm.com,
+	dhowells@redhat.com
+Subject: Re: [PATCH v2] KEYS: trusted: dcp: fix key_len validation and
+ calc_blob_len() return type
+Message-ID: <amDh1y9FJxtAsaBc@kernel.org>
+References: <20260719163939.3624767-1-fabrice.derepas@canonical.com>
+ <1EDDC226-1CDE-4A17-968D-EBA26E81B596@sigma-star.at>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v3 1/2] treewide: Add a flag to detect the Apple T2 chip
-To: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@kernel.org>,
- Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>,
- Dave Hansen <dave.hansen@linux.intel.com>, x86@kernel.org,
- "H. Peter Anvin" <hpa@zytor.com>, Andreas Noever <andreas.noever@gmail.com>,
- Mika Westerberg <westeri@kernel.org>, Yehezkel Bernat
- <YehezkelShB@gmail.com>, =?UTF-8?Q?Ilpo_J=C3=A4rvinen?=
- <ilpo.jarvinen@linux.intel.com>, Jarkko Sakkinen <jarkko@kernel.org>,
- Mimi Zohar <zohar@linux.ibm.com>, Roberto Sassu <roberto.sassu@huawei.com>,
- Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
- Eric Snowberg <eric.snowberg@oracle.com>, Paul Moore <paul@paul-moore.com>,
- James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
- linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
- linux-usb@vger.kernel.org, platform-driver-x86@vger.kernel.org,
- linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
- linux-security-module@vger.kernel.org
-References: <20260721063412.11588-1-atharvatiwarilinuxdev@gmail.com>
- <20260721063412.11588-2-atharvatiwarilinuxdev@gmail.com>
-From: Hans de Goede <hansg@kernel.org>
-Content-Language: en-US, nl
-In-Reply-To: <20260721063412.11588-2-atharvatiwarilinuxdev@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1EDDC226-1CDE-4A17-968D-EBA26E81B596@sigma-star.at>
 
-Hi,
-
-On 21-Jul-26 08:34, Atharva Tiwari wrote:
-> Add a flag to detect Apple T2 chips on Intel Macs.
-> Cache the result to avoid repeated checks. That will
-> be used in upcoming patches.
+On Mon, Jul 20, 2026 at 12:34:54PM +0200, David Gstir wrote:
+> Hi Fabrice,
 > 
-> Signed-off-by: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>
-> ---
->  arch/x86/kernel/quirks.c                      | 105 ++++++++++++++++++
->  include/linux/platform_data/x86/apple.h       |   5 +
->  .../platform_certs/keyring_handler.h          |   8 --
->  security/integrity/platform_certs/load_uefi.c |  38 ++-----
->  4 files changed, 118 insertions(+), 38 deletions(-)
+> > On 19.07.2026, at 18:41, Fabrice Derepas <fabrice.derepas@canonical.com> wrote:
+> > ﻿Two correctness and type-hygiene issues exist in the DCP trusted keys
+> > implementation.
+> > 
+> > First, trusted_dcp_unseal() reads p->key_len from a user-supplied blob
+> > without checking if it exceeds MAX_KEY_SIZE.  If a crafted blob provides
+> > a payload_len larger than 128, the subsequent do_aead_crypto() call
+> > writes past the end of the p->key array into the adjacent p->blob
+> > buffer within the same struct trusted_key_payload -- the caller's own
+> > input, not unrelated kernel memory.  While not exploitable, this
+> > violates strict array bounds and triggers static analyzers.  Fix this by adding a validation check against
+> > MIN_KEY_SIZE and MAX_KEY_SIZE immediately after reading the length,
+> > matching the checks already done in trusted_core.c.
+> > 
+> > Second, calc_blob_len() calculates a sum in size_t that truncates to
+> > unsigned int on 64-bit platforms.  Because the DCP hardware is only
+> > present on 32-bit i.MX SoC platforms, size_t and unsigned int are
+> > functionally equivalent in production, making this truncation harmless in
+> > practice.  Nevertheless, updating the return type to size_t (and
+> > subsequently updating 'blen' in the seal/unseal paths) resolves
+> > type-narrowing warnings and improves overall code hygiene.
+> > 
+> > Fixes: 2e8a0f40a39c ("KEYS: trusted: Introduce NXP DCP-backed trusted keys")
+> > Signed-off-by: Fabrice Derepas <fabrice.derepas@canonical.com>
+> > ---
+> > Changes in v2:
+> >  - Reframed commit message as correctness/hardening fix (Richard, Jarkko)
+> >  - Changed bare return -EINVAL to goto out for consistency
+> >  - Added Fixes tag
+> > 
+> > Compile-tested with arm-linux-gnueabihf-gcc on imx_v6_v7_defconfig
+> > with CONFIG_TRUSTED_KEYS_DCP=y (W=1, zero warnings). No DCP hardware
+> > available for runtime testing.
+> > 
+> > security/keys/trusted-keys/trusted_dcp.c | 15 +++++++++++----
+> > 1 file changed, 11 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/security/keys/trusted-keys/trusted_dcp.c b/security/keys/trusted-keys/trusted_dcp.c
+> > index 7b6eb655d..c078adebe 100644
+> > --- a/security/keys/trusted-keys/trusted_dcp.c
+> > +++ b/security/keys/trusted-keys/trusted_dcp.c
+> > @@ -69,7 +69,7 @@ static bool skip_zk_test;
+> > module_param_named(dcp_skip_zk_test, skip_zk_test, bool, 0);
+> > MODULE_PARM_DESC(dcp_skip_zk_test, "Don't test whether device keys are zero'ed");
+> > 
+> > -static unsigned int calc_blob_len(unsigned int payload_len)
+> > +static size_t calc_blob_len(unsigned int payload_len)
+> > {
+> >    return sizeof(struct dcp_blob_fmt) + payload_len + DCP_BLOB_AUTHLEN;
+> > }
+> > @@ -200,7 +200,8 @@ static int encrypt_blob_key(u8 *plain_key, u8 *encrypted_key)
+> > static int trusted_dcp_seal(struct trusted_key_payload *p, char *datablob)
+> > {
+> >    struct dcp_blob_fmt *b = (struct dcp_blob_fmt *)p->blob;
+> > -    int blen, ret;
+> > +    size_t blen;
+> > +    int ret;
+> >    u8 *plain_blob_key;
+> > 
+> >    blen = calc_blob_len(p->key_len);
+> > @@ -242,7 +243,8 @@ static int trusted_dcp_seal(struct trusted_key_payload *p, char *datablob)
+> > static int trusted_dcp_unseal(struct trusted_key_payload *p, char *datablob)
+> > {
+> >    struct dcp_blob_fmt *b = (struct dcp_blob_fmt *)p->blob;
+> > -    int blen, ret;
+> > +    size_t blen;
+> > +    int ret;
+> >    u8 *plain_blob_key = NULL;
+> > 
+> >    if (b->fmt_version != DCP_BLOB_VERSION) {
+> > @@ -253,9 +255,14 @@ static int trusted_dcp_unseal(struct trusted_key_payload *p, char *datablob)
+> >    }
+> > 
+> >    p->key_len = le32_to_cpu(b->payload_len);
+> > +    if (p->key_len < MIN_KEY_SIZE || p->key_len > MAX_KEY_SIZE) {
+> > +        ret = -EINVAL;
+> > +        goto out;
+> > +    }
+> > +
+> >    blen = calc_blob_len(p->key_len);
+> >    if (blen != p->blob_len) {
+> > -        pr_err("DCP blob has bad length: %i != %i\n", blen,
+> > +        pr_err("DCP blob has bad length: %zu != %u\n", blen,
+> >               p->blob_len);
+> >        ret = -EINVAL;
+> >        goto out;
+> > 
+> > base-commit: 6d41c11ef3044788902a05e292cd7f0a9c7a8157
+> > --
+> > 2.53.0
+> > 
 > 
-> diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-> index a92f18db9610..300d6436060d 100644
-> --- a/arch/x86/kernel/quirks.c
-> +++ b/arch/x86/kernel/quirks.c
-> @@ -664,8 +664,113 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x2083, quirk_intel_purley_xeon_ras
->  bool x86_apple_machine;
->  EXPORT_SYMBOL(x86_apple_machine);
->  
-> +bool has_apple_t2_chip;
-> +EXPORT_SYMBOL(has_apple_t2_chip);
-> +
-> +static const struct dmi_system_id apple_t2_devices[] __initconst = {
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,1"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,2"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,3"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro15,4"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,1"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,2"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,3"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro16,4"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir8,1"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir8,2"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir9,1"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "Macmini8,1"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "MacPro7,1"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "iMac20,1"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "iMac20,2"),
-> +		},
-> +	},
-> +	{
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "iMacPro1,1"),
-> +		},
-> +	},
-> +	{ }
-> +};
-> +
-
-This takes quite a bit of storage, struct dmi_system_id is not
-very efficient.
-
-How about making this a NULL terminated array of strings:
-
-const char *apple_t2_devices[] __initconst = {
-	"MacBookPro15,1",
-	...
-	"iMacPro1,1",
-	NULL
-};
-
->  void __init early_platform_quirks(void)
->  {
->  	x86_apple_machine = dmi_match(DMI_SYS_VENDOR, "Apple Inc.") ||
->  			    dmi_match(DMI_SYS_VENDOR, "Apple Computer, Inc.");
-> +
-> +	has_apple_t2_chip = dmi_check_system(apple_t2_devices);
-
-and then here:
-
-	for (int i = 0; x86_apple_machine && apple_t2_devices[i]; i++)
-		if (dmi_match(DMI_PRODUCT_NAME, apple_t2_devices[i])) {
-			has_apple_t2_chip = true;
-			break;
-		}
-
-This should save some space and IMHO just having a compact list of
-product-names is more readable too.
-
-Regards,
-
-Hans
+> LGTM and thanks for the fix!
+> 
+> Reviewed-by: David Gstir <david@sigma-star.at>
+> 
+> - David
 
 
->  }
-> diff --git a/include/linux/platform_data/x86/apple.h b/include/linux/platform_data/x86/apple.h
-> index 079e816c3c21..47b27dceab18 100644
-> --- a/include/linux/platform_data/x86/apple.h
-> +++ b/include/linux/platform_data/x86/apple.h
-> @@ -6,8 +6,13 @@
->   * x86_apple_machine - whether the machine is an x86 Apple Macintosh
->   */
->  extern bool x86_apple_machine;
-> +/**
-> + * has_apple_t2_chip - whether the machine has the Apple T2 chip
-> + */
-> +extern bool has_apple_t2_chip;
->  #else
->  #define x86_apple_machine false
-> +#define has_apple_t2_chip false
->  #endif
->  
->  #endif
-> diff --git a/security/integrity/platform_certs/keyring_handler.h b/security/integrity/platform_certs/keyring_handler.h
-> index f92895cc50f6..a355f4400179 100644
-> --- a/security/integrity/platform_certs/keyring_handler.h
-> +++ b/security/integrity/platform_certs/keyring_handler.h
-> @@ -45,11 +45,3 @@ efi_element_handler_t get_handler_for_code_signing_keys(const efi_guid_t *sig_ty
->  efi_element_handler_t get_handler_for_dbx(const efi_guid_t *sig_type);
->  
->  #endif
-> -
-> -#ifndef UEFI_QUIRK_SKIP_CERT
-> -#define UEFI_QUIRK_SKIP_CERT(vendor, product) \
-> -		 .matches = { \
-> -			DMI_MATCH(DMI_BOARD_VENDOR, vendor), \
-> -			DMI_MATCH(DMI_PRODUCT_NAME, product), \
-> -		},
-> -#endif
-> diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
-> index c0d6948446c3..b4096d4c828d 100644
-> --- a/security/integrity/platform_certs/load_uefi.c
-> +++ b/security/integrity/platform_certs/load_uefi.c
-> @@ -3,42 +3,16 @@
->  #include <linux/kernel.h>
->  #include <linux/sched.h>
->  #include <linux/cred.h>
-> -#include <linux/dmi.h>
->  #include <linux/err.h>
->  #include <linux/efi.h>
->  #include <linux/slab.h>
->  #include <linux/ima.h>
-> +#include <linux/platform_data/x86/apple.h>
->  #include <keys/asymmetric-type.h>
->  #include <keys/system_keyring.h>
->  #include "../integrity.h"
->  #include "keyring_handler.h"
->  
-> -/*
-> - * On T2 Macs reading the db and dbx efi variables to load UEFI Secure Boot
-> - * certificates causes occurrence of a page fault in Apple's firmware and
-> - * a crash disabling EFI runtime services. The following quirk skips reading
-> - * these variables.
-> - */
-> -static const struct dmi_system_id uefi_skip_cert[] = {
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,1") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,2") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,3") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro15,4") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,1") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,2") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,3") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookPro16,4") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir8,1") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir8,2") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacBookAir9,1") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "Macmini8,1") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "MacPro7,1") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMac20,1") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMac20,2") },
-> -	{ UEFI_QUIRK_SKIP_CERT("Apple Inc.", "iMacPro1,1") },
-> -	{ }
-> -};
-> -
->  /*
->   * Look to see if a UEFI variable called MokIgnoreDB exists and return true if
->   * it does.
-> @@ -165,10 +139,14 @@ static int __init load_uefi_certs(void)
->  	unsigned long dbsize = 0, dbxsize = 0, mokxsize = 0;
->  	efi_status_t status;
->  	int rc = 0;
-> -	const struct dmi_system_id *dmi_id;
->  
-> -	dmi_id = dmi_first_match(uefi_skip_cert);
-> -	if (dmi_id) {
-> +	/*
-> +	 * On T2 Macs reading the db and dbx efi variables to load UEFI Secure Boot
-> +	 * certificates causes occurrence of a page fault in Apple's firmware and
-> +	 * a crash disabling EFI runtime services. The following quirk skips reading
-> +	 * these variables.
-> +	 */
-> +	if (has_apple_t2_chip) {
->  		pr_err("Reading UEFI Secure Boot Certs is not supported on T2 Macs.\n");
->  		return false;
->  	}
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
+And applied (not yet pushed, will after end of my inbox)
+
+BR, Jarkko
