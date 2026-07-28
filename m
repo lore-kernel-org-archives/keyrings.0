@@ -1,63 +1,80 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AF71F42FCB0;
-	Mon, 27 Jul 2026 21:50:40 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E191F4315F;
+	Tue, 28 Jul 2026 00:49:28 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1785189041; cv=none; b=nSidckkUuz9sjXXRhDMmieHl+tGIxSFK3/zxB9rHxEg2oJBlRGAF3fbxTxVJWDPSIpkgGg02fSMKYeEF7ZGogp8oOHAvKtkRr6Nr/Lkb7x/V94Zb4oOSQdCTYcUUHj280FnGmPVShUNY+2hGVBl6LkEzTmsV005ADcXC9SWy2RI=
+	t=1785199769; cv=none; b=FnS3PsiV1OMnTGTL2wgr/+2IrkIkUG4TF3U0Qw3KGkgkDIM9HjhU7PSDbUmpGMrUGV0rIL+m8jaF8cUxCRcukdaZJGZHIlmfAhywBRVR7M9zuMb1HMD8iSU4DkfkvPK8YDFvdW74fltRbJMefbaNDXFvb84dTIfIqzpjwe26/9Q=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1785189041; c=relaxed/simple;
-	bh=Pp6bHO3sa+B5efpC5FZNyA1vjZYajJBtZRhiEwuw+Ik=;
-	h=Subject:From:In-Reply-To:References:Message-Id:Date:To:Cc; b=pV/IiE301236ejjHIQNeuxbBc5LvZmESsLYvO4rHB9Ia/H5qRoChvWL0zYw/obziSo5rQHukS4q/TDoEEJfK24E/J8YYU//S7qfpBax4tA4vQTDpueFEo7rYeOjxEojYyc9ZIf34OYMbkQP67CIunUgDvt1cJmRxYNOsZPyImFs=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TulJkxwn; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1785199769; c=relaxed/simple;
+	bh=oosCYnWmgxePIEDtXyTh5syo7EBriO/jeMARD3FOfLo=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=Ha8vqAKBTBaPE4bDIKb0cn4W/Yv1gsr7sxo0VQqcQ3jUUazAc+kVkYJ9Z+R+5IXDmsOlMOR/IUML5ZlROxl0qmP4fzNmA029Zq/oZNIEc6b8ydPgx6LUGHEcH/CA50JO2BiulnwDemxwcYBhweu/2o65dQYBDIBm/SUAwdHoDHk=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=O6MjoW8M; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TulJkxwn"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 925B51F00A3A;
-	Mon, 27 Jul 2026 21:50:40 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="O6MjoW8M"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id F32801F000E9;
+	Tue, 28 Jul 2026 00:49:27 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1785189040;
-	bh=hS3INzS2IGY6o6eQTzf6QDVQoW7S640ipFH3IaOj7lo=;
-	h=Subject:From:In-Reply-To:References:Date:To:Cc;
-	b=TulJkxwnqh4eBmge6Hm9a+Uq3xIaQF1z+Q8YYPxGzLp19X5NvHAj+4qMZO6D+Kxbj
-	 3hCiilwd9+Jt75s9Ku7P2Km6KluhxI0LEvKqKBN5UKX2RFTPyyhzl2B8SVJ6oMJyoN
-	 URAmlTk4b3toj63+di6CZEtzkpEe2uIep342JtU5thJ0lrs4ZjHqKqCdgo2TPybnwH
-	 G2Sfr0ianJuYChvL/jU3t0NGweadUgKvUwdKSuiYxxc5haCMtaQQ2l6z3XWmDHhUX3
-	 Gx5/Whd1s5R3KSI/bvnS0sjdei+A2KFYZMms4fia8xgvzEKHwKCpI/KxeEJcraXZHJ
-	 FiODgYeqjN8cg==
-Received: from [10.30.226.235] (localhost [IPv6:::1])
-	by aws-us-west-2-korg-oddjob-rhel9-1.codeaurora.org (Postfix) with ESMTP id 198BA380CECE;
-	Mon, 27 Jul 2026 21:50:07 +0000 (UTC)
+	s=k20260515; t=1785199768;
+	bh=wxJnO2GzK/YoQZOo68Xxpxxn7Y7qqH1kzHEmE92su40=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=O6MjoW8M7NUKyJGjoqmFNnb2LJT7rAzFKSSH37N1z7qFBwLOhjFbyDpBQPgJfjjBK
+	 6bpETEkQuNmZawKd5w+Ikq7UE0T/T4seu/h9DK8ZTAQ8AvHiI/msCOTlLdWUWGrY3/
+	 DVfNWnestp/uqjJXI7280p6SJHjoTkCxYTE4KyFf69IqhcCBCPftA2atDMbRs1toch
+	 EC2tXOUEzXr+2+0JVV/MSD+izMlCA2ucOtkGoyWaBLBg5VzhncT7+IXG2FjEa0obdw
+	 t5oGMEEc+iSTjSzoxMwrHNBkz2XEm2+jo4Fqaa57jZ0kL7F3lzxXTw0ZTjqJpZqibf
+	 6WxVvK+aDV4OQ==
+Date: Tue, 28 Jul 2026 03:49:24 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org,
+	Fabrice Derepas <fabrice.derepas@canonical.com>,
+	Michael Bommarito <michael.bommarito@gmail.com>
 Subject: Re: [GIT PULL] KEYS: for-next-keys-7.2-rc6
-From: pr-tracker-bot@kernel.org
-In-Reply-To: <amenZnA_QgqwMNeC@kernel.org>
+Message-ID: <amf8lG0-TnummN5Q@kernel.org>
 References: <amenZnA_QgqwMNeC@kernel.org>
-X-PR-Tracked-List-Id: <linux-integrity.vger.kernel.org>
-X-PR-Tracked-Message-Id: <amenZnA_QgqwMNeC@kernel.org>
-X-PR-Tracked-Remote: git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-keys-7.2-rc6
-X-PR-Tracked-Commit-Id: a82c8a05e86f3f84e09698f65b4515b5d04633f6
-X-PR-Merge-Tree: torvalds/linux.git
-X-PR-Merge-Refname: refs/heads/master
-X-PR-Merge-Commit-Id: aa6fc3defb36b11eb82c4d1f4e95b5f6d8a0bca6
-Message-Id: <178518900592.1430977.11592301794262799337.pr-tracker-bot@kernel.org>
-Date: Mon, 27 Jul 2026 21:50:05 +0000
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, Fabrice Derepas <fabrice.derepas@canonical.com>, Michael Bommarito <michael.bommarito@gmail.com>
+ <CAHk-=wj9JjzWfnoscfj7xg5NrHswXtU+sjZjrO4kcnwE_ET3Wg@mail.gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHk-=wj9JjzWfnoscfj7xg5NrHswXtU+sjZjrO4kcnwE_ET3Wg@mail.gmail.com>
 
-The pull request you sent on Mon, 27 Jul 2026 21:45:58 +0300:
+On Mon, Jul 27, 2026 at 02:22:47PM -0700, Linus Torvalds wrote:
+> On Mon, 27 Jul 2026 at 11:46, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+> >
+> > This pull request contains bug fixes discussed in [1] and two fixes
+> > (in one commit) from Fabrice for DCP trusted keys backend..
+> 
+> Please don't explain commits with links. The commit log is supposed to
+> be legible without a network connection. Links are ok as supplements
+> and background information, but not as a "this is explained by link".
+> 
+> And the pull request is supposed to have what I can useas that commit
+> log (either in the email or in the tag). Yes, I edit things for
+> clarity and consistency, but I don't want to follow links and try to
+> figure out what some discussion was all about.
+> 
+> So please give me an explanation for what you are asking me to pull.
+> Both so that I see what I'm pulling, and so that I'll have a merge
+> message explaining things for later.
+> 
+> I've done this myself this time, but please make your pull requests
+> legible in the future. The patch series you merged even had a cover
+> letter, please keep track of these things and don't make people search
+> for them.
+> 
+>              Linus
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-keys-7.2-rc6
+I'll keep this is mind and yeah, get the frustration with this.
 
-has been merged into torvalds/linux.git:
-https://git.kernel.org/torvalds/c/aa6fc3defb36b11eb82c4d1f4e95b5f6d8a0bca6
-
-Thank you!
-
--- 
-Deet-doot-dot, I am a bot.
-https://korg.docs.kernel.org/prtracker.html
+BR, Jarkko
