@@ -1,71 +1,73 @@
 Received: from fhigh-b3-smtp.messagingengine.com (fhigh-b3-smtp.messagingengine.com [202.12.124.154])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C9CFC468C31;
-	Fri, 31 Jul 2026 16:27:50 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D866E469829;
+	Fri, 31 Jul 2026 16:27:51 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=202.12.124.154
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1785515274; cv=none; b=fhIQ9U1eMxmbU6bFD7kJdGSk8EADINrqFqc7z24kUhpO0gkTBE3hjA5AnzPX5Ow07b5Tz/aggxfR9fR80hbOKNCOyupmpO3pP3M2P5YGWr5/OHzFegqRXodwX4YNwddil96rKC9L2RyFJQ720WIlKgHlCjkgRvqvMdTdkQup/Rw=
+	t=1785515274; cv=none; b=MsjVKLp8k1VjPyOa+R6hZB7qfKzUjDwBcNxAfGrn7Hu7fOFW3ZWKAYsjQCjF/9yJYe/bLXu+RlS6N0SNIl+2qIoLqYElPzGEcBYR6tQqLrYrLtBglaZlfds6qMGfzKJu+rLCtJTpXfEmCDjAUU61YwMNvuKarz0K4UZKbYpK08A=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
 	s=arc-20240116; t=1785515274; c=relaxed/simple;
-	bh=wnDbWj+1PJ4QZuNB2xApjO969pIH2+RuqA5XKIdiDAg=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version:Content-Type; b=nUcj6FbFAmuVisMs+BCN2+wzIcnBzsrks/WEnnf3hRZntv2+LfG+3YH+kq/VR2Q5PjZcfMVlC1C8gez/qcDdMtMZ/37CLrZ5nUdbfSedkThQR45QYjazV0fdsVPpRo5rT1sAK4bB79R5BYA52z6EU+Rf36Ja0or8uGKGed0t2cg=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=jaseg.de; spf=pass smtp.mailfrom=jaseg.de; dkim=pass (2048-bit key) header.d=jaseg.de header.i=@jaseg.de header.b=hjt7qbI8; dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b=kIog68RB; arc=none smtp.client-ip=202.12.124.154
+	bh=oQakT4tZTZ26yYuWUyxmknYxLRV5Ax8XxkRik07misk=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version:Content-Type; b=aU7ogxYRAQZfibPOwBwQw69+5zz4TaEGJIXhIsVF6WWCPg8LHCaXBBRW+PvT18CMTHivhlBFr8c2z0VQPiNupm12EfsrGptrz/4VdwfRTbFqHJzU2zmUHpGi98ZBok6TX4yjhVNJ6P8pAScUyeSK0E8D5H8ApnPXdPYAGxGXHtI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=jaseg.de; spf=pass smtp.mailfrom=jaseg.de; dkim=pass (2048-bit key) header.d=jaseg.de header.i=@jaseg.de header.b=b5nCQHhm; dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b=aQa0aJKS; arc=none smtp.client-ip=202.12.124.154
 Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=jaseg.de
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=jaseg.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=jaseg.de header.i=@jaseg.de header.b="hjt7qbI8";
-	dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b="kIog68RB"
-Received: from phl-compute-06.internal (phl-compute-06.internal [10.202.2.46])
-	by mailfhigh.stl.internal (Postfix) with ESMTP id 489707A012A;
-	Fri, 31 Jul 2026 12:27:47 -0400 (EDT)
+	dkim=pass (2048-bit key) header.d=jaseg.de header.i=@jaseg.de header.b="b5nCQHhm";
+	dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b="aQa0aJKS"
+Received: from phl-compute-05.internal (phl-compute-05.internal [10.202.2.45])
+	by mailfhigh.stl.internal (Postfix) with ESMTP id 4D71A7A00C2;
+	Fri, 31 Jul 2026 12:27:49 -0400 (EDT)
 Received: from phl-frontend-04 ([10.202.2.163])
-  by phl-compute-06.internal (MEProxy); Fri, 31 Jul 2026 12:27:47 -0400
+  by phl-compute-05.internal (MEProxy); Fri, 31 Jul 2026 12:27:49 -0400
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=jaseg.de; h=cc
 	:cc:content-transfer-encoding:content-type:content-type:date
-	:date:from:from:in-reply-to:message-id:mime-version:reply-to
-	:subject:subject:to:to; s=fm2; t=1785515267; x=1785601667; bh=Ak
-	DiARroLHl6KyOSQsFmxb3G2BExRBvYjwZc5Dx3u/U=; b=hjt7qbI8FvJ4RGjJdD
-	r+b04gl7p1QRerLb0BU6Qjqhzsbe98Z9KzJqYf/dtm64O+FQPX83r8MVn85oNcty
-	z0X4fZFhTfhtlnL9GJEb/+a7flBMG+vfdR1Z8OGNRSs9860DQe3FP3lGxPOBJdfn
-	iljIDSVMfNMBuLzwSLjP1Dv6039KS+wRlPW3+67Dz/H/kriDQB19uCIYmaO1xgRV
-	go5hJxjKfkxsRV77vUCZTtsB+3ZTzJyQotrho3ngrN10KtKDaBm2Jef43UPC5BrU
-	5pb2ZAfkXZ4pNWPHtue5rCUStMagoYlbfT96d7YzpzdYcYncJSC3IXGTp/FglyPo
-	9d+g==
+	:date:from:from:in-reply-to:in-reply-to:message-id:mime-version
+	:references:reply-to:subject:subject:to:to; s=fm2; t=1785515269;
+	 x=1785601669; bh=J5nIrNoSMiFUIl5DH8xWdANuglVgj8cbxwTsb9rwYoA=; b=
+	b5nCQHhm0J+Bh4qWMlYQ+VsiYMqE3pkfp60xUmMoRloMX0iNUYrevWKmbbyiOWGv
+	C8A4jONRfkjwdqa4UDoPf2/VFB+0CJDYxlfdIuwSFIxZ1y5yisj6t0jPZSM4VxsH
+	pqOYwrh8rjbx+0D9GGSdTnnVK18qbw6BQAVphQpwLDfz4mV8GxmENU1812Qmh5Mh
+	Ai8uEnYo6JS6yVNNqsya7j+iQ9tZbapAF0QAWYlNV4Tj9LskF3Mp8dVvKMe/e6jt
+	bPcW0IZ8vzdsMlpLkaVB7E1912BAhzHsum9haIOY48eNaYCmPLEPkjirpl8oGvVO
+	BCNwOK0df5Nv7Fh7gsl1uQ==
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=
 	messagingengine.com; h=cc:cc:content-transfer-encoding
 	:content-type:content-type:date:date:feedback-id:feedback-id
-	:from:from:in-reply-to:message-id:mime-version:reply-to:subject
-	:subject:to:to:x-me-proxy:x-me-sender:x-me-sender:x-sasl-enc; s=
-	fm2; t=1785515267; x=1785601667; bh=AkDiARroLHl6KyOSQsFmxb3G2BEx
-	RBvYjwZc5Dx3u/U=; b=kIog68RBao2r7bX5vkaWRkHXGnVWOrTvgIXKQuXYAo4z
-	kFPTuTcql3TbCIEkT+M7cimQQ9oojLJ5yf8UfEABGVee1sfju96P87ZjZhnMfNmQ
-	zz2mVGb38+bzWQhHbnN1ygw6LZDVhJjmctGkbeoSQWqhrpCJDXB2K707Q31UveL8
-	Yhoq54BDIOgjwqH5Q0l5bSJO+DwUcNzEgbssWj66zFDgCd1Vpq8rKZGfqyaxiuWV
-	KK9ZBvVEGWFNVf6MxO/J9vKG0oMJ2PiJLhN7uF0RjWn38b0IJ7LdRcrVl8X6D3oe
-	w1eNj6FEIxQXooALj7DM9C0QOjBgz6KjQqB4+Hb3EQ==
-X-ME-Sender: <xms:As1saiP_jfhX6GxIfUz0AEi6cQqX8LkLsBfks7M8Z8n7vSlCurwPXw>
-    <xme:As1sahbKlAdCSupSrwigUrcTeai2C4AYFIMLY53SqrdDcTFC3DIaE7D9_C_WDbvOz
-    zjakWFmFq_RZuHbL-Nf74z24lx09sjzy5B1FGyhMQRyC4Fin1e5Yg>
-X-ME-Received: <xmr:As1sap_LOBHM-lQwmoMck9ftRnlGzUdL8mXA8NrTqsaDkaskAxgErhFqyqka3WYT6DgqSjX-mtGemuL2Fg>
-X-ME-Proxy-Cause: dmFkZTERcFVP8HLW6lWAJcoFMNKyac4KI1WLdSW5Cwyv5Q1y5Mf4zQwvfs5MLKguSB69WD
-    9WWeywtKpWZQupz8iqlVwAqXwfVPcIpA0zWAnoln2vFRMsZ5/0NyILUu8khRqxHSc+porj
-    sEXnf9R/frKCLFuO4k5EcgxmebF1dFZDTkmYpB+ZAE5NcAqEp3I4Y3cayAywGXcJ60CYux
-    wuFhlPiLKYPaRlGZg0yinrrIvHHDYX1E/rLPP65YNds5yJbzqICjaYNfhvUiefT9If22bU
-    f7VjNiBbYA+da5ag1FbGIeOOmrseEOyOe8lOF/5OW7GKqFFgn78JwI4GwuDa0h1/tS+0In
-    xKVxvjXkh6CkzfdyxZiM5OOVn0agfJYkWpqT6pE8JQII6BKhMdou4AjkmEHEb2BTkUnZzB
-    NkpZb57BBGM+hRziXHB//LM/E+laIWVcdxlNrnssRcml3jAmjx5JQY+s/+BKxfzbU7FDXq
-    6GHNqUAWLZWoW7/Nn1FFbqNIAqPGsJSPbn6lPot1Tu3108NWr/O0vU03IHdZ+xcLjc+t3W
-    NcXQMmR1IZc3AYP+fNT+QWVFv+G0GdyzVBSTTl8DK45xcmmN4q9adVeLyiZFJv8kIme3ig
-    97wsh6m3BzxC7g4Doe/g+fe9tu9zcKtl+74wrHDhGd+ST7cG6x7V1AhPjzjg
-X-ME-Proxy: <xmx:As1saqRzf2z8nikH8v8Fgk7vE5ReXwTwewxy_kYa4GDi7drpBd2y8Q>
-    <xmx:As1sarfN__oFApAvj1SGHFP3MrJMtgNiDb8ydhAAWqEKr_0CFdeS5g>
-    <xmx:As1sakQC5jgRbzn602PtIDau365wCeo8O_PAZLpKdY79c-n97kTf_A>
-    <xmx:As1savLmxUrf-42QUT7-WpWLe0rwf8vAz7bAQS3G9pxat6ux61-LmA>
-    <xmx:A81sahcUa2-2m8h52Tj7OKAHdnM6S6QDlKncYBV6WH5ku6rJfAlLYW43>
+	:from:from:in-reply-to:in-reply-to:message-id:mime-version
+	:references:reply-to:subject:subject:to:to:x-me-proxy
+	:x-me-sender:x-me-sender:x-sasl-enc; s=fm2; t=1785515269; x=
+	1785601669; bh=J5nIrNoSMiFUIl5DH8xWdANuglVgj8cbxwTsb9rwYoA=; b=a
+	Qa0aJKSLM9u3cdJFxgBm0tbxdbLzGB4URrat1wcWTbAgoDVihHaOx1FvOk5GIiQR
+	/9p0LgUh2oyils3n7tYpJKvL79ebLZhQB0aghE1ZC1j4GhFSfbj859ouesVQHpTR
+	21iCK7tU/bndrfcMO96y43oh9nCedWbYQwwgEDW3Ng2xKkth4bK/CclGpjKqfrNr
+	6g3aqGKku+hEg9VOusp0tbXKRRX9+w2lHNgEwF9ea2ZOoWk1yP9DpQEtpDwF+IsT
+	OVW5dLG/FN5Eg5QFY7GFd4Cg0P0hlhUvEJGbgcnZD7AL/LonmXWVSSdE+vPlk7K8
+	GD2+mOHKnOpxl9PcfPyJA==
+X-ME-Sender: <xms:Bc1sakFa6ckKoqrFLAzPC3TUrv5WJxH6ldYcow49AmwJFyn0bT91aw>
+    <xme:Bc1satyJ_0I47EPzXiqmmi1_m9TXVwaQcCgTvfFud_seRcZqPon_9myIfXvEIVnvh
+    xtv3nMfz-y1XKLyXPeBF10jKdZoRdIgT3vmq_Ar_VFPFuD_TdrOvvI>
+X-ME-Received: <xmr:Bc1sau1WgMT4nRpp1Fsg_3S3JEfCzTecw1KWURrEtAPSWNnCnA_fvP2WfJtWoMcWgnExcfRUem-PM7qFwQ>
+X-ME-Proxy-Cause: dmFkZTGGTelZmm0/EhQAYArVTdDhZzjnmAPb6bZI2uOfRhcPRz2TI2oV8V45PSh9LdLr+9
+    dOlgXoBfEoyyFAhrcqXPD5Q9hVEjtJXoIhF2MoKd1yKDTw2ea5Nuq/+/AmFYSUo339o9zZ
+    H/at4LG3KrzxwoyaKUbXnTAmsLw8u8bstL0n0Hm+zeS6dtuk4WBOYvxR1KeM91qs9pbTHn
+    V5Yj6ph4RyA95kbMawVJDFVjaiGwugJQQV6H1QnRSnyH1rCnmQnAGiB4dMHKZak/Asn8tO
+    F/0oy0n4YeNO9MT0ImsCVvnJvFB1zR3ciQwN/2JEWm+YOztTqwzq31OHYrU6wne+Cpi3K5
+    TTD8qnOBAfOaIb/KCcnmwKr8TGm24y8rMJ8KNnshmEvBNvcrVA3lZ/fsqnabQ+bcEZvCxK
+    jVF6kNhPnROpmUpXsT9cQQ9WQAmvp3ChKXD/51Kcb96H3pMPJzDNcq1KfaKpkTZ8t4KfO5
+    AZsrHKXNbdf8Go9a0FfJSzKbdlEWCCQe6tUIEj8/1faJjDnVbgdenfwqKItxhfUu5xB2KJ
+    wGozjEql6w4pzgqozJiilyeInEsR6qujBgBrWFTgx+kdN6tGchhD24yAmJ/Q5c67/RvrEs
+    wT/Jm4IWcIvL3Yzv1SN3Sy2S1UiUxCs+GGRjhmkWjnngDVFojYXuBC16Bqmg
+X-ME-Proxy: <xmx:Bc1satrXBRkLfy7bBimN3F5eqR7idEanWT0Vno0Sk7EwpK5or2MGVw>
+    <xmx:Bc1sarX8CGRGgs6ptGjh4hnHVpC5Hyl-vlRHZqdDlvC7PuwwdIO5XA>
+    <xmx:Bc1samo4L8h--wHiXNuzz4IIByBgWUAUm6bNzU9kzfDiV70sIy9muA>
+    <xmx:Bc1saiAZoPLmVSYE-iqXwOXEVnDxMd99-Vrj7I2Y-e1HY64J7oPTWw>
+    <xmx:Bc1sahVxvqUHa0FML2utnkaBiC0hBDSUqJQDNS2wNexZYmN7JiE2vwDI>
 Feedback-ID: i60a14417:Fastmail
 Received: by mail.messagingengine.com (Postfix) with ESMTPA; Fri,
- 31 Jul 2026 12:27:45 -0400 (EDT)
+ 31 Jul 2026 12:27:47 -0400 (EDT)
 From: =?UTF-8?q?Jan=20Sebastian=20G=C3=B6tte?= <linux@jaseg.de>
 To: =?UTF-8?q?Jan=20Sebastian=20G=C3=B6tte?= <linux@jaseg.de>
 Cc: devicetree@vger.kernel.org,
@@ -75,10 +77,12 @@ Cc: devicetree@vger.kernel.org,
 	linux-mm@kvack.org,
 	linux-security-module@vger.kernel.org,
 	linux-integrity@vger.kernel.org
-Subject: [PATCH 0/4] CRASH_ZEROIZE: Wipe secrets before kdump
-Date: Fri, 31 Jul 2026 18:27:35 +0200
-Message-ID: <20260731162739.158320-1-linux@jaseg.de>
+Subject: [PATCH 1/4] of/kexec: fix typo in comment (usable-memory-range)
+Date: Fri, 31 Jul 2026 18:27:36 +0200
+Message-ID: <20260731162739.158320-2-linux@jaseg.de>
 X-Mailer: git-send-email 2.53.0
+In-Reply-To: <20260731162739.158320-1-linux@jaseg.de>
+References: <20260731162739.158320-1-linux@jaseg.de>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -88,54 +92,24 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
-I'm using linux on an embedded target in a Hardware Security Module-like
-application. One requirement is that I want the system to be able to
-quickly erase its memory when it detects physical tampering. I'm
-approaching that by using kdump to load into a small payload that
-instead of dumping RAM, erases RAM from start to end. However, writing
-all of RAM, especially on an embedded target, is rather slow. For this
-reason, I propose the mechanism in this patch series:
+Signed-off-by: Jan Sebastian Götte <linux@jaseg.de>
+---
+ drivers/of/kexec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Add CONFIG_CRASH_ZEROIZE (default off), which when enabled makes various
-subsystems handling secret data do a quick, targeted wipe of these
-secrets before kdump. This behavior might also be interesting in cases
-where you run a normal kdump kernel but you still want to keep things
-like fde crypto keys out of these dumps.
-
-CONFIG_CRASH_ZEROIZE is a best effort, defense in depth solution. There
-are circumstances, such as when a panic is triggered after memory
-corruption, or when a panic interrupts some operation that mutates data
-structures under locks, when the kernel cannot safely wipe some memory
-areas. The handlers proposed in this series will just print a warning
-and skip the affected areas in this case.
-
-This series introduces two handlers as a starting point: One for kernel
-keyrings, and one for secretmem. Future places where such handlers could
-be added would be for example drivers for crypto accelerators. 
-
-The patch series applies on top of linux-next but should work on 7.0.0,
-too. I've tested the patches on a Arduino uno Q (Qualcomm QRB2210)
-embedded target.
-
-Jan Sebastian Götte (4):
-  of/kexec: fix typo in comment (usable-memory-range)
-  kexec: add CRASH_ZEROIZE to wipe secrets before kdump
-  mm/secretmem: zeroize secret pages before kdump
-  security/keys: zeroize key payloads before kdump
-
- drivers/of/kexec.c                        |  2 +-
- include/linux/crash_core.h                |  5 +++
- include/linux/key-type.h                  |  9 ++++
- kernel/Kconfig.kexec                      |  8 ++++
- kernel/crash_core.c                       | 18 ++++++++
- mm/secretmem.c                            | 50 +++++++++++++++++++++++
- security/keys/big_key.c                   | 15 +++++++
- security/keys/encrypted-keys/encrypted.c  | 12 ++++++
- security/keys/key.c                       | 44 ++++++++++++++++++++
- security/keys/trusted-keys/trusted_core.c | 14 +++++++
- security/keys/user_defined.c              | 11 +++++
- 11 files changed, 187 insertions(+), 1 deletion(-)
-
+diff --git a/drivers/of/kexec.c b/drivers/of/kexec.c
+index 029903b986cb..36635f6cb900 100644
+--- a/drivers/of/kexec.c
++++ b/drivers/of/kexec.c
+@@ -24,7 +24,7 @@
+ 
+ /*
+  * Additional space needed for the FDT buffer so that we can add initrd,
+- * bootargs, kaslr-seed, rng-seed, useable-memory-range and elfcorehdr.
++ * bootargs, kaslr-seed, rng-seed, usable-memory-range and elfcorehdr.
+  */
+ #define FDT_EXTRA_SPACE 0x1000
+ 
 -- 
 2.53.0
 
