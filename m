@@ -1,101 +1,81 @@
-Received: from mail-pg1-f169.google.com (mail-pg1-f169.google.com [209.85.215.169])
+Received: from mail-pl1-f173.google.com (mail-pl1-f173.google.com [209.85.214.173])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2B5B23B14D0
-	for <keyrings@vger.kernel.org>; Thu, 30 Jul 2026 21:15:58 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.215.169
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C85E042BE86
+	for <keyrings@vger.kernel.org>; Fri, 31 Jul 2026 14:09:37 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.214.173
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1785446162; cv=none; b=BUeemH802NZgb0HHsAh5cJh54PSvSKfFjZWwPmVDzOk4DadMbR+rPJQ5y1j4iQZwY60xit1m8Z5mwlREp73pxCFTlNx1NBXJ8b2nLT3UxdwYwBO+RlI+dFTt9ChSUuOqOONDHcrMGglDcHgZWQRjg7v6H3/Zt5lwG70Mo+LwPeo=
+	t=1785506979; cv=none; b=AyMqObr5e6UwuylOyaiMCFxsNXWfcyOCmW/B2mMYOBSEbzPScIrbVGyvX6W6QihdcPAbrZaGeOaSe5tyLBa+0YQb3cTo+6YneN7EKSBuvf9MRNxGj3chrOq/nMLhky4sbTLeYi6OCBEicZoUUoFhRWEnnchd3ldDxPGgCcaNP3E=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1785446162; c=relaxed/simple;
-	bh=WG0+e1KN1nsoMOFFn5MjuvZvyoDnerqjnUnTWeX68Mg=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=SVcq90vPAoWfKHj0lmC+zpQRiNs8y85LjptCIyUhpNXJMIepocCKKysMCf9Cxoz6gppxdCdekYyri2qpO7Th4cgD+apycq4nnaldz0WBiGJAwiugXqQ71QfuVu7o17I0dl+AiOniTbwR6j73Tlt3gSPItIihC5bVpDR4C4ws/Xw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=gdANWppI; arc=none smtp.client-ip=209.85.215.169
+	s=arc-20240116; t=1785506979; c=relaxed/simple;
+	bh=3EOf2/jCD8AncItiAAHs6oeZqNAYPx5oM9R4lgo8xmE=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=Q4T+7NQks9aYjgmseNdk6NmzAAQ+5HNUPy6Bmy4fquSS/ij2tv3vsWFwzMRokpoeIVGKDYPqcYnHVAAV6r8/Qtv2eB6AAGmicQXrSfAaONdZHU2F1aCfYaSAFLX4dtF8F6EQZSDPEQcOhhD33oxvspBr9enHlT8+0cZ76n3/Uj0=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=mhkWKX5P; arc=none smtp.client-ip=209.85.214.173
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="gdANWppI"
-Received: by mail-pg1-f169.google.com with SMTP id 41be03b00d2f7-cbb973e6749so290066a12.1
-        for <keyrings@vger.kernel.org>; Thu, 30 Jul 2026 14:15:57 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="mhkWKX5P"
+Received: by mail-pl1-f173.google.com with SMTP id d9443c01a7336-2d01548ac96so987975ad.3
+        for <keyrings@vger.kernel.org>; Fri, 31 Jul 2026 07:09:37 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1785446156; x=1786050956; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=WG0+e1KN1nsoMOFFn5MjuvZvyoDnerqjnUnTWeX68Mg=;
-        b=gdANWppIZaHHVrO4NaZ0vAnYOeETJRqHszRJALyTxCLTqgXFXrtYSNK//frvSJEA1M
-         3XJJ9haOTo6G6TFEVFdIkZaz52Q8g5dIQV2bVosoXWU/WWUFW/93r52sljYl22mpBKl/
-         2MLJqA4PXP/ZhvSSifBMiJxZWjtupSytErT1RK1s73DP0GXqpIkcM5CzcKqA+eoYZkU1
-         8HpTUNx7+9bcYo5oBcQR8sogLak4n13pvrOpuY+MEVc05W3e9bhnbfFlWDdj5mvoouCI
-         HnAYRTRyxcZIqKGWZbU3wEQlEpc7dIhx8SWOIQw7iUrd9xDOnXw6dWZtVg/1OHfI5+BD
-         2i+w==
+        d=gmail.com; s=20251104; t=1785506977; x=1786111777; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=qfTZLKX5MXlI+65GiAcv4sDb6zyKTd9ns9ffnwjJXko=;
+        b=mhkWKX5PDoWgAmcXfVNp0XUlYz1PPHyqI7gvQ1vZLKrPHmfMAJDHQnoosd+NaU4JR4
+         R1G0fOpNuDGm5Kxx7EOXloQvCxIaBMUVNm18xEocs1JoP/ZgW9yTUybsD1zgb/+6jhd8
+         u30EcU0j1yJ+FJokT7DsaflSDIdy5wKqxPS6YEdADFFmPvrBKNmqxpVphiQ9baOqxdqI
+         7qIiRrP7I5ytwBKZYLJMk9QKpYq7DhVVqJ83xsIbK/3hIq3RAGlOZvqwcgFepYpYP7ax
+         vSt+8eywrUF955DmnPLFeEvwtWd4PQie1pVjKz3GWeudAAgFrDkwARs88dZ7YGprg8vi
+         Otxg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1785446156; x=1786050956;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=WG0+e1KN1nsoMOFFn5MjuvZvyoDnerqjnUnTWeX68Mg=;
-        b=hKOCy9kfHYL5vToL78SSaqgyIgIe5OyJV9I3STy8djgIk/c0kHvO2Ktk8zXntqxQE/
-         ObfxijfLcVB9Da2dC/+bv+JcWOXiXoks9pfmCKsT4/4TjVTQ2frqJhSgxhwOTR4GlZbG
-         PDLtzwckT7jkKTh8YB6kW4FsVd3MzJ49nf5BhQqUdayIwhcOJf1gTfDv0IKjcPD8Yx0F
-         0ww3JeE3VspZKhwuqYUfhrD7qk9ff7J+H4IYCJNBcfbHXIuzmFFqU8uB0Yq6y14+DsT4
-         lYit/SpaF7QunoELTqlEQEgGfurMbVNuaBCbqZsTZABXfpgVhs/JcCETgYaKYBVYJFfy
-         5LAQ==
-X-Forwarded-Encrypted: i=1; AHgh+RqeyhTPs/sQp1DHSx8ZiNWBkGq8D+qGC8Xy6K5AYqWILE17pUP+NlQfxYEjio/PyDkCbBis5oMPYg==@vger.kernel.org
-X-Gm-Message-State: AOJu0YzeoeDbGLJ6hyPBCU9P3OkvzAOH5iOYe+L4XktKNqFhwHCYkMO6
-	8YqimhfdrYkSDsInDhmVlwqstyYVrbqj8bQL2NE3fFjPIKK42Co6/DaxMX24fGs=
-X-Gm-Gg: AR+sD11+IVO0T4D/9VCEONWEUV3HDUry8YMhN5ToRxvvHr2C/pB6QmHALz4komClnXl
-	uorHytbpf/wYtRe84wxQpL41bRLGhyz3t3ms6O6IUiZq4bssTqdoa/rK3oJmT5VFa9St8La2wqB
-	L8Eqo8D0fqRnx5Q6wXTWJVCVCEaAhaA0gBLvvzpZ5Yz+CYMc2eeNfsBwq4mbX3NPKcUnHIR45sL
-	rPf4/kdl+qqHS4Pe06N8e9feMKPusKHBCbgZ0FhpCPyIY3ywV+6MhbwcceloRiiPm5wgG7Q4UCl
-	V/CgXhlvWeBvX0u54seJ3t34EKdR/aZNomJTBUe38t2dSsTVQVt2mjLhMEp+/GMALk9gkOLhn8A
-	aRIuDZA8AYPQWh+KGGwmSqfMi9TEA4LDeSTj1Nl8/ii18RqoGu8Vega44RJikNVaORbthi1CjTk
-	/+a8OICOSrEwB+K4rfodmp8zL2mcaP47bkalppHQqlE90h+W/IIEZUm4Zd//KspYTQTFU3vLDmB
-	JQvQBkA84UMSnyZdNFzIxbezsOare3H3fAy7Q==
-X-Received: by 2002:a17:90b:380b:b0:387:e0db:3faf with SMTP id 98e67ed59e1d1-38f9c0abaecmr3050277a91.40.1785446155807;
-        Thu, 30 Jul 2026 14:15:55 -0700 (PDT)
-Received: from at-Standard-PC-Q35-ICH9-2009.. ([106.221.78.187])
-        by smtp.gmail.com with ESMTPSA id a92af1059eb24-13e7263cfd9sm36251186c88.4.2026.07.30.14.15.46
+        d=1e100.net; s=20251104; t=1785506977; x=1786111777;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=qfTZLKX5MXlI+65GiAcv4sDb6zyKTd9ns9ffnwjJXko=;
+        b=DzPNgEVoAPvlv93i/TeGZp8/rFBICMITroxGpdAOv0JZmJhpwGnOML3o0OyrX5oymW
+         MYsW3PRS9mHmCSn/RJTCoOsG0XNxguOlZb4WaRbx7/pVSmTQW+dHtYSBqcAOMGwYB4Mj
+         g8EPq+kAiM0EY2fKpKF33XluBZbcvL/gGUe4RK1uGeoYlc6i3LLin66Clmv0hA978w+h
+         Y2qfOGF5HWVjpg48J04AjfhJEXCSvKXFcN+/0PPiKSZENBx4M8lam3SbcI9KGEBh7pU7
+         NTPzhwC/NLtPJ4IBLA4akDmdGPudLpT8Qzz2SSzlMwRooADAlqr1nK9oE24OrWTqjuW4
+         QqKA==
+X-Forwarded-Encrypted: i=1; AHgh+RrfZfz3COa34jyU3F096Nd9RWhyY1057zQpQIlYFqv/jrrr0oXubQyjOY9wzbCRb1RB3YLYpFS60g==@vger.kernel.org
+X-Gm-Message-State: AOJu0YwiOQnNk0xLQpOgV5bvdCIrfVXdPMcgkvLfyJml/1cWyv0E/aiX
+	GakulPgnITDPV7/fKVZrcN2IMuG8zwC8GzwN1T2P1CAqC5lEVSXYy3P9
+X-Gm-Gg: AR+sD133wUjyPW5/EZuGIm1sJ7vDQalKsbHrtmWmT3FB0286cqXwk/j4JzvHTFhxmKa
+	L8pFpn69i6L/cV6pApKHBuPyMDiZkJuWnaS6ftynbPt06QmOohEQl1ktcFPWjBUvDqA9s6/wPJM
+	GO6s2R58lLuSlW75b5fQRhYYfCaIQguLHy8Vu59TbNVptdRPnN5kGVBxhL5BerHV/aY8U+hW77S
+	+old+vspQg0LrPJ/RFvsEDYJjT0zO/Wq+WIbKgCZcA/ZWKOHPGJQb3r21ZT+tHhmKHC3hOT0fBv
+	yX1Utm3D2bAhlvUfRsecFP05m3dJi1cyTy7Bq4xpTT6r+ZevpMzPgMSr3sJ8IQp3RBC2HmwaW7A
+	y9AZb/g6BG2H2CcwtMuwYnZvSryKDofY0XYWktVP7shNTeNDs59wmNeqMS+kHXJNLy6/0RYOHC4
+	6RQEe2wTa8is9hy352p2/rzMEq+mmqSQLaMscLDVfRKFOMrZ1TDKBSTitr4oBoRT8RG6Fc27dVl
+	5t/+GfNn9hj39WQaCQyOXRURktCpqQ+Kb6fSaUlMNXV7tfyIyGw2GE=
+X-Received: by 2002:a17:902:f546:b0:2c9:b96a:2855 with SMTP id d9443c01a7336-2d051f078e3mr3246845ad.0.1785506976879;
+        Fri, 31 Jul 2026 07:09:36 -0700 (PDT)
+Received: from localhost.localdomain (45.78.65.84.16clouds.com. [45.78.65.84])
+        by smtp.gmail.com with ESMTPSA id 5a478bee46e88-3153ddd7a33sm6268159eec.12.2026.07.31.07.09.33
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 30 Jul 2026 14:15:55 -0700 (PDT)
-From: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>
-To: mika.westerberg@linux.intel.com
-Cc: YehezkelShB@gmail.com,
-	andreas.noever@gmail.com,
-	atharvatiwarilinuxdev@gmail.com,
-	bhelgaas@google.com,
-	bp@alien8.de,
-	dave.hansen@linux.intel.com,
-	dev@deq.rocks,
-	dmitry.kasatkin@gmail.com,
-	eric.snowberg@oracle.com,
-	hansg@kernel.org,
-	hpa@zytor.com,
-	ilpo.jarvinen@linux.intel.com,
-	jarkko@kernel.org,
-	jmorris@namei.org,
+        Fri, 31 Jul 2026 07:09:36 -0700 (PDT)
+From: Chengfeng Ye <nicoyip.dev@gmail.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Roberto Sassu <roberto.sassu@huawei.com>
+Cc: linux-integrity@vger.kernel.org,
 	keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	linux-pci@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
-	linux-usb@vger.kernel.org,
-	mingo@redhat.com,
-	paul@paul-moore.com,
-	platform-driver-x86@vger.kernel.org,
-	roberto.sassu@huawei.com,
-	serge@hallyn.com,
-	tglx@kernel.org,
-	westeri@kernel.org,
-	x86@kernel.org,
-	zohar@linux.ibm.com
-Subject: Re: [PATCH v5 2/2] thunderbolt: Add device links for Apple T2 NHI
-Date: Thu, 30 Jul 2026 17:15:42 -0400
-Message-ID: <20260730211542.1422-1-atharvatiwarilinuxdev@gmail.com>
+	linux-kernel@vger.kernel.org,
+	Chengfeng Ye <nicoyip.dev@gmail.com>,
+	stable@vger.kernel.org
+Subject: [PATCH] KEYS: trusted: Fix TPM teardown ordering
+Date: Fri, 31 Jul 2026 22:09:24 +0800
+Message-ID: <20260731140925.2973492-1-nicoyip.dev@gmail.com>
 X-Mailer: git-send-email 2.43.0
-In-Reply-To: <20260730113209.GF20844@black.igk.intel.com>
-References: <20260730113209.GF20844@black.igk.intel.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -104,8 +84,70 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-> Agree. It should be preparatory patch for the series.
+trusted_tpm_exit() drops the TPM chip reference and frees the digest
+array before unregistering the trusted key type. key_type_lookup()
+holds key_types_sem for reading until the key operation finishes, while
+unregister_key_type() takes it for writing. It therefore provides the
+synchronization point that must precede backend teardown.
 
-I think ur ideas should be implimeneted AFTER the patch, because this
-patch adds a kind-of important feature to T2 macs, and well ur ideas
-are for code quality, and well it takes time for patches to upstream
+The current order permits this interleaving:
+
+  CPU 0                              CPU 1
+  trusted_tpm_exit()                 key_type_lookup("trusted")
+    put_device(&chip->dev)             trusted_tpm_seal()
+    kfree(digests)                       pcrlock()
+    unregister_key_type()                  tpm_pcr_extend(..., digests)
+
+CPU 1 can consequently dereference the freed digest array. The chip can
+also be released before callbacks stop using it.
+
+KASAN reported:
+
+  BUG: KASAN: slab-use-after-free in tpm_pcr_extend+0x1f0/0x200
+  Read of size 2 at addr ffff88810872d000 by task poc/89
+  Call Trace:
+    tpm_pcr_extend+0x1f0/0x200
+    pcrlock+0x42/0x70 [trusted]
+    trusted_tpm_seal+0x1b6/0x570 [trusted]
+    trusted_instantiate+0x293/0x340 [trusted]
+    __key_instantiate_and_link+0xb2/0x2b0
+    __key_create_or_update+0x61e/0xb50
+    __do_sys_add_key+0x1b8/0x310
+  Allocated by task 88:
+    __kmalloc_noprof+0x1a7/0x490
+    do_one_initcall+0xa1/0x390
+    do_init_module+0x2df/0x840
+  Freed by task 90:
+    kfree+0x131/0x3c0
+    trusted_tpm_exit+0x59/0xa0 [trusted]
+    __do_sys_delete_module+0x346/0x510
+
+Move unregister_key_type() before releasing either resource. This stops
+new lookups and waits for in-flight key operations to finish before the
+backend state is destroyed.
+
+Fixes: 0b6cf6b97b7e ("tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()")
+Cc: stable@vger.kernel.org
+Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
+---
+ security/keys/trusted-keys/trusted_tpm1.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index 13513819991e..8f57c6111e7e 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -987,9 +987,9 @@ static int __init trusted_tpm_init(void)
+ static void trusted_tpm_exit(void)
+ {
+ 	if (chip) {
++		unregister_key_type(&key_type_trusted);
+ 		put_device(&chip->dev);
+ 		kfree(digests);
+-		unregister_key_type(&key_type_trusted);
+ 	}
+ }
+ 
+-- 
+2.43.0
+
