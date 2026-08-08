@@ -1,117 +1,124 @@
-Received: from mgamail.intel.com (mgamail.intel.com [192.198.163.11])
+Received: from xry111.site (xry111.site [89.208.246.23])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DE4D235DA43;
-	Fri,  7 Aug 2026 01:31:26 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=192.198.163.11
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1989C2848A7;
+	Sat,  8 Aug 2026 18:50:12 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=89.208.246.23
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1786066296; cv=none; b=cltP5nrHZTbSROSnpMzFdWb5fLxWRsyUfgVS7NqBAtZi8jpCvnFxNGVFavO6fWgrlIbw4BtfkYuzZ2R7h98iHxcrldI77KLGulqwzqJg1Acdnhb+IGcsvFwKoDS+pGf7I51LxQGgC6F401odCMDnpv+IasLNH08JrNyXcVMx1no=
+	t=1786215013; cv=none; b=MvzckSicYjdTV4vw7G+2szbCt2lNLqgvO8Bp6rDx7yOfdX2unmuSHqX73lfECvKojPijzIfOG/7lCtUu/UYY+y5nzymX3fakXBoftWcauIM9eoJsvo0Ded3vtumgKC7w2DHd2I5FC7tFGIKGcr56FEP2g+NCvuLSzDRCXyLXmIQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1786066296; c=relaxed/simple;
-	bh=taqgwb4RpaHuorOFuY8dCdXDfQToTYDhk32UGL3iqAI=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=lpNpB7h52MfySpv8u6iwRPiZKMsTAj2N2x8Pu6R7jZMtwNzTshR7xHxOhWxKhUzwYtW7wQh47ZZdbz8eg+bkmVDn7FWo4ebG60lMmEn8xsxMg2SMqQhDdgLWRuGuSgJ/sJn06HilQV7OrHvZNMQfAs35VRGOdmDGfWsAgBBHHis=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.intel.com; spf=pass smtp.mailfrom=linux.intel.com; dkim=pass (2048-bit key) header.d=intel.com header.i=@intel.com header.b=DFjNTcxv; arc=none smtp.client-ip=192.198.163.11
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.intel.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.intel.com
+	s=arc-20240116; t=1786215013; c=relaxed/simple;
+	bh=UQsdRLoFXqVd/iVvqfna96CbZTh3ttUtYk701j6I2kk=;
+	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
+	 Content-Type:MIME-Version; b=SkTcyJ/H6gCQOs0INhi03VWNPhbJnqTLN0u5oNIKX2iRGgDD99izmcqEESotMtY4RsRorbmzcIwbghpO3jm/cDKmXZjLorI9GjmvFVyp9FIbIQ5AoSmQE5Tf/RmtXfDORAVbG+pk8Uv4NmYJW/er6hbgC4XVxHAWyTbLi4hKwBw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=xry111.site; spf=pass smtp.mailfrom=xry111.site; dkim=pass (1024-bit key) header.d=xry111.site header.i=@xry111.site header.b=P3lmmchK; arc=none smtp.client-ip=89.208.246.23
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=xry111.site
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=xry111.site
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=intel.com header.i=@intel.com header.b="DFjNTcxv"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
-  t=1786066292; x=1817602292;
-  h=date:from:to:cc:subject:message-id:references:
-   mime-version:in-reply-to;
-  bh=taqgwb4RpaHuorOFuY8dCdXDfQToTYDhk32UGL3iqAI=;
-  b=DFjNTcxvVjomFmTEnJk01otpy0+GeVuQrj4iuXXNDVww7tpiXGIFT+pZ
-   CgUq9ECfOGGpqX34b0bWzefQzwQ3O5vVmLoisYyNvMf5vT2xkrlpqxKHV
-   MYW4eJZsfpmdPINATYpy2BNRsjSBiNl+81fmswPwCNMuWw6xfp0xjSTfj
-   vZ9ZGlMIaZ0ujvxKBmb956ezfPi23oWgPG69Lvu7WZoNu96owSE0rAnWO
-   K7DFQOqga0DKgOB78gaIaUyrLbq2V0NT6yw5LKDNoSKZdvhLy+8z/5tC4
-   XyQ0qxayyWynEvTlMc4rofxd470G/nOcqT5FGX3fgGu+oEPUuzVn0YRUP
-   Q==;
-X-CSE-ConnectionGUID: 6Kr/CIJQQ1OMAbcsWgzUNA==
-X-CSE-MsgGUID: NaVxHELORmSgDtKyUTB5cg==
-X-IronPort-AV: E=McAfee;i="6800,10657,11867"; a="97266865"
-X-IronPort-AV: E=Sophos;i="6.25,209,1779174000"; 
-   d="scan'208";a="97266865"
-Received: from fmviesa003.fm.intel.com ([10.60.135.143])
-  by fmvoesa105.fm.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 06 Aug 2026 18:31:22 -0700
-X-CSE-ConnectionGUID: rtF2mFYSRteG0Dd919mAZg==
-X-CSE-MsgGUID: w52SIaqWTLy2EEAJZkJeeQ==
-X-ExtLoop1: 1
-Received: from ettammin-mobl3.ger.corp.intel.com (HELO localhost) ([10.245.245.50])
-  by fmviesa003-auth.fm.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 06 Aug 2026 18:31:15 -0700
-Date: Fri, 7 Aug 2026 04:31:13 +0300
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>,
-	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-	Darren Hart <dvhart@infradead.org>, Lukas Wunner <lukas@wunner.de>,
-	Westerberg <mika.westerberg@linux.intel.com>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Thomas Gleixner <tglx@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-	Dave Hansen <dave.hansen@linux.intel.com>, x86@kernel.org,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Andreas Noever <andreas.noever@gmail.com>,
-	Mika Westerberg <westeri@kernel.org>,
-	Yehezkel Bernat <YehezkelShB@gmail.com>,
-	Hans de Goede <hansg@kernel.org>,
-	Ilpo =?iso-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@linux.intel.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	Roberto Sassu <roberto.sassu@huawei.com>,
-	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-	Eric Snowberg <eric.snowberg@oracle.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, linux-pci@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-	platform-driver-x86@vger.kernel.org,
-	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v5 1/2] treewide: Add a flag to detect the Apple T2 chip
-Message-ID: <anU1YX6EAHxrNiLP@ashevche-desk.local>
-References: <20260727211807.1223-1-atharvatiwarilinuxdev@gmail.com>
- <20260727211807.1223-2-atharvatiwarilinuxdev@gmail.com>
- <20260728005847.GBamf-x27vgqj7WG7e@fat_crate.local>
+	dkim=pass (1024-bit key) header.d=xry111.site header.i=@xry111.site header.b="P3lmmchK"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=xry111.site;
+	s=default; t=1786215003;
+	bh=julX4w9WvO3qJYA7oEBSZmrqq5UsDWhkpWHN4yGURhc=;
+	h=Subject:From:To:Cc:Date:In-Reply-To:References:From;
+	b=P3lmmchK7qzK9oRS35CgHk+lumSKodn9A91knUWRVGGu5oRNbw1BauwjQQTSb8iNB
+	 OuuuqffqZgGR1Tvfvtdsr9q+5nBvnv260aBbbW7Pe8X1//qBCDrj6eRjRApCZvNdI0
+	 SY6J7RDYRMHDDkJldJCErMR+JwbHB+99LJ4UZBxo=
+Received: from [127.0.0.1] (2607-8700-5500-e873-0000-0000-0000-1001.16clouds.com [IPv6:2607:8700:5500:e873::1001])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange ECDHE (prime256v1) server-signature ECDSA (secp384r1) server-digest SHA384)
+	(Client did not present a certificate)
+	(Authenticated sender: xry111@xry111.site)
+	by xry111.site (Postfix) with ESMTPSA id 1F82565983;
+	Sat,  8 Aug 2026 14:50:00 -0400 (EDT)
+Message-ID: <8932791855928d9f12b7356648e2ebacfc126bee.camel@xry111.site>
+Subject: Re: [PATCH v2] certs: specify byte alignment
+From: Xi Ruoyao <xry111@xry111.site>
+To: Giuliano Procida <gprocida@google.com>
+Cc: Will Deacon <will@kernel.org>, dhowells@redhat.com, dwmw2@infradead.org,
+ 	gregkh@linuxfoundation.org, keyrings@vger.kernel.org, 
+	linux-kernel@vger.kernel.org, Kexy Biscuit <kexybiscuit@aosc.io>
+Date: Sun, 09 Aug 2026 02:49:58 +0800
+In-Reply-To: <CAGvU0Hmxr3VSrfRCCZYjy4qKM+MkuRkXehGvKRwudZzUPX4UWQ@mail.gmail.com>
+References: <20250912100015.1267643-1-gprocida@google.com>
+	 <20250923081344.1657783-1-gprocida@google.com>
+	 <aNJjdzrkvfDm2SsK@willie-the-truck>
+	 <b7fdaedd9166b06133d35a254600131b7b9e5698.camel@xry111.site>
+	 <CAGvU0Hmxr3VSrfRCCZYjy4qKM+MkuRkXehGvKRwudZzUPX4UWQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.60.2 
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260728005847.GBamf-x27vgqj7WG7e@fat_crate.local>
-Organization: Intel Finland Oy - BIC 0357606-4 - c/o Alberga Business Park, 6
- krs, Bertel Jungin Aukio 5, 02600 Espoo
 
-On Mon, Jul 27, 2026 at 05:58:47PM -0700, Borislav Petkov wrote:
-> On Mon, Jul 27, 2026 at 05:18:02PM -0400, Atharva Tiwari wrote:
-> > Add a flag to detect Apple T2 chips on Intel Macs.
-> > Cache the result to avoid repeated checks. That will
-> > be used in upcoming patches.
+On Thu, 2026-08-06 at 15:32 +0100, Giuliano Procida wrote:
+> Hi.
+>=20
+> On Thu, 6 Aug 2026 at 14:51, Xi Ruoyao <xry111@xry111.site> wrote:
+> >=20
+> > On Tue, 2025-09-23 at 10:08 +0100, Will Deacon wrote:
+> > > On Tue, Sep 23, 2025 at 09:13:42AM +0100, Giuliano Procida wrote:
+> > > > The alignments specified in system_certificates.S and
+> > > > revocation_certificates.S are intended to be byte quantities.
+> > > >=20
+> > > > However, the .align macro is architecture dependent and on arm64 it
+> > > > behaves as .p2align. So use the .balign macro to avoid unnecessary
+> > > > padding due to over-alignment.
+> > > >=20
+> > > > Signed-off-by: Giuliano Procida <gprocida@google.com>
+> > > > ---
+> > > > =C2=A0certs/revocation_certificates.S | 4 ++--
+> > > > =C2=A0certs/system_certificates.S=C2=A0=C2=A0=C2=A0=C2=A0 | 8 ++++-=
+---
+> > > > =C2=A02 files changed, 6 insertions(+), 6 deletions(-)
+> > >=20
+> > > Acked-by: Will Deacon <will@kernel.org>
+> > >=20
+> > > Will
+> >=20
+> > Hi,
+> >=20
+> > It seems this patch somehow got lost?
+> >=20
+> > Kexy found MIPS is specifically affected by the .align directive: on
+> > MIPS it not only behaves as p2align and introduces a lot of extra
+> > padding, but also moved before the __revocation_list_end label in the
+> > case of
+> >=20
+> > __revocation_list_end:
+> >=20
+> > =C2=A0=C2=A0=C2=A0 .align 8
+> >=20
+> > in revocation_certificates.S.=C2=A0 It seems the GNU assembler moves th=
+e
+> > .align earlier to mimic the IRIX assembler behavior described at page
+> > 110 of https://irix7.com/techpubs/007-2418-006.pdf:
+> >=20
+> >=20
+> > =C2=A0=C2=A0=C2=A0 Labels immediately preceding an automatic or explici=
+t
+> > =C2=A0=C2=A0=C2=A0 alignment are also realigned. For example, foo:
+> > =C2=A0=C2=A0=C2=A0 .align 3; .word 0 is the same as .align 3;
+> > =C2=A0=C2=A0=C2=A0 foo: .word 0.
+> >=20
+> > Kexy's AI proposed the same fix as this patch.=C2=A0 So maybe we should=
+ apply
+> > it now?
+>=20
+> That seems like a good idea. A colleague raised it again this week.
+> We were considering just applying it to ACK and forgetting about upstream=
+.
+> I'm glad there's other interest though.
+>=20
+> Could you raise this with the relevant maintainer?
 
-Why don't you use match_string()?
-
-...
-
-> >  bool x86_apple_machine;
-> >  EXPORT_SYMBOL(x86_apple_machine);
-> >  
-> > +bool has_apple_t2_chip;
-> > +EXPORT_SYMBOL(has_apple_t2_chip);
-> 
-> I'm guessing this is parrotting the non-GPL export of x86_apple_machine from
-> 
->   630b3aff8a51 ("treewide: Consolidate Apple DMI checks")
-> 
-> Lemme add those folks and ask why aren't those exports GPL only?
-
-I don't remember the details, but brief grepping shows no impediments (from my
-p.o.v.) to make them GPL. Maybe Lukas knows more?
-
--- 
-With Best Regards,
-Andy Shevchenko
+Hmm, get_maintainers.pl shows David Howells and David Woodhouse are the
+relevant maintainers and they are already CC'ed.  Or is the
+get_maintainers.pl output inaccurate?
 
 
+--=20
+Xi Ruoyao <xry111@xry111.site>
