@@ -1,201 +1,176 @@
-Received: from mail-ed1-f49.google.com (mail-ed1-f49.google.com [209.85.208.49])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp-relay-internal-0.canonical.com (smtp-relay-internal-0.canonical.com [185.125.188.122])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5FB1C39D6E9
-	for <keyrings@vger.kernel.org>; Fri, 14 Aug 2026 22:29:52 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.208.49
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4C4B826AF4
+	for <keyrings@vger.kernel.org>; Sat, 15 Aug 2026 11:45:52 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=185.125.188.122
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1786746594; cv=none; b=WLEvvoSjxOU1Nof+gyMu7EWws4FrM8mVuuoIveziSiw38d1+Pq4sUoaZyFFlaS7EM2Yp3lLBIHLb0VmLVT6f3aMNINnr87I8L7oVeQfNXVvRoG0F04cy5dHr4/fYtKKSHXeF207u/GZL8bmacZkRJln449U8MPVr1ZEIB01oJ+g=
+	t=1786794355; cv=none; b=Q7Hm0j8JAmD95w2iuURVqhPOtBLGLSwJBaB0uzaZzcIxGaVRfIC5PID+uLp0Fva4mZwxLySu0ClIxuVN81UGKhs3Er6ShOzuVRNZbIBoWm66I6zkyVhaymcDbSFe0g4DN3kYHII9++v/fzicqQ7AQT7nECMPuPLR+/fjc/A6Izo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1786746594; c=relaxed/simple;
-	bh=007RVhNG3bzisB8QTh6oufkYCx+dZM4te2B2RVnhDkk=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=stFDXtMldCNm1qwBXW7Yf9CchMJ0AiYinYevJ1+njB5ORKNKYbFY5ulOyIHpD/JvaY1J4KXTHge8gtEMsOKk26zcZtDNROyoHoGgfY+I6v8DhFWxYtUE4DWiUaeiVkVcXlqfYB5/nliw1pOPOzeELxoeMslhl3M4G8dGWrM/fq0=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win; spf=pass smtp.mailfrom=gmail.com; arc=none smtp.client-ip=209.85.208.49
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
-Received: by mail-ed1-f49.google.com with SMTP id 4fb4d7f45d1cf-6a0a4a28cbdso2535033a12.3
-        for <keyrings@vger.kernel.org>; Fri, 14 Aug 2026 15:29:52 -0700 (PDT)
+	s=arc-20240116; t=1786794355; c=relaxed/simple;
+	bh=8BVu8L2G1X/CbpvqHu+EXMf/KCNL//0MM9mN81VPOj4=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=IILjOlllgzTbI7MndTVcdTXeWqTMMPi4FVjzwnZP8iiYh8KfDjyHPov2QkBGxCJ0yz4G/zEVLnCj24Hu4YYWFd+2H5WAO1Jpk5J8rwtiQsKI91N759UZHj6xryF4QVfqXBUN514ge2zuTV4lEpZwy11VlDyZWs3H90QVXc5tlaI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=canonical.com; spf=pass smtp.mailfrom=canonical.com; dkim=pass (4096-bit key) header.d=canonical.com header.i=@canonical.com header.b=mdUhpf7y; arc=none smtp.client-ip=185.125.188.122
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=canonical.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=canonical.com
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (4096-bit key) header.d=canonical.com header.i=@canonical.com header.b="mdUhpf7y"
+Received: from mail-wr1-f71.google.com (mail-wr1-f71.google.com [209.85.221.71])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by smtp-relay-internal-0.canonical.com (Postfix) with ESMTPS id 687AA3F57C
+	for <keyrings@vger.kernel.org>; Sat, 15 Aug 2026 11:45:50 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=canonical.com;
+	s=20251003; t=1786794350;
+	bh=2xCf7NNzqXlGxdkctmUtmNccZAJf+QJ9HiKn7Wp1+x0=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version;
+	b=mdUhpf7yF9cAAHHeDm2FN9mKgIq84AMcfLQoHSqNsOx+wg4FQxsbAtKlh+CrmTdEh
+	 qSbRjOn/iqtn0RLn8oG6YpaoRCneLU41OyYyIgLIEU6BJM4OdmZvbsth9FJVtidovR
+	 2GzVfYYmZNVFJjmLYstUGHZSfnQ/ePXSWp0iThhpwywHYa/M8NQLvSyeNLam8yUpng
+	 L4IcIhnInDAVSSNX4UtaLCB/fdtHFZlBWYfMnaqWCamT6ynkyiwmR7HBMzVtdtzV9r
+	 3ssBvF3ln+3WX1YzhJ2zSH8iJTf/Hxao2mcmYR12jx8/VS3QLjjdLbqZbk2Xle/iqa
+	 KDL76LCZosMWWeVb/Vrwkz7nZ2zU9N5+9l49V1+2FNlObndDAMMklRqMZz5HlcPw/7
+	 ttCgnXONUuPe7rrZ8WdnRt1cyq/4J4L0wmUvPJOlu2lmZ+D+fOvM4oIOyjmSv43lNw
+	 6fdFrJFKrl6CuOS10gP4pPWgNw4pNXP8JXLI3EaE6we0oOaazUiJEaOfPgnfC6hQP7
+	 W61adUopjmn5QasAp5YXevykxE7ScS6dozI1f7HhVaQin8fJ4D5kcYk/GHWAXVBMWR
+	 l7tvgrnWuI14sZ4gtfmwkMi5MJp+PmaiAXR7GD+mtrQByf1ER7qZZL2RzDu/eRMl7U
+	 34YQ4LtQdyuAV7lXAVMjHqaE=
+Received: by mail-wr1-f71.google.com with SMTP id ffacd0b85a97d-47fe85684b9so1498915f8f.3
+        for <keyrings@vger.kernel.org>; Sat, 15 Aug 2026 04:45:50 -0700 (PDT)
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1786746591; x=1787351391;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=waG0BdNRrEs0bEN8xb/gjEyGJq6U6CRZNm5O6yGz0BQ=;
-        b=gJqn7fI+Ra+CN4E3GnfLBbEGLkbXXzvgS1yN4aoqmSh5kM2vwC2Wr7uwRuM3YLiyKy
-         aFQBsf2s2uxkythxUETZEWbooqFHmbYdk8seizx0tlObvhepJfW8NYetpB05B8q4tS7d
-         acduGkr0aWwPG7Kvp8JCFH28u5Fbt4ikY1A7ifMj+2/442+La1o1+ev+RSBkdJeJQSXl
-         zxeCSTF71tS4kaiOaQUpCr3opKEBsKEf8X2RZdiRj5qbeGD+K3C3uacHubNMoPw2bFmj
-         vrIFJrruWJiBIqQaOM1ohArYmvqhC/s9FWVnB5zM1/tmrFEgKEg+eJY1nyUmEB1DqWBS
-         ukxg==
-X-Forwarded-Encrypted: i=1; AHgh+RrMTdMqjfERbXJUNTVARxlCfUdg+iEgB0WgyOUwTCsusHrpvgmOxlD/SWAGmQaf4poZ6+ph3I4rBQ==@vger.kernel.org
-X-Gm-Message-State: AOJu0YxZgvX27sbKzYSYc2mbzqNs1EWJyFNCFnLz+kyMnqq6FnnAKyN9
-	jI8QMnQm0roi6r9GX3o0idNW/wZMmsTT934rSa8LFMVe9BswL1AZtoCvhBd2tcJoy8k=
-X-Gm-Gg: AR+sD10uxpOj5NDzR/34epTr/cDqOvOsQ5dZ9ULEh9+DmgVEzcXzc72lgU9Onouxro7
-	7+JEVkeUHXXK6Yf1kMHtMBWDBR9hokLeyCvc4EgK8qjunOkw4bfqS98xqy0nBSPN5XEw3mZv0yw
-	jEj5TOF8YEFqUbim8j1CvdVH6dW1czw2VWXkIjhlGT2Po1nAM/bP1zd+pd2O+AUszqyblSWUPsc
-	2GULs2VPHvz9+SaUhiFElS7TQ2bcuSwrpIxHHQj7ZbZ3ib0/E30gZZBpNk8e3Tabx/3dddub63e
-	UDfPE0kl7SzwejnqnHy8v6X7AWAVMC8wFw8D3QiUnjPssgseJf8qs/ka8ML1EV6z4q0wiLXGxWt
-	R3RkjGYu8o1ONWgYZn0lTl8rwLmDEAXqAisvlG5rZpLTbpU3ENBUK2Qwoo8D1cI9hkKyKICieDv
-	V+KCsWMsnnV50cVOms2hVCGCmWEj28CZqO3WXtIGYkiomZcCMLUb9MWzrAy00Ht3b93Qu8fppyL
-	UaSuBiTvI5cwiXSWd8HxZ40rx4T1EQ=
-X-Received: by 2002:a05:6402:504a:b0:698:ad4b:abf4 with SMTP id 4fb4d7f45d1cf-6a38a8d7c48mr4066724a12.3.1786746590374;
-        Fri, 14 Aug 2026 15:29:50 -0700 (PDT)
-Received: from mail-ej1-f48.google.com (mail-ej1-f48.google.com. [209.85.218.48])
-        by smtp.gmail.com with ESMTPSA id 4fb4d7f45d1cf-6a38d78c5e0sm1038329a12.28.2026.08.14.15.29.46
-        for <keyrings@vger.kernel.org>
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Fri, 14 Aug 2026 15:29:46 -0700 (PDT)
-Received: by mail-ej1-f48.google.com with SMTP id a640c23a62f3a-c197e7e4e94so275408166b.2
-        for <keyrings@vger.kernel.org>; Fri, 14 Aug 2026 15:29:46 -0700 (PDT)
-X-Forwarded-Encrypted: i=1; AHgh+RrYiVTxQle/zj+ONxF9I7JKPA0CfIa2xh47Y9ocM/W/eLe8oVms2fyoaY7ccDTYcCopSdjY0DyLUg==@vger.kernel.org
-X-Received: by 2002:a17:907:d1b:b0:c20:3402:bd35 with SMTP id
- a640c23a62f3a-c212a15b29bmr481986966b.12.1786746585644; Fri, 14 Aug 2026
- 15:29:45 -0700 (PDT)
+        d=1e100.net; s=20251104; t=1786794350; x=1787399150;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to:content-type;
+        bh=2xCf7NNzqXlGxdkctmUtmNccZAJf+QJ9HiKn7Wp1+x0=;
+        b=CrLphSyazzGTbbDtzuaJP2q2IFJWWgLVAU8Oi3XArO3bXoR8ykmW3rUbfFCDP7vX1H
+         D0DdBtNn8m+O99DD6zfVWGCHUzSGfttq6YqHWkPIakQbwDvSTDIoUuKMbxoUsFZT4m5c
+         YILKQ4Lig2TJD3rnB3r4pCZGYXfxeYLcPdJ7F13LTwut5WwGVUqtselvlOCun4CoAHY7
+         gLE74JiZW+R3PQZAF4FIgpRC0E1K0dJ+yrbT+btmBarFSCPalhfJcYNeNYd+eLwqsooM
+         NB8YoMnfivTNHXB+ZKm/O+qXqVfjWhziVrcvCbwDqjNthwzr650IRW8LrlVIYaHgv5Jy
+         82iw==
+X-Forwarded-Encrypted: i=1; AHgh+Ro4FGaKdsopCKrGfpbg2EchJMNjIwTNch2ou4u2mKrxYFnAlG68s5KsrC8wMwzmaBAuVyjO1OqtbA==@vger.kernel.org
+X-Gm-Message-State: AOJu0YyV6r0A4vlG7U0KCFXSyrsZ+UIdvhtsiz3prtP0js9fgzKKQPsL
+	OayPKKfjctnEFdy8iqKRsEkmGeuoBCT1b65jh3K+2OWMm/iE9xi4+qq530doXUItH5+mUhw5Syn
+	VhHp/hCfP7hR2MEKHgaiWT9QyIeS/A+C9swYoLPbDQJYaaOhMcLOCm49mDxOfVk/BKeL3lQpxvh
+	1o
+X-Gm-Gg: AR+sD10zVt8soZb2on0bpXBx4Y8ZY3X2VGU4beH1YoD7pF3PacuBIf1rG9615kZBU+f
+	Oj4d2w96NNfMD5006XBPo8aTYXP7K/9kJWHVnnka1odUG81bphrUweJTsuRmPDSmznwd61K8q1z
+	WLemQVI0B9DIHbZLKJZYCWKK0syTAWbRm8ZVLZocwKZ/bEfp1S35C7vG5hYjkL5+HOT0qehWLJ4
+	kFEe/Mub58/LUNpewJyFVv49ppSMQcB7vuf4udmdVuBKIKVDG2Mjqf0hyZy8WIVRJeJ+lFFRq1C
+	xLDzsCdl5Uhu2rf/IhsYe+L849BH+c07/0ZUIjzsmL4LQfl2yZY35yGedJmaDYzvf20jBniPDT4
+	i0YNYP+7gm3/pgUcMSbTlCPz5IzV7Imz81N2LgospUc67XST2l4q+hIyxiSkIbH5l9V3E0JeCDy
+	66BOA8dZTcuIr7xT8LoVxKctCgMWzIZVc=
+X-Received: by 2002:a05:6000:3105:b0:481:60fc:edd0 with SMTP id ffacd0b85a97d-48160fcf090mr16008100f8f.8.1786794349911;
+        Sat, 15 Aug 2026 04:45:49 -0700 (PDT)
+X-Received: by 2002:a05:6000:3105:b0:481:60fc:edd0 with SMTP id ffacd0b85a97d-48160fcf090mr16008041f8f.8.1786794349117;
+        Sat, 15 Aug 2026 04:45:49 -0700 (PDT)
+Received: from t-14.home (2a01cb000883230031a3fd8213e7cff4.ipv6.abo.wanadoo.fr. [2a01:cb00:883:2300:31a3:fd82:13e7:cff4])
+        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-4815f2b13c3sm13090884f8f.19.2026.08.15.04.45.48
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 15 Aug 2026 04:45:48 -0700 (PDT)
+From: Fabrice Derepas <fabrice.derepas@canonical.com>
+To: Ignat Korchagin <ignat@linux.win>
+Cc: Fabrice Derepas <fabrice.derepas@canonical.com>,
+	David Howells <dhowells@redhat.com>,
+	Lukas Wunner <lukas@wunner.de>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>,
+	keyrings@vger.kernel.org,
+	linux-crypto@vger.kernel.org,
+	kexec@lists.infradead.org,
+	linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] crypto: asymmetric_keys - bound PE section ranges in pefile_parse_binary
+Date: Sat, 15 Aug 2026 13:45:30 +0200
+Message-ID: <20260815114533.2171445-1-fabrice.derepas@canonical.com>
+X-Mailer: git-send-email 2.53.0
+In-Reply-To: <CAOs+rJW1QymCXkr8-mU4kwMFvznnC98CXVvZMRjqpXwjJutdtA@mail.gmail.com>
+References: <CAOs+rJW1QymCXkr8-mU4kwMFvznnC98CXVvZMRjqpXwjJutdtA@mail.gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <CAOs+rJXZ++7_o4L6LuT567FjdYsa=6NEki3qcFSRX+ehJxpoVg@mail.gmail.com>
- <20260814220631.1101496-1-fabrice.derepas@canonical.com>
-In-Reply-To: <20260814220631.1101496-1-fabrice.derepas@canonical.com>
-From: Ignat Korchagin <ignat@linux.win>
-Date: Fri, 14 Aug 2026 23:29:33 +0100
-X-Gmail-Original-Message-ID: <CAOs+rJW1QymCXkr8-mU4kwMFvznnC98CXVvZMRjqpXwjJutdtA@mail.gmail.com>
-X-Gm-Features: AcwNN1Xw9h6GNj0ibMyw5rWypoAatSz6xjvorf8gf94rjiZOoVeFiOOzG0DX_sA
-Message-ID: <CAOs+rJW1QymCXkr8-mU4kwMFvznnC98CXVvZMRjqpXwjJutdtA@mail.gmail.com>
-Subject: Re: [PATCH v2] crypto: asymmetric_keys - bound PE section ranges in pefile_parse_binary
-To: Fabrice Derepas <fabrice.derepas@canonical.com>
-Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>, 
-	Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, 
-	keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, 
-	kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Transfer-Encoding: 8bit
 
-On Fri, Aug 14, 2026 at 11:06=E2=80=AFPM Fabrice Derepas
-<fabrice.derepas@canonical.com> wrote:
+On Fri, Aug 14, 2026 at 11:29 PM Ignat Korchagin <ignat@linux.win> wrote:
+> > Tested under KASAN (CONFIG_KASAN_GENERIC, x86-64) with a KUnit case that
+> > calls verify_pefile_signature() on real images: a signed-then-tampered
 >
-> pefile_digest_pe_contents() hashes each PE section with
->
->         crypto_shash_update(desc, pebuf + ctx->secs[i].data_addr,
->                             ctx->secs[i].raw_data_size);
->
-> where both data_addr and raw_data_size come straight from the untrusted P=
-E
-> section table. pefile_parse_binary() bounds the section table's location
-> but not the sections' data ranges, and nothing else on the path checks
-> them. A section with data_addr and/or raw_data_size pointing outside the
-> image therefore reads past the pelen-byte buffer (CWE-125); a large
-> raw_data_size makes it read far past the end and fault.
->
-> Commit f7dd32c5179d ("crypto: asymmetric_keys - fix OOB read in
-> pefile_digest_pe_contents") recently fixed a sibling underflow in this sa=
-me
-> function (the hashed_bytes + certs_size trailer computation); the
-> per-section read was left unchecked.
->
-> The digest loop runs only after verify_pkcs7_signature() succeeds, so it
-> requires a validly signed image -- but not an attacker signing key. The
-> PKCS#7 signature covers the SpcIndirectDataContent (a self-contained dige=
-st
-> in the certificate table), not the live section bytes, so tampering
-> data_addr in a publicly available signed image leaves the signature valid
-> at that step while the out-of-bounds read fires when the digest is
-> recomputed. It is thus reachable by a local CAP_SYS_BOOT user via
-> kexec_file_load() with a tampered signed image; the access is an
-> out-of-bounds read only, but a large raw_data_size faults, which is a
-> denial of service when panic_on_oops is set.
->
-> Validate each section's data range against the image when the section
-> table is parsed, reusing the existing chkaddr() bounds macro. A malformed
-> range is rejected with -ELIBBAD at parse time -- before signature
-> verification and before any hashing -- so a bad image is never digested.
->
-> Fixes: af316fc442ef ("pefile: Digest the PE binary and compare to the PKC=
-S#7 data")
-> Assisted-by: copilot-cli:claude-opus-4-6 frama-c
-> Signed-off-by: Fabrice Derepas <fabrice.derepas@canonical.com>
-> ---
-> v2:
->   - move the check into pefile_parse_binary() and reuse chkaddr(), per
->     Ignat Korchagin's review [1], so a malformed image is rejected at par=
-se
->     time -- before signature verification and before hashing. v1 put the
->     check in the pefile_digest_pe_contents() section loop.
->   - because chkaddr() runs on every section, v2 also validates zero-size
->     (raw_data_size =3D=3D 0) sections, which v1 and the shipping digest l=
-oop
->     skip. This only rejects a zero-size section whose data_addr points pa=
-st
->     the image -- malformed input that real PEs never produce (.bss uses
->     PointerToRawData =3D 0, which passes) -- and matches the "don't start=
- on
->     malformed data" intent.
->
-> [1] https://lore.kernel.org/all/CAOs+rJXZ++7_o4L6LuT567FjdYsa=3D6NEki3qcF=
-SRX+ehJxpoVg@mail.gmail.com/
->
-> Tested under KASAN (CONFIG_KASAN_GENERIC, x86-64) with a KUnit case that
-> calls verify_pefile_signature() on real images: a signed-then-tampered
+> Same as your other patch - any reason not to include this KUnit case?
 
-Same as your other patch - any reason not to include this KUnit case?
+The reason I am not including my tests is that I use real signed EFI
+binaries (a valid one and a tampered one), ~88 KB each via xxd -i, which is
+a lot of binary to carry in-tree. For upstream I'll write a self-contained
+case that constructs a minimal PE in the test itself and asserts that
+pefile_parse_binary() rejects an out-of-range section, so there are no
+embedded blobs. I'll send it as a second patch in a v3 series, so the fix
+is not gated on the test.
 
-> image (a section's data_addr set to pelen) is now rejected with -ELIBBAD =
-in
-> pefile_parse_binary(), before verify_pkcs7_signature() and with no KASAN
-> splat, while an untampered signed image passes parse and reaches the
-> signature check (-ENOKEY, as the test key is not trusted in this build).
-> v1's KASAN repro -- a crafted context taken straight into the digest loop=
- --
-> showed the slab-out-of-bounds this prevents.
+> > +       for (loop = 0; loop < ctx->n_sections; loop++)
 >
->  crypto/asymmetric_keys/verify_pefile.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
->
-> diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_k=
-eys/verify_pefile.c
-> index cec99db14..c447597f7 100644
-> --- a/crypto/asymmetric_keys/verify_pefile.c
-> +++ b/crypto/asymmetric_keys/verify_pefile.c
-> @@ -30,6 +30,7 @@ static int pefile_parse_binary(const void *pebuf, unsig=
-ned int pelen,
->         const struct data_dirent *dde;
->         const struct section_header *sec;
->         size_t cursor, datalen =3D pelen;
-> +       unsigned int loop;
->
->         kenter("");
->
-> @@ -112,6 +113,14 @@ static int pefile_parse_binary(const void *pebuf, un=
-signed int pelen,
->                 return -ELIBBAD;
->         ctx->secs =3D pebuf + cursor;
->
-> +       /* pefile_digest_pe_contents() hashes each section's raw data usi=
-ng
-> +        * these fields directly; reject a section whose data range falls
-> +        * outside the image so hashing never reads past the buffer.
-> +        */
-> +       for (loop =3D 0; loop < ctx->n_sections; loop++)
+> Looking at the code again: seems ctx->n_sections is user-controlled.
+> What happens if it is 0?
 
-Looking at the code again: seems ctx->n_sections is user-controlled.
-What happens if it is 0?
+For this loop, nothing: n_sections is unsigned, so "loop < 0" is false on
+the first test and the body never runs -- no chkaddr() call and no
+ctx->secs[] dereference. So the patch itself adds no hazard for
+n_sections == 0.
 
-> +               chkaddr(0, ctx->secs[loop].data_addr,
-> +                       ctx->secs[loop].raw_data_size);
-> +
->         return 0;
->  }
->
->
-> base-commit: d58772d8520c7ef247c4b95c9bd76d3a25da9ff5
-> --
-> 2.53.0
->
->
+But you have pointed at a real pre-existing problem one step further on.
+n_sections == 0 is not rejected anywhere -- pefile_parse_binary() only
+bounds it from above, against header_size -- and pefile_digest_pe_contents()
+then does:
 
-Ignat
+	canon = kcalloc(ctx->n_sections, sizeof(unsigned), GFP_KERNEL);
+	if (!canon)
+		return -ENOMEM;
+	...
+	canon[0] = 0;
+
+kcalloc(0, ...) returns ZERO_SIZE_PTR, which is non-NULL, so the !canon
+check passes and the unconditional "canon[0] = 0" writes through
+ZERO_SIZE_PTR. Because the digest runs only after verify_pkcs7_signature()
+succeeds, this has the same reachability as the read this patch fixes: a
+validly signed image with n_sections tampered to 0 (the PKCS#7 is
+unaffected) reaches it via kexec_file_load().
+
+I confirmed it under KASAN. With a trusted key embedded, a signed image
+whose NumberOfSections I set to 0 (leaving the certificate table untouched,
+so verify_pkcs7_signature() still returns 0) faults in the digest step,
+while the untampered image verifies:
+
+  control (trusted, 7 sections): verify_pefile_signature() = 0
+  BUG: kernel NULL pointer dereference, address: 0000000000000010
+  #PF: supervisor write access in kernel mode
+  Oops: 0002 [#1] SMP KASAN NOPTI
+  RIP: 0010:verify_pefile_signature+0x5c3   (pefile_digest_pe_contents inlined)
+
+Address 0x10 is ZERO_SIZE_PTR and error_code 0x2 is a write -- the
+canon[0] = 0 store -- so it is a write fault, reachable the same way as the
+out-of-bounds read this patch already addresses.
+
+Since we are now centralising section-table sanity in pefile_parse_binary(),
+the natural fix is to reject n_sections == 0 there as well, e.g. by folding
+it into the existing bound:
+
+	if (ctx->n_sections == 0 ||
+	    ctx->n_sections > (ctx->header_size - cursor) / sizeof(*sec))
+		return -ELIBBAD;
+
+A PE with zero sections is malformed (a signed kernel/EFI image always has
+at least one), so rejecting it at parse is safe and closes the
+ZERO_SIZE_PTR write too. I will include that in v3 and cover it in the KUnit
+case.
+
+Do you prefer it folded into this patch, or kept as a separate fix for the
+canon[0] write? Either way I will respin as v3 with the KUnit case once you
+let me know.
+
+Thanks for the careful review, Ignat.
+
+Fabrice
