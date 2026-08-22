@@ -1,129 +1,146 @@
-Received: from mail-gw01.astralinux.ru (mail-gw01.astralinux.ru [37.230.196.243])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-ej1-f53.google.com (mail-ej1-f53.google.com [209.85.218.53])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EAB23367B61;
-	Sat, 22 Aug 2026 08:39:41 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=37.230.196.243
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A65493469FA
+	for <keyrings@vger.kernel.org>; Sat, 22 Aug 2026 13:41:55 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.218.53
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787387984; cv=none; b=W/cx7bKcib22HHO2AmUKvUa/8hNvAWSrOJFs+ArDqc7cK/NW0D0yk5WlOwI2DEGWIofIeLcZyBNxlA4UALCAjpSs/hrhRiGj78msRdwvpwHFlINCbcmpOQuebfvYfJyAvJ+QZrO2lrMetVJI9J0h/ILWbosk6XmnGePyBmzPi/E=
+	t=1787406118; cv=none; b=eNWeKF+zjtvQlfAnG4FSSOpWAAXr5rbp4/obU0OsFZR9Ba6U9LmZRdY8QPcNGmacwAGVIDfdSn7k+iTon3BUBX2EwoKsDpt5UGLfEbWKVl+gMF1K3CRWWGUM/NCA5p36R7CejK5blvA7gouqZgL7FvF7n+JRZrT6NuKhpWMq3r0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787387984; c=relaxed/simple;
-	bh=4sI1NdIiMLwYD5o6jZ+qjz/USjnVVq4k2iEiiwLTJD0=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=HQZH8tGUYAv/X0VAX0HeW0RxjlyKUS5F77eow2J3nUXs17mHP93TQbpAT8PYxnjDt6p2nn6R542hHK1tMkRwHMeK/2Wsh9Z4rEJcqrIr2YICqcRhiQt0k3s1VTFVqM/E/dhuxX1t7W5uhCqjmujxqsrEBJSTWqELlg6uAONZV+g=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=astralinux.ru; spf=pass smtp.mailfrom=astralinux.ru; dkim=pass (2048-bit key) header.d=astralinux.ru header.i=@astralinux.ru header.b=XqPiA8nZ; arc=none smtp.client-ip=37.230.196.243
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=astralinux.ru
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=astralinux.ru
+	s=arc-20240116; t=1787406118; c=relaxed/simple;
+	bh=ShtTkIU3ezbFJIydaBLYCMvhC/wGsulze2uz5bQe5G4=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=d+vYVxP1GbeqZibhsbs46/r6d2/mFSq0MboY5phQLxZ4CYcBLRuqP9k8wlHVkoc8YYEUu7Bdy0W0b8au82a0pDK1XtZ+QSBAxXqwTW5hq0g6vgxfGONtDUg+G461C6yQhXY5UfCZcqGJO6eP6gzzVe7BWh6rGxG/SqnESvRcfzM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=baylibre.com; spf=pass smtp.mailfrom=baylibre.com; dkim=pass (2048-bit key) header.d=baylibre.com header.i=@baylibre.com header.b=NWr95Y6+; arc=none smtp.client-ip=209.85.218.53
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=baylibre.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=baylibre.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=astralinux.ru header.i=@astralinux.ru header.b="XqPiA8nZ"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=astralinux.ru;
-	s=mail; t=1787387461;
-	bh=4sI1NdIiMLwYD5o6jZ+qjz/USjnVVq4k2iEiiwLTJD0=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-	b=XqPiA8nZXyraSDmgMlyLHDO3URAH44KAA1y7khdR1ZZ11qbIBI6SlCN2YdliarklE
-	 ZJBBMDqxwPbRGNZAf8xGGGmxye/z5A3wUlrlHynY39UiHy9o0kqqucMe2RzuAVlGHK
-	 ESdHD5+O8yiS2q+F9OVCICgnaXLswJGBJRbJJ83nfCnubzBoj8YOACF1/gx1lme/dc
-	 bvqLJL/dRABY1Y/MI4Oh1JImh+FFT0JayohfVG5ESClDnPNzD94hKu+NTZwZD2G5sj
-	 0nuOcOI5sor4ar7RJFgPdWl7HWYHxNfx4OTGSGa4y2WumdZoG2ZKLfqNc64QPaP7lr
-	 7JmEu3Spvzm7A==
-Received: from gca-sc-a-srv-ksmg01.astralinux.ru (localhost [127.0.0.1])
-	by mail-gw01.astralinux.ru (Postfix) with ESMTP id DC3A1250B0;
-	Sat, 22 Aug 2026 11:31:01 +0300 (MSK)
-Received: from new-mail.astralinux.ru (unknown [10.205.207.10])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by mail-gw01.astralinux.ru (Postfix) with ESMTPS;
-	Sat, 22 Aug 2026 11:31:01 +0300 (MSK)
-Received: from astra.astra.ru (unknown [10.198.17.65])
-	by new-mail.astralinux.ru (Postfix) with ESMTPA id 4hRr3n32DqzrB6;
-	Sat, 22 Aug 2026 11:31:01 +0300 (MSK)
-From: Timofei Novikov <tnovikov@astralinux.ru>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org,
-	linux-crypto@vger.kernel.org,
-	Timofei Novikov <tnovikov@astralinux.ru>
-Subject: [PATCH 1/3] ASN.1: fix OPTIONAL for SEQUENCE OF and TYPE_REF
-Date: Sat, 22 Aug 2026 11:26:40 +0300
-Message-ID: <20260822082642.48936-2-tnovikov@astralinux.ru>
-X-Mailer: git-send-email 2.43.0
-In-Reply-To: <20260822082642.48936-1-tnovikov@astralinux.ru>
-References: <20260822082642.48936-1-tnovikov@astralinux.ru>
+	dkim=pass (2048-bit key) header.d=baylibre.com header.i=@baylibre.com header.b="NWr95Y6+"
+Received: by mail-ej1-f53.google.com with SMTP id a640c23a62f3a-c197e7e4e94so355075766b.2
+        for <keyrings@vger.kernel.org>; Sat, 22 Aug 2026 06:41:55 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=baylibre.com; s=google; t=1787406114; x=1788010914; darn=vger.kernel.org;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:from:to:cc:subject
+         :date:message-id:reply-to:content-type;
+        bh=Aj3ZYubTvLgnR11pZYHVat4EVUJdKX6AnHgTVge4+Wc=;
+        b=NWr95Y6+8gr1dd6kImBWVKkc9Ow7+W1hOqUbome1tczYJ0l7VolXq0eP+XhSlE2lop
+         cfrU27AzjWjNSHtmZZ6RuHDw63H/Aw3j1SR3ZUJxRQSBgNqaamZlv7pWt8qP16vXkNr8
+         RFuxFu+K2wzi5JQkrBzAM56wOg7B0Pw6h7m1cwa5fQL+1N4vZ9VmnU0fSvXmiMFSSbLp
+         PwxvZznnm7VHgzn3KPh0fvhzv105HloBofPB+0hansRG9f8EL4WMC1/pwoxYuig5g5ac
+         rHPjkA9B4VHQUiuu3DSUboCniUrCCNStbMPToZGTj1YRemJ0JduZoppZNUOsUtWyRRr6
+         6eqA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1787406114; x=1788010914;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=Aj3ZYubTvLgnR11pZYHVat4EVUJdKX6AnHgTVge4+Wc=;
+        b=UByaOqyppcCMYEgVrK+tUhd6SGpzO4NhtBp9vVymzNlZoiPQdBn+1d7KfLE91EnY8v
+         ccX5tYX9v9jJrES8nFf+ui0Jv8wBI4qWjFVq83+uhQEZ+ihmJhk4hOcf/nsj+NpcP/sF
+         R1WmVgITk/qsS+gPcvGYfcu2RyTu/KfKZA+6jzZnFbDpXFOVK5nfKpwKnG/4yr80HoY4
+         bB78zWhSZaSCeqJ61pJGj19+RtvsZv5CdCI6S+qJOEmVxDC88v0CF9/ZGBGZhg+TMTlI
+         IWInnQh1rwzVIaMOV+zCDSZ6IUt0+uai6IQmZB362p4qUn/FeSUdXQDSsoiYJmAz8fir
+         xM7w==
+X-Forwarded-Encrypted: i=1; AHgh+RoVXkONA+DTVDL38+oF3Q/UcnZeINNuXETnjXj2/DRYTF4wfHJI0rhCMq1XWgIbxOi9M7Z8HRSsfQ==@vger.kernel.org
+X-Gm-Message-State: AFuF++lu5f0iGOUGljPM0csdytix35z27zmUJFxp0YGTAB+9xZMcYlet
+	OWsXWjmMwAPsBH027kZsDTOIHZBNKzzahILCTQtwic2c+LoF7xde6JfRn9B3mxR2/To=
+X-Gm-Gg: AR+sD13W9tMva5J+xEFF4ywhKLgFx4TYbcsWnS0SWBOcXBSZ4TUL9dbDcx9NJGQxCDw
+	O3anUaAtJvjFMMwgbNXWZWgb6MBwhSNEm5MPtdyPI2OPHJOHl0ZAlNXBFav806c7YMolJodVXEb
+	Dcrw5RyXYnqTnp96v9f+fZhhagL/C2ABvS7opA4ZVGRBA2HYDgG0ZFaDOTlJ7kLqwlvBJNHMPmk
+	Jd1FHD8TP8f9N8Aly0OVTG09TvdFhKZ8ZO1lZeUuplhRwX34lEOsTpfDYtlkrDEloa2+DqkaSrx
+	pSRSr13GkqX62wfHDYjCKoNxR9ire0cEtz06uEk513imPagsleJ1Jk/kBElo9t8yfxBVzp16biA
+	Dtg/28Kx4UUp1+K5IvlJTl65jeeoBBuLVBT3eCLvoFNpznqvw/PUKKU+qyOoq0lZlFcfxervdCN
+	R8u/eO7PV/vuzqpIzuvkVcVGEwY74VyxW8KulONa8vQrMerK/INIPO9ZxVtnah/beHGA==
+X-Received: by 2002:a17:907:8908:b0:c21:35d0:f435 with SMTP id a640c23a62f3a-c24924db408mr547750766b.10.1787406113365;
+        Sat, 22 Aug 2026 06:41:53 -0700 (PDT)
+Received: from localhost ([2a02:8071:56d1:2de0:1d24:d58d:2b65:c291])
+        by smtp.gmail.com with UTF8SMTPSA id a640c23a62f3a-c249606a8fasm387614266b.8.2026.08.22.06.41.52
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 22 Aug 2026 06:41:52 -0700 (PDT)
+Date: Sat, 22 Aug 2026 15:41:50 +0200
+From: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@baylibre.com>
+To: Mauricio Faria de Oliveira <mfo@igalia.com>
+Cc: Kees Cook <kees@kernel.org>, Joel Granados <joel.granados@kernel.org>, 
+	Nathan Chancellor <nathan@kernel.org>, Nicolas Schier <nsc@kernel.org>, 
+	"David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>, 
+	Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>, Simon Horman <horms@kernel.org>, 
+	kernel-dev@igalia.com, linux-riscv@lists.infradead.org, linux-kernel@vger.kernel.org, 
+	fsverity@lists.linux.dev, keyrings@vger.kernel.org, bpf@vger.kernel.org, 
+	linux-fsdevel@vger.kernel.org, linux-kbuild@vger.kernel.org, netdev@vger.kernel.org, 
+	linux-wpan@vger.kernel.org, lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org, 
+	coreteam@netfilter.org, linux-sctp@vger.kernel.org, linux-rdma@vger.kernel.org, 
+	linux-s390@vger.kernel.org, bridge@lists.linux.dev, mptcp@lists.linux.dev, 
+	rds-devel@oss.oracle.com, virtualization@lists.linux.dev
+Subject: Re: [PATCH RFC v3 03/13] sysctl, mod_devicetable: add macro
+ MODULE_SYSCTL_TABLE
+Message-ID: <aomlfGJM61qZKxx2@monoceros>
+References: <20260819-sysctl-module-aliases-v3-0-aab90569365d@igalia.com>
+ <20260819-sysctl-module-aliases-v3-3-aab90569365d@igalia.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-KSMG-AntiPhishing: NotDetected
-X-KSMG-AntiSpam-Auth: dkim=none
-X-KSMG-AntiSpam-Envelope-From: tnovikov@astralinux.ru
-X-KSMG-AntiSpam-Info: LuaCore: 116 0.3.116 e16f906af7c720a8bd440e8c76eb19faffaac9ce, {Tracking_from_domain_doesnt_match_to}, d41d8cd98f00b204e9800998ecf8427e.com:7.1.1;new-mail.astralinux.ru:7.1.1;127.0.0.199:7.1.2;astralinux.ru:7.1.1, FromAlignment: s
-X-KSMG-AntiSpam-Interceptor-Info: scan successful
-X-KSMG-AntiSpam-Lua-Profiles: 205480 [Aug 21 2026]
-X-KSMG-AntiSpam-Method: none
-X-KSMG-AntiSpam-Rate: 0
-X-KSMG-AntiSpam-Status: not_detected
-X-KSMG-AntiSpam-Version: 6.1.1.27
-X-KSMG-AntiVirus: Kaspersky Secure Mail Gateway, version 2.1.0.7854, bases: 2026/08/22 08:00:00 #28528350
-X-KSMG-AntiVirus-Status: NotDetected, skipped
-X-KSMG-LinksScanning: NotDetected
-X-KSMG-Message-Action: skipped
-X-KSMG-Rule-ID: 1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="akn7oxv4v2qk2wdq"
+Content-Disposition: inline
+In-Reply-To: <20260819-sysctl-module-aliases-v3-3-aab90569365d@igalia.com>
 
-Fix two issues with OPTIONAL fields:
 
-1. For TYPE_REF fields that are OPTIONAL, propagate the ELEMENT_SKIPPABLE
-   flag to the target type via a temporary tag element.  This ensures the
-   target composite type generates MATCH_JUMP_OR_SKIP instead of MATCH.
+--akn7oxv4v2qk2wdq
+Content-Type: text/plain; protected-headers=v1; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+Subject: Re: [PATCH RFC v3 03/13] sysctl, mod_devicetable: add macro
+ MODULE_SYSCTL_TABLE
+MIME-Version: 1.0
 
-2. OPTIONAL SEQUENCE/SET OF: set ELEMENT_SKIPPABLE on sequence wrapper,
-   not just on parent field. This allows the entire sequence to be
-   absent from the data.
+Hello,
 
-Signed-off-by: Timofei Novikov <tnovikov@astralinux.ru>
----
- scripts/asn1_compiler.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+On Wed, Aug 19, 2026 at 03:16:16PM -0300, Mauricio Faria de Oliveira wrote:
+> The MODULE_SYSCTL_TABLE macro emits a struct module_sysctl_table variable
+> with pointers to a sysctl table's path and entries, and table/entry sizes.
 
-diff --git a/scripts/asn1_compiler.c b/scripts/asn1_compiler.c
-index 4c3f645065a4..5b118acbdbeb 100644
---- a/scripts/asn1_compiler.c
-+++ b/scripts/asn1_compiler.c
-@@ -1039,6 +1039,8 @@ static struct element *parse_type(struct token **_cursor, struct token *end,
- 			if (cursor >= end)
- 				goto overrun_error;
- 			element->children = parse_type(&cursor, end, NULL);
-+			element->flags |= element->children->flags & ELEMENT_SKIPPABLE;
-+			element->children->flags &= ~ELEMENT_SKIPPABLE;
- 		} else {
- 			element->children = parse_compound(&cursor, end, 0);
- 		}
-@@ -1056,6 +1058,8 @@ static struct element *parse_type(struct token **_cursor, struct token *end,
- 			if (cursor >= end)
- 				goto parse_error;
- 			element->children = parse_type(&cursor, end, NULL);
-+			element->flags |= element->children->flags & ELEMENT_SKIPPABLE;
-+			element->children->flags &= ~ELEMENT_SKIPPABLE;
- 		} else {
- 			element->children = parse_compound(&cursor, end, 1);
- 		}
-@@ -1522,7 +1526,13 @@ static void render_element(FILE *out, struct element *e, struct element *tag)
- 	/* Deal with compound types */
- 	switch (e->compound) {
- 	case TYPE_REF:
--		render_element(out, e->type->type->element, tag);
-+		if (skippable && !tag) {
-+			struct element tmp = { .flags = ELEMENT_SKIPPABLE };
-+
-+			render_element(out, e->type->type->element, &tmp);
-+		} else {
-+			render_element(out, e->type->type->element, tag);
-+		}
- 		if (e->action)
- 			render_opcode(out, "ASN1_OP_%sACT,\n",
- 				      skippable ? "MAYBE_" : "");
--- 
-2.43.0
+That new struct doesn't seem to contain any pointer?
 
+> That symbol will be handled by file2alias.c (modpost) with the changes in
+> mod_devicetable.h and devicetable-offsets.c.
+>=20
+> The option macros MODULE_SYSCTL_TABLE_{DISABLE,UNIQUE_ID} can be used on
+> a per-file basis to disable the macro and change the symbol name pattern.
+>=20
+> Signed-off-by: Mauricio Faria de Oliveira <mfo@igalia.com>
+> ---
+>  include/linux/mod_devicetable.h   |  7 +++++++
+>  include/linux/sysctl.h            | 42 +++++++++++++++++++++++++++++++++=
+++++++
+>  scripts/mod/devicetable-offsets.c |  6 ++++++
+>  3 files changed, 55 insertions(+)
+
+Please put the new struct in a separate header. Apart from not being
+about a device table, I'm currently work on removing
+<linux/mod_devicetable.h>. See commit
+ad428f5811bd7fb3d91fa002174de533f9da94d7 for more details.
+
+Best regards
+Uwe
+
+--akn7oxv4v2qk2wdq
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+
+iQEzBAABCgAdFiEEP4GsaTp6HlmJrf7Tj4D7WH0S/k4FAmqJpxsACgkQj4D7WH0S
+/k5bfgf9HJoNnVEr9RCdAghOTP5QqFmH5ae7Kbmnodv6c6Pi9JGIjjGbeT5eKw3e
+JkSKqdEnlVMrLoKrhneRsxwTDGPrZvrLZrPLdZwJmPWZn5Fg+kkOO9yFAGPeMsPX
+S6UP1NY9kaCiBtlcsGT9EvMWz0jWVAWX1xb7Y2WcVZJsCWdcPhvWc3/lIbw3E4o7
+PqLtSFblkQmtGl2OL4WkP6xhEPH6qQO9BAmhLVKKZwFW5/l4sHmXRrpgSJlroR3b
+iH3liIeS6wxFp/fMYuFRryGHNMXn6gC447OnOCTmGNEj7+7Y3COwSGivgubcRIzI
+RkmxkMf2Iuntnwp4oQzCbipE5EiKGA==
+=SPY4
+-----END PGP SIGNATURE-----
+
+--akn7oxv4v2qk2wdq--
