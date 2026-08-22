@@ -1,110 +1,102 @@
-Received: from oss.cyber.gouv.fr (oss.cyber.gouv.fr [51.159.188.251])
+Received: from mail-gw02.astralinux.ru (mail-gw02.astralinux.ru [93.188.205.243])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F12AE4078EE;
-	Fri, 21 Aug 2026 19:25:34 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=51.159.188.251
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 525FB34FF79;
+	Sat, 22 Aug 2026 08:39:38 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=93.188.205.243
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787340337; cv=none; b=iC5esqJgDSSspFmbTwLNnN4NUP+gnb+6a2bfIcKnR/bqklMeEtGsl+szQC83TCkMXGK9Nt3CDn9l3XNBkwOd26QXiiST0ycg6MODhwXCUqrJR9w+M1rhj4DbvtIkTJ1LFxEjynowBtrLmxeB+AokwZOViJfeXOo7ICojrxEL/tE=
+	t=1787387981; cv=none; b=pCDbkBnmN/sRv0aeSZ1ssyM16ePUO3hrwJzPh4uNMXeuQ7w5oPvOsvaL79xPncjqS4KonQUwt6f7r4o7nOzvISBRXycW4igMH8K6nxZMxXkOjiYMa4QFS+fF2yVs27C2vtF56cVqmtJCni8Vd1DxmJYX/HxKRpalVLPYsCKARSg=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787340337; c=relaxed/simple;
-	bh=coC1wJYIa/Bk7cJ+Ao+mMXF5jUAofNGH5WfceLQBpBc=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version:Content-Type; b=AVmt5b4ShT8cJrGB9UiCPuiiyjC1IZf+SzDmi/ALkozTyx5Y/4NL0HPqLODPEPa87AHZEGgRhivMkPGNuY3dtTktAW5yCb0k3DHd9ebK67H24pnNqXaGcx52aCfvaTfCgQZV6g8+Ssob55vByECYxMAvyn9xREIIBi/QhkbWyxc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=oss.cyber.gouv.fr; spf=pass smtp.mailfrom=oss.cyber.gouv.fr; dkim=pass (2048-bit key) header.d=oss.cyber.gouv.fr header.i=@oss.cyber.gouv.fr header.b=RWnMcxyM; arc=none smtp.client-ip=51.159.188.251
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=oss.cyber.gouv.fr
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=oss.cyber.gouv.fr
+	s=arc-20240116; t=1787387981; c=relaxed/simple;
+	bh=IByip44c4mzM/PU31oE5SNo2spQ+VThEYwPm17Z08OY=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=nrqGUT+T3Z4Mtyr+ZFITNKrAVJRPPPGK+YeTpJNhbj1l3/8JkKTF3wjvwVilnrmM9wBNOL7AMihdYebYqrqxw6hNP5vann2f/T/O/RrNGt3V4m1/0QJDFOmRfQeE4N5iz1EJbBDe3M9VL1eo8QywwAkSlJtpdaVVExzlTLONDEc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=astralinux.ru; spf=pass smtp.mailfrom=astralinux.ru; dkim=pass (2048-bit key) header.d=astralinux.ru header.i=@astralinux.ru header.b=WNdekIp0; arc=none smtp.client-ip=93.188.205.243
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=astralinux.ru
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=astralinux.ru
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=oss.cyber.gouv.fr header.i=@oss.cyber.gouv.fr header.b="RWnMcxyM"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=oss.cyber.gouv.fr; s=default; h=Content-Transfer-Encoding:Content-Type:
-	MIME-Version:Message-ID:Date:Subject:Cc:To:From:Sender:Reply-To:Content-ID:
-	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
-	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
-	List-Subscribe:List-Post:List-Owner:List-Archive;
-	bh=SrtsCDy6dLoKwXxO7io5lmiObGVJLfwxHYxffavVPKQ=; b=RWnMcxyMvabDzvJgmfKS0rPTpm
-	UHVE+6yY/9sUH9R1pnYtNhlQULNxdIghDRv6gEHggVr46ZJo2opNIsdUdQQULdcY0lSOUc5PLmK0N
-	3hibkW6VjQ41hXhXWdkHhiwmXZr5UBo1eojhWLtWNchgWUoBHRIyYRg2apIkuarHCQWNlS1PmxfYQ
-	LYN+zgyZOdGuAGPqMeh4xw2UP15md2kJZx2BOWhxUuOorTv7ZZcZZ6Q6mqXKVGTVliJGE+A86FDeq
-	7o+nV/yNnoshbaxDkOPossvWlBtiuuzX4Hu55r31XHLgjAxnPZEM6gG3ChNt7V28wD3KAEFcHPqu/
-	pa4xFVhQ==;
-Received: from [151.115.150.205] (port=42692 helo=gepetto..)
-	by pf-012.whm.fr-par.scw.cloud with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
-	(Exim 4.99.5)
-	(envelope-from <Jeremy.Jean@oss.cyber.gouv.fr>)
-	id 1wxUrs-0000000DdqK-49Dd;
-	Fri, 21 Aug 2026 21:25:32 +0200
-From: =?UTF-8?q?J=C3=A9r=C3=A9my=20Jean?= <Jeremy.Jean@oss.cyber.gouv.fr>
-To: David Howells <dhowells@redhat.com>,
-	Lukas Wunner <lukas@wunner.de>,
-	Ignat Korchagin <ignat@linux.win>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>,
-	keyrings@vger.kernel.org,
+	dkim=pass (2048-bit key) header.d=astralinux.ru header.i=@astralinux.ru header.b="WNdekIp0"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=astralinux.ru;
+	s=mail; t=1787387458;
+	bh=IByip44c4mzM/PU31oE5SNo2spQ+VThEYwPm17Z08OY=;
+	h=From:To:Cc:Subject:Date:From;
+	b=WNdekIp0UNQE4ZM1KxhxSmtA7YCPYc0GfORo5thUBCTOtnm+Qgvx0xUX4d9bQfrWT
+	 dBkBN0o6lgFtVnEF0tH7j5Ad6xuOLLnw4DHxgFYk91HnKZ6isIyqwEK5MwOniE+Ieu
+	 KHUWKIRyCX4qG5yxS6GClbOv0Pm0+QM43oNxbuXjXHvMek8Yp9dbqnOnXnWn+2S9++
+	 mne5IiA0TpsOdQ0pUjS5AoV24sDRw4jFvj9jqBU1nGf4Ob+Cnc9regmqwh//CzNj+f
+	 5cr0QGpOnzYP4bbV/N3xfggSAg0641K/r09z7esTrf4jqAlot6o+DMENapURa/iASU
+	 FWLf2OX6lvsbA==
+Received: from gca-msk-a-srv-ksmg01.astralinux.ru (localhost [127.0.0.1])
+	by mail-gw02.astralinux.ru (Postfix) with ESMTP id 6E0BE1F987;
+	Sat, 22 Aug 2026 11:30:58 +0300 (MSK)
+Received: from new-mail.astralinux.ru (unknown [10.205.207.10])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mail-gw02.astralinux.ru (Postfix) with ESMTPS;
+	Sat, 22 Aug 2026 11:30:56 +0300 (MSK)
+Received: from astra.astra.ru (unknown [10.198.17.65])
+	by new-mail.astralinux.ru (Postfix) with ESMTPA id 4hRr3h4jy7zrB4;
+	Sat, 22 Aug 2026 11:30:56 +0300 (MSK)
+From: Timofei Novikov <tnovikov@astralinux.ru>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org,
 	linux-crypto@vger.kernel.org,
-	=?UTF-8?q?J=C3=A9r=C3=A9my=20Jean?= <Jeremy.Jean@oss.cyber.gouv.fr>
-Subject: [PATCH] crypto: asymmetric_keys: copy X.509 TBS for data signature algorithms
-Date: Fri, 21 Aug 2026 19:25:03 +0000
-Message-ID: <20260821192502.3942767-2-Jeremy.Jean@oss.cyber.gouv.fr>
-X-Mailer: git-send-email 2.47.3
+	Timofei Novikov <tnovikov@astralinux.ru>
+Subject: [PATCH 0/3] Add X.509 CRL support
+Date: Sat, 22 Aug 2026 11:26:39 +0300
+Message-ID: <20260822082642.48936-1-tnovikov@astralinux.ru>
+X-Mailer: git-send-email 2.43.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - pf-012.whm.fr-par.scw.cloud
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - oss.cyber.gouv.fr
-X-Get-Message-Sender-Via: pf-012.whm.fr-par.scw.cloud: authenticated_id: jeremy.jean@oss.cyber.gouv.fr
-X-Authenticated-Sender: pf-012.whm.fr-par.scw.cloud: jeremy.jean@oss.cyber.gouv.fr
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-KSMG-AntiPhishing: NotDetected
+X-KSMG-AntiSpam-Auth: dkim=none
+X-KSMG-AntiSpam-Envelope-From: tnovikov@astralinux.ru
+X-KSMG-AntiSpam-Info: LuaCore: 116 0.3.116 e16f906af7c720a8bd440e8c76eb19faffaac9ce, {diag_burst_silent}, {Tracking_ml_letters}, {Tracking_from_domain_doesnt_match_to}, 127.0.0.199:7.1.2;astralinux.ru:7.1.1;new-mail.astralinux.ru:7.1.1;d41d8cd98f00b204e9800998ecf8427e.com:7.1.1, FromAlignment: s
+X-KSMG-AntiSpam-Interceptor-Info: scan successful
+X-KSMG-AntiSpam-Lua-Profiles: 205480 [Aug 21 2026]
+X-KSMG-AntiSpam-Method: none
+X-KSMG-AntiSpam-Rate: 0
+X-KSMG-AntiSpam-Status: not_detected
+X-KSMG-AntiSpam-Version: 6.1.1.27
+X-KSMG-AntiVirus: Kaspersky Secure Mail Gateway, version 2.1.0.7854, bases: 2026/08/22 08:00:00 #28528350
+X-KSMG-AntiVirus-Status: NotDetected, skipped
+X-KSMG-LinksScanning: NotDetected
+X-KSMG-Message-Action: skipped
+X-KSMG-Rule-ID: 1
 
-For signature algorithms operating on a message rather than a digest,
-x509_get_sig_params() points sig->m directly into cert->tbs.
-cert->tbs is the preparsed add_key() payload.  The syscall wipes and frees
-it on return, while the instantiated key retains public_key_signature.
+This series adds X.509 Certificate Revocation List (CRL) parsing with
+indirect CRL support per RFC 5280. Revoked certificates are blacklisted
+using SHA-256 hash of serial+issuer.
 
-A later KEYCTL_LINK into an asymmetric restricted keyring therefore passes
-a dangling message pointer to ML-DSA.  KASAN reports a slab-use-after-free
-in mldsa_verify(), with allocation and free provenance both leading to
-__do_sys_add_key().  Reuse is also an integrity issue: bytes occupying the
-freed object become the authenticated message instead of the certificate's
-own TBSCertificate.
+The ASN.1 compiler is fixed to handle OPTIONAL fields in SEQUENCE/SET OF
+and TYPE_REF constructs, which is required for the new CRL definitions.
 
-Give the signature object its own copy of the TBS, as is already done for
-a precomputed digest, and release it through the existing m_free contract.
+Timofei Novikov (3):
+  ASN.1: fix OPTIONAL for SEQUENCE OF and TYPE_REF
+  x509: add CRL parser with indirect CRL support
+  x509: add CRL signature verification support
 
-Fixes: f3eccecd782d ("pkcs7: Allow the signing algo to do whatever digestion it wants itself")
-Signed-off-by: Jérémy Jean <Jeremy.Jean@oss.cyber.gouv.fr>
-Assisted-by: Codex:gpt-5
----
- crypto/asymmetric_keys/x509_public_key.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ certs/blacklist.c                         |  17 ++-
+ crypto/asymmetric_keys/Makefile           |   8 +-
+ crypto/asymmetric_keys/x509_cert_parser.c | 132 ++++++++++++++++++++++
+ crypto/asymmetric_keys/x509_crl.asn1      |  59 ++++++++++
+ crypto/asymmetric_keys/x509_idp.asn1      |  12 ++
+ crypto/asymmetric_keys/x509_loader.c      | 113 ++++++++++++++++++
+ crypto/asymmetric_keys/x509_parser.h      |  18 +++
+ crypto/asymmetric_keys/x509_public_key.c  |  21 ++++
+ include/keys/asymmetric-type.h            |   4 +
+ include/keys/system_keyring.h             |   2 +
+ include/linux/oid_registry.h              |   4 +
+ scripts/asn1_compiler.c                   |  12 +-
+ 12 files changed, 395 insertions(+), 7 deletions(-)
+ create mode 100644 crypto/asymmetric_keys/x509_crl.asn1
+ create mode 100644 crypto/asymmetric_keys/x509_idp.asn1
 
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 25cf8ac..5c9165a 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -53,9 +53,11 @@ int x509_get_sig_params(struct x509_certificate *cert)
- 
- 	if (sig->algo_takes_data) {
- 		/* The signature algorithm does whatever passes for hashing. */
--		sig->m = (u8 *)cert->tbs;
-+		sig->m = kmemdup(cert->tbs, cert->tbs_size, GFP_KERNEL);
-+		if (!sig->m)
-+			return -ENOMEM;
- 		sig->m_size = cert->tbs_size;
--		sig->m_free = false;
-+		sig->m_free = true;
- 		goto out;
- 	}
- 
 -- 
-2.47.3
+2.43.0
 
