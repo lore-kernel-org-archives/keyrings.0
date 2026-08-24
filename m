@@ -1,147 +1,151 @@
-Received: from mail-pf1-f180.google.com (mail-pf1-f180.google.com [209.85.210.180])
+Received: from mail-pj1-f49.google.com (mail-pj1-f49.google.com [209.85.216.49])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9CE2436AB5A
-	for <keyrings@vger.kernel.org>; Mon, 24 Aug 2026 11:30:19 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.180
-ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787571021; cv=none; b=fdUo/Ss+ZAyzSbJSokP3g7iXcfSnXgDMiPUfcZjXfBc+alefB0I39eowoERXqaLdov9u+mGtHOL7bI8945kQefSLmnRib1G7tKZ/LxuaInQwvVdwSGvuON7odXJhpLU8Ltf8lCXOcy9Va+biyxFZ26jbXKrPFFJMVjDQjacsxbU=
-ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787571021; c=relaxed/simple;
-	bh=eIiHDNpGuJvlr6XzJzVZse8EFDoB8HDy4sppT9wCi+w=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=dxTz5eznYjHtFDTvCduQ2+5Lzl+rb6NbSwiW/Co67XOTY5ofzMWWAn0BRNr5/qPNdue0/cE5tGiifaBHRhPpjqx7bDPGziTXh2xJeFP081ZXLO79yZkEqjLLp/L5LK/EGiZt3KuQUmyiuuVVcoojvS2UAM6PNmYmfbiPqhXymxI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=V8x3jT9Y; arc=none smtp.client-ip=209.85.210.180
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 50AFB364E96
+	for <keyrings@vger.kernel.org>; Mon, 24 Aug 2026 15:18:52 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.216.49
+ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1787584733; cv=pass; b=qUADugporngMU7MJ7GkpiHrmHrCu3QhWJjNxCdOmAHbj6ChBODGyzJhrlWnFahLG7CTxZ5KID7BPqQFajLFjgJby4CwY8KxEiHSk8nbRDzDqd9hT/Dph0u7sLslVdZEFbs+yFBsSGR1VFfdUGk9X9umfOJ3lComk5l9/E211+3A=
+ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1787584733; c=relaxed/simple;
+	bh=BcIjz0TwFTjpzBBWL7usC6KhzrrYdTOn3cvUnb4jHYo=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=QEO7QT3U8/CmJeLgO0rgQRLx+p41cZeqK0A9bLHSG7k86Al8jjiMR0dLbBmlTw3RhPvsn7+Z1D6DNq+t/pQzpU7tBWmuZbHhXwHPgk9Gmkk7z+zk1b/UOFk7ikiEiagHYZW/voP2mIB6H5TiHfMn2fa4exanFJR/bao96PmLe94=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com; spf=pass smtp.mailfrom=paul-moore.com; dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b=DmC7Tzi/; arc=pass smtp.client-ip=209.85.216.49
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=paul-moore.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="V8x3jT9Y"
-Received: by mail-pf1-f180.google.com with SMTP id d2e1a72fcca58-84a652535dcso1829146b3a.3
-        for <keyrings@vger.kernel.org>; Mon, 24 Aug 2026 04:30:19 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="DmC7Tzi/"
+Received: by mail-pj1-f49.google.com with SMTP id 98e67ed59e1d1-38101f85591so3817471a91.1
+        for <keyrings@vger.kernel.org>; Mon, 24 Aug 2026 08:18:52 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1787584732; cv=none;
+        d=google.com; s=arc-20260327;
+        b=KBN6qltkOXy33HsbRZP8MQuSYVq+hIWVA5LkiKcVpTzIpBkUNNz2/l0ngady66efb1
+         ezu3x7Di3CpjnbXBC7K7hWoHw9uWgkM02QxYJNAajo4lYebh2q/fkjB87T051ADPPjgm
+         UDxRakHIIQplaz3BkPWH41sgyr9RxSKYPgZvUrXgNUc515a2dyeZ2J4j2amuflZv/3zu
+         JgjqZNZ2zuZYgP0v2riOozHcY96uUTNTcfOaZT63d5GMo7Z8oKW5rb3robPRFlOuPYUv
+         icuF6fr6qv8rho/3omiK1ql0EMs4pK/Ile3D/f57eNCD0+4RT299vHcEMSPBcjdCfvzb
+         XvxA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:dkim-signature;
+        bh=gqb137FAD3j5AecU+kBp3iNtBsHjhinz7tGtlFwvT1g=;
+        fh=d9YlQ8dYbk5E0nZaJ4hg9Tp4So1D2rej1tGz/3qnkRc=;
+        b=eCruC0Zw+UrZOoXRYpvOYavN+4i8DvX8Dsn5MXX0IAkILVhTmfcMIxeB3qpUyZmfR5
+         WXVCUa5/98EAoIBUNspcyEfFPdqDBvguTKslQvdABgXk44V1IZHntEEZqCZzOfMrLDOT
+         5FuRZagjpr/7ZyYtPRBkIYu/wNREhcqJ8g0HgwRouBC+xTiOFD5SdJWLnLGA7pgFH+eZ
+         NGoh8FrL95jfpNDZv0UD23EEh81XtdkSTOtJvaIyX6eEymZPf75egEEmjha1Y+1bW7wW
+         /RtUIdsolbC5/EsiI60QNg5ULwMxmvpQplIllAFCidk+RuXpxdVAr39R01Lu6AXkOkpe
+         TX7g==;
+        darn=vger.kernel.org
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1787571019; x=1788175819; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=0Yqy+VWHRiQmqGDvTYaHpxheSZahwTkk9CcTJ304p/4=;
-        b=V8x3jT9YvM2MrlOBRgaZmcHR4FXpMpUbyk9NcsUuyixF2LqeSZC+16kLsA4iMJmOcH
-         LePSvI+wRfzIs+INpcWdtXh6V630fe1p/GVNRwdhYszG6WcSMVKmJYP8kvZP984ghHKM
-         mc6SRHOTi6oIbPB0NnUjycLLI2DlbNQmUNlMHF4sFZd12Fuctk2il0obUsksYLUFbcxx
-         xhPmeruxVEUXWFwEcm+Q2Q8mrq47t263BTqEdm3BEHe8IMpeMNOHUlJMZstBT3piabcO
-         0V1dVLkepeuEsBnG6B7svLSGLlxEn/p1i6qLIHH72uO8aeDnoUa6z2jLXbnqnjWwozYs
-         3rjw==
+        d=paul-moore.com; s=google; t=1787584732; x=1788189532; darn=vger.kernel.org;
+        h=content-transfer-encoding:content-type:cc:to:subject:message-id
+         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
+         :date:message-id:reply-to:content-type;
+        bh=gqb137FAD3j5AecU+kBp3iNtBsHjhinz7tGtlFwvT1g=;
+        b=DmC7Tzi/pqA1ivkYiKhm4VJ4/+FkXwv8qpNPqPOlpvZ74P/sl1t4Jy139gOQtY7RDL
+         uCFU6cklEI2Wa8Da28cf23dyMILTvIsn/wpMAnXxGmno8vtwhs6u/M1xhuZxk3k2SoZ/
+         T/h9/o4RecRGw8/QtDe2LUHD8itb3b0S60pdFlegWxNwg1ez9/80pCrynu/pl7XJkyGZ
+         UVua9hBtiy/wX1d4smdlv6AmBCREEMGj3IlPxGb0sY5tzyzCSQqMzSyhkKn7ywRta0ZZ
+         Geest7hN3h6VoGYE38PRxrdsZzIKfxTBWlu8EZNnNeumFvSrTXwLVBNWobINQswcq7sy
+         astA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1787571019; x=1788175819;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=0Yqy+VWHRiQmqGDvTYaHpxheSZahwTkk9CcTJ304p/4=;
-        b=Svp7Pb0rsVI2gSh3AiuKMgocJiM01a5a8/lmGdysOmm+r6/mqdOxzWbl5v1moubACj
-         mKTtMo4Nutef9DlgqexhGuHM+XL0iapF7IcjqNRWm0BSjRod3Lxg1JcnP3FquwkYeCgK
-         mma8R94anxrk0qXO7REg/so2vWdtEEOduekwsx1/9Q0MOe8SeJKC6i0+Ufp6b+ax105i
-         NmUxnwWX3ZIiw6xRQ5oRhw//o5npbLEi+5sOP+YnyiTvnvaQvukvJLeQ26jSZChjdJG+
-         qItMYYVK1N+BNIkp+g9LHzpJtMJcHfrxMAosigOg+OrbSMlTj/X23G4qzXXvRKGpcNIu
-         CsfA==
-X-Forwarded-Encrypted: i=1; AHgh+Rp3vQskiRBWc49ZuSX/3DzwxvEo2A9/yzXgR3LqC5sED7++4BUq+NfPEllMVZqpWbvLVUbMu7i44Q==@vger.kernel.org
-X-Gm-Message-State: AFuF++kbCUBefvK84ueTJ2VmMkpuuSA8bRJmbcocJIebje/lTfnalH2h
-	6uJskVBeE3NCI88BbSwsGbk5cR19eZORgQKA5J/cw4FTLTQ/gaIn1eigSGRNxzl6
-X-Gm-Gg: AR+sD12jSOvmYsAzEYuiYuXCtCQqB4Qo2yEIQVrq9/XDnsVJH7EG6N089BIzt0Szz4P
-	dasWAcQsCqVbUq6BrEZ4K4Qk4/2pYqKArbfqAE0Zj/Y2elUciqbNTwJ52kX0I81VZ8nIMNExCTq
-	cWo+DlxvcyZ7MSqBueoiYueGYrJfZjeQTIzeWu9J0JG+pFyODkAcW4R5SOo57LUgT4vNwosN3sg
-	fTy5VYORrZ9BQwhg4RXvQL7+1ocTP52QYFpvjGPvBHtkyNtyBr2+rs+HQK0HAw76KpYD/difP9r
-	Y42p6SM0kvjtfxakhgw2id4kibqk4IGRnyogGGEUo4mg+5IskWtfVJtlSBV41BrKRNHo97E68li
-	SdpSiyQ2fh9dyknTobe/7LNfAjVz0JR3eAtjhoMNETOZdOGENfWJBVVP6riyIBdBQQncziK23Je
-	ASUT/dUBNLPv1scc2/H+Vjq5lvshQSxWw941/I+oF7Ee3+dXp7hjlTonDiP2S6ypvsDKzeoWKM
-X-Received: by 2002:a05:6a00:3690:b0:84f:d7e4:3404 with SMTP id d2e1a72fcca58-8520be6fd22mr30209102b3a.11.1787571018912;
-        Mon, 24 Aug 2026 04:30:18 -0700 (PDT)
-Received: from ancienth-X870E-Nova-WiFi ([125.186.72.2])
-        by smtp.gmail.com with ESMTPSA id d2e1a72fcca58-8520f149ef3sm1870661b3a.41.2026.08.24.04.30.15
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 24 Aug 2026 04:30:18 -0700 (PDT)
-From: Daehyeon Ko <4ncienth@gmail.com>
-To: dhowells@redhat.com,
-	jarkko@kernel.org,
-	lukas@wunner.de,
-	ignat@linux.win
-Cc: paul@paul-moore.com,
-	jmorris@namei.org,
-	serge@hallyn.com,
-	herbert@gondor.apana.org.au,
-	davem@davemloft.net,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-crypto@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Daehyeon Ko <4ncienth@gmail.com>
-Subject: [PATCH] keys: reject descriptions that exceed the index length
-Date: Mon, 24 Aug 2026 20:30:04 +0900
-Message-ID: <20260824113004.3755053-1-4ncienth@gmail.com>
-X-Mailer: git-send-email 2.54.0
+        d=1e100.net; s=20251104; t=1787584732; x=1788189532;
+        h=content-transfer-encoding:content-type:cc:to:subject:message-id
+         :date:from:in-reply-to:references:mime-version:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=gqb137FAD3j5AecU+kBp3iNtBsHjhinz7tGtlFwvT1g=;
+        b=fSGgUGggTp5WQ19YFBIX5EoVbThEL0VDjSGCo6tniVTwrFh9nwsHzBHsomRZv2heMN
+         pGgTD1z7DJbbjLXnUByACSUdGDfNl9BU/wpANQ+AUCe76OskagFXXRl+zh6mjat4W7nL
+         Q6FRv4BHukPGm7AYqZOHLSSI+RR8lDfWRuGLl3x0OYgpRCemdgGzTqmBiKy3gbxLEwJa
+         +2/foQZj+nfqzCGdo2iZwKWbdAnceyt/H5va4rN+LvJLalMynfNUUYFyXI2gSIw9a+Ny
+         oG11O89ELLbDYAXk2YH15VlTh2A6oKRMyij2PE3n/+mXHnPhmOFR+YYHLdDN/0txG+ug
+         Ne7g==
+X-Forwarded-Encrypted: i=1; AHgh+Ro/R1EDLMrKcSql4+WPfIrTED9EpTnGFyZFTxATzRQfLJAvCAIdokM4bHgYwMsth0XxRCRgxGFZ5w==@vger.kernel.org
+X-Gm-Message-State: AFuF++kGWAUXegg23TZUpi8/t+vJ++f0nf+6kKYKzShGByv4wuDM2bv5
+	YixDaJMMwNMiMgZ1ctiMu07IulgHUhPSz4/GIniOUvUsofnBdVrQ8eoJEWoYKorQFrGHv/PHkb7
+	7wfODeqcb4hYDHmWcDEjpyHlGhKn7CBoUHpHk4yAI
+X-Gm-Gg: AR+sD10FACrdswD6nAm/nCdvccJi3I59I8XHE2R/rNCGxwgF4XO+jQJIhRT2Lybixx1
+	u4jbhu2nyAohXMkqso3XQGK/PpTXiMfakplsszHujLLBYBJxW7BiY2woYIRTucCsaEuWkwLvkQ2
+	I2X6XzOWA2z4Ez7U6wyfkKCG7/0kmBCCAPxb8gweFOfUXoAq74t7BehgSMyx9ZVTU3b9X70janE
+	7as6fROiXGfCnt6loonl74ue5HicSDAyQFoOstFbJTaZiMMOKbF8XItFlNwH7b5w9ZcBJT8Fgxm
+	7t9fvL2tBOITUfhU+HlNNUqXMAArfyFgu3Y5lJT9iZFf
+X-Received: by 2002:a17:90b:4aca:b0:390:84db:888e with SMTP id
+ 98e67ed59e1d1-395c50b3dd6mr21407866a91.7.1787584731573; Mon, 24 Aug 2026
+ 08:18:51 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+References: <20260821214111.1120748-1-daniel@iogearbox.net>
+In-Reply-To: <20260821214111.1120748-1-daniel@iogearbox.net>
+From: Paul Moore <paul@paul-moore.com>
+Date: Mon, 24 Aug 2026 11:18:39 -0400
+X-Gm-Features: AcwNN1WWEwc8Nxt5gv5xsgwSa3ey-6k014cKfPpsLJfAMhEvNSlS6jEnRNiPYeM
+Message-ID: <CAHC9VhQb9-zR-W5acwACe=bH0VvmwPEAyGvsJNG5VyVxEVhtJg@mail.gmail.com>
+Subject: Re: [PATCH bpf-next 00/11] BPF keyring and signed loader ML-DSA support
+To: Daniel Borkmann <daniel@iogearbox.net>
+Cc: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org, 
+	memxor@gmail.com, brauner@kernel.org, kpsingh@kernel.org, ast@kernel.org, 
+	john.fastabend@gmail.com, a.s.protopopov@gmail.com, bpf@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-struct keyring_index_key::desc_len is a u16.  User-provided key
-descriptions are limited to 4095 bytes, but a key type preparser can
-generate a longer description when the caller passes NULL.
+On Fri, Aug 21, 2026 at 5:41=E2=80=AFPM Daniel Borkmann <daniel@iogearbox.n=
+et> wrote:
+>
+> Add a dedicated BPF keyring which is integrated for BPF signing. It
+> is modelled after the dm-verity keyring which was added in commit
+> 033724b ("dm-verity: add dm-verity keyring") and which can eventually
+> be used also via systemd through the same enrollment method as in
+> dm-verity's case. It is selected with a new well-known keyring_id
+> VERIFY_USE_BPF_KEYRING and gives an operator a place to enroll a
+> BPF-only signing key at boot, specifically scoped to signed BPF
+> program loading. Next, to demonstrate that BPF signing is algorithm
+> agnostic, we add a few small tooling changes to support ML-DSA and
+> integrate everything into BPF selftest for BPF CI to ensure nothing
+> breaks with future changes. For more details, see individual commits.
+>
+> Daniel Borkmann (11):
+>   bpf: Add a bpf keyring for program signature validation
+>   bpf: Refuse caller-supplied keyrings when the bpf one is active
+>   bpf: Raise the bound on a program's signature size
+>   bpftool: Support ML-DSA program signing
+>   selftests/bpf: Add a test for the sealed bpf keyring
+>   selftests/bpf: Rebuild signed lskels when signing key changes
+>   selftests/bpf: Rename the verify_sig_setup.sh setup into setup-rsa
+>   selftests/bpf: Add an end-to-end ML-DSA signed loader test
+>   selftests/bpf: Allow appending to guest kernel cmdline in vmtest.sh
+>   selftests/bpf: Add tests for bpf keyring in signed loader
+>   Documentation/bpf: Document the bpf keyring and improve examples
+>
+>  .../admin-guide/kernel-parameters.txt         |  15 +
+>  Documentation/bpf/signing.rst                 | 274 +++++++--
+>  include/linux/bpf.h                           |  13 +
+>  include/linux/verification.h                  |  10 +
+>  kernel/bpf/Makefile                           |   3 +
+>  kernel/bpf/keys.c                             |  72 +++
+>  kernel/bpf/verifier.c                         |  42 +-
+>  tools/bpf/bpftool/main.h                      |   2 +-
+>  tools/bpf/bpftool/sign.c                      |  22 +-
+>  tools/testing/selftests/bpf/Makefile          |   2 +-
+>  tools/testing/selftests/bpf/config            |   1 +
+>  .../selftests/bpf/prog_tests/signed_loader.c  | 518 +++++++++++++++++-
+>  .../bpf/prog_tests/verify_pkcs7_sig.c         |   4 +-
+>  .../testing/selftests/bpf/verify_sig_setup.sh |  63 ++-
+>  tools/testing/selftests/bpf/vmtest.sh         |  16 +-
+>  15 files changed, 974 insertions(+), 83 deletions(-)
+>  create mode 100644 kernel/bpf/keys.c
 
-The X.509 parser forms a description from the certificate subject and
-twice the raw serial length.  A certificate with a two-byte subject and a
-32766-byte serial therefore produces a 65536-byte description.  Assigning
-strlen() to desc_len wraps it to zero, after which __key_link_begin() hits:
+CC'ing the keyring folks for obvious reasons.  A lore link to the full
+thread can be found below:
 
-    BUG_ON(index_key->desc_len == 0);
+https://lore.kernel.org/all/20260821214111.1120748-1-daniel@iogearbox.net
 
-This is reachable through add_key() by an unprivileged user and can panic
-the kernel when oopses are fatal.
-
-Measure generated descriptions before narrowing the length and reject
-values that cannot be represented.  The boundary input now returns EINVAL,
-while the one-byte-short control still reaches the normal quota check.
-
-Fixes: f771fde82051 ("keys: Simplify key description management")
-Cc: stable@vger.kernel.org
-Assisted-by: LLM
-Signed-off-by: Daehyeon Ko <4ncienth@gmail.com>
----
- security/keys/key.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/security/keys/key.c b/security/keys/key.c
-index b34a64d81d47ab..f2f472b45f4eee 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -14,6 +14,7 @@
- #include <linux/workqueue.h>
- #include <linux/random.h>
- #include <linux/err.h>
-+#include <linux/limits.h>
- #include "internal.h"
- 
- struct kmem_cache *key_jar;
-@@ -820,6 +821,7 @@ static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
- 	const struct cred *cred = current_cred();
- 	struct key *keyring, *key = NULL;
- 	key_ref_t key_ref;
-+	size_t desc_len;
- 	int ret;
- 	struct key_restriction *restrict_link = NULL;
- 
-@@ -865,7 +867,12 @@ static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
- 		if (!index_key.description)
- 			goto error_free_prep;
- 	}
--	index_key.desc_len = strlen(index_key.description);
-+	desc_len = strlen(index_key.description);
-+	if (desc_len > U16_MAX) {
-+		key_ref = ERR_PTR(-EINVAL);
-+		goto error_free_prep;
-+	}
-+	index_key.desc_len = desc_len;
- 	key_set_index_key(&index_key);
- 
- 	ret = __key_link_lock(keyring, &index_key);
-
-base-commit: 0a0d1d55dad570724bf8c7ea83409639cfb4be9b
+--=20
+paul-moore.com
