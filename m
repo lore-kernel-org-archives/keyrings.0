@@ -1,151 +1,166 @@
-Received: from mail-pj1-f49.google.com (mail-pj1-f49.google.com [209.85.216.49])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from fanzine2.igalia.com (fanzine2.igalia.com [213.97.179.56])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 50AFB364E96
-	for <keyrings@vger.kernel.org>; Mon, 24 Aug 2026 15:18:52 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.216.49
-ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787584733; cv=pass; b=qUADugporngMU7MJ7GkpiHrmHrCu3QhWJjNxCdOmAHbj6ChBODGyzJhrlWnFahLG7CTxZ5KID7BPqQFajLFjgJby4CwY8KxEiHSk8nbRDzDqd9hT/Dph0u7sLslVdZEFbs+yFBsSGR1VFfdUGk9X9umfOJ3lComk5l9/E211+3A=
-ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787584733; c=relaxed/simple;
-	bh=BcIjz0TwFTjpzBBWL7usC6KhzrrYdTOn3cvUnb4jHYo=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=QEO7QT3U8/CmJeLgO0rgQRLx+p41cZeqK0A9bLHSG7k86Al8jjiMR0dLbBmlTw3RhPvsn7+Z1D6DNq+t/pQzpU7tBWmuZbHhXwHPgk9Gmkk7z+zk1b/UOFk7ikiEiagHYZW/voP2mIB6H5TiHfMn2fa4exanFJR/bao96PmLe94=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com; spf=pass smtp.mailfrom=paul-moore.com; dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b=DmC7Tzi/; arc=pass smtp.client-ip=209.85.216.49
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=paul-moore.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B3CDB38E8A7;
+	Mon, 24 Aug 2026 21:04:29 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=213.97.179.56
+ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1787605474; cv=none; b=KMisXyDPE8iQzJgKO4IoXM/RU4TcrkRtJe/1ibppRWAUh3lGF+GVJGFJAQbOIIkJs85X1ZgZ1pL1nkyWzy8QcpPmpiuG9QX2Xn5eb5JOPHbUdNiN3ivkhuEM3ycqQXF3FS4CHvY3O007CYHZ0Q+FN5tWaehWbVY/HmZNF0VHl/4=
+ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1787605474; c=relaxed/simple;
+	bh=lxWgaRS9cMBj7nzIKwYlcYTMb1BOWwOR02+GTkayrjs=;
+	h=MIME-Version:Date:From:To:Cc:Subject:In-Reply-To:References:
+	 Message-ID:Content-Type; b=tOJcsLmxSt32AlM8oGbzxW3CAcfdRTAb+tn11139PffJiCr5hehlx8+2AVFXu30urmDTAvjcAotF+sKrJBLl0x4CiDhdqiuJOBB85wCO54imV5b9COHMGuTK43tM6l2tksifIbWRaBa2PB9gzdd1VLOBn9S1qql6YVhPMuhEsO4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=igalia.com; spf=pass smtp.mailfrom=igalia.com; dkim=pass (2048-bit key) header.d=igalia.com header.i=@igalia.com header.b=iN4IZpg9; arc=none smtp.client-ip=213.97.179.56
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=igalia.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=igalia.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="DmC7Tzi/"
-Received: by mail-pj1-f49.google.com with SMTP id 98e67ed59e1d1-38101f85591so3817471a91.1
-        for <keyrings@vger.kernel.org>; Mon, 24 Aug 2026 08:18:52 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1787584732; cv=none;
-        d=google.com; s=arc-20260327;
-        b=KBN6qltkOXy33HsbRZP8MQuSYVq+hIWVA5LkiKcVpTzIpBkUNNz2/l0ngady66efb1
-         ezu3x7Di3CpjnbXBC7K7hWoHw9uWgkM02QxYJNAajo4lYebh2q/fkjB87T051ADPPjgm
-         UDxRakHIIQplaz3BkPWH41sgyr9RxSKYPgZvUrXgNUc515a2dyeZ2J4j2amuflZv/3zu
-         JgjqZNZ2zuZYgP0v2riOozHcY96uUTNTcfOaZT63d5GMo7Z8oKW5rb3robPRFlOuPYUv
-         icuF6fr6qv8rho/3omiK1ql0EMs4pK/Ile3D/f57eNCD0+4RT299vHcEMSPBcjdCfvzb
-         XvxA==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:dkim-signature;
-        bh=gqb137FAD3j5AecU+kBp3iNtBsHjhinz7tGtlFwvT1g=;
-        fh=d9YlQ8dYbk5E0nZaJ4hg9Tp4So1D2rej1tGz/3qnkRc=;
-        b=eCruC0Zw+UrZOoXRYpvOYavN+4i8DvX8Dsn5MXX0IAkILVhTmfcMIxeB3qpUyZmfR5
-         WXVCUa5/98EAoIBUNspcyEfFPdqDBvguTKslQvdABgXk44V1IZHntEEZqCZzOfMrLDOT
-         5FuRZagjpr/7ZyYtPRBkIYu/wNREhcqJ8g0HgwRouBC+xTiOFD5SdJWLnLGA7pgFH+eZ
-         NGoh8FrL95jfpNDZv0UD23EEh81XtdkSTOtJvaIyX6eEymZPf75egEEmjha1Y+1bW7wW
-         /RtUIdsolbC5/EsiI60QNg5ULwMxmvpQplIllAFCidk+RuXpxdVAr39R01Lu6AXkOkpe
-         TX7g==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google; t=1787584732; x=1788189532; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=gqb137FAD3j5AecU+kBp3iNtBsHjhinz7tGtlFwvT1g=;
-        b=DmC7Tzi/pqA1ivkYiKhm4VJ4/+FkXwv8qpNPqPOlpvZ74P/sl1t4Jy139gOQtY7RDL
-         uCFU6cklEI2Wa8Da28cf23dyMILTvIsn/wpMAnXxGmno8vtwhs6u/M1xhuZxk3k2SoZ/
-         T/h9/o4RecRGw8/QtDe2LUHD8itb3b0S60pdFlegWxNwg1ez9/80pCrynu/pl7XJkyGZ
-         UVua9hBtiy/wX1d4smdlv6AmBCREEMGj3IlPxGb0sY5tzyzCSQqMzSyhkKn7ywRta0ZZ
-         Geest7hN3h6VoGYE38PRxrdsZzIKfxTBWlu8EZNnNeumFvSrTXwLVBNWobINQswcq7sy
-         astA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1787584732; x=1788189532;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=gqb137FAD3j5AecU+kBp3iNtBsHjhinz7tGtlFwvT1g=;
-        b=fSGgUGggTp5WQ19YFBIX5EoVbThEL0VDjSGCo6tniVTwrFh9nwsHzBHsomRZv2heMN
-         pGgTD1z7DJbbjLXnUByACSUdGDfNl9BU/wpANQ+AUCe76OskagFXXRl+zh6mjat4W7nL
-         Q6FRv4BHukPGm7AYqZOHLSSI+RR8lDfWRuGLl3x0OYgpRCemdgGzTqmBiKy3gbxLEwJa
-         +2/foQZj+nfqzCGdo2iZwKWbdAnceyt/H5va4rN+LvJLalMynfNUUYFyXI2gSIw9a+Ny
-         oG11O89ELLbDYAXk2YH15VlTh2A6oKRMyij2PE3n/+mXHnPhmOFR+YYHLdDN/0txG+ug
-         Ne7g==
-X-Forwarded-Encrypted: i=1; AHgh+Ro/R1EDLMrKcSql4+WPfIrTED9EpTnGFyZFTxATzRQfLJAvCAIdokM4bHgYwMsth0XxRCRgxGFZ5w==@vger.kernel.org
-X-Gm-Message-State: AFuF++kGWAUXegg23TZUpi8/t+vJ++f0nf+6kKYKzShGByv4wuDM2bv5
-	YixDaJMMwNMiMgZ1ctiMu07IulgHUhPSz4/GIniOUvUsofnBdVrQ8eoJEWoYKorQFrGHv/PHkb7
-	7wfODeqcb4hYDHmWcDEjpyHlGhKn7CBoUHpHk4yAI
-X-Gm-Gg: AR+sD10FACrdswD6nAm/nCdvccJi3I59I8XHE2R/rNCGxwgF4XO+jQJIhRT2Lybixx1
-	u4jbhu2nyAohXMkqso3XQGK/PpTXiMfakplsszHujLLBYBJxW7BiY2woYIRTucCsaEuWkwLvkQ2
-	I2X6XzOWA2z4Ez7U6wyfkKCG7/0kmBCCAPxb8gweFOfUXoAq74t7BehgSMyx9ZVTU3b9X70janE
-	7as6fROiXGfCnt6loonl74ue5HicSDAyQFoOstFbJTaZiMMOKbF8XItFlNwH7b5w9ZcBJT8Fgxm
-	7t9fvL2tBOITUfhU+HlNNUqXMAArfyFgu3Y5lJT9iZFf
-X-Received: by 2002:a17:90b:4aca:b0:390:84db:888e with SMTP id
- 98e67ed59e1d1-395c50b3dd6mr21407866a91.7.1787584731573; Mon, 24 Aug 2026
- 08:18:51 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=igalia.com header.i=@igalia.com header.b="iN4IZpg9"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=igalia.com;
+	s=20170329; h=Content-Transfer-Encoding:Content-Type:Message-ID:Subject:Cc:To
+	:From:Date:MIME-Version:From:Reply-To;
+	bh=8Sz3WqkTSXrjfECQs9syX3OabIkTQfaoXng/2r3y3YI=; b=iN4IZpg94uQW7Qq71fa8RM3vEW
+	kYkZAE7Go3UMAHPCbMam59vi5F2G4bm4hWXaQvDe+IlXyYEvE3ysOyCUtZqscnptJn7q2InbNaFyu
+	soOubYTTGaNo34QYmi9ty2VVZJpRy9sTLLWPw/LK3yUGKpUbS/U50cLhVIERjuM4Ft+aoWfPy9dJE
+	gK9eUfYGXhRTBPX+kELcjgSnMYflg6ghgE0MkoYvLv42MzvqNcu61ANFS228b1Ien6EVqp3z8FXTb
+	NuEjADHZt8gwoX1gXWGgh+2+Dm/yjJ9PlQHQ27wXDkIEUhwmsrSPlTWDbQQk59YiDr1KX9MY2E47t
+	G2P9q0Eg==;
+Received: from maestria.local.igalia.com ([192.168.10.14] helo=mail.igalia.com)
+	by fanzine2.igalia.com with esmtps 
+	(Cipher TLS1.3:ECDHE_SECP256R1__RSA_PSS_RSAE_SHA256__AES_256_GCM:256) (Exim)
+	id 1wybpt-008hfh-DY; Mon, 24 Aug 2026 23:04:05 +0200
+Received: from webmail.service.igalia.com ([192.168.21.45])
+	by mail.igalia.com with esmtp (Exim)
+	id 1wybps-003b3A-2i; Mon, 24 Aug 2026 23:04:05 +0200
+Received: from localhost ([127.0.0.1] helo=webmail.igalia.com)
+	by webmail.service.igalia.com with esmtp (Exim 4.98.2)
+	(envelope-from <mfo@igalia.com>)
+	id 1wybps-00000003RKa-04eN;
+	Mon, 24 Aug 2026 23:04:03 +0200
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <20260821214111.1120748-1-daniel@iogearbox.net>
-In-Reply-To: <20260821214111.1120748-1-daniel@iogearbox.net>
-From: Paul Moore <paul@paul-moore.com>
-Date: Mon, 24 Aug 2026 11:18:39 -0400
-X-Gm-Features: AcwNN1WWEwc8Nxt5gv5xsgwSa3ey-6k014cKfPpsLJfAMhEvNSlS6jEnRNiPYeM
-Message-ID: <CAHC9VhQb9-zR-W5acwACe=bH0VvmwPEAyGvsJNG5VyVxEVhtJg@mail.gmail.com>
-Subject: Re: [PATCH bpf-next 00/11] BPF keyring and signed loader ML-DSA support
-To: Daniel Borkmann <daniel@iogearbox.net>
-Cc: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org, 
-	memxor@gmail.com, brauner@kernel.org, kpsingh@kernel.org, ast@kernel.org, 
-	john.fastabend@gmail.com, a.s.protopopov@gmail.com, bpf@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Date: Mon, 24 Aug 2026 18:04:03 -0300
+From: Mauricio Faria de Oliveira <mfo@igalia.com>
+To: =?UTF-8?Q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@baylibre.com>
+Cc: Kees Cook <kees@kernel.org>, Joel Granados <joel.granados@kernel.org>,
+ Nathan Chancellor <nathan@kernel.org>, Nicolas Schier <nsc@kernel.org>,
+ "David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
+ Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>, Simon
+ Horman <horms@kernel.org>, kernel-dev@igalia.com,
+ linux-riscv@lists.infradead.org, linux-kernel@vger.kernel.org,
+ fsverity@lists.linux.dev, keyrings@vger.kernel.org, bpf@vger.kernel.org,
+ linux-fsdevel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+ netdev@vger.kernel.org, linux-wpan@vger.kernel.org,
+ lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+ coreteam@netfilter.org, linux-sctp@vger.kernel.org,
+ linux-rdma@vger.kernel.org, linux-s390@vger.kernel.org,
+ bridge@lists.linux.dev, mptcp@lists.linux.dev, rds-devel@oss.oracle.com,
+ virtualization@lists.linux.dev
+Subject: Re: [PATCH RFC v3 03/13] sysctl, mod_devicetable: add macro
+ MODULE_SYSCTL_TABLE
+In-Reply-To: <aotteDcc588iwC6g@monoceros>
+References: <20260819-sysctl-module-aliases-v3-0-aab90569365d@igalia.com>
+ <20260819-sysctl-module-aliases-v3-3-aab90569365d@igalia.com>
+ <aomlfGJM61qZKxx2@monoceros> <4e3eaf1d3419e808be046035f114bf6c@igalia.com>
+ <aotteDcc588iwC6g@monoceros>
+Message-ID: <4aa22e41e8ff4bab6638cf0baaa9d07b@igalia.com>
+X-Sender: mfo@igalia.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Spam-Report: NO, Score=-2.1, Tests=ALL_TRUSTED=-3,BAYES_50=0.8,KAM_DMARC_NONE=0.125,KAM_DMARC_STATUS=0.005,KAM_SHORT=0.001
+X-Spam-Score: -20
+X-Spam-Bar: --
 
-On Fri, Aug 21, 2026 at 5:41=E2=80=AFPM Daniel Borkmann <daniel@iogearbox.n=
-et> wrote:
->
-> Add a dedicated BPF keyring which is integrated for BPF signing. It
-> is modelled after the dm-verity keyring which was added in commit
-> 033724b ("dm-verity: add dm-verity keyring") and which can eventually
-> be used also via systemd through the same enrollment method as in
-> dm-verity's case. It is selected with a new well-known keyring_id
-> VERIFY_USE_BPF_KEYRING and gives an operator a place to enroll a
-> BPF-only signing key at boot, specifically scoped to signed BPF
-> program loading. Next, to demonstrate that BPF signing is algorithm
-> agnostic, we add a few small tooling changes to support ML-DSA and
-> integrate everything into BPF selftest for BPF CI to ensure nothing
-> breaks with future changes. For more details, see individual commits.
->
-> Daniel Borkmann (11):
->   bpf: Add a bpf keyring for program signature validation
->   bpf: Refuse caller-supplied keyrings when the bpf one is active
->   bpf: Raise the bound on a program's signature size
->   bpftool: Support ML-DSA program signing
->   selftests/bpf: Add a test for the sealed bpf keyring
->   selftests/bpf: Rebuild signed lskels when signing key changes
->   selftests/bpf: Rename the verify_sig_setup.sh setup into setup-rsa
->   selftests/bpf: Add an end-to-end ML-DSA signed loader test
->   selftests/bpf: Allow appending to guest kernel cmdline in vmtest.sh
->   selftests/bpf: Add tests for bpf keyring in signed loader
->   Documentation/bpf: Document the bpf keyring and improve examples
->
->  .../admin-guide/kernel-parameters.txt         |  15 +
->  Documentation/bpf/signing.rst                 | 274 +++++++--
->  include/linux/bpf.h                           |  13 +
->  include/linux/verification.h                  |  10 +
->  kernel/bpf/Makefile                           |   3 +
->  kernel/bpf/keys.c                             |  72 +++
->  kernel/bpf/verifier.c                         |  42 +-
->  tools/bpf/bpftool/main.h                      |   2 +-
->  tools/bpf/bpftool/sign.c                      |  22 +-
->  tools/testing/selftests/bpf/Makefile          |   2 +-
->  tools/testing/selftests/bpf/config            |   1 +
->  .../selftests/bpf/prog_tests/signed_loader.c  | 518 +++++++++++++++++-
->  .../bpf/prog_tests/verify_pkcs7_sig.c         |   4 +-
->  .../testing/selftests/bpf/verify_sig_setup.sh |  63 ++-
->  tools/testing/selftests/bpf/vmtest.sh         |  16 +-
->  15 files changed, 974 insertions(+), 83 deletions(-)
->  create mode 100644 kernel/bpf/keys.c
+On 2026-08-23 19:12, Uwe Kleine-König wrote:
+> Hello Mauricio,
+> 
+> On Sat, Aug 22, 2026 at 01:57:24PM -0300, Mauricio Faria de Oliveira wrote:
+>> On 2026-08-22 10:41, Uwe Kleine-König wrote:
+>> > On Wed, Aug 19, 2026 at 03:16:16PM -0300, Mauricio Faria de Oliveira wrote:
+>> >> The MODULE_SYSCTL_TABLE macro emits a struct module_sysctl_table variable
+>> >> with pointers to a sysctl table's path and entries, and table/entry sizes.
+>> > 
+>> > That new struct doesn't seem to contain any pointer?
+>> 
+>> The struct module_sysctl_table fields .path and .table are pointers,
+>> although with kernel_ulong_t type so that the same 32/64-bit size is
+>> used in file2alias.c based on KERNEL_ELFCLASS (and not on the host,
+>> which might differ with CROSS_COMPILE).
+> 
+> Cross compilation isn't an issue for the already existing device id
+> structures; many of them also contain pointers.
+> (While modpost doesn't use the pointers, the size of the structures must
+> be known to correctly interpret the arrays.)
 
-CC'ing the keyring folks for obvious reasons.  A lore link to the full
-thread can be found below:
+Indeed. I missed some device_id structures with pointers, and that
+devicetable-offsets.c is cross-compiled to generate
+devicetable-offsets.h for file2alias.c to use offsets and sizes of the
+target architecture.
 
-https://lore.kernel.org/all/20260821214111.1120748-1-daniel@iogearbox.net
+I'll change .path and .table to pointers in the next version.
 
---=20
-paul-moore.com
+> Also sizeof(long) differs between architectures and I can compile for
+> arm(32) just fine on amd64.
+> 
+> Additionally there is hardware out there that has sizeof(void *) = 16
+> but sizeof(long) = 8. Up until recently I worked on mainlining that (and
+> it has business reasons only I stopped, so I guess and hope I will
+> continue at some point in the future). See
+> https://lwn.net/Articles/1037974/ for some details if you're interested.
+
+Cool.
+
+> 
+> I would be great if your series didn't introduce a new obstacle for
+> that.
+
+Absolutely. I'll be happy to adjust the series and testing for that.
+
+Could you please confirm one should just follow [1], which uses [2] to
+build the LLVM toolchain, and use it to build the kernel [3]?
+
+[1] https://github.com/cheri-linux#building-and-running
+[2] https://github.com/cheri-linux/buildroot
+[3] https://github.com/CHERI-Alliance/linux/tree/codasip-cheri-riscv-7.1
+
+>> >> That symbol will be handled by file2alias.c (modpost) with the changes in
+>> >> mod_devicetable.h and devicetable-offsets.c.
+>> >> 
+>> >> The option macros MODULE_SYSCTL_TABLE_{DISABLE,UNIQUE_ID} can be used on
+>> >> a per-file basis to disable the macro and change the symbol name pattern.
+>> >> 
+>> >> Signed-off-by: Mauricio Faria de Oliveira <mfo@igalia.com>
+>> >> ---
+>> >>  include/linux/mod_devicetable.h   |  7 +++++++
+>> >>  include/linux/sysctl.h            | 42 +++++++++++++++++++++++++++++++++++++++
+>> >>  scripts/mod/devicetable-offsets.c |  6 ++++++
+>> >>  3 files changed, 55 insertions(+)
+>> > 
+>> > Please put the new struct in a separate header. Apart from not being
+>> > about a device table, I'm currently work on removing
+>> > <linux/mod_devicetable.h>. See commit
+>> > ad428f5811bd7fb3d91fa002174de533f9da94d7 for more details.
+>> 
+>> Sure; I looked at that earlier (thanks for the instructive commit
+>> message, by the way) and found the new struct to be similar to "struct
+>> cpu_feature isn't really a device_id struct" (not moved), but apparently
+>> missed the trailing "fow now", which is clearer now. Fixed for v4.
+> 
+> Yeah, I didn't move that because it was an outlier in the header as it's
+> not a device id. IMHO it should go to something like
+> include/linux/cpu_feature.h.
+
+Ack.
+
+cheers,
+
+> 
+> Best regards
+> Uwe
+
+-- 
+Mauricio
