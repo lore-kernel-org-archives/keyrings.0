@@ -1,126 +1,200 @@
-Received: from mail-pl1-f181.google.com (mail-pl1-f181.google.com [209.85.214.181])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from fanzine2.igalia.com (fanzine2.igalia.com [213.97.179.56])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7C1623A5422
-	for <keyrings@vger.kernel.org>; Tue, 25 Aug 2026 18:29:43 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.214.181
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8533A3B6BFE;
+	Tue, 25 Aug 2026 19:10:49 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=213.97.179.56
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787682584; cv=none; b=RiKcRlrn4d8LyYGHn+vlRmrt+0hXlUcXCPEIEfr60ehH0ySQlF9v//bUaM8S2XLHml2/AQutScSysZQw4FYKF7pnIMzrt/zkxrSuzaVy7gt/jbZfHU5nCjWrcJy9UzJ9PP2iX08/q8XkI7CKEyxG0PXveLi/DHM3hHJLASUhzYk=
+	t=1787685054; cv=none; b=MBPFQ3JgaDmKBiwp2KDEEb4ecL+mLtph2ZDH5dUDq281tYFeEFrYTLqmj0fBsymWglvCHWxzIyTDZH9MReokSD6fJm8HvhUVSdj64YaC6gFEul3gP+c1AhtP9aAPtjK4OhXlImrdGrh8yAEgF7mDS3GGgLhWgOKsl1c6AF3TeI4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787682584; c=relaxed/simple;
-	bh=Qv5tizse7uM28ZMHWSBW/iFPF10dPIhLhOmQxkHnFTY=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=n1H0m9kORVq2B2L9T69IssMGoleJlWOMRTwzroCXcLfTFM+RY/Wa+X6HSnNv8ZxKos2dKR2R+cQVsXCDx1DdkwoMyaBA3SJznLcdI+LnTQZZeEY/E0t/Dq/gE4WYeRr+Qnhi9JI7egPfdP90QzeqZK9sTe9fl8RIlQdwSwtmnFc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=cotBJVFh; arc=none smtp.client-ip=209.85.214.181
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1787685054; c=relaxed/simple;
+	bh=OtchHb6GBRRv68k/gioU/7xbxZ19B8WsvvWJaYWNtpk=;
+	h=MIME-Version:Date:From:To:Cc:Subject:In-Reply-To:References:
+	 Message-ID:Content-Type; b=ipvLNwRYVe5qMCdwNi3DiLYUr8wa3BDCTTRR0oDbzguPyZv8t4cUzxHe9TeftT02dHk+LbW69SxsAwO7zSBhor2O9024k3t1P3Jqc+SNVIrIC9YItyp7L0nInMqvVzRwIKyPuzRPy4Mm4VQ7gBGxSu1mtANzzbw4nfK7j1dIW1A=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=igalia.com; spf=pass smtp.mailfrom=igalia.com; dkim=pass (2048-bit key) header.d=igalia.com header.i=@igalia.com header.b=RHvx1Ado; arc=none smtp.client-ip=213.97.179.56
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=igalia.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=igalia.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="cotBJVFh"
-Received: by mail-pl1-f181.google.com with SMTP id d9443c01a7336-2d6e954afbdso1421755ad.2
-        for <keyrings@vger.kernel.org>; Tue, 25 Aug 2026 11:29:43 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1787682583; x=1788287383; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=0TwaP32PT5H2i9bdrec6QBaBFNAsZuH5F1e7X2AhLIU=;
-        b=cotBJVFhYVrwQ7Pqi2AzKyEdhI2Q+9ujeT/SBkgj07ZLulLUom6zm392qKXytJ5Gwo
-         rQSJz2P6crqlTK991Q7XNNc2TDLMW1RKLi6qX7vSL/D2oadqyjcZlOH8tJuiP2PnkbT0
-         dQw+/ybED65bY/TP8Kwgx+dZ+CnNgDF8bhLjnw7QGW7G/DRFIkcs4ihfg16pAIKMZN5y
-         sjHx31F7NI0MNBJsDcgJvy8KHl7Zb6poAVn4FJQnBhvL6MYdb568usPgzjt4JiAIjdAR
-         8R34i5Vn0O++uGn1Im6wDNz4+yg8i+YKSeyM43+etBE5zSerCec4IEt+CVcM5l7Lik1f
-         23kw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1787682583; x=1788287383;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=0TwaP32PT5H2i9bdrec6QBaBFNAsZuH5F1e7X2AhLIU=;
-        b=nHjohKixc7w5zvaufs09/NRJP3dRvdh4rQY44ZvxepoJrLHHPoYPRHlUb6Gig9pNf6
-         y2xn4k3Y3I8aO1Q5jRoKMSPwFts/ryppDOhFbxJ01/KeWYm7jnTm1oLJA7bd7wb2i+I8
-         jIgoCq/P8LVE9mEoYUgynHlDrdqAzlCo1/8zYAq4xGSiMQB8Kq2CjUqNnxkMTA8bZzzB
-         b9zeHk237uw2aPk8e8AwsIG+6LarY2szNATzWGNOhPYSaeym34a7RoF3r/Zd920u51z+
-         b0i7eIwdxGJatNgsgeuJikzZNdtrf7x3bhh3uHsDKUQ5fE9XDi/selBLB491uG31il3n
-         py+g==
-X-Forwarded-Encrypted: i=1; AHgh+RpYUa/6j2xxiAHg98c0+gefSrlwPDzb+DUAvAfnXaIDG2AO+z0ILW1XQGMDkle0sEXan1kn3eWoxQ==@vger.kernel.org
-X-Gm-Message-State: AFuF++mrDiA+K6s+VMPSpJqiRKuYpFfge/4l0nyhOq/r4QoGZVP6Np9Z
-	6GSB6NgwPEUWJ5pUx9khFLBWLEeM4z0MhPqk3KvhnOC6D7/G+szQv9enXI93ZZ3V
-X-Gm-Gg: AR+sD12vhcl4ww4D8BT1yoQblFuM5XxetOzJOYQheq7iw9o3QqvjN9umXydZZPsiKov
-	zynqxP4DJyvHLB1kYbaw7HvwtOvJq2Eal6uhZl+VfIlJmy+tt2ZYInTvvSmVrspI+/o+lCsoKOI
-	JslrcJw6YCDY8dlCF1sQ3Px6BM4lWIfF3jIjdW5r8SCUQYK5l8a2NW4iXVU9EDwoyzG2AJpncAA
-	qM23RpghAvCiCPxEuKvKIOWaml2sYRa1/UXpuOTmmfCtxapqihiXC40B2rINKjxzMEdsWUsZXcv
-	NTh851ehVpp2ULoX/wjQVDoW54dz8nvp6PbXB+hd4iMeOCEm0+9kAaMu0q/kc5zVUsucciZhRu0
-	Y1OQEe458srUuzAsnFwQsF/6G1jCj/1p3AzyJKcdrgHPa8ISHQDxEAJZWwXp8g4KuXCps1Sln8t
-	0rN6QwOaAJJqeXfz7Y+txmqkyJnA08sHtlfIP3K0Y6fl5/FQ3QFTqal7uGFTCTaVOq8SdbJ98FZ
-	dvOK0DQTYXI4r4jA9Pr9u/BYDkXrXwLDIVh4s0w/vEbMyIPIZjiz4YkL5E=
-X-Received: by 2002:a17:90b:4484:b0:38e:9ef9:eb97 with SMTP id 98e67ed59e1d1-3966d5bc8b2mr1422567a91.16.1787682582620;
-        Tue, 25 Aug 2026 11:29:42 -0700 (PDT)
-Received: from MSI.localdomain ([157.20.184.42])
-        by smtp.gmail.com with ESMTPSA id 5a478bee46e88-3283d8861d3sm1230188eec.18.2026.08.25.11.29.39
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 25 Aug 2026 11:29:42 -0700 (PDT)
-From: sn0x-sharma <sanketsharmacsec@gmail.com>
-To: jarkko@kernel.org
-Cc: James.Bottomley@HansenPartnership.com,
-	zohar@linux.ibm.com,
-	dhowells@redhat.com,
-	linux-integrity@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	security@kernel.org,
-	w@1wt.eu,
-	sn0x-sharma <sanketsharmacsec@gmail.com>
-Subject: [PATCH 2/2] keys: trusted: tpm1: reject unauthenticated response tag in TSS_checkhmac1/2
-Date: Tue, 25 Aug 2026 18:29:19 +0000
-Message-ID: <20260825182919.15943-2-sanketsharmacsec@gmail.com>
-X-Mailer: git-send-email 2.53.0
-In-Reply-To: <20260825182919.15943-1-sanketsharmacsec@gmail.com>
-References: <20260825182919.15943-1-sanketsharmacsec@gmail.com>
+	dkim=pass (2048-bit key) header.d=igalia.com header.i=@igalia.com header.b="RHvx1Ado"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=igalia.com;
+	s=20170329; h=Content-Transfer-Encoding:Content-Type:Message-ID:Subject:Cc:To
+	:From:Date:MIME-Version:From:Reply-To;
+	bh=elAJm2a/yvCuwNZQN8cT8iWBlOljI1OpyGvFLYC11uo=; b=RHvx1Ado+WH9EzbHIOX+ZddNR4
+	p497xG/usjgdtyDE/kA/xbjOpyLIBJuOI92EZRwc1yOZOItUmNe5+oSRd4oxCZHOSJIg77xqmE+Tc
+	K5PFV0rWFpwnhQ6m9KAj6Aq1yxVDoopN2BKsaUVqLC48h9H3wG5IGBXSnMlrjvxadR17ZpA62zFv6
+	qnk+hsPSnk1nJmmcLcs7OjTT5cXXOefE42zyl0b94RK82DSvgwElUXWEAW9MTO2l5NBp9Zejkwn6T
+	YNgx8l8tDqfY2WGCtiFY0jVvYc0jEiv34rN7tch6qSf2TkOPn3XRxDKM1uTJZIDi4f2h9zACbsB7B
+	9kW+H63w==;
+Received: from maestria.local.igalia.com ([192.168.10.14] helo=mail.igalia.com)
+	by fanzine2.igalia.com with esmtps 
+	(Cipher TLS1.3:ECDHE_SECP256R1__RSA_PSS_RSAE_SHA256__AES_256_GCM:256) (Exim)
+	id 1wywXL-009BHb-A7; Tue, 25 Aug 2026 21:10:19 +0200
+Received: from webmail.service.igalia.com ([192.168.21.45])
+	by mail.igalia.com with esmtp (Exim)
+	id 1wywXJ-00530G-Og; Tue, 25 Aug 2026 21:10:19 +0200
+Received: from localhost ([127.0.0.1] helo=webmail.igalia.com)
+	by webmail.service.igalia.com with esmtp (Exim 4.98.2)
+	(envelope-from <mfo@igalia.com>)
+	id 1wywXJ-00000003he5-2ugE;
+	Tue, 25 Aug 2026 21:10:17 +0200
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Date: Tue, 25 Aug 2026 16:10:17 -0300
+From: Mauricio Faria de Oliveira <mfo@igalia.com>
+To: =?UTF-8?Q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@baylibre.com>
+Cc: Kees Cook <kees@kernel.org>, Joel Granados <joel.granados@kernel.org>,
+ Nathan Chancellor <nathan@kernel.org>, Nicolas Schier <nsc@kernel.org>,
+ "David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
+ Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>, Simon
+ Horman <horms@kernel.org>, kernel-dev@igalia.com,
+ linux-riscv@lists.infradead.org, linux-kernel@vger.kernel.org,
+ fsverity@lists.linux.dev, keyrings@vger.kernel.org, bpf@vger.kernel.org,
+ linux-fsdevel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+ netdev@vger.kernel.org, linux-wpan@vger.kernel.org,
+ lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+ coreteam@netfilter.org, linux-sctp@vger.kernel.org,
+ linux-rdma@vger.kernel.org, linux-s390@vger.kernel.org,
+ bridge@lists.linux.dev, mptcp@lists.linux.dev, rds-devel@oss.oracle.com,
+ virtualization@lists.linux.dev
+Subject: Re: [PATCH RFC v3 03/13] sysctl, mod_devicetable: add macro
+ MODULE_SYSCTL_TABLE
+In-Reply-To: <ao1P_mEJdyRExG3v@monoceros>
+References: <20260819-sysctl-module-aliases-v3-0-aab90569365d@igalia.com>
+ <20260819-sysctl-module-aliases-v3-3-aab90569365d@igalia.com>
+ <aomlfGJM61qZKxx2@monoceros> <4e3eaf1d3419e808be046035f114bf6c@igalia.com>
+ <aotteDcc588iwC6g@monoceros> <4aa22e41e8ff4bab6638cf0baaa9d07b@igalia.com>
+ <ao1P_mEJdyRExG3v@monoceros>
+Message-ID: <4a7925a800f0c9b36078a70bf35e960d@igalia.com>
+X-Sender: mfo@igalia.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Spam-Report: NO, Score=-2.1, Tests=ALL_TRUSTED=-3,BAYES_50=0.8,KAM_DMARC_NONE=0.125,KAM_DMARC_STATUS=0.005
+X-Spam-Score: -20
+X-Spam-Bar: --
 
-TSS_checkhmac1() and TSS_checkhmac2() silently return success when the
-response tag is TPM_TAG_RSP_COMMAND (0x00c4), bypassing HMAC
-verification entirely. A forged TPM response with this unauthenticated
-tag allows an attacker to skip integrity checks on TPM responses.
+On 2026-08-25 05:24, Uwe Kleine-König wrote:
+> Hello,
+> 
+> On Mon, Aug 24, 2026 at 06:04:03PM -0300, Mauricio Faria de Oliveira wrote:
+>> On 2026-08-23 19:12, Uwe Kleine-König wrote:
+>> > On Sat, Aug 22, 2026 at 01:57:24PM -0300, Mauricio Faria de Oliveira wrote:
+>> >> On 2026-08-22 10:41, Uwe Kleine-König wrote:
+>> >> > On Wed, Aug 19, 2026 at 03:16:16PM -0300, Mauricio Faria de Oliveira wrote:
+>> >> >> The MODULE_SYSCTL_TABLE macro emits a struct module_sysctl_table variable
+>> >> >> with pointers to a sysctl table's path and entries, and table/entry sizes.
+>> >> >
+>> >> > That new struct doesn't seem to contain any pointer?
+>> >>
+>> >> The struct module_sysctl_table fields .path and .table are pointers,
+>> >> although with kernel_ulong_t type so that the same 32/64-bit size is
+>> >> used in file2alias.c based on KERNEL_ELFCLASS (and not on the host,
+>> >> which might differ with CROSS_COMPILE).
+>> >
+>> > Cross compilation isn't an issue for the already existing device id
+>> > structures; many of them also contain pointers.
+>> > (While modpost doesn't use the pointers, the size of the structures must
+>> > be known to correctly interpret the arrays.)
+>> 
+>> Indeed. I missed some device_id structures with pointers, and that
+>> devicetable-offsets.c is cross-compiled to generate
+>> devicetable-offsets.h for file2alias.c to use offsets and sizes of the
+>> target architecture.
+>> 
+>> I'll change .path and .table to pointers in the next version.
+> 
+> I *think* the existing device-id structs use char[] for strings that are
+> relevant for modpost. I look forward to you finding out if there is
+> still a justification for that :-D
 
-Reject TPM_TAG_RSP_COMMAND with -EINVAL in both functions, requiring
-all responses to carry a proper authenticated tag.
+AFAICT, an array is simpler to read in file2alias as it is stored
+directly in the symbol:
 
-Reported-by: sn0x-sharma <sanketsharmacsec@gmail.com>
-Link: https://lore.kernel.org/linux-integrity/
-Signed-off-by: sn0x-sharma <sanketsharmacsec@gmail.com>
----
- security/keys/trusted-keys/trusted_tpm1.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+For example:
 
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index d47cb7108..c89fc6cfe 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -202,7 +202,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	ordinal = command;
- 	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
- 	if (tag == TPM_TAG_RSP_COMMAND)
--		return 0;
-+		return -EINVAL;
- 	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
- 		return -EINVAL;
- 	authdata = buffer + bufsize - SHA1_DIGEST_SIZE;
-@@ -270,7 +270,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
- 	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
- 
- 	if (tag == TPM_TAG_RSP_COMMAND)
--		return 0;
-+		return -EINVAL;
- 	if (tag != TPM_TAG_RSP_AUTH2_COMMAND)
- 		return -EINVAL;
- 	authdata1 = buffer + bufsize - (SHA1_DIGEST_SIZE + 1
+@ include/linux/device-id/of.h 
+
+	struct of_device_id {
+	...
+		char compatible[128];
+	...
+
+@ drivers/net/ethernet/korina.c
+
+	static const struct of_device_id korina_match[] = {
+		{
+		        .compatible = "idt,3243x-emac",
+	...
+	MODULE_DEVICE_TABLE(of, korina_match);
+
+which builds
+
+	$ objdump -t drivers/net/ethernet/korina.o | grep __mod_device_table
+	0000000000001020 l     O .rodata	0000000000000190
+__mod_device_table__kmod_korina__of__korina_match
+
+	$ objdump -s -j .rodata --start-address=0x1020
+--stop-address=$((0x1020+0x190)) drivers/net/ethernet/korina.o
+	...
+	 1020 00000000 00000000 00000000 00000000  ................
+	 1030 00000000 00000000 00000000 00000000  ................
+	 1040 00000000 00000000 00000000 00000000  ................
+	 1050 00000000 00000000 00000000 00000000  ................
+	 1060 6964742c 33323433 782d656d 61630000  idt,3243x-emac..
+	 1070 00000000 00000000 00000000 00000000  ................
+	...
+
+@ scripts/mod/file2lias.c
+
+	#define DEF_FIELD_ADDR(m, devid, f) \
+		typeof(((struct devid *)0)->f) *f = ((m) + OFF_##devid##_##f)
+
+	static void do_of_entry(struct module *mod, void *symval)
+	{
+	...
+		DEF_FIELD_ADDR(symval, of_device_id, compatible);
+	...
+	
+void handle_moddevtable(struct module *mod, struct elf_info *info,
+                        Elf_Sym *sym, const char *symname)
+{
+        void *symval;
+...
+                symval = sym_get_data(info, sym);
+
+On the other hand, a pointer is stored indirectly through a relocation
+in the symbol, which is not as simple to read (i.e., 1. find the
+relocation section for the symbol's section; 2. find the relocation in
+that section by matching relocation offsets with an offset in the symbol
++ symbol address; 3. finally read the relocation's target).
+
+>> > I would be great if your series didn't introduce a new obstacle for
+>> > [CHERI].
+>> 
+>> Absolutely. I'll be happy to adjust the series and testing for that.
+>> 
+>> Could you please confirm one should just follow [1], which uses [2] to
+>> build the LLVM toolchain, and use it to build the kernel [3]?
+>> 
+>> [1] https://github.com/cheri-linux#building-and-running
+>> [2] https://github.com/cheri-linux/buildroot
+>> [3] https://github.com/CHERI-Alliance/linux/tree/codasip-cheri-riscv-7.1
+> 
+> I used
+> https://github.com/CHERI-Alliance/meta-cheri/tree/codasip-scarthgap and
+> didn't care about toolchain and rootfs. It also has qemu integrated, so
+> you can actually test it.
+
+I'll take a look; thanks!
+
+cheers,
+
+> 
+> Best regards
+> Uwe
+
 -- 
-2.53.0
-
+Mauricio
