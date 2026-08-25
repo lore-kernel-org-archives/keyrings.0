@@ -1,153 +1,216 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+Received: from www62.your-server.de (www62.your-server.de [213.133.104.62])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EFD1837F326;
-	Tue, 25 Aug 2026 14:10:38 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1D8184582D2;
+	Tue, 25 Aug 2026 14:25:38 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=213.133.104.62
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787667040; cv=none; b=nULHdPRRBvWrte+LpdbUemT9VQ/upss7nU317jpDgaZnCb5eicNHoXUG4hd3EeRNgTnnPmK3/UoIAk+Vaywl+TFYCBKJRNAO6Fc4RoDuVTUYSGtClvGv+LujLxsOGgNwZzPi6ci7M7eU8StsT+HpqpoIf8mljNu0wYj+Dj4lvyM=
+	t=1787667941; cv=none; b=RTarLJ6xUMsGzTp/zi4tHUBdVDnEk6GsKCAFXFcb4aM9Kv2g4kWOZO80s/05rj+ueQIAjAw5I2Nda1yRhivjrWRIY7DN0f/mryfZLM4/hAVJaFI2D0V/Yta3ycFRyrBy4vXqDkXXr+2SIhBlM8mftmf7oCtuB3dIOWYfau+NE9w=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787667040; c=relaxed/simple;
-	bh=MfFQtTT/W85KevC15gz/V9mX0Owlq+lpP7+V9ZDGvb0=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=C6+jsR2Us0gr3W35isOzsGhbR1fcN6M8GGW4HseSFBjFdUoGP1EWX4zMpWkICz2/aXRvXHf1U41VELsd3rV8vc3JAlD/11EEPddecQOk3niQQLBfaG35DYP18p4j5MyQ3qtPWh12vocQASDMRawnqCC9PDP2XxYlYy+4aJIK4HM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TPkaLXwb; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1787667941; c=relaxed/simple;
+	bh=Axhzo/QLrt2Fm3aPV+s5QahHgLMN2UdW6KP/hI6hc90=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=PCFApvrEMojVLqAYNjE8wuISaqD8nYIj5IsNl1cmqMBnEEVCUn3bw0UiK8oM6pXZ/WRIEzyo0vs/xsh+bwPHH/ELNhfh1WY1r1bVkhyA3ZmkIUwVoN6k1MkH1eWsXTce1QvGy4cPkHQse3a9hEnGvfJ2r6nQ2uJXeSG+MYmMTzY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net; spf=pass smtp.mailfrom=iogearbox.net; dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b=rChJuSxG; arc=none smtp.client-ip=213.133.104.62
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=iogearbox.net
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TPkaLXwb"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 4966F1F000E9;
-	Tue, 25 Aug 2026 14:10:38 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1787667038;
-	bh=oZIYoxakdDcpHnw/oiQi6XnASlXnxu1bw6B/PUp3B2E=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=TPkaLXwbayFeS67Ap88S+Myncs5etLL85m0wtCa7ZJg2yxZrOXdsatoW07KR7yEeL
-	 1u9JZg77FUiKLjKVuLE2moN/V5h/9wkcRILU8jKFxuEheMw+GTHqGbwK3Js8Q1NDQW
-	 XDzRGquTcBNMdTNdwa8EZ9oH3CSHH2fNjAnlpWAOsUAYeAnGFri+GrQVWGEwoAcl2n
-	 nbR9jFPY5eRCEC21OMCsZRCie60YcI4gGsk17mlZXP7We2OuQljvKhFxbsCdyC8E6m
-	 ltTKfa1g7UMBd3URluY55LK418yBYWM+KcdIrmGsZgX29/2ESFhT2Oylf5OoPbrOIF
-	 87JP3C62uXJnA==
-Date: Tue, 25 Aug 2026 17:10:35 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Maoyi Xie <maoyixie.tju@gmail.com>
-Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
-	serge@hallyn.com, James.Bottomley@hansenpartnership.com,
-	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] keys: translate request_key_auth pid for the reading
- procfs instance
-Message-ID: <ao2iW6FGwphVCu3Q@kernel.org>
-References: <20260821095935.1864998-1-maoyixie.tju@gmail.com>
+	dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b="rChJuSxG"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=iogearbox.net; s=default2302; h=Content-Transfer-Encoding:MIME-Version:
+	References:In-Reply-To:Message-ID:Date:Subject:Cc:To:From:Sender:Reply-To:
+	Content-Type:Content-ID:Content-Description:Resent-Date:Resent-From:
+	Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID;
+	bh=lU1t2Z4kg3fekr99Z98PLBBehF5XNX7Adtbqw4WlaxU=; b=rChJuSxGbH+7FtrrDU5XXI/tGU
+	l/lrzM794F0gWrEeIlT99DM9TV4DcNfRyYBdplDyhqhVhuQ6HaYeW5ZJ4TkDNv0qiZl6BrxcxjK10
+	Aer6/XPSbhZUa0suXbP2miQIp5w8qb55MF54dgCI/hdSSXI/C4NsQIApZc0ImfKA0oQGGiqr1wYlT
+	fiQ7Q+b6QxP99OzqYAcuNzwVwFKUZp/6lruWj7Vi59+08rxoQ5IQALvLq6CWP0RlZ86zLhMOQamh5
+	UN5dCVGHjEnbkH/wU4DPLQndyOxLbTn4VkUU5Wlj+5VTzXfS3layWhQqcwbGIy3Fr05FCahkF4FBw
+	SQ7nVc7g==;
+Received: from localhost ([127.0.0.1])
+	by www62.your-server.de with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.96.2)
+	(envelope-from <daniel@iogearbox.net>)
+	id 1wys5p-000N9I-0E;
+	Tue, 25 Aug 2026 16:25:37 +0200
+From: Daniel Borkmann <daniel@iogearbox.net>
+To: memxor@gmail.com
+Cc: brauner@kernel.org,
+	kpsingh@kernel.org,
+	ast@kernel.org,
+	john.fastabend@gmail.com,
+	a.s.protopopov@gmail.com,
+	bpf@vger.kernel.org,
+	dhowells@redhat.com,
+	jarkko@kernel.org,
+	keyrings@vger.kernel.org
+Subject: [PATCH bpf-next v2 07/11] selftests/bpf: Rename the verify_sig_setup.sh setup into setup-rsa
+Date: Tue, 25 Aug 2026 16:25:26 +0200
+Message-ID: <20260825142530.1329706-8-daniel@iogearbox.net>
+X-Mailer: git-send-email 2.43.0
+In-Reply-To: <20260825142530.1329706-1-daniel@iogearbox.net>
+References: <20260825142530.1329706-1-daniel@iogearbox.net>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20260821095935.1864998-1-maoyixie.tju@gmail.com>
+Content-Transfer-Encoding: 8bit
+X-Virus-Scanned: Clear (ClamAV 1.4.3/28103/Tue Aug 25 08:27:08 2026)
 
-On Fri, Aug 21, 2026 at 05:59:35PM +0800, Maoyi Xie wrote:
-> request_key_auth_describe() prints rka->pid into /proc/keys as a raw
-> pid_t in the initial pid namespace. A reader can open /proc/keys through
-> a mount in another pid namespace. That reader sees a number with no
-> meaning there. The number can even name an unrelated task. The line
-> needs VIEW on the key. So the reader either shares the key owner's uid
-> or possesses the key.
-> 
-> The fix keeps a struct pid. Commit 4f82f45730c6 ("net ip6 flowlabel:
-> Make owner a union of struct pid * and kuid_t") gave
-> /proc/net/ip6_flowlabel the same storage. The print goes through
-> pid_nr_ns(). It renders against the pid namespace of the procfs instance
-> the line is read through. Commit ad08978ab41c ("ipv6/flowlabel: simplify
-> pid namespace lookup") moved that print to the same anchor. Output
-> through an initial namespace /proc does not change. The line shows 0 for
-> a requestor with no number in that namespace.
-> 
-> Translating at read time was the alternative. find_pid_ns() can resolve
-> a recycled number. The line would then name a live task with no
-> connection to the key. A stored struct pid gives 0 instead when the
-> requestor has no number there.
-> 
-> Link: https://lore.kernel.org/keyrings/20260809110202.2180410-1-maoyixie.tju@gmail.com/
-> Fixes: 78b7280cce23 ("KEYS: Improve /proc/keys")
-> Cc: stable@vger.kernel.org # v5.10+
-> Assisted-by: Claude:claude-opus-5 codeql
-> Signed-off-by: Maoyi Xie <maoyixie.tju@gmail.com>
-> ---
-> 
->  include/keys/request_key_auth-type.h |  2 +-
->  security/keys/request_key_auth.c     | 12 +++++++++---
->  2 files changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/keys/request_key_auth-type.h b/include/keys/request_key_auth-type.h
-> index 01e42ee5f4099..464636278c4f8 100644
-> --- a/include/keys/request_key_auth-type.h
-> +++ b/include/keys/request_key_auth-type.h
-> @@ -22,7 +22,7 @@ struct request_key_auth {
->  	const struct cred	*cred;
->  	void			*callout_info;
->  	size_t			callout_len;
-> -	pid_t			pid;
-> +	struct pid		*pid;
->  	char			op[8];
->  } __randomize_layout;
->  
-> diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-> index 282e09d8fa46c..ed6f55b9cdd93 100644
-> --- a/security/keys/request_key_auth.c
-> +++ b/security/keys/request_key_auth.c
-> @@ -9,6 +9,8 @@
->  
->  #include <linux/sched.h>
->  #include <linux/err.h>
-> +#include <linux/pid.h>
-> +#include <linux/proc_fs.h>
->  #include <linux/seq_file.h>
->  #include <linux/slab.h>
->  #include <linux/uaccess.h>
-> @@ -73,7 +75,10 @@ static void request_key_auth_describe(const struct key *key,
->  	seq_puts(m, "key:");
->  	seq_puts(m, key->description);
->  	if (key_is_positive(key))
-> -		seq_printf(m, " pid:%d ci:%zu", rka->pid, rka->callout_len);
-> +		seq_printf(m, " pid:%d ci:%zu",
-> +			   pid_nr_ns(rka->pid,
-> +				     proc_pid_ns(file_inode(m->file)->i_sb)),
-> +			   rka->callout_len);
->  }
->  
->  /*
-> @@ -113,6 +118,7 @@ static void free_request_key_auth(struct request_key_auth *rka)
->  	if (rka->cred)
->  		put_cred(rka->cred);
->  	kfree(rka->callout_info);
-> +	put_pid(rka->pid);
->  	kfree(rka);
->  }
->  
-> @@ -226,14 +232,14 @@ struct key *request_key_auth_new(struct key *target, const char *op,
->  
->  		irka = cred->request_key_auth->payload.data[0];
->  		rka->cred = get_cred(irka->cred);
-> -		rka->pid = irka->pid;
-> +		rka->pid = get_pid(irka->pid);
->  
->  		up_read(&cred->request_key_auth->sem);
->  	}
->  	else {
->  		/* it isn't - use this process as the context */
->  		rka->cred = get_cred(cred);
-> -		rka->pid = current->pid;
-> +		rka->pid = get_pid(task_pid(current));
->  	}
->  
->  	rka->target_key = key_get(target);
-> -- 
-> 2.34.1
-> 
+The script's "setup" action generates an RSA key, enrolls it and builds
+a keyring around it. The name says nothing about the algorithm, which is
+fine while there is only one, but we'll add "setup-mldsa" soon, therefore
+rename the existing one into "setup-rsa". No functional change.
 
+Signed-off-by: Daniel Borkmann <daniel@iogearbox.net>
+---
+ .../selftests/bpf/prog_tests/signed_loader.c   | 18 +++++++++---------
+ .../bpf/prog_tests/verify_pkcs7_sig.c          |  4 ++--
+ .../testing/selftests/bpf/verify_sig_setup.sh  |  8 ++++----
+ 3 files changed, 15 insertions(+), 15 deletions(-)
 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+diff --git a/tools/testing/selftests/bpf/prog_tests/signed_loader.c b/tools/testing/selftests/bpf/prog_tests/signed_loader.c
+index 5fb931d6b4c4..08d1cfe06e15 100644
+--- a/tools/testing/selftests/bpf/prog_tests/signed_loader.c
++++ b/tools/testing/selftests/bpf/prog_tests/signed_loader.c
+@@ -460,7 +460,7 @@ static void signed_btf_fd_array_rejected(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		return;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		return;
+ 	}
+@@ -910,7 +910,7 @@ static void signature_authenticates_insns(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		return;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		return;
+ 	}
+@@ -1010,7 +1010,7 @@ static void signature_authenticates_metadata(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		return;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		return;
+ 	}
+@@ -1346,7 +1346,7 @@ static void lsm_signature_verdict(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		goto out;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		dir = NULL;
+ 		goto out;
+@@ -1529,7 +1529,7 @@ static void loadtime_verify(struct bpf_object *obj, int expect_maps)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		return;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		return;
+ 	}
+@@ -1627,7 +1627,7 @@ static void signed_no_fd_array(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		return;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		return;
+ 	}
+@@ -1698,7 +1698,7 @@ static void signed_map_by_fd_rejected(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		goto out_map;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		goto out_map;
+ 	}
+@@ -1760,7 +1760,7 @@ static void signed_sparse_fd_array_rejected(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		goto out_map;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		goto out_map;
+ 	}
+@@ -1814,7 +1814,7 @@ static void signed_module_kfunc_rejected(void)
+ 	dir = mkdtemp(dir_tmpl);
+ 	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
+ 		return;
+-	if (!ASSERT_OK(run_setup("setup", dir), "verify_sig_setup")) {
++	if (!ASSERT_OK(run_setup("setup-rsa", dir), "verify_sig_setup")) {
+ 		rmdir(dir);
+ 		return;
+ 	}
+diff --git a/tools/testing/selftests/bpf/prog_tests/verify_pkcs7_sig.c b/tools/testing/selftests/bpf/prog_tests/verify_pkcs7_sig.c
+index f327feb8e38c..12b146d205d7 100644
+--- a/tools/testing/selftests/bpf/prog_tests/verify_pkcs7_sig.c
++++ b/tools/testing/selftests/bpf/prog_tests/verify_pkcs7_sig.c
+@@ -257,7 +257,7 @@ static void test_verify_pkcs7_sig_from_map(void)
+ 	if (!ASSERT_OK_PTR(tmp_dir, "mkdtemp"))
+ 		return;
+ 
+-	ret = _run_setup_process(tmp_dir, "setup");
++	ret = _run_setup_process(tmp_dir, "setup-rsa");
+ 	if (!ASSERT_OK(ret, "_run_setup_process"))
+ 		goto close_prog;
+ 
+@@ -458,7 +458,7 @@ static void test_pkcs7_sig_fsverity(void)
+ 	snprintf(data_path, PATH_MAX, "%s/data-file", tmp_dir);
+ 	snprintf(sig_path, PATH_MAX, "%s/sig-file", tmp_dir);
+ 
+-	ret = _run_setup_process(tmp_dir, "setup");
++	ret = _run_setup_process(tmp_dir, "setup-rsa");
+ 	if (!ASSERT_OK(ret, "_run_setup_process"))
+ 		goto out;
+ 
+diff --git a/tools/testing/selftests/bpf/verify_sig_setup.sh b/tools/testing/selftests/bpf/verify_sig_setup.sh
+index 09179fb551f0..202e6e6418fe 100755
+--- a/tools/testing/selftests/bpf/verify_sig_setup.sh
++++ b/tools/testing/selftests/bpf/verify_sig_setup.sh
+@@ -28,7 +28,7 @@ authorityKeyIdentifier=keyid
+ 
+ usage()
+ {
+-	echo "Usage: $0 <setup|cleanup <existing_tmp_dir>"
++	echo "Usage: $0 <setup-rsa|cleanup <existing_tmp_dir>"
+ 	exit 1
+ }
+ 
+@@ -47,7 +47,7 @@ genkey()
+ 		${tmp_dir}/signing_key.der -outform der
+ }
+ 
+-setup()
++setup_rsa()
+ {
+ 	local tmp_dir="$1"
+ 
+@@ -108,8 +108,8 @@ main()
+ 
+ 	[[ ! -d "${tmp_dir}" ]] && echo "Directory ${tmp_dir} doesn't exist" && exit 1
+ 
+-	if [[ "${action}" == "setup" ]]; then
+-		setup "${tmp_dir}"
++	if [[ "${action}" == "setup-rsa" ]]; then
++		setup_rsa "${tmp_dir}"
+ 	elif [[ "${action}" == "genkey" ]]; then
+ 		genkey "${tmp_dir}"
+ 	elif [[ "${action}" == "cleanup" ]]; then
+-- 
+2.43.0
 
-BR, Jarkko
