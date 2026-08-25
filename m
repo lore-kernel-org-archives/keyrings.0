@@ -1,178 +1,149 @@
-Received: from mail-ej1-f44.google.com (mail-ej1-f44.google.com [209.85.218.44])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3EC143DDAE2
-	for <keyrings@vger.kernel.org>; Tue, 25 Aug 2026 08:24:17 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.218.44
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 070C0472536;
+	Tue, 25 Aug 2026 14:08:02 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787646261; cv=none; b=YghccjJBYMSeDC3JDH61u2uWjhAHKOqOYmSDbnlOKsVgv0xpoAmo51IJK1QqK9+jpDBZIyHsxnOEaynJFjNuJarnl4vSKBEC9nsK1E+4Wy6EQqiOC9HvqnFcsalWegc4bxc9kR3uGTJCsH1OLZ5wcgZ8ToAST6YlbXIhaSohqSQ=
+	t=1787666884; cv=none; b=rkh1hours6/KC8Ht1ONAmydso7lr+hdPR6gZexFhJGOne4DvGjQjaYkR+YLXTNbwZ8z1ROZgF2nxrq8wMLWRwfUW5R/F5NT/U7vz32W8KU5TYtnhxra7ovbDTHIWsrRzC1nCTGLyQvT46pHqrgCbou+pGu3GA6ancHST0BRqFg0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787646261; c=relaxed/simple;
-	bh=DZQvgMF9MtoSMKn9/xxgPT3t+kYxUHeBLkPFZwmxGy0=;
+	s=arc-20240116; t=1787666884; c=relaxed/simple;
+	bh=zr/2C23VYBg5LbqW/G/01rHh0mXnCBWp6k0PGS1h7+U=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=CCLQ2OsQdlvNQXBPQSrB3pEuust6mBTTC0qFY9cFJ4CF83bB0ZNAn0M5j3sLmgEKrJzb1BGxCEnffix/bNjLxNokmTUGbz2hDVgRW8tCcF6O+pHW6fW64xuz5Tj+7y+4peg24fQqpKdQ0rjUnJwKgCttxn2UyZ3YVDSChKKSI6A=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=baylibre.com; spf=pass smtp.mailfrom=baylibre.com; dkim=pass (2048-bit key) header.d=baylibre.com header.i=@baylibre.com header.b=BFeqlQ0q; arc=none smtp.client-ip=209.85.218.44
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=baylibre.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=baylibre.com
+	 Content-Type:Content-Disposition:In-Reply-To; b=orDHAFmBUtleXHYhuczjQPdd61kwI36NjXJBU6cB5bXlYgBjMPe7FWuEtjG6H5qE8SbfI6ow4LzGmBobipehWqVavQ68jLvpFB5IO2W4ZIdYpqgVCq21mNXQnxP2Fz7GrLh9Mqz1YaB8bXhFav9nFqx6zsW2tXYJ6jALQiF8uCc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Q/LZny4O; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=baylibre.com header.i=@baylibre.com header.b="BFeqlQ0q"
-Received: by mail-ej1-f44.google.com with SMTP id a640c23a62f3a-c15b1da6b82so483341466b.1
-        for <keyrings@vger.kernel.org>; Tue, 25 Aug 2026 01:24:17 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=baylibre.com; s=google; t=1787646255; x=1788251055; darn=vger.kernel.org;
-        h=in-reply-to:content-disposition:content-type:mime-version
-         :references:message-id:subject:cc:to:from:date:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=DZQvgMF9MtoSMKn9/xxgPT3t+kYxUHeBLkPFZwmxGy0=;
-        b=BFeqlQ0q/iI/Y9xCCyZW9DcLrNuxdKfN+Y+//0GtDmUjYy2yEe/So/1C91iOhFggaa
-         w+PoJMpJllcqUOV1XX00bD7B84xNhMcsllE/0Nmh9dN8tZqJJBTNzbShKDQnxPsEmaEB
-         ADAFZ+g3kLKRuXMS8OJko/112mNWDH4sfjFIo4ughfQq/cnFDH/p9Dc0K0AtS70+B4FM
-         F9fsHPDaiztrmyZ3lyUZT3jElm9oP2eZVU4cOzQu3ucYmiskPZDEWm9d/KJQ6ZtJ4Xeu
-         uIa0swNl0ttsWWPbGXJPM6SHTBQ7jF+5mcgT6fWzV+zAaPzszidX3t44XfJa0Wfi3HSP
-         gdqw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1787646255; x=1788251055;
-        h=in-reply-to:content-disposition:content-type:mime-version
-         :references:message-id:subject:cc:to:from:date:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=DZQvgMF9MtoSMKn9/xxgPT3t+kYxUHeBLkPFZwmxGy0=;
-        b=MUHd2UHCntDhZf7ZO/NNlHmGkkUhgjGAU3FTGAOM+d6K39ZNCNj47W5dcBvszsPR/U
-         CwLZPYV8xeevoy+ogIsnSP9Z6y5ca/LxseFgG9gg98V3z8sE1ufOaHEq6wU6EO26ypUD
-         Tlw0pMFrHNxry0Ezv2LSBKaoOFCjym5mWxEdWHVGg7U+9Sz/foIgtrtkyMcKSFQtMcCL
-         Ikt9O7RMOKSBMAADW2tEI0jpnyNQmi2PjM9PFsJT60uuE9Gz3/I2oV0jGgc9QlWcMBbb
-         fqFHxfZIkL6ayYUFc8tAyCwG32vLR9YZ66MYfhJ2pFMqGo5jV2z+rMFd1EUTi+/hdvfD
-         /72g==
-X-Forwarded-Encrypted: i=1; AHgh+RpAtAH8fqZ3uE3iOjezQnFznYIuqEJj4gH5Im8Itn30/02ESOD4wo0nx9layhtEu1QMg5MFz/F6ew==@vger.kernel.org
-X-Gm-Message-State: AFuF++lhCvBQOeFAuaIrPArvm7TMXUGEC5sJ0j8Ua3Tb+CfsGRKbiZc9
-	7joSRzG0cDO9CiTTHqZ8dmI09kclLnvBkZdUwvaOD6d/Ls6QWByXe/ClsCU13fhL3VY=
-X-Gm-Gg: AR+sD12+pDfMxV8fpK8WUsJLANmE/FfLtYgzSjo4JgVzaaX+ZZkfspCy6gS3bfyY7Rw
-	mSFrfWGA0KGoypcB9/8lMLk2LpyK9OpIhAvzxQfc2FWmhEYRB4EipIfeOgQyS7P6XmalNuamsxC
-	yN5oOtKMAd/BZiLQeJ4ejlAGlvDZeg81hIS88tKf/otFNpH97wD7weREiCcwTXmSBXTHtx8EqJ3
-	PVMi7nG/chis5ueeASpMD7dcVByrclJNchTuUh8YOdRUxKuBZeAeVq8xX16H/CqKDsK9I5ikLbm
-	0NXYf7qrjfyw5xz7z29Qb76tKaIAYctw0q4Yzs2xGfZNrQI+e8Ayr9J+K7C4RwdljOdCw9y8mSu
-	HdnGakXodt/8wZTc1ME5F749fl+h29ndxQwD11HWcx/T/E4I0V9yj7URJkCvSSrfYZMzM59drRY
-	nJVOcDcPKkfBi03V/uGl6dQCBx+og3Dl+5nGrocj8LZ42FZIkGUANh7fWgyd7e+EDd3I++Jd1V9
-	wLllkgmmDE7UnlPwNQxKYhAiaLYtO/yUK2ZxDibuR7QzaOS8A==
-X-Received: by 2002:a17:907:1c07:b0:c15:f26a:3438 with SMTP id a640c23a62f3a-c24e5c1ffd3mr497229766b.24.1787646255345;
-        Tue, 25 Aug 2026 01:24:15 -0700 (PDT)
-Received: from localhost (p200300f65f19a904037016a565660d5e.dip0.t-ipconnect.de. [2003:f6:5f19:a904:370:16a5:6566:d5e])
-        by smtp.gmail.com with UTF8SMTPSA id a640c23a62f3a-c24966f9cbcsm1874351966b.29.2026.08.25.01.24.13
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 25 Aug 2026 01:24:14 -0700 (PDT)
-Date: Tue, 25 Aug 2026 10:24:12 +0200
-From: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@baylibre.com>
-To: Mauricio Faria de Oliveira <mfo@igalia.com>
-Cc: Kees Cook <kees@kernel.org>, Joel Granados <joel.granados@kernel.org>, 
-	Nathan Chancellor <nathan@kernel.org>, Nicolas Schier <nsc@kernel.org>, 
-	"David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>, 
-	Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>, Simon Horman <horms@kernel.org>, 
-	kernel-dev@igalia.com, linux-riscv@lists.infradead.org, linux-kernel@vger.kernel.org, 
-	fsverity@lists.linux.dev, keyrings@vger.kernel.org, bpf@vger.kernel.org, 
-	linux-fsdevel@vger.kernel.org, linux-kbuild@vger.kernel.org, netdev@vger.kernel.org, 
-	linux-wpan@vger.kernel.org, lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org, 
-	coreteam@netfilter.org, linux-sctp@vger.kernel.org, linux-rdma@vger.kernel.org, 
-	linux-s390@vger.kernel.org, bridge@lists.linux.dev, mptcp@lists.linux.dev, 
-	rds-devel@oss.oracle.com, virtualization@lists.linux.dev
-Subject: Re: [PATCH RFC v3 03/13] sysctl, mod_devicetable: add macro
- MODULE_SYSCTL_TABLE
-Message-ID: <ao1P_mEJdyRExG3v@monoceros>
-References: <20260819-sysctl-module-aliases-v3-0-aab90569365d@igalia.com>
- <20260819-sysctl-module-aliases-v3-3-aab90569365d@igalia.com>
- <aomlfGJM61qZKxx2@monoceros>
- <4e3eaf1d3419e808be046035f114bf6c@igalia.com>
- <aotteDcc588iwC6g@monoceros>
- <4aa22e41e8ff4bab6638cf0baaa9d07b@igalia.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Q/LZny4O"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 2C2E81F000E9;
+	Tue, 25 Aug 2026 14:08:02 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1787666882;
+	bh=nCk4v5O3nDcRRnnmp6QTELNqk3gp2nLuclpCFNq7UUE=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=Q/LZny4OTFoeuWOk3l4kVakPHd8hLUctFNBXG30vhwROASo+XqGLMK6kHMr2UqRKC
+	 DtubvvSpPoCw1+51kWNtz5aPvDO0K7x/jxD6fOIrMNKKPYrB5X0LH4Q8k0vnkIynne
+	 C6GnC4r33fvtph53TlvRh4oB9pKD4WCn2dA57Xw+cRdEv+uxp2fvWvqoW7Mtt09+M3
+	 EH96qK4n/xXZ90atfUhFIJGYyGkJ5PzoHCgo7wtYp5LP6PIgMpN2MxCHcuaBKT3Cnk
+	 Ca3F5qzDpwFFWNgpAuGly4tbAe6Wo6qfN1IaLUFTfNTD5p2q8wkjg5VH8FmLsBs9b3
+	 ppPq6aOqwzyfQ==
+Date: Tue, 25 Aug 2026 17:07:59 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Karl Mehltretter <kmehltretter@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] keys: fix lost wakeup when reaping a dead key type
+Message-ID: <ao2hv-9TVbMe2bbm@kernel.org>
+References: <20260821025327.61488-1-kmehltretter@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="ajsyed3ibfmsggn6"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4aa22e41e8ff4bab6638cf0baaa9d07b@igalia.com>
+In-Reply-To: <20260821025327.61488-1-kmehltretter@gmail.com>
 
+On Fri, Aug 21, 2026 at 04:53:27AM +0200, Karl Mehltretter wrote:
+> clear_bit() is atomic with respect to the word it modifies, but it is
+> an unordered operation: it implies no memory barrier on either side
+> (Documentation/atomic_bitops.txt).
+> 
+> key_garbage_collector() clears KEY_GC_REAPING_KEYTYPE with clear_bit()
+> and calls wake_up_bit() after reaping a dead key type. wake_up_bit()
+> uses a lockless waitqueue check and requires a full barrier after the
+> clear.
+> 
+> The existing smp_mb() is before clear_bit(), so nothing orders the clear
+> against that check. The GC can see an empty waitqueue while
+> unregister_key_type() still sees the bit set. The final wakeup is then
+> lost, leaving module unload stuck in wait_on_bit().
+> 
+> Use clear_and_wake_up_bit(). Its clear_bit_unlock() has RELEASE
+> semantics, so the completed GC work stays ordered before the clear, and
+> its smp_mb__after_atomic() orders the clear before the waitqueue check.
+> 
+> Fixes: 0c061b5707ab ("KEYS: Correctly destroy key payloads when their keytype is removed")
+> Assisted-by: Claude:claude-fable-5
+> Signed-off-by: Karl Mehltretter <kmehltretter@gmail.com>
+> ---
+> v2: open with the ordering semantics of clear_bit(), as suggested by
+>     Jarkko. No code change.
+> v1: https://lore.kernel.org/r/20260811173753.67616-1-kmehltretter@gmail.com/
+> 
+> LKMM (herdtools7 7.58). LKMM has no clear_bit*() primitives, so these
+> tests abstract the bit clear as a store while preserving the ordering
+> relevant to this race. The fixed test models clear_bit_unlock() with
+> smp_store_release() and smp_mb__after_atomic() with smp_mb().
+> 
+>   C keys-gc-buggy
+>   { flag=1; }
+>   P0(int *flag, int *wq)
+>   {
+>   	int r0;
+>   	smp_mb();
+>   	WRITE_ONCE(*flag, 0);
+>   	r0 = READ_ONCE(*wq);
+>   }
+>   P1(int *flag, int *wq)
+>   {
+>   	int r1;
+>   	WRITE_ONCE(*wq, 1);
+>   	smp_mb();
+>   	r1 = READ_ONCE(*flag);
+>   }
+>   exists (0:r0=0 /\ 1:r1=1)
+> 
+>   C keys-gc-fixed
+>   { flag=1; }
+>   P0(int *flag, int *wq)
+>   {
+>   	int r0;
+>   	smp_store_release(flag, 0);
+>   	smp_mb();
+>   	r0 = READ_ONCE(*wq);
+>   }
+>   P1(int *flag, int *wq)
+>   {
+>   	int r1;
+>   	WRITE_ONCE(*wq, 1);
+>   	smp_mb();
+>   	r1 = READ_ONCE(*flag);
+>   }
+>   exists (0:r0=0 /\ 1:r1=1)
+> 
+>   herd7 -conf linux-kernel.cfg keys-gc-buggy.litmus
+>   herd7 -conf linux-kernel.cfg keys-gc-fixed.litmus
+> 
+>   pre-fix: Sometimes
+>   fixed:   Never
+> 
+>  security/keys/gc.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/security/keys/gc.c b/security/keys/gc.c
+> index 748e83818a760..eda445f815d47 100644
+> --- a/security/keys/gc.c
+> +++ b/security/keys/gc.c
+> @@ -318,9 +318,7 @@ static void key_garbage_collector(struct work_struct *work)
+> 
+>  	if (unlikely(gc_state & KEY_GC_REAPING_DEAD_3)) {
+>  		kdebug("dead wake");
+> -		smp_mb();
+> -		clear_bit(KEY_GC_REAPING_KEYTYPE, &key_gc_flags);
+> -		wake_up_bit(&key_gc_flags, KEY_GC_REAPING_KEYTYPE);
+> +		clear_and_wake_up_bit(KEY_GC_REAPING_KEYTYPE, &key_gc_flags);
+>  	}
+> 
+>  	if (gc_state & KEY_GC_REAP_AGAIN)
+> --
+> 2.53.0
 
---ajsyed3ibfmsggn6
-Content-Type: text/plain; protected-headers=v1; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-Subject: Re: [PATCH RFC v3 03/13] sysctl, mod_devicetable: add macro
- MODULE_SYSCTL_TABLE
-MIME-Version: 1.0
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Hello,
+I send this to -rc2 as I already sent keys PR and I have quite heavy
+TPM PR to prepare.
 
-On Mon, Aug 24, 2026 at 06:04:03PM -0300, Mauricio Faria de Oliveira wrote:
-> On 2026-08-23 19:12, Uwe Kleine-K=F6nig wrote:
-> > On Sat, Aug 22, 2026 at 01:57:24PM -0300, Mauricio Faria de Oliveira wr=
-ote:
-> >> On 2026-08-22 10:41, Uwe Kleine-K=F6nig wrote:
-> >> > On Wed, Aug 19, 2026 at 03:16:16PM -0300, Mauricio Faria de Oliveira=
- wrote:
-> >> >> The MODULE_SYSCTL_TABLE macro emits a struct module_sysctl_table va=
-riable
-> >> >> with pointers to a sysctl table's path and entries, and table/entry=
- sizes.
-> >> >=20
-> >> > That new struct doesn't seem to contain any pointer?
-> >>=20
-> >> The struct module_sysctl_table fields .path and .table are pointers,
-> >> although with kernel_ulong_t type so that the same 32/64-bit size is
-> >> used in file2alias.c based on KERNEL_ELFCLASS (and not on the host,
-> >> which might differ with CROSS_COMPILE).
-> >=20
-> > Cross compilation isn't an issue for the already existing device id
-> > structures; many of them also contain pointers.
-> > (While modpost doesn't use the pointers, the size of the structures must
-> > be known to correctly interpret the arrays.)
->=20
-> Indeed. I missed some device_id structures with pointers, and that
-> devicetable-offsets.c is cross-compiled to generate
-> devicetable-offsets.h for file2alias.c to use offsets and sizes of the
-> target architecture.
->=20
-> I'll change .path and .table to pointers in the next version.
-
-I *think* the existing device-id structs use char[] for strings that are
-relevant for modpost. I look forward to you finding out if there is
-still a justification for that :-D
-
-> > I would be great if your series didn't introduce a new obstacle for
-> > [CHERI].
->=20
-> Absolutely. I'll be happy to adjust the series and testing for that.
->=20
-> Could you please confirm one should just follow [1], which uses [2] to
-> build the LLVM toolchain, and use it to build the kernel [3]?
->=20
-> [1] https://github.com/cheri-linux#building-and-running
-> [2] https://github.com/cheri-linux/buildroot
-> [3] https://github.com/CHERI-Alliance/linux/tree/codasip-cheri-riscv-7.1
-
-I used
-https://github.com/CHERI-Alliance/meta-cheri/tree/codasip-scarthgap and
-didn't care about toolchain and rootfs. It also has qemu integrated, so
-you can actually test it.
-
-Best regards
-Uwe
-
---ajsyed3ibfmsggn6
-Content-Type: application/pgp-signature; name="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-
-iQEzBAABCgAdFiEEP4GsaTp6HlmJrf7Tj4D7WH0S/k4FAmqNUSoACgkQj4D7WH0S
-/k5rHwf/eQKyjSm4dfYOnpO+kyESzhGSDXacrU0BK/nrQ7Z3BN+QipNdHe9BZ4f7
-k+3uxaB8pZmyHeh98alfg/5Bq9HBt62YSsVo0f1LrxdEuw+otojZstZ5BajlC1fB
-uCZWsGYJ1lROqcGUkm3WTuwmO+VkI4no1e0+OMnKjMkIdarwm+SRxroNmGXPxjFS
-0c5XzO8ufI4T330xBhTtUCfIGtmOib0XeyZT/dCtT8wNoKlznA36ojMl4ZOArWgW
-VYBN9/JdmoDGTZxdbWqXoETzY//dT0yaCQF2J8+eM7vMW+ay0vkBIpxXkR9QmIGF
-KIDH4l3txv82X35T5GJP5y9myooT6g==
-=Ph6i
------END PGP SIGNATURE-----
-
---ajsyed3ibfmsggn6--
+BR, Jarkko
