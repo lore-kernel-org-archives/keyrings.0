@@ -1,169 +1,127 @@
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pj1-f42.google.com (mail-pj1-f42.google.com [209.85.216.42])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B5D6241A4E4;
-	Wed, 26 Aug 2026 16:48:41 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 97BD4443307
+	for <keyrings@vger.kernel.org>; Wed, 26 Aug 2026 17:08:04 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.42
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787762938; cv=none; b=tcB8bYahBqlnBILDzkRyATlpmaCo4PyUIUIUTBfzQ6XzSLZqBoz+dB07PP70CjZ1Zn0HWa1vNE1gT1GVUL3Ut+IvBTnr5lLXuSHqeb1byHmB2qG1bidRgQvaE6VUn9B2P3oSTFIqgBHhLpICiij3mdgmm2to4kkti6SR12MoHjs=
+	t=1787764098; cv=none; b=LMLiIECp/AZjPApLVUZSCTznw9KKu1Qn9E/tjJ52P2aPGcPW/XtaLWOF3mb0GE18TujR7ckd0zd9rovIZVGGEwdnE3+4AqtyaMzxS3bCPTFWxSvPL9a28oAyZCHCGu5Tw4MHbUOBdzS/N6cYprJpFxuiSVEYJnHw5uzlxOP0kZc=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787762938; c=relaxed/simple;
-	bh=obc+IRsBRKyKcqGaGQ0d48PPiKl+8gfBIBrd9w4+4QU=;
-	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
-	 Message-Id:References:To; b=QLEyN/fhXuQkwtQfGXmu3HcqgFCAEL2CzUwGqRw8MbCsbKEI+OOuJXn2XzL+px3KNV/jrkjpxx5gq28y8w/r3pmxBEmDlaeutbZTpJwOyoI2ZnovmqSePvRdYidiC1ho2RCXNbZ/nH2buK3mFE+o348VXfYIg80Yq4vNdxLrdfU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=aDCm8Gqg; arc=none smtp.client-ip=148.163.156.1
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1787764098; c=relaxed/simple;
+	bh=vdAY/faVLh29CfLHLgVsNnTrIBvl2WSvEe0RVJF/UQE=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=jGDmdDgWx8pQF6ZYsq6qxH3PbBFZIdDFuF81gLG93B+BIgb6oxHKBmE0GiGw+PZp1k5COcrHR0BFjus/yrGB8dGfCQ0ouKHYIKFCyfjzSXQpmB+6WcLydYNRjyJdvvzG6N33WOb/OuPvW5/clsf3B/v8OhoFcMGb/gCFDq4xZbE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=h97C8WWv; arc=none smtp.client-ip=209.85.216.42
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="aDCm8Gqg"
-Received: from pps.filterd (m0356517.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 67QE1X9b015968;
-	Wed, 26 Aug 2026 16:48:10 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=obc+IR
-	sBRKyKcqGaGQ0d48PPiKl+8gfBIBrd9w4+4QU=; b=aDCm8GqgRFpUzUVwLgXN8r
-	j/wfAFfjdmlb6TwExN3cT6CY/NI+oADQGZFvrvqPFqQkH0WcGxNPYm9SqtUZ7Ivw
-	WhQ08gvkheTpFhJh5GrIiU5YWylrAgsK3Big+xtb66+r5/WSb1RyH06zAro8eUwe
-	wSEEBsDMIqSGSMH0468F75/Etw940t/Xz0EsujrUNT7X21SfkDq+jW1DqkLLw31q
-	1CHgQRbhIjc29sbf2j4u46ZqUTyGuvAuIKKJUS2mXxfCPHRzld1yAbG36r0IksNi
-	vrJpMmrecr6cKp2QntldmtIqQJiqVhvUgZXfsOyQPGde3OveYzAcFjmf8Fqh2ICA
-	==
-Received: from ppma21.wdc07v.mail.ibm.com (5b.69.3da9.ip4.static.sl-reverse.com [169.61.105.91])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4g73g50064-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 26 Aug 2026 16:48:10 +0000 (GMT)
-Received: from pps.filterd (ppma21.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma21.wdc07v.mail.ibm.com (8.18.1.7/8.18.1.7) with ESMTP id 67QGfKPT023110;
-	Wed, 26 Aug 2026 16:48:09 GMT
-Received: from smtprelay01.fra02v.mail.ibm.com ([9.218.2.227])
-	by ppma21.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4g7q3k315b-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 26 Aug 2026 16:48:09 +0000 (GMT)
-Received: from smtpav02.fra02v.mail.ibm.com (smtpav02.fra02v.mail.ibm.com [10.20.54.101])
-	by smtprelay01.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 67QGm6Rv44761472
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Wed, 26 Aug 2026 16:48:07 GMT
-Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id E127720043;
-	Wed, 26 Aug 2026 16:48:06 +0000 (GMT)
-Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id F323120040;
-	Wed, 26 Aug 2026 16:48:03 +0000 (GMT)
-Received: from smtpclient.apple (unknown [9.124.213.3])
-	by smtpav02.fra02v.mail.ibm.com (Postfix) with ESMTPS;
-	Wed, 26 Aug 2026 16:48:03 +0000 (GMT)
-Content-Type: text/plain;
-	charset=utf-8
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="h97C8WWv"
+Received: by mail-pj1-f42.google.com with SMTP id 98e67ed59e1d1-3964e480f76so1627999a91.1
+        for <keyrings@vger.kernel.org>; Wed, 26 Aug 2026 10:08:04 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1787764081; x=1788368881; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=i7Y3/aUaSMSqtnYOcW/WwHTgglCUuyrDSlF3Z2YzqPY=;
+        b=h97C8WWvhPhI4zdzTjeXFsISyzxpH5ZmrXuuRLkyr/KGHENwOJoALsYoLdpzqr7Lv3
+         nNZReTVaEJeF3koK850Mpf/t1haMZ5tqHU9auIwo48bU9DvNC8C+m2Cy4kk523tFK/iw
+         G27fa+Awe1aEFepd554OOLqZ7KI2JaPb0NIgRq31Vk0oacmnGnx5c6l7N1f8uu6AEs0u
+         VFTGEXIjvagyyXflUC+wdNhQIakFpfuEdRiUWNzOZyQ/8/qs2spv795pMTha0KbmX2Ar
+         zDVe44XEWqJOEhkEy6F9aJbOQY0uO907+xiXmnqP9/GpNsij8BXuu0aWW0K+RMbsU5hy
+         CvOg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1787764081; x=1788368881;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to:content-type;
+        bh=i7Y3/aUaSMSqtnYOcW/WwHTgglCUuyrDSlF3Z2YzqPY=;
+        b=Gr3w2deu7SPJhxqrG2Cf37SZN890s60ARaeHgkuDoVkl4FQkl6/ns/B0Pb3iXecKgd
+         pAa8dIStKQoDihBSXVecbwUeqdj5oEefxGmiOdZe6qQq4My1XBW3p+BvUpgKVtcSIn1m
+         nqTzfKr6MnEygrFnGf3Zw37Wwwuus4DHxY+WnjwpLDWk9YjGJIX3+KXuV9vMOF1HqqJg
+         V6R6sEr0wfm1NrisVnJ/zRcSstn0RbJLO/K+mnjM1jrfyrKt2YALvHsVJpnYkbSSxeQR
+         ZP/VGZKlIwAaKUT4D5m5wouolRpBKzK64JuKZaoKhMfRifgLm2TDdyU7tK69ud+YlmJV
+         Z0hQ==
+X-Forwarded-Encrypted: i=1; AHgh+RrJULyxuUhSw5baE1t0uw5l6eL8++Afy2FOOa6IJ+PGIxkh5PzMhFlgsl85Ue6tnQeL2jE26cBIQQ==@vger.kernel.org
+X-Gm-Message-State: AFuF++mLbZHUgHTeBS/kSfrvw/b8CS2s/vc189YAXTn2wV1mvQVPf9az
+	6pt5AkIq+up7T40GtzQ32NgxltqoZoVyQ1pyodWE7l2Drg7ckWdJ7Qi+XDKabil3
+X-Gm-Gg: AR+sD11nXqIavMQFEju3do+/bOpbarHSo9xBrvFsX7Wy7/EUgKiqiVAFbOnqQod7yHq
+	ZmxKHEMoS5gv7i6re5OgsBLL0YdmzFVDTI4R47+6lBGxKbTIdR+jSjJtKX8ObvSOPnfAKEXDoIH
+	ggWH19XJvb4o8ogAzK5zbDenwEM8l4kwDwaQwYCErCutz/yk0qhOvY8vpmbvrsRAsBBRSsESFRp
+	chLd2S8fnMIrvppKFFgKFpmZrqfFo5ef+1naOhUFurn9kFKGqvLDjPMyk9t4I2ctStBRTduaiQN
+	w1qriVqCJTOhId3ZuYnRElSRhPp27Q7cimMajEXPW4kjHXaKlimfe1aDvKNkgi1+ANa2oIDrPWH
+	+04CFjGZoO38C4du/i0n0K4+8iMQNZVCR67EKmgRlxAThVRS04W+Lh6Kg2HqnoVzPZMf2fBMBCN
+	WDhl7gcDEWWnLPmvTGlqGLYrm4ImhINhT6u3yRbZwwbdMBLKV+l8NQdJKxxweepJZmPS55zcjxB
+	MgLnIUYVGeqo+XFFeAJp+F4lmPmjjtm/O9NvqRBJeT4XnXRa84fmUu709Q=
+X-Received: by 2002:a17:90a:e70f:b0:38e:49c0:75a7 with SMTP id 98e67ed59e1d1-3966d43471cmr18087587a91.8.1787764081008;
+        Wed, 26 Aug 2026 10:08:01 -0700 (PDT)
+Received: from MSI.localdomain ([157.20.184.42])
+        by smtp.gmail.com with ESMTPSA id a92af1059eb24-141a8eefd82sm8945491c88.2.2026.08.26.10.07.57
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Wed, 26 Aug 2026 10:08:00 -0700 (PDT)
+From: Sanket Sharma <sanketsharmacsec@gmail.com>
+To: jarkko@kernel.org
+Cc: sudhakar@linux.ibm.com,
+	gregkh@linuxfoundation.org,
+	James.Bottomley@HansenPartnership.com,
+	zohar@linux.ibm.com,
+	dhowells@redhat.com,
+	linux-integrity@vger.kernel.org,
+	keyrings@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	security@kernel.org,
+	w@1wt.eu,
+	Sanket Sharma <sanketsharmacsec@gmail.com>
+Subject: [PATCH v3 2/2] keys: trusted: tpm1: reject unauthenticated response tag in TSS_checkhmac1/2
+Date: Wed, 26 Aug 2026 17:07:00 +0000
+Message-ID: <20260826170700.616-2-sanketsharmacsec@gmail.com>
+X-Mailer: git-send-email 2.53.0
+In-Reply-To: <20260826170700.616-1-sanketsharmacsec@gmail.com>
+References: <20260826080405.255083-1-sanketsharmacsec@gmail.com>
+ <20260826170700.616-1-sanketsharmacsec@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3864.700.51.1.1\))
-Subject: Re: [PATCH v2 2/2] keys: trusted: tpm1: reject unauthenticated
- response tag in TSS_checkhmac1/2
-From: Sudhakar Kuppusamy <sudhakar@linux.ibm.com>
-In-Reply-To: <20260826080405.255083-2-sanketsharmacsec@gmail.com>
-Date: Wed, 26 Aug 2026 22:17:51 +0530
-Cc: jarkko@kernel.org, gregkh@linuxfoundation.org,
-        "James.Bottomley@hansenpartnership.com" <James.Bottomley@HansenPartnership.com>,
-        zohar@linux.ibm.com, dhowells@redhat.com,
-        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        linux-kernel@vger.kernel.org, security@kernel.org, w@1wt.eu
-Content-Transfer-Encoding: quoted-printable
-Message-Id: <A16F8908-4440-43FE-814C-2129C2B30478@linux.ibm.com>
-References: <20260825182919.15943-1-sanketsharmacsec@gmail.com>
- <20260826080405.255083-1-sanketsharmacsec@gmail.com>
- <20260826080405.255083-2-sanketsharmacsec@gmail.com>
-To: Sanket Sharma <sanketsharmacsec@gmail.com>
-X-Mailer: Apple Mail (2.3864.700.51.1.1)
-X-TM-AS-GCONF: 00
-X-Proofpoint-Reinject: loops=2 maxloops=12
-X-Proofpoint-ORIG-GUID: wmWzGIHluAZXJb3idDoRZO9sixnTeQx5
-X-Proofpoint-Spam-Info: AW1haW4tMjYwODI2MDEzOCBTYWx0ZWRfX6fEsw9DyckDf
- xpPPMmxcUtHOYjwKDPhQiXUqRCvvoo3eEtZlpOyrtOJr3XKX2CeIyMhJdMedc+5Xpn3blQTmXCH
- 6pdt2TYrLPfkdcRikuLWt1OyWP9eoVQ=
-X-Proofpoint-GUID: BM2COZajFAbUGG38GdJR3Uzj-vDUP2oN
-X-Authority-Analysis: v=2.4 cv=JZyMa0KV c=1 sm=1 tr=0 ts=6a8f18ca cx=c_pps
- a=GFwsV6G8L6GxiO2Y/PsHdQ==:117 a=GFwsV6G8L6GxiO2Y/PsHdQ==:17
- a=IkcTkHD0fZMA:10 a=Sv0fKeRqtYgA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=U7nrCbtTmkRpXpFmAIza:22 a=pGLkceISAAAA:8
- a=NrVHMxhdPDTnOdUCm4oA:9 a=QEXdDO2ut3YA:10
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwODI2MDEzOCBTYWx0ZWRfXwZDTbjQ3YzDu
- 4UPOlWuO1Zj4KJsUkXGpE0tFDfhqEK0YYsYzGjRRpBx4xImi0RQx2hT/FSBPxe1/7vSbmFAjfBd
- rZFRtutCsiT4m5ArKaTYYXLYDoQq9oEzfxTjqSuSj17uPMVkYFRXD3a64pJIQpYcLACvSSFgKsR
- MomantNl3tB8SOZkgboj9FQ6caQ9fK7uAieokvGJfveGB1Z53drPMJwxbT0VE6KjPhr17I7XlMa
- +HZaf5X3lO8b6Xkc9cBRrWmtETD/FCxy0hF9RLQ3UL7MHyE0uFHFJksF0Y4+UlY6xwNbMuhJ4qf
- XY40mQg+rC2ickmiDl0Gh3o2/A2cTg77tALtvXkR4QmjPXUq7SvcF49/Ykx//zluV8lu8CnFQZQ
- z1+Sp5L2ktLjJw0O7V+Eec0fsmRL34QaCT9BUHCNbhu4n7McPTUXycfQq8Rx5zyNu+2QDhNd/r/
- U27zhU5Z1Xc/zhL8z1A==
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-08-26_04,2026-08-26_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- spamscore=0 clxscore=1015 adultscore=0 priorityscore=1501 impostorscore=0
- malwarescore=0 bulkscore=0 lowpriorityscore=0 suspectscore=0 phishscore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2606150000 definitions=main-2608260138
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
+TSS_checkhmac1() and TSS_checkhmac2() silently return success when the
+response tag is TPM_TAG_RSP_COMMAND (0x00c4), bypassing HMAC
+verification entirely. A forged TPM response with this unauthenticated
+tag allows an attacker to skip integrity checks on TPM responses.
 
+Reject TPM_TAG_RSP_COMMAND with -EINVAL in both functions, requiring
+all responses to carry a proper authenticated tag.
 
-> On 26 Aug 2026, at 1:34=E2=80=AFPM, Sanket Sharma =
-<sanketsharmacsec@gmail.com> wrote:
->=20
-> TSS_checkhmac1() and TSS_checkhmac2() silently return success when the
-> response tag is TPM_TAG_RSP_COMMAND (0x00c4), bypassing HMAC
-> verification entirely. A forged TPM response with this unauthenticated
-> tag allows an attacker to skip integrity checks on TPM responses.
->=20
-> Reject TPM_TAG_RSP_COMMAND with -EINVAL in both functions, requiring
-> all responses to carry a proper authenticated tag.
->=20
-> Signed-off-by: Sanket Sharma <sanketsharmacsec@gmail.com>
-> ---
-> security/keys/trusted-keys/trusted_tpm1.c | 4 ++--
-> 1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/security/keys/trusted-keys/trusted_tpm1.c =
-b/security/keys/trusted-keys/trusted_tpm1.c
-> index d47cb7108..c89fc6cfe 100644
-> --- a/security/keys/trusted-keys/trusted_tpm1.c
-> +++ b/security/keys/trusted-keys/trusted_tpm1.c
-> @@ -202,7 +202,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
-> ordinal =3D command;
-> result =3D LOAD32N(buffer, TPM_RETURN_OFFSET);
-> if (tag =3D=3D TPM_TAG_RSP_COMMAND)
-> - return 0;
-> + return -EINVAL;
+Signed-off-by: Sanket Sharma <sanketsharmacsec@gmail.com>
+---
+ security/keys/trusted-keys/trusted_tpm1.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-Hi Sanket Sharma,
-
-Instead of changing the return value to -EINVAL inside the =
-TPM_TAG_RSP_COMMAND check,
-we can simplify the control flow by removing that block entirely.Since =
-TPM_TAG_RSP_COMMAND is
-inherently not equal to TPM_TAG_RSP_AUTH1_COMMAND, the subsequent =
-mismatch check will naturally
-catch it and return -EINVAL.=20
-
-Thanks,
-Sudhakar
-
-> if (tag !=3D TPM_TAG_RSP_AUTH1_COMMAND)
-> return -EINVAL;
-> authdata =3D buffer + bufsize - SHA1_DIGEST_SIZE;
-> @@ -270,7 +270,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
-> result =3D LOAD32N(buffer, TPM_RETURN_OFFSET);
->=20
-> if (tag =3D=3D TPM_TAG_RSP_COMMAND)
-> - return 0;
-> + return -EINVAL;
-> if (tag !=3D TPM_TAG_RSP_AUTH2_COMMAND)
-> return -EINVAL;
-> authdata1 =3D buffer + bufsize - (SHA1_DIGEST_SIZE + 1
-> --=20
-> 2.53.0
->=20
->=20
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index d47cb7108..6dbbf4546 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -201,8 +201,6 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 	tag = LOAD16(buffer, 0);
+ 	ordinal = command;
+ 	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
+-	if (tag == TPM_TAG_RSP_COMMAND)
+-		return 0;
+ 	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
+ 		return -EINVAL;
+ 	authdata = buffer + bufsize - SHA1_DIGEST_SIZE;
+@@ -269,8 +267,6 @@ static int TSS_checkhmac2(unsigned char *buffer,
+ 	ordinal = command;
+ 	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
+ 
+-	if (tag == TPM_TAG_RSP_COMMAND)
+-		return 0;
+ 	if (tag != TPM_TAG_RSP_AUTH2_COMMAND)
+ 		return -EINVAL;
+ 	authdata1 = buffer + bufsize - (SHA1_DIGEST_SIZE + 1
+-- 
+2.53.0
 
