@@ -1,38 +1,38 @@
 Received: from www62.your-server.de (www62.your-server.de [213.133.104.62])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0EC0F46AA92;
-	Wed, 26 Aug 2026 16:41:55 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 260D1472539;
+	Wed, 26 Aug 2026 16:41:48 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=213.133.104.62
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787762541; cv=none; b=K06LEQ2iN6mHSEjis2dTNsKFpPaZgi+Q1QBFCk9EzG7Xx0BOvX6PwI1uEdtpKrL0QvydHEfCnaoNG5i5VH3BLmelP6CXDGwOKQnI3e3puhIXSZfm2YO7N2cVB+Wp0xdzy5UPkmx0wSU0/pBoeGSIX2zorCXQFfemnOmlrpI/WtE=
+	t=1787762541; cv=none; b=czT03KF2N3CLUVqmqpp6xeaBcpERnrPZPFfQ3JsDbZy6dyyMCNqZkI6CEbm/gM1HI32XiJaRfdM+DAg6XyaUzNlzZ+4GqZ25JvdneIaGDmJazxfiX9+0mInGYdi7ddYsUgjgrmPnpvQc/6GTZiBKXtlqYfSFntduCmk8FDMm2Ns=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
 	s=arc-20240116; t=1787762541; c=relaxed/simple;
-	bh=16n4TsTUAu9GhjKP47wM3R+AbVWs08/PU6jhMT9OPOM=;
+	bh=3UC8JytobDNcQzugW+9HsHgSVwlEx/VjAYwzYE0UGJE=;
 	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=JRCvZKuzM4l0f796LlyQumcYwEreqJ9NFpQ5IhoPyZy2ZQjUfLtvie1mcDLavttuFovwTCx/uB/QRbP+kr1FViazeK7YodgIAjjpcHMWgu1+0XmUrNp45nW5leqFoQIGvf13nuovj9iopaLiULV+DqJH3I6fiBaowQXv2ztt1oA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net; spf=pass smtp.mailfrom=iogearbox.net; dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b=YJCqbLOm; arc=none smtp.client-ip=213.133.104.62
+	 MIME-Version; b=d7/D1nn8peaL5e3exiKfzqt2zWLJ5DkMx0UGFBbcx8rEX8aZpPgCiqFqTS9uCCaNRQ+p9FN7tgtCvDnv/6k2UM0zK6NZtI4kswsJug3DUyNHNqlqy3UFDb8Ef/sFySbD7A9D1i6KPSBkPM7h6pep083CqjRXEd289TONfqpJC/M=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net; spf=pass smtp.mailfrom=iogearbox.net; dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b=Sbkj1QVY; arc=none smtp.client-ip=213.133.104.62
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=iogearbox.net
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b="YJCqbLOm"
+	dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b="Sbkj1QVY"
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
 	d=iogearbox.net; s=default2302; h=Content-Transfer-Encoding:MIME-Version:
 	References:In-Reply-To:Message-ID:Date:Subject:Cc:To:From:Sender:Reply-To:
 	Content-Type:Content-ID:Content-Description:Resent-Date:Resent-From:
 	Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID;
-	bh=EhgI/l6vnvOET2eYbP/oSJbkLO6aD2eQvyOMf26FBqw=; b=YJCqbLOmsoJOWPFuOXKmZAwN10
-	blM97CzqaGlklFhfKheaWPEhqzicPLg1jTLOR0Tl/a4+gy3kgJK3kUfTssyusc/EKT9wtgYqXwJFq
-	X8liQR/lhJ33mDy8L40tXCcjNLZQ13Hljr1TeVxQVbk0tVKujBs6c8is/LWRGhkIHUhy+SEGg41z8
-	8ix2KcmjtCt96Ql0RMRo3UoiwiDU1Li/lNAfPqIbkwjaF/jyjSaEGkO3cuoQTgWGKN1I2mFZOscFj
-	yQA9XK1ku6Oa9WcEVf8IWslK740fJpPcbuVQe7NJRJQOFwNSwoTvHonjyxuGLBdcElLlR/33uS0zp
-	EM/ivE9A==;
+	bh=HrXQHQEbqCdL7Rcoeh0x2oiDfZ9ohwNGb1IVAbZzkDM=; b=Sbkj1QVYXUoYTAerEc1T7EJvHA
+	tlMvtNftqGMOIM5H1lCUlLHO5XdxLAlceWwnbzLOQOv8wOKJmPwCU7r8x0DWvesiuKvpbAWF/CpKf
+	shjCZa+QoZ7FmH1SakwzRP/9b5RjSVHs52AwnPokvINq5az//xg5+mnqTJKf/c1YLpjlvCVhrst17
+	IoYlX/vn6nZnuGEVDDB0uXJl/wp6bC0mGqpaQhP/BI8hr5wZQJ+nMt7VrbZUu9lM8FfCKcenr5TWu
+	w521g/ZquM6GRmrMnm6MJ6apDvxovvRPWJyhfrm/Vhh2dmwaBEbahhOKTFUOQALGFzZsG20OsShpL
+	RErdZFDg==;
 Received: from localhost ([127.0.0.1])
 	by www62.your-server.de with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
 	(Exim 4.96.2)
 	(envelope-from <daniel@iogearbox.net>)
-	id 1wzGh7-000ILs-0V;
-	Wed, 26 Aug 2026 18:41:45 +0200
+	id 1wzGh1-000IKm-12;
+	Wed, 26 Aug 2026 18:41:39 +0200
 From: Daniel Borkmann <daniel@iogearbox.net>
 To: memxor@gmail.com
 Cc: brauner@kernel.org,
@@ -44,9 +44,9 @@ Cc: brauner@kernel.org,
 	dhowells@redhat.com,
 	jarkko@kernel.org,
 	keyrings@vger.kernel.org
-Subject: [PATCH bpf-next v3 09/11] selftests/bpf: Allow appending to guest kernel cmdline in vmtest.sh
-Date: Wed, 26 Aug 2026 18:41:34 +0200
-Message-ID: <20260826164136.1400997-10-daniel@iogearbox.net>
+Subject: [PATCH bpf-next v3 02/11] bpf: Refuse caller-supplied keyrings when the bpf one is active
+Date: Wed, 26 Aug 2026 18:41:27 +0200
+Message-ID: <20260826164136.1400997-3-daniel@iogearbox.net>
 X-Mailer: git-send-email 2.43.0
 In-Reply-To: <20260826164136.1400997-1-daniel@iogearbox.net>
 References: <20260826164136.1400997-1-daniel@iogearbox.net>
@@ -59,60 +59,129 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-Virus-Scanned: Clear (ClamAV 1.4.3/28104/Wed Aug 26 08:24:01 2026)
 
-vmtest.sh currently hardcodes the guest command line, so there is no
-way to ask for such a setting without editing the script. Append
-$KERNEL_CMDLINE_EXTRA when set so it can be used for testing the
-BPF keyring:
+Nothing changes for systems that do not use the bpf keyring. Without
+bpf.keyring_unsealed=1 a caller-supplied keyring behaves exactly as
+before, which also lets it serve as the staging step for software
+installed onto a running system whose signing key is not enrolled
+anywhere yet.
 
-   # KERNEL_CMDLINE_EXTRA="bpf.keyring_unsealed=1" \
-	./vmtest.sh -- ./test_progs -t signed_loader
+Passing bpf.keyring_unsealed=1 states that the bpf keyring is the trust
+anchor for this boot, so from the first program load onwards a caller-
+supplied keyring is refused with -EPERM. Deriving this from the boot
+flag rather than from the keyring's runtime state keeps the decision
+immutable from userspace.
 
 Signed-off-by: Daniel Borkmann <daniel@iogearbox.net>
 ---
- tools/testing/selftests/bpf/vmtest.sh | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ .../admin-guide/kernel-parameters.txt         |  8 +++++
+ include/linux/bpf.h                           |  6 ++++
+ kernel/bpf/keys.c                             |  5 ++++
+ kernel/bpf/verifier.c                         | 29 ++++++++++++-------
+ 4 files changed, 37 insertions(+), 11 deletions(-)
 
-diff --git a/tools/testing/selftests/bpf/vmtest.sh b/tools/testing/selftests/bpf/vmtest.sh
-index 6a3d026d76bd..e7e0b419a0b8 100755
---- a/tools/testing/selftests/bpf/vmtest.sh
-+++ b/tools/testing/selftests/bpf/vmtest.sh
-@@ -107,6 +107,14 @@ Options:
- 	-s)		Instead of powering off the VM, start an interactive
- 			shell. If <command> is specified, the shell runs after
- 			the command finishes executing
+diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
+index 2beb61092bb3..e70fb15757d4 100644
+--- a/Documentation/admin-guide/kernel-parameters.txt
++++ b/Documentation/admin-guide/kernel-parameters.txt
+@@ -673,6 +673,14 @@ Kernel parameters
+ 			keys. Once the keyring is restricted it becomes active
+ 			and can be used for BPF program signature verification.
+ 
++			Setting this also means that the bpf keyring is the
++			only non-system keyring a loader may select for the
++			rest of the boot: caller-supplied user/session
++			keyrings are refused with -EPERM, whether or not
++			provisioning actually completed. The system keyrings
++			stay selectable. Leaving it unset keeps the prior
++			behaviour, where a caller-supplied keyring is allowed.
 +
-+Environment variables:
-+
-+	KERNEL_CMDLINE_EXTRA
-+			Extra arguments to append to the guest kernel command
-+			line, for tests that need a boot-time setting. e.g:
-+
-+	  KERNEL_CMDLINE_EXTRA="bpf.keyring_unsealed=1" $0 -- ./test_progs -t signed_loader
- EOF
+ 			See Documentation/bpf/signing.rst
+ 
+ 	bttv.card=	[HW,V4L] bttv (bt848 + bt878 based grabber cards)
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+index 62b095f7f524..571f7792a5c4 100644
+--- a/include/linux/bpf.h
++++ b/include/linux/bpf.h
+@@ -3821,6 +3821,7 @@ struct bpf_key {
+ struct bpf_key *bpf_lookup_user_key(s32 serial, u64 flags);
+ struct bpf_key *bpf_lookup_system_key(u64 id);
+ struct bpf_key *bpf_lookup_keyring(void);
++bool bpf_keyring_enforced(void);
+ void bpf_key_put(struct bpf_key *bkey);
+ int bpf_verify_pkcs7_signature(const struct bpf_dynptr *data_p,
+ 			       const struct bpf_dynptr *sig_p,
+@@ -3846,6 +3847,11 @@ static inline struct bpf_key *bpf_lookup_keyring(void)
+ 	return NULL;
  }
  
-@@ -286,6 +294,12 @@ EOF
- 		QEMU_FLAGS=("${HOST_FLAGS[@]}")
- 	fi
- 
-+	local kernel_cmdline="root=/dev/vda rw console=${QEMU_CONSOLE}"
++static inline bool bpf_keyring_enforced(void)
++{
++	return false;
++}
 +
-+	if [[ -n "${KERNEL_CMDLINE_EXTRA:-}" ]]; then
-+		kernel_cmdline+=" ${KERNEL_CMDLINE_EXTRA}"
-+	fi
-+
- 	${QEMU_BINARY} \
- 		-nodefaults \
- 		-display none \
-@@ -294,7 +308,7 @@ EOF
- 		-m 4G \
- 		-drive file="${rootfs_img}",format=raw,index=1,media=disk,if=virtio,cache=none \
- 		-kernel "${kernel_bzimage}" \
--		-append "root=/dev/vda rw console=${QEMU_CONSOLE}"
-+		-append "${kernel_cmdline}"
+ static inline void bpf_key_put(struct bpf_key *bkey)
+ {
  }
+diff --git a/kernel/bpf/keys.c b/kernel/bpf/keys.c
+index 08549b3220c1..bffc356839ac 100644
+--- a/kernel/bpf/keys.c
++++ b/kernel/bpf/keys.c
+@@ -18,6 +18,11 @@ static bool bpf_keyring_unsealed __ro_after_init;
+ module_param_named(keyring_unsealed, bpf_keyring_unsealed, bool, 0444);
+ MODULE_PARM_DESC(keyring_unsealed, "Leave the bpf keyring unsealed");
  
- copy_logs()
++bool bpf_keyring_enforced(void)
++{
++	return bpf_keyring_unsealed;
++}
++
+ struct bpf_key *bpf_lookup_keyring(void)
+ {
+ 	struct bpf_key *bkey;
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index b45d201c2535..095057277994 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -21019,21 +21019,28 @@ static int bpf_prog_verify_signature(struct bpf_verifier_env *env,
+ 	if (!attr->signature_size ||
+ 	    attr->signature_size > KMALLOC_MAX_CACHE_SIZE)
+ 		return -EINVAL;
+-	if (attr->keyring_id == KEY_SPEC_BPF_KEYRING) {
+-		key = bpf_lookup_keyring();
+-		if (!key) {
+-			verbose(env, "the bpf keyring is empty or has not been restricted\n");
+-			return -ENOKEY;
+-		}
+-	} else if (system_keyring_id_check(attr->keyring_id) == 0) {
++	if (!system_keyring_id_check(attr->keyring_id)) {
+ 		key = bpf_lookup_system_key(attr->keyring_id);
+ 	} else {
+-		key = bpf_lookup_user_key(attr->keyring_id, 0);
++		if (attr->keyring_id != KEY_SPEC_BPF_KEYRING) {
++			if (bpf_keyring_enforced()) {
++				verbose(env, "caller-supplied keyring refused, use bpf keyring\n");
++				return -EPERM;
++			}
++			key = bpf_lookup_user_key(attr->keyring_id, 0);
++		} else {
++			key = bpf_lookup_keyring();
++		}
+ 	}
+ 	if (!key) {
+-		verbose(env, "cannot resolve signing keyring with keyring_id %d\n",
+-			attr->keyring_id);
+-		return -EINVAL;
++		if (attr->keyring_id == KEY_SPEC_BPF_KEYRING) {
++			verbose(env, "the bpf keyring is empty or has not been restricted\n");
++			return -ENOKEY;
++		} else {
++			verbose(env, "cannot resolve signing keyring with keyring_id %d\n",
++				attr->keyring_id);
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	sig = kvmemdup_bpfptr(usig, attr->signature_size);
 -- 
 2.43.0
 
