@@ -1,141 +1,157 @@
-Received: from www62.your-server.de (www62.your-server.de [213.133.104.62])
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5A99A463B6D;
-	Wed, 26 Aug 2026 16:41:51 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=213.133.104.62
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2507346D090;
+	Wed, 26 Aug 2026 16:45:38 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787762546; cv=none; b=QjoKG9P1qpJ1EpTMlr2lmZwSifyHWoEo3UIKDFOve3XsdrG/gzeucjaT70dol29tbet/sXKYR5zNU3hBvLS4fqXveri7ebcQF1DoyxfUcFGLHbV1IJnE2DlW8yt4hYWM6Rl+XRLmeAKbYU7rklOsoK5J39ZM8EXUwzRPq7DuzZk=
+	t=1787762746; cv=none; b=c6wVgaTl0MNkNCF0JLjB0QPswae7n4P/jR7K93eP1XzEb5cMG87rs0xE2Uz5LffohJbijKnKJUytalPWMbwAF9VD+iHDL0iXdRoqsWYNB8SzZ28nkYv0qqc/lmViXBXmhUPsFCEORqM2w/2PpbHa8Su96oCA0icGG1L1A/AdEyA=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787762546; c=relaxed/simple;
-	bh=U7wzSR7439nn+Fi5SgeW3apgfv/5vDqIb06YQ+i+mng=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=hq9khcC7yoTONb+TpAF4s7/TUbkpo+iHg3yMPcilGNaEdTUL9qN+v4z373bgPOeVEPt/MvavaEalw+jE1dsUR+0s3E9h+vdAUNN0QStBzh8YpDX7rB/v4Z1RC1le66djmwK4pBiejo+sIBYONRGN2XAsQ2qzSSLTeMLVcoF356s=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net; spf=pass smtp.mailfrom=iogearbox.net; dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b=RoUvArle; arc=none smtp.client-ip=213.133.104.62
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=iogearbox.net
+	s=arc-20240116; t=1787762746; c=relaxed/simple;
+	bh=FKwdZ0kNj6TKNMz6cRANqkd4+E8cghbWEbTNvONfBgk=;
+	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
+	 Message-Id:References:To; b=LfzSsaFxCKg+x4axaQuuEBRQDpiHbGFVpxyjdiqskz9JlIQaseABoyaTalqMOU8vg8XEHc+ZZ9z+SZEd8c2EQ19JzJH+QAGAXR6QoSJiAziKE/PRNpZDBuqi5BYJ1jPFff3oJ5zM6Cl97FozrqE7xolhaAfTvvh9EoHdsrMaUeU=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=PSpurddJ; arc=none smtp.client-ip=148.163.158.5
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b="RoUvArle"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=iogearbox.net; s=default2302; h=Content-Transfer-Encoding:MIME-Version:
-	References:In-Reply-To:Message-ID:Date:Subject:Cc:To:From:Sender:Reply-To:
-	Content-Type:Content-ID:Content-Description:Resent-Date:Resent-From:
-	Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID;
-	bh=ENGVFJH4VABL9esrNnw7jL9XwYlrZ1Q6mqu2AQ+tlyU=; b=RoUvArlesdHiKHS7B9w/qPkNYO
-	pVwEZCHRVVHMtetCHK7UJzW9W0Nb/oLHh8k2vsyHD/OHZr6q6E/XeaZkxobSvbMKcsUqgduuvTEpW
-	R4RizBt8NdIOSICJEazDfuHc0gMxHKR8HHyVMn2XJzZJxNqyr31gF8InZStRmYgRKU0JcWX1fVoHj
-	l8mawluaI5H7xbHIWP+AMMa7tbKQZC9zJhmwlnGJiqzdELISv1j5Ts8+ghgyF2YUkIFMRKnd9qMx1
-	g9AXQf4yp7N8g9U8zVrs7gp4SnCStjSMSP2E/oXET4RtXVpvDcSm05xJ41ELoQfq+y6IiN0SECudv
-	4ab2fgTA==;
-Received: from localhost ([127.0.0.1])
-	by www62.your-server.de with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
-	(Exim 4.96.2)
-	(envelope-from <daniel@iogearbox.net>)
-	id 1wzGh3-000ILI-0L;
-	Wed, 26 Aug 2026 18:41:41 +0200
-From: Daniel Borkmann <daniel@iogearbox.net>
-To: memxor@gmail.com
-Cc: brauner@kernel.org,
-	kpsingh@kernel.org,
-	ast@kernel.org,
-	john.fastabend@gmail.com,
-	a.s.protopopov@gmail.com,
-	bpf@vger.kernel.org,
-	dhowells@redhat.com,
-	jarkko@kernel.org,
-	keyrings@vger.kernel.org
-Subject: [PATCH bpf-next v3 04/11] bpftool: Support ML-DSA program signing
-Date: Wed, 26 Aug 2026 18:41:29 +0200
-Message-ID: <20260826164136.1400997-5-daniel@iogearbox.net>
-X-Mailer: git-send-email 2.43.0
-In-Reply-To: <20260826164136.1400997-1-daniel@iogearbox.net>
-References: <20260826164136.1400997-1-daniel@iogearbox.net>
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="PSpurddJ"
+Received: from pps.filterd (m0360072.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 67QE1dFk070358;
+	Wed, 26 Aug 2026 16:45:05 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:content-type:date:from:in-reply-to
+	:message-id:mime-version:references:subject:to; s=pp1; bh=FKwdZ0
+	kNj6TKNMz6cRANqkd4+E8cghbWEbTNvONfBgk=; b=PSpurddJxZD7bjMvdy3hBK
+	65NbDdFR9d8U2S+TWRGIkAtTbJ5KVlisA3ay3tZRYNY7oFm+YS8v6Yd0OblJw4VP
+	/0UvvH/wW8zRrK4arMSicb9Bj5/my8ET6ygxqpKPYjUC5cT+UVmLF10Ird8DQ1Ri
+	pWrYe6sRBUH/D4yy22MMysWjKXRMR1dXM4q1SLOdfUEBH6s/RovgruAfvPyou1eU
+	rQlqQJyI8Ai4qQrQZKTelBjZQqw/AU/uP/7Tx7AyYaskEvAQVwVsFrBUTnWmDt3C
+	Ln8gsn/6yV6lRBLIVf+Lbxaeji4uB4DtOkgx9OrNguNXEqrIs8vA8YJANRHQNfGQ
+	==
+Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4g73dxfmr3-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Wed, 26 Aug 2026 16:45:04 +0000 (GMT)
+Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
+	by ppma12.dal12v.mail.ibm.com (8.18.1.7/8.18.1.7) with ESMTP id 67QGfEDm022800;
+	Wed, 26 Aug 2026 16:45:03 GMT
+Received: from smtprelay05.fra02v.mail.ibm.com ([9.218.2.225])
+	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4g7p3qb7qd-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Wed, 26 Aug 2026 16:45:03 +0000 (GMT)
+Received: from smtpav02.fra02v.mail.ibm.com (smtpav02.fra02v.mail.ibm.com [10.20.54.101])
+	by smtprelay05.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 67QGj1ge36372960
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Wed, 26 Aug 2026 16:45:02 GMT
+Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id C8DE820043;
+	Wed, 26 Aug 2026 16:45:01 +0000 (GMT)
+Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id C63DF20040;
+	Wed, 26 Aug 2026 16:44:58 +0000 (GMT)
+Received: from smtpclient.apple (unknown [9.124.213.3])
+	by smtpav02.fra02v.mail.ibm.com (Postfix) with ESMTPS;
+	Wed, 26 Aug 2026 16:44:58 +0000 (GMT)
+Content-Type: text/plain;
+	charset=utf-8
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Virus-Scanned: Clear (ClamAV 1.4.3/28104/Wed Aug 26 08:24:01 2026)
+Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3864.700.51.1.1\))
+Subject: Re: [PATCH v2 1/2] keys: trusted: tpm1: add bounds check in
+ tpm_seal() before memcpy
+From: Sudhakar Kuppusamy <sudhakar@linux.ibm.com>
+In-Reply-To: <20260826080405.255083-1-sanketsharmacsec@gmail.com>
+Date: Wed, 26 Aug 2026 22:14:46 +0530
+Cc: jarkko@kernel.org, gregkh@linuxfoundation.org,
+        "James.Bottomley@hansenpartnership.com" <James.Bottomley@HansenPartnership.com>,
+        zohar@linux.ibm.com, dhowells@redhat.com,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org, security@kernel.org, w@1wt.eu
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <284F8B1D-F60A-4BBB-80B3-D2814A165DC1@linux.ibm.com>
+References: <20260825182919.15943-1-sanketsharmacsec@gmail.com>
+ <20260826080405.255083-1-sanketsharmacsec@gmail.com>
+To: Sanket Sharma <sanketsharmacsec@gmail.com>
+X-Mailer: Apple Mail (2.3864.700.51.1.1)
+X-TM-AS-GCONF: 00
+X-Proofpoint-Reinject: loops=2 maxloops=12
+X-Proofpoint-Spam-Info: AW1haW4tMjYwODI2MDEzOCBTYWx0ZWRfX9Rp50emSERgN
+ AHLYL9hbvYxRs31CJ99rs1NXBcl/2vTz67iaTzDSvl1xcKA9JFnRZGhovc1BBMhaYCSUHo1nIcK
+ vU4FgwXaOqgy9uXoDllVOQ/39qEfXzw=
+X-Authority-Analysis: v=2.4 cv=AYuB2XXG c=1 sm=1 tr=0 ts=6a8f1811 cx=c_pps
+ a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
+ a=IkcTkHD0fZMA:10 a=Sv0fKeRqtYgA:10 a=VkNPw1HP01LnGYTKEx00:22
+ a=RnoormkPH1_aCDwRdu11:22 a=RzCfie-kr_QcCd8fBx8p:22 a=pGLkceISAAAA:8
+ a=VnNF1IyMAAAA:8 a=Qxsn6e9zUWdzkDgwqbgA:9 a=QEXdDO2ut3YA:10 a=KSyJCaK48GcA:10
+X-Proofpoint-ORIG-GUID: 3K8IBhSYKotbUWi57o4QzPLHEiMZX5Hn
+X-Proofpoint-GUID: Kebi_T0TQU_Y4_fB7XJj5Y3JXcaeVrtd
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwODI2MDEzOCBTYWx0ZWRfX9EFuzPyxXAd2
+ 08J1/rAtOE/vkIyc69D2MSm7rZse3vnFiyqCpNPZvtw4e5fMl1fIrQB9xzEtntfGQrd08IakGdS
+ UaCIl5jyMIdxFr7kP/YddFr7LJJmD/VitYbtnn9q4Y2I5wPJgFffUZVaW/3rJeAnP0z19UpjjSM
+ IBuB3746A55d+bBhhgIzxUk0dTzRXraPCVjrVLOpClaHaTd7mToHa0IttB9iNipJKIazPtwTXAj
+ TxdN4LxrkOFyuYSoQseJPomATZ1Lk4NQN+VNur6ge6/Ys96QxJR4cDgzKxFvGJXKW+sy7U+VgG8
+ eW0CzWYSMNyd1b8Kjs4HleZIT8MnoTOSlsdqhal15emEZOSKSLV/v6KmX6z679ufdbwrFnS2HoS
+ 6P21Nzcms27g7vKC88rhxrjf4aVgaZeZvP7DYLzq5NwIbdyc1YMZjfmhlG7Xa+qpJByMuRH820P
+ /3YnU4eOTZztKsrv9kQ==
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
+ definitions=2026-08-26_04,2026-08-26_02,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ malwarescore=0 phishscore=0 clxscore=1011 adultscore=0 bulkscore=0
+ impostorscore=0 priorityscore=1501 lowpriorityscore=0 spamscore=0
+ suspectscore=0 classifier=typeunknown authscore=0 authtc= authcc=
+ route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2606150000
+ definitions=main-2608260138
 
-Add bpftool support for ML-DSA program signing and drop the flag for
-ML-DSA keys on affected OpenSSL versions, the same way as commit
-0ad9a71933e7 ("modsign: Enable ML-DSA module signing").
 
-Also, an ML-DSA-87 signature is 4627 bytes on its own, so the blob does
-not fit into the 4 KiB of MAX_SIG_SIZE anymore and signing would fail
-otherwise. Bump to 16 KiB. MAX_SIG_SIZE only sizes the buffer for
-what bpftool itself emits (unrelated to BPF_PROG_MAX_SIGNATURE_SIZE).
 
-Signed-off-by: Daniel Borkmann <daniel@iogearbox.net>
----
- tools/bpf/bpftool/main.h |  2 +-
- tools/bpf/bpftool/sign.c | 24 +++++++++++++++++++++---
- 2 files changed, 22 insertions(+), 4 deletions(-)
+> On 26 Aug 2026, at 1:34=E2=80=AFPM, Sanket Sharma =
+<sanketsharmacsec@gmail.com> wrote:
+>=20
+> tpm_seal() computes storedsize from TPM response fields and passes
+> it directly to memcpy() into a MAX_BLOB_SIZE buffer without bounds
+> validation. A forged TPM response can set storedsize to 4086,
+> overflowing the 512-byte blob by 3574 bytes into adjacent slab
+> objects.
+>=20
+> Add a check that storedsize does not exceed MAX_BLOB_SIZE before
+> the memcpy, returning -EINVAL on oversized responses.
+>=20
+> Signed-off-by: Sanket Sharma <sanketsharmacsec@gmail.com>
 
-diff --git a/tools/bpf/bpftool/main.h b/tools/bpf/bpftool/main.h
-index 78b6e0ebb85d..9315a1db1f7c 100644
---- a/tools/bpf/bpftool/main.h
-+++ b/tools/bpf/bpftool/main.h
-@@ -57,7 +57,7 @@ static inline void *u64_to_ptr(__u64 ptr)
- 	})
- 
- #define ERR_MAX_LEN	1024
--#define MAX_SIG_SIZE	4096
-+#define MAX_SIG_SIZE	16384
- 
- #define BPF_TAG_FMT	"%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx"
- 
-diff --git a/tools/bpf/bpftool/sign.c b/tools/bpf/bpftool/sign.c
-index 88726a6db6d0..adbfd4ae5c02 100644
---- a/tools/bpf/bpftool/sign.c
-+++ b/tools/bpf/bpftool/sign.c
-@@ -130,6 +130,12 @@ __u32 register_session_key(const char *key_der_path)
- 
- int bpftool_prog_sign(struct bpf_load_and_run_opts *opts)
- {
-+	unsigned int signer_flags = CMS_NOCERTS | CMS_BINARY | CMS_NOSMIMECAP |
-+#ifdef CMS_NO_SIGNING_TIME
-+				    CMS_NO_SIGNING_TIME |
-+#endif
-+				    CMS_USE_KEYID | CMS_NOATTR;
-+	const EVP_MD *cms_digest = EVP_sha256();
- 	BIO *bd_in = NULL, *bd_out = NULL;
- 	EVP_PKEY *private_key = NULL;
- 	CMS_ContentInfo *cms = NULL;
-@@ -167,6 +173,20 @@ int bpftool_prog_sign(struct bpf_load_and_run_opts *opts)
- 		goto cleanup;
- 	}
- 
-+#if OPENSSL_VERSION_NUMBER >= 0x30000000L && OPENSSL_VERSION_NUMBER < 0x40000000L
-+	if (EVP_PKEY_is_a(private_key, "ML-DSA-44") ||
-+	    EVP_PKEY_is_a(private_key, "ML-DSA-65") ||
-+	    EVP_PKEY_is_a(private_key, "ML-DSA-87")) {
-+		/*
-+		 * See workaround in 0ad9a71933e7 ("modsign: Enable ML-DSA
-+		 * module signing"). Kernel only accepts sha512, see also
-+		 * 8bbdeb7a25b4 ("pkcs7, x509: Add ML-DSA support").
-+		 */
-+		signer_flags &= ~CMS_NOATTR;
-+		cms_digest = EVP_sha512();
-+	}
-+#endif
-+
- 	cms = CMS_sign(NULL, NULL, NULL, NULL,
- 		       CMS_NOCERTS | CMS_PARTIAL | CMS_BINARY | CMS_DETACHED |
- 			       CMS_STREAM);
-@@ -175,9 +195,7 @@ int bpftool_prog_sign(struct bpf_load_and_run_opts *opts)
- 		goto cleanup;
- 	}
- 
--	if (!CMS_add1_signer(cms, x509, private_key, EVP_sha256(),
--			     CMS_NOCERTS | CMS_BINARY | CMS_NOSMIMECAP |
--			     CMS_USE_KEYID | CMS_NOATTR)) {
-+	if (!CMS_add1_signer(cms, x509, private_key, cms_digest, signer_flags)) {
- 		err = -EINVAL;
- 		goto cleanup;
- 	}
--- 
-2.43.0
+Reviewed-by: Sudhakar Kuppusamy <sudhakar@linux.ibm.com>
+
+
+Thanks,
+Sudhakar
+
+> ---
+> security/keys/trusted-keys/trusted_tpm1.c | 4 ++++
+> 1 file changed, 4 insertions(+)
+>=20
+> diff --git a/security/keys/trusted-keys/trusted_tpm1.c =
+b/security/keys/trusted-keys/trusted_tpm1.c
+> index 8f57c6111..d47cb7108 100644
+> --- a/security/keys/trusted-keys/trusted_tpm1.c
+> +++ b/security/keys/trusted-keys/trusted_tpm1.c
+> @@ -531,6 +531,10 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t =
+keytype,
+>=20
+> /* copy the returned blob to caller */
+> if (!ret) {
+> + if (storedsize > MAX_BLOB_SIZE) {
+> + ret =3D -EINVAL;
+> + goto out;
+> + }
+> memcpy(blob, tb->data + TPM_DATA_OFFSET, storedsize);
+> *bloblen =3D storedsize;
+> }
+> --=20
+> 2.53.0
+>=20
+>=20
 
