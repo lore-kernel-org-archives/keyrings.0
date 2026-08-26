@@ -1,170 +1,191 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CF558361944;
-	Wed, 26 Aug 2026 17:41:45 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D16DF407CF4;
+	Wed, 26 Aug 2026 17:54:22 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787766125; cv=none; b=e9CuUHVaeEkfYfAmq6OD8LUS3Ht81OZp9OkhVzU8zzIoUh1eKMvI3t756uSU45Z6qH3voqicJk2GcKdGR/pCGl8wx/cK+NEeKOQgDj9GCF5DapnfZpftvcCw6sqpuH2AHQGIYIhgChYQD/eOHeurIL92xEur9EVrHgNOODzA5ZA=
+	t=1787766866; cv=none; b=UZQg8iW8Q/ACdsehVR9m+4YH0bzdFqS41NUQs1R4WkGQtCfMAwEkyY9/D90BK6RRKb8Krwr0NxKwPOM9KNlg2ntFJSpx8MF6IpGW/12EsbQpb5ASyM7hoX1Yqn2pTqytTN8e7u3pUaqJHMdO7yL0ohZuy8+2jeHKlVHDxqM+Q/Y=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787766125; c=relaxed/simple;
-	bh=RqvrSC/u8ffeILHjUMlApnV2ziiY+90xGKbb/yzGqb4=;
+	s=arc-20240116; t=1787766866; c=relaxed/simple;
+	bh=w9skj64TxRaJWqssAJlZeApfM4Av3byQ44QULYgGPRk=;
 	h=Content-Type:MIME-Version:Message-Id:In-Reply-To:References:
-	 Subject:From:To:Cc:Date; b=VgJ+ZnIXn7gewstSXU+UMoOK+Px4uZI67YiUhj46YIww0pizCQoO5UCtC92c9/DN0Iz1KJmy0K/P0nN7PHN0CMf3A5P+fO8UIU+LtTg7b/NZmvNeSx8XgrSgZXVH9SeeHCjDQ4nMO8jOY/tBBGp5om0UYfj3cQoNy7B709uWA+w=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=WMMsRZKH; arc=none smtp.client-ip=100.103.45.18
+	 Subject:From:To:Cc:Date; b=AqwmrVIK4xWx8LtDKIM7PYxs/UIzToGEmMEqi31oYZB/IhTt8s7UGNKSvsq7UZQ4ybXEd+3dZ0If3hfX/7m9qKUsW6BychItvgvzWKiYyiqBHznVxyw6EBC9anGnZMdJ/vbPOwihT/ycaIe2hjVONS+dENFy8vBmCwT/BC7erdc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=OdigilCm; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="WMMsRZKH"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id E95C61F00A3E;
-	Wed, 26 Aug 2026 17:41:40 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="OdigilCm"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id A3F861F00A3A;
+	Wed, 26 Aug 2026 17:54:20 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1787766101;
-	bh=bEwAyNEyDfKcKpFKCFgjYv1VOJYJhwT0F0AbrT2n5Nc=;
+	s=k20260515; t=1787766861;
+	bh=djoosPotoK1GKZs9afsH0ieLbmjIxU9SrjjGSy7Po9o=;
 	h=In-Reply-To:References:Subject:From:To:Cc:Date;
-	b=WMMsRZKHLTpR1D01rTsQdbUwnMhzK+nGelJbXzrfYjfxuHN87WymEfllDa4BLCjdo
-	 OZuMHgryBUu7QTPg4SA0RsyY3QF3K4D4g1RKPxsJvaKeluMbBZkyyZiKha386PYPzF
-	 g+dUsf2cwuQpa+/RU9lfRa/CZAPFlL8O+nTe34UZKVoNZ9C0h6ZHx1oEDW47Vb1k3v
-	 4/rCDveMcyezgyNyf8ho4QCpzwK1+iO4sEo6UlPxKqVmmK0nSIrCja36knScoF3Zgx
-	 MnfRHh2lQuBYm4Nx2sPr9e4Fh5zbm8u0r7338bSILmwjKxIr2iJ1zvzmU9Zn5WPdWO
-	 NwSzg/JRV5RxQ==
-Content-Type: multipart/mixed; boundary="===============5992077780879722460=="
+	b=OdigilCm1VIurW4nQSwokrnq7jEGRLuhAXLq7mi4skWnVD6+D4EmEwRLHDuT/xk3E
+	 Ay6NNNeGu3AGCb6hAQ78nuZ79TsKnMjY3Wp/0vQhFStmzdPpo6LdpFkcNWvyjoRKBy
+	 wRQq4ke6qvhcCIp2PlfHxT6vR2KPdTdkEpMMqLaSj3Y8pqsmhhGu/tiBC6aJFPXNUj
+	 fWg3tp6CKf2iY0ZtzVWa1RxQeLLiIjzB0GYz6G6zz2Ug//fm1JbzhxN8l+Z3NYyPzI
+	 PD+KrSMUP8hGYB7AKDfKA6+RBTd00ACv1d24RIYhWoL9pe4zhOXwN+135WqNkhMDMN
+	 hNRuCeSEm2j8w==
+Content-Type: multipart/mixed; boundary="===============2876771852046386153=="
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Message-Id: <e783182c9c90c540f79299ee1a346fdfa600c3686e8500d32dc1c166a54d5f79@mail.kernel.org>
-In-Reply-To: <20260826164136.1400997-9-daniel@iogearbox.net>
-References: <20260826164136.1400997-9-daniel@iogearbox.net>
-Subject: Re: [PATCH bpf-next v3 08/11] selftests/bpf: Add an end-to-end ML-DSA signed loader test
+Message-Id: <85816e37ec75b37214a821f28fe985baf2d9e2e5f2b3c7d39bc7c0f0f97a6dcd@mail.kernel.org>
+In-Reply-To: <20260826164136.1400997-2-daniel@iogearbox.net>
+References: <20260826164136.1400997-2-daniel@iogearbox.net>
+Subject: Re: [PATCH bpf-next v3 01/11] bpf, keys: Add a bpf keyring for program signature validation
 From: bot+bpf-ci@kernel.org
 To: daniel@iogearbox.net,memxor@gmail.com
 Cc: brauner@kernel.org,kpsingh@kernel.org,ast@kernel.org,john.fastabend@gmail.com,a.s.protopopov@gmail.com,bpf@vger.kernel.org,dhowells@redhat.com,jarkko@kernel.org,keyrings@vger.kernel.org,ast@kernel.org,andrii@kernel.org,daniel@iogearbox.net,martin.lau@kernel.org,eddyz87@gmail.com,yonghong.song@linux.dev,clm@meta.com,ihor.solodrai@linux.dev
-Date: Wed, 26 Aug 2026 17:41:40 +0000 (UTC)
+Date: Wed, 26 Aug 2026 17:54:20 +0000 (UTC)
 
---===============5992077780879722460==
+--===============2876771852046386153==
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
-> diff --git a/tools/testing/selftests/bpf/config b/tools/testing/selftests/bpf/config
-> index ea7044f30adc3..2ec15117abb50 100644
-> --- a/tools/testing/selftests/bpf/config
-> +++ b/tools/testing/selftests/bpf/config
-> @@ -51,6 +51,8 @@ CONFIG_IPV6_SEG6_LWTUNNEL=y
->  CONFIG_IPV6_SIT=y
->  CONFIG_IPV6_TUNNEL=y
->  CONFIG_KEYS=y
-> +CONFIG_CRYPTO_MLDSA=y
-> +CONFIG_CRYPTO_SHA512=y
->  CONFIG_LIRC=y
->  CONFIG_LIVEPATCH=y
->  CONFIG_LWTUNNEL=y
-
-This isn't a bug, but would these two fit more naturally in the
-CONFIG_CRYPTO_* block at the top of the file, next to CONFIG_CRYPTO_SHA256,
-rather than after CONFIG_KEYS? The file is otherwise maintained in
-alphabetical order, and CONFIG_CRYPTO_SHA512 reads oddly 40 lines away from
-its CONFIG_CRYPTO_SHA256 sibling.
+> diff --git a/kernel/bpf/keys.c b/kernel/bpf/keys.c
+> new file mode 100644
+> index 0000000000000..08549b3220c13
+> --- /dev/null
+> +++ b/kernel/bpf/keys.c
+> @@ -0,0 +1,68 @@
 
 [ ... ]
 
-> diff --git a/tools/testing/selftests/bpf/verify_sig_setup.sh b/tools/testing/selftests/bpf/verify_sig_setup.sh
-> index 202e6e6418fe2..2737c1a2bcfd6 100755
-> --- a/tools/testing/selftests/bpf/verify_sig_setup.sh
-> +++ b/tools/testing/selftests/bpf/verify_sig_setup.sh
+> +struct bpf_key *bpf_lookup_keyring(void)
+> +{
+> +	struct bpf_key *bkey;
+> +
+> +	if (!bpf_keyring)
+> +		return NULL;
+> +	if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
+> +	    !READ_ONCE(bpf_keyring->restrict_link))
+> +		return NULL;
+
+A subsystem pattern flags this as potentially concerning: the activation
+gate samples bpf_keyring->keys.nr_leaves_on_tree and
+bpf_keyring->restrict_link while holding neither bpf_keyring->sem nor
+rcu_read_lock().
+
+Both fields are written by assoc_array_apply_edit() and
+keyring_restrict() under down_write(&keyring->sem), and the stores are
+unmarked, so the READ_ONCE() loads form marked-read/unmarked-write pairs.
+
+The two existing analogues, drivers/md/dm-verity-verify-sig.c and
+fs/verity/signature.c, perform the same unlocked check with plain loads
+and no annotation at all, so this patch is if anything stricter than
+precedent.
+
+Could a keyring maintainer confirm whether the gate is safe as written,
+or whether all three sites need the keyring semaphore?
+
+> +
+> +	bkey = kmalloc_obj(*bkey);
+> +	if (!bkey)
+> +		return NULL;
+> +
+> +	bkey->key = bpf_keyring;
+> +	bkey->has_ref = false;
+> +	return bkey;
+> +}
+
+Does this overload struct bpf_key::has_ref in a way that breaks its
+existing consumers?
+
+bpf_lookup_keyring() introduces a third meaning for has_ref: a valid
+struct key pointer with has_ref == false. The existing contract,
+documented in bpf_lookup_system_key()'s kernel-doc, is that
+has_ref == false means bkey->key is not a real pointer at all - it is a
+sentinel understood only by verify_pkcs7_signature().
+
+bpf_lookup_user_key() sets has_ref = true for real keys;
+bpf_lookup_system_key() sets has_ref = false and stores
+(struct key *)(unsigned long)id. This new code stores a real, live,
+borrowed keyring pointer but flags it like a sentinel.
+
+The borrow itself is safe - bpf_keyring keeps keyring_alloc()'s initial
+reference for the lifetime of the system. But the two existing readers
+of has_ref now behave wrongly for this case:
+
+1) bpf_verify_pkcs7_signature() in kernel/bpf/helpers.c skips validation
+   for has_ref == false:
+
+     if (trusted_keyring->has_ref) {
+             ret = key_validate(trusted_keyring->key);
+             if (ret < 0)
+                     return ret;
+     }
+
+   Revocation and invalidation of the .bpf keyring are still caught
+   downstream by search_nested_keyrings(). Expiry is not caught anywhere.
+
+   keyring_search_rcu() never tests the root keyring's expiry, and
+   keyring_search_iterator() only tests the expiry of candidate leaf
+   keys. Because the perm mask includes KEY_USR_SETATTR, root can
+   'keyctl timeout <.bpf serial> <n>'; after the timeout the .bpf keyring
+   keeps validating BPF program signatures, whereas the same operation on
+   a caller-supplied keyring correctly makes the load fail with
+   -EKEYEXPIRED.
+
+2) bpf_key_serial() in include/linux/bpf.h is:
+
+     return key->has_ref ? key->key->serial : 0;
+
+   so the caller records prog->aux->sig.keyring_serial = 0 even though a
+   genuine serial is available here. BPF LSM programs read this field
+   directly, so they cannot see which keyring was used; they only get
+   the new keyring_type == BPF_SIG_KEYRING_BPF.
+
+Would it be clearer to either call key_validate() explicitly in
+bpf_lookup_keyring(), or split the sentinel meaning out of has_ref with
+a separate flag?
+
+> diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+> index e036ae20bf6b9..b45d201c25357 100644
+> --- a/kernel/bpf/verifier.c
+> +++ b/kernel/bpf/verifier.c
 
 [ ... ]
 
-> @@ -57,6 +57,57 @@ setup_rsa()
->  	keyctl link $key_id $keyring_id
->  }
->
-> +mldsa_supported()
-> +{
-> +	local tmp_dir="$1"
-> +
-> +	genkey_mldsa "${tmp_dir}" || return 1
-> +	: > ${tmp_dir}/probe
-> +	# Same digest as the caller signs with, see sign_buf_digest().
-> +	./sign-file -d sha512 ${tmp_dir}/signing_key.pem \
-> +		${tmp_dir}/signing_key.pem ${tmp_dir}/probe || return 1
-> +	rm -f ${tmp_dir}/probe ${tmp_dir}/probe.p7s
-> +}
-> +
-> +genkey_mldsa()
-> +{
-> +	local tmp_dir="$1"
-> +
-> +	echo "${x509_genkey_content}" > ${tmp_dir}/x509.genkey
-> +
-> +	# No -<digest> here: ML-DSA hashes the message itself, and openssl
-> +	# rejects an explicit digest for it.
-> +	openssl req -new -nodes -utf8 -days 36500 \
-> +			-batch -x509 -newkey ML-DSA-87 \
-> +			-config ${tmp_dir}/x509.genkey \
-> +			-outform PEM -out ${tmp_dir}/signing_key.pem \
-> +			-keyout ${tmp_dir}/signing_key.pem 2>&1
-> +
-> +	openssl x509 -in ${tmp_dir}/signing_key.pem -out \
-> +		${tmp_dir}/signing_key.der -outform der
-> +}
-> +
-> +mldsa_skip()
-> +{
-> +	local tmp_dir="$1"
-> +
-> +	rm -f ${tmp_dir}/x509.genkey ${tmp_dir}/signing_key.pem \
-> +		${tmp_dir}/signing_key.der ${tmp_dir}/probe \
-> +		${tmp_dir}/probe.p7s
-> +	exit 77
-> +}
+> @@ -21016,10 +21019,17 @@ static int bpf_prog_verify_signature(struct bpf_verifier_env *env,
+>  	if (!attr->signature_size ||
+>  	    attr->signature_size > KMALLOC_MAX_CACHE_SIZE)
+>  		return -EINVAL;
+> -	if (system_keyring_id_check(attr->keyring_id) == 0)
+> +	if (attr->keyring_id == KEY_SPEC_BPF_KEYRING) {
+> +		key = bpf_lookup_keyring();
+> +		if (!key) {
+> +			verbose(env, "the bpf keyring is empty or has not been restricted\n");
+> +			return -ENOKEY;
 
-A subsystem pattern flags this as potentially concerning: mldsa_supported()
-collapses every possible failure into a single 'unsupported' verdict. The
-calling code in signed_loader.c then reports:
+bpf_lookup_keyring() returns NULL for four distinct reasons:
 
-    printf("%s:SKIP:openssl has no ML-DSA support (needs 3.5+)\n", __func__);
+  kernel/bpf/keys.c:
+    if (!bpf_keyring)                              /* (a) never created */
+            return NULL;
+    if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
+        !READ_ONCE(bpf_keyring->restrict_link))
+            return NULL;                           /* (b) empty or (c) unrestricted */
+    bkey = kmalloc_obj(*bkey);
+    if (!bkey)
+            return NULL;                           /* (d) allocation failure */
 
-But `return 1` in mldsa_supported() is reached for any of: openssl missing or
-too old; `openssl req -newkey ML-DSA-87` failing for an unrelated reason;
-`openssl x509` failing; `./sign-file` not built or linked against an openssl
-that cannot CMS-sign ML-DSA; a write failure creating ${tmp_dir}/probe.
+(a) covers 'the keyring was never created' - if keyring_alloc() or
+keyring_restrict() failed at late_initcall, both leave bpf_keyring NULL
+after only pr_err(). It also covers CONFIG_KEYS=n builds, where
+bpf_lookup_keyring() is the static inline stub that unconditionally
+returns NULL.
 
-Every one of those reports as 'openssl has no ML-DSA support', and with the
-CHANGE-8 modification to catch() at line 145, the openssl/sign-file
-diagnostics are deleted for exit 77 cases. In a default
-(SELFTESTS_VERBOSE=0) run there is nothing left to distinguish 'ML-DSA
-genuinely absent' from 'ML-DSA present but the signing path is broken.'
+(d) is an -ENOMEM condition reported to userspace as -ENOKEY together
+with the message "empty or has not been restricted", which is actively
+misleading when debugging an OOM.
 
-Would narrowing the probe help here? For example, only treating a
-genkey_mldsa failure as unsupported, and treating a ./sign-file failure with
-a working key as a real error would keep the broken case visible.
-
-> +
-> +setup_mldsa()
-> +{
-> +	local tmp_dir="$1"
-> +
-> +	mldsa_supported "${tmp_dir}" || mldsa_skip "${tmp_dir}"
-> +	key_id=$(cat ${tmp_dir}/signing_key.der |
-> +		 keyctl padd asymmetric ebpf_testing_key @s)
-> +	keyring_id=$(keyctl newring ebpf_testing_keyring @s)
-> +	keyctl link $key_id $keyring_id
-> +}
-
-[ ... ]
-
-> @@ -91,7 +142,7 @@ catch()
->  	local exit_code="$1"
->  	local log_file="$2"
->
-> -	if [[ "${exit_code}" -ne 0 ]]; then
-> +	if [[ "${exit_code}" -ne 0 && "${exit_code}" -ne 77 ]]; then
->  		cat "${log_file}" >&3
->  	fi
-
-[ ... ]
+Could the message and errno distinguish these cases so the feedback is
+actionable when provisioning the keyring?
 
 
 ---
@@ -172,4 +193,4 @@ AI reviewed your patch. Please fix the bug or email reply why it's not a bug.
 See: https://github.com/kernel-patches/vmtest/blob/master/ci/claude/README.md
 
 CI run summary: https://github.com/kernel-patches/bpf/actions/runs/32991355707
---===============5992077780879722460==--
+--===============2876771852046386153==--
