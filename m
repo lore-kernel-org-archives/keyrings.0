@@ -1,778 +1,179 @@
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from bg-bec.cloudflare-smtp.org (bg-bec.cloudflare-smtp.org [104.30.16.142])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 448A9351C3B;
-	Thu, 27 Aug 2026 06:25:38 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 531A72FC893
+	for <keyrings@vger.kernel.org>; Thu, 27 Aug 2026 12:42:12 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=104.30.16.142
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787811940; cv=none; b=C/QCzC7dsZKouCglK3bJQfh7q0CGSsm+meVtMzMWt/PKxaI65x4T9qUUxVH2ZaLANU4BaGrTr+miygLwDReBEvRHbhv6I7iDtxouGt7mgqjZTVExpihiIBFoQ9S0QUGHoI7v+Y9SF+N0gQYCQwv3ufi4FofKijpjC1OXFRgokcc=
+	t=1787834536; cv=none; b=aYrY1/5XdJmEZ4dcRXdb/ly9nk6XVFeyY0UsVocef2NzdctRpERPJrOuWJlBR1h5TRn2YSg1HbhFguSSxt9jF4CCV8raUzmoMZ45b45tMKedG1u9+YDDxqKSIM1tKcE6xLOmoxAuudVMylDOhJPnNZdXsX9Tk8jknL4pWzeqwgE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787811940; c=relaxed/simple;
-	bh=GnmLu7YMeQRiC5xtBFbqInbE2DRNeuRqMOiBzbuxJSo=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=iuNr0k1Ah2ipTFO4HMmgmBNb2c9eb76EHjitNezLVNG/UPhNDr17KY44IZha6XaqjlZZplSyhDjjTI2fR82ZJdzrFHYYB8D3WsaAc1H2aQPy6AnfXJuC17SEeBQnXeqQlAnHCzoe0Hy5enbLDwrqTohp6X8tP1hWQGKF46N3DNg=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=HOp2l4BR; arc=none smtp.client-ip=148.163.156.1
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1787834536; c=relaxed/simple;
+	bh=6UdXvmcxiyNgsz6+w7pMYno+sCHdZX6CqOByXzxekDs=;
+	h=From:Message-ID:Date:Subject:To:MIME-Version:Content-Type; b=kzI0FrEUNQMskyZCCv3a5xVfXQbS8XisUs7y0w9iQDpLae50vT3xlxLZHC5hfpKqkTvtRUVv9s4wGxSVQ51X+zzE8HEltmJpm60M01Ywi9U7PSypxCsm+7UhTcXQjngwQ1DAc3Tk2mJ5CkiJygvKqqhC111pajVyb0M4eY5dG4A=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=bugs.sh; spf=pass smtp.mailfrom=cf-bounce.bugs.sh; dkim=pass (2048-bit key) header.d=cloudflare-smtp.org header.i=@cloudflare-smtp.org header.b=LIwHcUZ2; dkim=pass (2048-bit key) header.d=bugs.sh header.i=@bugs.sh header.b=aQx50E0u; arc=none smtp.client-ip=104.30.16.142
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=bugs.sh
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cf-bounce.bugs.sh
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="HOp2l4BR"
-Received: from pps.filterd (m0356517.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 67R3VVIW1823404;
-	Thu, 27 Aug 2026 06:25:23 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:date:from:in-reply-to:message-id
-	:mime-version:references:subject:to; s=pp1; bh=X2yKp8KODl7jyBAVu
-	L3HGsUW2Jbd4ijTx73X1Vy2WAA=; b=HOp2l4BRHPn/sJsNsec/sVHdwWsFNhgXK
-	n81NmS9ZI0P7Fpci5xeNPGwmcZl0cqi0Vk7z5iqnlVq3LH0svBjDrlcTMDJQd+XX
-	HECijYN4RxRtvId9t0srDt87qCa8ehldXXlv0Aef/dyMVtB0DzIX0dRTujxcyvPM
-	XBoPtrPWLV2cjvZ+ixruC0fAy7GlqukBOt9lVUu00UvYrd9o/1j12jKm5nZcb/Od
-	bwRQex8NEGN6DR41JsmzQ5cFLQdCxVDtt/pREM/i5bqoxX3KWBZkx0uyI/heCl9l
-	dzXu8yHqImhuHn9NcK7P9cX7+ynwdc4GdIGkgyMRx8BmRpYOSI5Ww==
-Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4g73g53n32-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Thu, 27 Aug 2026 06:25:22 +0000 (GMT)
-Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma12.dal12v.mail.ibm.com (8.18.1.7/8.18.1.7) with ESMTP id 67R6BFk2000452;
-	Thu, 27 Aug 2026 06:25:21 GMT
-Received: from smtprelay03.fra02v.mail.ibm.com ([9.218.2.224])
-	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4g7p3qeq88-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Thu, 27 Aug 2026 06:25:21 +0000 (GMT)
-Received: from smtpav01.fra02v.mail.ibm.com (smtpav01.fra02v.mail.ibm.com [10.20.54.100])
-	by smtprelay03.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 67R6PIOj32440780
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Thu, 27 Aug 2026 06:25:18 GMT
-Received: from smtpav01.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id E891920040;
-	Thu, 27 Aug 2026 06:25:17 +0000 (GMT)
-Received: from smtpav01.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id CAFAB20043;
-	Thu, 27 Aug 2026 06:25:01 +0000 (GMT)
-Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.ibm.com.com (unknown [9.76.202.253])
-	by smtpav01.fra02v.mail.ibm.com (Postfix) with ESMTP;
-	Thu, 27 Aug 2026 06:25:01 +0000 (GMT)
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: maddy@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com,
-        christophe.leroy@csgroup.eu, James.Bottomley@HansenPartnership.com,
-        jarkko@kernel.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, nayna@linux.ibm.com,
-        rnsastry@linux.ibm.com, ssrish@linux.ibm.com
-Subject: [PATCH 8/8] pseries/plpks/wrapkey: expose PKWM wrapping key management to userspace via sysfs
-Date: Thu, 27 Aug 2026 11:53:08 +0530
-Message-ID: <20260827062309.724808-9-ssrish@linux.ibm.com>
-X-Mailer: git-send-email 2.55.0
-In-Reply-To: <20260827062309.724808-1-ssrish@linux.ibm.com>
-References: <20260827062309.724808-1-ssrish@linux.ibm.com>
+	dkim=pass (2048-bit key) header.d=cloudflare-smtp.org header.i=@cloudflare-smtp.org header.b="LIwHcUZ2";
+	dkim=pass (2048-bit key) header.d=bugs.sh header.i=@bugs.sh header.b="aQx50E0u"
+DKIM-Signature: v=1; a=rsa-sha256; s=cf2024-1; d=cloudflare-smtp.org; c=relaxed/relaxed;
+	h=To:Subject:Date:From:Feedback-ID:from:reply-to:cc:resent-date
+	:resent-from:resent-to:resent-cc:in-reply-to:references:list-id:list-help
+	:list-unsubscribe:list-unsubscribe-post:list-subscribe:list-post
+	:list-owner:list-archive; t=1787834533; x=1788439333; bh=Jcox8l/ThO6XMTGwSm
+	80cpy3q3O7GlZqpuHdohAJm6g=; b=LIwHcUZ25iy/mXN08NFMVB7qwIFGlwzQBGUD+eGqFQgHM
+	fCHO0KP1JEU+emQY1POT/5+gZTR+a/QsGw1gW/P2mjm3HlnqH1CloTdWaoIS4prCUmTAUWTiseI
+	tjRV6OOI926wf+ZerFsqnkj1QYdrqrx8ItEVDGhppmRTWg6kNuHVa7h1WHc1/EShqh57BDyXxJ9
+	8mZzME2BuBbcEM9tF3SqnvyVJ5jfq0GYxQMATZ+Frdc0ENugzAaz52xr5lu/ypCPaxTCNjiOD4Y
+	yRrkbQq0gK0A8Dnom1fgyx9fPsplWaPZQpp/+fSGskpMm94t0e/5PrdqiwpaXxxIb+SS6CRw==;
+DKIM-Signature: v=1; a=rsa-sha256; s=cf-bounce; d=bugs.sh; c=relaxed/relaxed;
+	h=To:Subject:Date:From:Feedback-ID:from:reply-to:cc:resent-date
+	:resent-from:resent-to:resent-cc:in-reply-to:references:list-id:list-help
+	:list-unsubscribe:list-unsubscribe-post:list-subscribe:list-post
+	:list-owner:list-archive; t=1787834533; x=1788439333; bh=Jcox8l/ThO6XMTGwSm
+	80cpy3q3O7GlZqpuHdohAJm6g=; b=aQx50E0ugIVquDWiN5ftWUoNDdaOWWhgFulABPwYVmOls
+	iYQSlarDLs/Xh5LSililP+ZbdIqReFIXUuimtMpBf9Xr7pWxmIy2fkVEHlM8aGDPG4sm4zH7lUC
+	p3pc9vRE+UA64Il+17YnXt8LR5ceeoQuYyehezcYHMak+tFzyHsLzUb5J1QpVuQSgTcUG0rqbBR
+	AiY7TBbRai43MNa67fbSJinZIPY6zY7RcK1Ge3Jfy8RoTy3gqruqxRyx9SW/La+2qhoGHhfgM/I
+	IJrYDoVpKz3FKwGXmGTOaHLnDZ2E6Wa4hlCll+EcfzPWqSVjuYL0GnWNInAKTAAyDdDrISQA==;
+Feedback-ID: bugs.sh:5:6:Cloudflare
+From: co <co+6a581c4284f721d4@bugs.sh>
+Message-ID: <jS2KwfrOeQPAnc2xZL0obs0OW3eVUUvpe6Yt@bugs.sh>
+Date: Thu, 27 Aug 2026 12:42:08 +0000
+Subject: [BUG] security/keys: out-of-bounds in tpm2_unseal_trusted()
+To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, "James
+ Bottomley" <James.Bottomley@HansenPartnership.com>, "Jarkko Sakkinen" <jarkko@kernel.org>, "Mimi
+ Zohar" <zohar@linux.ibm.com>, "David Howells" <dhowells@redhat.com>, "Paul
+ Moore" <paul@paul-moore.com>, "James Morris" <jmorris@namei.org>, "Serge E.
+ Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Reinject: loops=2 maxloops=12
-X-Proofpoint-ORIG-GUID: 9h3Hccq7bhrOmIQ0gtJwST0LtE5Lz8Kc
-X-Proofpoint-Spam-Info: AW1haW4tMjYwODI3MDA0OCBTYWx0ZWRfX4WsaghuumOI0
- o6fHYgxAbMEYvUH0K05pXLJu1lzHyw4B8DOE0cE5WFyAwP3on9pTjM/CaKZM4+Qne5HJ34lsYnC
- c738fDVsLAvSRSosmnMd9w2Z6t9UkJo=
-X-Proofpoint-GUID: NU4h1gJS27UmDOdgHJilV3B0QMRBneKz
-X-Authority-Analysis: v=2.4 cv=JZyMa0KV c=1 sm=1 tr=0 ts=6a8fd853 cx=c_pps
- a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
- a=Sv0fKeRqtYgA:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
- a=U7nrCbtTmkRpXpFmAIza:22 a=VnNF1IyMAAAA:8 a=Dm_dBKYgswZ8qGTShzQA:9
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwODI3MDA0OCBTYWx0ZWRfX/xl5Z+jfN8lK
- Dk5iNH0iOG0CzI/vZREIbyy46qcxB/QsXkSKK6gkUAEl2eay9nq3Yv5YicvjYnp7Ze0apD+DR9z
- KuZDBPSVW33vPcUiJJ04RYWw7LcKKwuOP1tUfBsakfoR/iG3qqKBG2VBhF4j6wLUz69vlccGJ9x
- dqDg4PngYWwrleIQ/RFEdIMhF9g000cq1nyjNUSyPXB/zBsxJSlvIImA/fDILfHE2jFmEomGBWK
- eY4mWJGZbv5NHtRssexBnVh8NjaG+1Sh+HoDAaldvKfiQriOmAGCiGzbcJsHpSm1PAjWrJtayRo
- srSX/RxOKOTFI+5eChVZdvWKJrLX3pH6vtmBM5t2tgZ45Cpw0h22YbAuzbYkva6BsMlWD22G9Py
- 9OXqOZp4LJu4cX4uXaGuBDMhxi9pGVv1TurYiTiCA4ZXf1pBpg3XQIbkS4DT6rHmKHrCGqhV6qY
- VE9nndGPlEDnfO/hqiQ==
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-08-27_02,2026-08-26_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- spamscore=0 clxscore=1015 adultscore=0 priorityscore=1501 impostorscore=0
- malwarescore=0 bulkscore=0 lowpriorityscore=0 suspectscore=0 phishscore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2606150000 definitions=main-2608270048
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-The PKWM trusted source currently uses a single default wrapping key
-created during initialization. However, PKWM also supports user-created
-wrapping keys for better isolation between trusted keys.
+We found a bug reachable in:
 
-Expose wrapping key lifecycle operations through sysfs to allow users to
-create and manage their own wrapping keys.
+    path    security/keys/trusted-keys
+    crash   out-of-bounds in tpm2_unseal_trusted()
+    commit  2709dd5ae32f ("Merge tag 'sched-urgent-2026-08-22' of git://git=
+.kernel.org/pub/scm/linux/kernel/git/tip/tip")
 
-Create a sysfs interface at /sys/firmware/plpks/wrapkey with the following
-attributes:
+Config, environment, the sanitizer report and a C reproducer follow.
 
-  create        - Create a new wrapping key with a user-provided label
-  delete        - Delete a revoked wrapping key by label
-  revoke        - Revoke a wrapping key by label
-  unrevoke      - Unrevoke a previously revoked wrapping key by label
-  list_active   - List labels of all active (non-revoked) wrapping keys
-  list_revoked  - List labels of all revoked wrapping keys
+=3D=3D Notes =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+    If you patch the bug based on our artifacts, a tag would be
+    appreciated:
 
-User-provided labels are validated to contain only alphanumeric characters.
+Reported-by: co+6a581c4284f721d4@bugs.sh
 
-Wrapping key lifecycle constraints:
-- A wrapping key must be revoked before it can be deleted
-- Revoked wrapping keys cannot be used for wrap operations until unrevoked
-- The default wrapping key cannot be revoked or deleted; it always appears
-  in list_active
+    Everything in this mail is validated by the reproducer below.
 
-The wrapping keys themselves are confidential objects stored in PLPKS. Only
-the user-provided labels are exposed to userspace for identification and
-management purposes.
+    We also hold an LLM-generated root-cause analysis and a candidate
+    patch. The patch passes an A/B test: the same reproducer panics the
+    unpatched kernel and runs clean on the patched one. Neither has had
+    human review, so both still require validation before you send or
+    apply them. Available on:
 
-These user-created wrapping keys can be used in seal/unseal operations via
-the wrapping_key=<label> option.
+        patch.diff  https://bugs.sh/b/6a581c4284f721d4/patch.diff
+        report.md   https://bugs.sh/b/6a581c4284f721d4/report.md
 
-Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
+    This is an open science project. The code and the full set of PoCs
+    are not public at this moment, as we intend to disclose our findings
+    in an ethical way.
+
+    Happy to test patches. Complaints and suggestions about our work
+    are welcome at:
+
+        cedalion@bugs.sh
+
+=3D=3D Environment =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+    Reproduced on  2709dd5ae32f ("Merge tag 'sched-urgent-2026-08-22' of gi=
+t://git.kernel.org/pub/scm/linux/kernel/git/tip/tip")
+    VM setup       https://bugs.sh/b/6a581c4284f721d4/run.sh
+    config         https://bugs.sh/b/6a581c4284f721d4/config.gz
+    poc            https://bugs.sh/b/6a581c4284f721d4/repro.c
+
+=3D=3D Sanitizer Report =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+BUG: KASAN: slab-out-of-bounds in tpm2_unseal_trusted (./include/linux/unal=
+igned.h:48 (discriminator 1) security/keys/trusted-keys/trusted_tpm2.c:408 =
+(discriminator 1) security/keys/trusted-keys/trusted_tpm2.c:595 (discrimina=
+tor 1))
+Read of size 2 at addr ffff8880125db7aa by task exploit/149
+CPU: 0 UID: 1000 PID: 149 Comm: exploit Tainted: G        W           7.2.0=
++ #31 PREEMPTLAZY
+Call Trace:
+dump_stack_lvl (lib/dump_stack.c:94 lib/dump_stack.c:120)
+print_report (mm/kasan/report.c:378 mm/kasan/report.c:482)
+kasan_report (mm/kasan/report.c:595)
+tpm2_unseal_trusted (./include/linux/unaligned.h:48 (discriminator 1) secur=
+ity/keys/trusted-keys/trusted_tpm2.c:408 (discriminator 1) security/keys/tr=
+usted-keys/trusted_tpm2.c:595 (discriminator 1))
+trusted_tpm_unseal (security/keys/trusted-keys/trusted_tpm1.c:928)
+trusted_instantiate (security/keys/trusted-keys/trusted_core.c:196)
+__key_instantiate_and_link (security/keys/key.c:446)
+__key_create_or_update (security/keys/key.c:941)
+key_create_or_update (security/keys/key.c:1021)
+__do_sys_add_key (security/keys/keyctl.c:134)
+do_syscall_64 (arch/x86/entry/syscall_64.c:61 arch/x86/entry/syscall_64.c:8=
+4)
+entry_SYSCALL_64_after_hwframe (arch/x86/entry/entry_64.S:121)
+Allocated by task 149:
+kasan_save_stack (mm/kasan/common.c:57)
+kasan_save_track (mm/kasan/common.c:78)
+__kasan_kmalloc (mm/kasan/common.c:398 mm/kasan/common.c:415)
+__kmalloc_noprof (./include/linux/kasan.h:263 mm/slub.c:5337 mm/slub.c:5362)
+tpm2_unseal_trusted (./include/linux/slab.h:992 security/keys/trusted-keys/=
+trusted_tpm2.c:119 security/keys/trusted-keys/trusted_tpm2.c:384 security/k=
+eys/trusted-keys/trusted_tpm2.c:595)
+trusted_tpm_unseal (security/keys/trusted-keys/trusted_tpm1.c:928)
+trusted_instantiate (security/keys/trusted-keys/trusted_core.c:196)
+__key_instantiate_and_link (security/keys/key.c:446)
+__key_create_or_update (security/keys/key.c:941)
+key_create_or_update (security/keys/key.c:1021)
+__do_sys_add_key (security/keys/keyctl.c:134)
+do_syscall_64 (arch/x86/entry/syscall_64.c:61 arch/x86/entry/syscall_64.c:8=
+4)
+entry_SYSCALL_64_after_hwframe (arch/x86/entry/entry_64.S:121)
+The buggy address belongs to the object at ffff8880125db7a0
+which belongs to the cache kmalloc-8 of size 8
+The buggy address is located 2 bytes to the right of
+allocated 8-byte region [ffff8880125db7a0, ffff8880125db7a8)
+The buggy address belongs to the physical page:
+page dumped because: kasan: bad access detected
+Memory state around the buggy address:
+ffff8880125db680: 00 fc fc fc fa fc fc fc 00 fc fc fc fc fc fc fc
+ffff8880125db700: fc fc fc fc fc fc fc fc fa fc fc fc 00 fc fc fc
+>ffff8880125db780: fc fc fc fc 00 fc fc fc fa fc fc fc fc fc fc fc
+^
+ffff8880125db800: fc fc fc fc fa fc fc fc 07 fc fc fc fc fc fc fc
+ffff8880125db880: fa fc fc fc fc fc fc fc fc fc fc fc 00 fc fc fc
+
+
 ---
- .../ABI/testing/sysfs-firmware-plpks          | 106 +++++
- arch/powerpc/include/asm/plpks.h              |   9 +
- arch/powerpc/platforms/pseries/Kconfig        |  13 +
- arch/powerpc/platforms/pseries/Makefile       |   1 +
- arch/powerpc/platforms/pseries/plpks-sysfs.c  |  11 +
- .../platforms/pseries/plpks-wrapkey-sysfs.c   | 407 ++++++++++++++++++
- arch/powerpc/platforms/pseries/plpks.c        |   1 -
- 7 files changed, 547 insertions(+), 1 deletion(-)
- create mode 100644 arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
+The report format is based on syzbot bug report.
 
-diff --git a/Documentation/ABI/testing/sysfs-firmware-plpks b/Documentation/ABI/testing/sysfs-firmware-plpks
-index cba061e4eee2..ebcdef17a8a8 100644
---- a/Documentation/ABI/testing/sysfs-firmware-plpks
-+++ b/Documentation/ABI/testing/sysfs-firmware-plpks
-@@ -56,3 +56,109 @@ Description:	Bitmask of the wrapping features indicating the wrapping
- 		algorithms that are supported for the H_PKS_WRAP_OBJECT requests
- 		, represented as a 8 byte hexadecimal ASCII string. Consult the
- 		hypervisor documentation for what these flags mean.
-+
-+What:		/sys/firmware/plpks/wrapkey
-+Date:		August 2026
-+Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-+Description:	This directory provides the interface for creating and managing
-+		user-created PKWM wrapping keys.
-+
-+		The directory is present only when CONFIG_PLPKS_WRAPKEY_SYSFS is
-+		enabled and the system supports the H_PKS_{UN}REVOKE_OBJECT
-+		interfaces.
-+
-+		Only alphanumeric characters are accepted in wrapping key
-+		labels. The wrapping keys themselves are confidential PLPKS
-+		objects and are not exposed to userspace. Only their labels are
-+		exposed for identification and management.
-+
-+		Each write is processed as an independent operation and accepts
-+		exactly one wrapping key label. The resulting state can be
-+		verified through list_active or list_revoked, as appropriate.
-+
-+		The default wrapping key cannot be revoked or deleted.
-+
-+What:		/sys/firmware/plpks/wrapkey/create
-+Date:		August 2026
-+Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-+Description:	(WO) Create a wrapping key with the specified label.
-+
-+		On success, the label appears in list_active.
-+
-+		For example, to create a wrapping key labelled "wk1":
-+
-+			echo -n wk1 > /sys/firmware/plpks/wrapkey/create
-+
-+		or:
-+
-+			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/create
-+
-+What:		/sys/firmware/plpks/wrapkey/delete
-+Date:		August 2026
-+Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-+Description:	(WO) Delete a revoked wrapping key identified by the specified
-+		label. A wrapping key must be revoked before it can be deleted.
-+
-+		On success, the label no longer appears in list_revoked.
-+
-+		For example, to delete a revoked wrapping key labelled "wk1":
-+
-+			echo -n wk1 > /sys/firmware/plpks/wrapkey/delete
-+
-+		or:
-+
-+			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/delete
-+
-+What:		/sys/firmware/plpks/wrapkey/revoke
-+Date:		August 2026
-+Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-+Description:	(WO) Revoke a wrapping key identified by the specified label. A
-+		revoked wrapping key cannot be used for seal or unseal
-+		operations until it is unrevoked.
-+
-+		On success, the label appears in list_revoked and no longer
-+		appears in list_active.
-+
-+		For example, to revoke a wrapping key labelled "wk1":
-+
-+			echo -n wk1 > /sys/firmware/plpks/wrapkey/revoke
-+
-+		or:
-+
-+			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/revoke
-+
-+What:		/sys/firmware/plpks/wrapkey/unrevoke
-+Date:		August 2026
-+Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-+Description:	(WO) Unrevoke a revoked wrapping key identified by the specified
-+		label.
-+
-+		On success, the label appears in list_active and no longer
-+		appears in list_revoked.
-+
-+		For example, to unrevoke a revoked wrapping key labelled "wk1":
-+
-+			echo -n wk1 > /sys/firmware/plpks/wrapkey/unrevoke
-+
-+		or:
-+
-+			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/unrevoke
-+
-+What:		/sys/firmware/plpks/wrapkey/list_active
-+Date:		August 2026
-+Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-+Description:	(RO) List the labels of active, non-revoked wrapping keys. The
-+		default wrapping key is always included in this list.
-+
-+		For example:
-+
-+			cat /sys/firmware/plpks/wrapkey/list_active
-+
-+What:		/sys/firmware/plpks/wrapkey/list_revoked
-+Date:		August 2026
-+Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-+Description:	(RO) List the labels of revoked wrapping keys.
-+
-+		For example:
-+
-+			cat /sys/firmware/plpks/wrapkey/list_revoked
-diff --git a/arch/powerpc/include/asm/plpks.h b/arch/powerpc/include/asm/plpks.h
-index badb07afe749..420945aeeb0e 100644
---- a/arch/powerpc/include/asm/plpks.h
-+++ b/arch/powerpc/include/asm/plpks.h
-@@ -56,6 +56,8 @@
- // Component for a PKWM wrapping key
- #define PLPKS_WRAPKEY_COMPONENT	"PLPKSWR"
- 
-+#define PLPKS_OBJLABEL_LEN_FIELD_SIZE	2
-+
- struct plpks_var {
- 	char *component;
- 	u8 *name;
-@@ -144,6 +146,9 @@ int plpks_get_object_labels(u8 **output_buf, u64 *output_len,
- 
- bool plpks_revoke_is_supported(void);
- 
-+int plpks_init_child_kobj(struct kobject *kobj, const struct kobj_type *ktype,
-+			  const char *name);
-+
- #else // CONFIG_PSERIES_PLPKS
- static inline bool plpks_is_available(void) { return false; }
- static inline u16 plpks_get_passwordlen(void) { BUILD_BUG(); }
-@@ -151,6 +156,10 @@ static inline void plpks_early_init_devtree(void) { }
- static inline int plpks_populate_fdt(void *fdt) { BUILD_BUG(); }
- static inline int plpks_config_create_softlink(struct kobject *from)
- 						{ return 0; }
-+static inline int plpks_init_child_kobj(struct kobject *kobj,
-+					const struct kobj_type *ktype,
-+					const char *name)
-+						{ return 0; }
- #endif // CONFIG_PSERIES_PLPKS
- 
- #endif // _ASM_POWERPC_PLPKS_H
-diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-index 74910ce3a541..77afd9fd6c90 100644
---- a/arch/powerpc/platforms/pseries/Kconfig
-+++ b/arch/powerpc/platforms/pseries/Kconfig
-@@ -216,3 +216,16 @@ config PPC_SVM
- 	 those guests.
- 
- 	 If unsure, say "N".
-+
-+config PLPKS_WRAPKEY_SYSFS
-+	bool "Enable sysfs based user interface for managing PKWM wrapping keys"
-+	default n
-+	depends on PSERIES_PLPKS
-+	depends on SYSFS
-+	depends on TRUSTED_KEYS_PKWM
-+	help
-+	  The PKWM trusted source has support for user-created wrapping keys
-+	  that are managed and controlled by OS. These wrapping keys can be
-+	  created, revoked, unrevoked, deleted, and their labels can be viewed
-+	  via the sysfs. Say Y if you have PLPKS enabled and want to setup PKWM
-+	  as the trusted source.
-diff --git a/arch/powerpc/platforms/pseries/Makefile b/arch/powerpc/platforms/pseries/Makefile
-index 3ced289a675b..c604be40f546 100644
---- a/arch/powerpc/platforms/pseries/Makefile
-+++ b/arch/powerpc/platforms/pseries/Makefile
-@@ -33,6 +33,7 @@ obj-$(CONFIG_FA_DUMP)		+= rtas-fadump.o
- obj-$(CONFIG_PSERIES_PLPKS)	+= plpks.o plpks-sysfs.o
- obj-$(CONFIG_PPC_SECURE_BOOT)	+= plpks-secvar.o
- obj-$(CONFIG_PSERIES_PLPKS_SED)	+= plpks_sed_ops.o
-+obj-$(CONFIG_PLPKS_WRAPKEY_SYSFS) += plpks-wrapkey-sysfs.o
- obj-$(CONFIG_SUSPEND)		+= suspend.o
- obj-$(CONFIG_PPC_VAS)		+= vas.o vas-sysfs.o
- 
-diff --git a/arch/powerpc/platforms/pseries/plpks-sysfs.c b/arch/powerpc/platforms/pseries/plpks-sysfs.c
-index f2436229f323..0ca13bb6405f 100644
---- a/arch/powerpc/platforms/pseries/plpks-sysfs.c
-+++ b/arch/powerpc/platforms/pseries/plpks-sysfs.c
-@@ -55,6 +55,17 @@ static umode_t plpks_config_attr_is_visible(struct kobject *kobj,
- 	return attr->mode;
- }
- 
-+int plpks_init_child_kobj(struct kobject *kobj, const struct kobj_type *ktype,
-+			  const char *name)
-+{
-+	kobject_init(kobj, ktype);
-+
-+	if (!plpks_kobj)
-+		return -ENODEV;
-+
-+	return kobject_add(kobj, plpks_kobj, "%s", name);
-+}
-+
- int plpks_config_create_softlink(struct kobject *from)
- {
- 	if (!plpks_config_kobj)
-diff --git a/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c b/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
-new file mode 100644
-index 000000000000..7493d3f58546
---- /dev/null
-+++ b/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
-@@ -0,0 +1,407 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * Copyright (C) 2025 IBM Corporation <ssrish@linux.ibm.com>
-+ *
-+ * This code exposes wrapping key management options to the user via the
-+ * sysfs
-+ */
-+
-+#define pr_fmt(fmt) "wrapkey-sysfs: " fmt
-+#define PLPKS_WRAPKEY_REVOKED 1
-+#define PLPKS_WRAPKEY_UNREVOKED 0
-+
-+#include <linux/slab.h>
-+#include <linux/compat.h>
-+#include <linux/string.h>
-+#include <linux/of.h>
-+#include <linux/ctype.h>
-+#include <linux/unaligned.h>
-+#include <asm/plpks.h>
-+
-+static struct kobject *wrapkey_kobj;
-+
-+static bool is_wrapkey_label_alnum(const char *key_label, size_t len)
-+{
-+	size_t i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (!isalnum((unsigned char)key_label[i])) {
-+			pr_err("key label <%*pE> is not alphanumeric\n",
-+			       (int)len, key_label);
-+			return false;
-+		}
-+	}
-+
-+	return true;
-+}
-+
-+static ssize_t list_key_labels(char *buf, u8 *obj_labels_buf,
-+			       u64 obj_labels_count, int revoked)
-+{
-+	struct plpks_var var = {0};
-+	u8 *obj_labels_buf_ptr, *comp_prefix;
-+	u8 *key_label_ptr;
-+	u16 obj_label_len;
-+	int len = 0;
-+	int is_revoked;
-+	u64 i;
-+
-+	var.os = PLPKS_VAR_LINUX;
-+	var.component = PLPKS_WRAPKEY_COMPONENT;
-+	obj_labels_buf_ptr = obj_labels_buf;
-+
-+	for (i = 0; i < obj_labels_count; ++i) {
-+		obj_label_len = get_unaligned_be16(obj_labels_buf_ptr);
-+		comp_prefix = obj_labels_buf_ptr +
-+			      PLPKS_OBJLABEL_LEN_FIELD_SIZE;
-+
-+		var.namelen = obj_label_len - PLPKS_MAX_LABEL_ATTR_SIZE;
-+		var.name = kzalloc(var.namelen + 1, GFP_KERNEL);
-+
-+		if (!var.name)
-+			return -ENOMEM;
-+
-+		key_label_ptr = comp_prefix + PLPKS_MAX_LABEL_ATTR_SIZE;
-+		memcpy(var.name, key_label_ptr, var.namelen);
-+
-+		is_revoked = plpks_is_wrapping_key_revoked(&var);
-+		if (is_revoked == revoked)
-+			len += sysfs_emit_at(buf, len, "<%s>\n",
-+					     (char *)var.name);
-+		else if (is_revoked < 0)
-+			pr_warn("Failed to get revocation status for <%s>\n",
-+				(char *)var.name);
-+
-+		kfree(var.name);
-+		obj_labels_buf_ptr = key_label_ptr + var.namelen;
-+	}
-+
-+	return len;
-+}
-+
-+static ssize_t list_active_show(struct kobject *kobj,
-+				struct kobj_attribute *attr, char *buf)
-+{
-+	u8 *obj_labels_buf;
-+	u64 obj_labels_count = 0;
-+	int rc;
-+
-+	rc = plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
-+				     PLPKS_WRAPKEY_COMPONENT);
-+	if (rc) {
-+		pr_err("Retrieving object labels failed. rc=%d\n", rc);
-+		goto out;
-+	}
-+
-+	rc = list_key_labels(buf, obj_labels_buf, obj_labels_count,
-+			     PLPKS_WRAPKEY_UNREVOKED);
-+
-+out:
-+	kfree(obj_labels_buf);
-+	return rc;
-+}
-+
-+static ssize_t list_revoked_show(struct kobject *kobj,
-+				 struct kobj_attribute *attr, char *buf)
-+{
-+	u8 *obj_labels_buf;
-+	u64 obj_labels_count = 0;
-+	int rc;
-+
-+	rc = plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
-+				     PLPKS_WRAPKEY_COMPONENT);
-+	if (rc) {
-+		pr_err("Retrieving object labels failed. rc=%d\n", rc);
-+		goto out;
-+	}
-+
-+	rc = list_key_labels(buf, obj_labels_buf, obj_labels_count,
-+			     PLPKS_WRAPKEY_REVOKED);
-+
-+out:
-+	kfree(obj_labels_buf);
-+	return rc;
-+}
-+
-+static ssize_t create_store(struct kobject *kobj, struct kobj_attribute *attr,
-+			    const char *buf, size_t count)
-+{
-+	struct plpks_var var = {0};
-+	int rc;
-+
-+	if (!capable(CAP_SYS_ADMIN)) {
-+		rc = -EPERM;
-+		goto out;
-+	}
-+
-+	if (!count) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (count > PLPKS_MAX_NAME_SIZE) {
-+		rc = -ENAMETOOLONG;
-+		goto out;
-+	}
-+
-+	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-+		pr_warn("<%s> creation is restricted to pkwm init\n",
-+			PLPKS_DEFAULT_WRAPKEY_LABEL);
-+		rc = -EPERM;
-+		goto out;
-+	}
-+
-+	if (!is_wrapkey_label_alnum(buf, count)) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	var.name = kstrndup(buf, count, GFP_KERNEL);
-+	if (!var.name) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	var.namelen = count;
-+	var.policy = PLPKS_WRAPPINGKEY;
-+	var.os = PLPKS_VAR_LINUX;
-+	var.component = PLPKS_WRAPKEY_COMPONENT;
-+
-+	rc = plpks_gen_wrapping_key(&var);
-+	if (rc) {
-+		pr_err("creation of wrapping key <%s> failed. rc = %d\n",
-+		       (char *)var.name, rc);
-+		goto out;
-+	}
-+
-+	rc = count;
-+out:
-+	kfree(var.name);
-+	return rc;
-+}
-+
-+static ssize_t revoke_store(struct kobject *kobj, struct kobj_attribute *attr,
-+			    const char *buf, size_t count)
-+{
-+	struct plpks_var var = {0};
-+	int rc;
-+
-+	if (!capable(CAP_SYS_ADMIN)) {
-+		rc = -EPERM;
-+		goto out;
-+	}
-+
-+	if (!count) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (count > PLPKS_MAX_NAME_SIZE) {
-+		rc = -ENAMETOOLONG;
-+		goto out;
-+	}
-+
-+	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-+		pr_warn("<%s> must not be revoked\n",
-+			PLPKS_DEFAULT_WRAPKEY_LABEL);
-+		rc = -EPERM;
-+		goto out;
-+	}
-+
-+	if (!is_wrapkey_label_alnum(buf, count)) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	var.name = kstrndup(buf, count, GFP_KERNEL);
-+	if (!var.name) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	var.namelen = count;
-+	var.os = PLPKS_VAR_LINUX;
-+	var.component = PLPKS_WRAPKEY_COMPONENT;
-+
-+	rc = plpks_revoke_wrapping_key(&var);
-+
-+	if (rc) {
-+		pr_err("revocation of wrapping key <%s> failed. rc = %d\n",
-+		       (char *)var.name, rc);
-+		goto out;
-+	}
-+
-+	rc = count;
-+out:
-+	kfree(var.name);
-+	return rc;
-+}
-+
-+static ssize_t unrevoke_store(struct kobject *kobj, struct kobj_attribute *attr,
-+			      const char *buf, size_t count)
-+{
-+	struct plpks_var var = {0};
-+	int rc;
-+
-+	if (!capable(CAP_SYS_ADMIN)) {
-+		rc = -EPERM;
-+		goto out;
-+	}
-+
-+	if (!count) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (count > PLPKS_MAX_NAME_SIZE) {
-+		rc = -ENAMETOOLONG;
-+		goto out;
-+	}
-+
-+	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-+		pr_warn("unrevoke on <%s> is invalid\n",
-+			PLPKS_DEFAULT_WRAPKEY_LABEL);
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (!is_wrapkey_label_alnum(buf, count)) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	var.name = kstrndup(buf, count, GFP_KERNEL);
-+	if (!var.name) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	var.namelen = count;
-+	var.os = PLPKS_VAR_LINUX;
-+	var.component = PLPKS_WRAPKEY_COMPONENT;
-+
-+	rc = plpks_unrevoke_wrapping_key(&var);
-+
-+	if (rc) {
-+		pr_err("un-revocation of wrapping key <%s> failed. rc = %d\n",
-+		       (char *)var.name, rc);
-+		goto out;
-+	}
-+
-+	rc = count;
-+out:
-+	kfree(var.name);
-+	return rc;
-+}
-+
-+static ssize_t delete_store(struct kobject *kobj, struct kobj_attribute *attr,
-+			    const char *buf, size_t count)
-+{
-+	struct plpks_var var = {0};
-+	int rc;
-+
-+	if (!capable(CAP_SYS_ADMIN)) {
-+		rc = -EPERM;
-+		goto out;
-+	}
-+
-+	if (!count) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (count > PLPKS_MAX_NAME_SIZE) {
-+		rc = -ENAMETOOLONG;
-+		goto out;
-+	}
-+
-+	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-+		pr_warn("<%s> must not be deleted\n",
-+			PLPKS_DEFAULT_WRAPKEY_LABEL);
-+		rc = -EPERM;
-+		goto out;
-+	}
-+
-+	if (!is_wrapkey_label_alnum(buf, count)) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	var.name = kstrndup(buf, count, GFP_KERNEL);
-+	if (!var.name) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	var.namelen = count;
-+	var.os = PLPKS_VAR_LINUX;
-+	var.component = PLPKS_WRAPKEY_COMPONENT;
-+
-+	rc = plpks_del_wrapping_key(&var);
-+
-+	if (rc) {
-+		pr_err("deletion of wrapping key <%s> failed. rc = %d\n",
-+		       (char *)var.name, rc);
-+		goto out;
-+	}
-+
-+	rc = count;
-+out:
-+	kfree(var.name);
-+	return rc;
-+}
-+
-+static struct kobj_attribute view_active_attr = __ATTR_RO(list_active);
-+
-+static struct kobj_attribute view_revoked_attr = __ATTR_RO(list_revoked);
-+
-+static struct kobj_attribute create_attr = __ATTR_WO(create);
-+
-+static struct kobj_attribute revoke_attr = __ATTR_WO(revoke);
-+
-+static struct kobj_attribute unrevoke_attr = __ATTR_WO(unrevoke);
-+
-+static struct kobj_attribute delete_attr = __ATTR_WO(delete);
-+
-+static struct attribute *wrapkey_attrs[] = {
-+	&view_active_attr.attr,
-+	&view_revoked_attr.attr,
-+	&create_attr.attr,
-+	&revoke_attr.attr,
-+	&unrevoke_attr.attr,
-+	&delete_attr.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group wrapkey_attr_group = {
-+	.attrs = wrapkey_attrs,
-+};
-+__ATTRIBUTE_GROUPS(wrapkey_attr);
-+
-+static const struct kobj_type wrapkey_ktype = {
-+	.sysfs_ops	= &kobj_sysfs_ops,
-+	.default_groups = wrapkey_attr_groups,
-+};
-+
-+static __init int wrapkey_sysfs_init(void)
-+{
-+	int rc;
-+
-+	if (!plpks_revoke_is_supported()) {
-+		pr_err("H_PKS_{UN}REVOKE_OBJECT interface not supported\n");
-+		return -ENODEV;
-+	}
-+
-+	wrapkey_kobj = kzalloc_obj(*wrapkey_kobj);
-+	if (!wrapkey_kobj)
-+		return -ENOMEM;
-+
-+	rc = plpks_init_child_kobj(wrapkey_kobj, &wrapkey_ktype, "wrapkey");
-+
-+	if (rc)
-+		kobject_put(wrapkey_kobj);
-+
-+	return rc;
-+}
-+
-+late_initcall(wrapkey_sysfs_init);
-diff --git a/arch/powerpc/platforms/pseries/plpks.c b/arch/powerpc/platforms/pseries/plpks.c
-index f8c263e29bb6..7edeca7eee62 100644
---- a/arch/powerpc/platforms/pseries/plpks.c
-+++ b/arch/powerpc/platforms/pseries/plpks.c
-@@ -25,7 +25,6 @@
-  */
- #define PLPKS_OBJLABEL_BUF_MAX	2550
- 
--#define PLPKS_OBJLABEL_LEN_FIELD_SIZE	2
- #define PLPKS_OBJLABEL_PREFIX_LEN	8
- 
- #define PLPKS_WRAP_INTERFACE_BIT	3
--- 
-2.52.0
+This report is generated by a bot. It may contain errors.
+See https://github.com/n132/cedalion for more information.
+
+For any issue with this report, reach out to cedalion@bugs.sh
+
+If the report is already addressed, let us know by replying with:
+#co fix: <commit hash>
+
+If the report is a duplicate of another one, reply with:
+#co dup: <lore link>
+
+If you want to undo deduplication, reply with:
+#co undup
+
 
