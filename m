@@ -1,183 +1,146 @@
-Received: from mail-ej1-f53.google.com (mail-ej1-f53.google.com [209.85.218.53])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 11D183AD51C
-	for <keyrings@vger.kernel.org>; Wed, 26 Aug 2026 19:51:06 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.218.53
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9674435CB60;
+	Thu, 27 Aug 2026 06:23:46 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787773870; cv=none; b=Upcbve44RNR/CsDeDnVVNVU8ZTWRv157mBemhTLn0J0etQ/L+VTRMDXnBd5D6/yjzZMm5COfMBz21NkXsl0EujrFmogPk/9M8q7wlhzeeocBCpqz4V3eMzEzzg0eJ/gYACsP4cCBMCvEKo4fQWkdmjUxW7tAEaolQM8eRnp4G1c=
+	t=1787811828; cv=none; b=XFZFoY1LXMOIrLP/OKlMAyh2gBTqCfdU2BA7Z7QzcTEMKv5xKoPviieYDip/ZtAFpBWkZwoJCyoJohah+pZI5g0hm4PboE81z9dbBySGcWCc+mssxBdW84eaWGtTTa6wK9E6kefNNBDvEjaf4AmQ+jXRoQi5eSZ5Hsh/rSq01nM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787773870; c=relaxed/simple;
-	bh=M+TpnqIzx9YzVakWndAoYkuS3Ivh0lBQkdoao0Agnh8=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=etqmGmEXCM/kJenB4S2sap99VfKIUh8p5xkAWt0LwJQMcNB9ogHcyqRE7v1I5P2Yo/Mf2XOuZkA4bdq7oxmTAfrvSmDZ7wZ8zC9hbzH2a0aLiK2c1ZbuU1ZKtJg78Ucm6ljj8l93ZQpvyn/2ntOujLZAAdbSb2I0fCWeBs0iCJQ=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win; spf=pass smtp.mailfrom=gmail.com; arc=none smtp.client-ip=209.85.218.53
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
-Received: by mail-ej1-f53.google.com with SMTP id a640c23a62f3a-c1677c91969so155923066b.1
-        for <keyrings@vger.kernel.org>; Wed, 26 Aug 2026 12:51:06 -0700 (PDT)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1787773864; x=1788378664;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=1ffOGWLkNU0B5wefleM0f4kOcS8WHnfV6s3VJ7x4ll4=;
-        b=npv8OhZIEnSEPHTVFcA4a37VSSOW8bvt25Ky8mycVEELiNDb8sUAjDQldSVoZ1GOPy
-         CdG7BPKIUQmcn+oXDPPL6eHo5bOFkgC8PYpLp1i9KSvmeaFcDld+u4SU+XMPT6Zp3VhN
-         ZdUTehVC8Z+bLJcuQHJkPQtNo4nJIayqcF6i0OD3mD4aVRUemooWe9r+CavcCMm9wFct
-         OH+DEj0tyUHE35rI76WtYM2M8d+g8Agp6Mg1feEy1dFh9DYuYvJYZiEPnZJaEvwHEGmz
-         c4Q3KBRv+3VwsLY1SxzR6gpUHgwfcB+M4zZM1g4kWg2DcVIkWYQuvENJQfstYceVxwjl
-         InlA==
-X-Forwarded-Encrypted: i=1; AHgh+RrzHiEgBuyBdANhD0QvVssW8ICr4lF/ycLk3QsJ51k8JUx2lxS0Z9b9kuhQhX3wP/hMVHm0kl89ig==@vger.kernel.org
-X-Gm-Message-State: AFuF++kNAmXIMB+kei1CvOdCnji7+Ml8i+dGYjFRmi8Xz/rivWa/I0DK
-	hlS4TU3Jw9sF7WT9lARgYbn/VQiTh+1mMqiRrVLB/DRLFBj2jKqU4+/QYx/d/qBK4kE=
-X-Gm-Gg: AR+sD13Qt3sPrP8dJtCGbKDtBx5KMSWw7MhuJtB7/DRtbavGM/R/d7VSsye1tKw2Qmn
-	qvRhlcGRoAmkscYl3XrP/Q62Ab8GnJx0VX5/0SOWbIs6xd8YMA6h2Yu4GAPcx+QZSC8Dc/35Ap1
-	4Bb+6yTYBRXhMv9Ka+5kNGzHxx2l0+5ojG5E/lYrrCxDre9MeZfPN4yZLauBLgtRRuwsSayv1tE
-	RWKmKcCqjlNkew+qAeFJKD+QHkB74AS//JoAAK+bNMexWr+1Cg3cIr/I4RCmCM+uErFF0YNMOy9
-	UGza/9epH3PIz3Sxf71qhr5LqOPjkutwJ7P3mQkOIw+GcxNhFcCpGlUL4NEMWH7Au9mKFP3wIe+
-	X+fBelLBWCVqFg0ZhoF7FDMUqXO1QXOXZzOFUCrtu+VT5Hie1NZHCSuHz39cr4gHOyVt7QQj1UU
-	OKRg4Y9mKVsKhWkBCmopTezap9cRuN3rpgqD1lw7YvO7ZiJxz/RLZFz1bls4jDp296CCeSRkF+p
-	EYDUSobb6lF8zOihqs=
-X-Received: by 2002:a17:907:3ea8:b0:c24:6445:d19 with SMTP id a640c23a62f3a-c250c32b5e2mr1141249666b.17.1787773864196;
-        Wed, 26 Aug 2026 12:51:04 -0700 (PDT)
-Received: from mail-ej1-f43.google.com (mail-ej1-f43.google.com. [209.85.218.43])
-        by smtp.gmail.com with ESMTPSA id a640c23a62f3a-c25185b4d97sm503619366b.34.2026.08.26.12.51.03
-        for <keyrings@vger.kernel.org>
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Wed, 26 Aug 2026 12:51:03 -0700 (PDT)
-Received: by mail-ej1-f43.google.com with SMTP id a640c23a62f3a-c25344a8c6cso63476666b.0
-        for <keyrings@vger.kernel.org>; Wed, 26 Aug 2026 12:51:03 -0700 (PDT)
-X-Forwarded-Encrypted: i=1; AHgh+RpOVzLV4O6rbiAz89/a8UVpO9lKdDeyv4xBw5bK15UoJjJ8Awnj8kLBYuClM3WMpSpeU/SNoT0Eow==@vger.kernel.org
-X-Received: by 2002:a17:906:9fce:b0:c1f:1520:4de5 with SMTP id
- a640c23a62f3a-c250bb50762mr1103314466b.1.1787773863104; Wed, 26 Aug 2026
- 12:51:03 -0700 (PDT)
+	s=arc-20240116; t=1787811828; c=relaxed/simple;
+	bh=H/nY6FHTc9WKFAZwZWSoXmVvAP2y6OjzohTVZsAyhoU=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=HAPpNHkHn4MpOKVw6AxyQRqTNp46l0TUhHp7udM6nVUR6j/97oi9EBSQWpECgcd59RaTc5tazrn61+qGDiy5A7Qw/IJsfBDjiyT/pESbZc7Pe3s18HJbEb2cwPJBifUqeCGE5M3Qfk44Q5aVCv2iJGFphlhw9Kj0azM7fnwiP5Y=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=reiRl5us; arc=none smtp.client-ip=148.163.158.5
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="reiRl5us"
+Received: from pps.filterd (m0356516.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 67R3VdO61715236;
+	Thu, 27 Aug 2026 06:23:30 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:date:from:message-id:mime-version
+	:subject:to; s=pp1; bh=wDkkBq/zQRjvyGz/fv752jvBhNJjNG8gKU9apD71w
+	gA=; b=reiRl5usw1lINty/gEgjr9NSOi8+ogsIHO2hurHS9IVGWV4ZnC9AK8/3n
+	S8Lr1VDyiwszhT3cz182tiBR9Y9yBD2bvMvfOcVZbXWOsY7eb//76hA+n8EoAkYH
+	XFwFgCzCrkV0/69BH1agRMRx911yGHn5in5675Gpcw5tR4U0ZHcIKqFYytRVsH35
+	k/ehxI49mzUkVJzhNMGvOs+GwuZSd/whMA6ibyI3iqE3V3/HZEToUuyqv1AY7wHj
+	7tCmghJoUDI+CZnpI/3NrQbviaEiAxdcazWoBDCf+a47M+aQ5Cp35XO2Qw0xwMkb
+	k9TYRQ8W/M5vU0vxn+2upVKuCjtEA==
+Received: from ppma21.wdc07v.mail.ibm.com (5b.69.3da9.ip4.static.sl-reverse.com [169.61.105.91])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4g716j3ndd-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 27 Aug 2026 06:23:29 +0000 (GMT)
+Received: from pps.filterd (ppma21.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma21.wdc07v.mail.ibm.com (8.18.1.7/8.18.1.7) with ESMTP id 67R6BIfS025454;
+	Thu, 27 Aug 2026 06:23:28 GMT
+Received: from smtprelay01.fra02v.mail.ibm.com ([9.218.2.227])
+	by ppma21.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4g7q3k6fhy-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 27 Aug 2026 06:23:28 +0000 (GMT)
+Received: from smtpav01.fra02v.mail.ibm.com (smtpav01.fra02v.mail.ibm.com [10.20.54.100])
+	by smtprelay01.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 67R6NOBe30867940
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Thu, 27 Aug 2026 06:23:24 GMT
+Received: from smtpav01.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 81E4920043;
+	Thu, 27 Aug 2026 06:23:24 +0000 (GMT)
+Received: from smtpav01.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 9DE3520040;
+	Thu, 27 Aug 2026 06:23:13 +0000 (GMT)
+Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.ibm.com.com (unknown [9.76.202.253])
+	by smtpav01.fra02v.mail.ibm.com (Postfix) with ESMTP;
+	Thu, 27 Aug 2026 06:23:12 +0000 (GMT)
+From: Srish Srinivasan <ssrish@linux.ibm.com>
+To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: maddy@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com,
+        christophe.leroy@csgroup.eu, James.Bottomley@HansenPartnership.com,
+        jarkko@kernel.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, nayna@linux.ibm.com,
+        rnsastry@linux.ibm.com, ssrish@linux.ibm.com
+Subject: [PATCH 0/8] Extend PKWM to support user-created wrapping keys
+Date: Thu, 27 Aug 2026 11:53:00 +0530
+Message-ID: <20260827062309.724808-1-ssrish@linux.ibm.com>
+X-Mailer: git-send-email 2.55.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <CAOs+rJW1QymCXkr8-mU4kwMFvznnC98CXVvZMRjqpXwjJutdtA@mail.gmail.com>
- <20260815114533.2171445-1-fabrice.derepas@canonical.com>
-In-Reply-To: <20260815114533.2171445-1-fabrice.derepas@canonical.com>
-From: Ignat Korchagin <ignat@linux.win>
-Date: Wed, 26 Aug 2026 20:50:49 +0100
-X-Gmail-Original-Message-ID: <CAOs+rJVggeq-Y4hysPRtpV0pQRBU8cZTm-iyQ4EpHM6-6eapkA@mail.gmail.com>
-X-Gm-Features: AcwNN1W5DIcNWEcvlctI_OYJ194qPghIiHh-JbFunx3timWYfG5krkQObSF_4k4
-Message-ID: <CAOs+rJVggeq-Y4hysPRtpV0pQRBU8cZTm-iyQ4EpHM6-6eapkA@mail.gmail.com>
-Subject: Re: [PATCH v2] crypto: asymmetric_keys - bound PE section ranges in pefile_parse_binary
-To: Fabrice Derepas <fabrice.derepas@canonical.com>
-Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>, 
-	Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, 
-	keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, 
-	kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-Reinject: loops=2 maxloops=12
+X-Proofpoint-Spam-Info: AW1haW4tMjYwODI3MDA0OCBTYWx0ZWRfX2X5Glst8xwqu
+ hMrbTtfNiANWbpwzLVDkyUHzc1wpnAcV7yOU/Rfdk5QHwb0/KUM6McxFTCxC9ko5XXUy93OavkS
+ G27q3Y3W+ORuHjGkqPM9o07XbbOKRl8=
+X-Proofpoint-GUID: zawEhz905MFPrAEf-En517P1M1_zeAGf
+X-Proofpoint-ORIG-GUID: EFJOoTvm_tREc0dQ_TZE1nks12qiD96N
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwODI3MDA0OCBTYWx0ZWRfX8elJOjg6cFbB
+ vd1NOyDrNLqntbGxs+6HjFPnOymXqFYRN186HtZ2gkm1257Q4mR6lo+ypRAlx5rd7xzAx86vXVa
+ gk2ooxyA1Z6xWGad4WQbm47ln6Wqkny/Xvv5TcTCp2NHnFj98gkoAMhiDRsWKvMiZXdssvzBA/c
+ CWIsjVt/Onkk6mV/asRqvkuz2nPryhEIkHymdYwAjQDUlB17aLD7sAV1rr20jgmHeiMGLP4Vd64
+ vvgdG8XijK8YlsIau2VkAvTuSaj8kZRRMPHMMsHfigzXw0Bqc8/D9xw888+rDP7mAuO6pIqpUxs
+ gZ11U/Z8FmTbvsbhwrmZWV0VUERo6fSNrPZZL5zPELUt0excvIDJ7pYINAyNmzA3qgto3PX1gJX
+ 7MceXIySo5BDwKYsqAlqg5vDzRJ4a3609HQLYvi8zd/qU9+4vuPBbcnLHI7gzUOEy6rywwhkrN1
+ anZQLNXEghAbCF4VK0g==
+X-Authority-Analysis: v=2.4 cv=H7brBeYi c=1 sm=1 tr=0 ts=6a8fd7e1 cx=c_pps
+ a=GFwsV6G8L6GxiO2Y/PsHdQ==:117 a=GFwsV6G8L6GxiO2Y/PsHdQ==:17
+ a=Sv0fKeRqtYgA:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
+ a=Y2IxJ9c9Rs8Kov3niI8_:22 a=A93gRhB2vYe917ExAJkA:9
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
+ definitions=2026-08-27_02,2026-08-26_02,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ suspectscore=0 malwarescore=0 lowpriorityscore=0 impostorscore=0 spamscore=0
+ bulkscore=0 adultscore=0 priorityscore=1501 clxscore=1011 phishscore=0
+ classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
+ reason=mlx scancount=1 engine=8.22.0-2606150000 definitions=main-2608270048
 
-Sorry for delay on this,
+The PKWM trusted source currently uses a single default wrapping key per
+LPAR. This key is created during trusted source initialization, and all
+trusted keys backed by PKWM are sealed and unsealed using it.
 
-On Sat, Aug 15, 2026 at 12:45=E2=80=AFPM Fabrice Derepas
-<fabrice.derepas@canonical.com> wrote:
->
-> On Fri, Aug 14, 2026 at 11:29 PM Ignat Korchagin <ignat@linux.win> wrote:
-> > > Tested under KASAN (CONFIG_KASAN_GENERIC, x86-64) with a KUnit case t=
-hat
-> > > calls verify_pefile_signature() on real images: a signed-then-tampere=
-d
-> >
-> > Same as your other patch - any reason not to include this KUnit case?
->
-> The reason I am not including my tests is that I use real signed EFI
-> binaries (a valid one and a tampered one), ~88 KB each via xxd -i, which =
-is
-> a lot of binary to carry in-tree. For upstream I'll write a self-containe=
-d
-> case that constructs a minimal PE in the test itself and asserts that
-> pefile_parse_binary() rejects an out-of-range section, so there are no
-> embedded blobs. I'll send it as a second patch in a v3 series, so the fix
-> is not gated on the test.
->
-> > > +       for (loop =3D 0; loop < ctx->n_sections; loop++)
-> >
-> > Looking at the code again: seems ctx->n_sections is user-controlled.
-> > What happens if it is 0?
->
-> For this loop, nothing: n_sections is unsigned, so "loop < 0" is false on
-> the first test and the body never runs -- no chkaddr() call and no
-> ctx->secs[] dereference. So the patch itself adds no hazard for
-> n_sections =3D=3D 0.
->
-> But you have pointed at a real pre-existing problem one step further on.
-> n_sections =3D=3D 0 is not rejected anywhere -- pefile_parse_binary() onl=
-y
-> bounds it from above, against header_size -- and pefile_digest_pe_content=
-s()
-> then does:
->
->         canon =3D kcalloc(ctx->n_sections, sizeof(unsigned), GFP_KERNEL);
->         if (!canon)
->                 return -ENOMEM;
->         ...
->         canon[0] =3D 0;
->
-> kcalloc(0, ...) returns ZERO_SIZE_PTR, which is non-NULL, so the !canon
-> check passes and the unconditional "canon[0] =3D 0" writes through
-> ZERO_SIZE_PTR. Because the digest runs only after verify_pkcs7_signature(=
-)
-> succeeds, this has the same reachability as the read this patch fixes: a
-> validly signed image with n_sections tampered to 0 (the PKCS#7 is
-> unaffected) reaches it via kexec_file_load().
->
-> I confirmed it under KASAN. With a trusted key embedded, a signed image
-> whose NumberOfSections I set to 0 (leaving the certificate table untouche=
-d,
-> so verify_pkcs7_signature() still returns 0) faults in the digest step,
-> while the untampered image verifies:
->
->   control (trusted, 7 sections): verify_pefile_signature() =3D 0
->   BUG: kernel NULL pointer dereference, address: 0000000000000010
->   #PF: supervisor write access in kernel mode
->   Oops: 0002 [#1] SMP KASAN NOPTI
->   RIP: 0010:verify_pefile_signature+0x5c3   (pefile_digest_pe_contents in=
-lined)
->
-> Address 0x10 is ZERO_SIZE_PTR and error_code 0x2 is a write -- the
-> canon[0] =3D 0 store -- so it is a write fault, reachable the same way as=
- the
-> out-of-bounds read this patch already addresses.
->
-> Since we are now centralising section-table sanity in pefile_parse_binary=
-(),
-> the natural fix is to reject n_sections =3D=3D 0 there as well, e.g. by f=
-olding
-> it into the existing bound:
->
->         if (ctx->n_sections =3D=3D 0 ||
->             ctx->n_sections > (ctx->header_size - cursor) / sizeof(*sec))
->                 return -ELIBBAD;
->
-> A PE with zero sections is malformed (a signed kernel/EFI image always ha=
-s
-> at least one), so rejecting it at parse is safe and closes the
-> ZERO_SIZE_PTR write too. I will include that in v3 and cover it in the KU=
-nit
-> case.
->
-> Do you prefer it folded into this patch, or kept as a separate fix for th=
-e
+Recent versions of PKWM allow users to create and manage their own wrapping
+keys through a set of lifecycle operations. This patch series brings these
+PKWM capabilities into the kernel, allowing users to create, manage, and
+select wrapping keys for sealing and unsealing their trusted keys, rather
+than requiring all trusted keys to use the default wrapping key.
 
-Let's fold into this patch, since it is one place now.
+In addition to implementing user-created wrapping key support, this series
+includes five prerequisite cleanup patches for the PLPKS and PKWM code.
+These patches improve error handling and type consistency, rename a macro
+for clarity, prevent unsupported capabilities from being exposed through
+the sysfs, and make minor documentation and MAINTAINERS updates.
 
-> canon[0] write? Either way I will respin as v3 with the KUnit case once y=
-ou
-> let me know.
+Srish Srinivasan (8):
+  pseries/plpks: update PKS documentation and maintainer entry
+  pseries/plpks: fix error handling in plpks_read_var()
+  pseries/plpks: improve type consistency and parameter validation
+  pseries/plpks: rename the default wrapping key macro
+  pseries/plpks: hide wrapping_features when unsupported
+  pseries/plpks: add HCALLs for PKWM wrapping key life cycle management
+  keys/trusted_keys: enable PKWM wrapping key selection by label
+  pseries/plpks/wrapkey: expose PKWM wrapping key management to
+    userspace via sysfs
 
-Thank you.
+ .../ABI/testing/sysfs-firmware-plpks          | 106 ++++
+ Documentation/arch/powerpc/papr_hcalls.rst    |  49 +-
+ .../security/keys/trusted-encrypted.rst       |   4 +-
+ MAINTAINERS                                   |   2 +-
+ arch/powerpc/include/asm/hvcall.h             |   5 +-
+ arch/powerpc/include/asm/plpks.h              |  40 +-
+ arch/powerpc/platforms/pseries/Kconfig        |  13 +
+ arch/powerpc/platforms/pseries/Makefile       |   1 +
+ arch/powerpc/platforms/pseries/plpks-sysfs.c  |  31 +-
+ .../platforms/pseries/plpks-wrapkey-sysfs.c   | 407 +++++++++++++
+ arch/powerpc/platforms/pseries/plpks.c        | 557 ++++++++++++++++--
+ include/keys/trusted_pkwm.h                   |   3 +
+ security/keys/trusted-keys/trusted_pkwm.c     |  40 +-
+ 13 files changed, 1188 insertions(+), 70 deletions(-)
+ create mode 100644 arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
 
->
-> Thanks for the careful review, Ignat.
->
-> Fabrice
->
+-- 
+2.52.0
+
