@@ -1,49 +1,42 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9EA6729405;
-	Fri, 28 Aug 2026 01:59:31 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1FBD22D8385;
+	Fri, 28 Aug 2026 05:02:36 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787882372; cv=none; b=RHmXwl0qpijS7uO7CXP+yfa2iH0sDbkJmabgbBP+k+it1sFK3gca7j4ZB/owxZAf+A3wHkf0k+zAFhz+VqZMH0VLB3IdDJYrKdaBULOOScyP4IjROaDcPbnRNcYyCQEFtcbcrzxaernvOb3TLflVKcRZnY+kolIJKE3qEDGnlI8=
+	t=1787893358; cv=none; b=RrJvQmx83YLSCP+U6Xvs5vN/xEZYhs4e00UTwq5r6QrksgkHwa5w/t9e/ZgH4nwPYK7KQvmlVN+pyQCx+u8QwKwzbGponwFieJpnWL6RiGW/Vwm36RM7sKiJz+/UxagxXLgTO11ybwQqUd0c07v2Svxc3o2bzavTwVae9qJRfHE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787882372; c=relaxed/simple;
-	bh=PLUrSJ7Bgr42fAa7hl3L90oFyHaK/ng3BsHc6DjlYsg=;
+	s=arc-20240116; t=1787893358; c=relaxed/simple;
+	bh=xc2jrMMftAB3uphDmcLwC4Iya/N10TIxFInNVCqurOo=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=TwH4PczUyFzbig4jJ4R15lEDqRT7s0XuEkzgSiNhR++xtcep4EbhyTT6/6DZ8/lBWJGbpV+eeJ+qvMc8rSalZgS24e/XAMeJqGaVLU4YfIdn78IRQuxn6iUYvKl2m7JQjPj/TqxhKtUbel9vVnIZSCabxidsw0Hr8wo1bVk2rdw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=alyJu5Ry; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=mJXr5GIWuBf9lRLpj/ETCLaCWDSVKzuBW4F/b5z3C7eLZHvGeugoBymXWXLQrSKhKptzG1BnEnlq2JWgulVr4j0FsajNFvPCihtSUYVGN8okgTxImRe1J3VG+/ghQvmkVMmfrnkEN2NudycipK0zBOxeChsWjV4YYc3pKh8If3k=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=DBozuRKX; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="alyJu5Ry"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B51761F000E9;
-	Fri, 28 Aug 2026 01:59:30 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="DBozuRKX"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 4280A1F000E9;
+	Fri, 28 Aug 2026 05:02:36 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1787882371;
-	bh=BmMeT+sGruSoarJZXTMiWDmYAjjQLaM8q39gUOJQkx8=;
+	s=k20260515; t=1787893356;
+	bh=2AeKnpQEc5FuYi17jCmz/ZwCBYps/95FktR9vWPHpK8=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=alyJu5RyJZxHpySxmSX2EQq01LxMYALxg4y2c7/trNsJ8eg1uAVvo3Ay8zeIfizUT
-	 a1TZZEP8ghnZT7m+o1kxgQbg+UMP57BmgZEpv7WUkf70OpF5fg0ESZnQWa0dSfLH3n
-	 J1wj613i20sY6qEp2Z7S0IdG04bRyXQg7Wug+Q1CJCn99pDT1gX0XFW7cK45t39C3O
-	 d/wNvxDqLspl04zBg3cTdxrdZFxU4NbIMxvXoAFGO0TaKV2GVTzWPYEsJUOAruawKe
-	 Rl0XgcYaJ+IFN00KAUOzqYTfnOcH/yXW6iCR0sFbrmYwqM6NJsZvIRsV84GIP/yKm6
-	 0+0XXkf3ek2UA==
-Date: Fri, 28 Aug 2026 04:59:27 +0300
+	b=DBozuRKXlF/oGZ0R5ayjGfQ/4fka1GT03Q84FcAxBCm8hzDxUJzbSDtRzzNEgiDOv
+	 tGRgyuyaIn5+pOuwj4TT2Kcuk/U5uoVbktgUopzOTTYSXwZEoT6+wGmdunjAQkxgCI
+	 VeaLZ/QUvmligOvrho61act8tQ3MNEsMatYhkUVbwHc5LECkUA3dr0DpC9tSFewNDx
+	 nS0szmVxpZ37aPX8XwrwBQgr0YzbQUJjpsQtq5CiR5s2Il5DaQoobRje0eMmxe25ml
+	 KRNd8Hrohmy0K8WXxmDdSa+lX215ULG3Av/Lzm7YiTv/xWe2IEfZf3lBGSP/Ve44Lc
+	 wttO6vOAFepqQ==
+Date: Fri, 28 Aug 2026 08:02:29 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: "Cen Zhang (Microsoft Security FORGE Labs)" <blbllhy@gmail.com>
-Cc: Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Roberto Sassu <roberto.sassu@polito.it>,
-	David Safford <safford@watson.ibm.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Kees Cook <kees@kernel.org>, Francis Perron <francis@akrites.dev>,
-	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Akrites SIRT <sirt@akrites.dev>,
-	AutonomousCodeSecurity@microsoft.com,
-	Cen Zhang <cenzhang@microsoft.com>
-Subject: Re: [PATCH v2] KEYS: encrypted: fix integer overflow of datablob_len
-Message-ID: <apDrfyDB883Nl5Sd@kernel.org>
-References: <20260826154456.85974-1-blbllhy@gmail.com>
+To: Daehyeon Ko <4ncienth@gmail.com>
+Cc: dhowells@redhat.com, lukas@wunner.de, ignat@linux.win,
+	paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
+	herbert@gondor.apana.org.au, davem@davemloft.net,
+	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+	linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] keys: reject descriptions that exceed the index length
+Message-ID: <apEWZUFe8NmwgPDb@kernel.org>
+References: <20260824113004.3755053-1-4ncienth@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -52,110 +45,47 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260826154456.85974-1-blbllhy@gmail.com>
+In-Reply-To: <20260824113004.3755053-1-4ncienth@gmail.com>
 
-On Wed, Aug 26, 2026 at 11:44:56AM -0400, Cen Zhang (Microsoft Security FORGE Labs) wrote:
-> From: "Cen Zhang (Microsoft Security FORGE Labs)" <cenzhang@microsoft.com>
+On Mon, Aug 24, 2026 at 08:30:04PM +0900, Daehyeon Ko wrote:
+> struct keyring_index_key::desc_len is a u16.  User-provided key
+> descriptions are limited to 4095 bytes, but a key type preparser can
+> generate a longer description when the caller passes NULL.
 > 
-> The datablob_len field in struct encrypted_key_payload and the local
-> variable in encrypted_key_alloc() are declared as unsigned short, which
-> has a maximum value of 65535. The datablob_len is computed as:
+> The X.509 parser forms a description from the certificate subject and
+> twice the raw serial length.  A certificate with a two-byte subject and a
+> 32766-byte serial therefore produces a 65536-byte description.  Assigning
+> strlen() to desc_len wraps it to zero, after which __key_link_begin() hits:
 > 
->   format_len + 1 + strlen(master_desc) + 1 + strlen(datalen) + 1
->   + ivsize + 1 + encrypted_datalen
+>     BUG_ON(index_key->desc_len == 0);
 > 
-> An attacker can create an encrypted key with a very long datalen string
-> (e.g., 32756 characters of leading zeros followed by "4096", which
-> kstrtol() happily parses as 4096), and then update it with a very long
-> master_desc string (~32760 characters). The combined lengths exceed
-> 65535, causing the unsigned short to silently wrap around. This results
+> This is reachable through add_key() by an unprivileged user and can panic
+> the kernel when oopses are fatal.
+> 
+> Measure generated descriptions before narrowing the length and reject
+> values that cannot be represented.  The boundary input now returns EINVAL,
+> while the one-byte-short control still reaches the normal quota check.
 
-Please use concrete sizes as possible. E.g., 16-bit word or u16 would be
-much less involved than "unsigned short".
+This lacks smoking gun type of evidence, and I don't understand why
+as it requires an extremely low effort.
 
-> in a grossly undersized kzalloc() allocation, and the subsequent
-> memcpy() in __ekey_init() writes ~32KB past the end of the buffer,
-> corrupting adjacent slab objects.
+If I understood the code correctly, I'd start with a key that I would
+craft along the lines of:
 
-One more: please describe the issue as ergnomic as possible (but still
-complete). I care neither Alice nor Bob.
+    openssl genpkey -algorithm Ed25519 -out key.bin
 
-> 
-> Fix this by:
-> 1. Using check_add_overflow() to calculate datablob_len directly into
->    its existing unsigned short destination.
-> 2. Checking the total payload length the same way before passing it to
->    key_payload_reserve(), since key->datalen is also unsigned short.
-> 3. Using kzalloc_flex() to allocate encrypted_key_payload together with
->    its trailing payload_data[] array.
-> 
-> Fixes: 7e70cb497850 ("keys: add new key-type encrypted")
-> Cc: stable@vger.kernel.org
-> Assisted-by: GitHub-Copilot:claude-opus-4.6
-> Signed-off-by: Cen Zhang (Microsoft Security FORGE Labs) <cenzhang@microsoft.com>
-> Signed-off-by: Francis Perron (Akrites SIRT) <francis@akrites.dev>
-> ---
-> Changes in v2:
-> - Keep datablob_len unchanged and check both unsigned short bounds with
->   check_add_overflow().
-> - Use kzalloc_flex() for the trailing payload_data[] array.
-> - Correct the attribution and sign-off trailers.
-> 
-> The initial version was discussed off-list and is not publicly archived.
-> 
->  security/keys/encrypted-keys/encrypted.c | 20 ++++++++++++++------
->  1 file changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-> index 59cb77b237b3..e07092ea301a 100644
-> --- a/security/keys/encrypted-keys/encrypted.c
-> +++ b/security/keys/encrypted-keys/encrypted.c
-> @@ -19,6 +19,7 @@
->  #include <linux/parser.h>
->  #include <linux/string.h>
->  #include <linux/err.h>
-> +#include <linux/overflow.h>
->  #include <keys/user-type.h>
->  #include <keys/trusted-type.h>
->  #include <keys/encrypted-type.h>
-> @@ -579,6 +580,7 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
->  {
->  	struct encrypted_key_payload *epayload = NULL;
->  	unsigned short datablob_len;
-> +	unsigned short payload_totallen;
->  	unsigned short decrypted_datalen;
->  	unsigned short payload_datalen;
->  	unsigned int encrypted_datalen;
-> @@ -632,16 +634,22 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
->  
->  	encrypted_datalen = roundup(decrypted_datalen, blksize);
->  
-> -	datablob_len = format_len + 1 + strlen(master_desc) + 1
-> -	    + strlen(datalen) + 1 + ivsize + 1 + encrypted_datalen;
-> +	if (check_add_overflow(format_len + 1 + strlen(master_desc) + 1
-> +			       + strlen(datalen) + 1 + ivsize + 1,
-> +			       encrypted_datalen, &datablob_len))
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	if (check_add_overflow(datablob_len,
-> +			       payload_datalen + HASH_SIZE + 1,
-> +			       &payload_totallen))
-> +		return ERR_PTR(-EINVAL);
->  
-> -	ret = key_payload_reserve(key, payload_datalen + datablob_len
-> -				  + HASH_SIZE + 1);
-> +	ret = key_payload_reserve(key, payload_totallen);
->  	if (ret < 0)
->  		return ERR_PTR(ret);
->  
-> -	epayload = kzalloc(sizeof(*epayload) + payload_datalen +
-> -			   datablob_len + HASH_SIZE + 1, GFP_KERNEL);
-> +	epayload = kzalloc_flex(*epayload, payload_data, payload_totallen,
-> +				GFP_KERNEL);
->  	if (!epayload)
->  		return ERR_PTR(-ENOMEM);
->  
-> -- 
-> 2.55.0
+    openssl req -x509 -key key.bin \
+                      -outform DER \
+                      -out certificate.bin \
+                      -subj "/CN=xx" \
+                      -set_serial "0x7f$(head -c 65530 /dev/zero | tr '\0' 'f')"
+
+Then I would simply expect this to crash my system:
+
+    keyctl padd asymmetric %:s @s < certificate.bin
+
+Will this happen? Have not tried it in a VM yet. I just feel a bit
+confused that this was not already demontrated in the commit message,
+which makes me think that I get something wrong?
 
 BR, Jarkko
