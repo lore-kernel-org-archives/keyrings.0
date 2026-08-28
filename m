@@ -1,175 +1,120 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 142403F106F;
-	Thu, 27 Aug 2026 22:06:00 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E53D321C173;
+	Fri, 28 Aug 2026 01:38:59 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787868362; cv=none; b=CSW5xlTukDnkWy1KqUTm1sspWJPtmPvrC5at2qGsu44kdJEn3U761T13knNKp6vDdvEViU5pW1Q4zzd0OZ4x4+wGVzrsCDLZeDHcYfoKrCEWzS2N58dOCi9D/ADabSkUxfqaT1EfHwSf6CK1REx3y/POThPwvG457QztkSuGROo=
+	t=1787881141; cv=none; b=FjE7TNuIX4i/ZA94A5/PWgfmX2SFQ7XQPHGofyJ76UnO/fgOwRR5ECQMAqwzsOLn+VxC327nbfTrWsvARcyJ4nLctt5R+hyqEJV67RZcxgYYN4WMNbplnElleBtat89xAmOXggfDS/ZIoycvHnk6FrdJ4rQ5Qzkj4LJsd+2zff4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787868362; c=relaxed/simple;
-	bh=poBYDZ4Eg3HvpbH01Bcr5xv8th65vKN6a6r+FEOdTW8=;
+	s=arc-20240116; t=1787881141; c=relaxed/simple;
+	bh=FsUxGIx6rhOio1Ml3/iSyvWPxqD1x/cB0gE+EMoBEkk=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=fOEpKqNem19quo7Vrr/QdZMPxUUNJNDaof5jmEkmW/RFUhTN+bYHd/qTrx2Ebd1T6PGTTNmMaj0xCDoGNfIyIFAZGOABTUrdgXGYx5ltV5+ntMYlQsHRTro/zmKOacZ0RBrz7sZUMJy4ZO7m4TdGjQuEt45bznNe86BsqLlVnFc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=R6L9etGk; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=X9jTOKj2fyHcNMU7eInjbjw0BA5saeUu82v9B4Efpwhzhd0RkS79oHzHAxW1LHNpjuf6wIan8a+rR1EuTj9S/8Y5U8Fs+qW8nD65pgZa9khw2PwTyN2K0WxlfZZlegJlKFNL+AEaqZEc5iWrOf8OZh8qxcvuWUss0KEC4aOOCJ4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=j2natF7h; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="R6L9etGk"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 250941F000E9;
-	Thu, 27 Aug 2026 22:05:59 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="j2natF7h"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id AE6331F000E9;
+	Fri, 28 Aug 2026 01:38:58 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1787868360;
-	bh=uYQ//+Nc6FOYi0VIuRjLfmYOORJZwY6o51QG645xVho=;
+	s=k20260515; t=1787881139;
+	bh=XYz3JLl4NNQqHv+orqcXrbJk0zL9In/+Nv7/8cOKk4s=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=R6L9etGkhGx1vUChACmOrrebXlCOnn9Fr08hZEt2UyklwGmgleywwVgoIZOWwjPVR
-	 OEMa4EqfwKCZmeLN3Tu96ZTPggJsqvw92Vog1htRPk68ORqdFgWZBxLh4iqzwqvMHj
-	 rpkTSVGDo0/M3Z6juKJagH0wd8PpLuhOz5VtCK2Ao6wsZVHrnPUFYwnd3EioISX5hr
-	 5MLSypr++shF7PkdoNMQ2ov9zEmnzVcB4ztM7RLWPv5D5XWPT+IgYiT8YmkLaQKADj
-	 OBFgcAcqaMvbj6vjB7RTwC/j/2jFoR4nqjLDt9Xe0PuVX1Tln+w9pCkUyRPYkW3ctg
-	 95y8yovIUGr8Q==
-Date: Fri, 28 Aug 2026 01:05:56 +0300
+	b=j2natF7hluXDyv75RT37lZcFk2uDzz0YZmEzPyX9WqCpNc5rVwVdXiHvlF/NgAjZZ
+	 rb0pNl4H9do5Jl8f+inrf4zxYNkEeX8dOyw6nao2ushDGGM0lnEmAjtoYTCEZh8QVP
+	 A4FR/7PBX08uZy6sBUdgmAxGfqQXSBYTAoDnO3RjKlN7aH+bxEc6Q9+vqqAUn1W0fP
+	 6/+1H2I5vIXIDb6HjAz0O3ECiRz8rra91XnoWuJ8HahqQtM/jJdvLhsYBC9th0SN9U
+	 MRfTVAHaH8OKeTyuhMNUWtAeNusZ1OczWrJgcY/urRxd1AeGchLCu+ypLlEpoiIOdb
+	 jY3er14GkCZRg==
+Date: Fri, 28 Aug 2026 04:38:55 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Chengfeng Ye <nicoyip.dev@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Serge Hallyn <sergeh@kernel.org>, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] keys: Fix key_user use-after-free during ownership
- changes
-Message-ID: <apC0xGqWTIXTIgBU@kernel.org>
-References: <20260823152858.3839939-1-nicoyip.dev@gmail.com>
+To: Daniel Borkmann <daniel@iogearbox.net>
+Cc: memxor@gmail.com, brauner@kernel.org, kpsingh@kernel.org,
+	ast@kernel.org, john.fastabend@gmail.com, a.s.protopopov@gmail.com,
+	bpf@vger.kernel.org, dhowells@redhat.com, keyrings@vger.kernel.org
+Subject: Re: [PATCH bpf-next v2 00/11] BPF keyring and signed loader ML-DSA
+ support
+Message-ID: <apDmr_33q2zz6YCd@kernel.org>
+References: <20260825142530.1329706-1-daniel@iogearbox.net>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20260823152858.3839939-1-nicoyip.dev@gmail.com>
+In-Reply-To: <20260825142530.1329706-1-daniel@iogearbox.net>
 
-On Sun, Aug 23, 2026 at 11:28:58PM +0800, Chengfeng Ye wrote:
-> keyctl_chown_key() replaces key->user while holding key->sem and drops
-> the old key_user reference after releasing the semaphore. The /proc/keys
-> iterators and find_keyring_by_name() instead dereference key->user while
-> holding unrelated locks.
+On Tue, Aug 25, 2026 at 04:25:19PM +0200, Daniel Borkmann wrote:
+> Add a dedicated BPF keyring which is integrated for BPF signing. It
+> is modelled after the dm-verity keyring which was added in commit
+> 033724b ("dm-verity: add dm-verity keyring") and which can eventually
+> be used also via systemd through the same enrollment method as in
+> dm-verity's case. It is selected with a new well-known keyring_id
+
+I'm not interested where the code is derived; only what it *is*.
+
+dm-verity would be better fit for e.g., corresponding patch.
+
+
+> VERIFY_USE_BPF_KEYRING and gives an operator a place to enroll a
+> BPF-only signing key at boot, specifically scoped to signed BPF
+> program loading. Next, to demonstrate that BPF signing is algorithm
+> agnostic, we add a few small tooling changes to support ML-DSA and
+> integrate everything into BPF selftest for BPF CI to ensure nothing
+> breaks with future changes. For more details, see individual commits.
+
+Why do we want this? Motivation to add anything is missing.
+
 > 
-> This allows the following interleaving:
+> v1 -> v2:
+>   - Mainly addressing LLM feedback in docs, commit message and
+>     selftests (BPF CI, sashiko)
+>     - Fix reasoning on BPF_PROG_MAX_SIGNATURE_SIZE
+>     - Add reasoning about bpftool MAX_SIG_SIZE change and pinning
+>       the CMS digest to SHA-512
+>     - Fix misc signing.rst phrasing
+>     - Fix a potential NULL deref in bpf_keyring_lookup selftest code
+>     - Add CONFIG_CRYPTO_SHA512=y to BPF selftest config
+>     - Clean up key material on ML-DSA signed loader test failure
+>     - Refactor duplicated bpf_attr setup for bpf keyring tests
+>     - Fix wording in kernel-parameters.txt
 > 
->   CPU 0 (/proc/keys)            CPU 1 (KEYCTL_CHOWN)
->   load old key->user
->                                 replace key->user
->                                 key_user_put(old)
->                                   kfree(old)
->   read old->uid
+> Daniel Borkmann (11):
+>   bpf: Add a bpf keyring for program signature validation
+>   bpf: Refuse caller-supplied keyrings when the bpf one is active
+>   bpf: Raise the bound on a program's signature size
+>   bpftool: Support ML-DSA program signing
+>   selftests/bpf: Add a test for the sealed bpf keyring
+>   selftests/bpf: Rebuild signed lskels when signing key changes
+>   selftests/bpf: Rename the verify_sig_setup.sh setup into setup-rsa
+>   selftests/bpf: Add an end-to-end ML-DSA signed loader test
+>   selftests/bpf: Allow appending to guest kernel cmdline in vmtest.sh
+>   selftests/bpf: Add tests for bpf keyring in signed loader
+>   Documentation/bpf: Document the bpf keyring and improve examples
 > 
-> Serialize the namespace-mapping reads and the pointer replacement with
-> key_user_lock. This lock already protects final key_user removal, so the
-> old object cannot be freed while its uid is being read. Keep reading the
-> quota-owner UID rather than key->uid because those values can legitimately
-> differ for thread keyrings.
+>  .../admin-guide/kernel-parameters.txt         |  16 +
+>  Documentation/bpf/signing.rst                 | 279 +++++++++--
+>  include/linux/bpf.h                           |  13 +
+>  include/linux/verification.h                  |  10 +
+>  kernel/bpf/Makefile                           |   3 +
+>  kernel/bpf/keys.c                             |  72 +++
+>  kernel/bpf/verifier.c                         |  43 +-
+>  tools/bpf/bpftool/main.h                      |   2 +-
+>  tools/bpf/bpftool/sign.c                      |  22 +-
+>  tools/testing/selftests/bpf/Makefile          |   2 +-
+>  tools/testing/selftests/bpf/config            |   2 +
+>  .../selftests/bpf/prog_tests/signed_loader.c  | 472 ++++++++++++++++--
+>  .../bpf/prog_tests/verify_pkcs7_sig.c         |   4 +-
+>  .../testing/selftests/bpf/verify_sig_setup.sh |  63 ++-
+>  tools/testing/selftests/bpf/vmtest.sh         |  16 +-
+>  15 files changed, 915 insertions(+), 104 deletions(-)
+>  create mode 100644 kernel/bpf/keys.c
 > 
-> Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
-> ---
->  security/keys/internal.h | 10 ++++++++++
->  security/keys/keyctl.c   |  2 ++
->  security/keys/keyring.c  |  2 +-
->  security/keys/proc.c     |  4 ++--
->  4 files changed, 15 insertions(+), 3 deletions(-)
-> 
-> diff --git a/security/keys/internal.h b/security/keys/internal.h
-> index b7b622bc36a1..741d547ba5c4 100644
-> --- a/security/keys/internal.h
-> +++ b/security/keys/internal.h
-> @@ -70,6 +70,16 @@ extern struct key_user	root_key_user;
->  extern struct key_user *key_user_lookup(kuid_t uid);
->  extern void key_user_put(struct key_user *user);
->  
-> +static inline kuid_t key_user_uid(const struct key *key)
-> +{
-> +	kuid_t uid;
-> +
-> +	spin_lock(&key_user_lock);
-> +	uid = key->user->uid;
-> +	spin_unlock(&key_user_lock);
-> +	return uid;
-> +}
-> +
->  /*
->   * Key quota limits.
->   * - root has its own separate limits to everyone else
-> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> index d14ace88e529..c17924609317 100644
-> --- a/security/keys/keyctl.c
-> +++ b/security/keys/keyctl.c
-> @@ -1036,8 +1036,10 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
->  			atomic_inc(&newowner->nikeys);
->  		}
->  
-> +		spin_lock(&key_user_lock);
->  		zapowner = key->user;
->  		key->user = newowner;
-> +		spin_unlock(&key_user_lock);
->  		key->uid = uid;
->  	}
->  
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> index 15bf4af8f282..49f4be934525 100644
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
-> @@ -1158,7 +1158,7 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
->  	 * grants Search permission and that hasn't been revoked
->  	 */
->  	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
-> -		if (!kuid_has_mapping(ns, keyring->user->uid))
-> +		if (!kuid_has_mapping(ns, key_user_uid(keyring)))
->  			continue;
->  
->  		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
-> diff --git a/security/keys/proc.c b/security/keys/proc.c
-> index 4f4e2c1824f1..8d6d26652aab 100644
-> --- a/security/keys/proc.c
-> +++ b/security/keys/proc.c
-> @@ -68,7 +68,7 @@ static struct rb_node *key_serial_next(struct seq_file *p, struct rb_node *n)
->  	n = rb_next(n);
->  	while (n) {
->  		struct key *key = rb_entry(n, struct key, serial_node);
-> -		if (kuid_has_mapping(user_ns, key->user->uid))
-> +		if (kuid_has_mapping(user_ns, key_user_uid(key)))
->  			break;
->  		n = rb_next(n);
->  	}
-> @@ -100,7 +100,7 @@ static struct key *find_ge_key(struct seq_file *p, key_serial_t id)
->  		return NULL;
->  
->  	for (;;) {
-> -		if (kuid_has_mapping(user_ns, minkey->user->uid))
-> +		if (kuid_has_mapping(user_ns, key_user_uid(minkey)))
->  			return minkey;
->  		n = rb_next(&minkey->serial_node);
->  		if (!n)
 > -- 
 > 2.43.0
 > 
-
-I hope you don't mind that I sanity check a bit:
-
- git grep "user->uid" security/keys
-security/keys/internal.h:       uid = key->user->uid;
-security/keys/key.c:            if (uid_lt(uid, user->uid))
-security/keys/key.c:            else if (uid_gt(uid, user->uid))
-security/keys/key.c:            unsigned maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
-security/keys/proc.c:           if (kuid_has_mapping(user_ns, user->uid))
-security/keys/proc.c:   unsigned maxkeys = uid_eq(user->uid, GLOBAL_ROOT_UID) ?
-security/keys/proc.c:   unsigned maxbytes = uid_eq(user->uid, GLOBAL_ROOT_UID) ?
-security/keys/proc.c:              from_kuid_munged(seq_user_ns(m), user->uid),
-security/keys/process_keys.c:   uid_t uid = from_kuid(user_ns, cred->user->uid);
-security/keys/process_keys.c:           uid_keyring = keyring_alloc(buf, cred->user->uid, INVALID_GID,
-security/keys/process_keys.c:           session_keyring = keyring_alloc(buf, cred->user->uid, INVALID_GID,
-security/keys/process_keys.c:                                               cred->user->uid));
-
-Have you audited these and reflected against your current patch?
 
 BR, Jarkko
 
