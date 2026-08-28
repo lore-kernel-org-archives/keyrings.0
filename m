@@ -1,44 +1,45 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2F72323F40D;
-	Fri, 28 Aug 2026 01:46:30 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 84516EEA8;
+	Fri, 28 Aug 2026 01:48:56 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787881594; cv=none; b=ZSAP6n9Iq91qJOUq2GaZQtHaikbDEgH55MACd+70xWuhlCpAEnS7lYSInL9KFkaPwkiog/jNKQKo3CRNE5TRFtWDdx88LQyoRakUh2L3TMrhv5PuvW4xecYXi28qjvgbONP8QX5sm/G/KKuuCSh/Rw1BMuDcqt9iIZsojY4pT2E=
+	t=1787881737; cv=none; b=NJdZymMolOFaqYqr/s7AWZGzFmmUHC07nnUkqHNFGtmGNoOZeT5OGgrSu4MhM9I6RbFzPIvUO2KPYzij7E9CxztD54MiHkj50PCmXeb265G7anA0ijgAZLDrxrBd9RiYm5bRFa6ZSZ+J3ghuBcbllwiwXFA5IKxrHVvS5A4T1Ts=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787881594; c=relaxed/simple;
-	bh=rWbPuiLM6kveF1zhG1HZoHtKHgeTBdcQs16WCUOXArU=;
+	s=arc-20240116; t=1787881737; c=relaxed/simple;
+	bh=9GQj1dAq1dLBVhD71kzsVD9cDCjAwoYyeauMj0pGsTk=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=k470bxOegC+h/LeMnuxJMxJwezTZj6ZFotHqGezPD4ltXN0HAwSDPLQ/mGZIL0iYNmMgnhav+eO7gm0BfYsyw/9QQlgtr9uqm3xJzs9nVpj8I8hu8RD0GuKMx1yYqv4ybXyK8L3ASCvI65G55Ldtu1VhRvz41wEQvYdnseaEltw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=IdOfCn34; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=lrF+L+TWNiyY4QzgqDR2GUIAGE3nXOkL1dvk1olLeZd5Q17eti7V8GoqRDIhX2g62jyInNsrgRRyu3xb3/dipeuu+7FF1sWifX9yIk+PzgQ1fLJbnOE3ulqn5cicJ0tCcziKyxh2sq4GnulveWFj+IqdHE4QFFPlbhJKYNdcc2s=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=llxIWQFT; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="IdOfCn34"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E80361F000E9;
-	Fri, 28 Aug 2026 01:46:28 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="llxIWQFT"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D171B1F000E9;
+	Fri, 28 Aug 2026 01:48:55 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1787881589;
-	bh=BZWLsWtVITIf4iYFfpNvgFMDadOeUE6CNl8Ep+F4Jlo=;
+	s=k20260515; t=1787881736;
+	bh=wo4FCAjDOKndHUSorb8iLPYOJuJ6AlqY7FPfHRH2IWA=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=IdOfCn34EPGb4if09usnYBwqZNdiR4MND8x1vBJQwL15mgxOWLHADw+C+CF3mDrSS
-	 rqSvfcwgmzvWA/lojO3niCTjRHOnd0kG9XSWjEc4+Iw7jCqmOjl6wXw8GR8ccoM3oH
-	 DhRmqK3ZWBQXg6Qm0RqI04JpAzZzQ41ot12wnTMp7XVXILczjq+xsl2aUX74a6KTO+
-	 8T+KHvg6imz3EwKUXCX9bfJcAOaiJC/wIpVnJ2qw3OoPF2K4uMGeQMpmpy0EbV+Ykg
-	 zDGspfgYM+ld3TNXKo5chYc5rvRRWYyUv0RlZ3oxBHFriIkdOE3J1aI2nk4aIPHuN4
-	 Xjo8TI6mEGw/g==
-Date: Fri, 28 Aug 2026 04:46:25 +0300
+	b=llxIWQFTKn0Z/beqIxCtTU75POIvFSVVU0323Nwdc2hBHycnHNfDAA55boR2+EiXU
+	 qV+NBCVkZCc30eGKzTcOOuix//cnphHoNi9NfbfIKXzk88usSNNsd493AVEzd+pz0i
+	 9DXN7kMKc0rpha+3UhWHV4KZ/wx6VKZul3xI3H+CJsMpVPbzK8F6duB+DMfg9+0rLR
+	 5I5/MF04bXXjGo6YZ4FD5EDuwtzzs5I2VSCEnrdb9qEgUgKGveVmdE3/H+44VXYgb+
+	 t+5jmzzfAu42wZdmYQBlaBFXBC6KQ3UcZlkS9HTgDxbMD8BjfedXrVZ3p02oKFAsnZ
+	 pvNyxlvlbdbgg==
+Date: Fri, 28 Aug 2026 04:48:52 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: sn0x-sharma <sanketsharmacsec@gmail.com>,
+To: Sanket Sharma <sanketsharmacsec@gmail.com>
+Cc: sudhakar@linux.ibm.com, gregkh@linuxfoundation.org,
 	James.Bottomley@hansenpartnership.com, zohar@linux.ibm.com,
 	dhowells@redhat.com, linux-integrity@vger.kernel.org,
 	keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
 	security@kernel.org, w@1wt.eu
-Subject: Re: [PATCH 1/2] keys: trusted: tpm1: add bounds check in tpm_seal()
- before memcpy
-Message-ID: <apDocVfEfwX3hFa_@kernel.org>
-References: <20260825182919.15943-1-sanketsharmacsec@gmail.com>
- <2026082651-portal-valid-da58@gregkh>
+Subject: Re: [PATCH v3 2/2] keys: trusted: tpm1: reject unauthenticated
+ response tag in TSS_checkhmac1/2
+Message-ID: <apDpBEAmDmtuJShz@kernel.org>
+References: <20260826080405.255083-1-sanketsharmacsec@gmail.com>
+ <20260826170700.616-1-sanketsharmacsec@gmail.com>
+ <20260826170700.616-2-sanketsharmacsec@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -47,37 +48,49 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2026082651-portal-valid-da58@gregkh>
+In-Reply-To: <20260826170700.616-2-sanketsharmacsec@gmail.com>
 
-On Wed, Aug 26, 2026 at 08:18:32AM +0200, Greg KH wrote:
-> On Tue, Aug 25, 2026 at 06:29:18PM +0000, sn0x-sharma wrote:
-> > tpm_seal() computes storedsize from TPM response fields and passes
-> > it directly to memcpy() into a MAX_BLOB_SIZE buffer without bounds
-> > validation. A forged TPM response can set storedsize to 4086,
-> > overflowing the 512-byte blob by 3574 bytes into adjacent slab
-> > objects.
-> > 
-> > Add a check that storedsize does not exceed MAX_BLOB_SIZE before
-> > the memcpy, returning -EINVAL on oversized responses.
-> > 
-> > Reported-by: sn0x-sharma <sanketsharmacsec@gmail.com>
-> > Link: https://lore.kernel.org/linux-integrity/
-> 
-> That's not a valid link :(
+On Wed, Aug 26, 2026 at 05:07:00PM +0000, Sanket Sharma wrote:
+> TSS_checkhmac1() and TSS_checkhmac2() silently return success when the
+> response tag is TPM_TAG_RSP_COMMAND (0x00c4), bypassing HMAC
+> verification entirely. A forged TPM response with this unauthenticated
+> tag allows an attacker to skip integrity checks on TPM responses.
 
-Oops, missed this one ;-)
-
-Should be just deleted, b4 shazam will set the link tag.
+I don't think we need threat scenario role play here.
 
 > 
-> > Signed-off-by: sn0x-sharma <sanketsharmacsec@gmail.com>
+> Reject TPM_TAG_RSP_COMMAND with -EINVAL in both functions, requiring
+> all responses to carry a proper authenticated tag.
 > 
-> No need for a reported-by: if you author and sign off on the patch.
+> Signed-off-by: Sanket Sharma <sanketsharmacsec@gmail.com>
+> ---
+>  security/keys/trusted-keys/trusted_tpm1.c | 4 ----
+>  1 file changed, 4 deletions(-)
 > 
-> And we need a real name please, not an alias.
+> diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+> index d47cb7108..6dbbf4546 100644
+> --- a/security/keys/trusted-keys/trusted_tpm1.c
+> +++ b/security/keys/trusted-keys/trusted_tpm1.c
+> @@ -201,8 +201,6 @@ static int TSS_checkhmac1(unsigned char *buffer,
+>  	tag = LOAD16(buffer, 0);
+>  	ordinal = command;
+>  	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
+> -	if (tag == TPM_TAG_RSP_COMMAND)
+> -		return 0;
+>  	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
+>  		return -EINVAL;
+>  	authdata = buffer + bufsize - SHA1_DIGEST_SIZE;
+> @@ -269,8 +267,6 @@ static int TSS_checkhmac2(unsigned char *buffer,
+>  	ordinal = command;
+>  	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
+>  
+> -	if (tag == TPM_TAG_RSP_COMMAND)
+> -		return 0;
+>  	if (tag != TPM_TAG_RSP_AUTH2_COMMAND)
+>  		return -EINVAL;
+>  	authdata1 = buffer + bufsize - (SHA1_DIGEST_SIZE + 1
+> -- 
+> 2.53.0
 > 
-> thanks,
-> 
-> greg k-h
 
 BR, Jarkko
