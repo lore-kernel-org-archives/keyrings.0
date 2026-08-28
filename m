@@ -1,45 +1,49 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 84516EEA8;
-	Fri, 28 Aug 2026 01:48:56 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 568641624C0;
+	Fri, 28 Aug 2026 01:53:50 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787881737; cv=none; b=NJdZymMolOFaqYqr/s7AWZGzFmmUHC07nnUkqHNFGtmGNoOZeT5OGgrSu4MhM9I6RbFzPIvUO2KPYzij7E9CxztD54MiHkj50PCmXeb265G7anA0ijgAZLDrxrBd9RiYm5bRFa6ZSZ+J3ghuBcbllwiwXFA5IKxrHVvS5A4T1Ts=
+	t=1787882031; cv=none; b=a+WG4Rm2ST4rvFGq8wEWRj71Ci7u7UO9BcZ8PeT3tTT6ZnXVDIpYO4EB/b0uKdPmmhFC7IdClCTD7/mwlP51Q9iGEPql/yWo/OSfC2/vjha/99V2iRjEE7STlbYUq/HcxBqZ6bk/JUkf7jIprnOPgSVK9d+GXtS09vpyJPbXsEs=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787881737; c=relaxed/simple;
-	bh=9GQj1dAq1dLBVhD71kzsVD9cDCjAwoYyeauMj0pGsTk=;
+	s=arc-20240116; t=1787882031; c=relaxed/simple;
+	bh=38aD5Z1llzQWEUWRyxWZi7A1+PE7kLPT2aOFcM0IotQ=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=lrF+L+TWNiyY4QzgqDR2GUIAGE3nXOkL1dvk1olLeZd5Q17eti7V8GoqRDIhX2g62jyInNsrgRRyu3xb3/dipeuu+7FF1sWifX9yIk+PzgQ1fLJbnOE3ulqn5cicJ0tCcziKyxh2sq4GnulveWFj+IqdHE4QFFPlbhJKYNdcc2s=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=llxIWQFT; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=FPQlE0v2V8iEZcxvnnuI5z87M+Wj/Z2ZntrVTvtF6HE4gJ7493BZ573Inlt5cSumb8dVedqGGabbqz0WzVXJjEn9SthHc+aOc/xrMqSe82wbhrqKCUmtYeB2uF++NiavJrmXiWD77qJ+isSVm7ZTPX7i3T7bVJPUtWWGK6ji7MA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=GlgepBem; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="llxIWQFT"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D171B1F000E9;
-	Fri, 28 Aug 2026 01:48:55 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="GlgepBem"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5C1C01F000E9;
+	Fri, 28 Aug 2026 01:53:49 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1787881736;
-	bh=wo4FCAjDOKndHUSorb8iLPYOJuJ6AlqY7FPfHRH2IWA=;
+	s=k20260515; t=1787882029;
+	bh=J+KiUj8K3vNiZHvNshThClNRWFPlWXgKFpM7uZcUsD8=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=llxIWQFTKn0Z/beqIxCtTU75POIvFSVVU0323Nwdc2hBHycnHNfDAA55boR2+EiXU
-	 qV+NBCVkZCc30eGKzTcOOuix//cnphHoNi9NfbfIKXzk88usSNNsd493AVEzd+pz0i
-	 9DXN7kMKc0rpha+3UhWHV4KZ/wx6VKZul3xI3H+CJsMpVPbzK8F6duB+DMfg9+0rLR
-	 5I5/MF04bXXjGo6YZ4FD5EDuwtzzs5I2VSCEnrdb9qEgUgKGveVmdE3/H+44VXYgb+
-	 t+5jmzzfAu42wZdmYQBlaBFXBC6KQ3UcZlkS9HTgDxbMD8BjfedXrVZ3p02oKFAsnZ
-	 pvNyxlvlbdbgg==
-Date: Fri, 28 Aug 2026 04:48:52 +0300
+	b=GlgepBemnFBZ92mm4s14pC/+w9mtI/vrlPJRxHHweeaT+vhA/T7eC9o9MK0BwinFa
+	 UZBDWFVGSbJWKqSwAcCDyvhrZW6ZBcjuPwUvSyRdoalur6xtpNjRyYfsSdJBuu+oxu
+	 QdCIaBrzn7gWSxwFPWdoon84aC8pOgJzJYdmmz1AVNMNVYojxV2mFajJ5ksieDqDd+
+	 vU7A+i+V5MBwD23IpQZC+oJ5p1KSxKCa1RbYSy2N7csyTI7YK1OBZNyaNL1Uxqm+oh
+	 fR758X+ock4GFCeJlLLeyScgvNCrNKpTTlhxAIB4sGoQ8CeOSlPMHLAw7IohGFwQ4U
+	 DYgq+Q8Fos1BQ==
+Date: Fri, 28 Aug 2026 04:53:45 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Sanket Sharma <sanketsharmacsec@gmail.com>
-Cc: sudhakar@linux.ibm.com, gregkh@linuxfoundation.org,
-	James.Bottomley@hansenpartnership.com, zohar@linux.ibm.com,
-	dhowells@redhat.com, linux-integrity@vger.kernel.org,
-	keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-	security@kernel.org, w@1wt.eu
-Subject: Re: [PATCH v3 2/2] keys: trusted: tpm1: reject unauthenticated
- response tag in TSS_checkhmac1/2
-Message-ID: <apDpBEAmDmtuJShz@kernel.org>
-References: <20260826080405.255083-1-sanketsharmacsec@gmail.com>
- <20260826170700.616-1-sanketsharmacsec@gmail.com>
- <20260826170700.616-2-sanketsharmacsec@gmail.com>
+To: "Cen Zhang (Microsoft Security FORGE Labs)" <blbllhy@gmail.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Roberto Sassu <roberto.sassu@polito.it>,
+	David Safford <safford@watson.ibm.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Kees Cook <kees@kernel.org>, Francis Perron <francis@akrites.dev>,
+	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Akrites SIRT <sirt@akrites.dev>,
+	AutonomousCodeSecurity@microsoft.com,
+	Cen Zhang <cenzhang@microsoft.com>
+Subject: Re: [PATCH v2] KEYS: encrypted: fix integer overflow of datablob_len
+Message-ID: <apDqKZ1vbdWRQ6r-@kernel.org>
+References: <20260826154456.85974-1-blbllhy@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -48,49 +52,105 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260826170700.616-2-sanketsharmacsec@gmail.com>
+In-Reply-To: <20260826154456.85974-1-blbllhy@gmail.com>
 
-On Wed, Aug 26, 2026 at 05:07:00PM +0000, Sanket Sharma wrote:
-> TSS_checkhmac1() and TSS_checkhmac2() silently return success when the
-> response tag is TPM_TAG_RSP_COMMAND (0x00c4), bypassing HMAC
-> verification entirely. A forged TPM response with this unauthenticated
-> tag allows an attacker to skip integrity checks on TPM responses.
-
-I don't think we need threat scenario role play here.
-
+On Wed, Aug 26, 2026 at 11:44:56AM -0400, Cen Zhang (Microsoft Security FORGE Labs) wrote:
+> From: "Cen Zhang (Microsoft Security FORGE Labs)" <cenzhang@microsoft.com>
 > 
-> Reject TPM_TAG_RSP_COMMAND with -EINVAL in both functions, requiring
-> all responses to carry a proper authenticated tag.
+> The datablob_len field in struct encrypted_key_payload and the local
+> variable in encrypted_key_alloc() are declared as unsigned short, which
+> has a maximum value of 65535. The datablob_len is computed as:
 > 
-> Signed-off-by: Sanket Sharma <sanketsharmacsec@gmail.com>
+>   format_len + 1 + strlen(master_desc) + 1 + strlen(datalen) + 1
+>   + ivsize + 1 + encrypted_datalen
+> 
+> An attacker can create an encrypted key with a very long datalen string
+> (e.g., 32756 characters of leading zeros followed by "4096", which
+> kstrtol() happily parses as 4096), and then update it with a very long
+> master_desc string (~32760 characters). The combined lengths exceed
+> 65535, causing the unsigned short to silently wrap around. This results
+> in a grossly undersized kzalloc() allocation, and the subsequent
+> memcpy() in __ekey_init() writes ~32KB past the end of the buffer,
+> corrupting adjacent slab objects.
+> 
+> Fix this by:
+> 1. Using check_add_overflow() to calculate datablob_len directly into
+>    its existing unsigned short destination.
+> 2. Checking the total payload length the same way before passing it to
+>    key_payload_reserve(), since key->datalen is also unsigned short.
+> 3. Using kzalloc_flex() to allocate encrypted_key_payload together with
+>    its trailing payload_data[] array.
+> 
+> Fixes: 7e70cb497850 ("keys: add new key-type encrypted")
+> Cc: stable@vger.kernel.org
+> Assisted-by: GitHub-Copilot:claude-opus-4.6
+> Signed-off-by: Cen Zhang (Microsoft Security FORGE Labs) <cenzhang@microsoft.com>
+> Signed-off-by: Francis Perron (Akrites SIRT) <francis@akrites.dev>
+
+Please remove "(Microsoft Security FORGE Labs)" and "(Akrites SIRT)"
+
 > ---
->  security/keys/trusted-keys/trusted_tpm1.c | 4 ----
->  1 file changed, 4 deletions(-)
+> Changes in v2:
+> - Keep datablob_len unchanged and check both unsigned short bounds with
+>   check_add_overflow().
+> - Use kzalloc_flex() for the trailing payload_data[] array.
+> - Correct the attribution and sign-off trailers.
 > 
-> diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-> index d47cb7108..6dbbf4546 100644
-> --- a/security/keys/trusted-keys/trusted_tpm1.c
-> +++ b/security/keys/trusted-keys/trusted_tpm1.c
-> @@ -201,8 +201,6 @@ static int TSS_checkhmac1(unsigned char *buffer,
->  	tag = LOAD16(buffer, 0);
->  	ordinal = command;
->  	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
-> -	if (tag == TPM_TAG_RSP_COMMAND)
-> -		return 0;
->  	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
->  		return -EINVAL;
->  	authdata = buffer + bufsize - SHA1_DIGEST_SIZE;
-> @@ -269,8 +267,6 @@ static int TSS_checkhmac2(unsigned char *buffer,
->  	ordinal = command;
->  	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
+> The initial version was discussed off-list and is not publicly archived.
+> 
+>  security/keys/encrypted-keys/encrypted.c | 20 ++++++++++++++------
+>  1 file changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+> index 59cb77b237b3..e07092ea301a 100644
+> --- a/security/keys/encrypted-keys/encrypted.c
+> +++ b/security/keys/encrypted-keys/encrypted.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/parser.h>
+>  #include <linux/string.h>
+>  #include <linux/err.h>
+> +#include <linux/overflow.h>
+>  #include <keys/user-type.h>
+>  #include <keys/trusted-type.h>
+>  #include <keys/encrypted-type.h>
+> @@ -579,6 +580,7 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
+>  {
+>  	struct encrypted_key_payload *epayload = NULL;
+>  	unsigned short datablob_len;
+> +	unsigned short payload_totallen;
+>  	unsigned short decrypted_datalen;
+>  	unsigned short payload_datalen;
+>  	unsigned int encrypted_datalen;
+> @@ -632,16 +634,22 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
 >  
-> -	if (tag == TPM_TAG_RSP_COMMAND)
-> -		return 0;
->  	if (tag != TPM_TAG_RSP_AUTH2_COMMAND)
->  		return -EINVAL;
->  	authdata1 = buffer + bufsize - (SHA1_DIGEST_SIZE + 1
+>  	encrypted_datalen = roundup(decrypted_datalen, blksize);
+>  
+> -	datablob_len = format_len + 1 + strlen(master_desc) + 1
+> -	    + strlen(datalen) + 1 + ivsize + 1 + encrypted_datalen;
+> +	if (check_add_overflow(format_len + 1 + strlen(master_desc) + 1
+> +			       + strlen(datalen) + 1 + ivsize + 1,
+> +			       encrypted_datalen, &datablob_len))
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	if (check_add_overflow(datablob_len,
+> +			       payload_datalen + HASH_SIZE + 1,
+> +			       &payload_totallen))
+> +		return ERR_PTR(-EINVAL);
+>  
+> -	ret = key_payload_reserve(key, payload_datalen + datablob_len
+> -				  + HASH_SIZE + 1);
+> +	ret = key_payload_reserve(key, payload_totallen);
+>  	if (ret < 0)
+>  		return ERR_PTR(ret);
+>  
+> -	epayload = kzalloc(sizeof(*epayload) + payload_datalen +
+> -			   datablob_len + HASH_SIZE + 1, GFP_KERNEL);
+> +	epayload = kzalloc_flex(*epayload, payload_data, payload_totallen,
+> +				GFP_KERNEL);
+>  	if (!epayload)
+>  		return ERR_PTR(-ENOMEM);
+>  
 > -- 
-> 2.53.0
-> 
+> 2.55.0
 
 BR, Jarkko
