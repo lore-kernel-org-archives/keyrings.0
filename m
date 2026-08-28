@@ -1,32 +1,32 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E4D8918C02E;
-	Fri, 28 Aug 2026 01:55:12 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9EA6729405;
+	Fri, 28 Aug 2026 01:59:31 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787882114; cv=none; b=DaDDhvAOVNo4II6zIe7J9DmTrwCthSkg2SnyQVgEmwxVDUD4qDipu5DO4LANYZ/iGYB8MjFYfz7sELyUCibTiZspvmzt+rkcslzrwGjgWYF7eGVKJaFQWgUkOs5j060fV+q+OpcNSx9DZ0VgppYa/RwNfojdxjfId8O4Z/oGAAU=
+	t=1787882372; cv=none; b=RHmXwl0qpijS7uO7CXP+yfa2iH0sDbkJmabgbBP+k+it1sFK3gca7j4ZB/owxZAf+A3wHkf0k+zAFhz+VqZMH0VLB3IdDJYrKdaBULOOScyP4IjROaDcPbnRNcYyCQEFtcbcrzxaernvOb3TLflVKcRZnY+kolIJKE3qEDGnlI8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787882114; c=relaxed/simple;
-	bh=HOi1EJIHIkS1hcIW1kmW1WaIUvnW86l1JshGs/YxUQI=;
+	s=arc-20240116; t=1787882372; c=relaxed/simple;
+	bh=PLUrSJ7Bgr42fAa7hl3L90oFyHaK/ng3BsHc6DjlYsg=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=K9KnAP6NzL3t5+UVe9wnoklh1FroQkLV0bBfpWC25ep0G4g1ePDsAdS8/xIoMB8c0dfyZyciISqlP0g32PoxHt8f7GJRTrhboL5eAZWJXVtMwF/9sSXroRLmaS6RfBe6qBbneap8uKKfrbCS7+xbHq00WzBsMDptCOsc+qbvYtg=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=gajaH5hS; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=TwH4PczUyFzbig4jJ4R15lEDqRT7s0XuEkzgSiNhR++xtcep4EbhyTT6/6DZ8/lBWJGbpV+eeJ+qvMc8rSalZgS24e/XAMeJqGaVLU4YfIdn78IRQuxn6iUYvKl2m7JQjPj/TqxhKtUbel9vVnIZSCabxidsw0Hr8wo1bVk2rdw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=alyJu5Ry; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="gajaH5hS"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id F3E181F000E9;
-	Fri, 28 Aug 2026 01:55:11 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="alyJu5Ry"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B51761F000E9;
+	Fri, 28 Aug 2026 01:59:30 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1787882112;
-	bh=Tv3ZqTtgZ264J1wiziBzoGlZWfmFHd92dq+9ueZK8Kg=;
+	s=k20260515; t=1787882371;
+	bh=BmMeT+sGruSoarJZXTMiWDmYAjjQLaM8q39gUOJQkx8=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=gajaH5hS7/I7JMfV8QA730m+Op0UEOhWsXNKnU1U8aKzcavdSR4dlXS4bYxzARTzM
-	 BcH1JDw7vKIscUAspkSsLDCvaFkt9jEL2QcB1cfs2KJTkAiWMEjX4CHjzilW98n3qY
-	 qNBR9it3x6+UY0fNAQ81OqKOibv0dQgD58+yZTyWKil3GT7sLVlklSXMtk3fbPuBwJ
-	 O64MOQaKTK+LEPfhoX8N/WtS/zVz+zAJ2cf7IxZqC7A290uDiUIRz1ZTNsb8JI5njP
-	 XumaGfvjvmE/QmUmEKw0LVofM5qpKraMog2BaYkob0Q21Zok34Ble6xBX8eAM9rJGV
-	 CIz/CDpkjwaYQ==
-Date: Fri, 28 Aug 2026 04:55:08 +0300
+	b=alyJu5RyJZxHpySxmSX2EQq01LxMYALxg4y2c7/trNsJ8eg1uAVvo3Ay8zeIfizUT
+	 a1TZZEP8ghnZT7m+o1kxgQbg+UMP57BmgZEpv7WUkf70OpF5fg0ESZnQWa0dSfLH3n
+	 J1wj613i20sY6qEp2Z7S0IdG04bRyXQg7Wug+Q1CJCn99pDT1gX0XFW7cK45t39C3O
+	 d/wNvxDqLspl04zBg3cTdxrdZFxU4NbIMxvXoAFGO0TaKV2GVTzWPYEsJUOAruawKe
+	 Rl0XgcYaJ+IFN00KAUOzqYTfnOcH/yXW6iCR0sFbrmYwqM6NJsZvIRsV84GIP/yKm6
+	 0+0XXkf3ek2UA==
+Date: Fri, 28 Aug 2026 04:59:27 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: "Cen Zhang (Microsoft Security FORGE Labs)" <blbllhy@gmail.com>
 Cc: Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
@@ -42,7 +42,7 @@ Cc: Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
 	AutonomousCodeSecurity@microsoft.com,
 	Cen Zhang <cenzhang@microsoft.com>
 Subject: Re: [PATCH v2] KEYS: encrypted: fix integer overflow of datablob_len
-Message-ID: <apDqfGUFiZv_2Gpv@kernel.org>
+Message-ID: <apDrfyDB883Nl5Sd@kernel.org>
 References: <20260826154456.85974-1-blbllhy@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
@@ -69,9 +69,17 @@ On Wed, Aug 26, 2026 at 11:44:56AM -0400, Cen Zhang (Microsoft Security FORGE La
 > kstrtol() happily parses as 4096), and then update it with a very long
 > master_desc string (~32760 characters). The combined lengths exceed
 > 65535, causing the unsigned short to silently wrap around. This results
+
+Please use concrete sizes as possible. E.g., 16-bit word or u16 would be
+much less involved than "unsigned short".
+
 > in a grossly undersized kzalloc() allocation, and the subsequent
 > memcpy() in __ekey_init() writes ~32KB past the end of the buffer,
 > corrupting adjacent slab objects.
+
+One more: please describe the issue as ergnomic as possible (but still
+complete). I care neither Alice nor Bob.
+
 > 
 > Fix this by:
 > 1. Using check_add_overflow() to calculate datablob_len directly into
@@ -94,9 +102,6 @@ On Wed, Aug 26, 2026 at 11:44:56AM -0400, Cen Zhang (Microsoft Security FORGE La
 > - Correct the attribution and sign-off trailers.
 > 
 > The initial version was discussed off-list and is not publicly archived.
-
-I have no recollection of being part of this discussion.
-
 > 
 >  security/keys/encrypted-keys/encrypted.c | 20 ++++++++++++++------
 >  1 file changed, 14 insertions(+), 6 deletions(-)
