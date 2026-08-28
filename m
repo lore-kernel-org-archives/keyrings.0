@@ -1,38 +1,38 @@
 Received: from www62.your-server.de (www62.your-server.de [213.133.104.62])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9A4EB3AA1A1;
-	Fri, 28 Aug 2026 17:52:38 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 479D33AF660;
+	Fri, 28 Aug 2026 17:52:39 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=213.133.104.62
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1787939560; cv=none; b=k+Ps3ksxi3j7qwH+KpSFTR5JIH6lieaMlgslAujBa+8KXh8XGGETOBocWpnhWqD61bqb8TjoTlJLzBotONBCRCuW9OvxZDVSaFdKIWcrcWM/nIveV6kMUE565oEw2rmfJmZwfrz88wen6AOjn+SlOcpBJRNfMjZ1jh8b0d2uUBs=
+	t=1787939561; cv=none; b=T6i9WkJ+4YWyvUGU4+zMD3Sudl3tEU0Qaz+Oo4/q82RvfVDsu0G6Zaxmv1v4WWqWPer832tw6tBf2w7IQliZN2cDOQzffC/AFz/k5/9tPOKSP+n+VF41jOyhIUorHsV96eYygB9sp78f85G2d85Y55qiLuvX0/SL+0viXgXypwU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1787939560; c=relaxed/simple;
-	bh=bfn9tHefomhXtxx7D0eALkUi+dsmsahpwfEntZ+jw5E=;
+	s=arc-20240116; t=1787939561; c=relaxed/simple;
+	bh=a0w/xBiGWQn69EzrAUca35S2Od+gImm5Mvo3mbzOW30=;
 	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=JbTm1pxdmIm1ciYLKSpiNejtdRTs1aFVe03FcCb+yKxr+4oTWasYarABFu1ufJowrZ3sDyY8n90baGAPi8v6y9QZBe5J8lVZJpdhKRAPBATqLREwMe2mwSuSR1Aup5y9FKB9ZJ+f3bzVZau1aHOcAuis7Hxz5RWL4AD8S58mu5A=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net; spf=pass smtp.mailfrom=iogearbox.net; dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b=efUtFtfq; arc=none smtp.client-ip=213.133.104.62
+	 MIME-Version; b=lwEZx88z8LxxxixuudbsW9ZciuH7v2Y1up9HVGy7iIHDpiUX7go1fmJQLNkMuLSKw5JteUDKlzABaZTu196v3u4h8BZ4eG0FjGZQGQckop2YhNeh3QaXiALtA8BG7tZmVAbE237ACfQuh+qDDthfWP/X1Dz+CGbqsvxb9VY6WOY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net; spf=pass smtp.mailfrom=iogearbox.net; dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b=RPUkvLXq; arc=none smtp.client-ip=213.133.104.62
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=iogearbox.net
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=iogearbox.net
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b="efUtFtfq"
+	dkim=pass (2048-bit key) header.d=iogearbox.net header.i=@iogearbox.net header.b="RPUkvLXq"
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
 	d=iogearbox.net; s=default2302; h=Content-Transfer-Encoding:MIME-Version:
 	References:In-Reply-To:Message-ID:Date:Subject:Cc:To:From:Sender:Reply-To:
 	Content-Type:Content-ID:Content-Description:Resent-Date:Resent-From:
 	Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID;
-	bh=9D8xfTIZZggTu5EMcF44win9WTF9DfCXPcwmOK21gZI=; b=efUtFtfq2f+OhZ26HkkEUArlUH
-	Nqqy6z5KhDQDUKC4uwsVw/td3rEpvORSAEOTmW6S6GfrQ2QHRgwX1iwRo46FjKyQHFnUJM1g6sBN7
-	sT6cSeqFn6Ihjyx+YLhxPs/kgPGGhpDYji9ShqqvS1MikZ2RHsdBYkt6ydZRo305IwrstMKcHcMDx
-	PsYYJmbQMMMEytw6EscTvghdbWoGywEYH1UpSoPQivKN5hjU+ZsWYUpwQTYOUpQ3a1o3TIFq+h3mp
-	g5NNeTqPkuhOvaw0adK9/sFXGUiiCPrRXCOtZYlU1DPPy7mjAb1dtuH+VNtFlXngBaoHOOrkQgNZw
-	odSDsb4A==;
+	bh=r2G0xrjtBZjS/EzNEAh46TGbFZrLzOeicUGUGsIHamM=; b=RPUkvLXqUrWLDsbvvGKt+8ZOiS
+	Nzjy/ScsRP2kqYG/7lhEggTgnovnzxxa/spjfXzX7mVIuaVNYfFcodziBIlGBWRZckIN70NTFbu+5
+	rpe0MG0csHig7BuNLab66Lv/moQecT8hd9rIs8UBhTsyJYXMeo+KFCk1pWnAACW2TrxIYeOZnm19/
+	3S5rtyaaeM1iVnst3S3VCeRtfVXwuR0WV3bjOCaupIWZUhBFFsnJd3RcbyG6RbRvqqjjXYHIX6qj4
+	DVmj9nCXRhJQ0HrlLwitS8EM7sp0l6NDXsLpixQd7we6JX/0/tDEH+2wz8lZTOYB8VVYNdyOXglqY
+	WRVqr3ag==;
 Received: from localhost ([127.0.0.1])
 	by www62.your-server.de with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
 	(Exim 4.96.2)
 	(envelope-from <daniel@iogearbox.net>)
-	id 1x00km-0000bk-2q;
-	Fri, 28 Aug 2026 19:52:36 +0200
+	id 1x00kn-0000by-26;
+	Fri, 28 Aug 2026 19:52:37 +0200
 From: Daniel Borkmann <daniel@iogearbox.net>
 To: memxor@gmail.com
 Cc: brauner@kernel.org,
@@ -44,9 +44,9 @@ Cc: brauner@kernel.org,
 	dhowells@redhat.com,
 	jarkko@kernel.org,
 	keyrings@vger.kernel.org
-Subject: [PATCH bpf-next v4 10/11] selftests/bpf: Add tests for bpf keyring in signed loader
-Date: Fri, 28 Aug 2026 19:52:26 +0200
-Message-ID: <20260828175227.1537793-11-daniel@iogearbox.net>
+Subject: [PATCH bpf-next v4 11/11] Documentation/bpf: Document the bpf keyring and improve examples
+Date: Fri, 28 Aug 2026 19:52:27 +0200
+Message-ID: <20260828175227.1537793-12-daniel@iogearbox.net>
 X-Mailer: git-send-email 2.43.0
 In-Reply-To: <20260828175227.1537793-1-daniel@iogearbox.net>
 References: <20260828175227.1537793-1-daniel@iogearbox.net>
@@ -59,531 +59,392 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-Virus-Scanned: Clear (ClamAV 1.4.3/28106/Fri Aug 28 08:27:08 2026)
 
-bpf_keyring_provisioned walks the keyring through its whole lifecycle in
-one boot for ease of testing. It enrolls a freshly generated key into the
-bpf keyring, confirms a load is still refused with -ENOKEY while the keyring
-carries no restriction, then restricts it, and only then does the same
-signed BPF program load with the bpf keyring. A caller-supplied keyring is
-asserted to be refused both before and after the restriction, since what
-refuses it is bpf.keyring_unsealed=1 rather than the state of the keyring.
-
-Unsealing is a boot-time decision which also refuses the caller-supplied
-keyrings that most subtests here sign against, so each subtest is tagged
-with the boot it needs and the ones which cannot run report as skipped
-instead of being dropped.
-
-Regular run:
-
-  # LDLIBS=-static PKG_CONFIG='pkg-config --static' ./vmtest.sh -- ./test_progs -t signed_loader
-  [...]
-  #425/12  signed_loader/signature_zero_size:OK
-  #425/13  signed_loader/signature_bad_keyring:OK
-  #425/14  signed_loader/bpf_keyring_sealed:OK
-  [...]
-  #425/30  signed_loader/signed_map_by_fd_rejected:OK
-  #425/31  signed_loader/signed_sparse_fd_array_rejected:OK
-  #425/32  signed_loader/bpf_keyring_provisioned:SKIP
-  #425     signed_loader:OK (SKIP: 1/32)
-  Summary: 1/31 PASSED, 1 SKIPPED, 0/0 FAILED
-
-Unsealed run:
-
-  # KERNEL_CMDLINE_EXTRA="bpf.keyring_unsealed=1" \
-    LDLIBS=-static PKG_CONFIG='pkg-config --static' ./vmtest.sh -- ./test_progs -t signed_loader
-  #425/1   signed_loader/loadtime_no_map:SKIP
-  #425/2   signed_loader/loadtime_with_map:SKIP
-  #425/3   signed_loader/metadata_match:OK
-  [...]
-  #425/30  signed_loader/signed_map_by_fd_rejected:SKIP
-  #425/31  signed_loader/signed_sparse_fd_array_rejected:SKIP
-  #425/32  signed_loader/bpf_keyring_provisioned:OK
-  #425     signed_loader:OK (SKIP: 17/32)
-  Summary: 1/15 PASSED, 17 SKIPPED, 0/0 FAILED
+Key generation is detailled for RSA and ML-DSA, the load example sets
+keyring_id to the bpf keyring with the session keyring shown only as
+the staging variant, and the LSM admission example anchors on the bpf
+keyring while allowlisting staged serials rather than treating a user
+keyring as ordinary trust.
 
 Signed-off-by: Daniel Borkmann <daniel@iogearbox.net>
 ---
- .../selftests/bpf/prog_tests/signed_loader.c  | 376 +++++++++++++-----
- 1 file changed, 287 insertions(+), 89 deletions(-)
+ Documentation/bpf/signing.rst | 283 +++++++++++++++++++++++++++++-----
+ 1 file changed, 246 insertions(+), 37 deletions(-)
 
-diff --git a/tools/testing/selftests/bpf/prog_tests/signed_loader.c b/tools/testing/selftests/bpf/prog_tests/signed_loader.c
-index 87f155de0e65..a0f93756e717 100644
---- a/tools/testing/selftests/bpf/prog_tests/signed_loader.c
-+++ b/tools/testing/selftests/bpf/prog_tests/signed_loader.c
-@@ -45,9 +45,9 @@ enum {
- /* FIPS-204 ML-DSA-87 signature size, see include/crypto/mldsa.h. */
- #define MLDSA87_SIGNATURE_SIZE	4627
+diff --git a/Documentation/bpf/signing.rst b/Documentation/bpf/signing.rst
+index e73eaaebd8b1..27fdad3df96f 100644
+--- a/Documentation/bpf/signing.rst
++++ b/Documentation/bpf/signing.rst
+@@ -254,21 +254,24 @@ returned. Only after the program has fully loaded, at the next hook
+ (``security_bpf_prog()``), does ``BPF_SIG_VERIFIED`` carry its full meaning:
+ validly signed *and* fully verified.
  
--static int load_loader(const void *insns, __u32 insns_sz, int map_fd,
--		       const void *sig, __u32 sig_sz, __s32 keyring_id,
--		       __u32 fd_array_cnt)
-+static int load_loader_log(const void *insns, __u32 insns_sz, int map_fd,
-+			   const void *sig, __u32 sig_sz, __s32 keyring_id,
-+			   __u32 fd_array_cnt, char *log_buf, __u32 log_sz)
- {
- 	union bpf_attr attr;
- 	int fd;
-@@ -59,18 +59,31 @@ static int load_loader(const void *insns, __u32 insns_sz, int map_fd,
- 	attr.license = ptr_to_u64("Dual BSD/GPL");
- 	attr.prog_flags = BPF_F_SLEEPABLE;
- 	attr.fd_array = ptr_to_u64(&map_fd);
-+	attr.fd_array_cnt = fd_array_cnt;
- 	if (sig) {
- 		attr.signature = ptr_to_u64(sig);
- 		attr.signature_size = sig_sz;
- 		attr.keyring_id = keyring_id;
- 	}
--	attr.fd_array_cnt = fd_array_cnt;
-+	if (log_buf) {
-+		attr.log_level = 1;
-+		attr.log_buf = ptr_to_u64(log_buf);
-+		attr.log_size = log_sz;
-+	}
- 	memcpy(attr.prog_name, "__loader.prog", sizeof("__loader.prog"));
- 	fd = syscall(__NR_bpf, BPF_PROG_LOAD, &attr,
- 		     offsetofend(union bpf_attr, keyring_id));
- 	return fd < 0 ? -errno : fd;
- }
+-A more realistic admission policy than "is it signed at all": accept programs
+-signed by a system keyring, accept a user-keyring signature only if the
+-key/keyring it was verified against is on an explicit allowlist, and emit a
+-tamper-evident record of every decision so that even denied attempts are
+-auditable. (Illustrative - error checking elided.)
++A more realistic admission policy than "is it signed at all": base trust in
++the bpf keyring or an explicit allowlist of a caller-supplied staging key/
++keyring, and emit a record of every decision including denied attempts.
++(Illustrative - error checking elided.)
  
-+static int load_loader(const void *insns, __u32 insns_sz, int map_fd,
-+		       const void *sig, __u32 sig_sz, __s32 keyring_id,
-+		       __u32 fd_array_cnt)
-+{
-+	return load_loader_log(insns, insns_sz, map_fd, sig, sig_sz, keyring_id,
-+			       fd_array_cnt, NULL, 0);
-+}
-+
- static int run_gen_loader(const void *insns, __u32 insns_sz,
- 			  const void *data, __u32 data_sz,
- 			  const void *excl, __u32 excl_sz,
-@@ -205,6 +218,7 @@ static int sign_buf_digest(const char *dir, const void *buf, __u32 len,
- 	fd = mkstemp(data_tmpl);
- 	if (fd < 0)
- 		return -errno;
-+	snprintf(sigpath, sizeof(sigpath), "%s.p7s", data_tmpl);
- 	if (write(fd, buf, len) != (ssize_t)len) {
- 		close(fd);
- 		ret = -EIO;
-@@ -229,30 +243,28 @@ static int sign_buf_digest(const char *dir, const void *buf, __u32 len,
- 		goto out;
- 	}
+ .. code-block:: c
  
--	snprintf(sigpath, sizeof(sigpath), "%s.p7s", data_tmpl);
- 	if (stat(sigpath, &st) < 0) {
- 		ret = -errno;
- 		goto out;
- 	}
- 	if (st.st_size > (off_t)*sig_sz) {
- 		ret = -E2BIG;
--		goto out_sig;
-+		goto out;
- 	}
- 	fd = open(sigpath, O_RDONLY);
- 	if (fd < 0) {
- 		ret = -errno;
--		goto out_sig;
-+		goto out;
- 	}
- 	if (read(fd, sig, st.st_size) != st.st_size) {
- 		close(fd);
- 		ret = -EIO;
--		goto out_sig;
-+		goto out;
- 	}
- 	close(fd);
- 	*sig_sz = st.st_size;
--out_sig:
--	unlink(sigpath);
- out:
-+	unlink(sigpath);
- 	unlink(data_tmpl);
- 	return ret;
- }
-@@ -564,7 +576,6 @@ static void signature_failure_logs(void)
- 	static const __u8 junk[64] = { 0x30, 0x42, 0x13, 0x37, };
- 	char log_buf[1024] = {};
- 	struct gen_loader_fixture f;
--	union bpf_attr attr;
- 	int fd;
+-    /* Serials of user keys/keyrings we additionally trust. */
++    /*
++     * Serials of caller-supplied keyrings we are willing to stage. Empty
++     * on a system that has committed to the bpf keyring, where the kernel
++     * refuses them anyway.
++     */
+     struct {
+             __uint(type, BPF_MAP_TYPE_HASH);
+             __type(key, __s32);             /* keyring_serial */
+             __type(value, __u8);
+             __uint(max_entries, 64);
+-    } trusted_user_keys SEC(".maps");
++    } staging_keys SEC(".maps");
  
- 	if (gen_loader_fixture_init(&f) == 0) {
-@@ -573,22 +584,9 @@ static void signature_failure_logs(void)
- 		 * failure is reported through the verifier log. A present-but-
- 		 * invalid signature is rejected and the log says why.
- 		 */
--		memset(&attr, 0, sizeof(attr));
--		attr.prog_type = BPF_PROG_TYPE_SYSCALL;
--		attr.insns = ptr_to_u64(f.gopts.insns);
--		attr.insn_cnt = f.gopts.insns_sz / sizeof(struct bpf_insn);
--		attr.license = ptr_to_u64("Dual BSD/GPL");
--		attr.prog_flags = BPF_F_SLEEPABLE;
--		attr.signature = ptr_to_u64(junk);
--		attr.signature_size = sizeof(junk);
--		attr.keyring_id = KEY_SPEC_SESSION_KEYRING;
--		attr.log_level = 1;
--		attr.log_buf = ptr_to_u64(log_buf);
--		attr.log_size = sizeof(log_buf);
--		memcpy(attr.prog_name, "__loader.prog", sizeof("__loader.prog"));
--
--		fd = syscall(__NR_bpf, BPF_PROG_LOAD, &attr,
--			     offsetofend(union bpf_attr, keyring_id));
-+		fd = load_loader_log(f.gopts.insns, f.gopts.insns_sz, -1, junk,
-+				     sizeof(junk), KEY_SPEC_SESSION_KEYRING, 0,
-+				     log_buf, sizeof(log_buf));
- 		ASSERT_LT(fd, 0, "invalid signature rejected at load");
- 		if (fd >= 0)
- 			close(fd);
-@@ -708,6 +706,23 @@ static int bpf_keyring_lookup(int *nr_keys)
- 	return serial;
- }
+     /* Audit stream consumed by a userspace logger. */
+     struct {
+@@ -291,11 +294,18 @@ auditable. (Illustrative - error checking elided.)
+             if (kernel)
+                     return 0;                       /* trust in-kernel loads */
  
-+static long keyctl_ret(int cmd, unsigned long arg2, unsigned long arg3)
-+{
-+	long ret = syscall(__NR_keyctl, cmd, arg2, arg3);
-+
-+	return ret < 0 ? -errno : ret;
-+}
-+
-+/*
-+ * What the bpf keyring still needs once it got provisioned: KEY_POS_SEARCH
-+ * for the in-kernel search during verification, and the user view/read bits
-+ * so it stays visible in /proc/keys, rest is dropped so the enrolled is
-+ * therefore final.
-+ */
-+#define BPF_KEYRING_PERM_LOCKED		0x08030000
-+/* What bpf_keyring_init() grants at boot. */
-+#define BPF_KEYRING_PERM_INITIAL	0x082f0000
-+
- static void bpf_keyring_sealed(void)
- {
- 	static const __u8 junk[64] = {};
-@@ -721,6 +736,9 @@ static void bpf_keyring_sealed(void)
- 	}
- 	serial = bpf_keyring_lookup(NULL);
- 	if (serial >= 0) {
-+		ASSERT_EQ(keyctl_ret(KEYCTL_GET_KEYRING_ID,
-+				     KEY_SPEC_BPF_KEYRING, 0), serial,
-+			  "KEY_SPEC_BPF_KEYRING resolves to the bpf keyring");
- 		key = syscall(__NR_add_key, "user", "sealprobe", "x", 1,
- 			      KEY_SPEC_BPF_KEYRING);
- 		if (key >= 0)
-@@ -739,6 +757,183 @@ static void bpf_keyring_sealed(void)
- 	gen_loader_fixture_fini(&f);
- }
+-            if (verdict != BPF_SIG_VERIFIED)
++            if (verdict != BPF_SIG_VERIFIED) {
+                     ret = -EPERM;                   /* must be validly signed */
+-            else if (ktype == BPF_SIG_KEYRING_USER &&
+-                     !bpf_map_lookup_elem(&trusted_user_keys, &serial))
+-                    ret = -EPERM;                   /* key/keyring not allowlisted */
++            } else switch (ktype) {
++            case BPF_SIG_KEYRING_BPF:
++                    break;
++            case BPF_SIG_KEYRING_USER:
++                    if (!bpf_map_lookup_elem(&staging_keys, &serial))
++                            ret = -EPERM;
++                    break;
++            default:
++                    ret = -EPERM;                   /* keyring not in policy */
++            }
  
-+static int try_load(const struct gen_loader_fixture *f, const void *sig,
-+		    __u32 sig_sz, __s32 keyring_id, char *log_buf, __u32 log_sz)
-+{
-+	int map_fd, prog_fd;
-+
-+	map_fd = setup_meta_map(f);
-+	if (!ASSERT_OK_FD(map_fd, "meta_map"))
-+		return map_fd;
-+	prog_fd = load_loader_log(f->gopts.insns, f->gopts.insns_sz, map_fd,
-+				  sig, sig_sz, keyring_id, 1, log_buf, log_sz);
-+	close(map_fd);
-+	if (prog_fd >= 0)
-+		close(prog_fd);
-+	return prog_fd;
-+}
-+
-+/*
-+ * This needs bpf.keyring_unsealed=1 on the guest kernel command line, which
-+ * vmtest.sh can pass via KERNEL_CMDLINE_EXTRA. There is no way to unseal the
-+ * keyring from here, so without it the test skips. It also only works once
-+ * per boot, as restricting a keyring cannot be undone.
-+ */
-+static void bpf_keyring_provisioned(void)
-+{
-+	char dir_tmpl[] = "/tmp/bpfkeyringXXXXXX";
-+	char bad_tmpl[] = "/tmp/bpfkeyringbadXXXXXX";
-+	__u8 *sig = NULL, *bad = NULL, *buf = NULL;
-+	int serial, err;
-+	int nr_keys = 0, der_fd = -1;
-+	struct gen_loader_fixture f;
-+	__u32 sig_sz = 8192, bad_sz;
-+	bool have_fixture = false;
-+	char *dir, *bad_dir = NULL;
-+	char log_buf[1024] = {};
-+	char path[PATH_MAX];
-+	__u8 der[4096];
-+	ssize_t der_sz;
-+
-+	serial = bpf_keyring_lookup(&nr_keys);
-+	if (serial < 0) {
-+		printf("%s:SKIP:no bpf keyring (needs CONFIG_KEYS)\n", __func__);
-+		test__skip();
-+		return;
-+	}
-+	if (nr_keys != 0) {
-+		printf("%s:SKIP:the bpf keyring has already been provisioned\n",
-+		       __func__);
-+		test__skip();
-+		return;
-+	}
-+
-+	dir = mkdtemp(dir_tmpl);
-+	if (!ASSERT_OK_PTR(dir, "mkdtemp"))
-+		return;
-+	if (!ASSERT_OK(run_setup("genkey", dir), "verify_sig_setup genkey"))
-+		goto rmdir;
-+
-+	snprintf(path, sizeof(path), "%s/signing_key.der", dir);
-+	der_fd = open(path, O_RDONLY);
-+	if (!ASSERT_OK_FD(der_fd, "open signing_key.der"))
-+		goto rmdir;
-+	der_sz = read(der_fd, der, sizeof(der));
-+	close(der_fd);
-+	if (!ASSERT_GT(der_sz, 0, "read signing_key.der"))
-+		goto rmdir;
-+
-+	ASSERT_EQ(keyctl_ret(KEYCTL_GET_KEYRING_ID, KEY_SPEC_BPF_KEYRING, 0),
-+		  serial, "KEY_SPEC_BPF_KEYRING resolves to the bpf keyring");
-+
-+	err = syscall(__NR_add_key, "asymmetric", "", der, (size_t)der_sz,
-+		      KEY_SPEC_BPF_KEYRING);
-+	if (err < 0 && errno == EPERM) {
-+		printf("%s:SKIP:the bpf keyring is sealed, need bpf.keyring_unsealed=1\n",
-+		       __func__);
-+		test__skip();
-+		goto rmdir;
-+	}
-+	if (!ASSERT_GE(err, 0, "add the signing key to the bpf keyring"))
-+		goto rmdir;
-+
-+	sig = malloc(sig_sz);
-+	if (!ASSERT_OK_PTR(sig, "sig buf"))
-+		goto out;
-+	have_fixture = true;
-+	if (gen_loader_fixture_init(&f) != 0)
-+		goto out;
-+
-+	buf = malloc((size_t)f.gopts.insns_sz + f.data_sz);
-+	if (!ASSERT_OK_PTR(buf, "signbuf"))
-+		goto out;
-+	memcpy(buf, f.gopts.insns, f.gopts.insns_sz);
-+	memcpy(buf + f.gopts.insns_sz, f.blob, f.data_sz);
-+	if (!ASSERT_OK(sign_buf(dir, buf, f.gopts.insns_sz + f.data_sz, sig,
-+				&sig_sz), "sign insns||metadata"))
-+		goto out;
-+
-+	ASSERT_EQ(try_load(&f, sig, sig_sz, KEY_SPEC_BPF_KEYRING, NULL, 0),
-+		  -ENOKEY, "unrestricted keyring still not consulted");
-+
-+	ASSERT_EQ(try_load(&f, sig, sig_sz, KEY_SPEC_SESSION_KEYRING, NULL, 0),
-+		  -EPERM, "caller-supplied keyring refused before provisioning");
-+
-+	if (!ASSERT_OK(syscall(__NR_keyctl, KEYCTL_RESTRICT_KEYRING,
-+			       KEY_SPEC_BPF_KEYRING, NULL, NULL),
-+		       "restrict bpf keyring"))
-+		goto out;
-+
-+	if (!ASSERT_OK_FD(try_load(&f, sig, sig_sz, KEY_SPEC_BPF_KEYRING,
-+				   NULL, 0),
-+			  "load signed by a key in the .bpf keyring"))
-+		goto out;
-+
-+	bad_dir = mkdtemp(bad_tmpl);
-+	if (!ASSERT_OK_PTR(bad_dir, "mkdtemp unenrolled"))
-+		goto out;
-+	if (!ASSERT_OK(run_setup("genkey", bad_dir), "verify_sig_setup genkey unenrolled"))
-+		goto out;
-+	bad_sz = 8192;
-+	bad = malloc(bad_sz);
-+	if (!ASSERT_OK_PTR(bad, "bad sig buf"))
-+		goto out;
-+	if (!ASSERT_OK(sign_buf(bad_dir, buf, f.gopts.insns_sz + f.data_sz, bad,
-+				&bad_sz), "sign with an unenrolled key"))
-+		goto out;
-+
-+	ASSERT_EQ(try_load(&f, bad, bad_sz, KEY_SPEC_BPF_KEYRING, log_buf,
-+			   sizeof(log_buf)), -ENOKEY,
-+		  "key outside the bpf keyring refused");
-+	ASSERT_HAS_SUBSTR(log_buf, "signature verification failed",
-+			  "the bpf keyring was consulted");
-+
-+	f.blob[0] ^= 0xff;
-+	err = try_load(&f, sig, sig_sz, KEY_SPEC_BPF_KEYRING, NULL, 0);
-+	f.blob[0] ^= 0xff;
-+	ASSERT_EQ(err, -EKEYREJECTED, "tampered metadata refused");
-+
-+	ASSERT_EQ(try_load(&f, sig, sig_sz, KEY_SPEC_SESSION_KEYRING, NULL, 0),
-+		  -EPERM, "caller-supplied keyring refused once .bpf is in use");
-+
-+	err = keyctl_ret(KEYCTL_UNLINK, KEY_SPEC_SESSION_KEYRING, serial);
-+	ASSERT_EQ(err, -ENOENT, "keyring writable while the user bits are there");
-+
-+	err = keyctl_ret(KEYCTL_SETPERM, serial, BPF_KEYRING_PERM_LOCKED);
-+	if (!ASSERT_OK(err, "drop the user bits on the bpf keyring"))
-+		goto out;
-+
-+	ASSERT_OK_FD(try_load(&f, sig, sig_sz, KEY_SPEC_BPF_KEYRING, NULL, 0),
-+		     "load still verified against the locked keyring");
-+	ASSERT_EQ(keyctl_ret(KEYCTL_GET_KEYRING_ID, KEY_SPEC_BPF_KEYRING, 0),
-+		  -EACCES, "the special id grants no rights of its own");
-+
-+	err = keyctl_ret(KEYCTL_UNLINK, KEY_SPEC_SESSION_KEYRING, serial);
-+	ASSERT_EQ(err, -EACCES, "unlink refused");
-+	err = keyctl_ret(KEYCTL_CLEAR, serial, 0);
-+	ASSERT_EQ(err, -EACCES, "clear refused");
-+	err = keyctl_ret(KEYCTL_REVOKE, serial, 0);
-+	ASSERT_EQ(err, -EACCES, "revoke refused");
-+	err = keyctl_ret(KEYCTL_INVALIDATE, serial, 0);
-+	ASSERT_EQ(err, -EACCES, "invalidate refused");
-+	err = keyctl_ret(KEYCTL_SET_TIMEOUT, serial, 1);
-+	ASSERT_EQ(err, -EACCES, "timeout refused");
-+	err = keyctl_ret(KEYCTL_SETPERM, serial, BPF_KEYRING_PERM_INITIAL);
-+	ASSERT_EQ(err, -EACCES, "the bits cannot be granted back");
-+
-+	ASSERT_EQ(bpf_keyring_lookup(&nr_keys), serial, "keyring still there");
-+	ASSERT_EQ(nr_keys, 1, "the enrolled key survived");
-+out:
-+	if (have_fixture)
-+		gen_loader_fixture_fini(&f);
-+	genkey_dir_fini(bad_dir);
-+	free(buf);
-+	free(bad);
-+	free(sig);
-+rmdir:
-+	genkey_dir_fini(dir);
-+}
-+
- /*
-  * A signed loader must ignore ctx-supplied map dimensions: the host cannot
-  * resize a signed program's maps via the loader ctx. Drive a one-map program
-@@ -1973,68 +2168,71 @@ static void signed_module_kfunc_rejected(void)
- 	run_setup("cleanup", dir);
- }
+             d = bpf_ringbuf_reserve(&audit, sizeof(*d), 0);
+             if (d) {
+@@ -309,6 +319,11 @@ auditable. (Illustrative - error checking elided.)
+             return ret;
+     }
  
-+enum subtest_boot {
-+	BOOT_ANY,
-+	BOOT_SEALED,
-+	BOOT_UNSEALED,
-+};
++Such a policy is what makes a caller-supplied keyring usable at all on a system
++that does not boot with ``bpf.keyring_unsealed=1``: the allowlist bounds which
++staged keys count, and the LSM itself has to protect them from being tampered
++with.
 +
-+static const struct {
-+	const char *name;
-+	void (*fn)(void);
-+	enum subtest_boot boot;
-+} subtests[] = {
-+	{ "loadtime_no_map", loadtime_no_map, BOOT_SEALED },
-+	{ "loadtime_with_map", loadtime_with_map, BOOT_SEALED },
-+	{ "metadata_match", metadata_match, BOOT_ANY },
-+	{ "signature_enforced", signature_enforced, BOOT_SEALED },
-+	{ "signed_nonexcl_fd_array_rejected", signed_nonexcl_fd_array_rejected, BOOT_SEALED },
-+	{ "signed_unfrozen_fd_array_rejected", signed_unfrozen_fd_array_rejected, BOOT_SEALED },
-+	{ "signed_nonarray_fd_array_rejected", signed_nonarray_fd_array_rejected, BOOT_SEALED },
-+	{ "signed_btf_fd_array_rejected", signed_btf_fd_array_rejected, BOOT_ANY },
-+	{ "signed_module_kfunc_rejected", signed_module_kfunc_rejected, BOOT_SEALED },
-+	{ "signature_failure_logs", signature_failure_logs, BOOT_SEALED },
-+	{ "signature_too_large", signature_too_large, BOOT_ANY },
-+	{ "signature_zero_size", signature_zero_size, BOOT_ANY },
-+	{ "signature_bad_keyring", signature_bad_keyring, BOOT_SEALED },
-+	{ "bpf_keyring_sealed", bpf_keyring_sealed, BOOT_ANY },
-+	{ "mldsa_signed_load", mldsa_signed_load, BOOT_SEALED },
-+	{ "metadata_ctx_max_entries_ignored", metadata_ctx_max_entries_ignored, BOOT_ANY },
-+	{ "metadata_ctx_initial_value_ignored", metadata_ctx_initial_value_ignored, BOOT_ANY },
-+	{ "signature_authenticates_insns", signature_authenticates_insns, BOOT_SEALED },
-+	{ "signature_authenticates_metadata", signature_authenticates_metadata, BOOT_SEALED },
-+	{ "hash_requires_frozen", hash_requires_frozen, BOOT_ANY },
-+	{ "no_update_after_freeze", no_update_after_freeze, BOOT_ANY },
-+	{ "freeze_writable_mmap", freeze_writable_mmap, BOOT_ANY },
-+	{ "no_writable_mmap_frozen", no_writable_mmap_frozen, BOOT_ANY },
-+	{ "map_hash_matches_libbpf", map_hash_matches_libbpf, BOOT_ANY },
-+	{ "map_hash_multi_element", map_hash_multi_element, BOOT_ANY },
-+	{ "map_hash_bad_size", map_hash_bad_size, BOOT_ANY },
-+	{ "map_hash_unsupported_type", map_hash_unsupported_type, BOOT_ANY },
-+	{ "lsm_signature_verdict", lsm_signature_verdict, BOOT_SEALED },
-+	{ "signed_no_fd_array", signed_no_fd_array, BOOT_SEALED },
-+	{ "signed_map_by_fd_rejected", signed_map_by_fd_rejected, BOOT_SEALED },
-+	{ "signed_sparse_fd_array_rejected", signed_sparse_fd_array_rejected, BOOT_SEALED },
-+	{ "bpf_keyring_provisioned", bpf_keyring_provisioned, BOOT_UNSEALED },
-+};
+ Observing a verified load: ``security_bpf_prog()``
+ --------------------------------------------------
+ 
+@@ -381,8 +396,9 @@ that verdict covered all of its exclusive maps, rejecting any that did not - so
+ a deny-by-default admission policy needs no second enforcement point. Use
+ ``security_bpf_prog()`` to record or finally gate the verified programs once
+ they carry an id. The ``verdict``, ``keyring_type`` and ``keyring_serial`` fields
+-let a policy distinguish, for example, "verified and signed by a builtin key"
+-from "verified by a user key". A policy LSM such as IPE could consume the same
++let a policy distinguish "verified against the operator's bpf keyring" from
++"verified against a keyring the loader supplied itself", which is the
++distinction that matters most. A policy LSM such as IPE could consume the same
+ hooks to enforce system policy without writing any BPF, though none implements
+ this today.
+ 
+@@ -390,33 +406,158 @@ Keyrings
+ ========
+ 
+ ``keyring_id`` selects the trusted keyring the PKCS#7 signature is verified
+-against. The well-known ids ``0`` (builtin), ``VERIFY_USE_SECONDARY_KEYRING``
+-and ``VERIFY_USE_PLATFORM_KEYRING`` select the corresponding system keyrings;
+-any other value is treated as the serial of a user/session key or keyring.
+-The keyring is looked up first, before the signature bytes are examined, so a
+-signature naming a non-existent keyring is rejected up front, and a failed
+-verification aborts the load - so a program that loads successfully with a
+-signature always has consistent keyring fields recorded.
++against. Four values are well-known; anything else is resolved as a caller-
++supplied key or keyring, named either by its serial or by one of the other
++``KEY_SPEC_*`` ids:
 +
- void test_signed_loader(void)
- {
--	if (test__start_subtest("loadtime_no_map"))
--		loadtime_no_map();
--	if (test__start_subtest("loadtime_with_map"))
--		loadtime_with_map();
--	if (test__start_subtest("metadata_match"))
--		metadata_match();
--	if (test__start_subtest("signature_enforced"))
--		signature_enforced();
--	if (test__start_subtest("signed_nonexcl_fd_array_rejected"))
--		signed_nonexcl_fd_array_rejected();
--	if (test__start_subtest("signed_unfrozen_fd_array_rejected"))
--		signed_unfrozen_fd_array_rejected();
--	if (test__start_subtest("signed_nonarray_fd_array_rejected"))
--		signed_nonarray_fd_array_rejected();
--	if (test__start_subtest("signed_btf_fd_array_rejected"))
--		signed_btf_fd_array_rejected();
--	if (test__start_subtest("signed_module_kfunc_rejected"))
--		signed_module_kfunc_rejected();
--	if (test__start_subtest("signature_failure_logs"))
--		signature_failure_logs();
--	if (test__start_subtest("signature_too_large"))
--		signature_too_large();
--	if (test__start_subtest("signature_zero_size"))
--		signature_zero_size();
--	if (test__start_subtest("signature_bad_keyring"))
--		signature_bad_keyring();
--	if (test__start_subtest("bpf_keyring_sealed"))
--		bpf_keyring_sealed();
--	if (test__start_subtest("mldsa_signed_load"))
--		mldsa_signed_load();
--	if (test__start_subtest("metadata_ctx_max_entries_ignored"))
--		metadata_ctx_max_entries_ignored();
--	if (test__start_subtest("metadata_ctx_initial_value_ignored"))
--		metadata_ctx_initial_value_ignored();
--	if (test__start_subtest("signature_authenticates_insns"))
--		signature_authenticates_insns();
--	if (test__start_subtest("signature_authenticates_metadata"))
--		signature_authenticates_metadata();
--	if (test__start_subtest("hash_requires_frozen"))
--		hash_requires_frozen();
--	if (test__start_subtest("no_update_after_freeze"))
--		no_update_after_freeze();
--	if (test__start_subtest("freeze_writable_mmap"))
--		freeze_writable_mmap();
--	if (test__start_subtest("no_writable_mmap_frozen"))
--		no_writable_mmap_frozen();
--	if (test__start_subtest("map_hash_matches_libbpf"))
--		map_hash_matches_libbpf();
--	if (test__start_subtest("map_hash_multi_element"))
--		map_hash_multi_element();
--	if (test__start_subtest("map_hash_bad_size"))
--		map_hash_bad_size();
--	if (test__start_subtest("map_hash_unsupported_type"))
--		map_hash_unsupported_type();
--	if (test__start_subtest("lsm_signature_verdict"))
--		lsm_signature_verdict();
--	if (test__start_subtest("signed_no_fd_array"))
--		signed_no_fd_array();
--	if (test__start_subtest("signed_map_by_fd_rejected"))
--		signed_map_by_fd_rejected();
--	if (test__start_subtest("signed_sparse_fd_array_rejected"))
--		signed_sparse_fd_array_rejected();
-+	bool unsealed = keyring_unsealed_boot();
-+	unsigned int i;
++.. list-table::
++   :header-rows: 1
 +
-+	for (i = 0; i < ARRAY_SIZE(subtests); i++) {
-+		if (!test__start_subtest(subtests[i].name))
-+			continue;
-+		if (subtests[i].boot == BOOT_SEALED && unsealed) {
-+			printf("%s:SKIP:needs a boot without bpf.keyring_unsealed=1\n",
-+			       subtests[i].name);
-+			test__skip();
-+			continue;
-+		}
-+		if (subtests[i].boot == BOOT_UNSEALED && !unsealed) {
-+			printf("%s:SKIP:needs bpf.keyring_unsealed=1\n",
-+			       subtests[i].name);
-+			test__skip();
-+			continue;
-+		}
-+		subtests[i].fn();
-+	}
- }
++   * - ``keyring_id``
++     - Keyring
++   * - ``0``
++     - builtin trusted keyring
++   * - ``VERIFY_USE_SECONDARY_KEYRING`` (``1``)
++     - secondary trusted keyring
++   * - ``VERIFY_USE_PLATFORM_KEYRING`` (``2``)
++     - platform keyring
++   * - ``KEY_SPEC_BPF_KEYRING`` (``-9``)
++     - the bpf keyring
++   * - anything else
++     - a caller-supplied user/session key or keyring
++
++The keyring is resolved first, before the signature bytes are examined, so a
++signature naming a keyring that cannot be used is rejected up front, and a
++failed verification aborts the load - a program that loads successfully with
++a signature therefore always has consistent keyring fields recorded.
++
++The bpf keyring
++---------------
++
++A system keyring needs a kernel rebuild or a vouched-for enrollment to rotate a
++key, and grants BPF-signing trust to keys trusted for everything else in the
++kernel too. A caller-supplied keyring, at the other extreme, is filled by the
++very process that loads the program and so carries no trust of its own.
++
++The bpf keyring fills that gap and is the trust anchor which a signed BPF
++deployment should be built on top of: a keyring named ``.bpf``, selected with
++``KEY_SPEC_BPF_KEYRING``, that an operator provisions at boot with a key
++scoped to BPF program loading and nothing else in the kernel's trust hierarchy.
++It is owned by the operator rather than by the loader, and rotatable across a
++reboot without touching the kernel image. It is modelled after the dm-verity
++keyring (see ``dm_verity.keyring_unsealed=``) and provisioned the same way: an
++initrd runs the ``keyctl`` steps below before handing off to the rootfs.
++
++Provisioning
++~~~~~~~~~~~~
++
++The keyring is created during ``late_initcall`` and is **sealed empty** by
++default: it carries a reject-all restriction, so no key can ever be added and
++``KEY_SPEC_BPF_KEYRING`` fails with ``-ENOKEY`` for the whole boot.
++
++``bpf.keyring_unsealed=1`` leaves it unrestricted at init so the initrd can
++provision it. The keyring is not linked into any process keyring, but the
++``KEY_SPEC_BPF_KEYRING`` special key id addresses it directly, so its serial
++does not have to be looked up first. Steps would be as follows::
++
++    keyctl padd asymmetric "" -9 < signing_key.der
++    keyctl restrict_keyring -9
++
++Both steps are required: the keyring is consulted only once it is **non-empty
++and restricted**. An unrestricted keyring is ignored even when it holds keys,
++so a half-provisioned keyring is inert rather than a weaker trust anchor, and a
++load naming it fails with ``-ENOKEY`` and a verifier log. Restricting cannot
++be undone.
++
++More than one key is enrolled by repeating the ``keyctl padd`` step; the
++restriction is applied once, after the last of them::
++
++    for key in /etc/bpf/keys/*.der; do
++        keyctl padd asymmetric "" -9 < $key
++    done
++
++    keyctl restrict_keyring -9
++    keyctl show -9
++
++The restriction bounds what can be added, never what can be taken away. A key
++that is already enrolled can still be unlinked, and the keyring cleared or
++revoked, by anything running as root. That does not weaken the anchor, since
++a keyring left empty is no longer consulted and a load naming it fails with
++``-ENOKEY``, but it does take signed loading out until the next boot. Dropping
++the user permissions the keyring no longer needs would close that; as a third
++step in the initrd::
++
++    keyctl setperm -9 0x08030000
++
++What remains is ``KEY_POS_SEARCH`` for the in-kernel search during verification,
++plus ``KEY_USR_VIEW`` and ``KEY_USR_READ`` so the keyring stays visible in
++``/proc/keys``. ``KEY_SPEC_BPF_KEYRING`` names the keyring but conveys no rights
++of its own - the keyring is not possessed by anyone, so the ``KEY_POS_*`` bits
++are only ever reached by the in-kernel search, and userspace is left with what
++the ``KEY_USR_*`` bits grant. Once they are dropped, addressing it by the serial
++``/proc/keys`` reports gets no further than the special id does.
++
++Provisioning has to complete before control passes to the rootfs. The keyring
++takes any number of keys for as long as it is unrestricted, so it is the
++restriction that bounds the enrolled set, not the first enrollment. Before
++the initrd hands off control, it must therefore restrict the keyring after
++the last enrollment.
++
++Enforcement
++~~~~~~~~~~~
++
++``bpf.keyring_unsealed=1`` states that the bpf keyring is *the* trust anchor for
++this boot, so it does more than unseal. From the first program load onwards a
++caller-supplied user/session keyring is refused with ``-EPERM`` and a verifier
++log message, whether or not provisioning ever completed. The system keyrings
++stay selectable.
++
++Enforcement is readable at ``/sys/module/bpf/parameters/keyring_unsealed``, and
++read-only there: the flag is ``__ro_after_init`` behind a 0444 parameter. It is
++also derived from the boot flag rather than from the keyring's runtime state,
++so there is no window early in boot during which a caller-supplied keyring is
++still accepted.
++
++Caller-supplied keyrings are for staging
++----------------------------------------
++
++A ``keyring_id`` naming a user or session key or keyring is a *staging*
++mechanism, not a trust anchor: it is filled by the same userspace that loads the
++program, so verifying against it establishes only that the loader signed what it
++loaded. Its purpose is to let software installed onto a running system - whose
++signing key is not enrolled anywhere yet - run signed until that key reaches the
++bpf keyring on the next boot.
++
++A system that has committed to the bpf keyring refuses this path outright (see
++`Enforcement`_). A system that has not can still allow it, but a policy must
++never treat ``BPF_SIG_KEYRING_USER`` as equivalent to the bpf or system
++keyrings; it should allowlist the specific serials it is willing to stage and
++pair that with a BPF LSM policy protecting those keys from tampering, as in
++`Enforcement via LSMs`_.
++
++Recorded fields
++---------------
+ 
+ Two fields are recorded in ``prog->aux->sig`` for an LSM to inspect:
+ 
+ ``keyring_type`` (``enum bpf_sig_keyring``)
+     Classified purely from ``keyring_id`` whenever the program is signed:
+     ``BPF_SIG_KEYRING_BUILTIN``, ``_SECONDARY``, ``_PLATFORM`` for the system
+-    keyrings, or ``_USER`` for a user/session keyring. It is
+-    ``BPF_SIG_KEYRING_NONE`` for an unsigned program.
++    keyrings, ``_BPF`` for the bpf keyring, or ``_USER`` for a caller-supplied
++    user/session keyring. It is ``BPF_SIG_KEYRING_NONE`` for an unsigned
++    program.
+ 
+ ``keyring_serial`` (``s32``)
+     Set **only** on a successful verification, to the serial of the
+-    **user/session key or keyring** that ``keyring_id`` resolved to - the
++    **caller-supplied key or keyring** that ``keyring_id`` resolved to - the
+     object the signature was verified against, not the individual asymmetric
+     key inside it that matched the signer. Passing
+     ``KEY_SPEC_SESSION_KEYRING``, for example, records the session keyring's
+-    serial. The system keyrings are trusted as a whole and expose no serial
+-    here, so the serial is ``0`` for builtin, secondary and platform
+-    signatures, and ``0`` for unsigned programs. In other words, a non-zero
+-    ``keyring_serial`` is exactly "verified against the user key/keyring with
+-    this serial".
++    serial. The system keyrings and the bpf keyring are trusted as a whole and
++    expose no serial here, so the serial is ``0`` for them, and ``0`` for
++    unsigned programs. A non-zero ``keyring_serial`` is therefore exactly
++    "verified against the caller-supplied key/keyring with this serial", which
++    is exactly the case a policy has to scrutinise.
+ 
+ .. list-table::
+    :header-rows: 1
+@@ -436,16 +577,51 @@ Two fields are recorded in ``prog->aux->sig`` for an LSM to inspect:
+    * - ``VERIFY_USE_PLATFORM_KEYRING``
+      - ``BPF_SIG_KEYRING_PLATFORM``
+      - ``0``
+-   * - other (a user/session key serial)
++   * - ``KEY_SPEC_BPF_KEYRING``
++     - ``BPF_SIG_KEYRING_BPF``
++     - ``0``
++   * - other (a caller-supplied key serial)
+      - ``BPF_SIG_KEYRING_USER``
+      - serial of the resolved key/keyring
+ 
+-Producing a signed object
+-==========================
++Producing and loading a signed object
++=====================================
++
++Generating a signing key
++------------------------
++
++Signing is algorithm agnostic: the algorithm comes from the X.509 certificate
++and the PKCS#7 ``SignerInfo``. Anything the X.509 and PKCS#7 parsers understand
++works with no BPF-side change. Both examples below read the certificate request
++config from ``x509.genkey``, for which ``certs/x509.genkey`` serves as a
++template (see Documentation/admin-guide/module-signing.rst). RSA::
++
++    openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
++            -config x509.genkey -outform PEM \
++            -out signing_key.pem -keyout signing_key.pem
++    openssl x509 -in signing_key.pem -outform der -out signing_key.der
++
++ML-DSA-87 (FIPS-204), which needs openssl 3.5 or later, and both
++``CONFIG_CRYPTO_MLDSA`` and ``CONFIG_CRYPTO_SHA512`` in the kernel - the latter
++for the signedAttrs digest described below, which ``CONFIG_CRYPTO_MLDSA`` does
++not select. Note the absence of a digest option: ML-DSA hashes the message
++itself, so openssl ignores an explicit digest for it::
++
++    openssl req -new -nodes -utf8 -days 36500 -batch -x509 \
++            -newkey ML-DSA-87 -config x509.genkey -outform PEM \
++            -out signing_key.pem -keyout signing_key.pem
++    openssl x509 -in signing_key.pem -outform der -out signing_key.der
++
++``bpftool`` handles the following internally: openssl before 4.0 cannot combine
++ML-DSA with ``CMS_NOATTR``, so it falls back to signedAttrs, where only SHA-512
++is permitted. This mirrors what module signing does as well.
++
++Signing
++-------
+ 
+ ``bpftool`` generates and signs a light skeleton in one step::
+ 
+-    bpftool gen skeleton -L -S -k <private_key.pem> -i <certificate.x509> \
++    bpftool gen skeleton -L -S -k signing_key.pem -i signing_key.der \
+             obj.bpf.o > obj.lskel.h
+ 
+ ``-L`` selects the light-skeleton (``gen_loader``) backend and ``-S`` enables
+@@ -454,12 +630,36 @@ signing; ``-k`` and ``-i`` supply the signing key and its X.509 certificate.
+ reconstructs - and also computes ``excl_prog_hash`` as the digest of the loader
+ instructions so the metadata map can be bound to the loader. The signature and
+ hash are embedded in the generated header; the certificate is used only for
+-signing and is not included. Loading the skeleton performs the
+-create/populate/freeze/load sequence described above.
++signing and is not included.
++
++Loading
++-------
++
++The generated skeleton exposes ``keyring_id``, which selects the keyring the
++kernel verifies against. Set it between open and load; loading then performs
++the create/populate/freeze/load sequence described above::
+ 
+-At runtime the trusted public key must be present in the chosen keyring (for
+-example added to the session keyring, or built into the kernel's builtin trusted
+-keyring) for verification to succeed.
++    struct obj *skel = obj__open();
++
++    skel->keyring_id = KEY_SPEC_BPF_KEYRING;
++    err = obj__load(skel);
++
++For the staging case the same object is loaded against a keyring the caller
++populated itself, which only works on a system that has not set
++``bpf.keyring_unsealed=1``::
++
++    /*
++     * Staging only: this keyring is under the loader's own control and
++     * carries no trust of its own. See "Caller-supplied keyrings are for
++     * staging".
++     */
++    key_id = add_key("asymmetric", "", der, der_sz, KEY_SPEC_SESSION_KEYRING);
++    skel->keyring_id = KEY_SPEC_SESSION_KEYRING;
++    err = obj__load(skel);
++
++Either way the trusted public key must already be in the chosen keyring for
++verification to succeed. For the bpf keyring that enrollment happens once at
++boot, see `Provisioning`_.
+ 
+ UAPI reference
+ ==============
+@@ -487,6 +687,13 @@ UAPI reference
+     The map content is not hashed separately at all - it is covered, as bytes,
+     by the program signature.
+ 
++Kernel command line:
++
++``bpf.keyring_unsealed=``
++    Set to ``1`` to leave the bpf keyring unsealed for provisioning, and to make
++    it the only non-system keyring a loader may select for the rest of the boot
++    (see `The bpf keyring`_).
++
+ Notes and limitations
+ ======================
+ 
+@@ -495,3 +702,5 @@ Notes and limitations
+   exceed it.
+ - The metadata container is a single-element array map, accessed through
+   ``map_direct_value_addr``.
++- The bpf keyring needs ``CONFIG_KEYS``; without it there is no bpf keyring
++  and ``KEY_SPEC_BPF_KEYRING`` never resolves.
 -- 
 2.43.0
 
