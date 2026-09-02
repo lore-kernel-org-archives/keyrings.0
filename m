@@ -1,219 +1,188 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 074992D1911;
-	Tue,  1 Sep 2026 23:00:59 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 21A4E415F22
+	for <keyrings@vger.kernel.org>; Wed,  2 Sep 2026 09:24:28 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1788303661; cv=none; b=fA468bGzrpcMDH1SsjKsls/wOI9429lOEtrCtqFTHTe3NuEwI5ZUdRDUgXIMg+BsJ5ckEipv1FlUjj/bVBwPxIp3N7gEgeUymBsMWl5MXS4iKM8jH9LhbOdXD3+hErSvBbFQX43AigPwrnklN7PZp9tRWZhkn1LTIeItK/cs3+M=
+	t=1788341070; cv=none; b=sgQKq7dhJ7Jk5aRlMeY09/p9p8Asx+1jAkS8WHDuT9K6nIiPz4k1n+T6xdp1XGdO4mnxDZdpOMFXXuHwMUI4wx4igVxzkwAh6tM70k6v1+RhqnRzc2v3gw2/e6bvkA83q4H1FY3ZSc7uDFd7A3+ug3W0/1U5q2oozlfYiyKglew=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1788303661; c=relaxed/simple;
-	bh=9TBc2TSNKd8wom1BAsKVsfqQ7GveYX2PqH6iKaZzJ+g=;
+	s=arc-20240116; t=1788341070; c=relaxed/simple;
+	bh=dv1csfbz3+AfIisrDWKM/LTeMZoRYy6BRCz9NaDNXI0=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=lPtn86fUxVr1IIjXzkeLMaLOQqC0sVF7KrJaExYyYbZdYVnN2s+wiVMd4fVGm9POpfVnCNLq+8685O47hbZLJ8GojJ5reCvtPfohTaGe+Bgq74Z1zW7luIkjNE1eIBLSGOFwGVJUlWkbQsPpYZVC2E/tKVYOpuRj/bAC4qjniKE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=T1L2wgjo; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=oWWKtQjCUcgxVOgYNMf8NzxvqlzPF6mB0wKq80iZPro66TzHy9VwVUVv7G/bBS4Wmr3ArcSnEUYaFJv+vajLmoCTNYEe8yP3hx/uxKxDz2TcYtf+tlNj1HEJyfqCozQrKQwzqrMGnmPbBNm8J9utyEMfGoaMyABRC3ecgJZl6rY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=DKn3S1rS; dkim=pass (2048-bit key) header.d=redhat.com header.i=@redhat.com header.b=JyYnDxPi; arc=none smtp.client-ip=170.10.133.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="T1L2wgjo"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 32A121F000E9;
-	Tue,  1 Sep 2026 23:00:59 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1788303659;
-	bh=yopPsOeV+Vj+/WVfoA5yU2nIAO4oHT7ZU/Lq7XqWAr4=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=T1L2wgjoAkwcUtCLGfPFcb52NDBgQyKyj9ZYjT+Ddt70tjQPWkLq7iPCA6jHWRUSO
-	 YFWCUcfYSBF1gghGKu65PEeuJjvH5bSgwG5F1lyRMCMMyAUkT9wM0bVHfjXgSGwYaC
-	 RT5OxNvCbRKD3thKXFKp4ObM3wwbsCWlfivVf/NPZp8wZU5Ijxs5E84rHSzCGgDmKd
-	 TbPQQPLKSKLtQKjsIXj4X/QXALyBBsq72KRIBsr6o/RR1+AdNbuzwnPTK6XX8OQJ2f
-	 CDLCJRdFEccTYjQHVkVmQbjg1Bh7jQ/7OEHmKh4x3xi2FYjmWE8weC/1iZ5bxZVNyT
-	 LMG2pVA/IShnA==
-Date: Wed, 2 Sep 2026 02:00:56 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Karl Mehltretter <kmehltretter@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] keys: finalize persistent keyring timeout after link
- attempt
-Message-ID: <apdZKMddhZoASXmL@kernel.org>
-References: <20260901191743.39210-1-kmehltretter@gmail.com>
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="DKn3S1rS";
+	dkim=pass (2048-bit key) header.d=redhat.com header.i=@redhat.com header.b="JyYnDxPi"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1788341066;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+	 in-reply-to:in-reply-to:references:references;
+	bh=8QzyTGdGmNYHVJq7S368eFIeE6Ma1yvkdBRAoiX3kKc=;
+	b=DKn3S1rSZRpSyl3FHhGxt3ILEWTihqGI/rG0tNTwpxCT7Yqj3fv6irbbb6Wcf6z9koP/go
+	xZ2HkSvkh68ax3doeLn5uZHmhe7bzTaDLCMIJYUhmjkutd30ZTtA8kMSTSY9ZA29zX3NLk
+	pJbHWyr3iB/ajVRzqIGSH1j+WKarnfw=
+Received: from mail-wr1-f72.google.com (mail-wr1-f72.google.com
+ [209.85.221.72]) by relay.mimecast.com with ESMTP with STARTTLS
+ (version=TLSv1.3, cipher=TLS_AES_256_GCM_SHA384) id
+ us-mta-2-hAb_RCK8N3asatefHFgmdg-1; Wed, 02 Sept 2026 05:24:25 -0400
+X-MC-Unique: hAb_RCK8N3asatefHFgmdg-1
+X-Mimecast-MFC-AGG-ID: hAb_RCK8N3asatefHFgmdg_1788341064
+Received: by mail-wr1-f72.google.com with SMTP id ffacd0b85a97d-481514be433so445342f8f.2
+        for <keyrings@vger.kernel.org>; Wed, 02 Sep 2026 02:24:25 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=redhat.com; s=google; t=1788341064; x=1788945864; darn=vger.kernel.org;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:from:to:cc:subject
+         :date:message-id:reply-to:content-type;
+        bh=8QzyTGdGmNYHVJq7S368eFIeE6Ma1yvkdBRAoiX3kKc=;
+        b=JyYnDxPiF2rPoE7R5j1x2Lv3ODL7MDYcdYu/6e58kZl+6RlY6Xk5w4my4eaCxLUYA8
+         zPlAzzeAtMOv9B13xii8ynINbejCEVTZjtFmzgIlM9LLp776aO9BZeLI9HHlCFvRGXvH
+         eKAZum0oe1RalaQrh1p30bYM8fFtx1+DgVrDJR9yhHpyI74zEWFp3Fyir9pnbouy5sy1
+         R+DTB3gg7Y+paqAb2us/ns8Bg7zrtA7avzLIYuCaY43ld/hcPy64idGwDHsxUr3UbesB
+         S/t5UG4GMdr43+9hepMt0/NnfZCzknTiNeEG1rgqH62X5uOCW5ZtzLDFzWdj9anitwgq
+         /CUQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1788341064; x=1788945864;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=8QzyTGdGmNYHVJq7S368eFIeE6Ma1yvkdBRAoiX3kKc=;
+        b=AQ50dhLv2WOmrciMWwhtja0yuWbffQTvDW5GRTNpNmOAzqnYsE6HmDfkSuUUNhYekz
+         br9T8jwrXKhu5kr7wHEjZ1/R2C0W1jcvLxDP2pIE8bx8r3dAd9ric0URsVTauedv8QD1
+         7tZchKP7AJEHvybx7R3dMiXkyQI52Q7aRHpf9+45nZk/bfy3Pmt/dVAxZ/8FCsBEcSjH
+         AifBqZdE/XXDftFuTg7p1xw7bC/sWKJOBH5F/Jv180EU5dFulY98e0kZ7sM2+ddWPFEs
+         NM2IJjrB0TR+LvkwOHJHuM9uq3Lrs+uT+cZ7bC/lgDSWgDbYLcdRULT9FNR+IQXCivmV
+         yL6A==
+X-Forwarded-Encrypted: i=1; AKwUvBzyr76sgCqTfejNzfyIFkoJmVf0GKJAS4+fEF1Gu8o52iUBooPHbJf0zNgF0/F6bx0+bEXwJpN6rg==@vger.kernel.org
+X-Gm-Message-State: AFuF++kOxaG6hKEgT0Wk22RnkExFZCs8OvrJ7BhiA8X6N6m4WZ9sV6k0
+	mcMSk+7bfEtxyaffTg7Zyu7z3zkdPVORsjd7Mihg6ewcq6ZCl7Uqu4ogs3JBUEZELFgAGLWc4mG
+	5PeGaeRxI6obSiFVt+I15PKC3574CgzREj5g4Wve9CKde7WLLWZ8jbZh4U7fK
+X-Gm-Gg: AYBFou2X9Fm+WZ8ZTSZ9ofiP+5urmIzVlDGdi+XKeQDUV6hw/uDVql2eosQiszgIHd1
+	+2pTWJNxNuFasXJUTPiz2948R9pbXOk+dFYLCLJZilFiYZLNIZoLVZzab+ieEQyP9cktBqsnkIK
+	n+Crgt1XAw1XbhVuXc/N1CwPbG36leviWz+tT6B65yxlL1MxQ/z6A/BHHEsL8m/hAiejBNMRKB7
+	egWacKV6hJbfLkU8lVoIQJZI4mFjztnHYVFhzOzYW0SHCDZ7R06JIEjwRBVQcZIcHLAV6OLdUv+
+	HFODd1dpLNCZ/XTc6MIVzXy3SJU2AWf++4m7pm3CV7odNqDSIG5eNjDdYBwAxlkSxiOd88fL0Eo
+	8BQBx4TrdMBukP9PpGnY3p+MCn5+BCaq45yWu3qcm9nhrOw==
+X-Received: by 2002:a05:6000:454c:b0:485:1bcc:67f8 with SMTP id ffacd0b85a97d-4851bcc69c1mr3651064f8f.13.1788341064194;
+        Wed, 02 Sep 2026 02:24:24 -0700 (PDT)
+X-Received: by 2002:a05:6000:454c:b0:485:1bcc:67f8 with SMTP id ffacd0b85a97d-4851bcc69c1mr3650988f8f.13.1788341063712;
+        Wed, 02 Sep 2026 02:24:23 -0700 (PDT)
+Received: from sgarzare-redhat (host-79-53-30-11.retail.telecomitalia.it. [79.53.30.11])
+        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-48448e80388sm6406811f8f.14.2026.09.02.02.24.22
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Wed, 02 Sep 2026 02:24:22 -0700 (PDT)
+Date: Wed, 2 Sep 2026 11:24:16 +0200
+From: Stefano Garzarella <sgarzare@redhat.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: linux-integrity@vger.kernel.org, stable@vger.kernel.org, 
+	co+6a581c4284f721d4@bugs.sh, James Bottomley <James.Bottomley@hansenpartnership.com>, 
+	Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>, 
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, 
+	"Serge E. Hallyn" <serge@hallyn.com>, Jonathan McDowell <noodles@meta.com>, 
+	Ross Philipson <ross.philipson@gmail.com>, Stefan Berger <stefanb@linux.ibm.com>, 
+	Srish Srinivasan <ssrish@linux.ibm.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, 
+	linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KEYS: trusted: Fix tpm2_load_cmd() boundary check
+Message-ID: <apfoKo-BdwaLXtkT@sgarzare-redhat>
+References: <20260901205809.2028454-1-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20260901191743.39210-1-kmehltretter@gmail.com>
+In-Reply-To: <20260901205809.2028454-1-jarkko@kernel.org>
 
-On Tue, Sep 01, 2026 at 09:17:43PM +0200, Karl Mehltretter wrote:
-> When no keyring exists for the requested UID, KEYCTL_GET_PERSISTENT
-> creates and registers one before linking it to the requested destination.
-> The configured timeout is set only after the destination link succeeds.
-> 
-> A destination restricted with KEYCTL_RESTRICT_KEYRING makes that link fail
-> with -EPERM. With persistent_keyring_expiry set to 60 seconds, /proc/keys
-> still reports the registered keyring's expiry as "perm".
-> The failed call therefore leaves a quota-exempt keyring in the namespace's
-> hidden register, where it may remain until namespace teardown.
-> 
-> Rename the write-locked helper to key_get_or_create_persistent() and return
-> the key reference through a result parameter. Return 0 when it creates a
-> keyring and 1 when the retry finds an existing one. Return a negative error
-> on failure. Another caller may create the keyring between the initial
-> read-locked lookup and the retry under the write lock.
-> 
-> Set the timeout after permission checking and linking. Do this on success,
-> or on failure if the call allocated the keyring. This leaves a new keyring
-> collectible after failure without starting its timeout while linking is
-> still in progress.
-> 
-> Fixes: f36f8c75ae2e ("KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches")
-> Assisted-by: LLM
-> Signed-off-by: Karl Mehltretter <kmehltretter@gmail.com>
-> ---
-> Changes in v3:
-> - Return the persistent key reference through a result parameter (Jarkko).
-> - Keep lookup-or-create atomic inside the helper and use 0 for creation, 1
->   for an existing keyring, and negative values only for errors.
-> 
-> v2: https://lore.kernel.org/r/20260901164323.35785-1-kmehltretter@gmail.com/
-> 
-> Changes in v2:
-> - Rewrite the commit message around the restricted-destination reproducer
->   and trim the explanation (Jarkko).
-> - Track whether the persistent keyring was newly allocated and finalize its
->   timeout after the permission and link checks. This preserves an existing
->   keyring's timeout on failure and avoids expiry during linking.
-> 
-> Tested with QEMU 10.2.1 TCG on i386 and x86_64. With
-> persistent_keyring_expiry set to 60 seconds, KEYCTL_GET_PERSISTENT returned
-> -EPERM and /proc/keys reported "perm" before the fix and "1m" after it on
-> both architectures.
-> 
-> Also tested on x86_64 with persistent_keyring_expiry set to 1 second and
-> gc_delay set to 0. Successful calls reused the same serial, a newly created
-> keyring from a failed call expired, and a failed call using an existing
-> keyring left its timeout unchanged. A test-only two-second delay before
-> timeout finalization did not allow the keyring to be collected before link.
-> 
-> Two concurrent callers returned the same serial. A test-only 100 ms delay
-> after the read-locked miss forced both callers into the write-locked retry
-> and confirmed that the second caller took the 1 (existing) return path.
-> 
->  security/keys/persistent.c | 55 ++++++++++++++++++++++----------------
->  1 file changed, 32 insertions(+), 23 deletions(-)
-> 
-> diff --git a/security/keys/persistent.c b/security/keys/persistent.c
-> index 97af230aa4b22..e99929b81a1a2 100644
-> --- a/security/keys/persistent.c
-> +++ b/security/keys/persistent.c
-> @@ -33,25 +33,31 @@ static int key_create_persistent_register(struct user_namespace *ns)
->  }
->  
->  /*
-> - * Create the persistent keyring for the specified user.
-> + * Get or create the persistent keyring for the specified user.
->   *
->   * Called with the namespace's sem locked for writing.
-> + *
-> + * Return 0 if a keyring was created, 1 if an existing keyring was found, or a
-> + * negative error.  On a nonnegative return, persistent_ref holds a reference
-> + * to the keyring.
->   */
-> -static key_ref_t key_create_persistent(struct user_namespace *ns, kuid_t uid,
-> -				       struct keyring_index_key *index_key)
-> +static int key_get_or_create_persistent(struct user_namespace *ns, kuid_t uid,
-> +					struct keyring_index_key *index_key,
-> +					key_ref_t *persistent_ref)
->  {
->  	struct key *persistent;
-> -	key_ref_t reg_ref, persistent_ref;
-> +	key_ref_t reg_ref;
->  
->  	if (!ns->persistent_keyring_register) {
-> -		long err = key_create_persistent_register(ns);
-> +		int err = key_create_persistent_register(ns);
-> +
->  		if (err < 0)
-> -			return ERR_PTR(err);
-> +			return err;
->  	} else {
->  		reg_ref = make_key_ref(ns->persistent_keyring_register, true);
-> -		persistent_ref = find_key_to_update(reg_ref, index_key);
-> -		if (persistent_ref)
-> -			return persistent_ref;
-> +		*persistent_ref = find_key_to_update(reg_ref, index_key);
-> +		if (*persistent_ref)
-> +			return 1;
+On Tue, Sep 01, 2026 at 11:58:06PM +0300, Jarkko Sakkinen wrote:
+>tpm2_load_cmd() does boundary checks against the ASN.1 size i.e.,
+>payload->blob_len. Address this by passing the decoded blob size to
+>tpm2_load_cmd(), and use it for the boundary checks.
+>
+>Cc: stable@vger.kernel.org # v5.13+
+>Fixes: f2219745250f ("security: keys: trusted: use ASN.1 TPM2 key format for the blobs")
+>Reported-by: co+6a581c4284f721d4@bugs.sh
+>Closes: https://bugs.sh/b/6a581c4284f721d4/
+>Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+>---
+> security/keys/trusted-keys/trusted_tpm2.c | 12 +++++++-----
+> 1 file changed, 7 insertions(+), 5 deletions(-)
+>
+>diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+>index 67225dd562a9..01f18bb37047 100644
+>--- a/security/keys/trusted-keys/trusted_tpm2.c
+>+++ b/security/keys/trusted-keys/trusted_tpm2.c
+>@@ -99,7 +99,7 @@ struct tpm2_key_context {
+>
+> static int tpm2_key_decode(struct trusted_key_payload *payload,
+> 			   struct trusted_key_options *options,
+>-			   u8 **buf)
+>+			   u8 **buf, unsigned int *blob_len)
+> {
+> 	int ret;
+> 	struct tpm2_key_context ctx;
+>@@ -120,6 +120,7 @@ static int tpm2_key_decode(struct trusted_key_payload *payload,
 
-I'd return -ENOENT here instead and not make return value tristate.
+	blob = kmalloc(ctx.priv_len + ctx.pub_len + 4, GFP_KERNEL);
 
->  	}
->  
->  	persistent = keyring_alloc(index_key->description,
-> @@ -61,9 +67,10 @@ static key_ref_t key_create_persistent(struct user_namespace *ns, kuid_t uid,
->  				   KEY_ALLOC_NOT_IN_QUOTA, NULL,
->  				   ns->persistent_keyring_register);
->  	if (IS_ERR(persistent))
-> -		return ERR_CAST(persistent);
-> +		return PTR_ERR(persistent);
->  
-> -	return make_key_ref(persistent, true);
-> +	*persistent_ref = make_key_ref(persistent, true);
-> +	return 0;
->  }
->  
->  /*
-> @@ -78,6 +85,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
->  	key_ref_t reg_ref, persistent_ref;
->  	char buf[32];
->  	long ret;
-> +	bool created = false;
->  
->  	/* Look in the register if it exists */
->  	memset(&index_key, 0, sizeof(index_key));
-> @@ -100,23 +108,24 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
->  	 * also need to create the register.
->  	 */
->  	down_write(&ns->keyring_sem);
-> -	persistent_ref = key_create_persistent(ns, uid, &index_key);
-> +	ret = key_get_or_create_persistent(ns, uid, &index_key,
-> +					   &persistent_ref);
->  	up_write(&ns->keyring_sem);
-> -	if (!IS_ERR(persistent_ref))
-> -		goto found;
-> -
-> -	return PTR_ERR(persistent_ref);
-> +	if (ret < 0)
-> +		return ret;
-> +	created = ret == 0;
->  
->  found:
-> +	persistent = key_ref_to_ptr(persistent_ref);
->  	ret = key_task_permission(persistent_ref, current_cred(), KEY_NEED_LINK);
-> -	if (ret == 0) {
-> -		persistent = key_ref_to_ptr(persistent_ref);
-> +	if (ret == 0)
->  		ret = key_link(key_ref_to_ptr(dest_ref), persistent);
-> -		if (ret == 0) {
-> -			key_set_timeout(persistent, persistent_keyring_expiry);
-> -			ret = persistent->serial;
-> -		}
-> -	}
-> +
-> +	if (ret == 0 || created)
-> +		key_set_timeout(persistent, persistent_keyring_expiry);
-> +
-> +	if (ret == 0)
-> +		ret = persistent->serial;
->  
->  	key_ref_put(persistent_ref);
->  	return ret;
-> 
-> base-commit: 08dbfad3f5040f5bdb6c529da20d6d4e81fefd72
-> -- 
-> 2.53.0
+Pre-existing, but is `+ 4` here useless?
 
-BR, Jarkko
+I'm not asking to fix here, just noticed while reviewing.
+Maybe we can set *blob_len earlier and use it also in the kmalloc().
+Not a strong opinion, that said this LGTM:
+
+Reviewed-by: Stefano Garzarella <sgarzare@redhat.com>
+
+	if (!blob)
+> 		return -ENOMEM;
+>
+> 	*buf = blob;
+>+	*blob_len = ctx.priv_len + ctx.pub_len;
+> 	options->keyhandle = ctx.parent;
+>
+> 	memcpy(blob, ctx.priv, ctx.priv_len);
+>@@ -384,10 +385,11 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+> 	int rc;
+> 	u32 attrs;
+>
+>-	rc = tpm2_key_decode(payload, options, &blob);
+>+	rc = tpm2_key_decode(payload, options, &blob, &blob_len);
+> 	if (rc) {
+> 		/* old form */
+> 		blob = payload->blob;
+>+		blob_len = payload->blob_len;
+> 		payload->old_format = 1;
+> 	} else {
+> 		/* Bind for cleanup: */
+>@@ -399,17 +401,17 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+> 		return -EINVAL;
+>
+> 	/* must be big enough for at least the two be16 size counts */
+>-	if (payload->blob_len < 4)
+>+	if (blob_len < 4)
+> 		return -EINVAL;
+>
+> 	private_len = get_unaligned_be16(blob);
+>
+> 	/* must be big enough for following public_len */
+>-	if (private_len + 2 + 2 > (payload->blob_len))
+>+	if (private_len + 2 + 2 > blob_len)
+> 		return -E2BIG;
+>
+> 	public_len = get_unaligned_be16(blob + 2 + private_len);
+>-	if (private_len + 2 + public_len + 2 > payload->blob_len)
+>+	if (private_len + 2 + public_len + 2 > blob_len)
+> 		return -E2BIG;
+>
+> 	pub = blob + 2 + private_len + 2;
+>-- 
+>2.47.3
+>
+
