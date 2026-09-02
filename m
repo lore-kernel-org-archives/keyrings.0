@@ -1,106 +1,143 @@
-Received: from mail-lj1-f180.google.com (mail-lj1-f180.google.com [209.85.208.180])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B14413839A1
-	for <keyrings@vger.kernel.org>; Wed,  2 Sep 2026 18:04:35 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.208.180
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9EE284ADD90;
+	Wed,  2 Sep 2026 22:24:49 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1788372277; cv=none; b=DVvxROx7ddNjFzLQi0SMwVevr5Gpu3Q9pPOmLlaDXV6l8dZcJ/s7BChh8Um6YNYjz0SM5yed5F3h2M6hKXuSnPbtUfvHhV0MqLJ/i0zuv0LPsqJJmDFESxdSkJJhE/FsggToAlFBGwhpaAerrpSdu8YsfrQNfxAaILYZSIDHGMk=
+	t=1788387895; cv=none; b=gGJnHI/xwl7BL2Mlcu337jbrSXXX0hIl1tAX6XE0q/K3DpuCkiZB8ISIX6PyfSSYw5/uDVppTEQ4dc3Nf+5gdXpzAKxD5+FolxCDLwB9YxaRhq5LzjmiCITbG2MlzWxSunHbLKkYvxkYtMXsaADaJQeZh5KmPDCx4W9C5wis3BU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1788372277; c=relaxed/simple;
-	bh=CfTWnNxSJggP9yjaDpB3r0Rkf7dLaPcJdZaM28btY4M=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=AESPnr7Frgqi3h7npgdeG7PYhjvl0in2d6Jvhjsr+g9+qRg5aciofA4ABbVXzfaw5sBmq4hWtiZpOufpfNG3NPBNX6d7/CgooHhK4Q93GolKp8m/EvYYIAf2ToCAiKCE4KE0NEIOAcjtreJbis4gCcUSaPHs0IkJSKZ/6h/EDnQ=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=B3L78KG+; arc=none smtp.client-ip=209.85.208.180
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1788387895; c=relaxed/simple;
+	bh=D6bkpoIpcIYOnZZyO6lK4ItdOwuknHRlO1Z8sHXjL6M=;
+	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
+	 In-Reply-To:Content-Type; b=AP8epyQOCcV0rZwrGYow22L6YGfSBiBaoH8j5Eo7HuCwjLSmTMtqDw2O8Ub65Qi2o4ywXAqvYRFR2ABUvhhg/vdp7RpsHkJ1aDzkEB8tLsy3wacZZ7+MuscMp8iAccZg351L8Tofazu6Ef0HG+/kJz8g02OzVyJtLuTQO/NFAm4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=X4Vu2QtD; arc=none smtp.client-ip=148.163.156.1
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="B3L78KG+"
-Received: by mail-lj1-f180.google.com with SMTP id 38308e7fff4ca-3a20367cf82so12768711fa.1
-        for <keyrings@vger.kernel.org>; Wed, 02 Sep 2026 11:04:35 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1788372274; x=1788977074; darn=vger.kernel.org;
-        h=in-reply-to:content-disposition:content-type:mime-version
-         :references:message-id:subject:cc:to:from:date:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=3eSWRBHdZ/8X2dHJRKHsprBiq+T7ne+lI7EooU3WQuw=;
-        b=B3L78KG+10VwKobhvdswaiLwCwXYb1ntz6RluckkKfwFVp9wu2M4NJFZLnZsjkAkZ8
-         iMOQP1jfXfFTSVJHI7/hxaa96UO/DUC4PthgKaVBOJvGE+a00GiyNPaHAdTNG6nU02ud
-         wMs1YLtd7zK7JYZ7odwsOvkhJ3ErLaDuWcMn2g3I057J0d7C/+20Rdjm7vvFyPjDtnMy
-         20AOyN6oTM2o+a3eqnQGL2CrFJSO4YATyuCcgaKWFKydhhH/xe9rPEbFC271rZrpQsFu
-         WAjnyE3o9nn+un25yCjap4A27VpoJ2WPCk3JNIHFa47g6EavPSkJLGhHzigjguKLKJmJ
-         io+A==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1788372274; x=1788977074;
-        h=in-reply-to:content-disposition:content-type:mime-version
-         :references:message-id:subject:cc:to:from:date:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=3eSWRBHdZ/8X2dHJRKHsprBiq+T7ne+lI7EooU3WQuw=;
-        b=rxL4ODHOUAbeZM+fzgOiXn+zmEKLkMLvG3QMxSNzoBwxbxY9hD8fmqfL6h1S4+AKEG
-         fIjVtzuvW0LcBIOFg5tGREQGFOLULAHbDdKer5G+1rWSmTWhjXNcWFRvUfyyHZTiBhrt
-         iUwxxB0c5AZf68BtUJkkApUg5SrSuBgpUM4yRDOeIWbDspy+zrPuGJVVH1TyFPFH+RYR
-         dKcWHkfiO8xD8iBK6swbylWRyg3ppXaS5PDnJdtzEECwhTw0siT4QbqzvGXNf62/3tvT
-         VGo6O/M3OcfGMnoFwnJ6dvCLPZ7ddQ1QHt9/hWrPaN9YZV954Tl/GYOX04OOVSNAvQmn
-         wKpw==
-X-Forwarded-Encrypted: i=1; AKwUvBxk487B9NRJeSeYL7K2Hs5DuZQJBGDnEGUr3ZQvrIOJ/HK9X962cuaXiqqlRWvS5DDOzyVVRV0L0g==@vger.kernel.org
-X-Gm-Message-State: AFuF++kgUHwn+pyTdcCe3BeV+rgAfcDCsMcJe8TWJZTVL7OHuXigLZSs
-	zv4z+hWtukl91QDTLuQqGh88GbSZLsMFKLWSL2GbOevQjJ2NZDJXkues
-X-Gm-Gg: AYBFou2UPLi6b6BeHDO8GS1842TyhL58IHadVsgUS22+5qQOc04jnBMjZfHjTR1IBtZ
-	N9EmEKsZXwMW4wpV8s3dBOBAEcqy/lUPXS/VRyDWYzFeWS/IVGwUa+iunFg0Lb1qdNX0XqN2C1y
-	MMIrM2qJu3vxrZmi+/SHx4oi8uhZxihUkzrwkEw2ubaAHHuBroJqSwLofg5sOD+VieLui+ua/NH
-	stZWgHwD9+/NWZkWySUiOF+ZLu+P8RR1oRNQ5dq64f+v2Ut1uOJs1tWlGXe5Xj1hrfr+/JBsdQA
-	O8DZhbP2To0POvYqTK55TjOkbJTkUFj2eK2JVmcWXqX5i11yLHPhJZlBxEZh1n/Po/su5U9h2qM
-	Eijk3AKYqv1mC5rMkWM+fJrVKtdSm9B59jaB9DjWTEVE3Gd4yRTcVthT+jv32skZfMqQJK4/JRa
-	LpdSlzNJrG1nNUln+wfubQRO3KdKF9UCv/9yfezYBugNTurcJ/x+IZ7IdrMmb04l0huem/3MslX
-	gKy8f/Uqd1lLUerQHXeOF6lbqKhfdTg4Lu8a2HyYj/zzmvi8a0MG79Uw2DktF+TnIfCA7eo8IYA
-	ByY8QGbFNI3OkdnqTcUoMQjQCby8KOJJ/j5K3X589JI4b19ngD5Wf3i0BXSbcvPcqKmRvWcAawF
-	t/C50lDeKJA==
-X-Received: by 2002:a05:651c:a209:10b0:3a1:f671:b2ee with SMTP id 38308e7fff4ca-3a34fd283b7mr11486751fa.8.1788372273337;
-        Wed, 02 Sep 2026 11:04:33 -0700 (PDT)
-Received: from MacBook-Pro-von-Karl.localdomain (dynamic-2a02-3100-a1c2-c401-11b2-c123-0d12-6c0f.310.pool.telefonica.de. [2a02:3100:a1c2:c401:11b2:c123:d12:6c0f])
-        by smtp.gmail.com with ESMTPSA id 38308e7fff4ca-3a34ad2699bsm8235851fa.35.2026.09.02.11.04.30
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 02 Sep 2026 11:04:32 -0700 (PDT)
-Date: Wed, 2 Sep 2026 20:04:30 +0200
-From: Karl Mehltretter <kmehltretter@gmail.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>, 
-	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, 
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] keys: finalize persistent keyring timeout after link
- attempt
-Message-ID: <aphkt2PpqUFcTvun@gmail.com>
-References: <20260901191743.39210-1-kmehltretter@gmail.com>
- <apdZKMddhZoASXmL@kernel.org>
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="X4Vu2QtD"
+Received: from pps.filterd (m0353729.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 682KVV4u3367009;
+	Wed, 2 Sep 2026 22:24:45 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:content-type:date:from:in-reply-to
+	:message-id:mime-version:references:subject:to; s=pp1; bh=jxIqqe
+	Ksku6ms7BZZ9tYTyFuKkIPq5UjiX6SWrdx6hk=; b=X4Vu2QtDEpA7K9cWhaKhY4
+	Z6PJzwo+j71oQttr8O2b7fuY4p/1nLwsaHCreY/M1XGAxiWFROOsAg/gEVPDZRA0
+	g2NmOFvu7v+shALYBhI9RuOYD8fRPkez/SZqYJp0gN6ZJM0tqfpDuR7jhM3Feywx
+	wrfePnmWoR2IU6H2doo6kPT0IEQmgQh0AX+zrObeOjDChW0CYr4EmYXLkWP3yWDm
+	dYxg0mQAZHPs9PKv3EraJUDRU57AaCDaCeNTiNIsan8B4OGL8QxQ7YAQBI8i+4Do
+	VzJm4tyxy11j1GJcYhsmurc1vThUbsfWLB4Z7BMlCw4IQ5OQwYUKPCoXjGy5pe3Q
+	==
+Received: from ppma22.wdc07v.mail.ibm.com (5c.69.3da9.ip4.static.sl-reverse.com [169.61.105.92])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4gbq3rhua9-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Wed, 02 Sep 2026 22:24:44 +0000 (GMT)
+Received: from pps.filterd (ppma22.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma22.wdc07v.mail.ibm.com (8.18.1.7/8.18.1.7) with ESMTP id 682LuY4W030585;
+	Wed, 2 Sep 2026 22:24:43 GMT
+Received: from smtprelay05.wdc07v.mail.ibm.com ([172.16.1.72])
+	by ppma22.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4gecjan46x-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Wed, 02 Sep 2026 22:24:43 +0000 (GMT)
+Received: from smtpav03.dal12v.mail.ibm.com (smtpav03.dal12v.mail.ibm.com [10.241.53.102])
+	by smtprelay05.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 682MOgwR19989100
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Wed, 2 Sep 2026 22:24:42 GMT
+Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 630A758056;
+	Wed,  2 Sep 2026 22:24:42 +0000 (GMT)
+Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 9959E58063;
+	Wed,  2 Sep 2026 22:24:39 +0000 (GMT)
+Received: from [9.67.98.186] (unknown [9.67.98.186])
+	by smtpav03.dal12v.mail.ibm.com (Postfix) with ESMTP;
+	Wed,  2 Sep 2026 22:24:39 +0000 (GMT)
+Message-ID: <b2d390dd-3ba0-4faf-967b-d1188da12e62@linux.ibm.com>
+Date: Thu, 3 Sep 2026 03:54:38 +0530
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <apdZKMddhZoASXmL@kernel.org>
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH 1/2] keys/trusted_keys: return immediately after TPM
+ unseal failure
+To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
+Cc: James.Bottomley@HansenPartnership.com, jarkko@kernel.org,
+        zohar@linux.ibm.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, nayna@linux.ibm.com,
+        rnsastry@linux.ibm.com
+References: <20260902103120.222326-1-ssrish@linux.ibm.com>
+ <20260902103120.222326-2-ssrish@linux.ibm.com>
+Content-Language: en-US
+From: Srish Srinivasan <ssrish@linux.ibm.com>
+In-Reply-To: <20260902103120.222326-2-ssrish@linux.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Authority-Analysis: v=2.4 cv=EIc2FVZC c=1 sm=1 tr=0 ts=6a98a22d cx=c_pps
+ a=5BHTudwdYE3Te8bg5FgnPg==:117 a=5BHTudwdYE3Te8bg5FgnPg==:17
+ a=IkcTkHD0fZMA:10 a=VdqzKS8jKosA:10 a=VkNPw1HP01LnGYTKEx00:22
+ a=RnoormkPH1_aCDwRdu11:22 a=uAbxVGIbfxUO_5tXvNgY:22 a=VwQbUJbxAAAA:8
+ a=VnNF1IyMAAAA:8 a=Y-y2Im-bRa9duunfRGsA:9 a=QEXdDO2ut3YA:10
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwOTAyMDE5NSBTYWx0ZWRfX3PxBAJMX5NU1
+ YKCe2YMNrQeY54PsYfBlvCKv28mWayPk8iRBmEnM1baoCAtPfuvoXn30rYRGAK7fQ7QD4mLJCeD
+ SB8H6xRe3NCmJjFH2jslQUVos+NNZ4EtxiRTg8aj/Pbq9DnCHUDFJtifPovPeZ/GLAeXom2j15t
+ grt9Xs9iWn8rp47FzBwCFIv43r1KqFJe+HugzZ/vKlA6e3HKrg3E1WvMwmEIUQ8gnKXEpRSK4Eb
+ upVIaxDHUpi9Mg9elYidDWX5CgqBFBw4iG/X+L3rMYhSW961l2W+I/LEOahO6Oqbxi9BFNEkp7Y
+ fda7IYZ4B+1G5ok039CmzVSjne7puMG4yHJDoHFvL97xAulwXVKvnJSvNsgr07Gk/ojvbHYpI5Y
+ Lh66xFuN2aXm3Oy3r4nmWILRWfMam07vXrtRsG4lQoMLZXrMGnbrPEym3ad67+aqWpYxEZfBA3/
+ 6I9MmMoTvcu5s8NafGg==
+X-Proofpoint-GUID: a4VYTaxDfaTffOkljByhbbMBZnHapPtp
+X-Proofpoint-ORIG-GUID: a4VYTaxDfaTffOkljByhbbMBZnHapPtp
+X-Proofpoint-Spam-Info: AW1haW4tMjYwOTAyMDE5NSBTYWx0ZWRfXzGkBGzAc61jh
+ MEFbVliPiV+D965upWYoi/s6Ena9FYRLqig6LuTdPpAYENTmWUfBDAqM2oAxi0MxNkhfcFX6wX1
+ 6JkTIRUlsONS7vN8VAoJehHVt3vKjaY=
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
+ definitions=2026-09-02_05,2026-09-02_04,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ bulkscore=0 impostorscore=0 suspectscore=0 priorityscore=1501 clxscore=1015
+ phishscore=0 spamscore=0 adultscore=0 lowpriorityscore=0 malwarescore=0
+ classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
+ reason=mlx scancount=1 engine=8.22.0-2606150000 definitions=main-2609020195
 
-On Wed, Sep 02, 2026 at 02:00:56AM +0100, Jarkko Sakkinen wrote:
-> > +		*persistent_ref = find_key_to_update(reg_ref, index_key);
-> > +		if (*persistent_ref)
-> > +			return 1;
-> 
-> I'd return -ENOENT here instead and not make return value tristate.
-> 
 
-I don't think using an error to mean "found" is safe. keyring_alloc()
-can return -ENOENT through security_key_alloc(). A BPF LSM key_alloc
-hook can return any errno.
+On 9/2/26 4:01 PM, Srish Srinivasan wrote:
+> trusted_tpm_unseal() proceeds to pcrlock() when the TPM unseal operation
+> fails. If pcrlock() succeeds, its return value overwrites the unseal error,
+> causing key instantiation to succeed.
+>
+> Return immediately when unseal fails to preserve the original error.
+>
+> Fixes: 5d0682be3189 ("KEYS: trusted: Add generic trusted keys framework")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
+> ---
+>   security/keys/trusted-keys/trusted_tpm1.c | 4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+> index bf0bf7f36970..1168ca235205 100644
+> --- a/security/keys/trusted-keys/trusted_tpm1.c
+> +++ b/security/keys/trusted-keys/trusted_tpm1.c
+> @@ -923,8 +923,10 @@ static int trusted_tpm_unseal(struct trusted_key_payload *p, char *datablob)
+>   		ret = tpm2_unseal_trusted(chip, p, options);
+>   	else
+>   		ret = key_unseal(p, options);
+> -	if (ret < 0)
+> +	if (ret < 0) {
+>   		pr_info("key_unseal failed (%d)\n", ret);
+> +		return ret;
 
-I checked this in QEMU with a BPF LSM hook returning -ENOENT.
-keyring_alloc(".persistent_register") returned -ENOENT and
-KEYCTL_GET_PERSISTENT failed with ENOENT.
 
-So -ENOENT would be ambiguous. I also considered +EEXIST instead of 1,
-but that seems a bit too clever. I'd rather keep 0/1/<0.
+This should be "goto out;"
+will fix this in my next version
 
-Thanks,
-Karl
+
+> +	}
+>   
+>   	if (options->pcrlock) {
+>   		ret = pcrlock(options->pcrlock);
