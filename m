@@ -1,138 +1,194 @@
-Received: from mail-ed1-f44.google.com (mail-ed1-f44.google.com [209.85.208.44])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8D6754FB9C6
-	for <keyrings@vger.kernel.org>; Thu,  3 Sep 2026 18:04:16 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.208.44
-ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1788458657; cv=pass; b=UELHUUdX2sFeA4aITlhLhz6YJZW5icdrS8RORwUU1ZRjFmlh+fbv7KyWkA4AAjXzl/2k0uvJKoB3btTNq12xCWD4HNUN4ff3T2YndWF8xVAeO8OSan0xwqIu8Dh3sS9Vg3rXsL4CYsVljPGrpVkFtuH7RcTj/Mr9EJdxihGitFA=
-ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1788458657; c=relaxed/simple;
-	bh=rBhnMpnlpQJIqe45e7mghY2bbrkfay04f++iDuWUl10=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=bZSWmhJp5U/VAo4HxX2nFVgYMubivfkxTZtmc9kBJk139mb3Wbd/ClWbuXAKTTKvzVgHz/o3Ws/CWoOwliJSheVGHn+FmBr2Zy3mXmKlKj4ObJFOJGEIACcRL17aiu3EzA4XYqiAdCXuuyWwEMIqvJVCNC1Mmc+I9fEtuThav8Q=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=RccCEGpi; arc=pass smtp.client-ip=209.85.208.44
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2FBBC414A2A;
+	Fri,  4 Sep 2026 06:10:38 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1788502240; cv=none; b=Gd1YEgNrXMDHNeH3POZ9W53qG0GxmOb2tpZNBNSjy11YsvMXvsoUQx0vzQ+KhoqhPMDAueCUi0UVS+vdrJJkVuqPcGMVmz1hTH+ym+mewYYb0IiH2/NZugtHPQP+q3EruOvhkQ4EY4A9rxUMP+CeHtxV/nuZ1T3/uT2rOzD0A6k=
+ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1788502240; c=relaxed/simple;
+	bh=3l2fgcyVrJxrS90+tLbAHnESPYxrvgoxhahRmryoN/o=;
+	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
+	 In-Reply-To:Content-Type; b=D1ujes3gZGBLW4ydBmHP3kzXtuHT0Ezxa26csFRsiANyLUsBy2e5m7vjnvgR/e/ltvRjGiB9MJFenPczc/eRkzkBEEQeKdtDvj0niwEdExcMUzcThknxBYq1u5SSVUSngsuTOlG9II+HmrDHY7jqQLIy3ww821+UPWTpjrEOekI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=NkTV4xoJ; arc=none smtp.client-ip=148.163.158.5
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="RccCEGpi"
-Received: by mail-ed1-f44.google.com with SMTP id 4fb4d7f45d1cf-6a615ab11b5so7350a12.0
-        for <keyrings@vger.kernel.org>; Thu, 03 Sep 2026 11:04:16 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1788458655; cv=none;
-        d=google.com; s=arc-20260327;
-        b=Oh8oonExIpTKAvOjdO1MQ2rwUtSn24NqplGgztxmq/9xQOUrb+hcVKFkLW4wKmXOi4
-         WYJmDM2BFZ39FaBPK2jsbOu7pdlWuBFGfSKibizilx9O8tBaV/BN9EOaA6+DaD5tJppR
-         xjoqtR1y53J88MDli9kyYcnbuNBtYDhtfhuHk/uZffUxVfK4CfgeOedTqrS+l5WANE6z
-         oEKjIF65C/fohThpoIuNQxmYqI5Ws1+7fJAzNa1F3LOL5tW9Su5HQsmFQDcXHxICXwmC
-         pRCAvE05QHP2YvrlWCW8sO1Fhm0hu5u6TP//6HhVUzJlM45cQYcgIMDafWYoPe5xrl1n
-         FrnA==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:dkim-signature;
-        bh=uK/GuQ6nbungHJUUyJOtLDjrs+AVjPNapJ1G3ZSkOBc=;
-        fh=GicwVhCIjDPShLoLNywiU3yxZwe4FS3OBgicwI0547c=;
-        b=dDsOo07zVdryheeTHTO+eRkS8ClCgfUIfwIEzUfKyWSS8cigLwDzjQj9jsIWDGXjW+
-         AyG2EgarXeQAwz5T1nD/+3Kms2RK8kk7OfBCbJMsSjEYeKi+auGrni7cqKPZwbvKo3bQ
-         K4yqqCk7IK9UjTjsSyru23kGxmncQLFvzKQfv6wiUiGzhWsigKj4J+341tn+1V0Vu6zu
-         6pxvf3aHli0bCqeHHeHMoI9eVxQ/o/huCeER6NNKxqaRW2ZceNhd6gSSv8X0cqYd9mI9
-         ebX7NT9YqRxOo03e2/gpoI7FQ3xz/IV3mwwGRYDct4ux+MO0L+5OltIb+dY5+16HtRHn
-         aQrg==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1788458655; x=1789063455; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=uK/GuQ6nbungHJUUyJOtLDjrs+AVjPNapJ1G3ZSkOBc=;
-        b=RccCEGpiA7D7Pf/qAQaHVXLmcQu4HvtTYkDZDCl9EtQa8UOUSWjX7VNEbGAToiTY3+
-         1K8kZCa/pTbhlPrZlOZIXKz0XXv9xDSv+qWrTBbcyWDD7iZvT/xdng91f/FAYq5JEuw4
-         vs5PeWxL1VX6hcuU3w54d3Gi/USbAs7D3k9Qurdvj0zwujivEJ2rzi/2HEPEMjbwruub
-         7ePUCfV84U4s+4+TjRX2UyaBJh8XJexp2mioen6Q5yE8ezRjYCf7jiPHi314mMQHGWQD
-         lHA32d/k/KNYFlTGdCD4R3OzjfDGuCT39rErJLZaMgRnJihS8DYZlSg0Wgd80oryWxlK
-         BAPw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1788458655; x=1789063455;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=uK/GuQ6nbungHJUUyJOtLDjrs+AVjPNapJ1G3ZSkOBc=;
-        b=Gx1ka3TWGlFBSUJEBO+fYB3qMbUdpa7Oh7+PC/KGNpWWLey4wG0rV2EsEXpKVV44Ee
-         llcELYgMz7eRAO+i/af/7RwvJ7sFGLI8tqjAQR5abnMnZIRNbdE9AiqmhSU8DIIPXlf1
-         qcg6j0k9JY5hd0TwD/wJmaOW9c1IMW2mPYxTcm/E4yNf23XIjx5xL7QAbuf8nzQocO6L
-         9/b8wCv0r5O+g4ZZe4+9p/o6mXegnrmJuvXSUSmCPuYl8z6VRdqskM82qeMDcbLk6vGO
-         sRQ3vl90/dbCw/9YmO2CcCJqEwHy29chz99fvYWKdzsHrOk9ibJMhiOYpB0GDIsaJUBL
-         4Q7Q==
-X-Forwarded-Encrypted: i=1; AKwUvByDoScawYXx2DHrqp7hgEGbpyvmckRzzHe6D2QbCAak+womVglXof+SUfOrJGn+JuXwvRKaNcubiw==@vger.kernel.org
-X-Gm-Message-State: AFuF++lUvDkdnkOvTGOZ9kalDWLuv4vqwDWh1wV60kf3kOW3QnVK4SGh
-	gHYBQnPR1OpIhgBeW1c4Xf+twVZZ5JN+MTUmBy/xwA9Gi/ZcIrcPBw6bQSEkLM6NUlCopLuAkFm
-	erOpLe/61hNobVCmiMgN+edasBYkIOtg=
-X-Gm-Gg: AYBFou2m09uCjrOcAESGuUQS7oxB7eeyw73qnG8EUQuD/9tzoa5s+R3WpwTbn89oIAP
-	xLxp8zgGiMWdWbnlHiT59Iyv3kUREGTuAisRZO2PFRJwCUCrTUB1BRIiNeoaQy8xcdmPwkzPVX/
-	f5ML90TUQZfy2sZFUCcsgI5pqTrgY6k7eZfEgocrNMd2JEGHtNXuZpYtSe0xjVyZvHY4GJzKJWI
-	lZwXj5TTfbzKCo6EshGWrxIZ9QBr0r0vsm+KLNeoVbJ+CnJqFIZDYp2QZGRRWHPgUpFZvfa8fOP
-	G5UPMKM7Fj/TCHnkKMMjuCzLvhFSHovLvUoADRKky8ASd7msxCY4ZxyVWzSJstMS6pZj0iWb1A4
-	=
-X-Received: by 2002:a05:6402:440b:b0:6a1:d68:338a with SMTP id
- 4fb4d7f45d1cf-6a6818d6c95mr5674598a12.0.1788458654598; Thu, 03 Sep 2026
- 11:04:14 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="NkTV4xoJ"
+Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 68464WhQ3993728;
+	Fri, 4 Sep 2026 06:10:17 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:content-type:date:from:in-reply-to
+	:message-id:mime-version:references:subject:to; s=pp1; bh=OQbECm
+	C/onJiPTMMl9RCUTY5J26b9sb7ubS5BtR54vc=; b=NkTV4xoJsPs5PYMTsQ6EEN
+	8cqUG/TWMjQNLRvVbibM9bXppxU34UwNXMXRV7/x8OD6m9MzIvcgq8gBUewgPGMM
+	WwOnvOb9Ii2s4s1OjtcHAWGcqkAjeoRzmq2lV13GaMZCdniazJ99hA1hzWcheyxx
+	pWiTRvciH8OEHiK0msXp9WawYjNQlTJfkiOSsoAbI/Z2eFFshFNQALaVaK7N3HAG
+	jwtL0ZqNangLYMvkhQTYDL0tA+PQbHr+2Ch5g4W7DjetuGAfFLiI5JV/vFXFJVdJ
+	HFF5P3FLGZ4IL62csoPYQRJqEexbWhKsbYhxRgFWLkZpFFIDW3u7E5Q/2huv7ViA
+	==
+Received: from ppma23.wdc07v.mail.ibm.com (5d.69.3da9.ip4.static.sl-reverse.com [169.61.105.93])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4gbnue8jav-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Fri, 04 Sep 2026 06:10:16 +0000 (GMT)
+Received: from pps.filterd (ppma23.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma23.wdc07v.mail.ibm.com (8.18.1.7/8.18.1.7) with ESMTP id 6845uOAX002158;
+	Fri, 4 Sep 2026 06:10:15 GMT
+Received: from smtprelay03.fra02v.mail.ibm.com ([9.218.2.224])
+	by ppma23.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4gcb8huebc-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Fri, 04 Sep 2026 06:10:15 +0000 (GMT)
+Received: from smtpav05.fra02v.mail.ibm.com (smtpav05.fra02v.mail.ibm.com [10.20.54.104])
+	by smtprelay03.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6846ABQn42074590
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Fri, 4 Sep 2026 06:10:11 GMT
+Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id C675F20043;
+	Fri,  4 Sep 2026 06:10:11 +0000 (GMT)
+Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 6EF4D20040;
+	Fri,  4 Sep 2026 06:10:05 +0000 (GMT)
+Received: from [9.61.247.46] (unknown [9.61.247.46])
+	by smtpav05.fra02v.mail.ibm.com (Postfix) with ESMTPS;
+	Fri,  4 Sep 2026 06:10:05 +0000 (GMT)
+Message-ID: <6fed0a01-964e-4945-b598-a890cbcb6da5@linux.ibm.com>
+Date: Fri, 4 Sep 2026 11:40:01 +0530
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <20260823152858.3839939-1-nicoyip.dev@gmail.com> <apC0xGqWTIXTIgBU@kernel.org>
-In-Reply-To: <apC0xGqWTIXTIgBU@kernel.org>
-From: Chengfeng Ye <nicoyip.dev@gmail.com>
-Date: Fri, 4 Sep 2026 02:04:02 +0800
-X-Gm-Features: AcwNN1Vixc56lPwOlEAr0jNOgKZcPkT3QtgHqPSwQ2VM7-p1rr5p9dczVDYtyP8
-Message-ID: <CAAo+4rXK_MpdsSbmuu+oHP2STUxApG2XRBkKUcpvcTKETEznOQ@mail.gmail.com>
-Subject: Re: [PATCH] keys: Fix key_user use-after-free during ownership changes
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>, 
-	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Serge Hallyn <sergeh@kernel.org>, 
-	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, 
-	linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH v2 01/10] pseries/plpks: update PKS documentation and
+ maintainer entry
+To: Srish Srinivasan <ssrish@linux.ibm.com>, linux-integrity@vger.kernel.org,
+        keyrings@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Cc: maddy@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com,
+        christophe.leroy@csgroup.eu, James.Bottomley@HansenPartnership.com,
+        jarkko@kernel.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, nayna@linux.ibm.com
+References: <20260831111738.334857-1-ssrish@linux.ibm.com>
+ <20260831111738.334857-2-ssrish@linux.ibm.com>
+Content-Language: en-US
+From: R Nageswara Sastry <rnsastry@linux.ibm.com>
+In-Reply-To: <20260831111738.334857-2-ssrish@linux.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-Reinject: loops=2 maxloops=12
+X-Proofpoint-GUID: SnJZsrsJ53N_81H6YNQvYFe8I2YXR0KK
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwOTA0MDA1NCBTYWx0ZWRfX/Q5NI5kGfru8
+ WGnzI21tKyNN9+YqRdl/SAteiF4ileL3wjedwIm2YQekekdOHxeC8xRkvkjrt4UkT+3r/vEGB5y
+ qX/7DfSYlLeb/f4atnJQ9dHAZ2WSmEvDDQnvyrL6RS5CqeHjdxQBcYrqVTrFuigSRWrNstcDRIy
+ qS4R5PdtYsF404MI6msg9dKOBY1uxvl4mPFWQXO0LqSUOL2BJnjb0ch45ZOwvL71mBZzBEBjJSU
+ YRrDvOHgvVnNou0L4XQxYDTqoBurCK+ulT5CnsNNq0FBdVvSMDcITlJPd9nRhnM3uBoeQnxcMW7
+ h3WtpaTnQLuwLuEMC5IPHTL90DmIcvhFd1DIJaqL2MlCCaWg/Xy2gIjc7LZIueeKL7EVocdZeYq
+ e5pU5fUbHsICioIs4eEHsLudMDDIVbcC11d1SQ1hgwqvoUeorge/qdk3sBgn6AOWHULhTNS1S1M
+ tmJxS2xIzOrNHSGSkOw==
+X-Proofpoint-ORIG-GUID: RCcuBRQqUr2h0Dc9lQNS9_Jgpx1r7q7L
+X-Proofpoint-Spam-Info: AW1haW4tMjYwOTA0MDA1NCBTYWx0ZWRfXwBOAL4RDPkHc
+ 2Mpxczjv0TQiu6N3ZibewWmIoyMbiCLYY6x6zrEUdHMAI8Lr0qixraDHpuDWJfc4PJMEqjzfNtQ
+ YACuknmXRfMLaPdG4k+94Pgqz2Khvlk=
+X-Authority-Analysis: v=2.4 cv=B92JFutM c=1 sm=1 tr=0 ts=6a9a60c8 cx=c_pps
+ a=3Bg1Hr4SwmMryq2xdFQyZA==:117 a=3Bg1Hr4SwmMryq2xdFQyZA==:17
+ a=IkcTkHD0fZMA:10 a=VdqzKS8jKosA:10 a=VkNPw1HP01LnGYTKEx00:22
+ a=RnoormkPH1_aCDwRdu11:22 a=V8glGbnc2Ofi9Qvn3v5h:22 a=VnNF1IyMAAAA:8
+ a=VwQbUJbxAAAA:8 a=ZSwnYTGPAMvaW41niKkA:9 a=QEXdDO2ut3YA:10
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
+ definitions=2026-09-04_02,2026-09-03_01,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ adultscore=0 spamscore=0 clxscore=1015 suspectscore=0 phishscore=0
+ lowpriorityscore=0 bulkscore=0 priorityscore=1501 impostorscore=0
+ malwarescore=0 classifier=typeunknown authscore=0 authtc= authcc=
+ route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2606150000
+ definitions=main-2609040054
 
-On Fri, Aug 28, 2026 at 6:06=E2=80=AFAM Jarkko Sakkinen <jarkko@kernel.org>=
- wrote:
->
-> I hope you don't mind that I sanity check a bit:
->
-> =EE=9A=91 git grep "user->uid" security/keys
-> security/keys/internal.h:       uid =3D key->user->uid;
-> security/keys/key.c:            if (uid_lt(uid, user->uid))
-> security/keys/key.c:            else if (uid_gt(uid, user->uid))
-> security/keys/key.c:            unsigned maxbytes =3D uid_eq(key->user->u=
-id, GLOBAL_ROOT_UID) ?
-> security/keys/proc.c:           if (kuid_has_mapping(user_ns, user->uid))
-> security/keys/proc.c:   unsigned maxkeys =3D uid_eq(user->uid, GLOBAL_ROO=
-T_UID) ?
-> security/keys/proc.c:   unsigned maxbytes =3D uid_eq(user->uid, GLOBAL_RO=
-OT_UID) ?
-> security/keys/proc.c:              from_kuid_munged(seq_user_ns(m), user-=
->uid),
-> security/keys/process_keys.c:   uid_t uid =3D from_kuid(user_ns, cred->us=
-er->uid);
-> security/keys/process_keys.c:           uid_keyring =3D keyring_alloc(buf=
-, cred->user->uid, INVALID_GID,
-> security/keys/process_keys.c:           session_keyring =3D keyring_alloc=
-(buf, cred->user->uid, INVALID_GID,
-> security/keys/process_keys.c:                                            =
-   cred->user->uid));
->
-> Have you audited these and reflected against your current patch?
->
-> BR, Jarkko
->
 
-Right, there are more sites that take and dereference key->user but
-not serialized to prevent the UAF. I am going to send a v2 to protect
-other sites affected by the data race.
+On 31.08.2026 4:47 PM, Srish Srinivasan wrote:
+> Wrap long PKS hcall return-value lines consistently and fix a typo in the
+> H_PKS_UNWRAP_OBJECT description.
+>
+> Also update the MAINTAINERS entry from KEYS-TRUSTED-PLPKS to
+> KEYS-TRUSTED-PKWM to reflect the PowerVM Key Wrapping Module naming.
+>
+> Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
 
-Best regards,
-Chengfeng
+Tested-by: R Nageswara Sastry <rnsastry@linux.ibm.com>
+
+Documentation-only change. Gone through documentation.
+Used this data in test cases creation.
+
+> ---
+>   Documentation/arch/powerpc/papr_hcalls.rst | 16 ++++++++--------
+>   MAINTAINERS                                |  2 +-
+>   2 files changed, 9 insertions(+), 9 deletions(-)
+>
+> diff --git a/Documentation/arch/powerpc/papr_hcalls.rst b/Documentation/arch/powerpc/papr_hcalls.rst
+> index 14e39f095a1c..44c9c8b32ae3 100644
+> --- a/Documentation/arch/powerpc/papr_hcalls.rst
+> +++ b/Documentation/arch/powerpc/papr_hcalls.rst
+> @@ -305,8 +305,8 @@ like core instruction, core LLAT and nest.
+>   | Input: authorization, objectlabel, objectlabellen, policy, out, outlen
+>   | Out: *Hypervisor Generated Key, or None when the wrapping key policy is set*
+>   | Return Value: *H_SUCCESS, H_Function, H_State, H_R_State, H_Parameter, H_P2,
+> -                H_P3, H_P4, H_P5, H_P6, H_Authority, H_Nomem, H_Busy, H_Resource,
+> -                H_Aborted*
+> +                H_P3, H_P4, H_P5, H_P6, H_Authority, H_Nomem, H_Busy,
+> +                H_Resource, H_Aborted*
+>   
+>   H_PKS_GEN_KEY is used to have the hypervisor generate a new random key.
+>   This key is stored as an object in the Power LPAR Platform KeyStore with
+> @@ -321,8 +321,8 @@ the user. Generation of wrapping keys is supported only for a key size of
+>   |        inlen, out, outlen, continue-token
+>   | Out: *continue-token, byte size of wrapped object, wrapped object*
+>   | Return Value: *H_SUCCESS, H_Function, H_State, H_R_State, H_Parameter, H_P2,
+> -                H_P3, H_P4, H_P5, H_P6, H_P7, H_P8, H_P9, H_Authority, H_Invalid_Key,
+> -                H_NOT_FOUND, H_Busy, H_LongBusy, H_Aborted*
+> +                H_P3, H_P4, H_P5, H_P6, H_P7, H_P8, H_P9, H_Authority,
+> +                H_Invalid_Key, H_NOT_FOUND, H_Busy, H_LongBusy, H_Aborted*
+>   
+>   H_PKS_WRAP_OBJECT is used to wrap an object using a wrapping key stored in the
+>   Power LPAR Platform KeyStore and return the wrapped object to the caller. The
+> @@ -331,16 +331,16 @@ which must have been previously created with H_PKS_GEN_KEY. The provided object
+>   is then encrypted with the wrapping key and additional metadata and the result
+>   is returned to the caller.
+>   
+> -
+>   **H_PKS_UNWRAP_OBJECT**
+>   
+>   | Input: authorization, objectwrapflags, in, inlen, out, outlen, continue-token
+>   | Out: *continue-token, byte size of unwrapped object, unwrapped object*
+>   | Return Value: *H_SUCCESS, H_Function, H_State, H_R_State, H_Parameter, H_P2,
+> -                H_P3, H_P4, H_P5, H_P6, H_P7, H_Authority, H_Unsupported, H_Bad_Data,
+> -                H_NOT_FOUND, H_Invalid_Key, H_Busy, H_LongBusy, H_Aborted*
+> +                H_P3, H_P4, H_P5, H_P6, H_P7, H_Authority, H_Unsupported,
+> +                H_Bad_Data, H_NOT_FOUND, H_Invalid_Key, H_Busy, H_LongBusy,
+> +                H_Aborted*
+>   
+> -H_PKS_UNWRAP_OBJECT is used to unwrap an object that was previously warapped with
+> +H_PKS_UNWRAP_OBJECT is used to unwrap an object that was previously wrapped with
+>   H_PKS_WRAP_OBJECT.
+>   
+>   References
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 3a19da74d00c..6b91d7f081c4 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -14491,7 +14491,7 @@ S:	Supported
+>   F:	include/keys/trusted_dcp.h
+>   F:	security/keys/trusted-keys/trusted_dcp.c
+>   
+> -KEYS-TRUSTED-PLPKS
+> +KEYS-TRUSTED-PKWM
+>   M:	Srish Srinivasan <ssrish@linux.ibm.com>
+>   M:	Nayna Jain <nayna@linux.ibm.com>
+>   L:	linux-integrity@vger.kernel.org
+
+-- 
+Thanks and Regards
+R.Nageswara Sastry
+
