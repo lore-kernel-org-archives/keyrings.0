@@ -1,822 +1,300 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pj1-f45.google.com (mail-pj1-f45.google.com [209.85.216.45])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 18216426D37;
-	Fri,  4 Sep 2026 06:19:57 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AD8CD3C9EF3
+	for <keyrings@vger.kernel.org>; Fri,  4 Sep 2026 08:09:49 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.45
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1788502800; cv=none; b=fOsCQT65WxxTkSBcARezctA3TBTPLiGDyls8iW29tcWqnugJo9sdZoy9y8rRVvU91VzK4oUMmnpapdfX0obcDdpu78bPnGFhOr9LjR48tZjq+YBTSpz+mZF/9QQRTNofdITU9PFewseBl9T9fA7QNjR1hBiBMDbK6PNa35pe/y8=
+	t=1788509391; cv=none; b=FSLo4usvaUtGlXvqvTtZ5sNbezigZe9hXFcycfXC1WrSrxAyzCS2q91VRYWS8hurpw8iMLF68lYgHEmwJ5YAckZP2P+klWreyfVLOi2MnwNjHYpH49xfBsLQ2hC8x68PFt1fF9hrbpDrEaDHRTdj4CyMYmF8VW6g2mZpbNfBMuc=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1788502800; c=relaxed/simple;
-	bh=DAiwddbXR1MYm1N4KiZM56rZSXK0HXn3m3n7+4HIbBE=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=es1Uy/nPcBxb7GdOa5Wexq3B+QRLGsrDJSp8hcUy1lIKnE3mQRp/Lr1Lktd1ckm+dP38xVz/iIjCYI2O7B+g1iHsXJ8g9Pj35/ZFitNVlGiCB9WDWn/7yVZ7PYrJlUESwblJgcwMaxepusEL94A7KggpTrs7fXLAxQX8ztQlNqE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=jlcWveFr; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1788509391; c=relaxed/simple;
+	bh=HACMX+LXnMqI9f9mdRxV9S15xsrMIb40XFMmR6zi/z0=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=kkXng8nQR+6aZVebX9/NSNG42RQyQE3UQ0WjuWnFFQYeKAEjcaEqEUaAL+gUPo8K1FW3bHg0t+8oZSqaeQLVn5ROUh/mUOB6QBadZsJcQNH+92Bm+4SyYWtKqJl2SN0k2LUb6bnn8bA4kXRqqf5W+5BMPMkHrZGoW7cxNvnjDEw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=g1Qq+79r; arc=none smtp.client-ip=209.85.216.45
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="jlcWveFr"
-Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 68464jar3994208;
-	Fri, 4 Sep 2026 06:19:43 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=A5vuUe
-	ZalymWeDfD9MhY/ToFAN4FtGVMfCATD0412D4=; b=jlcWveFrZafK7GNtCclpd1
-	vz2WnJV0mzcc2u74tgNdT2kIGN4he8sMVwJ3UF9Q+Cm0iLaAydvp4uQAYINGNP7i
-	a/nCeqeCcHUsZn4VCheXFqwU4wUpVxlaUNoQTDBsMB+EJ1+GjNzdzbROVR0PO0oR
-	grge93R3GbaQSOCYL5DhiGP7uGwWlNo8b3gjqMWAQFU+n1RN/Yz7XFe3iDuSmma4
-	fXmxagZe9CzvmOSSnXlKGzXwOO95LaY+8YH0liJt7I9My5fTu+HrojWg/8d2+lF6
-	KlqAbIlQmzWKFQL19RVPIPK+XnwN5xkWomQBRk/KLJWBu1swDxGSDOUAJL/9gHDQ
-	==
-Received: from ppma21.wdc07v.mail.ibm.com (5b.69.3da9.ip4.static.sl-reverse.com [169.61.105.91])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4gbnue8kcc-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Fri, 04 Sep 2026 06:19:42 +0000 (GMT)
-Received: from pps.filterd (ppma21.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma21.wdc07v.mail.ibm.com (8.18.1.7/8.18.1.7) with ESMTP id 6846BfW5019713;
-	Fri, 4 Sep 2026 06:19:41 GMT
-Received: from smtprelay02.fra02v.mail.ibm.com ([9.218.2.226])
-	by ppma21.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4gcarkkhhe-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Fri, 04 Sep 2026 06:19:41 +0000 (GMT)
-Received: from smtpav05.fra02v.mail.ibm.com (smtpav05.fra02v.mail.ibm.com [10.20.54.104])
-	by smtprelay02.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6846JbvT39518590
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Fri, 4 Sep 2026 06:19:37 GMT
-Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id B834820043;
-	Fri,  4 Sep 2026 06:19:37 +0000 (GMT)
-Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 27ECC20040;
-	Fri,  4 Sep 2026 06:19:31 +0000 (GMT)
-Received: from [9.61.247.46] (unknown [9.61.247.46])
-	by smtpav05.fra02v.mail.ibm.com (Postfix) with ESMTPS;
-	Fri,  4 Sep 2026 06:19:30 +0000 (GMT)
-Message-ID: <e95f096b-e1ed-484c-b122-5a5e7d304a61@linux.ibm.com>
-Date: Fri, 4 Sep 2026 11:49:27 +0530
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="g1Qq+79r"
+Received: by mail-pj1-f45.google.com with SMTP id 98e67ed59e1d1-38f0f3c8da5so87580a91.3
+        for <keyrings@vger.kernel.org>; Fri, 04 Sep 2026 01:09:49 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1788509389; x=1789114189; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=QuKGhcV8twnDAPnDv4bBYkqWbBQMc0+zi9pzIkYky7U=;
+        b=g1Qq+79rWDjoWVtuFrEookroVSUP+5bEd9GcNeiP/lvBwQEhLO0Y7VS9YnaG4LwxJX
+         bXrTPg0ENbv/RuXXTp4DCY5vO0XRPCykcLoGr9//RofcYSZv9lZBHeI9zAuzl78ZVoMw
+         kwyNmFl0TctgKCrP5p2QSeTsyBMlfBoh2/dnrMrdUC/MNEwcfX+3rxDWnaYEby3ETIpH
+         B8S2KjanNSDgmjxBBH+G9h6bziSTk66u48fgw86wbms2VHoUyWKNaEX2SZtJoeyxOiSV
+         5LJXWzeiZ7YqYnGBWdun0q7dHsnGzjg065Qdpc7peGv6JyoOLxQUba30EYejQ9/h+m3b
+         V9/w==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1788509389; x=1789114189;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=QuKGhcV8twnDAPnDv4bBYkqWbBQMc0+zi9pzIkYky7U=;
+        b=A6e8kqOyPCyGotIO3T6cS1YDrGfJBsF9nSk4WuwrxHGdAOVSk5lZjk2XTJIZQlkNOc
+         ZXIavonlrwrEd9U9Mw0Fu4EjHSNRljBJJ6IDcoAmMvYWokgqRi6hlfsUrBHXzueGA8fd
+         2R7yGF9YWvOSQ6lbUkZNmI53hgi2eaAqKHIFB1T5+irSUi3fdKOmJXtAUnYP4zzl6FSj
+         50nelBQKcDWvZ03pNtPGDKOVPta3XfS5ifxxbnNWiSbqaKmh9Swy7PS7CeIGVTgERyen
+         BCzEFFCRsGWqOVcrTMTe9DyzON9nTFo5BmuiRUzBePPa2UGZ0BATGAcda44bgN+n9vC3
+         unBA==
+X-Forwarded-Encrypted: i=1; AKwUvBz5PXo+oNk6nC4qHibMLImC17xi4OjlSfWt8DTHUbLpBTdKd4v7NQsXtwi50p7D6y732B8V8fo+gg==@vger.kernel.org
+X-Gm-Message-State: AFuF++l8KV9qVBjtih6zBZcpJesBwclNndOfehOXlwZ9N43dDa866RY3
+	5rtHK7ADnqT4pqhcJAWmVsrSSL0vw+AM8+4MIp2wJo6di4YQB8QdGikE
+X-Gm-Gg: AYBFou1rODfNdDKUDSaHszGv1g6lFuN7kxfy6C7T041gJPx58px2RSp5v4tfsPJszNt
+	6wTgOOVK9qmPzVii+REiqooeOigJod1vBJouUbIxYYqNqhirw+mxnheMMyfXPBgHOLymiGJokc4
+	sLZy2KZfKJa5s85dbk7JkL/1Sy2EocU2h/stmplxgAy6zzV69qylWWT35yxGgOkgNwDvTQfx1Q8
+	kfz0bxhb4pbnZil94Hyx0uSESFKFW5RAltEnP/TZaVXjeN1fLV0T+oJOVJFNqc56jwCcPys9mYB
+	5j4zvZ7NylQTAfAizzPrXUonYULsvmrFPvf2fQGLoKnbnYik2SEeKFHeh/JCTyT1zQJHONbZpFb
+	gvDNbEOaf6nDiqfAK3qvoJ6iC/Uff6/j/UX7MyN4incI7geLieQMSwf7BuBMvIZ79Z8iIVQJssy
+	1/NYHkocmPkGF9YRIpgfhNG4GZWkeGM4aM3U9HZWFfridSxzZD8p0ifIUHGdK3kRtCzKEK5or8D
+	jki+ygvEUeFxpPrlTgVvJb0+JpguVA8avbSOookm6dLGhb+BVxIaoGkOg==
+X-Received: by 2002:a17:90b:5404:b0:396:d28e:b52 with SMTP id 98e67ed59e1d1-39b26229b5dmr4311093a91.3.1788509388892;
+        Fri, 04 Sep 2026 01:09:48 -0700 (PDT)
+Received: from localhost.localdomain (45.78.64.189.16clouds.com. [45.78.64.189])
+        by smtp.gmail.com with ESMTPSA id a92af1059eb24-1432423f99fsm4578817c88.1.2026.09.04.01.09.45
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Fri, 04 Sep 2026 01:09:47 -0700 (PDT)
+From: Chengfeng Ye <nicoyip.dev@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Chengfeng Ye <nicoyip.dev@gmail.com>
+Subject: [PATCH v2] keys: Fix key_user use-after-free during ownership changes
+Date: Fri,  4 Sep 2026 16:09:40 +0800
+Message-ID: <20260904080940.575882-1-nicoyip.dev@gmail.com>
+X-Mailer: git-send-email 2.43.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v2 10/10] pseries/plpks/wrapkey: expose PKWM wrapping key
- management to userspace via sysfs
-To: Srish Srinivasan <ssrish@linux.ibm.com>, linux-integrity@vger.kernel.org,
-        keyrings@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Cc: maddy@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com,
-        christophe.leroy@csgroup.eu, James.Bottomley@HansenPartnership.com,
-        jarkko@kernel.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, nayna@linux.ibm.com
-References: <20260831111738.334857-1-ssrish@linux.ibm.com>
- <20260831111738.334857-11-ssrish@linux.ibm.com>
-Content-Language: en-US
-From: R Nageswara Sastry <rnsastry@linux.ibm.com>
-In-Reply-To: <20260831111738.334857-11-ssrish@linux.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Reinject: loops=2 maxloops=12
-X-Proofpoint-GUID: U9rcSXbnhD-PaOlzqlMv4-YGo_OfT4Q3
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwOTA0MDA1NCBTYWx0ZWRfXyb3UxbB63NTa
- r72RC4c0mZvAGv/iMATnndaqHcRk9zH3Rb/p5KO7KBAlv3BU3YhpwiqOJs1C1wd94sLBfkuoymv
- FF+f8pb0kibRVRYAhHknOnr/Z8rX6d7N4Hq4qQPs7RuGGLFB3ABq3DxBqHDWCFFT70uGaeHHCMU
- zztf++3kq77UPN0kJrB8wWbaULqO6Jql0MK0tshKuAUF6aESz1cIE5x56iYc++zmEZ8PGUvwpXA
- SP/4GVyA8QLF84arvz7J4buUtnv4yLIRe91nyCuM77lKBtavkwvKREIyGHkaRZnd0h4yT5DKSfH
- v4Con2HRzny9YfMAF2eHuQiyvUCDgZzbnLxXFJWd5tuxAXMQmT0AgNFE/pqaOUxUnXjCHfT46vY
- /rQJ1JGlJvnoXjjn1gmQPKjt3Ogd1IJNWbNeQRyOhcZfz9/5taAvNA4goIsd9rVXq/2N6IsDFjb
- U3n61H5zI+evLrpgbAw==
-X-Proofpoint-ORIG-GUID: aIIzWtzrqauZH2flR-WaV427NTP2jbbo
-X-Proofpoint-Spam-Info: AW1haW4tMjYwOTA0MDA1NCBTYWx0ZWRfX9LsuVB9T+Ev4
- qSUwZCCxPzGFcRWl8JXEaBoqEI4uHYJAlXy6bqGpnv2zUmBAaUIkBG+3zUo9yKMKpR0Ua3g3WB0
- dbSioUk8SLAjk/1ei47HGotEexh1pZ8=
-X-Authority-Analysis: v=2.4 cv=B92JFutM c=1 sm=1 tr=0 ts=6a9a62ff cx=c_pps
- a=GFwsV6G8L6GxiO2Y/PsHdQ==:117 a=GFwsV6G8L6GxiO2Y/PsHdQ==:17
- a=IkcTkHD0fZMA:10 a=VdqzKS8jKosA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=V8glGbnc2Ofi9Qvn3v5h:22 a=VnNF1IyMAAAA:8
- a=FeG7EYxqCxfRIhz7DHoA:9 a=3ZKOabzyN94A:10 a=QEXdDO2ut3YA:10
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-09-04_02,2026-09-03_01,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- adultscore=0 spamscore=0 clxscore=1015 suspectscore=0 phishscore=0
- lowpriorityscore=0 bulkscore=0 priorityscore=1501 impostorscore=0
- malwarescore=0 classifier=typeunknown authscore=0 authtc= authcc=
- route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2606150000
- definitions=main-2609040054
 
+keyctl_chown_key() replaces key->user and then drops the key's
+reference to the previous key_user. Several paths access key->user
+without any common synchronization with this replacement, including
+the /proc/keys iterators, find_keyring_by_name(), quota accounting, and
+key instantiation.
 
-On 31.08.2026 4:47 PM, Srish Srinivasan wrote:
-> The PKWM trusted source currently uses a single default wrapping key
-> created during initialization. However, PKWM also supports user-created
-> wrapping keys for better isolation between trusted keys.
->
-> Expose wrapping key lifecycle operations through sysfs to allow users to
-> create and manage their own wrapping keys.
->
-> Create a sysfs interface at /sys/firmware/plpks/wrapkey with the following
-> attributes:
->
->    create        - Create a new wrapping key with a user-provided label
->    delete        - Delete a revoked wrapping key by label
->    revoke        - Revoke a wrapping key by label
->    unrevoke      - Unrevoke a previously revoked wrapping key by label
->    list_active   - List labels of all active (non-revoked) wrapping keys
->    list_revoked  - List labels of all revoked wrapping keys
->
-> User-provided labels are validated to contain only alphanumeric characters.
->
-> Wrapping key lifecycle constraints:
-> - A wrapping key must be revoked before it can be deleted
-> - Revoked wrapping keys cannot be used for wrap operations until unrevoked
-> - The default wrapping key cannot be revoked or deleted; it always appears
->    in list_active
->
-> The wrapping keys themselves are confidential objects stored in PLPKS. Only
-> the user-provided labels are exposed to userspace for identification and
-> management purposes.
->
-> These user-created wrapping keys can be used in seal/unseal operations via
-> the wrapping_key=<label> option.
->
-> Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
-Tested-by: R Nageswara Sastry <rnsastry@linux.ibm.com>
+This allows an ownership change to free the previous key_user while a
+reader is still accessing it:
 
-Tested on ppc64le PowerVM LPARs:
+  CPU 0 (/proc/keys)            CPU 1 (KEYCTL_CHOWN)
+  user = key->user
+                                old = key->user
+                                key->user = newowner
+                                key_user_put(old)
+                                  kfree(old)
+  uid = user->uid
 
-On firmware without revoke/unrevoke support:
-   - /sys/firmware/plpks/wrapkey is correctly absent; the kernel logs that
-     the H_PKS_{UN}REVOKE_OBJECT interface is not supported.
+The same missing synchronization also can corrupt instantiated-key
+accounting. KEY_LOOKUP_PARTIAL allows keyctl_chown_key() to change the
+owner of a key while it is still being instantiated:
 
-On firmware with revoke/unrevoke support, Secure Boot disabled:
-   - /sys/firmware/plpks/wrapkey is present with all six attributes:
-     create, delete, revoke, unrevoke, list_active, list_revoked.
-   - Full wrapping key lifecycle via sysfs (create, revoke, unrevoke, 
-delete)
-     works correctly.
-   - Sealing a trusted key with a user-created wrapping key and unsealing it
-     works. Unsealing fails as expected when the wrapping key is 
-revoked, and
-     succeeds again after unrevoking.
-   - Only root (CAP_SYS_ADMIN) can write to the sysfs attributes.
-     Non-alphanumeric labels are rejected. The default wrapping key is
-     protected from revoke and delete.
-   - Listing wrapping key labels (list_active, list_revoked) is consistent
-     across many keys, including the H_CONTINUE pagination path.
-   - PLPKS was filled to capacity with wrapping keys and confirmed to reject
-     further creation correctly; cleanup via sysfs restored the original 
-state.
-   - Concurrent Dynamic GSB secvar reads and wrapping key lifecycle 
-operations
-     complete without issue.
+  CPU 0 (instantiate)           CPU 1 (KEYCTL_CHOWN)
+  atomic_inc(old->nikeys)
+                                observe KEY_IS_UNINSTANTIATED
+                                skip the nikeys transfer
+                                key->user = newowner
+  mark key instantiated
 
-On firmware with revoke/unrevoke support, Secure Boot enabled:
-   - All sysfs interface functionality listed above passes.
-> ---
->   .../ABI/testing/sysfs-firmware-plpks          | 106 +++++
->   arch/powerpc/include/asm/plpks.h              |   9 +
->   arch/powerpc/platforms/pseries/Kconfig        |  15 +
->   arch/powerpc/platforms/pseries/Makefile       |   1 +
->   arch/powerpc/platforms/pseries/plpks-sysfs.c  |  11 +
->   .../platforms/pseries/plpks-wrapkey-sysfs.c   | 407 ++++++++++++++++++
->   arch/powerpc/platforms/pseries/plpks.c        |   1 -
->   7 files changed, 549 insertions(+), 1 deletion(-)
->   create mode 100644 arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
->
-> diff --git a/Documentation/ABI/testing/sysfs-firmware-plpks b/Documentation/ABI/testing/sysfs-firmware-plpks
-> index cba061e4eee2..ebcdef17a8a8 100644
-> --- a/Documentation/ABI/testing/sysfs-firmware-plpks
-> +++ b/Documentation/ABI/testing/sysfs-firmware-plpks
-> @@ -56,3 +56,109 @@ Description:	Bitmask of the wrapping features indicating the wrapping
->   		algorithms that are supported for the H_PKS_WRAP_OBJECT requests
->   		, represented as a 8 byte hexadecimal ASCII string. Consult the
->   		hypervisor documentation for what these flags mean.
-> +
-> +What:		/sys/firmware/plpks/wrapkey
-> +Date:		August 2026
-> +Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +Description:	This directory provides the interface for creating and managing
-> +		user-created PKWM wrapping keys.
-> +
-> +		The directory is present only when CONFIG_PLPKS_WRAPKEY_SYSFS is
-> +		enabled and the system supports the H_PKS_{UN}REVOKE_OBJECT
-> +		interfaces.
-> +
-> +		Only alphanumeric characters are accepted in wrapping key
-> +		labels. The wrapping keys themselves are confidential PLPKS
-> +		objects and are not exposed to userspace. Only their labels are
-> +		exposed for identification and management.
-> +
-> +		Each write is processed as an independent operation and accepts
-> +		exactly one wrapping key label. The resulting state can be
-> +		verified through list_active or list_revoked, as appropriate.
-> +
-> +		The default wrapping key cannot be revoked or deleted.
-> +
-> +What:		/sys/firmware/plpks/wrapkey/create
-> +Date:		August 2026
-> +Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +Description:	(WO) Create a wrapping key with the specified label.
-> +
-> +		On success, the label appears in list_active.
-> +
-> +		For example, to create a wrapping key labelled "wk1":
-> +
-> +			echo -n wk1 > /sys/firmware/plpks/wrapkey/create
-> +
-> +		or:
-> +
-> +			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/create
-> +
-> +What:		/sys/firmware/plpks/wrapkey/delete
-> +Date:		August 2026
-> +Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +Description:	(WO) Delete a revoked wrapping key identified by the specified
-> +		label. A wrapping key must be revoked before it can be deleted.
-> +
-> +		On success, the label no longer appears in list_revoked.
-> +
-> +		For example, to delete a revoked wrapping key labelled "wk1":
-> +
-> +			echo -n wk1 > /sys/firmware/plpks/wrapkey/delete
-> +
-> +		or:
-> +
-> +			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/delete
-> +
-> +What:		/sys/firmware/plpks/wrapkey/revoke
-> +Date:		August 2026
-> +Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +Description:	(WO) Revoke a wrapping key identified by the specified label. A
-> +		revoked wrapping key cannot be used for seal or unseal
-> +		operations until it is unrevoked.
-> +
-> +		On success, the label appears in list_revoked and no longer
-> +		appears in list_active.
-> +
-> +		For example, to revoke a wrapping key labelled "wk1":
-> +
-> +			echo -n wk1 > /sys/firmware/plpks/wrapkey/revoke
-> +
-> +		or:
-> +
-> +			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/revoke
-> +
-> +What:		/sys/firmware/plpks/wrapkey/unrevoke
-> +Date:		August 2026
-> +Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +Description:	(WO) Unrevoke a revoked wrapping key identified by the specified
-> +		label.
-> +
-> +		On success, the label appears in list_active and no longer
-> +		appears in list_revoked.
-> +
-> +		For example, to unrevoke a revoked wrapping key labelled "wk1":
-> +
-> +			echo -n wk1 > /sys/firmware/plpks/wrapkey/unrevoke
-> +
-> +		or:
-> +
-> +			printf '%s' 'wk1' > /sys/firmware/plpks/wrapkey/unrevoke
-> +
-> +What:		/sys/firmware/plpks/wrapkey/list_active
-> +Date:		August 2026
-> +Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +Description:	(RO) List the labels of active, non-revoked wrapping keys. The
-> +		default wrapping key is always included in this list.
-> +
-> +		For example:
-> +
-> +			cat /sys/firmware/plpks/wrapkey/list_active
-> +
-> +What:		/sys/firmware/plpks/wrapkey/list_revoked
-> +Date:		August 2026
-> +Contact:	Srish Srinivasan <ssrish@linux.ibm.com>
-> +Description:	(RO) List the labels of revoked wrapping keys.
-> +
-> +		For example:
-> +
-> +			cat /sys/firmware/plpks/wrapkey/list_revoked
-> diff --git a/arch/powerpc/include/asm/plpks.h b/arch/powerpc/include/asm/plpks.h
-> index badb07afe749..420945aeeb0e 100644
-> --- a/arch/powerpc/include/asm/plpks.h
-> +++ b/arch/powerpc/include/asm/plpks.h
-> @@ -56,6 +56,8 @@
->   // Component for a PKWM wrapping key
->   #define PLPKS_WRAPKEY_COMPONENT	"PLPKSWR"
->   
-> +#define PLPKS_OBJLABEL_LEN_FIELD_SIZE	2
-> +
->   struct plpks_var {
->   	char *component;
->   	u8 *name;
-> @@ -144,6 +146,9 @@ int plpks_get_object_labels(u8 **output_buf, u64 *output_len,
->   
->   bool plpks_revoke_is_supported(void);
->   
-> +int plpks_init_child_kobj(struct kobject *kobj, const struct kobj_type *ktype,
-> +			  const char *name);
-> +
->   #else // CONFIG_PSERIES_PLPKS
->   static inline bool plpks_is_available(void) { return false; }
->   static inline u16 plpks_get_passwordlen(void) { BUILD_BUG(); }
-> @@ -151,6 +156,10 @@ static inline void plpks_early_init_devtree(void) { }
->   static inline int plpks_populate_fdt(void *fdt) { BUILD_BUG(); }
->   static inline int plpks_config_create_softlink(struct kobject *from)
->   						{ return 0; }
-> +static inline int plpks_init_child_kobj(struct kobject *kobj,
-> +					const struct kobj_type *ktype,
-> +					const char *name)
-> +						{ return 0; }
->   #endif // CONFIG_PSERIES_PLPKS
->   
->   #endif // _ASM_POWERPC_PLPKS_H
-> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-> index 74910ce3a541..d0dcfbae6fc9 100644
-> --- a/arch/powerpc/platforms/pseries/Kconfig
-> +++ b/arch/powerpc/platforms/pseries/Kconfig
-> @@ -216,3 +216,18 @@ config PPC_SVM
->   	 those guests.
->   
->   	 If unsure, say "N".
-> +
-> +config PLPKS_WRAPKEY_SYSFS
-> +	bool "Enable sysfs interface for managing PKWM wrapping keys"
-> +	default n
-> +	depends on PSERIES_PLPKS
-> +	depends on SYSFS
-> +	depends on TRUSTED_KEYS_PKWM
-> +	help
-> +	  The PKWM trusted source supports user-created wrapping keys that are
-> +	  managed by the OS. These wrapping keys can be created, revoked,
-> +	  unrevoked, and deleted through sysfs. Their labels can also be viewed
-> +	  through sysfs.
-> +
-> +	  Say Y if PLPKS and PKWM are enabled and you want to isolate trusted
-> +	  keys using user-created wrapping keys.
-> diff --git a/arch/powerpc/platforms/pseries/Makefile b/arch/powerpc/platforms/pseries/Makefile
-> index 3ced289a675b..c604be40f546 100644
-> --- a/arch/powerpc/platforms/pseries/Makefile
-> +++ b/arch/powerpc/platforms/pseries/Makefile
-> @@ -33,6 +33,7 @@ obj-$(CONFIG_FA_DUMP)		+= rtas-fadump.o
->   obj-$(CONFIG_PSERIES_PLPKS)	+= plpks.o plpks-sysfs.o
->   obj-$(CONFIG_PPC_SECURE_BOOT)	+= plpks-secvar.o
->   obj-$(CONFIG_PSERIES_PLPKS_SED)	+= plpks_sed_ops.o
-> +obj-$(CONFIG_PLPKS_WRAPKEY_SYSFS) += plpks-wrapkey-sysfs.o
->   obj-$(CONFIG_SUSPEND)		+= suspend.o
->   obj-$(CONFIG_PPC_VAS)		+= vas.o vas-sysfs.o
->   
-> diff --git a/arch/powerpc/platforms/pseries/plpks-sysfs.c b/arch/powerpc/platforms/pseries/plpks-sysfs.c
-> index f2436229f323..0ca13bb6405f 100644
-> --- a/arch/powerpc/platforms/pseries/plpks-sysfs.c
-> +++ b/arch/powerpc/platforms/pseries/plpks-sysfs.c
-> @@ -55,6 +55,17 @@ static umode_t plpks_config_attr_is_visible(struct kobject *kobj,
->   	return attr->mode;
->   }
->   
-> +int plpks_init_child_kobj(struct kobject *kobj, const struct kobj_type *ktype,
-> +			  const char *name)
-> +{
-> +	kobject_init(kobj, ktype);
-> +
-> +	if (!plpks_kobj)
-> +		return -ENODEV;
-> +
-> +	return kobject_add(kobj, plpks_kobj, "%s", name);
-> +}
-> +
->   int plpks_config_create_softlink(struct kobject *from)
->   {
->   	if (!plpks_config_kobj)
-> diff --git a/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c b/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
-> new file mode 100644
-> index 000000000000..7493d3f58546
-> --- /dev/null
-> +++ b/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
-> @@ -0,0 +1,407 @@
-> +// SPDX-License-Identifier: GPL-2.0+
-> +/*
-> + * Copyright (C) 2025 IBM Corporation <ssrish@linux.ibm.com>
-> + *
-> + * This code exposes wrapping key management options to the user via the
-> + * sysfs
-> + */
-> +
-> +#define pr_fmt(fmt) "wrapkey-sysfs: " fmt
-> +#define PLPKS_WRAPKEY_REVOKED 1
-> +#define PLPKS_WRAPKEY_UNREVOKED 0
-> +
-> +#include <linux/slab.h>
-> +#include <linux/compat.h>
-> +#include <linux/string.h>
-> +#include <linux/of.h>
-> +#include <linux/ctype.h>
-> +#include <linux/unaligned.h>
-> +#include <asm/plpks.h>
-> +
-> +static struct kobject *wrapkey_kobj;
-> +
-> +static bool is_wrapkey_label_alnum(const char *key_label, size_t len)
-> +{
-> +	size_t i;
-> +
-> +	for (i = 0; i < len; i++) {
-> +		if (!isalnum((unsigned char)key_label[i])) {
-> +			pr_err("key label <%*pE> is not alphanumeric\n",
-> +			       (int)len, key_label);
-> +			return false;
-> +		}
-> +	}
-> +
-> +	return true;
-> +}
-> +
-> +static ssize_t list_key_labels(char *buf, u8 *obj_labels_buf,
-> +			       u64 obj_labels_count, int revoked)
-> +{
-> +	struct plpks_var var = {0};
-> +	u8 *obj_labels_buf_ptr, *comp_prefix;
-> +	u8 *key_label_ptr;
-> +	u16 obj_label_len;
-> +	int len = 0;
-> +	int is_revoked;
-> +	u64 i;
-> +
-> +	var.os = PLPKS_VAR_LINUX;
-> +	var.component = PLPKS_WRAPKEY_COMPONENT;
-> +	obj_labels_buf_ptr = obj_labels_buf;
-> +
-> +	for (i = 0; i < obj_labels_count; ++i) {
-> +		obj_label_len = get_unaligned_be16(obj_labels_buf_ptr);
-> +		comp_prefix = obj_labels_buf_ptr +
-> +			      PLPKS_OBJLABEL_LEN_FIELD_SIZE;
-> +
-> +		var.namelen = obj_label_len - PLPKS_MAX_LABEL_ATTR_SIZE;
-> +		var.name = kzalloc(var.namelen + 1, GFP_KERNEL);
-> +
-> +		if (!var.name)
-> +			return -ENOMEM;
-> +
-> +		key_label_ptr = comp_prefix + PLPKS_MAX_LABEL_ATTR_SIZE;
-> +		memcpy(var.name, key_label_ptr, var.namelen);
-> +
-> +		is_revoked = plpks_is_wrapping_key_revoked(&var);
-> +		if (is_revoked == revoked)
-> +			len += sysfs_emit_at(buf, len, "<%s>\n",
-> +					     (char *)var.name);
-> +		else if (is_revoked < 0)
-> +			pr_warn("Failed to get revocation status for <%s>\n",
-> +				(char *)var.name);
-> +
-> +		kfree(var.name);
-> +		obj_labels_buf_ptr = key_label_ptr + var.namelen;
-> +	}
-> +
-> +	return len;
-> +}
-> +
-> +static ssize_t list_active_show(struct kobject *kobj,
-> +				struct kobj_attribute *attr, char *buf)
-> +{
-> +	u8 *obj_labels_buf;
-> +	u64 obj_labels_count = 0;
-> +	int rc;
-> +
-> +	rc = plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
-> +				     PLPKS_WRAPKEY_COMPONENT);
-> +	if (rc) {
-> +		pr_err("Retrieving object labels failed. rc=%d\n", rc);
-> +		goto out;
-> +	}
-> +
-> +	rc = list_key_labels(buf, obj_labels_buf, obj_labels_count,
-> +			     PLPKS_WRAPKEY_UNREVOKED);
-> +
-> +out:
-> +	kfree(obj_labels_buf);
-> +	return rc;
-> +}
-> +
-> +static ssize_t list_revoked_show(struct kobject *kobj,
-> +				 struct kobj_attribute *attr, char *buf)
-> +{
-> +	u8 *obj_labels_buf;
-> +	u64 obj_labels_count = 0;
-> +	int rc;
-> +
-> +	rc = plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
-> +				     PLPKS_WRAPKEY_COMPONENT);
-> +	if (rc) {
-> +		pr_err("Retrieving object labels failed. rc=%d\n", rc);
-> +		goto out;
-> +	}
-> +
-> +	rc = list_key_labels(buf, obj_labels_buf, obj_labels_count,
-> +			     PLPKS_WRAPKEY_REVOKED);
-> +
-> +out:
-> +	kfree(obj_labels_buf);
-> +	return rc;
-> +}
-> +
-> +static ssize_t create_store(struct kobject *kobj, struct kobj_attribute *attr,
-> +			    const char *buf, size_t count)
-> +{
-> +	struct plpks_var var = {0};
-> +	int rc;
-> +
-> +	if (!capable(CAP_SYS_ADMIN)) {
-> +		rc = -EPERM;
-> +		goto out;
-> +	}
-> +
-> +	if (!count) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	if (count > PLPKS_MAX_NAME_SIZE) {
-> +		rc = -ENAMETOOLONG;
-> +		goto out;
-> +	}
-> +
-> +	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-> +		pr_warn("<%s> creation is restricted to pkwm init\n",
-> +			PLPKS_DEFAULT_WRAPKEY_LABEL);
-> +		rc = -EPERM;
-> +		goto out;
-> +	}
-> +
-> +	if (!is_wrapkey_label_alnum(buf, count)) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	var.name = kstrndup(buf, count, GFP_KERNEL);
-> +	if (!var.name) {
-> +		rc = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	var.namelen = count;
-> +	var.policy = PLPKS_WRAPPINGKEY;
-> +	var.os = PLPKS_VAR_LINUX;
-> +	var.component = PLPKS_WRAPKEY_COMPONENT;
-> +
-> +	rc = plpks_gen_wrapping_key(&var);
-> +	if (rc) {
-> +		pr_err("creation of wrapping key <%s> failed. rc = %d\n",
-> +		       (char *)var.name, rc);
-> +		goto out;
-> +	}
-> +
-> +	rc = count;
-> +out:
-> +	kfree(var.name);
-> +	return rc;
-> +}
-> +
-> +static ssize_t revoke_store(struct kobject *kobj, struct kobj_attribute *attr,
-> +			    const char *buf, size_t count)
-> +{
-> +	struct plpks_var var = {0};
-> +	int rc;
-> +
-> +	if (!capable(CAP_SYS_ADMIN)) {
-> +		rc = -EPERM;
-> +		goto out;
-> +	}
-> +
-> +	if (!count) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	if (count > PLPKS_MAX_NAME_SIZE) {
-> +		rc = -ENAMETOOLONG;
-> +		goto out;
-> +	}
-> +
-> +	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-> +		pr_warn("<%s> must not be revoked\n",
-> +			PLPKS_DEFAULT_WRAPKEY_LABEL);
-> +		rc = -EPERM;
-> +		goto out;
-> +	}
-> +
-> +	if (!is_wrapkey_label_alnum(buf, count)) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	var.name = kstrndup(buf, count, GFP_KERNEL);
-> +	if (!var.name) {
-> +		rc = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	var.namelen = count;
-> +	var.os = PLPKS_VAR_LINUX;
-> +	var.component = PLPKS_WRAPKEY_COMPONENT;
-> +
-> +	rc = plpks_revoke_wrapping_key(&var);
-> +
-> +	if (rc) {
-> +		pr_err("revocation of wrapping key <%s> failed. rc = %d\n",
-> +		       (char *)var.name, rc);
-> +		goto out;
-> +	}
-> +
-> +	rc = count;
-> +out:
-> +	kfree(var.name);
-> +	return rc;
-> +}
-> +
-> +static ssize_t unrevoke_store(struct kobject *kobj, struct kobj_attribute *attr,
-> +			      const char *buf, size_t count)
-> +{
-> +	struct plpks_var var = {0};
-> +	int rc;
-> +
-> +	if (!capable(CAP_SYS_ADMIN)) {
-> +		rc = -EPERM;
-> +		goto out;
-> +	}
-> +
-> +	if (!count) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	if (count > PLPKS_MAX_NAME_SIZE) {
-> +		rc = -ENAMETOOLONG;
-> +		goto out;
-> +	}
-> +
-> +	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-> +		pr_warn("unrevoke on <%s> is invalid\n",
-> +			PLPKS_DEFAULT_WRAPKEY_LABEL);
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	if (!is_wrapkey_label_alnum(buf, count)) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	var.name = kstrndup(buf, count, GFP_KERNEL);
-> +	if (!var.name) {
-> +		rc = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	var.namelen = count;
-> +	var.os = PLPKS_VAR_LINUX;
-> +	var.component = PLPKS_WRAPKEY_COMPONENT;
-> +
-> +	rc = plpks_unrevoke_wrapping_key(&var);
-> +
-> +	if (rc) {
-> +		pr_err("un-revocation of wrapping key <%s> failed. rc = %d\n",
-> +		       (char *)var.name, rc);
-> +		goto out;
-> +	}
-> +
-> +	rc = count;
-> +out:
-> +	kfree(var.name);
-> +	return rc;
-> +}
-> +
-> +static ssize_t delete_store(struct kobject *kobj, struct kobj_attribute *attr,
-> +			    const char *buf, size_t count)
-> +{
-> +	struct plpks_var var = {0};
-> +	int rc;
-> +
-> +	if (!capable(CAP_SYS_ADMIN)) {
-> +		rc = -EPERM;
-> +		goto out;
-> +	}
-> +
-> +	if (!count) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	if (count > PLPKS_MAX_NAME_SIZE) {
-> +		rc = -ENAMETOOLONG;
-> +		goto out;
-> +	}
-> +
-> +	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
-> +		pr_warn("<%s> must not be deleted\n",
-> +			PLPKS_DEFAULT_WRAPKEY_LABEL);
-> +		rc = -EPERM;
-> +		goto out;
-> +	}
-> +
-> +	if (!is_wrapkey_label_alnum(buf, count)) {
-> +		rc = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	var.name = kstrndup(buf, count, GFP_KERNEL);
-> +	if (!var.name) {
-> +		rc = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	var.namelen = count;
-> +	var.os = PLPKS_VAR_LINUX;
-> +	var.component = PLPKS_WRAPKEY_COMPONENT;
-> +
-> +	rc = plpks_del_wrapping_key(&var);
-> +
-> +	if (rc) {
-> +		pr_err("deletion of wrapping key <%s> failed. rc = %d\n",
-> +		       (char *)var.name, rc);
-> +		goto out;
-> +	}
-> +
-> +	rc = count;
-> +out:
-> +	kfree(var.name);
-> +	return rc;
-> +}
-> +
-> +static struct kobj_attribute view_active_attr = __ATTR_RO(list_active);
-> +
-> +static struct kobj_attribute view_revoked_attr = __ATTR_RO(list_revoked);
-> +
-> +static struct kobj_attribute create_attr = __ATTR_WO(create);
-> +
-> +static struct kobj_attribute revoke_attr = __ATTR_WO(revoke);
-> +
-> +static struct kobj_attribute unrevoke_attr = __ATTR_WO(unrevoke);
-> +
-> +static struct kobj_attribute delete_attr = __ATTR_WO(delete);
-> +
-> +static struct attribute *wrapkey_attrs[] = {
-> +	&view_active_attr.attr,
-> +	&view_revoked_attr.attr,
-> +	&create_attr.attr,
-> +	&revoke_attr.attr,
-> +	&unrevoke_attr.attr,
-> +	&delete_attr.attr,
-> +	NULL,
-> +};
-> +
-> +static const struct attribute_group wrapkey_attr_group = {
-> +	.attrs = wrapkey_attrs,
-> +};
-> +__ATTRIBUTE_GROUPS(wrapkey_attr);
-> +
-> +static const struct kobj_type wrapkey_ktype = {
-> +	.sysfs_ops	= &kobj_sysfs_ops,
-> +	.default_groups = wrapkey_attr_groups,
-> +};
-> +
-> +static __init int wrapkey_sysfs_init(void)
-> +{
-> +	int rc;
-> +
-> +	if (!plpks_revoke_is_supported()) {
-> +		pr_err("H_PKS_{UN}REVOKE_OBJECT interface not supported\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	wrapkey_kobj = kzalloc_obj(*wrapkey_kobj);
-> +	if (!wrapkey_kobj)
-> +		return -ENOMEM;
-> +
-> +	rc = plpks_init_child_kobj(wrapkey_kobj, &wrapkey_ktype, "wrapkey");
-> +
-> +	if (rc)
-> +		kobject_put(wrapkey_kobj);
-> +
-> +	return rc;
-> +}
-> +
-> +late_initcall(wrapkey_sysfs_init);
-> diff --git a/arch/powerpc/platforms/pseries/plpks.c b/arch/powerpc/platforms/pseries/plpks.c
-> index 5cdaabe9de06..1666c1889e43 100644
-> --- a/arch/powerpc/platforms/pseries/plpks.c
-> +++ b/arch/powerpc/platforms/pseries/plpks.c
-> @@ -25,7 +25,6 @@
->    */
->   #define PLPKS_OBJLABEL_BUF_MAX	2550
->   
-> -#define PLPKS_OBJLABEL_LEN_FIELD_SIZE	2
->   #define PLPKS_OBJLABEL_PREFIX_LEN	8
->   
->   #define PLPKS_WRAP_INTERFACE_BIT	3
+The increment remains charged to the previous owner. Quota reservation
+can similarly select one owner for its quota limit and another owner
+for the usage update, or access an owner that has already been freed.
 
+The existing locks do not provide common exclusion for these
+operations. keyctl_chown_key() holds key->sem, key construction uses
+key_construction_mutex, and the affected readers hold their respective
+tree or list locks.
+
+Use key_user_lock to serialize access to key ownership. Hold it across
+the accounting transfer and key->user replacement in keyctl_chown_key().
+Use the same lock while readers copy the owner's UID, while quota usage
+is updated, and while the instantiated-key count and key state are
+committed.
+
+key_user_lock already serializes final key_user removal, so an old
+owner cannot be freed while one of these readers is accessing it.
+
+Fixes: 5801649d8b83 ("[PATCH] keys: let keyctl_chown() change a key's owner")
+Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
+---
+Changes in v2:
+- Audit every user->uid occurrence and all direct key->user accesses.
+- Take key_user_lock explicitly at each namespace-filtering reader instead
+  of hiding the lock acquisition in an accessor.
+- Serialize quota reservation and construction accounting with ownership
+  changes while preserving the existing direct key->user accesses.
+- Use the commit that introduced ownership changes as the Fixes target.
+
+Link: https://lore.kernel.org/keyrings/20260823170448.3856516-1-nicoyip.dev@gmail.com/ [v1]
+---
+ security/keys/key.c     | 13 +++++++++++--
+ security/keys/keyctl.c  |  4 ++++
+ security/keys/keyring.c |  7 ++++++-
+ security/keys/proc.c    | 15 +++++++++++++--
+ 4 files changed, 34 insertions(+), 5 deletions(-)
+
+diff --git a/security/keys/key.c b/security/keys/key.c
+index b34a64d81d47..54c675b3b58d 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -21,6 +21,7 @@ struct rb_root		key_serial_tree; /* tree of keys indexed by serial */
+ DEFINE_SPINLOCK(key_serial_lock);
+ 
+ struct rb_root	key_user_tree; /* tree of quota records indexed by UID */
++/* Protects key_user_tree and key ownership changes. */
+ DEFINE_SPINLOCK(key_user_lock);
+ 
+ unsigned int key_quota_root_maxkeys = 1000000;	/* root's key count quota */
+@@ -380,9 +381,12 @@ int key_payload_reserve(struct key *key, size_t datalen)
+ 
+ 	/* contemplate the quota adjustment */
+ 	if (delta != 0 && test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
+-		unsigned maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
+-			key_quota_root_maxbytes : key_quota_maxbytes;
+ 		unsigned long flags;
++		unsigned int maxbytes;
++
++		spin_lock(&key_user_lock);
++		maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
++			key_quota_root_maxbytes : key_quota_maxbytes;
+ 
+ 		spin_lock_irqsave(&key->user->lock, flags);
+ 
+@@ -396,6 +400,7 @@ int key_payload_reserve(struct key *key, size_t datalen)
+ 			key->quotalen += delta;
+ 		}
+ 		spin_unlock_irqrestore(&key->user->lock, flags);
++		spin_unlock(&key_user_lock);
+ 	}
+ 
+ 	/* change the recorded data length if that didn't generate an error */
+@@ -447,8 +452,10 @@ static int __key_instantiate_and_link(struct key *key,
+ 
+ 		if (ret == 0) {
+ 			/* mark the key as being instantiated */
++			spin_lock(&key_user_lock);
+ 			atomic_inc(&key->user->nikeys);
+ 			mark_key_instantiated(key, 0);
++			spin_unlock(&key_user_lock);
+ 			notify_key(key, NOTIFY_KEY_INSTANTIATED, 0);
+ 
+ 			if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
+@@ -604,8 +611,10 @@ int key_reject_and_link(struct key *key,
+ 	/* can't instantiate twice */
+ 	if (key->state == KEY_IS_UNINSTANTIATED) {
+ 		/* mark the key as being negatively instantiated */
++		spin_lock(&key_user_lock);
+ 		atomic_inc(&key->user->nikeys);
+ 		mark_key_instantiated(key, -error);
++		spin_unlock(&key_user_lock);
+ 		notify_key(key, NOTIFY_KEY_INSTANTIATED, -error);
+ 		key_set_expiry(key, ktime_get_real_seconds() + timeout);
+ 
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index d14ace88e529..83a9575b084e 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1004,6 +1004,8 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+ 		if (!newowner)
+ 			goto error_put;
+ 
++		spin_lock(&key_user_lock);
++
+ 		/* transfer the quota burden to the new user */
+ 		if (test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
+ 			unsigned maxkeys = uid_eq(uid, GLOBAL_ROOT_UID) ?
+@@ -1039,6 +1041,7 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+ 		zapowner = key->user;
+ 		key->user = newowner;
+ 		key->uid = uid;
++		spin_unlock(&key_user_lock);
+ 	}
+ 
+ 	/* change the GID */
+@@ -1058,6 +1061,7 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+ 
+ quota_overrun:
+ 	spin_unlock_irqrestore(&newowner->lock, flags);
++	spin_unlock(&key_user_lock);
+ 	zapowner = newowner;
+ 	ret = -EDQUOT;
+ 	goto error_put;
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 15bf4af8f282..5943e8b48c0f 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -1148,6 +1148,7 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
+ {
+ 	struct user_namespace *ns = current_user_ns();
+ 	struct key *keyring;
++	kuid_t uid;
+ 
+ 	if (!name)
+ 		return ERR_PTR(-EINVAL);
+@@ -1158,7 +1159,11 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
+ 	 * grants Search permission and that hasn't been revoked
+ 	 */
+ 	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
+-		if (!kuid_has_mapping(ns, keyring->user->uid))
++		spin_lock(&key_user_lock);
++		uid = keyring->user->uid;
++		spin_unlock(&key_user_lock);
++
++		if (!kuid_has_mapping(ns, uid))
+ 			continue;
+ 
+ 		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index 4f4e2c1824f1..e507c500c068 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -68,7 +68,13 @@ static struct rb_node *key_serial_next(struct seq_file *p, struct rb_node *n)
+ 	n = rb_next(n);
+ 	while (n) {
+ 		struct key *key = rb_entry(n, struct key, serial_node);
+-		if (kuid_has_mapping(user_ns, key->user->uid))
++		kuid_t uid;
++
++		spin_lock(&key_user_lock);
++		uid = key->user->uid;
++		spin_unlock(&key_user_lock);
++
++		if (kuid_has_mapping(user_ns, uid))
+ 			break;
+ 		n = rb_next(n);
+ 	}
+@@ -80,6 +86,7 @@ static struct key *find_ge_key(struct seq_file *p, key_serial_t id)
+ 	struct user_namespace *user_ns = seq_user_ns(p);
+ 	struct rb_node *n = key_serial_tree.rb_node;
+ 	struct key *minkey = NULL;
++	kuid_t uid;
+ 
+ 	while (n) {
+ 		struct key *key = rb_entry(n, struct key, serial_node);
+@@ -100,7 +107,11 @@ static struct key *find_ge_key(struct seq_file *p, key_serial_t id)
+ 		return NULL;
+ 
+ 	for (;;) {
+-		if (kuid_has_mapping(user_ns, minkey->user->uid))
++		spin_lock(&key_user_lock);
++		uid = minkey->user->uid;
++		spin_unlock(&key_user_lock);
++
++		if (kuid_has_mapping(user_ns, uid))
+ 			return minkey;
+ 		n = rb_next(&minkey->serial_node);
+ 		if (!n)
 -- 
-Thanks and Regards
-R.Nageswara Sastry
-
+2.43.0
