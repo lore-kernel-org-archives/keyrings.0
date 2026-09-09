@@ -1,106 +1,127 @@
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A8D6A5427ED
-	for <keyrings@vger.kernel.org>; Wed,  9 Sep 2026 11:55:51 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 174BD53FD2B;
+	Wed,  9 Sep 2026 14:07:15 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1788954953; cv=none; b=e5IT4VwG9bxbxrTTw7xfNx7zXd7d0Fv912E8biBNY7ebYaYbCwAROglEcqml0+7GYqgs6cDiNyqYdyOOKSurmLeae2TDCArWxMoKO3e/Ab5zKKEx9Sl5pHRQvu2lkfF+tn4mdocfYEC2A596a70rlsvqupWsQmPnocXWNXPFu0I=
+	t=1788962836; cv=none; b=ght1u6XJ8lc4XR80otpEYsHwxVNRixJB14aPF77OgeJ9OQDWIZ8Ht/2R1E0ETmOhuN7XAI1slVH2nQ9PNGl4sfdh13ABkyUX3CSlc/+SvFG8v5+2qrl4ZYEXDlB0MOfdfXxnAacYA6fF+dHUTpfv5QwqK0He5toJBuoR8F9bjxY=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1788954953; c=relaxed/simple;
-	bh=YA+a6CCA1zWdQPcieNEuLQ0mIwRn0Ck7WsDOY4ql94Y=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=EGJ27JzlMVrZe2bAxBnM0kuvGauszIk2OCqq8KrXuf12VO9BY1dUUDzu1hbRjXRB25b8XmkRyvQXPtP/b/Y/xfcSMsU5LVkZbOc722LbKqMegM/uAcr278PWfIElWuXWNBW1cPnzDTJcuWsyvQooPnWXNUbH0FRZa1QmI6mR0Do=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=ZRN4d0AY; arc=none smtp.client-ip=170.10.133.124
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
+	s=arc-20240116; t=1788962836; c=relaxed/simple;
+	bh=yGxcXMg/VT7JrxWQ7k59cV5n2jK1svswZYlXM2tThIQ=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=CQ2hy6o7XCqnCH34UjaPRZQVTP07GaFw6jaa3DNFXv380uoG0U6IEeS6pul2uXsaIgsqCs3XijKjvVCNQESKe794acUk/PEFj6e/uy3At+Jn8KuCkJixFNLimSw/W6eiignaHL+KIj8NIn6bEgg7Pu5G8RRgzS4+xrKxtVwNCMI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=VpvCy6Uw; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="ZRN4d0AY"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1788954950;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=FeWcXK9/x+ZPPaC++IgCQ9jS/VWtgj79RgI0CVq94cU=;
-	b=ZRN4d0AY/oYuHqTQ/UEbop9VH7WhAo3YjxxCoZ+VTjzekOfFFAAtwRzrhtodWdCYBegM16
-	58vz4uo9cTAvzroBW4XqLKhXuOdhc/uCHCYoxPGaCxGvmBbhTWiQNDZQ/27v+hVWGxxYDq
-	R5jlNP2XIBcD26E52ta3u3hyBd+iLwA=
-Received: from mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com
- (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
- relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-416-XppBFvCKMm-g7oxw0FdvVQ-1; Wed,
- 09 Sep 2026 07:55:47 -0400
-X-MC-Unique: XppBFvCKMm-g7oxw0FdvVQ-1
-X-Mimecast-MFC-AGG-ID: XppBFvCKMm-g7oxw0FdvVQ_1788954944
-Received: from mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.12])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id EEFA519541AC;
-	Wed,  9 Sep 2026 11:55:43 +0000 (UTC)
-Received: from thuth-p1g4.redhat.corp (headnet05.pony-001.prod.iad2.dc.redhat.com [10.2.32.117])
-	by mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id B5571195608D;
-	Wed,  9 Sep 2026 11:55:37 +0000 (UTC)
-From: Thomas Huth <thuth@redhat.com>
-To: Eric Biggers <ebiggers@kernel.org>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>,
-	"Jason A. Donenfeld" <Jason@zx2c4.com>,
-	Ard Biesheuvel <ardb@kernel.org>,
-	James Bottomley <James.Bottomley@HansenPartnership.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-crypto@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Thomas Gleixner <tglx@kernel.org>,
-	Ingo Molnar <mingo@redhat.com>,
-	Borislav Petkov <bp@alien8.de>,
-	Dave Hansen <dave.hansen@linux.intel.com>,
-	linux-integrity@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org
-Subject: [PATCH v2 09/13] security: keys: trusted: always clear the hmac_sha1_ctx before returning
-Date: Wed,  9 Sep 2026 13:54:45 +0200
-Message-ID: <20260909115455.157093-10-thuth@redhat.com>
-In-Reply-To: <20260909115455.157093-1-thuth@redhat.com>
-References: <20260909115455.157093-1-thuth@redhat.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="VpvCy6Uw"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 628091F00A3A;
+	Wed,  9 Sep 2026 14:07:14 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1788962834;
+	bh=yGxcXMg/VT7JrxWQ7k59cV5n2jK1svswZYlXM2tThIQ=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=VpvCy6UwudJZRKyHYxBt6LUZKSLzqyeSNPo8wcmuhCq6VuIWbikSim8NAcIVxZdE8
+	 Rr2dWFLy383Dhuh7eMMJ38xof/JHameVOaXR+T3Oz9BdvFb0Mjf5JUjBzSALmUTCYu
+	 VkvaF6rvZECVLdGBKB8OjrZdWoDHc6z4rNutbF/vdkvnn5dV+EGAyvOxEvTE9Zrwn9
+	 5kbIb3SSv8A2THq3Mk3ZUKazodObnYDrfNbLzFzUtxOFWJiM2VcxN5Zf6sI5POERtV
+	 UTAE55cfsVoVsODX4FPbGdSQL0V6DbXl3p6lWexRNY28qtPTAojEgIQp96U1DJPLIX
+	 A+FiqpeFWSKgg==
+Date: Wed, 9 Sep 2026 16:07:09 +0200
+From: Joel Granados <joel.granados@kernel.org>
+To: Mauricio Faria de Oliveira <mfo@igalia.com>
+Cc: Kees Cook <kees@kernel.org>, Nathan Chancellor <nathan@kernel.org>, 
+	Nicolas Schier <nsc@kernel.org>, "David S. Miller" <davem@davemloft.net>, 
+	Eric Dumazet <edumazet@google.com>, Jakub Kicinski <kuba@kernel.org>, 
+	Paolo Abeni <pabeni@redhat.com>, Simon Horman <horms@kernel.org>, kernel-dev@igalia.com, 
+	linux-riscv@lists.infradead.org, linux-kernel@vger.kernel.org, fsverity@lists.linux.dev, 
+	keyrings@vger.kernel.org, bpf@vger.kernel.org, linux-fsdevel@vger.kernel.org, 
+	linux-kbuild@vger.kernel.org, netdev@vger.kernel.org, linux-wpan@vger.kernel.org, 
+	lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org, coreteam@netfilter.org, 
+	linux-sctp@vger.kernel.org, linux-rdma@vger.kernel.org, linux-s390@vger.kernel.org, 
+	bridge@lists.linux.dev, mptcp@lists.linux.dev, rds-devel@oss.oracle.com, 
+	virtualization@lists.linux.dev
+Subject: Re: [PATCH RFC v3 00/13] sysctl: add module aliases
+Message-ID: <rywhz6soawf5dzyui5g7dnbufsgpxr7ma7honuhejwgncemzrm@f32at7hl6ugm>
+References: <20260819-sysctl-module-aliases-v3-0-aab90569365d@igalia.com>
+ <bpnqwggtidgiec5akns3fa5edbsvl7xf55dxabtwng2xspy4pn@ue554aii2ngk>
+ <53155340c897560bfc67e61ba9568fd6@igalia.com>
+ <mokz5pdtwswkyab4byfq7q7m6ac2g6ceoi6jflyxmaszaibzqa@su6m4kamtdpy>
+ <b1a6cec17e7c828fcebe310ca2a0d25b@igalia.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Scanned-By: MIMEDefang 3.0 on 10.30.177.12
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="2m5clqoly7vxfssm"
+Content-Disposition: inline
+In-Reply-To: <b1a6cec17e7c828fcebe310ca2a0d25b@igalia.com>
 
-Clear the hmac_sha1_ctx structure via __cleanup(hmac_sha1_zeroize_ctx)
-to make sure that the function does not leak sensitive data on the stack
-when returning without calling hmac_sha1_final().
 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
-Signed-off-by: Thomas Huth <thuth@redhat.com>
----
- security/keys/trusted-keys/trusted_tpm1.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--2m5clqoly7vxfssm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index bf0bf7f369705..e5a904b5c1946 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -101,7 +101,7 @@ static inline void dump_tpm_buf(unsigned char *buf)
- static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
- 		       unsigned int keylen, ...)
- {
--	struct hmac_sha1_ctx hmac_ctx;
-+	struct hmac_sha1_ctx hmac_ctx __cleanup(hmac_sha1_zeroize_ctx);
- 	va_list argp;
- 	unsigned int dlen;
- 	unsigned char *data;
--- 
-2.55.0
+On Fri, Sep 04, 2026 at 02:45:23PM -0300, Mauricio Faria de Oliveira wrote:
+> On 2026-09-04 10:41, Joel Granados wrote:
+> > On Thu, Aug 20, 2026 at 06:22:13PM -0300, Mauricio Faria de Oliveira wr=
+ote:
+> >> On 2026-08-20 09:51, Joel Granados wrote:
+> >> > On Wed, Aug 19, 2026 at 03:16:13PM -0300, Mauricio Faria de Oliveira=
+ wrote:
+> >> >> This series adds 'sysctl:' aliases to modules that register sysctl =
+tables; e.g.:
+<... snip ...>
+> > use the correct call moving forward?
+>=20
+> This scheme currently covers all modules, AFAIK, as it is wrapped in the
+> functions that register sysctl tables.
+>=20
+> On moving forward: usage of such functions in a way that breaks a
+> requirement of this series (e.g., failing to specify the template
+> table/path parameter(s), or not having constant initializers) hits a
+> build error, as the requirements are actually from the compiler.
+>=20
+> >> I guess that a different design could use MODULE_SYSCTL_TABLE() as
+> >> MODULE_DEVICE_TABLE(), declared per table instead of wrapped into
+> >> register sysctl functions.
+> >> However, it seems to require moving the value of the path argument (or
+> >> its template) into the macro and still referencing it in the function
+> >> (or its instantiation of the template), which adds obfuscation, to all
+> >> callers.=20
+> >>=20
+> >> What do you think?
+> > It might be that having it inside the module subsys is more work, but I
+> > believe that there is the right place to have it. I still don't see that
+> > adding a module specific arg to the sysctl register is a good thing.
+>=20
+> Ok, cool. I can work on a different design.
+>=20
+> Please just let me know whether you are OK with the remaining (above),
+> and I'll be happy to tackle this.
 
+What is "the remaining"?
+
+Best
+
+--2m5clqoly7vxfssm
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAABCgAdFiEErkcJVyXmMSXOyyeQupfNUreWQU8FAmqhaAwACgkQupfNUreW
+QU+KhwwAk2Lee/ZoiUFUIogotHEgXdEnbLXsVMd7eYE+yCbFRSeHmKvBS3+HIQKk
+3YwwDiKYy9LoPX/Z8J6u2Xzr6HX2acGjasEgcoVhtZwFfhNXbIhLsKQXuCL5xeP8
+SP94dos6ha2gCbwAasxDxDaxBIeSpiyAojpShoXDz5sWPUp0+CmYPWbFSxvUSIiI
+ky8t15AXflY5CE5Zs1l4rIapiMx4+KY3eP9XUpwYfkuRfqrIcdXpZAQLPEEHlvpI
+YWkeFHLIzcVwQDJMylAIDZXqkqkcPwdT7HhvrtG59h/8S3oIx5d/D6RC03Wgb6Ac
+O03rgV1e427EBuBbAqihY/D46amiR8xQUv+T+jgM+DnKvwGlmiTsIUimaqMrbVkq
+tbmIxW90f2zlalhgxxmLbrnkzOLQ/jL4hz7blCO912BBCLNX40Ed/ZwI2GE+7hWk
+LwqnPJ25U43p9yb5S6lO0E4aXy0oDr1cRrm93HBZeRgkQBJM4L8IttiwgbTEVAGM
+McH2aXN2
+=WiYs
+-----END PGP SIGNATURE-----
+
+--2m5clqoly7vxfssm--
