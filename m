@@ -1,254 +1,138 @@
-Received: from mail-wm2-f12.google.com (mail-wm2-f12.google.com [74.125.225.140])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B1657343893
-	for <keyrings@vger.kernel.org>; Sat, 12 Sep 2026 09:54:50 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.225.140
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 20D3B368D51;
+	Sun, 13 Sep 2026 16:05:55 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789206892; cv=none; b=Hh+Z6j10yrxPd+3+tejipL3vwER4sihJLRj/XiANW3V3/llok4/gqtQJEJpSSBy15RSoVz+YO0cE1ZUX4yhSgBapHDDHxw4dzE3zCu+yiIAXKUwOPIzfSGP/EJpjWYVf2kgCiDYWk1BCiBdU044HYQQn/+VomRw7g3WfZS++qdE=
+	t=1789315558; cv=none; b=FHjChH2c+WiVEVA/CAqrTqI5rWAfp1x/c+G2u2l6ux7iPs/Y5yQahv2w4/bpCSgoWqIocNg5d4AroLqfhToRLsvr5/v04rUL3i0+KYGp88CjkT92cN5LeOmkdmeAg8WUSTXnEfxjo/1JyjRVvgr6WQI7UxFxtcYJItoue208SPY=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789206892; c=relaxed/simple;
-	bh=xLGZ6pfrGi7Y0P4Mp+UYTrV0Mv1NTPoX6SsMuAFVEFY=;
-	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version; b=hZ4J4N5xzFnu72yzRNfl+afndSdidMGnILINGfaULQX546LlYVndxrhG6orreVShOZURy4da5KjvlrWQ4UKpr5UI1k8Z2u1WGCRjaBykZT5EXVz/ouBZMu/zt82JPIf6QRERLELrtKYigejR+8n7zUlxKUYFyBTD9RJ1xeMjiqU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=YQRcTUGR; arc=none smtp.client-ip=74.125.225.140
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1789315558; c=relaxed/simple;
+	bh=9MnzZ5c/GPTeMPuSywpbP4+Si4gXx+i7tnpD+xDMoRU=;
+	h=MIME-Version:Date:From:To:Cc:Message-Id:In-Reply-To:References:
+	 Subject:Content-Type; b=Y0Q879Oqja3WIMnJD7Pod8/KGMLElGEwrz3prarsO6KOjH4mtqVrp0mlGA5pfwNMgnfWDVUoXiI4ydm1s34JK5e5GRK5c+ShaBtN0OMjDmU1+CjcckdUpWXIw2KpO4rzf6Vz/ClShEehjqLyQ7Ee+8LqESyrRBcRhv+xin0U/0M=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TFyF4wg8; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="YQRcTUGR"
-Received: by mail-wm2-f12.google.com with SMTP id 5b1f17b1804b1-49ccfd61ecaso5708555e9.3
-        for <keyrings@vger.kernel.org>; Sat, 12 Sep 2026 02:54:50 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1789206889; x=1789811689; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=KnNpw1WOa9p3MlCBG6ZZCFsfq25XNP5JJbLzPV5Kleo=;
-        b=YQRcTUGRgJG63ylGSvwLq9lvUJSzb6MmR8xxznYtZHOZx2ydHGJlkrbEUtO/TEeM5X
-         Y6P0hxK3/5Wj0k3xMfnZUdJdw9+Nk7FyuFy7PlWodrfGvX1zVBSwIBqA8gq/tD/viXI1
-         Icy9Z19vkv/lB6FxfydG5l5A/HCS1gCGLT1bob3jaqpGAVonEIt6AHJ67mS/95VE+YZ0
-         g3vNezzDlTcnJ4YydGXiWGxZRH3IzB4udOKuhce+jkSdveykWBS+FmBoK4f7wvrpLhVT
-         QKWODaPEogClLGgHP3LCcNnr/LDsGraYo1ZX1rcCGAVKd8q6/BRxLmU8byMDt0uJZ25f
-         dBMg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1789206889; x=1789811689;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=KnNpw1WOa9p3MlCBG6ZZCFsfq25XNP5JJbLzPV5Kleo=;
-        b=XmOUHdusybWIQQ1R3WxqANqNsBsKEGCz4ht4RUqDc4iu4E57WKUXAbr8AhFSAiC4m6
-         eSNQ55T4+IhJ07Xzud3qp2De07e2cYCyQi56Sjbhg5x1RvmD/soYkRaybwayjGw5QN2F
-         m5X/2ihguRAjX5eSsOwpRr3lZMWizhjd4ZGKkZqCcDYVBoh7auXkKlKOIueXCquRqzBy
-         ULmQmnY5362Pf0nRuCgA9l07AHnNiMAFrXXhJYhgUfE/x+nwwiCYkHuyCzAqBT/FmfXi
-         Aj+phuzUGcT/YJJ4k5H9Hq4J4710K50vEbOHsp92TbZl13ylt+hNjOKn1712M/SFVpA4
-         iZWQ==
-X-Forwarded-Encrypted: i=1; AKwUvBx+nUuDcUzRLJMOKdSW8BND3X4r20jGDpf+x8+vMi5/COA7xbZNgCDX5uLj4Qp5QFFoaUtqmoHh8Q==@vger.kernel.org
-X-Gm-Message-State: AFuF++l/eA9AVThAnv8UieMNhW7veMt9cef3oybOSbYlvGAeGnV+fN2e
-	r+bSnK4QXwJimlp1KPP837KhbdfydayFtMPbXsAi1VQlBkKg5bN+aQLU
-X-Gm-Gg: AYBFou3m2KZMw2VWd5aOWAahIP5YRWChVVK8zZeYNk7VJjITSiq89UHXnW6XnuUCvgZ
-	lkmlqEiZ99Prm5cdXMknC+Cxtsqe13K9BafiB1HfGrgBZNinxUo18EGq5ZqOnL5s15dXMgyh2+F
-	tdlEAT9WzyHA4ZmY+2kY1dFOLyi5YBCM0UIQucJJX1/496h/J1rvq872X0mcGYkHhEVYJH+mwW6
-	zZRHdcbISTHKD5yN5ne4TUCCZCM3wOioTKIf6m94sFpDdCxHEsd2Mcijpa8BqYYHf/KOayGhP4O
-	p5CJIDyLdk3+5JgZa0LAsjJLMylhoxyqsZ/GqMkjyi/61MxNNBOD3SGsefnVeLIgsUso0YVDBX3
-	vTFp9j5RIdf0UAM3oOebCNYN/KWqP67w5/3gp+iXOJjSgWWKMsXCh3J8ipEPrnami+MGmqnI9yj
-	yaNbNBl0Uky6035V8vhNIceg2nDYXCiFWmfiX6SzmscPsaBgxD3NDyCKk4w0Uq2Ksx5iNdYEI0k
-	FGv/3dxQXgp7WGHcShbI2o3QcM71d/8Ui5pexhaG5fjAZy00d/xCVjvl1TiT1zrLvGdA6qurHBW
-	pfYAoQjygRhl33yJ+lXd1YReiTpiopZqtwMGqz1r1DeWoTRo490yMzePbVvInQDo4fUDYJBy9yK
-	fxg==
-X-Received: by 2002:a05:600d:4452:20b0:499:b65d:124f with SMTP id 5b1f17b1804b1-49e6198c2aemr67076425e9.11.1789206888615;
-        Sat, 12 Sep 2026 02:54:48 -0700 (PDT)
-Received: from localhost.localdomain (dynamic-2a02-3100-b260-f201-9983-e8c4-aff5-7a36.310.pool.telefonica.de. [2a02:3100:b260:f201:9983:e8c4:aff5:7a36])
-        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-49e71adc2ecsm15179175e9.4.2026.09.12.02.54.47
-        (version=TLS1_3 cipher=TLS_CHACHA20_POLY1305_SHA256 bits=256/256);
-        Sat, 12 Sep 2026 02:54:48 -0700 (PDT)
-From: Karl Mehltretter <kmehltretter@gmail.com>
-To: David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Karl Mehltretter <kmehltretter@gmail.com>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: [PATCH v4] keys: finalize persistent keyring timeout after link attempt
-Date: Sat, 12 Sep 2026 11:54:40 +0200
-Message-Id: <20260912095440.79864-1-kmehltretter@gmail.com>
-X-Mailer: git-send-email 2.39.5 (Apple Git-154)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TFyF4wg8"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 720651F00893;
+	Sun, 13 Sep 2026 16:05:55 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1789315555;
+	bh=5YCpCgr7wN6BRngUrHQuusuhHt9EZlKC0MCMR65I/Wk=;
+	h=Date:From:To:Cc:In-Reply-To:References:Subject;
+	b=TFyF4wg8t1JVUlkOZtO5/xJjB6918d1JKyW0zLDhhrHy8L5A7spT7wKHu/A8D+pKa
+	 Oexy/7syyAHdliF2NYFzCFyozozVipJuqGnBXq0RNF0UHOZWT+dMAm/16U1r0gxoaX
+	 wQgJGyp2oyX6uB99O5OLlrnWUMWaEhGA1pOnjvQxxS+dEFr7LRfICNYnpCrCx7G0Mx
+	 f4RWRrRtyxljJROYOcZIGErq0NWCHzt8BwfR6eKStKZMhzL3ajP6av2VCTjYq0toBe
+	 Pxj8nzZVFeiaVf3SR2kNWUR8ruuMm5Z6i4eZlx/2ep9lxni+oF6Xfv7BQv/W1qmOVx
+	 UYJBojTjgRcLw==
+Received: from phl-compute-10.internal (phl-compute-10.internal [10.202.2.50])
+	by mailfauth.phl.internal (Postfix) with ESMTP id 83650F40066;
+	Sun, 13 Sep 2026 12:05:54 -0400 (EDT)
+Received: from phl-imap-15 ([10.202.2.104])
+  by phl-compute-10.internal (MEProxy); Sun, 13 Sep 2026 12:05:54 -0400
+X-ME-Sender: <xms:4smmal1B8TFbjoWMJrfJ5FhRf8BSKoXx-jo-mnyHgeLV6pZ86fhsJQ>
+    <xme:4smmam42vccNsHlMdMphoub0O9Mt6SBLGSdJAqR0B7Q4mBQmIfZ4aR1zcpnD4pZeQ
+    aCW82fJ6xaX4NSHKVHSiyP6kCrHz9au6jfWs54SSNnyB4IPTF6K1zrZ>
+X-ME-Proxy-Cause: dmFkZTEuqnInwcZIkp3LZsOKtysl7pel0EoEBfW5y/sKAQwXh8kf6FPGOaVTkGtuxdR5/h
+    ZGAYoQdVo1yKWRzC8fkocQNj1y2i9F/PUs93rVn5UsXeFWGMglFjiCNx7lEm5RdcmEceY/
+    U2En6IgIKw6P+/TAqV7JGISUxgDWrjNyemNEFnokNDHC34LKB7sUZquBqOU1uQk9jU04I2
+    D8wgimrXmhbhirlb4990OPurrA7zdrV9t2Yu4XohTmGeP9loP5fgWa9G7IG1wkLC0thrnU
+    caz3D2RzkyB4bstm/zqDyEodkkbYPjxEw7m/xFpknoRehRrC66QFtPGZs7PWi3iPO2JuO8
+    3bqDcl/niTrOt9fypPTFRg1DNqvnrj6NZQiMp4GgrStpzxyuMAqTXE62NkzpzaPtetoEAu
+    bTG7grwrfh5iemoTClsDhnUo/ThXRqJ4ZD65LnkjscpP8QDEdn3x14DICEmcMGurUhvvGo
+    xESXAocLzoLXRw5cMyLG2o3CY+he8QNkzMMZD4elgLM8ORKR0A5a8ZAvwYVwjNi3MEnjV6
+    3AoGONWflhPGf90eVn4obalU+CoS89vKt00uTnHRL1iUrZGgHqFxG3wPeD7pWy+n5w4fhP
+    JiGOv897ElJBvTxs2rkXZRVYOUvF3J4qRQa8Aouti1l5T4TsnGqgXcBDjbNQ
+X-ME-Proxy: <xmx:4smmatYUSxOOxVRfDNKBwj3YJk6lBCqmROiE-DepGz1EAqhRtlI5xA>
+    <xmx:4smmal9gpqdvZVSLreJsYibhKRSeJYBA-skBXLO7wRavRIxd3xAmDQ>
+    <xmx:4smmavP4ilzY9sverMsE3g46lL6oi4GbHaAsXjBnO-LESvhQu68CrA>
+    <xmx:4smmaiEj2adrdRz-E8fKny65h2Wol5BH1ClFKZw8aEB0nkiliF-hOQ>
+    <xmx:4smmatyoCFcbCvS-JOQ4RN43Qu6tQZJ-mo5jSLKe4ZBhXTE-MKpGGd1H>
+Feedback-ID: ifa6e4810:Fastmail
+Received: by mailuser.phl.internal (Postfix, from userid 501)
+	id 5A64A780070; Sun, 13 Sep 2026 12:05:54 -0400 (EDT)
+X-Mailer: MessagingEngine.com Webmail Interface
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+X-ThreadId: AAPZyXKTxCYB
+Date: Sun, 13 Sep 2026 12:05:30 -0400
+From: "Chuck Lever" <cel@kernel.org>
+To: linux-nfs@vger.kernel.org, "Sagi Grimberg" <sagi@grimberg.me>
+Cc: keyrings@vger.kernel.org, kernel-tls-handshake@lists.linux.dev,
+ netdev@vger.kernel.org, "Trond Myklebust" <trondmy@kernel.org>,
+ "Anna Schumaker" <anna@kernel.org>, "Christoph Hellwig" <hch@lst.de>,
+ "Hannes Reinecke" <hare@suse.de>, "David Howells" <dhowells@redhat.com>,
+ "Jarkko Sakkinen" <jarkko@kernel.org>
+Message-Id: <8ddb29a7-28e7-4c90-8d6c-5ab2976fa53a@app.fastmail.com>
+In-Reply-To: <20260602154740.49861-1-cel@kernel.org>
+References: <20260602154740.49861-1-cel@kernel.org>
+Subject: Re: [RFC] NFS: named client identities for mTLS mounts and a per-namespace
+ .nfs keyring
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 
-When no keyring exists for the requested UID, KEYCTL_GET_PERSISTENT
-creates and registers one before linking it to the requested destination.
-The configured timeout is set only after the destination link succeeds.
 
-A destination restricted with KEYCTL_RESTRICT_KEYRING makes that link fail
-with -EPERM. With persistent_keyring_expiry set to 60 seconds, /proc/keys
-still reports the registered keyring's expiry as "perm".
-The failed call therefore leaves a quota-exempt keyring in the namespace's
-hidden register, where it may remain until namespace teardown.
 
-Rename the write-locked helper to key_get_or_create_persistent() and return
-the key reference through a result parameter. Return 0 when it creates a
-keyring and 1 when the retry finds an existing one. Return a negative error
-on failure. Another caller may create the keyring between the initial
-read-locked lookup and the retry under the write lock.
+On Tue, Jun 2, 2026, at 11:47 AM, Chuck Lever wrote:
 
-Set the timeout after permission checking and linking. Do this on success,
-or on failure if the call allocated the keyring. This leaves a new keyring
-collectible after failure without starting its timeout while linking is
-still in progress.
+> Userspace front end
+> ===================
+>
+> With the keyring in place the front end is straightforward and follows
+> the nvme-cli / cifscreds pattern.
+>
+> A new nfs-utils tool -- working name nfstlskey, fitting the nfsidmap /
+> nfsconf family -- manages x.509 client identities:
+>
+>     nfstlskey add  <identity> --cert cert.pem --key key.pem
+>     nfstlskey list
+>     nfstlskey remove <identity>
+>
+> The add subcommand reads the PEM cert and key, converts each to DER,
+> and creates two "user" keys on the netns .nfs keyring ("user" because
+> tlshd consumes raw DER via keyctl_read_alloc()), with possessor-only
+> read. Description convention:
+>
+>     nfs:x509:<identity>:cert
+>     nfs:x509:<identity>:privkey
+>
+> The mount command names the identity:
+>
+>     mount -o xprtsec=mtls,tls_identity=<identity> server:/export /mnt
+>
+> mount.nfs runs in the caller's namespace, searches the .nfs keyring for
+> the two descriptions, and passes the existing cert_serial= and
+> privkey_serial= options to the kernel. tls_identity= is purely a
+> userspace convenience that resolves a name to the serials the kernel
+> already accepts; the raw serial options remain as a documented escape
+> hatch. Both get documented in nfs(5), with a new nfstlskey(8) page.
+>
+> tlshd changes are minimal: confirm the per-handshake link of the passed
+> keyring happens before the cert and privkey serials are read, and
+> retire the now-unnecessary .nfs entry in the keyrings= startup path.
 
-Fixes: f36f8c75ae2e ("KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches")
-Assisted-by: LLM
-Signed-off-by: Karl Mehltretter <kmehltretter@gmail.com>
----
-Changes in v4:
-- tweak comment (Jarkko)
+I've created an nfstlskey tool and pushed it to the nfs-mtls-identity
+branch of https://github.com/oracle/ktls-utils/ . It compiles, but I
+haven't otherwise tested it. There is a nfstlskey(8) man page.
 
-v3: https://lore.kernel.org/r/20260901191743.39210-1-kmehltretter@gmail.com/
+There is a change to tlshd so that the handshake children processes
+pick up the .nfs keyring instead of picking .nfs up at tlshd start-up
+time. This avoids the ordering problem of starting tlshd before the
+NFS client module is loaded.
 
-Changes in v3:
-- Return the persistent key reference through a result parameter (Jarkko).
-- Keep lookup-or-create atomic inside the helper and use 0 for creation, 1
-  for an existing keyring, and negative values only for errors.
+I'm hoping this new tool can be used with current kernels, though
+all of this is missing proper namespace support at the moment, so
+it should work in the init net-ns only. Kernel patches for namespace
+support are in the works.
 
-v2: https://lore.kernel.org/r/20260901164323.35785-1-kmehltretter@gmail.com/
+Please kick the tires. Is this the kind of administrative UX you
+expect?
 
-Changes in v2:
-- Rewrite the commit message around the restricted-destination reproducer
-  and trim the explanation (Jarkko).
-- Track whether the persistent keyring was newly allocated and finalize its
-  timeout after the permission and link checks. This preserves an existing
-  keyring's timeout on failure and avoids expiry during linking.
 
-Testing below was performed for v3; v4 changes only the comment.
-
-Tested with QEMU 10.2.1 TCG on i386 and x86_64. With
-persistent_keyring_expiry set to 60 seconds, KEYCTL_GET_PERSISTENT returned
--EPERM and /proc/keys reported "perm" before the fix and "1m" after it on
-both architectures.
-
-Also tested on x86_64 with persistent_keyring_expiry set to 1 second and
-gc_delay set to 0. Successful calls reused the same serial, a newly created
-keyring from a failed call expired, and a failed call using an existing
-keyring left its timeout unchanged. A test-only two-second delay before
-timeout finalization did not allow the keyring to be collected before link.
-
-Two concurrent callers returned the same serial. A test-only 100 ms delay
-after the read-locked miss forced both callers into the write-locked retry
-and confirmed that the second caller took the 1 (existing) return path.
-
- security/keys/persistent.c | 55 ++++++++++++++++++++++----------------
- 1 file changed, 32 insertions(+), 23 deletions(-)
-
-diff --git a/security/keys/persistent.c b/security/keys/persistent.c
-index 97af230aa4b22..bdab995393261 100644
---- a/security/keys/persistent.c
-+++ b/security/keys/persistent.c
-@@ -33,25 +33,31 @@ static int key_create_persistent_register(struct user_namespace *ns)
- }
- 
- /*
-- * Create the persistent keyring for the specified user.
-+ * Get or create the persistent keyring for the specified user.
-  *
-  * Called with the namespace's sem locked for writing.
-+ *
-+ * Returns a boolean indicating whether the keyring already existed,
-+ * or a negative error. On success, *persistent_ref holds a reference
-+ * to the keyring.
-  */
--static key_ref_t key_create_persistent(struct user_namespace *ns, kuid_t uid,
--				       struct keyring_index_key *index_key)
-+static int key_get_or_create_persistent(struct user_namespace *ns, kuid_t uid,
-+					struct keyring_index_key *index_key,
-+					key_ref_t *persistent_ref)
- {
- 	struct key *persistent;
--	key_ref_t reg_ref, persistent_ref;
-+	key_ref_t reg_ref;
- 
- 	if (!ns->persistent_keyring_register) {
--		long err = key_create_persistent_register(ns);
-+		int err = key_create_persistent_register(ns);
-+
- 		if (err < 0)
--			return ERR_PTR(err);
-+			return err;
- 	} else {
- 		reg_ref = make_key_ref(ns->persistent_keyring_register, true);
--		persistent_ref = find_key_to_update(reg_ref, index_key);
--		if (persistent_ref)
--			return persistent_ref;
-+		*persistent_ref = find_key_to_update(reg_ref, index_key);
-+		if (*persistent_ref)
-+			return 1;
- 	}
- 
- 	persistent = keyring_alloc(index_key->description,
-@@ -61,9 +67,10 @@ static key_ref_t key_create_persistent(struct user_namespace *ns, kuid_t uid,
- 				   KEY_ALLOC_NOT_IN_QUOTA, NULL,
- 				   ns->persistent_keyring_register);
- 	if (IS_ERR(persistent))
--		return ERR_CAST(persistent);
-+		return PTR_ERR(persistent);
- 
--	return make_key_ref(persistent, true);
-+	*persistent_ref = make_key_ref(persistent, true);
-+	return 0;
- }
- 
- /*
-@@ -78,6 +85,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
- 	key_ref_t reg_ref, persistent_ref;
- 	char buf[32];
- 	long ret;
-+	bool created = false;
- 
- 	/* Look in the register if it exists */
- 	memset(&index_key, 0, sizeof(index_key));
-@@ -100,23 +108,24 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
- 	 * also need to create the register.
- 	 */
- 	down_write(&ns->keyring_sem);
--	persistent_ref = key_create_persistent(ns, uid, &index_key);
-+	ret = key_get_or_create_persistent(ns, uid, &index_key,
-+					   &persistent_ref);
- 	up_write(&ns->keyring_sem);
--	if (!IS_ERR(persistent_ref))
--		goto found;
--
--	return PTR_ERR(persistent_ref);
-+	if (ret < 0)
-+		return ret;
-+	created = ret == 0;
- 
- found:
-+	persistent = key_ref_to_ptr(persistent_ref);
- 	ret = key_task_permission(persistent_ref, current_cred(), KEY_NEED_LINK);
--	if (ret == 0) {
--		persistent = key_ref_to_ptr(persistent_ref);
-+	if (ret == 0)
- 		ret = key_link(key_ref_to_ptr(dest_ref), persistent);
--		if (ret == 0) {
--			key_set_timeout(persistent, persistent_keyring_expiry);
--			ret = persistent->serial;
--		}
--	}
-+
-+	if (ret == 0 || created)
-+		key_set_timeout(persistent, persistent_keyring_expiry);
-+
-+	if (ret == 0)
-+		ret = persistent->serial;
- 
- 	key_ref_put(persistent_ref);
- 	return ret;
-
-base-commit: 08dbfad3f5040f5bdb6c529da20d6d4e81fefd72
 -- 
-2.53.0
+Chuck Lever (Come to NFS bake-a-thon! https://nfsv4bat.org)
