@@ -1,138 +1,163 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 20D3B368D51;
-	Sun, 13 Sep 2026 16:05:55 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5816E49B5DD
+	for <keyrings@vger.kernel.org>; Mon, 14 Sep 2026 15:14:55 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789315558; cv=none; b=FHjChH2c+WiVEVA/CAqrTqI5rWAfp1x/c+G2u2l6ux7iPs/Y5yQahv2w4/bpCSgoWqIocNg5d4AroLqfhToRLsvr5/v04rUL3i0+KYGp88CjkT92cN5LeOmkdmeAg8WUSTXnEfxjo/1JyjRVvgr6WQI7UxFxtcYJItoue208SPY=
+	t=1789398897; cv=none; b=V70fexrvZ/o2Fens0WnjGfZ4WvRhgXXL5VpwnMuDchvpVazbZ3SZCaPXERTQGxZYR1wljbiXN5VnXWND+7/np8M3xeWtRhW+8ujaqRfPzmFZsiRasFOsDAYqjntBl5rfyX0gPK65jMDAhyRk2wJ0nLWvnYwUbrOp6UakX0cVSBo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789315558; c=relaxed/simple;
-	bh=9MnzZ5c/GPTeMPuSywpbP4+Si4gXx+i7tnpD+xDMoRU=;
-	h=MIME-Version:Date:From:To:Cc:Message-Id:In-Reply-To:References:
-	 Subject:Content-Type; b=Y0Q879Oqja3WIMnJD7Pod8/KGMLElGEwrz3prarsO6KOjH4mtqVrp0mlGA5pfwNMgnfWDVUoXiI4ydm1s34JK5e5GRK5c+ShaBtN0OMjDmU1+CjcckdUpWXIw2KpO4rzf6Vz/ClShEehjqLyQ7Ee+8LqESyrRBcRhv+xin0U/0M=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=TFyF4wg8; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1789398897; c=relaxed/simple;
+	bh=7VhYWvTRpk42aGwR/DyS0rUdC1K5k+gwI3S8xT1cqMU=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=hcdA/jDb6yume2Qio6cAh7gOIL05lgMCIvWqRSOsA8rFgs7TWJDPpfpgEA6Ys/ypm1ku5s4+KBq9bcz08abX0GbGHGvl5E3n3gVnxR1KFt6YqJmq8z7NP6Cp+bX9Jh4MYEBVGfqGKfnDdJ7q+b3zmRq/bYFY0E6diRSm0YuVGQ0=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=KLoVLui2; arc=none smtp.client-ip=170.10.133.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="TFyF4wg8"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 720651F00893;
-	Sun, 13 Sep 2026 16:05:55 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1789315555;
-	bh=5YCpCgr7wN6BRngUrHQuusuhHt9EZlKC0MCMR65I/Wk=;
-	h=Date:From:To:Cc:In-Reply-To:References:Subject;
-	b=TFyF4wg8t1JVUlkOZtO5/xJjB6918d1JKyW0zLDhhrHy8L5A7spT7wKHu/A8D+pKa
-	 Oexy/7syyAHdliF2NYFzCFyozozVipJuqGnBXq0RNF0UHOZWT+dMAm/16U1r0gxoaX
-	 wQgJGyp2oyX6uB99O5OLlrnWUMWaEhGA1pOnjvQxxS+dEFr7LRfICNYnpCrCx7G0Mx
-	 f4RWRrRtyxljJROYOcZIGErq0NWCHzt8BwfR6eKStKZMhzL3ajP6av2VCTjYq0toBe
-	 Pxj8nzZVFeiaVf3SR2kNWUR8ruuMm5Z6i4eZlx/2ep9lxni+oF6Xfv7BQv/W1qmOVx
-	 UYJBojTjgRcLw==
-Received: from phl-compute-10.internal (phl-compute-10.internal [10.202.2.50])
-	by mailfauth.phl.internal (Postfix) with ESMTP id 83650F40066;
-	Sun, 13 Sep 2026 12:05:54 -0400 (EDT)
-Received: from phl-imap-15 ([10.202.2.104])
-  by phl-compute-10.internal (MEProxy); Sun, 13 Sep 2026 12:05:54 -0400
-X-ME-Sender: <xms:4smmal1B8TFbjoWMJrfJ5FhRf8BSKoXx-jo-mnyHgeLV6pZ86fhsJQ>
-    <xme:4smmam42vccNsHlMdMphoub0O9Mt6SBLGSdJAqR0B7Q4mBQmIfZ4aR1zcpnD4pZeQ
-    aCW82fJ6xaX4NSHKVHSiyP6kCrHz9au6jfWs54SSNnyB4IPTF6K1zrZ>
-X-ME-Proxy-Cause: dmFkZTEuqnInwcZIkp3LZsOKtysl7pel0EoEBfW5y/sKAQwXh8kf6FPGOaVTkGtuxdR5/h
-    ZGAYoQdVo1yKWRzC8fkocQNj1y2i9F/PUs93rVn5UsXeFWGMglFjiCNx7lEm5RdcmEceY/
-    U2En6IgIKw6P+/TAqV7JGISUxgDWrjNyemNEFnokNDHC34LKB7sUZquBqOU1uQk9jU04I2
-    D8wgimrXmhbhirlb4990OPurrA7zdrV9t2Yu4XohTmGeP9loP5fgWa9G7IG1wkLC0thrnU
-    caz3D2RzkyB4bstm/zqDyEodkkbYPjxEw7m/xFpknoRehRrC66QFtPGZs7PWi3iPO2JuO8
-    3bqDcl/niTrOt9fypPTFRg1DNqvnrj6NZQiMp4GgrStpzxyuMAqTXE62NkzpzaPtetoEAu
-    bTG7grwrfh5iemoTClsDhnUo/ThXRqJ4ZD65LnkjscpP8QDEdn3x14DICEmcMGurUhvvGo
-    xESXAocLzoLXRw5cMyLG2o3CY+he8QNkzMMZD4elgLM8ORKR0A5a8ZAvwYVwjNi3MEnjV6
-    3AoGONWflhPGf90eVn4obalU+CoS89vKt00uTnHRL1iUrZGgHqFxG3wPeD7pWy+n5w4fhP
-    JiGOv897ElJBvTxs2rkXZRVYOUvF3J4qRQa8Aouti1l5T4TsnGqgXcBDjbNQ
-X-ME-Proxy: <xmx:4smmatYUSxOOxVRfDNKBwj3YJk6lBCqmROiE-DepGz1EAqhRtlI5xA>
-    <xmx:4smmal9gpqdvZVSLreJsYibhKRSeJYBA-skBXLO7wRavRIxd3xAmDQ>
-    <xmx:4smmavP4ilzY9sverMsE3g46lL6oi4GbHaAsXjBnO-LESvhQu68CrA>
-    <xmx:4smmaiEj2adrdRz-E8fKny65h2Wol5BH1ClFKZw8aEB0nkiliF-hOQ>
-    <xmx:4smmatyoCFcbCvS-JOQ4RN43Qu6tQZJ-mo5jSLKe4ZBhXTE-MKpGGd1H>
-Feedback-ID: ifa6e4810:Fastmail
-Received: by mailuser.phl.internal (Postfix, from userid 501)
-	id 5A64A780070; Sun, 13 Sep 2026 12:05:54 -0400 (EDT)
-X-Mailer: MessagingEngine.com Webmail Interface
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="KLoVLui2"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1789398894;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=/YQ6jY2vMxj6CmWtcGwa3WgcRCD6xKPLYBefHI9f7cw=;
+	b=KLoVLui2P5a2drGSkEkXVOabah6kct0H5e6A47wByh0mFndyuUfTpmUObWFyNPd2rS0Evf
+	4lnNgd2vgVHPovkwM0/4O4x680Hj7UMNDNdI8CaYdks4owYSILWZONUBFmz2bLZbO+vSS5
+	w0xlWpAK4dxCx+x5adU99uEKzeHwS8s=
+Received: from mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-606-BW6U-u8IN0GV9M4pgcEr3w-1; Mon,
+ 14 Sep 2026 11:14:50 -0400
+X-MC-Unique: BW6U-u8IN0GV9M4pgcEr3w-1
+X-Mimecast-MFC-AGG-ID: BW6U-u8IN0GV9M4pgcEr3w_1789398888
+Received: from mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.93])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id C78D6182E6B7;
+	Mon, 14 Sep 2026 15:14:48 +0000 (UTC)
+Received: from warthog.com (unknown [10.44.32.54])
+	by mx-prod-int-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 0465E180056E;
+	Mon, 14 Sep 2026 15:14:44 +0000 (UTC)
+From: David Howells <dhowells@redhat.com>
+To: netdev@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>,
+	Marc Dionne <marc.dionne@auristor.com>,
+	Jakub Kicinski <kuba@kernel.org>,
+	"David S. Miller" <davem@davemloft.net>,
+	Eric Dumazet <edumazet@google.com>,
+	Paolo Abeni <pabeni@redhat.com>,
+	Simon Horman <horms@kernel.org>,
+	linux-afs@lists.infradead.org,
+	linux-kernel@vger.kernel.org,
+	Jeffrey Altman <jaltman@auristor.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	keyrings@vger.kernel.org,
+	stable@kernel.org
+Subject: [PATCH net v10 12/14] afs: Fix lack of setting call->server when doing FS.InlineBulkStatus
+Date: Mon, 14 Sep 2026 16:13:36 +0100
+Message-ID: <20260914151340.3227501-13-dhowells@redhat.com>
+In-Reply-To: <20260914151340.3227501-1-dhowells@redhat.com>
+References: <20260914151340.3227501-1-dhowells@redhat.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-ThreadId: AAPZyXKTxCYB
-Date: Sun, 13 Sep 2026 12:05:30 -0400
-From: "Chuck Lever" <cel@kernel.org>
-To: linux-nfs@vger.kernel.org, "Sagi Grimberg" <sagi@grimberg.me>
-Cc: keyrings@vger.kernel.org, kernel-tls-handshake@lists.linux.dev,
- netdev@vger.kernel.org, "Trond Myklebust" <trondmy@kernel.org>,
- "Anna Schumaker" <anna@kernel.org>, "Christoph Hellwig" <hch@lst.de>,
- "Hannes Reinecke" <hare@suse.de>, "David Howells" <dhowells@redhat.com>,
- "Jarkko Sakkinen" <jarkko@kernel.org>
-Message-Id: <8ddb29a7-28e7-4c90-8d6c-5ab2976fa53a@app.fastmail.com>
-In-Reply-To: <20260602154740.49861-1-cel@kernel.org>
-References: <20260602154740.49861-1-cel@kernel.org>
-Subject: Re: [RFC] NFS: named client identities for mTLS mounts and a per-namespace
- .nfs keyring
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.93
 
+Fix afs_make_op_call to set call->server.  This will prevent
+afs_done_fs_inline_bulk_status() from oopsing if the server does not
+support the FS.InlineBulkStatus RPC due to call->server not being set.
 
+Note that this requires afs_make_op_call() to be moved so that it can use
+afs_use_server(); the server is un-used by afs_free_call().
 
-On Tue, Jun 2, 2026, at 11:47 AM, Chuck Lever wrote:
+Fixes: e49c7b2f6de7 ("afs: Build an abstraction around an "operation" concept")
+Link: https://netdev-ai.bots.linux.dev/sashiko/#/patchset/20260824091645.415423-1-dhowells%40redhat.com
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Marc Dionne <marc.dionne@auristor.com>
+cc: Jeffrey Altman <jaltman@auristor.com>
+cc: Eric Dumazet <edumazet@google.com>
+cc: "David S. Miller" <davem@davemloft.net>
+cc: Jakub Kicinski <kuba@kernel.org>
+cc: Paolo Abeni <pabeni@redhat.com>
+cc: Simon Horman <horms@kernel.org>
+cc: Jarkko Sakkinen <jarkko@kernel.org>
+cc: linux-afs@lists.infradead.org
+cc: keyrings@vger.kernel.org
+cc: stable@kernel.org
+---
+ fs/afs/internal.h          | 33 +++++++++++++++++----------------
+ include/trace/events/afs.h |  1 +
+ 2 files changed, 18 insertions(+), 16 deletions(-)
 
-> Userspace front end
-> ===================
->
-> With the keyring in place the front end is straightforward and follows
-> the nvme-cli / cifscreds pattern.
->
-> A new nfs-utils tool -- working name nfstlskey, fitting the nfsidmap /
-> nfsconf family -- manages x.509 client identities:
->
->     nfstlskey add  <identity> --cert cert.pem --key key.pem
->     nfstlskey list
->     nfstlskey remove <identity>
->
-> The add subcommand reads the PEM cert and key, converts each to DER,
-> and creates two "user" keys on the netns .nfs keyring ("user" because
-> tlshd consumes raw DER via keyctl_read_alloc()), with possessor-only
-> read. Description convention:
->
->     nfs:x509:<identity>:cert
->     nfs:x509:<identity>:privkey
->
-> The mount command names the identity:
->
->     mount -o xprtsec=mtls,tls_identity=<identity> server:/export /mnt
->
-> mount.nfs runs in the caller's namespace, searches the .nfs keyring for
-> the two descriptions, and passes the existing cert_serial= and
-> privkey_serial= options to the kernel. tls_identity= is purely a
-> userspace convenience that resolves a name to the serials the kernel
-> already accepts; the raw serial options remain as a documented escape
-> hatch. Both get documented in nfs(5), with a new nfstlskey(8) page.
->
-> tlshd changes are minimal: confirm the per-handshake link of the passed
-> keyring happens before the cert and privkey serials are read, and
-> retire the now-unnecessary .nfs entry in the keyrings= startup path.
+diff --git a/fs/afs/internal.h b/fs/afs/internal.h
+index 290873bac89b..65a0866cd8b8 100644
+--- a/fs/afs/internal.h
++++ b/fs/afs/internal.h
+@@ -1416,22 +1416,6 @@ static inline void afs_see_call(struct afs_call *call, enum afs_call_trace why)
+ 		       __builtin_return_address(0));
+ }
+ 
+-static inline void afs_make_op_call(struct afs_operation *op, struct afs_call *call,
+-				    gfp_t gfp)
+-{
+-	struct afs_addr_list *alist = op->estate->addresses;
+-
+-	op->call	= afs_get_call(call, afs_call_trace_get);
+-	op->type	= call->type;
+-	call->op	= op;
+-	call->key	= op->key;
+-	call->intr	= !(op->flags & AFS_OPERATION_UNINTR);
+-	call->peer	= rxrpc_kernel_get_peer(alist->addrs[op->addr_index].peer);
+-	call->service_id = op->server->service_id;
+-	afs_make_call(call, gfp);
+-	afs_put_call(call);
+-}
+-
+ static inline void afs_extract_begin(struct afs_call *call, void *buf, size_t size)
+ {
+ 	call->iov_len = size;
+@@ -1763,6 +1747,23 @@ static inline struct inode *AFS_VNODE_TO_I(struct afs_vnode *vnode)
+ 	return &vnode->netfs.inode;
+ }
+ 
++static inline void afs_make_op_call(struct afs_operation *op, struct afs_call *call,
++				    gfp_t gfp)
++{
++	struct afs_addr_list *alist = op->estate->addresses;
++
++	op->call	= afs_get_call(call, afs_call_trace_get);
++	op->type	= call->type;
++	call->op	= op;
++	call->server	= afs_use_server(op->server, false, afs_server_trace_use_call);
++	call->key	= op->key;
++	call->intr	= !(op->flags & AFS_OPERATION_UNINTR);
++	call->peer	= rxrpc_kernel_get_peer(alist->addrs[op->addr_index].peer);
++	call->service_id = op->server->service_id;
++	afs_make_call(call, gfp);
++	afs_put_call(call);
++}
++
+ /*
+  * Note that a dentry got changed.  We need to set d_fsdata to the data version
+  * number derived from the result of the operation.  It doesn't matter if
+diff --git a/include/trace/events/afs.h b/include/trace/events/afs.h
+index 1b3c48b5591d..04b0bb682b81 100644
+--- a/include/trace/events/afs.h
++++ b/include/trace/events/afs.h
+@@ -148,6 +148,7 @@ enum yfs_cm_operation {
+ 	EM(afs_server_trace_unuse_slist_isort,	"UNU isort") \
+ 	EM(afs_server_trace_update,		"UPDATE   ") \
+ 	EM(afs_server_trace_use_by_uuid,	"USE uuid ") \
++	EM(afs_server_trace_use_call,		"USE call ") \
+ 	EM(afs_server_trace_use_cm_call,	"USE cm-cl") \
+ 	EM(afs_server_trace_use_get_caps,	"USE gcaps") \
+ 	EM(afs_server_trace_use_give_up_cb,	"USE gvupc") \
 
-I've created an nfstlskey tool and pushed it to the nfs-mtls-identity
-branch of https://github.com/oracle/ktls-utils/ . It compiles, but I
-haven't otherwise tested it. There is a nfstlskey(8) man page.
-
-There is a change to tlshd so that the handshake children processes
-pick up the .nfs keyring instead of picking .nfs up at tlshd start-up
-time. This avoids the ordering problem of starting tlshd before the
-NFS client module is loaded.
-
-I'm hoping this new tool can be used with current kernels, though
-all of this is missing proper namespace support at the moment, so
-it should work in the init net-ns only. Kernel patches for namespace
-support are in the works.
-
-Please kick the tires. Is this the kind of administrative UX you
-expect?
-
-
--- 
-Chuck Lever (Come to NFS bake-a-thon! https://nfsv4bat.org)
