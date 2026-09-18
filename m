@@ -1,63 +1,150 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1C6C94C6D;
-	Fri, 18 Sep 2026 00:09:31 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3AFA23955DE;
+	Fri, 18 Sep 2026 01:31:35 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789690172; cv=none; b=qjh37jjL3t+E6AB3b6JUtJQ5CumJuwTI8jsYRTV3IaoSgwAJdT5Icult8jSH1qn36YKV5ZQfUR4jvMDiKwTEVS4tZtMynJCZJRdE4HH1B2ALAItFTscNSybw90JWRi/ysiVlh9hR/n8ddwWadYnovtN8MmvQj7D4pDUprrBN/N0=
+	t=1789695097; cv=none; b=DQE1bLFRur41J2htCFMfmVkkt1Ry+CA73Y348rjJOb6ncC6zMJNo6d3cmW1TAL4zvB8FXe8XOJTUrVBs8zbzHLxaHOb+ovimexzWwKVong8FaaJV5HrnH2P0/hQmWr/kg06JIFOu1BQRThq12852djObkL0Z3xyd8GFYYM2ZLAk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789690172; c=relaxed/simple;
-	bh=mlyIpGxz8LISSFQMeNxTI24BMtXO3+gZAEhxbwNtMww=;
-	h=Subject:From:In-Reply-To:References:Message-Id:Date:To:Cc; b=ZZiOskBRawrbgsxYaqE0yJz+KBiGzwzfnv2UJ7UslC+0WjwZo4PcJuLYZboOh88cdbjndeZcAruNK884s5ApzzubLzYErfugyAnQxlbb5+HOmm2j9N+TnxYxqSgnSduJvrvafxnFNNWbNrljPP3cDsIyqNysSc2RuVbDlSww388=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=lnebO9oB; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1789695097; c=relaxed/simple;
+	bh=PWy80UZLt+fEKjwmUcpNgnnc7UMsMHoujwCGf6BW4zU=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=VhC0TqnlQ8dzsogzfh3TLFttAC+QVbl5Q9GVX1HvgtX0bShOD1zBhkXnu16HGnigI4usgE14kMwZzouybYMrq1jCvCwxUfKq4BsaDJXc786aGKJnD6MQb4w73Mvnn5Vl17gIswuBB/a3nK/yjdiX5P84tIUJfS6q9uZXemov4Qo=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=ZEq40oa1; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="lnebO9oB"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id E805B1F00893;
-	Fri, 18 Sep 2026 00:09:30 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="ZEq40oa1"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 3877F1F00893;
+	Fri, 18 Sep 2026 01:31:34 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1789690170;
-	bh=nIu0KnbDEXKbg55PWXwakDH9/Kn5BbLUJga/9JiR8VA=;
-	h=Subject:From:In-Reply-To:References:Date:To:Cc;
-	b=lnebO9oBMN+1DKsAHBoPdstyRrZNIL5am434T2Of9WWMb3VuglTU3uivkvBTyLq0z
-	 RbBs7Qew/q0z4rE7ZJsT23j8gisbv46BgBgzVYguua5RC31HSvHa1sNjRSV/dBDArP
-	 VHOVDS13hZirFORXT9fZ455GGNqFFotGtSNQ8MT1dycGp6b2nCc3wNEPI4HMwvhVj2
-	 y4+aD4Ypknq0YthQ5D8zNauF9ieJHRC24y0Jc8G2ze+pbaSdhUd3vTOQylSLURAPc6
-	 jZGcagDkchKE10+ezRiRBG/l0fUOCT7PAqoRC2liGbRa+ZncvyqVR5QHQK7YqtpeTb
-	 HCsUvZVj7uG9A==
-Received: from [10.30.226.235] (localhost [IPv6:::1])
-	by aws-us-west-2-korg-oddjob-rhel9-1.codeaurora.org (Postfix) with ESMTP id 93BBB380820D;
-	Fri, 18 Sep 2026 00:08:25 +0000 (UTC)
-Subject: Re: [GIT PULL] KEYS: for-next-keys-v7.3-rc4
-From: pr-tracker-bot@kernel.org
-In-Reply-To: <aqxjFEZwvSB_7exH@kernel.org>
-References: <aqxjFEZwvSB_7exH@kernel.org>
-X-PR-Tracked-List-Id: <linux-integrity.vger.kernel.org>
-X-PR-Tracked-Message-Id: <aqxjFEZwvSB_7exH@kernel.org>
-X-PR-Tracked-Remote: git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-keys-v7.3-rc4
-X-PR-Tracked-Commit-Id: 8697c431e297eb0d0ab13dda6bc172b48a34f05c
-X-PR-Merge-Tree: torvalds/linux.git
-X-PR-Merge-Refname: refs/heads/master
-X-PR-Merge-Commit-Id: 5dd1818b15d98d4a20806cd00b1b40320b06004f
-Message-Id: <178969010425.190692.2028439215296374658.pr-tracker-bot@kernel.org>
-Date: Fri, 18 Sep 2026 00:08:24 +0000
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org
+	s=k20260515; t=1789695094;
+	bh=sbKKW3nT9JVsJ3qPTLi+7RzPbQD+A4Vy+uvkP+eNa20=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=ZEq40oa1VRFfulWmXUh05id228g1AneEVMVFE5O308PONjc0mkObeLzKxEdGd41pZ
+	 /yZJ5EfIGx98nOtcCdP7WbfUjgB/YmMYQisF0m5vGO5ZVHGvjY6sIf8OcpXArln1cf
+	 u23GufsYa9+Ja9/ncDTQWsHp3AmJxKNoOXq7gJUg1vzWWUXTKdqcn+V+zW8RYMXp5k
+	 lOx0KWWZRJgckHTB2zkFAW4agefV6ro1ST9qilSNLFPSvaXs0M/zihM9zxo4rVpzUg
+	 Juylo1R9/Txp6rv6DmQ4Tts4l9L8lvndt4JwCWZz8V3CQVmglgfdeeHlSsyboXjn72
+	 FsH2VSjbyTyBg==
+Date: Fri, 18 Sep 2026 04:31:31 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: R Nageswara Sastry <rnsastry@linux.ibm.com>
+Cc: Cen Zhang <cenzhang@linux.microsoft.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Roberto Sassu <roberto.sassu@polito.it>,
+	David Safford <safford@watson.ibm.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Kees Cook <kees@kernel.org>, Francis Perron <francis@akrites.dev>,
+	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org, Akrites SIRT <sirt@akrites.dev>,
+	AutonomousCodeSecurity@microsoft.com, tgopinath@linux.microsoft.com,
+	kys@microsoft.com
+Subject: Re: [PATCH v3] KEYS: encrypted: fix integer overflow of datablob_len
+Message-ID: <aqyUc_7c19MgzAG7@kernel.org>
+References: <20260909153433.83117-1-cenzhang@linux.microsoft.com>
+ <3e27a805-36e7-4423-b3d1-4e84b4c8f434@linux.ibm.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3e27a805-36e7-4423-b3d1-4e84b4c8f434@linux.ibm.com>
 
-The pull request you sent on Fri, 18 Sep 2026 01:00:52 +0300:
+On Thu, Sep 10, 2026 at 10:14:57AM +0530, R Nageswara Sastry wrote:
+> 
+> On 09.09.2026 9:04 PM, Cen Zhang wrote:
+> > encrypted_key_alloc() stores datablob_len in a u16. It is computed from
+> > multiple string and payload lengths. If the result exceeds U16_MAX, the
+> > assignment truncates the allocation size. KASAN reports a 32760-byte
+> > slab-out-of-bounds write when __ekey_init() copies the master key
+> > description into the undersized buffer.
+> > 
+> > The total payload length stored in key->datalen is also a u16. Use
+> > check_add_overflow() to reject values that do not fit either destination,
+> > and use kzalloc_flex() for the flexible-array allocation.
+> > 
+> > Fixes: 7e70cb497850 ("keys: add new key-type encrypted")
+> > Cc: stable@vger.kernel.org
+> > Link: https://lore.kernel.org/keyrings/20260826154456.85974-1-blbllhy@gmail.com/
+> > Assisted-by: GitHub-Copilot:claude-opus-4.6
+> > Signed-off-by: Cen Zhang <cenzhang@linux.microsoft.com>
+> > Signed-off-by: Francis Perron <francis@akrites.dev>
+> Tested-by: R Nageswara Sastry <rnsastry@linux.ibm.com>
+> 
+> System: ppc64le LPAR (IBM POWER), Linux 7.3-rc2
+> > ---
+> > Changes in v3:
+> > - Describe the bounds using u16 and U16_MAX and simplify the commit
+> >    message.
+> > - Include the KASAN-reported write size.
+> > - Remove organization names from the author and sign-off identities.
+> > - Remove the unnecessary off-list discussion note.
+> > - Use cenzhang@linux.microsoft.com.
+> > - No code changes.
+> > 
+> >   security/keys/encrypted-keys/encrypted.c | 20 ++++++++++++++------
+> >   1 file changed, 14 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+> > index 59cb77b237b3..e07092ea301a 100644
+> > --- a/security/keys/encrypted-keys/encrypted.c
+> > +++ b/security/keys/encrypted-keys/encrypted.c
+> > @@ -19,6 +19,7 @@
+> >   #include <linux/parser.h>
+> >   #include <linux/string.h>
+> >   #include <linux/err.h>
+> > +#include <linux/overflow.h>
+> >   #include <keys/user-type.h>
+> >   #include <keys/trusted-type.h>
+> >   #include <keys/encrypted-type.h>
+> > @@ -579,6 +580,7 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
+> >   {
+> >   	struct encrypted_key_payload *epayload = NULL;
+> >   	unsigned short datablob_len;
+> > +	unsigned short payload_totallen;
+> >   	unsigned short decrypted_datalen;
+> >   	unsigned short payload_datalen;
+> >   	unsigned int encrypted_datalen;
+> > @@ -632,16 +634,22 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
+> >   	encrypted_datalen = roundup(decrypted_datalen, blksize);
+> > -	datablob_len = format_len + 1 + strlen(master_desc) + 1
+> > -	    + strlen(datalen) + 1 + ivsize + 1 + encrypted_datalen;
+> > +	if (check_add_overflow(format_len + 1 + strlen(master_desc) + 1
+> > +			       + strlen(datalen) + 1 + ivsize + 1,
+> > +			       encrypted_datalen, &datablob_len))
+> > +		return ERR_PTR(-EINVAL);
+> > +
+> > +	if (check_add_overflow(datablob_len,
+> > +			       payload_datalen + HASH_SIZE + 1,
+> > +			       &payload_totallen))
+> > +		return ERR_PTR(-EINVAL);
+> > -	ret = key_payload_reserve(key, payload_datalen + datablob_len
+> > -				  + HASH_SIZE + 1);
+> > +	ret = key_payload_reserve(key, payload_totallen);
+> >   	if (ret < 0)
+> >   		return ERR_PTR(ret);
+> > -	epayload = kzalloc(sizeof(*epayload) + payload_datalen +
+> > -			   datablob_len + HASH_SIZE + 1, GFP_KERNEL);
+> > +	epayload = kzalloc_flex(*epayload, payload_data, payload_totallen,
+> > +				GFP_KERNEL);
+> >   	if (!epayload)
+> >   		return ERR_PTR(-ENOMEM);
+> > 
+> > base-commit: 893e11787f78e43b534e252249ac3fff4d1333f8
+> 
+> -- 
+> Thanks and Regards
+> R.Nageswara Sastry
+> 
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/for-next-keys-v7.3-rc4
 
-has been merged into torvalds/linux.git:
-https://git.kernel.org/torvalds/c/5dd1818b15d98d4a20806cd00b1b40320b06004f
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Thank you!
-
--- 
-Deet-doot-dot, I am a bot.
-https://korg.docs.kernel.org/prtracker.html
+BR, Jarkko
