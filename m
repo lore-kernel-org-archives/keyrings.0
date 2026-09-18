@@ -1,267 +1,120 @@
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 35064492E3F;
-	Fri, 18 Sep 2026 06:48:36 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.156.1
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7129936167B
+	for <keyrings@vger.kernel.org>; Fri, 18 Sep 2026 08:05:43 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789714129; cv=none; b=qrXLTN0F/IbSmfToBKT8HtYApsKoQWiSgGidfpRmO3ndcGyPpfJ+tcYhrgoeHHFONtKeffale4rqdbrGGjLBIR1zkie9vubzTtCyisEU998CJs/L2L18CMSct1MYgPKd/lXrPp8hubC8IlHf49S28XQxNXEAlANo3RamBWP5nvc=
+	t=1789718745; cv=none; b=J0oqaIkHsH+IVDHKvpc+Qa+yzR09kXWYiFVS6EqPK8lPlfYzGpvKnbZF4joIb+nXrYOyUmNr+gKuGmnOH8jyjlVZkIU/gq+HGy2H1MTdcrXNpRBpfBJ7yHl0Sn6911pfBcYcohWhCGM0kUA81VVknlnCCFHoDhWgwZwuoRXNv/s=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789714129; c=relaxed/simple;
-	bh=qYEFzIm+N0CfUhVGL28bB4CRxWsTwzRqweegiM+XOQ0=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=d1Iw+dNN5HeC9XzNGQ5L1t7vMT1bwWvcgFNRlhJ7e0usU824FEKbl/NG6Alv7OJ4RmmhGuq2jfltWhfhXPySnlkN37Y0fB8uYl8bFn3CHFIY4gknQT4g9sB78BXSlZW5LN6iLdtamHcTF3jyCDEUzkqdnL/kPnjGiHy4U+pWhi4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=ln5wKdTA; arc=none smtp.client-ip=148.163.156.1
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1789718745; c=relaxed/simple;
+	bh=SSml5sWGhbr1aX5qXNp5m87HXKcpLyEzFeK1/Q/8sOE=;
+	h=From:In-Reply-To:References:To:Cc:Subject:MIME-Version:
+	 Content-Type:Date:Message-ID; b=uz+PTU+ULSsrY0H2EkSjz8bZ3NevlFYUJWLqLzkD+2ZtQWbkLwdyxKumhs4vYKEqyjzpthYk0AhsTe9m3P7snG4+Fhm6VLrLMYAYUgqCz8AahB58U+jF+U6OC2pS2GQ8Qcne8flxI9/KgvpN0HVZ0vW8eTKS7LIOazK9e1KosM8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=PNReafD0; arc=none smtp.client-ip=170.10.133.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="ln5wKdTA"
-Received: from pps.filterd (m0353729.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 68I61c2C2781323;
-	Fri, 18 Sep 2026 06:48:32 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=JlJbws
-	tGkzlMLSOxQwpy8CnDx+tVF5dvH6CEitAre5g=; b=ln5wKdTAS5s/Nk5VqtAXJ6
-	9mW9QnoXPOS6YmMhYIdHSIttd5opYZmLf9MmxTeNA+2CwgtkwU+9K7y9N7niO85e
-	1aqiv1cDbabqK6yh7pOrfeY/rVaX6Htoep6dXPw9w+C9elPUvXwNxtu0cR7Cmn9j
-	GHgO5dbhRfcuxDYSzX8n+4rWBxRkkwR6yOvZXEJQya+vJ6Ql88kaGw1i25RHNPi0
-	Wud0tv1Cu/HlipDlvilKJF/6Mo4BrdpMIN3dDk+Zk1uvhGxA57a7NWoIoCzBrBH+
-	3f6eXqOC72oYAhTMOJ2+qSG7wdibTWRSESA6nbcykiJd66F7xOdTEPQLHoyYjWPQ
-	==
-Received: from ppma22.wdc07v.mail.ibm.com (5c.69.3da9.ip4.static.sl-reverse.com [169.61.105.92])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4gmxdqpn4d-1
-	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
-	Fri, 18 Sep 2026 06:48:31 +0000 (GMT)
-Received: from pps.filterd (ppma22.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma22.wdc07v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 68I6552b196230;
-	Fri, 18 Sep 2026 06:48:30 GMT
-Received: from smtprelay07.dal12v.mail.ibm.com ([172.16.1.9])
-	by ppma22.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4gr5fjp5c0-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Fri, 18 Sep 2026 06:48:30 +0000 (GMT)
-Received: from smtpav05.dal12v.mail.ibm.com (smtpav05.dal12v.mail.ibm.com [10.241.53.104])
-	by smtprelay07.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 68I6mTAe14680646
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Fri, 18 Sep 2026 06:48:29 GMT
-Received: from smtpav05.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id A579E58065;
-	Fri, 18 Sep 2026 06:48:29 +0000 (GMT)
-Received: from smtpav05.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 831DD58052;
-	Fri, 18 Sep 2026 06:48:26 +0000 (GMT)
-Received: from [9.123.14.23] (unknown [9.123.14.23])
-	by smtpav05.dal12v.mail.ibm.com (Postfix) with ESMTP;
-	Fri, 18 Sep 2026 06:48:26 +0000 (GMT)
-Message-ID: <e05d8ca7-ac48-47ef-bc47-bef5b22cb723@linux.ibm.com>
-Date: Fri, 18 Sep 2026 12:18:25 +0530
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="PNReafD0"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1789718742;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+	 in-reply-to:in-reply-to:references:references;
+	bh=Ym7emDJFhy4PiOXGVpk05NT3ISXd1kAvgtskHF5RU0g=;
+	b=PNReafD077lIjVU+tGlGZqSpttPqD4MOuRVkfVy4b2Yo2UmGInE8f4YaO6UZvDl6/5k5/p
+	QNVA8oHGdnoHw8R/3IxVlR4Ro9FoQ6xwxagC6VhIf3QhNk3TDYxLOKhQVi9B8W7Ll0wkbh
+	6Z42oQjinsehD5NOZCLVzaBzBmwkhZY=
+Received: from mx-prod-mc-08.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-546-RN0R4fb1NhK5JGQk9pctmg-1; Fri,
+ 18 Sep 2026 04:05:38 -0400
+X-MC-Unique: RN0R4fb1NhK5JGQk9pctmg-1
+X-Mimecast-MFC-AGG-ID: RN0R4fb1NhK5JGQk9pctmg_1789718736
+Received: from mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.12])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-08.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id AA7F818512C6;
+	Fri, 18 Sep 2026 08:05:35 +0000 (UTC)
+Received: from warthog.procyon.org.uk (unknown [10.44.32.54])
+	by mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 1CADB1956047;
+	Fri, 18 Sep 2026 08:05:27 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <aqyiCavj3xeNqyAo@kernel.org>
+References: <aqyiCavj3xeNqyAo@kernel.org> <20260914-ajhalaney-dmverity-key-identifier-v1-0-01922dc1366a@amutable.com> <20260914-ajhalaney-dmverity-key-identifier-v1-1-01922dc1366a@amutable.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: dhowells@redhat.com, Andrew Halaney <andrew@amutable.com>,
+    Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@kernel.org>,
+    Mikulas Patocka <mpatocka@redhat.com>,
+    Benjamin Marzinski <bmarzins@redhat.com>,
+    Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+    "Serge E. Hallyn" <serge@hallyn.com>,
+    Eric Biggers <ebiggers@kernel.org>,
+    "Theodore Y. Ts'o" <tytso@mit.edu>, Jonathan Corbet <corbet@lwn.net>,
+    Shuah Khan <skhan@linuxfoundation.org>,
+    Randy Dunlap <rdunlap@infradead.org>, dm-devel@lists.linux.dev,
+    linux-kernel@vger.kernel.org, keyrings@vger.kernel.org,
+    linux-security-module@vger.kernel.org, bpf@vger.kernel.org,
+    fsverity@lists.linux.dev, linux-doc@vger.kernel.org,
+    "Christian Brauner (Amutable)" <brauner@kernel.org>
+Subject: Re: [PATCH 1/3] keys: add KEY_SPEC_DM_VERITY_KEYRING
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v2] keys/trusted/tpm2: Validate TPM2_Create object sizes
- separately
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-        James.Bottomley@hansenpartnership.com, zohar@linux.ibm.com,
-        stefanb@linux.ibm.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, nayna@linux.ibm.com,
-        rnsastry@linux.ibm.com
-References: <20260910100222.247529-1-ssrish@linux.ibm.com>
- <aqydqxpVmp67kTQO@kernel.org>
-Content-Language: en-US
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-In-Reply-To: <aqydqxpVmp67kTQO@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwOTE4MDA4NyBTYWx0ZWRfX5k5yd4li2M9t
- JsI+7majam6CmqxsdGiN3Mrbigzxi8aH3KV/1rxMLMHczy2YqBmukK/Bk7qUhlMfPeh7xECcjfL
- iF7i+ci9S36LSSG4Z0hBssEf3STxec/PwFTvcFWB/0gzkofy56W4K3PWuxaDP+nXfIf0u+3Ifqf
- 25CCpnR9J4c/JFaHbO5xhDusNouakAMjXHfL79BKaBOCoeWC0mn1QA9fHfqMorJTl9Ks6MghLdA
- B+0VJglJ6iQI3WDSGoM0z4N8dFSpgPtmKDL/tfu6N3B0GlAR/jSMX34vKz0Kv8I6tncxep+BGqt
- GLCTtKgR/6QBuGGF+iT8mU19HNGV8gl/CVH7tAXm/7DlarMdEiVrK4boV6oi6kiMk/CxFHLoGOH
- F4lzwgcF/FFcAnU30j+cgYfY5vqmgzu918H0mdBjFBDDa2P44z0obu258IAekV1n2zKTC0qNVp4
- HrissPhr9s/eUWaQcTw==
-X-Proofpoint-GUID: M3B6wiPu_x1nxjmVpbQahD3mqB6-0nxd
-X-Authority-Analysis: v=2.4 cv=DobDa2/+ c=1 sm=1 tr=0 ts=6aacdebf cx=c_pps
- a=5BHTudwdYE3Te8bg5FgnPg==:117 a=5BHTudwdYE3Te8bg5FgnPg==:17
- a=IkcTkHD0fZMA:10 a=VdqzKS8jKosA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=uAbxVGIbfxUO_5tXvNgY:22 a=VnNF1IyMAAAA:8
- a=6fPxEW-5Y_PwP9TQzHIA:9 a=3ZKOabzyN94A:10 a=QEXdDO2ut3YA:10
-X-Proofpoint-ORIG-GUID: M3B6wiPu_x1nxjmVpbQahD3mqB6-0nxd
-X-Proofpoint-Spam-Info: AW1haW4tMjYwOTE4MDA4NyBTYWx0ZWRfXzJcxTnCKncGt
- ku5UXDI3rC2R1HRmjgp9K/2AowyZkBTsgAZSjMy3o875udla0FMFtwhMowNpJcML7D7asIIIHSk
- 3jpihV0kNiO6f/p7b9Jjh8WVwNyYV2g=
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-09-18_02,2026-09-16_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- phishscore=0 malwarescore=0 priorityscore=1501 suspectscore=0 impostorscore=0
- spamscore=0 clxscore=1015 adultscore=0 bulkscore=0 lowpriorityscore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2609040000 definitions=main-2609180087
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <715248.1789718726.1@warthog.procyon.org.uk>
+Date: Fri, 18 Sep 2026 09:05:26 +0100
+Message-ID: <715249.1789718726@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 3.0 on 10.30.177.12
 
+Jarkko Sakkinen <jarkko@kernel.org> wrote:
 
-On 9/18/26 7:40 AM, Jarkko Sakkinen wrote:
-> On Thu, Sep 10, 2026 at 03:32:22PM +0530, Srish Srinivasan wrote:
->> TPM2_Create returns outPrivate, outPublic, creationData, creationHash and
->> creationTicket in its response parameter area. However, only outPrivate and
->> outPublic are included in the trusted key blob. The size of the blob is
->> therefore not determined by the size of the complete response parameter
->> area.
->>
->> tpm2_seal_trusted() currently compares the size of the complete response
->> parameter area against MAX_BLOB_SIZE. This can reject a valid response
->> when the remaining response outputs cause the entire response parameter
->> area to exceed MAX_BLOB_SIZE, even though the outPrivate and outPublic
->> TPM2B structures consumed by tpm2_key_encode() remain small enough to be
->> encoded in the key blob.
->>
->> This is observed when creating larger trusted keys using an swtpm TPM 2.0
->> emulator backed by libtpms.
->>
->> For example, requesting a 113-byte key succeeds, 114 fails.
->>
->> ~$ keyctl add trusted trusted_key1 "new 113 keyhandle=0x81000001" @u
->> 520504613
->> ~$ keyctl add trusted trusted_key2 "new 114 keyhandle=0x81000001" @u
->> add_key: Argument list too long
->> ~$
->>
->> Remove the MAX_BLOB_SIZE check on the complete response parameter area.
->> Instead, use the response length passed to tpm2_key_encode() to validate
->> that the outPrivate and outPublic TPM2B structures are fully contained
->> in the response before accessing them.
->>
->> Previously, a response parameter area larger than MAX_BLOB_SIZE was
->> rejected with -E2BIG before ASN.1 encoding. With this change, if the
->> resulting encoded blob does not fit in payload->blob, the error returned by
->> asn1_encode_sequence() is propagated instead.
->>
->> Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
->> ---
->> Changelog:
->>
->>   v2:
->>    - Exclude a comment pointed out by Jarkko
->>
->>   security/keys/trusted-keys/trusted_tpm2.c | 35 +++++++++++++++++------
->>   1 file changed, 27 insertions(+), 8 deletions(-)
->>
->> diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
->> index 01f18bb37047..cbec4f591952 100644
->> --- a/security/keys/trusted-keys/trusted_tpm2.c
->> +++ b/security/keys/trusted-keys/trusted_tpm2.c
->> @@ -24,24 +24,42 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
->>   			   u8 *src, u32 len)
->>   {
->>   	const int SCRATCH_SIZE = PAGE_SIZE;
->> -	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
->> -	u8 *work = scratch, *work1;
->> -	u8 *end_work = scratch + SCRATCH_SIZE;
->> +	u8 *scratch;
->> +	u8 *work, *work1;
->> +	u8 *end_work;
->>   	u8 *priv, *pub;
->> -	u16 priv_len, pub_len;
->> +	u32 priv_len, pub_len;
->>   	int ret;
->>   
->> -	priv_len = get_unaligned_be16(src) + 2;
->> +	if (len < sizeof(__be16))
->> +		return -EFAULT;
->> +
->> +	priv_len = get_unaligned_be16(src);
->> +	if (priv_len > len - sizeof(__be16))
->> +		return -EFAULT;
->> +
->> +	priv_len += sizeof(__be16);
->>   	priv = src;
->>   
->> +	if (len - priv_len < sizeof(__be16))
->> +		return -EFAULT;
-> This caused for me some head scrathing tbh.
->
-> See:
->
-> 1. len >= 2
-> 2. priv_len <= len - 2
-> 3. 2 - priv_len + priv_len <= 2 - priv_len + len - 2
-> 4. 2 <= len - priv_len
->
-> Is this check required?
+> This is great for discussion but what we want for the commit message
+> is just motivation and resolution.
 
+Actually, I think it's useful that Andrew wrote up the issues in the commit
+message - and I think it shows part of the motivation.  The 'writing a fake
+/proc/keys line in the description' is something I hadn't considered.
 
-Hi Jarkko,
-Thanks for taking a look.
+> I don't think we need all this just to say that /proc/keys in a racy
+> query mechanism for production, which is an issue for dm-verity, given
+> that nothing else is available.
 
-The preceding check,
+I think at some point, we will need a system call to search all for all
+accessible keys matching certain criteria by actually walking the key
+database.  The problem there is that there may be multiple hits, so we may
+need something like:
 
+	int count = find_key(key_serial_t start_id,
+			     const char *type, const char *desc_prefix,
+			     key_serial_t *results, size_t results_size,
+			     unsigned int flags);
 
-     if (priv_len > len - sizeof(__be16))
-         return -EFAULT;
+Allowing you to do:
 
+	key_serial_t dm_key;
+	int n = find_key(0, "keyring", ".dm_verity", &dm_key, 1,
+			 FIND_KEY_EXACT_DESC);
 
-ensures that the complete TPM2B_PRIVATE, including its size field,
-fits within len. After this check, priv_len is incremented by 2 and
-therefore represents the complete TPM2B_PRIVATE length.
+This wouldn't be as fast as a direct lookup since it would have to walk the
+key tree, doing name comparisons and perm checks on each key of the type.
 
+> And secondly special keys are meant for implicit keyrings so isn't
+> that all there's to it?
 
-The check you pointed out,
+I have no particular objection to setting aside a block of negative key IDs
+for special keyrings that need to be accessed a lot - though I would make
+common reg/unreg functions that take the ID to be registered and, say, set the
+block at -257..-512.  Moving the BFP keyring to -257 and DM to -258.
 
+David
 
-     if (len - priv_len < sizeof(__be16))
-         return -EFAULT;
-
-
-then ensures that at least 2 bytes remain for reading the following
-TPM2B_PUBLIC size field.
-
-
->
->> +
->>   	src += priv_len;
->>   
->> -	pub_len = get_unaligned_be16(src) + 2;
->> +	pub_len = get_unaligned_be16(src);
->> +	if (pub_len > len - priv_len - sizeof(__be16))
->> +		return -EFAULT;
->> +
->> +	pub_len += sizeof(__be16);
->>   	pub = src;
->>   
->> +	scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
->>   	if (!scratch)
->>   		return -ENOMEM;
->>   
->> +	work = scratch;
->> +	end_work = scratch + SCRATCH_SIZE;
->> +
->>   	work = asn1_encode_oid(work, end_work, tpm2key_oid,
->>   			       asn1_oid_len(tpm2key_oid));
->>   
->> @@ -336,10 +354,11 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
->>   		goto out;
->>   
->>   	blob_len = tpm_buf_read_u32(buf, &offset);
->> -	if (blob_len > MAX_BLOB_SIZE || buf->flags & TPM_BUF_INVALID) {
->> -		rc = -E2BIG;
->> +	if (buf->flags & TPM_BUF_INVALID) {
->> +		rc = -EFAULT;
->>   		goto out;
->>   	}
->> +
->>   	if (buf->length - offset < blob_len) {
->>   		rc = -EFAULT;
->>   		goto out;
->> -- 
->> 2.53.0
->>
-> BR, Jarkko
-
-Thanks,
-Srish.
