@@ -1,42 +1,53 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 64C1C3B6BF2;
-	Fri, 18 Sep 2026 02:14:33 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 715C33BFAEB;
+	Fri, 18 Sep 2026 02:29:38 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789697676; cv=none; b=skk6xRMo1tiHjUIbgHzZ5jUVYAmu+vBvgGYa2kJU9kyQku3SkzsnnPpJq8JtdvLJImR/x1lBECyQpWACJEUCsk9v5tLRtkUr40c7gl/HSBTGayuVoCLo9Dj3wANZv48qH56XCf5S+pufY5IG1nrCblPYS8a/zdbn7JQY3UE1NoM=
+	t=1789698585; cv=none; b=VS6oDG5emjTTizhcSowoU7yTTLss1lm6CYqqU+KaFVzGQs4TeeUJNm+V1ckvpLZAhMsHpSvWYwH0AR52W/qMrslsdl/EoxOTCKuOpSGbMah1aIjuB13xMsvau8zBdzyfNhmwoeZuWZFYM4SdFCkBnsvpEU1fuiOE//H+5dv3OEw=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789697676; c=relaxed/simple;
-	bh=XG5tXNhmHVkSr+ObLlr7vqBx3G4FZGH3QBqATB45sHc=;
+	s=arc-20240116; t=1789698585; c=relaxed/simple;
+	bh=zr6RZjqy8zkfck/Pdh/SCIhM1e3d18vR1boWvALaMiA=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=UIgPyMPwLDzinwjDQ27bI0UiKddaryoE1QxnaTp4+v1G+ebUOvtd68kkKHdyiZy2B8nwgHmGSogkIFa02LmACRjapyysqcF28hrw38WcZrcPN5B2N4Qn0jAvAJ6ulV2XvUCh1QrIdkD+30tkE+RMHVtE9jGuWOncoO7m1rrGhM4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=aF8+G0iY; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=ALesK0gG8O1NK9BtxfC4gme2ctV6XKet6bbZz17U53CPwfHelV3jowQoLgNLimNDyuccrNghTJ12y8yIwBMxj60AsJLU3D2Y6Q/bcEPWEp2pRzSOwzeswMZ4f8vi83Npdafyy5dfbKeFFcQ3BlltX8LQ66uoKPZzcca9JdZoxeU=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=ITubRvvc; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="aF8+G0iY"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D194E1F000FF;
-	Fri, 18 Sep 2026 02:14:32 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="ITubRvvc"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A94C41F000FF;
+	Fri, 18 Sep 2026 02:29:32 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1789697673;
-	bh=Cs4e9fGmvBmMllPzVQFlcqSoCGiEMLUQj/MHmC0cLds=;
+	s=k20260515; t=1789698573;
+	bh=g9YcUG3szeoayvwUqM/cv8sctvahn3Ihcoi9jbjGOnk=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=aF8+G0iYE1ckBIWsf9fbtQCAiHhUzHqUdb1iDPgypKgaRejp31ul41xmGnMkJIBRJ
-	 YdCWLb1w/DMoG7Rf74oQua0tT5N0V+/eRbkeB49c/9eyLMmkUE/aE15mR0gchRDY5S
-	 YU653jB7/MsrbMheQ1Eoc3lEOIB1ThWUx3qGFQ5qCMbx2eLj0DSkC3qxTRPdnxIVxO
-	 NeYP3TOtHpwo+bF8CXayKjkt00qu376iD3QAFVIvqmmbTKwZGUuAwZ7n4x7M8Wm2Xs
-	 XVWs6yID193KgpN3CvfwLDWzOW+fXz2kTcNASNjoa78ZNbfn/+YEYzzXoA3WtAwJx4
-	 cc10ZHizk6/AQ==
-Date: Fri, 18 Sep 2026 05:14:29 +0300
+	b=ITubRvvc3F/vvkNNV3easTtv4kW2t5sTGcQTrFimYGHRTwrI36hleEBj04p+G4rD+
+	 NamNYIZiDAoFX0JrbXdOJ6jo1MW4JQvtJnZely7Mw/DeVKHz4e/H85J6KnkgRoEc5I
+	 cLgsJVPAcMhvkwd6xKrLPl8G7InF+UXtNbbg8ngK7txU/xCUsC+I9gO05MwuE3doN2
+	 /gdrMcCm4IwXBvGjSc4UnL+t92rx9lkE502wmrjLTerz13U0wjK5mG4QN8XgBagAGv
+	 EMbNmlXejAvA43Xb6vzKXOfltB7g1Z9/tWbDe2iu9Z8WZCKSMHvXSmuAd1wqPLTC/4
+	 Z4KrVoDpwIZWQ==
+Date: Fri, 18 Sep 2026 05:29:29 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Karl Mehltretter <kmehltretter@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] keys: finalize persistent keyring timeout after link
- attempt
-Message-ID: <aqyehcvl9fM6LuVw@kernel.org>
-References: <20260912095440.79864-1-kmehltretter@gmail.com>
+To: Andrew Halaney <andrew@amutable.com>
+Cc: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Eric Biggers <ebiggers@kernel.org>,
+	"Theodore Y. Ts'o" <tytso@mit.edu>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Randy Dunlap <rdunlap@infradead.org>, dm-devel@lists.linux.dev,
+	linux-kernel@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, bpf@vger.kernel.org,
+	fsverity@lists.linux.dev, linux-doc@vger.kernel.org,
+	"Christian Brauner (Amutable)" <brauner@kernel.org>
+Subject: Re: [PATCH 1/3] keys: add KEY_SPEC_DM_VERITY_KEYRING
+Message-ID: <aqyiCavj3xeNqyAo@kernel.org>
+References: <20260914-ajhalaney-dmverity-key-identifier-v1-0-01922dc1366a@amutable.com>
+ <20260914-ajhalaney-dmverity-key-identifier-v1-1-01922dc1366a@amutable.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -45,183 +56,170 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260912095440.79864-1-kmehltretter@gmail.com>
+In-Reply-To: <20260914-ajhalaney-dmverity-key-identifier-v1-1-01922dc1366a@amutable.com>
 
-On Sat, Sep 12, 2026 at 11:54:40AM +0200, Karl Mehltretter wrote:
-> When no keyring exists for the requested UID, KEYCTL_GET_PERSISTENT
-> creates and registers one before linking it to the requested destination.
-> The configured timeout is set only after the destination link succeeds.
+On Mon, Sep 14, 2026 at 11:41:42AM -0500, Andrew Halaney wrote:
+> The .dm-verity keyring is not linked into any process keyring, so
+> request_key() and KEYCTL_SEARCH cannot find it. Userspace has to scrape
+> /proc/keys for the serial to use.
 > 
-> A destination restricted with KEYCTL_RESTRICT_KEYRING makes that link fail
-> with -EPERM. With persistent_keyring_expiry set to 60 seconds, /proc/keys
-> still reports the registered keyring's expiry as "perm".
-> The failed call therefore leaves a quota-exempt keyring in the namespace's
-> hidden register, where it may remain until namespace teardown.
+> That's not great, one could put in a bogus description containing
+> a newline to confuse userspace further. For example, thanks to AI
+> models, which I run as root but you could show off as any old user:
 > 
-> Rename the write-locked helper to key_get_or_create_persistent() and return
-> the key reference through a result parameter. Return 0 when it creates a
-> keyring and 1 when the retry finds an existing one. Return a negative error
-> on failure. Another caller may create the keyring between the initial
-> read-locked lookup and the retry under the write lock.
+>     # DESC=$'.dm-verity: 1\n0badf00d I--Q---     1 perm 082f0000     0     0 keyring   .dm-verity'
+>     # k=$(echo -n "1234567" | keyctl padd user "$DESC" @s)
+>     # keyctl setperm "$k" 0x3f010001
 > 
-> Set the timeout after permission checking and linking. Do this on success,
-> or on failure if the call allocated the keyring. This leaves a new keyring
-> collectible after failure without starting its timeout while linking is
-> still in progress.
+>     # cat /proc/keys | grep dm-verity
+>     10402023 I------     2 perm 082f0000     0     0 keyring   .dm-verity: empty
+>     12e0bee6 I--Q---     1 perm 3f010001     0     0 user      .dm-verity: 1
+>     0badf00d I--Q---     1 perm 082f0000     0     0 keyring   .dm-verity: 7
 > 
-> Fixes: f36f8c75ae2e ("KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches")
-> Assisted-by: LLM
-> Signed-off-by: Karl Mehltretter <kmehltretter@gmail.com>
+> 0x0badf00d is not a keyring, it is the text inside our user's key
+> description. Telling the two apart needs a KEYCTL_DESCRIBE per row
+> which is annoying to do. i.e.:
+> 
+>     # keyctl rdescribe 0x10402023
+>     keyring;0;0;082f0000;.dm-verity
+>     # keyctl rdescribe 0x0badf00d
+>     keyctl_describe: Required key not available
+> 
+> Let's just give it a well known identifier, i.e.:
+> 
+>     # keyctl rdescribe -10
+>     keyring;0;0;082f0000;.dm-verity
+> 
+> This is exactly what
+> commit 264d8fd2794f ("bpf, keys: Add a bpf keyring for program signature validation")
+> did, and was the inspiration for this commit minus the spinlock bits
+> required due to dm-verity being a module.
+
+This is great for discussion but what we want for the commit message
+is just motivation and resolution.
+
+I don't think we need all this just to say that /proc/keys in a racy
+query mechanism for production, which is an issue for dm-verity, given
+that nothing else is available.
+
+And secondly special keys are meant for implicit keyrings so isn't
+that all there's to it?
+
+
+> 
+> Suggested-by: Christian Brauner (Amutable) <brauner@kernel.org>
+> Signed-off-by: Andrew Halaney <andrew@amutable.com>
 > ---
-> Changes in v4:
-> - tweak comment (Jarkko)
+>  drivers/md/dm-verity-verify-sig.c |  3 +++
+>  include/linux/key.h               |  1 +
+>  include/uapi/linux/keyctl.h       |  1 +
+>  security/keys/process_keys.c      | 33 +++++++++++++++++++++++++++++++++
+>  4 files changed, 38 insertions(+)
 > 
-> v3: https://lore.kernel.org/r/20260901191743.39210-1-kmehltretter@gmail.com/
-> 
-> Changes in v3:
-> - Return the persistent key reference through a result parameter (Jarkko).
-> - Keep lookup-or-create atomic inside the helper and use 0 for creation, 1
->   for an existing keyring, and negative values only for errors.
-> 
-> v2: https://lore.kernel.org/r/20260901164323.35785-1-kmehltretter@gmail.com/
-> 
-> Changes in v2:
-> - Rewrite the commit message around the restricted-destination reproducer
->   and trim the explanation (Jarkko).
-> - Track whether the persistent keyring was newly allocated and finalize its
->   timeout after the permission and link checks. This preserves an existing
->   keyring's timeout on failure and avoids expiry during linking.
-> 
-> Testing below was performed for v3; v4 changes only the comment.
-> 
-> Tested with QEMU 10.2.1 TCG on i386 and x86_64. With
-> persistent_keyring_expiry set to 60 seconds, KEYCTL_GET_PERSISTENT returned
-> -EPERM and /proc/keys reported "perm" before the fix and "1m" after it on
-> both architectures.
-> 
-> Also tested on x86_64 with persistent_keyring_expiry set to 1 second and
-> gc_delay set to 0. Successful calls reused the same serial, a newly created
-> keyring from a failed call expired, and a failed call using an existing
-> keyring left its timeout unchanged. A test-only two-second delay before
-> timeout finalization did not allow the keyring to be collected before link.
-> 
-> Two concurrent callers returned the same serial. A test-only 100 ms delay
-> after the read-locked miss forced both callers into the write-locked retry
-> and confirmed that the second caller took the 1 (existing) return path.
-> 
->  security/keys/persistent.c | 55 ++++++++++++++++++++++----------------
->  1 file changed, 32 insertions(+), 23 deletions(-)
-> 
-> diff --git a/security/keys/persistent.c b/security/keys/persistent.c
-> index 97af230aa4b22..bdab995393261 100644
-> --- a/security/keys/persistent.c
-> +++ b/security/keys/persistent.c
-> @@ -33,25 +33,31 @@ static int key_create_persistent_register(struct user_namespace *ns)
+> diff --git a/drivers/md/dm-verity-verify-sig.c b/drivers/md/dm-verity-verify-sig.c
+> index b2b55c41e2cb..da509dcdd7e5 100644
+> --- a/drivers/md/dm-verity-verify-sig.c
+> +++ b/drivers/md/dm-verity-verify-sig.c
+> @@ -189,11 +189,14 @@ int __init dm_verity_verify_sig_init(void)
+>  	    keyring_restrict(make_key_ref(dm_verity_keyring, true), NULL, NULL))
+>  		panic("dm-verity can't seal keyring\n");
+>  
+> +	key_register_dm_verity_keyring(dm_verity_keyring);
+> +
+>  	return 0;
 >  }
 >  
->  /*
-> - * Create the persistent keyring for the specified user.
-> + * Get or create the persistent keyring for the specified user.
->   *
->   * Called with the namespace's sem locked for writing.
-> + *
-> + * Returns a boolean indicating whether the keyring already existed,
-> + * or a negative error. On success, *persistent_ref holds a reference
-> + * to the keyring.
->   */
-> -static key_ref_t key_create_persistent(struct user_namespace *ns, kuid_t uid,
-> -				       struct keyring_index_key *index_key)
-> +static int key_get_or_create_persistent(struct user_namespace *ns, kuid_t uid,
-> +					struct keyring_index_key *index_key,
-> +					key_ref_t *persistent_ref)
+>  void dm_verity_verify_sig_exit(void)
 >  {
->  	struct key *persistent;
-> -	key_ref_t reg_ref, persistent_ref;
-> +	key_ref_t reg_ref;
+> +	key_register_dm_verity_keyring(NULL);
+>  	key_revoke(dm_verity_keyring);
+>  	key_put(dm_verity_keyring);
+>  }
+> diff --git a/include/linux/key.h b/include/linux/key.h
+> index bd10fe45819d..ae8d3314fd93 100644
+> --- a/include/linux/key.h
+> +++ b/include/linux/key.h
+> @@ -441,6 +441,7 @@ extern int keyring_restrict(key_ref_t keyring, const char *type,
+>  			    const char *restriction);
 >  
->  	if (!ns->persistent_keyring_register) {
-> -		long err = key_create_persistent_register(ns);
-> +		int err = key_create_persistent_register(ns);
+>  extern void key_register_bpf_keyring(struct key *keyring);
+> +extern void key_register_dm_verity_keyring(struct key *keyring);
+>  
+>  extern struct key *key_lookup(key_serial_t id);
+>  
+> diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+> index fa85b9760391..75923941f1b3 100644
+> --- a/include/uapi/linux/keyctl.h
+> +++ b/include/uapi/linux/keyctl.h
+> @@ -25,6 +25,7 @@
+>  #define KEY_SPEC_REQKEY_AUTH_KEY	-7	/* - key ID for assumed request_key auth key */
+>  #define KEY_SPEC_REQUESTOR_KEYRING	-8	/* - key ID for request_key() dest keyring */
+>  #define KEY_SPEC_BPF_KEYRING		-9	/* - key ID for the BPF-specific keyring */
+> +#define KEY_SPEC_DM_VERITY_KEYRING	-10	/* - key ID for the .dm-verity keyring */
+>  
+>  /* request-key default keyrings */
+>  #define KEY_REQKEY_DEFL_NO_CHANGE		-1
+> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+> index 44358388e395..dba3df41638b 100644
+> --- a/security/keys/process_keys.c
+> +++ b/security/keys/process_keys.c
+> @@ -25,6 +25,10 @@ static DEFINE_MUTEX(key_session_mutex);
+>  /* BPF keyring reachable through KEY_SPEC_BPF_KEYRING */
+>  static struct key *bpf_keyring __ro_after_init;
+>  
+> +/* dm-verity keyring reachable through KEY_SPEC_DM_VERITY_KEYRING */
+> +static struct key *dm_verity_keyring;
+> +static DEFINE_SPINLOCK(dm_verity_keyring_lock);
 > +
->  		if (err < 0)
-> -			return ERR_PTR(err);
-> +			return err;
->  	} else {
->  		reg_ref = make_key_ref(ns->persistent_keyring_register, true);
-> -		persistent_ref = find_key_to_update(reg_ref, index_key);
-> -		if (persistent_ref)
-> -			return persistent_ref;
-> +		*persistent_ref = find_key_to_update(reg_ref, index_key);
-> +		if (*persistent_ref)
-> +			return 1;
->  	}
->  
->  	persistent = keyring_alloc(index_key->description,
-> @@ -61,9 +67,10 @@ static key_ref_t key_create_persistent(struct user_namespace *ns, kuid_t uid,
->  				   KEY_ALLOC_NOT_IN_QUOTA, NULL,
->  				   ns->persistent_keyring_register);
->  	if (IS_ERR(persistent))
-> -		return ERR_CAST(persistent);
-> +		return PTR_ERR(persistent);
->  
-> -	return make_key_ref(persistent, true);
-> +	*persistent_ref = make_key_ref(persistent, true);
-> +	return 0;
+>  /* The root user's tracking struct */
+>  struct key_user root_key_user = {
+>  	.usage		= REFCOUNT_INIT(3),
+> @@ -607,6 +611,24 @@ void key_register_bpf_keyring(struct key *keyring)
+>  	bpf_keyring = keyring;
 >  }
 >  
+> +/**
+> + * key_register_dm_verity_keyring - Publish the keyring for KEY_SPEC_DM_VERITY_KEYRING
+> + * @keyring: The keyring to publish, or NULL to withdraw it
+> + *
+> + * Make @keyring reachable by userspace through the KEY_SPEC_DM_VERITY_KEYRING
+> + * special key ID, so that provisioning it does not require scraping its
+> + * serial out of /proc/keys first. dm-verity can be unloaded as a module
+> + * and the keyring deregistered, as such serialize access with
+> + * dm_verity_keyring_lock.
+> + */
+> +void key_register_dm_verity_keyring(struct key *keyring)
+> +{
+> +	spin_lock(&dm_verity_keyring_lock);
+> +	dm_verity_keyring = keyring;
+> +	spin_unlock(&dm_verity_keyring_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(key_register_dm_verity_keyring);
+> +
 >  /*
-> @@ -78,6 +85,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
->  	key_ref_t reg_ref, persistent_ref;
->  	char buf[32];
->  	long ret;
-> +	bool created = false;
+>   * Look up a key ID given us by userspace with a given permissions mask to get
+>   * the key it refers to.
+> @@ -766,6 +788,17 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+>  		key_ref = make_key_ref(key, 0);
+>  		break;
 >  
->  	/* Look in the register if it exists */
->  	memset(&index_key, 0, sizeof(index_key));
-> @@ -100,23 +108,24 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
->  	 * also need to create the register.
->  	 */
->  	down_write(&ns->keyring_sem);
-> -	persistent_ref = key_create_persistent(ns, uid, &index_key);
-> +	ret = key_get_or_create_persistent(ns, uid, &index_key,
-> +					   &persistent_ref);
->  	up_write(&ns->keyring_sem);
-> -	if (!IS_ERR(persistent_ref))
-> -		goto found;
-> -
-> -	return PTR_ERR(persistent_ref);
-> +	if (ret < 0)
-> +		return ret;
-> +	created = ret == 0;
->  
->  found:
-> +	persistent = key_ref_to_ptr(persistent_ref);
->  	ret = key_task_permission(persistent_ref, current_cred(), KEY_NEED_LINK);
-> -	if (ret == 0) {
-> -		persistent = key_ref_to_ptr(persistent_ref);
-> +	if (ret == 0)
->  		ret = key_link(key_ref_to_ptr(dest_ref), persistent);
-> -		if (ret == 0) {
-> -			key_set_timeout(persistent, persistent_keyring_expiry);
-> -			ret = persistent->serial;
-> -		}
-> -	}
+> +	case KEY_SPEC_DM_VERITY_KEYRING:
+> +		spin_lock(&dm_verity_keyring_lock);
+> +		key = dm_verity_keyring;
+> +		if (key)
+> +			__key_get(key);
+> +		spin_unlock(&dm_verity_keyring_lock);
+> +		if (!key)
+> +			goto error;
+> +		key_ref = make_key_ref(key, 0);
+> +		break;
 > +
-> +	if (ret == 0 || created)
-> +		key_set_timeout(persistent, persistent_keyring_expiry);
-> +
-> +	if (ret == 0)
-> +		ret = persistent->serial;
->  
->  	key_ref_put(persistent_ref);
->  	return ret;
+>  	default:
+>  		key_ref = ERR_PTR(-EINVAL);
+>  		if (id < 1)
 > 
-> base-commit: 08dbfad3f5040f5bdb6c529da20d6d4e81fefd72
 > -- 
-> 2.53.0
-
-LGTM. Thank you.
-
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+> 2.55.0
+> 
 
 BR, Jarkko
