@@ -1,129 +1,143 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-oo2-f40.google.com (mail-oo2-f40.google.com [74.125.231.168])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3BB4F501F26
-	for <keyrings@vger.kernel.org>; Fri, 18 Sep 2026 15:15:56 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 093F64EDCC8
+	for <keyrings@vger.kernel.org>; Fri, 18 Sep 2026 17:21:41 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.231.168
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789744559; cv=none; b=PwC5L0m5NzcgEoXRd1cEygV59aHUMMbCU+NJLB55eu9k1GKOv6CxMK8anTvuC6tZk+VQkCiHL/wfi+CZ8mzJw4AtBiu2TQ92FGNExnGAsKLFvx0fLdCvbffLSaOzAJz9bQe/zz5xKDxGbhtBky6gve4VanPanObGrrU9gfpdRs8=
+	t=1789752108; cv=none; b=PdVw6I0WgAuYH/2kde8EmTWAb4NVuS2KHnc7PUGrtt3rrage1317OTafsQsg2YxokAv+TmB+MykWO5wsAXul37QzNUiUurdoojZpul42WreBCEC1Q+2Qmg4I7nigW0QMRd1hP7Khm6lpIKNIaucRfhM7Ke4DCQUjr0urUGT2awM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789744559; c=relaxed/simple;
-	bh=UfTLgGlcDO389mCAtzhYb8eUPKLIBO/8OmDx/Bf0eiw=;
-	h=MIME-Version:Date:From:To:Cc:Message-Id:In-Reply-To:References:
-	 Subject:Content-Type; b=AGM2REMR6uxQnRbduW8g2Svdmq46aC+KZzjvh3ekQGLTcsFVn5qfGqELWMB6uoQWNMruLU5DNlmwJIuGBAV5/jKpgnrfMBzTBJ16XwaCS30fCS/u7j2pTeOkJMKU1/9TI5XHMDxYe6Q+xAmmDvADjkqlMKXiizIyPmtyADPCT5o=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=J18fAPvX; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1789752108; c=relaxed/simple;
+	bh=de5x0Zxo6F6d2MB0yVScP1sFcZZJFeuVMt4yQvyoVlA=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version:Content-Type; b=gINIGw6fHhpyKuCMZU53o4W3q1+iN81Y6IY4CTXhznwFVwofyNA+ghCI6RDcpwH0K6nnKB1C3PnyqfiCVAnJ7AvvnZ2KIjT298NcaoRq1VFHfZPpKre44YeQedTqHkMVTY19n+kDF83vwxznzjTuIRavQL35cxVgUbO7H9f0ihE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=hammerspace.com; spf=pass smtp.mailfrom=hammerspace.com; dkim=pass (2048-bit key) header.d=hammerspace.com header.i=@hammerspace.com header.b=aLVCpAYL; arc=none smtp.client-ip=74.125.231.168
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=hammerspace.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=hammerspace.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="J18fAPvX"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 8E6BF1F000FF;
-	Fri, 18 Sep 2026 15:15:55 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1789744556;
-	bh=o9OjELzOfnEXe/aV35HyOAn/5z/gkwl3afGuJPIOTAo=;
-	h=Date:From:To:Cc:In-Reply-To:References:Subject;
-	b=J18fAPvXrmnVpkYAnRWamd5ziIU6ZpeBXScpnWdh/Dni6hxEDtUbD3Rwo5oIW8keY
-	 0Kk7N6ina5Mt5mUBzc/ScwaZOWZdbWmFiVMQ6w7guALTy28CfGcqK+jvnrbzpHPLJn
-	 ei4kM7CpG+KNhUso4dd7Cv75J8dYtLvv0tPOwvOOuK2Hoc5haHuMwJD8a1vQJ8AlxI
-	 dK59oN2xjhE/F6mFaMleeMsrfYJvKUeikkl0TzATcZ13YTo84sXDtA9Kd003gRBOJO
-	 3R0qiE2R1LUt5OIjVkSvaYJsET8oTDvgUg7rPCLyhVgg1fgTNqWtRTfJymhy4BuXY6
-	 1FpBbPDY8uZVQ==
-Received: from phl-compute-10.internal (phl-compute-10.internal [10.202.2.50])
-	by mailfauth.phl.internal (Postfix) with ESMTP id A7316F40066;
-	Fri, 18 Sep 2026 11:15:54 -0400 (EDT)
-Received: from phl-imap-15 ([10.202.2.104])
-  by phl-compute-10.internal (MEProxy); Fri, 18 Sep 2026 11:15:54 -0400
-X-ME-Sender: <xms:qlWtaseO_erFY3v5ZN6Yni5ZizEiVPku9oQJ1MR5uH6i_HgwXQjlNw>
-    <xme:qlWtapBoP-lWVaH5x8p2_zbbMMKEENgijDodfyqM5gELx4VHu4pI3e-60gkJh9Hij
-    vFroCc-qj2wpSS4f79zYLmfpGQSzA1iKUQEThWv-02fFp4twsIxk4yQ>
-X-ME-Proxy-Cause: dmFkZTFyeyeW4YTKL8BGfOlidQaMKIe0Y/lxcWtKiU1uxUhGtjbzNhVAnPES35mJw04iGI
-    6Y5KV/Gbrs+krGKQLolsszzJlze9yuEotfINiUh15oh6n5J4HCRBfSJ/eKMxYdDZQgzYq5
-    zXjdLUN1h+4glEqgEEmDWisv5k77BxsyoEe6cbiphpjxr1RnenF4T6BBYsQftoE4u2bLet
-    MJtNSerLdkRbMz8cm0jpQ38G78EVitrZxMsAEYVp/e/LEMqnsr/7unSbHKoX+1Js1xEqwt
-    t1/nR5P5Polw+qXMnF8qhaJBSD479TDjm89i6S3OB10jRlACPG/F7/vX2GM+wpWZ9x2zat
-    vBzltsWkc9BATM86G0sCGC/Qa/3o6/4p0YP+6LMq69tVR2ByBZprj3ajYk/Q3aOLn2Xgwp
-    Zv687ctvA7j5e7OqUzK+edRsrxUnLyA3Yg2y54QzcwKHBArjeVTrZQEtvsaSuixR8Hfvio
-    Ab9lrk81DlXpwCmS1w8i0bcEKTLUKXrTNnEuVDn6cFHud2ExplQ2SyE6puSB/a7YqcpWCe
-    O1dtQQ9a1JZBkwqY7/qTtoYD3FBC4FiJiQGm1Va0ITlLru/bID9biYllGoxNCxJNCs7nlQ
-    3GM195d4PfAXBLLwXyNbfe/RU2U1zfSBOMMPhNc/fS15LmSDGmCzo0JQnwpQ
-X-ME-Proxy: <xmx:qlWtapVv6-rR43qj2JRhOY-TPtmy1xQHWFTLscjBKPqCpuNss0G3cQ>
-    <xmx:qlWtauc3rBzJcBZdYmy5HlFY7kBBm3P1rTimhjxeuLm4nEh54JhSdQ>
-    <xmx:qlWtat-fzf1BY5UhIoLAh2zBUp6bzD4HGHiTvOk37STAPB7jtyDNYg>
-    <xmx:qlWtatm6xm0-W98UfAOBnblUNOxezBk-26X4NAIvRYcY23UtBLy89Q>
-    <xmx:qlWtamhrnMCLq7AMwh9RVIUDLPuAECF177t45MDfk1LFdvqifpG4WrnQ>
-Feedback-ID: ifa6e4810:Fastmail
-Received: by mailuser.phl.internal (Postfix, from userid 501)
-	id 7D640780075; Fri, 18 Sep 2026 11:15:54 -0400 (EDT)
-X-Mailer: MessagingEngine.com Webmail Interface
+	dkim=pass (2048-bit key) header.d=hammerspace.com header.i=@hammerspace.com header.b="aLVCpAYL"
+Received: by mail-oo2-f40.google.com with SMTP id 006d021491bc7-6bc475ffcf6so500009eaf.1
+        for <keyrings@vger.kernel.org>; Fri, 18 Sep 2026 10:21:41 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=hammerspace.com; s=google; t=1789752099; x=1790356899; darn=vger.kernel.org;
+        h=content-type:mime-version:references:in-reply-to:message-id:date
+         :subject:cc:to:from:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=BBKlhw0dOEOei2lTcRYxlQw5MM/EKQhWFk5pNENBOIA=;
+        b=aLVCpAYLsiWMtfVrSXcyzAKiRQIZD8WXF3wSqmprCpJtpl70Entfq7wa2yHy4+K6Uy
+         tGrOa4LLvUp5X9YtZz8bhWCm6RF+LxSfIr6/+9FCWttMd10LbpJhMtuxIg1VvLmeRfcX
+         WIz3tXF49p0uraQhpq5jfZhBhrOyAS13e7LmEmzTmq7OVDf79k90oQADr3CvVCWKUJQr
+         pobHkxMoXRqWoGl3yEF7Huk+wTawViIXeRoFHryYGQdLpQgyQcraGu+oRg1wHVo30aB5
+         vqy35MNNRxnLbRhTP+uZTRjmFly1sUTn1JbcyDYkqTH9E0wSRcJU3kTUcvRk9QqrKQqD
+         iiOg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1789752099; x=1790356899;
+        h=content-type:mime-version:references:in-reply-to:message-id:date
+         :subject:cc:to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject
+         :date:message-id:reply-to:content-type;
+        bh=BBKlhw0dOEOei2lTcRYxlQw5MM/EKQhWFk5pNENBOIA=;
+        b=PVTDOGXZ6/vLVavGrhslssczEiVHXbm0h3kiMYHRnQY9tQRB9ykOyAl3LeOdvboZJ9
+         klzHzjYALiKYVtZASXr+ZEDUKBN5cHCn+FOuZ8spqzdgQLKsvfiy8O3Kf0sd/FvpFR+q
+         ULMQ9l6TF23SHywrTRFXqxf+AJ7gNLZQt18JbKEswNThf/6OwifqPCtPvZfS1hDPvgF/
+         orNvpA3frEqQuOCSGhBXETRkzOL5GnJPt/rIhm+m5J+KLFKKzFFfnu2VsvbB20VQk8Cq
+         mnH9gYD0dxF3copQ12N3sgs5ncJv/jyBNaOl/zR34i1h3AlI84V0HqfYdBEBaLDJXdhz
+         Nl9g==
+X-Forwarded-Encrypted: i=1; AKwUvBx43u9Nt19HbaPjPT1Eu4V0ag/D0FzdOWF6c+ChNtrTCNFCJJs5/xnZdoy8ZBslYIucl7vryP+uMw==@vger.kernel.org
+X-Gm-Message-State: AFuF++lZfoHcqzeHgCDXTBYz6xBy53xZcS60uy7uAB0u2/ryp0nYWcWi
+	GJ3yhTeLhlL1HZo1VoZrEgPBVN5EeZEz8694KSEiKYCTNG6z+5z8pQMEURzkwGGIN7Y=
+X-Gm-Gg: AYBFou1aiJzZyPf68yk7uIuLmF6EMiyWEkIf/pQE6O7TqMk2JO3kz330XCVTfjR5dNc
+	f6eHErjQfboZh0WbxVxrW3CPaRUlSnSFI/H6ZmdfGLslMMiWyshyfjVxv8UQeZMQZJ29yqCf0x2
+	wSC6Pa+JYX/rqks4oX8saCgd9MuddSa+nx0aFu2naV/cOcPjaPuAL69STZrMeyftf4v5SXMk7LL
+	7cxgBjHCp0dixU0+3y+qhqygH7VahPSikaiIeJMvCIIwAPW76hzbT6HeOBYEjQdZsAnpYnSkiWh
+	KKbl8NNmecNZg4r9iV9fMoNlAxE2/Bl5xWfcp5eZvUCrhB6qAC7zMSwgqmmAPsuiHuvuIW8rob/
+	EmxB7I5hss425CeTxBtbauiJCEw+VZpfGPn4ikIKtmAXZD2116ET/JZVVQutpuTCy28WawEgy3m
+	KE7B6bIsvtMAELW4u5A8dYywdK+7/mv8CNOSAu11RKLWcXHqYkpWls8T63ekJBdYpgj+YBFCPAV
+	yNnjXS1nTte3bwsAPg=
+X-Received: by 2002:a05:6820:a284:20b0:6cd:3fdb:fa6a with SMTP id 006d021491bc7-6cd3fdbfe8dmr158239eaf.85.1789752099254;
+        Fri, 18 Sep 2026 10:21:39 -0700 (PDT)
+Received: from [192.168.254.51] ([66.97.168.37])
+        by smtp.gmail.com with ESMTPSA id 586e51a60fabf-48739852afasm1477855fac.7.2026.09.18.10.21.35
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Fri, 18 Sep 2026 10:21:37 -0700 (PDT)
+From: Benjamin Coddington <ben.coddington@hammerspace.com>
+X-Google-Original-From: Benjamin Coddington <bcodding@hammerspace.com>
+To: Chuck Lever <cel@kernel.org>
+Cc: Trond Myklebust <trondmy@kernel.org>, Anna Schumaker <anna@kernel.org>,
+ "David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
+ Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>,
+ Simon Horman <horms@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+ Shuah Khan <skhan@linuxfoundation.org>, Randy Dunlap <rdunlap@infradead.org>,
+ Christian Brauner <brauner@kernel.org>, David Howells <dhowells@redhat.com>,
+ Sagi Grimberg <sagi@grimberg.me>, linux-nfs@vger.kernel.org,
+ keyrings@vger.kernel.org, kernel-tls-handshake@lists.linux.dev,
+ netdev@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH RFC 0/5] NFS: isolate mTLS client credentials by network
+ namespace
+Date: Fri, 18 Sep 2026 13:21:34 -0400
+X-Mailer: MailMate (2.0r6272)
+Message-ID: <2FBF57B6-FBB6-498F-A1F4-695D52EB89E9@hammerspace.com>
+In-Reply-To: <20260918-nfs-mtls-identity-v1-0-197e568d78a7@kernel.org>
+References: <20260918-nfs-mtls-identity-v1-0-197e568d78a7@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-ThreadId: Ak1fuKNIJ_kR
-Date: Fri, 18 Sep 2026 11:15:27 -0400
-From: "Chuck Lever" <cel@kernel.org>
-To: "Hannes Reinecke" <hare@suse.de>, "Trond Myklebust" <trondmy@kernel.org>,
- "Anna Schumaker" <anna@kernel.org>, "David S. Miller" <davem@davemloft.net>,
- "Eric Dumazet" <edumazet@google.com>, "Jakub Kicinski" <kuba@kernel.org>,
- "Paolo Abeni" <pabeni@redhat.com>, "Simon Horman" <horms@kernel.org>,
- "Jonathan Corbet" <corbet@lwn.net>, "Shuah Khan" <skhan@linuxfoundation.org>,
- "Randy Dunlap" <rdunlap@infradead.org>,
- "Christian Brauner" <brauner@kernel.org>,
- "David Howells" <dhowells@redhat.com>, "Sagi Grimberg" <sagi@grimberg.me>
-Cc: linux-nfs@vger.kernel.org, keyrings@vger.kernel.org,
- kernel-tls-handshake@lists.linux.dev, netdev@vger.kernel.org,
- linux-doc@vger.kernel.org
-Message-Id: <81bade19-10d6-4fc7-9a57-eef85afe76cf@app.fastmail.com>
-In-Reply-To: <bbc4ff6f-aa38-4862-96fe-518c3b4df4d6@suse.de>
-References: <20260918-nfs-mtls-identity-v1-0-197e568d78a7@kernel.org>
- <20260918-nfs-mtls-identity-v1-2-197e568d78a7@kernel.org>
- <bbc4ff6f-aa38-4862-96fe-518c3b4df4d6@suse.de>
-Subject: Re: [PATCH RFC 2/5] NFS: allocate the .nfs keyring per network namespace
 Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
 
+On 18 Sep 2026, at 10:05, Chuck Lever wrote:
 
+> An xprtsec=mtls mount names its client certificate and private key
+> by keyring serial, and tlshd reads those keys with its own
+> credentials. Each key therefore has to grant user read permission,
+> and any tlshd on the host that learns a serial can read it. Nothing
+> separates one network namespace's credentials from another's.
+>
+> This series makes the network namespace the isolation domain. The
+> RFC thread asked whether the user or mount namespace is the better
+> binding. tlshd services the handshake socket of one network
+> namespace, so that is the namespace it already lives in.
+>
+>   https://lore.kernel.org/linux-nfs/20260602154740.49861-1-cel@kernel.org/
+>
+> The keyring is held in struct nfs_net rather than found by name,
+> because /proc/keys is not namespace scoped. Its serial travels with
+> each handshake instead (patches 3-4), and tlshd's possession of that
+> keyring is what lets a provisioned key grant no user read permission
+> at all. Both ends of the link exist today, in tls_handshake_accept()
+> and in tlshd. The handshake genetlink ABI and the cert_serial= and
+> privkey_serial= mount options do not change.
+>
+> Still open is how userspace names the kernel-held keyring. Patch 5
+> prototypes a request_key type handled in the kernel and tagged
+> KEY_TYPE_NET_DOMAIN. A keyctl modeled on KEYCTL_GET_PERSISTENT, or a
+> read-only attribute on the netns-tagged nfs_client sysfs kobject,
+> would do the same job if the keyrings maintainers prefer one. Keys
+> that userspace adds are quota-charged by user namespace while the
+> keyring lives in nfs_net. Confirmation that this is sane when the
+> two boundaries differ would be welcome.
+>
+> nfstlskey, the provisioning tool that consumes the key type, is
+> merged in https://github.com/oracle/ktls-utils/ .
+>
+> Tested on one Fedora VM acting as both NFS client and NFSD, with
+> tlshd from ktls-utils 1.4.0: NFSv4.2 mounts with xprtsec=tls, with
+> xprtsec=mtls using the identity in tlshd.conf, and with xprtsec=mtls
+> using serials that nfstlskey provisioned.
 
-On Fri, Sep 18, 2026, at 10:44 AM, Hannes Reinecke wrote:
-> On 9/18/26 4:05 PM, Chuck Lever wrote:
->> Commit 87268f7a4f1f ("nfs: create a kernel keyring") allocates one
->> .nfs keyring at module load, and nothing in the NFS client reads it.
->> One module-wide keyring also cannot isolate x.509 credentials
->> between network namespaces. Each tlshd instance services the
->> handshake socket of one network namespace, so a credential
->> provisioned for that namespace's mounts has to be reachable by that
->> tlshd and by no other.
->> 
->> Allocate one .nfs keyring per network namespace in nfs_net_init()
->> and release it in nfs_net_exit(). tlshd finds a keyring by name
->> through /proc/keys, which is not namespace scoped, so each handshake
->> request has to carry the keyring serial instead. Allocate the
->> keyring under a kernel credential rather than that of the task
->> creating the namespace, so an LSM labels every namespace's keyring
->> the same way.
+I think this is the old upcall/namespace problem that's never been generally
+solved (as far as I know).  Here's a shameless plug to potentially revive
+the original "key agent" concept which solves this in a general way.
 
-> Curiously enough, I had been pondering a similar issue.
-> Thing is, when running within a container (eg a docker one) access
-> access to /proc/keys might be restricted, and from what I've
-> gathered each container gets its own, _empty_ keyring.
-> (certainly an empty session keyring ...).
-> So I wonder what'll happen with the predefined keyrings (like the
-> .nvme keyring); one possibility is surely to make them network
-> namespace aware.
-> But the alternative approach I'm exploring is to allow each container
-> to create its own (.nvme) keyring; that would have the advantage of
-> being more flexible and we wouldn't need to rely on 'magic' names.
+The idea is - user space processes (tlshd) register themselves as key-agents
+that can satisfy request-key.  A key agent represents itself as a key-type,
+and the appropriate key agent is consulted for request-key if the calling
+process has that agent's key in its keyrings.
 
-IMO we need to hear from the folks who have deep keyring expertise
-to understand what is most flexible and most idiomatic. I'm certainly
-not expert enough to make those calls.
+Otherwise, this solution looks good - but without a general solution to this
+problem, other folks building on keyrings will keep trying to solve this
+problem.
 
-It would be great if tlshd's NVMe and NFS/NFSD keyring support
-behaved consistently with each other, but perhaps that's just my
-compulsion for symmetry talking.
+Ben
 
-I'm willing to take a look at patches, if you have any.
-
-
--- 
-Chuck Lever (Come to NFS bake-a-thon! https://nfsv4bat.org)
