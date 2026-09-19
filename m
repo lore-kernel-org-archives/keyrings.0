@@ -1,118 +1,143 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pj2-f18.google.com (mail-pj2-f18.google.com [74.125.227.146])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9388B282F0C;
-	Sat, 19 Sep 2026 16:23:23 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id ABA61332EBC
+	for <keyrings@vger.kernel.org>; Sat, 19 Sep 2026 20:35:14 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.227.146
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789835004; cv=none; b=CqjbCG7/tvBmPE/HgyN3MqmtAFSYjxsJtmwf0Udw3vyOVGKxrQbVnLdvLtYxika225imWl9ZGTcNbwyJp5sr7hzlYXCIMi9GXbjME9SeWnzvvUB3a7N/meo+Sn/UnMbd74KFpFG0qD3lIxOrJh3HVKKxYFSq9k8Jeoc4pDeJkso=
+	t=1789850116; cv=none; b=oQxDKzBS5xAPpO+Ny1G6wyVKkBQ3wrd3Bzhjk2euEu0WXEoD+0S4xMLOjcKHlyr2jVUyMxx3/NGJgLFwCWTiR9G7FJGu0qiPS5KNhnhcOx1wWtF46UGVibKv7EqNDk6yiUBFdhbJ10z5KYLcfqfj/sb9TVXRsOEtUxaT5K6er8s=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789835004; c=relaxed/simple;
-	bh=rCfku23NV4rHOcA4C6xP0o0XxycvahRnuUmJxepMU10=;
-	h=MIME-Version:Date:From:To:Cc:Message-Id:In-Reply-To:References:
-	 Subject:Content-Type; b=Qu9zpX2vz4nXigJ+EUb+/qLjs0qv3RkB5YY1GZqZYO/Zog+0bGZU76BVnD8Cjzd5MRevT9AfLwNKqB0Y72gu9Zq1NZ2auu2HruW1m332DEjWLeFZ2a4af7Z1JauJLlJIDLpHe9ad1X/br6kMZbGN2IhDVxTE6HmaZuzHrAefpAI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=DP6wtNOV; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1789850116; c=relaxed/simple;
+	bh=6Dt0U3Nv3UU/hUnJU6VCs7akUfdBnup8mEUblwSfJH0=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=X53FMPULDlX5/Sw2gAXAf77482hT5uHNR+5T138sZ+Sn88z9L7BI6NDOXeIpRy0F7xhyk0mxXXJUf7h/NyjjW9GIWJJV9zNXMzl1d05belXQiWR4YU7DH+pV7s9WCiH1b5KBel10Shmg8otba5rym3exUa6yLJNHT9zSD63/yxE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=gjdEI/D7; arc=none smtp.client-ip=74.125.227.146
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="DP6wtNOV"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 08D511F00893;
-	Sat, 19 Sep 2026 16:23:22 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1789835003;
-	bh=C4lRm3RTYNV9mhdEEDcZuzTAV6oSYrE2Pr2mgjuhYUs=;
-	h=Date:From:To:Cc:In-Reply-To:References:Subject;
-	b=DP6wtNOViiARae2q4SCrhAyAjFH8KgPwEw8WLAjQbJOmdm/ox8AuLydIJPBO14wzF
-	 HFAChnG/jXzQrTMR5ZK6knAFEquuyvHrYDZAwcFqYUvi1EjMCI+X5rzt6VY5ZL/iHG
-	 0z1aQ23qMJldHrWn9H92GNf/ye+WhPPjhGW20uydqgrUskzcrrmCuDSoVhP46a2LZh
-	 HHBa8M1cx6qDFj4tXSRS6F9xeEjIhmvnHd8Y27NoBO76AWVxuIK516mD/JsaprktZ3
-	 MW3uhHSmeYwS9+x6syOn5B9fjrZRnMchpUbr/cu7/vdqI/FfxOlPWDC10YfPkZPNJ1
-	 pADuEyXzxvOww==
-Received: from phl-compute-10.internal (phl-compute-10.internal [10.202.2.50])
-	by mailfauth.phl.internal (Postfix) with ESMTP id 3CD09F40066;
-	Sat, 19 Sep 2026 12:23:22 -0400 (EDT)
-Received: from phl-imap-15 ([10.202.2.104])
-  by phl-compute-10.internal (MEProxy); Sat, 19 Sep 2026 12:23:22 -0400
-X-ME-Sender: <xms:-rauao4lVNwNJfYCW_uP-vocWLYXA57nbVKefMKFSueq83qGmQNR0g>
-    <xme:-rauaktlCAjPoyAVKnoGlmCs-uiF8aJELr9aOxjX_GfQZ0u0oAvLRmMqOMEtIsfjr
-    I6OklI6iYn2IlD3A2gCrUwiQ2TN2N5EtY9AsFQS7-M5cvesT_tPGIK1>
-X-ME-Proxy-Cause: dmFkZTEthDnEnTNzGgkWQatgFds47X3LBSfUEYm0c0ZV4go8jNCGUPTrclDhUI/156RFd1
-    /El8fx5I9rXFPLoY0rOdO+CyvUB20WNDyuUvNd2rs4whvxrwYkFwqFWAmZgOmYRfacooGf
-    Hsno+CrK28XrP4pQiCXO6I6fHLBpX/OBZF+5vqlcEnKmpro4D07Z2TnxgKtKoOSx/EeJDk
-    Glh7d3bJXB4TtCB4mrfUOOjA1WR4nLQRvqMBgn54Es+OSfZ189mocfqS/A9z+Kd5oWwiwW
-    86mNzGJRzE9jVo6E5PFLeFEEOUwbtSi/ySCoXWBN2XGCZ3xIfVvCq4ajWkUJmBxFEmQimT
-    yC+8CFFp++nh1Gpgkl715haFfzOTVJ/BzvU8Gx+DnRZCcTYqkgydL48eoVhKA/T5FilLjA
-    Dlt7oirURHzjF0M82ZLTxtGLHyauKFB/8HnR8JfpLOvtcGwV5uM34/lP0Sq+0vVf69FBq+
-    maWUY544pdxmFhCrzgofqT+an5vcltd5DUBUZMUVergbT/Ys4m587z0p2E4/sMF0MPt8Za
-    GU8LWqsNyXiXI/Ds6McbcCRBFCGuIEnCV9pp+L3pjJJPEXC7iiQJrtRFC+udc9dhm+nkQa
-    zbeHlIr8F7p0/KKumF2T33Ufu5AYehf5+PnQLasaD8Sbf+3/hPH8b3AkzhXA
-X-ME-Proxy: <xmx:-rauakSPik5hohjS6WVR9oHq5r_BBrZPo3dvSwBB-finccobpzOMRQ>
-    <xmx:-rauamrvN3Uo0LBKIxAWvTdijVNQPYe3GQ23koadj-FULtE5n7XeJg>
-    <xmx:-rauaqZ07v50s4_DfQGFKTF3emwXKCRee_eK2NpO97SdwAHO-gFQiw>
-    <xmx:-rauapQdYCHkzEQghnYFCbsUHPZJVlE3gM29Y4e4-3NHaZQmIXRwqQ>
-    <xmx:-rauagd3AzYaAnJtbeI88yDbi6C35PSvLiLIFpVbc0bNx1vNO-i5QQpW>
-Feedback-ID: ifa6e4810:Fastmail
-Received: by mailuser.phl.internal (Postfix, from userid 501)
-	id 1A66E780070; Sat, 19 Sep 2026 12:23:22 -0400 (EDT)
-X-Mailer: MessagingEngine.com Webmail Interface
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="gjdEI/D7"
+Received: by mail-pj2-f18.google.com with SMTP id d9443c01a7336-2db22383fe8so11650375ad.2
+        for <keyrings@vger.kernel.org>; Sat, 19 Sep 2026 13:35:14 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1789850114; x=1790454914; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=sp+3MfHIef17t9guG27n3yYy5IMEoS4o2YkTC2fwCC8=;
+        b=gjdEI/D7ejwEfIP57Q2RqSvTjh9zUVxZ/v1WQQLDawyy2eDEcq/afrD+zsuWZRckr/
+         NrlwFlmk7sIcODlDIEP5HuBtQvCZaRvfhfgcx7USBmNLcKbe9e3nyX2K5mkHM/bqtosR
+         X4Fc4o44crgF9N8MAqkM1gfjhL26vkjdfi6XYA+LO3ebAbNyZD33BCbLfRLHiFjdU3EP
+         MTZyeb2BI0ad3uu6uN24DqgvzMafadSqqJXvOyL1PpuKl8/aOH00TEa6OW84XiySufpE
+         vdvc1+Jnae6Cldt2YQiJz4/jUGc+ojaiy1UoKH3oJ67hSCpERD8TElBqho3/gIyVrQCR
+         cr6w==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1789850114; x=1790454914;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=sp+3MfHIef17t9guG27n3yYy5IMEoS4o2YkTC2fwCC8=;
+        b=SLn7+vYElsXCBu3SthzEkusuZeciRH66dJkFYFs8ZU8OTCMAaHhEojgEH0rnKEp2+q
+         W5EV7gWW5I3oFX+G4vTfujnyz0jQo3w5PIn+Z5gKOtn0PrLIjyUTHVEJ8ZzUP3yqoNdq
+         okS8M3NRS7E0ASElHLK+6M8WHnw+s8pMKfMCCRlOS6Ef36s9DQ+2lkMzKRXaMKgG5QGg
+         /dSDzSuCh5AiyK/bLZcQfOc62AfqoOuVuxD1FY0ca77TcND7O5tZal89mLTbKd9RGKYN
+         47s5IAbSxJpRN9g63F/nZI2rIzA+am6cLibU8xo8Ff+xROJy6Dgmie/jQ1/3R+i7+JPA
+         RP+g==
+X-Forwarded-Encrypted: i=1; AKwUvBxvRBz3hVUW/G8GSy+BnOypUnCITEMPnmhfM5Uhw2agvFBhZlm++Yc2XcPe2g7/NfKnIwubSEgqpQ==@vger.kernel.org
+X-Gm-Message-State: AFuF++lR2zalZtdoyW5tvvKVk75N23LqT5oMepS/wgWh4jOl1mX+qHaS
+	4TkSXd+0APno9ujjr0+Cgy7R86Smr+0nPzz46C984pFulNwk42KAZZEF
+X-Gm-Gg: AYBFou29S+63tlmLPT+6hqTk2gHgJGodo90Eyr8gQKOWcB8mVvzElxrSNu0buTOcE7I
+	3Vlw861NJ2MwcjPNek8bRItJ8MBXSkw2yb8yzbE6xP0cfvLl0Wx5PQN0Mh1GSBC42W6Si/gXkcn
+	X2HouMA4RCQUjwdp+ZFL1lJpj4kRkbNPwPLfv+sP79FOPVkkN8KJUQyX9BVqc/JzlgJxPMcxjGZ
+	67svPxzp6c7x3M2FmQXNS+zrVNLk3gATkg4y16lznC/q4tC5e4ebzQkoMFTYL1J2vdz5QlM2KTG
+	pLEhU/c0okeaEBfaQ5qVvZ6wyOcesThJTEIu3hu9F22NqJ9j+hQaym6rl2/GWDgmS1SxHoAPPFb
+	/eWDJRICcR7v9royUgPvGW0AlslSw8W9+I74gmMcfi72pmmejMJExffhW1mqxIx9ExCg62iYCwV
+	+4Td6zszldjK0bG82VhURZuOonnTKgB1S/jg5MtYi4gB8Vlv5uu8cawtR8/8zIH2jY3675nd0Hh
+	JpMDnaoGxr1VcXHdEFyCBRSOPPDV/VrT+RV02QC120A6hQHHj21wGyteC5BhFfpCrF33wEu0LCK
+	rav0KPqrtw==
+X-Received: by 2002:a17:902:f608:b0:2dd:c0ff:e724 with SMTP id d9443c01a7336-2ddc0ffe92dmr39228325ad.54.1789850113925;
+        Sat, 19 Sep 2026 13:35:13 -0700 (PDT)
+Received: from phui-2.c.googlers.com.com (67.51.127.34.bc.googleusercontent.com. [34.127.51.67])
+        by smtp.gmail.com with ESMTPSA id d9443c01a7336-2ddc17ff4d7sm12700145ad.74.2026.09.19.13.35.13
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 19 Sep 2026 13:35:13 -0700 (PDT)
+From: Hui Peng <benquike@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Paul Moore <paul@paul-moore.com>,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Subject: [PATCH] KEYS: reject descriptions exceeding U16_MAX in __key_create_or_update()
+Date: Sat, 19 Sep 2026 20:35:11 +0000
+Message-ID: <20260919203511.2580732-1-benquike@gmail.com>
+X-Mailer: git-send-email 2.55.0.1082.g2b9226bbc0-goog
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-ThreadId: Ak1fuKNIJ_kR
-Date: Sat, 19 Sep 2026 12:22:53 -0400
-From: "Chuck Lever" <cel@kernel.org>
-To: "Hannes Reinecke" <hare@suse.de>
-Cc: "Trond Myklebust" <trondmy@kernel.org>,
- "Anna Schumaker" <anna@kernel.org>, "David S. Miller" <davem@davemloft.net>,
- "Eric Dumazet" <edumazet@google.com>, "Jakub Kicinski" <kuba@kernel.org>,
- "Paolo Abeni" <pabeni@redhat.com>, "Simon Horman" <horms@kernel.org>,
- "Jonathan Corbet" <corbet@lwn.net>, "Shuah Khan" <skhan@linuxfoundation.org>,
- "Randy Dunlap" <rdunlap@infradead.org>,
- "Christian Brauner" <brauner@kernel.org>,
- "David Howells" <dhowells@redhat.com>, "Sagi Grimberg" <sagi@grimberg.me>,
- linux-nfs@vger.kernel.org, keyrings@vger.kernel.org,
- kernel-tls-handshake@lists.linux.dev, netdev@vger.kernel.org,
- linux-doc@vger.kernel.org
-Message-Id: <ebaeb3c9-839c-4ad7-8573-baa68e8c64d0@slotpi15m67>
-In-Reply-To: <bbc4ff6f-aa38-4862-96fe-518c3b4df4d6@suse.de>
-References: <20260918-nfs-mtls-identity-v1-0-197e568d78a7@kernel.org>
- <20260918-nfs-mtls-identity-v1-2-197e568d78a7@kernel.org>
- <bbc4ff6f-aa38-4862-96fe-518c3b4df4d6@suse.de>
-Subject: Re: [PATCH RFC 2/5] NFS: allocate the .nfs keyring per network namespace
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 
-On 9/18/26 10:44 AM, Hannes Reinecke wrote:
-> Thing is, when running within a container (eg a docker one) access
-> access to /proc/keys might be restricted, and from what I've
-> gathered each container gets its own, _empty_ keyring.
-> (certainly an empty session keyring ...).
+struct keyring_index_key stores the key description length in a 16-bit
+field (u16 desc_len), and __key_link_begin() enforces
+BUG_ON(index_key->desc_len == 0).
 
-IMO, neither one affects patch 5. The key type has its own request_key
-handler, so construct_key() calls it in the requesting task's context.
-There's no upcall, no /proc/keys. It reports the .nfs keyring of
-current->nsproxy->net_ns, and KEY_TYPE_NET_DOMAIN keeps a key
-instantiated in one netns from answering another. An empty session
-keyring is a fine destination, and with no session keyring at all
-look_up_user_keyrings() creates a per-user-namespace one on demand.
+While add_key() bounds explicit userspace description strings to
+KEY_MAX_DESC_SIZE (4096), when the userspace description is NULL or
+empty __key_create_or_update() delegates description generation to
+index_key.type->preparse(&prep) on the payload (up to 1 MiB). Key types
+such as "asymmetric" (x509_key_preparse()) construct prep.description
+from the certificate issuer, subject, and hex-encoded serial number,
+which can exceed 65535 bytes.
 
-What does break is add_key() into the .nfs keyring from a container
-with its own user namespace. Patch 2 allocates it owned by global
-root with no OTH permissions, so a root mapped to a non-zero kuid
-gets EACCES. A netns-only container (Docker's default) works end to
-end. NFS is not FS_USERNS_MOUNT either, so whoever mounts on behalf
-of a user-ns container can provision the keyring too. If a
-netns-owned keyring is wanted anyway, patch 2 can allocate it with
-net->user_ns->owner instead of GLOBAL_ROOT_UID. I'd like the
-keyrings folks to weigh in on that, please.
+__key_create_or_update() then assigns:
 
-Regarding the idea of letting each container create its own keyring,
-the kernel still has to learn which keyring to link into tlshd for a
-handshake, and the serial number in the handshake request already
-carries that. The per-namespace allocation decides only who creates
-the keyring and who owns it, not how it is named on the wire.
+        index_key.desc_len = strlen(index_key.description);
 
+without checking whether the length fits in u16. When
+strlen(index_key.description) is 65536 (0x10000), index_key.desc_len
+truncates to 0 and immediately triggers BUG_ON(index_key->desc_len == 0)
+in __key_link_begin(). Lengths above 65536 truncate modulo 65536,
+corrupting keyring hash and comparison lengths.
 
+Reject empty descriptions or descriptions longer than U16_MAX with
+-EINVAL in __key_create_or_update() and key_alloc().
+
+Fixes: 16feef434017 ("KEYS: Consolidate the concept of an 'index key' for key access")
+Assisted-by: LLM
+Signed-off-by: Hui Peng <benquike@gmail.com>
+---
+diff --git a/security/keys/key.c b/security/keys/key.c
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -245,6 +245,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	}
+ 
+ 	desclen = strlen(desc);
++	if (desclen > U16_MAX)
++		goto error;
+ 	quotalen = desclen + 1 + type->def_datalen;
+ 
+ 	/* get hold of the key tracking for this user */
+@@ -820,6 +822,7 @@ static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
+ 	const struct cred *cred = current_cred();
+ 	struct key *keyring, *key = NULL;
+ 	key_ref_t key_ref;
++	size_t desc_len;
+ 	int ret;
+ 	struct key_restriction *restrict_link = NULL;
+ 
+@@ -865,7 +868,11 @@ static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
+ 		if (!index_key.description)
+ 			goto error_free_prep;
+ 	}
+-	index_key.desc_len = strlen(index_key.description);
++	desc_len = strlen(index_key.description);
++	key_ref = ERR_PTR(-EINVAL);
++	if (!desc_len || desc_len > U16_MAX)
++		goto error_free_prep;
++	index_key.desc_len = desc_len;
+ 	key_set_index_key(&index_key);
+ 
+ 	ret = __key_link_lock(keyring, &index_key);
 -- 
-Chuck Lever (Come to NFS bake-a-thon! https://nfsv4bat.org)
+2.43.0
