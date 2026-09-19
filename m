@@ -1,57 +1,57 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BA12D377ECC;
-	Sat, 19 Sep 2026 15:59:33 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9388B282F0C;
+	Sat, 19 Sep 2026 16:23:23 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789833575; cv=none; b=Gbs8Xxwm6ARjOOFNCNXSBaO1YmhYgzY39VeGLWZMAh7FCgWPbLwKTY20BE2MS8F7IrzqEX+RQJFW8z9nBZnyWqfUWDlLGpdjZ9KR3bitZNjA6nWCKt0RrxZE31YZsQJUSGLLyNFe3g6vbJUztikinNhLHk1VmPDmijIjOYMDQDo=
+	t=1789835004; cv=none; b=CqjbCG7/tvBmPE/HgyN3MqmtAFSYjxsJtmwf0Udw3vyOVGKxrQbVnLdvLtYxika225imWl9ZGTcNbwyJp5sr7hzlYXCIMi9GXbjME9SeWnzvvUB3a7N/meo+Sn/UnMbd74KFpFG0qD3lIxOrJh3HVKKxYFSq9k8Jeoc4pDeJkso=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789833575; c=relaxed/simple;
-	bh=KuZxTGYmYI+18lYLipMVDIRS5uCzvWfO7Vz+l7dBcNw=;
+	s=arc-20240116; t=1789835004; c=relaxed/simple;
+	bh=rCfku23NV4rHOcA4C6xP0o0XxycvahRnuUmJxepMU10=;
 	h=MIME-Version:Date:From:To:Cc:Message-Id:In-Reply-To:References:
-	 Subject:Content-Type; b=e/Xa7Y7SKNvunM269jVkiMt7zY3hbFCBMyiMNTbLm9TPEfwMOOs3eXdbhBLnjVCJ0hJdm+/81HLpPokFmzi4YZ2REAo4Jsg8V4dZYvKUmAd+mieGbxBg2qKw8ySeyzO+JJIynjeD0VNPjKLMYcoTpvzOF0DmrIimZyxZl3rI/c0=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=aAjXuHgc; arc=none smtp.client-ip=100.103.45.18
+	 Subject:Content-Type; b=Qu9zpX2vz4nXigJ+EUb+/qLjs0qv3RkB5YY1GZqZYO/Zog+0bGZU76BVnD8Cjzd5MRevT9AfLwNKqB0Y72gu9Zq1NZ2auu2HruW1m332DEjWLeFZ2a4af7Z1JauJLlJIDLpHe9ad1X/br6kMZbGN2IhDVxTE6HmaZuzHrAefpAI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=DP6wtNOV; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="aAjXuHgc"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C6D861F00893;
-	Sat, 19 Sep 2026 15:59:32 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="DP6wtNOV"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 08D511F00893;
+	Sat, 19 Sep 2026 16:23:22 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1789833573;
-	bh=q9tGf2FHjvgt3EYsyTdi+IQiT0IDvvD38OcRKEVlpoA=;
+	s=k20260515; t=1789835003;
+	bh=C4lRm3RTYNV9mhdEEDcZuzTAV6oSYrE2Pr2mgjuhYUs=;
 	h=Date:From:To:Cc:In-Reply-To:References:Subject;
-	b=aAjXuHgcm5sppM0erniPLOOn7gm43yQzo7P62FKAx3TDITEaFopNgCC4QWS0kZJft
-	 qNo8iSImnQMJ7NCiguVzszrCo/IWI/9cHIuuVseKKH11l+B/6F83X0lhNJggEPkT6C
-	 DtHYX73KokrpS+joSM77K9MoO7U+A/ACuRYdJ/tJ+zlFVM2Z8leJiXF0mdi6yUL6/B
-	 nstLOXyEyVJt3STxb4nUCq9KDltD0Qt2mcSs3upP5//5CZvKV6FGxKLa2whrMDxWDK
-	 ZuxBxbtKcHdJZJmV6QJO+rBfeXzK/vLUAE2u9q/R8arNL5rIRKvu1lveFmCb7w0EgV
-	 4/9SRQFMg0aGw==
+	b=DP6wtNOViiARae2q4SCrhAyAjFH8KgPwEw8WLAjQbJOmdm/ox8AuLydIJPBO14wzF
+	 HFAChnG/jXzQrTMR5ZK6knAFEquuyvHrYDZAwcFqYUvi1EjMCI+X5rzt6VY5ZL/iHG
+	 0z1aQ23qMJldHrWn9H92GNf/ye+WhPPjhGW20uydqgrUskzcrrmCuDSoVhP46a2LZh
+	 HHBa8M1cx6qDFj4tXSRS6F9xeEjIhmvnHd8Y27NoBO76AWVxuIK516mD/JsaprktZ3
+	 MW3uhHSmeYwS9+x6syOn5B9fjrZRnMchpUbr/cu7/vdqI/FfxOlPWDC10YfPkZPNJ1
+	 pADuEyXzxvOww==
 Received: from phl-compute-10.internal (phl-compute-10.internal [10.202.2.50])
-	by mailfauth.phl.internal (Postfix) with ESMTP id DC7BCF40066;
-	Sat, 19 Sep 2026 11:59:31 -0400 (EDT)
+	by mailfauth.phl.internal (Postfix) with ESMTP id 3CD09F40066;
+	Sat, 19 Sep 2026 12:23:22 -0400 (EDT)
 Received: from phl-imap-15 ([10.202.2.104])
-  by phl-compute-10.internal (MEProxy); Sat, 19 Sep 2026 11:59:31 -0400
-X-ME-Sender: <xms:Y7GuasnpgOpticBZFGdWhC0dSIhSK0A_KuTB45BC8whK4OVed-iQ5A>
-    <xme:Y7Guamr0yFme39V5i8WWcGesJIlReCzc7ecA3weMg41SVR6TFCH-RT1jpIjkV5fP0
-    W_TCG5KVyNIZd9-b7F0DmQ1k8fZyCGgmGd59hpamNyWFRmZQMdoL-mO>
-X-ME-Proxy-Cause: dmFkZTEWaFWew1YtC5kOyRNe16JieifWt0qiUM04EPgn9QLCnIWp956Fs6XsXOuGDWbPys
-    HJNwl8prIHsgOTDrtWY2xhwbpwyDrMtoWEh4rZfGAKCvqod1NVrtqs07w1bAZZUoy9mIcq
-    +tR3/adKNO3hOkcgJm0prld2ULCet9BOiK1CIErqNrvNiYjmUJFpi5sXdqw+e0KQKchmhd
-    mDKjBccjZy0VW6BBXmrrzl6vtDMrNz/krSAaMY5fzdrBjVyqP1WEvestmRq948TI++qWlO
-    RfEZEV9X3re3MScR7+hwhZ/eTW7r3W2pyuC7ADQ3mtL1Ga4oz5FRnBHoDr56l7YUNeGLNZ
-    BJ+qcwgtdvkuofgL+A+tiFAQwcWDuuIVhXU0G3mtvB6xktzdBTUgZ72crIggLeqWeQNN6S
-    j5wcwcxipyNW+JH+tVzcOGz5Rxp4ygjc0uEBRZBeyLzdL0CECXqnzsywXQSV77SQWWsFJ2
-    yQlcIQxsPBUw0RLgMyTr3eHx6JBOSsmOcmv65IrPeg8ePFGmGbGBYsa1LJMH4I+rb0pou9
-    oyFXB+1vxyu2ILJ3hltVKAhJblh+RnUWJSn1bi9gCp+RLssrL4fCw1b9XINJDjd1Sf6yhl
-    OBx/ln6mMHPfStvU4B0FH4KIoA3z1wuTbdgFsDSJzkCjHC/uqHX71GD5EQrQ
-X-ME-Proxy: <xmx:Y7GuanMcKK9PM7C_QjjmZuOliOWTaROYlxLorpEHs6-r-V8OZkbNGg>
-    <xmx:Y7Guap4lnpUVY_Sg9uL2ZlF1C_TlJ-jf2WqiU0cnpbg5Mz4x2ekFqA>
-    <xmx:Y7GuatcBcJG8Pn4Ur1BHVnfkhmD6DJc21xICsMatAU3C_kxoB8iHUQ>
-    <xmx:Y7GuaiJQb8f2S3m7U8HfJxGBfSQH5jf5zCxGgtJF3F2wcUmOco0L_Q>
-    <xmx:Y7Guarn8qvknBOJXUQJHyzOzb_QIlzX0c_gvsiB-tUg_zDpHXWkhJGCb>
+  by phl-compute-10.internal (MEProxy); Sat, 19 Sep 2026 12:23:22 -0400
+X-ME-Sender: <xms:-rauao4lVNwNJfYCW_uP-vocWLYXA57nbVKefMKFSueq83qGmQNR0g>
+    <xme:-rauaktlCAjPoyAVKnoGlmCs-uiF8aJELr9aOxjX_GfQZ0u0oAvLRmMqOMEtIsfjr
+    I6OklI6iYn2IlD3A2gCrUwiQ2TN2N5EtY9AsFQS7-M5cvesT_tPGIK1>
+X-ME-Proxy-Cause: dmFkZTEthDnEnTNzGgkWQatgFds47X3LBSfUEYm0c0ZV4go8jNCGUPTrclDhUI/156RFd1
+    /El8fx5I9rXFPLoY0rOdO+CyvUB20WNDyuUvNd2rs4whvxrwYkFwqFWAmZgOmYRfacooGf
+    Hsno+CrK28XrP4pQiCXO6I6fHLBpX/OBZF+5vqlcEnKmpro4D07Z2TnxgKtKoOSx/EeJDk
+    Glh7d3bJXB4TtCB4mrfUOOjA1WR4nLQRvqMBgn54Es+OSfZ189mocfqS/A9z+Kd5oWwiwW
+    86mNzGJRzE9jVo6E5PFLeFEEOUwbtSi/ySCoXWBN2XGCZ3xIfVvCq4ajWkUJmBxFEmQimT
+    yC+8CFFp++nh1Gpgkl715haFfzOTVJ/BzvU8Gx+DnRZCcTYqkgydL48eoVhKA/T5FilLjA
+    Dlt7oirURHzjF0M82ZLTxtGLHyauKFB/8HnR8JfpLOvtcGwV5uM34/lP0Sq+0vVf69FBq+
+    maWUY544pdxmFhCrzgofqT+an5vcltd5DUBUZMUVergbT/Ys4m587z0p2E4/sMF0MPt8Za
+    GU8LWqsNyXiXI/Ds6McbcCRBFCGuIEnCV9pp+L3pjJJPEXC7iiQJrtRFC+udc9dhm+nkQa
+    zbeHlIr8F7p0/KKumF2T33Ufu5AYehf5+PnQLasaD8Sbf+3/hPH8b3AkzhXA
+X-ME-Proxy: <xmx:-rauakSPik5hohjS6WVR9oHq5r_BBrZPo3dvSwBB-finccobpzOMRQ>
+    <xmx:-rauamrvN3Uo0LBKIxAWvTdijVNQPYe3GQ23koadj-FULtE5n7XeJg>
+    <xmx:-rauaqZ07v50s4_DfQGFKTF3emwXKCRee_eK2NpO97SdwAHO-gFQiw>
+    <xmx:-rauapQdYCHkzEQghnYFCbsUHPZJVlE3gM29Y4e4-3NHaZQmIXRwqQ>
+    <xmx:-rauagd3AzYaAnJtbeI88yDbi6C35PSvLiLIFpVbc0bNx1vNO-i5QQpW>
 Feedback-ID: ifa6e4810:Fastmail
 Received: by mailuser.phl.internal (Postfix, from userid 501)
-	id AEA58780070; Sat, 19 Sep 2026 11:59:31 -0400 (EDT)
+	id 1A66E780070; Sat, 19 Sep 2026 12:23:22 -0400 (EDT)
 X-Mailer: MessagingEngine.com Webmail Interface
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
@@ -59,54 +59,60 @@ List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-X-ThreadId: AwBBIkqz6-kg
-Date: Sat, 19 Sep 2026 11:59:03 -0400
+X-ThreadId: Ak1fuKNIJ_kR
+Date: Sat, 19 Sep 2026 12:22:53 -0400
 From: "Chuck Lever" <cel@kernel.org>
-To: "Randy Dunlap" <rdunlap@infradead.org>
+To: "Hannes Reinecke" <hare@suse.de>
 Cc: "Trond Myklebust" <trondmy@kernel.org>,
  "Anna Schumaker" <anna@kernel.org>, "David S. Miller" <davem@davemloft.net>,
  "Eric Dumazet" <edumazet@google.com>, "Jakub Kicinski" <kuba@kernel.org>,
  "Paolo Abeni" <pabeni@redhat.com>, "Simon Horman" <horms@kernel.org>,
  "Jonathan Corbet" <corbet@lwn.net>, "Shuah Khan" <skhan@linuxfoundation.org>,
+ "Randy Dunlap" <rdunlap@infradead.org>,
  "Christian Brauner" <brauner@kernel.org>,
  "David Howells" <dhowells@redhat.com>, "Sagi Grimberg" <sagi@grimberg.me>,
  linux-nfs@vger.kernel.org, keyrings@vger.kernel.org,
  kernel-tls-handshake@lists.linux.dev, netdev@vger.kernel.org,
  linux-doc@vger.kernel.org
-Message-Id: <ebc7d73e-92be-4997-937c-7b9fd086154f@slotpi15m67>
-In-Reply-To: <8d635404-f85f-48fa-817a-88d3c1ecd344@infradead.org>
+Message-Id: <ebaeb3c9-839c-4ad7-8573-baa68e8c64d0@slotpi15m67>
+In-Reply-To: <bbc4ff6f-aa38-4862-96fe-518c3b4df4d6@suse.de>
 References: <20260918-nfs-mtls-identity-v1-0-197e568d78a7@kernel.org>
- <20260918-nfs-mtls-identity-v1-5-197e568d78a7@kernel.org>
- <8d635404-f85f-48fa-817a-88d3c1ecd344@infradead.org>
-Subject: Re: [PATCH RFC 5/5] NFS: add a key type that reveals the namespace .nfs
- keyring serial
+ <20260918-nfs-mtls-identity-v1-2-197e568d78a7@kernel.org>
+ <bbc4ff6f-aa38-4862-96fe-518c3b4df4d6@suse.de>
+Subject: Re: [PATCH RFC 2/5] NFS: allocate the .nfs keyring per network namespace
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 
-On 9/18/26 2:00 PM, Randy Dunlap wrote:
-> This might be a locale thing, but using serial as a noun here seems
-> awkward to me.  Is this like "serial number" with the "number" omitted?
->
-> Serial as a noun usually means a publication in a series (TV, comics, etc.).
->
-> Or is this some special security-related usage of the word serial?
+On 9/18/26 10:44 AM, Hannes Reinecke wrote:
+> Thing is, when running within a container (eg a docker one) access
+> access to /proc/keys might be restricted, and from what I've
+> gathered each container gets its own, _empty_ keyring.
+> (certainly an empty session keyring ...).
 
-It's "serial number" with the "number" omitted, borrowed from the
-keyring code. The struct member is key->serial, the type is
-key_serial_t, and the accessor is key_serial(). The bare form has
-crept into prose in a few places (Documentation/bpf/signing.rst,
-Documentation/ABI/stable/sysfs-nvme), but the canonical documents,
-Documentation/security/keys/core.rst and the keyrings(7) man page,
-consistently say "serial number", and keyctl(1) says "key ID".
+IMO, neither one affects patch 5. The key type has its own request_key
+handler, so construct_key() calls it in the requesting task's context.
+There's no upcall, no /proc/keys. It reports the .nfs keyring of
+current->nsproxy->net_ns, and KEY_TYPE_NET_DOMAIN keeps a key
+instantiated in one netns from answering another. An empty session
+keyring is a fine destination, and with no session keyring at all
+look_up_user_keyrings() creates a per-user-namespace one on demand.
 
-I agree that it's a little disorienting. I'll update the patch
-description and keyring.rst to use "serial number".
+What does break is add_key() into the .nfs keyring from a container
+with its own user namespace. Patch 2 allocates it owned by global
+root with no OTH permissions, so a root mapped to a non-zero kuid
+gets EACCES. A netns-only container (Docker's default) works end to
+end. NFS is not FS_USERNS_MOUNT either, so whoever mounts on behalf
+of a user-ns container can provision the keyring too. If a
+netns-owned keyring is wanted anyway, patch 2 can allocate it with
+net->user_ns->owner instead of GLOBAL_ROOT_UID. I'd like the
+keyrings folks to weigh in on that, please.
 
-The cert_serial= and privkey_serial= mount option names have to
-stay as they are, since those are an already established part of
-the kernel/user space API.
+Regarding the idea of letting each container create its own keyring,
+the kernel still has to learn which keyring to link into tlshd for a
+handshake, and the serial number in the handshake request already
+carries that. The per-namespace allocation decides only who creates
+the keyring and who owns it, not how it is named on the wire.
 
-Thanks for your review!
 
 -- 
 Chuck Lever (Come to NFS bake-a-thon! https://nfsv4bat.org)
