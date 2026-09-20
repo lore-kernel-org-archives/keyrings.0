@@ -1,180 +1,190 @@
-Received: from mail-pz2-f12.google.com (mail-pz2-f12.google.com [74.125.228.12])
+Received: from mail-pz2-f40.google.com (mail-pz2-f40.google.com [74.125.228.40])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 25E8D250BF2
-	for <keyrings@vger.kernel.org>; Sun, 20 Sep 2026 01:22:11 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=74.125.228.12
-ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789867333; cv=pass; b=XP+iqOg8+XVWfr1RUnfv0zEyJSLlF/tmsYXhG3awJHygnBklHiLz7JTHG7MTvL6eCFfui8J1Bs7dBXY4nPoO64eKjGHiPuOf89LCrTNlmw2y8QmjCxYnMDbCzYGx6hd63rhrGiOLRhtcf3YC7WLPm9c3g8q6QGqhLTZcISJ4qbM=
-ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789867333; c=relaxed/simple;
-	bh=2VEm69UeAdHkIwbBU0Ergf1rGXkHAkJuOFSQAiSO0p8=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=P8HkYgLZ0uUbywZ9r3qVk7lEdc7Ox9ZOok+vexY2J3k8PJGwlrTWSDQOYRJQzVCDBBAxgvUPbwZFvZ6vRbQHtcmW3+6t9L+aWHMIbC/pS+joZEiy5gWSWEk+HLBPVrtvZ06m/HQWuxkKHnAJwq0owU7vVfwG+CqXmrKIrGfTlnc=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com; spf=pass smtp.mailfrom=paul-moore.com; dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b=L6O+ve67; arc=pass smtp.client-ip=74.125.228.12
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=paul-moore.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5109D3CF022
+	for <keyrings@vger.kernel.org>; Sun, 20 Sep 2026 07:35:28 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.228.40
+ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1789889729; cv=none; b=BGQzu8qk1kc4jfYWdhPUKOEFDLzYn6ZFLiFO0N0UmoNvQMZTU+CL9KWseySEtkspuwcDw4bQldwL72omTxcBCfKPvdMQ06H+9Ok9+Ydgd5HLy8bPTp0Cb6A9FtZg/RYmW2KC93fZL5kKu3J8cFRk9uu+f3gJLO6mYbn9tQQG0Ic=
+ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1789889729; c=relaxed/simple;
+	bh=DPiosEXUTgQ4JjvfnOhAGoZPwcUGQWKSSE59G1rv3RQ=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=ep/I5UM8Ta4CRzaUkviqty1Kz6T7icy0W51DdW/i5Wv80tp6bYAo53uH5VhsHFDQJr5Zk8DfEAZbcRNaUOu+t+a/JfDgz7wOtwns+DWkDpt/TF2+AB3poXh8E1MS/IQwK+OxUYE+PaNa3oDYXt2IIxb90N40t+ZTsCHYeHWtFTE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=n9Vt9o+l; arc=none smtp.client-ip=74.125.228.40
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=paul-moore.com header.i=@paul-moore.com header.b="L6O+ve67"
-Received: by mail-pz2-f12.google.com with SMTP id 41be03b00d2f7-cc1cea50dc3so1283485a12.3
-        for <keyrings@vger.kernel.org>; Sat, 19 Sep 2026 18:22:11 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1789867330; cv=none;
-        d=google.com; s=arc-20260327;
-        b=CVEraAHKH2S+jCEIPKfdoCHGxikdgFNGHfvIlGen5nTKX0w4uVVuBsxikbT1NQio/u
-         +a662CkCi4vKe4Xb7wIV1G1Ql2MnWjuHLYqutLP+y2N5LWt2hodwmMbvrk7g5vcqAhsf
-         +US+Om5/X82nnYfTdPI4lQhIVAexPCOd0y5uqbzAQjjaxAN/gJA+rYzwU5UeUNR6icnb
-         30JywqhtEUQEG1cTf3jPx7Vw/2FzS9UK4XiaPkG78fTgizU/w1cgFEJAxr4li+bhEdfD
-         sBkKksMXz45zV2QgoE4w9lr2WQj1znsQAQUTy8NIpk0LSGB9Ah0FV5Em9U45yckd4YuD
-         zQfA==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:dkim-signature;
-        bh=zXdKuOcPQjh4tFULSVStg5yQtDl5Sivh8Z/3KuFYKs0=;
-        fh=3caLlGc6Zl/cOFmrlsXfT6AEUfrCPMedGWpNhqqWE/I=;
-        b=Pdvj/9nycXAaIvHHFbnoShL7z1fv+LU1WDkKf+DYftmXutQOXhQGHSRciS8B9qEDsP
-         R1XOyhwyMNFptXPkwh+U8q3/E34N7iBAfa5pR1ww4MoNrmVSWcX0X5YSu6jmPy/+uq5Z
-         HgwPrpap5KnFudncUNwOCiTZ6LhbDelNuIQue/Zv/xqctb27l5clg8H2W3ikNb5tufZ9
-         t0q+yUlHljZBaRfgSiZRStyCWZgzTYVssVsfZ0rHZfzNNOJRyih/uSxvpovFGAN7xfJm
-         k+1NugifGASFLVYQtdYHDq7LaXCa3g1OzHR09gNnvA7+6xOI4tXUbRB2Ew55QZ/ggpD/
-         f87w==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="n9Vt9o+l"
+Received: by mail-pz2-f40.google.com with SMTP id 41be03b00d2f7-cc5256c2a4bso1307427a12.1
+        for <keyrings@vger.kernel.org>; Sun, 20 Sep 2026 00:35:28 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google; t=1789867330; x=1790472130; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=zXdKuOcPQjh4tFULSVStg5yQtDl5Sivh8Z/3KuFYKs0=;
-        b=L6O+ve675fqEPtcUxqXtqgUQOpms6zlKaUIVzibB6dwlz8UfhHs18NE2LQUD0Itsbq
-         AmXaRpmqj59ev0o94mh3ukN0p/YT3QVdvoOrUJ1MdZT9J/lGPqVNQkvOsxD5rhN+A9eL
-         LSsfQ6qJGaQTDNhZ2QQWWEBDV889TT7n/YsnabMngyUxuZlKl/P1C3y/n3UyrpfAOlcN
-         MOBAOUOJScs7eRYBD8xg0ICP/+2B7tz/TIyD6q5N1RhFcabKg9Gkct3n4hjEokIhjm3X
-         69PzVQcrIsgtUubhk1bGHZETjXsz2Or2LbKOUnyrb7IK1ddnqQG3J9tdZG88507MKWLH
-         P/fw==
+        d=gmail.com; s=20251104; t=1789889727; x=1790494527; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=30XeFg5Fl5QM8uZfDju7oAPFMP/eO4GBITZ0vmaOsbA=;
+        b=n9Vt9o+lDWZxKsRBRt9ZYYT6+a3wHgPW2kWMxS61WBoTUIx3NtaVdvws762hZmWVIF
+         fLy3E+5fwBX7yaQtgc+RxHa60Cwec/aDfreuqZipZ9t8L6LgXMNiEtwoEFbL4NQyR9Iy
+         HtM7/4jzoQJQA1d5EnpD6HXAkOxj5Bdfn1745QyQitFZAgrcqRqLtEmVF64KkuqZcYAX
+         t5nvMJfGdcRdTwYghiIqu9VCKovuKVIe0MrV6yVAaSN1yMYd3xyDJng4ziT1nawCv64O
+         LeVRygSHoRKdmVPoODMJVkFi0dAK3pL7rF6kIQTS+M2it2FyeEW94NgUj+Mm3BJ4xnVa
+         9MMg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1789867330; x=1790472130;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=zXdKuOcPQjh4tFULSVStg5yQtDl5Sivh8Z/3KuFYKs0=;
-        b=EUlUm2zE5VNztuZE+ZMM8wwJEvMGpTD8di0y7ekkKIncbEKKcI6nVj1oGHkGlGqOLH
-         BmtA8vmUiA3uV2OFEZRkCiwxdQy27mEJKDcgt4LTbviNuB4uZsYiKT6cntIIoppnD3oG
-         8Cx4p4KzGkqMhDZUZmXKPhdXMpmoj3v1qNniHwmELmsQbLy9LKw312TEhdoskufjEO55
-         mDDno7bgi8GEZ+Mn+70r2m1BFZOTCtYKjpwurvhmiBUUp52028U8xS0RAj2azgYykBiH
-         vpAp6x+zxlK1Zr4k/5ybXhZDbX4lcGOKUOBwn+X+DuEIP++2Q/ixl9+NTU/m1GhirLY5
-         4OZA==
-X-Forwarded-Encrypted: i=1; AKwUvBx0bp56Ai2Cm5LgA7WXtlrYrJqquKBRl+5hd0mRwja8Pf6J4GRwCb8ZtQ9jvnG/HCEPDbe/MSvmIg==@vger.kernel.org
-X-Gm-Message-State: AFuF++k9K7bui3Aek7a8QC/gyS0/T++PpKB6Ttzar7h+y5RKQiD6LFGQ
-	Vp3ySGtmrFSYluNvRIWBbs2Km8lGa9oUutDcblNRvsKPlj/k+IivjSAt5OfHwGPDOGrmHOXruBi
-	zIwhVNsiCAKssq7rw6nFadWESTDprqhmalEk5knPB
-X-Gm-Gg: AYBFou2gBeAhhYRpzKfRPdVbEDvVZRjwXlxX/GcU/feaZ2TKLyWqJBg+paNbpaQdK3W
-	Z5/oVHpwR1TsiUiKE90k72CDhEiHAhDS9FHMHeG/IdtMAwbMs9VhGJSbw+V2cezR/m+uHG3jR+Y
-	RlWU8B+fvBR4JDEVuEmxFZbrgJUQqe9LJK1YAcC0s9/5gFm/g8brB8/8dr2XNOn+dYLIKVCSHN+
-	bgehlsqXOA9Nu84CTevS+Y26g4er0vMZ6jEALPvvGMjNMIkHwL9Oz7+t9Lnf6VTo7ouNQKzt486
-	uWwubVZHbnSohEXC9qTfMHX9qYYB0itANwo9wKfoAyPN01NXhHi20nZ5GNd2xCJbpK+XrWhBhzk
-	APF10mu8t5/M=
-X-Received: by 2002:a05:6a20:144d:b0:3dd:a008:dc39 with SMTP id
- adf61e73a8af0-3dda008e131mr6498106637.39.1789867330527; Sat, 19 Sep 2026
- 18:22:10 -0700 (PDT)
+        d=1e100.net; s=20260707; t=1789889727; x=1790494527;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to:content-type;
+        bh=30XeFg5Fl5QM8uZfDju7oAPFMP/eO4GBITZ0vmaOsbA=;
+        b=MXACdNIygAoVHkJTEhOUlLtcL0BmpDPqnRJrybmC9CYYLRd1m9fDcu5tLoMYWaUvra
+         45HuQlDW/ZoVCi+NRivGu5B95BKAgV/4735Z7A2fWBXHqWVRg4QRqS2xbEATCdifUOv1
+         ihMykwStV94wTgle16XEgPGuRA5anGvVV+05dD7T/e5WZjVEKEMj7SRgrR1Cel8OwqhM
+         neTDuM9HtlQp44EDUut7LgvAXjFqrq5OarJd/d1TtWBEYh9G7XDExYpxEk8/8f1xup4Z
+         A6iz2WgRzeoWVvREcE/JmmoBUU7fxk8M/dVJzuFqUIE2jaXlJMy7fVjYWdtNzrZx7b2y
+         3TcA==
+X-Forwarded-Encrypted: i=1; AKwUvBx/UYpzwQ87wLwwJZE/gAooQwdfrCPg95FpA08rgvGvxBWg3wOxzX+rjrmWOe6MddosgyXakrMNWA==@vger.kernel.org
+X-Gm-Message-State: AFuF++l5+yjwgt6339rAsrEhl5FDo3/rLg9XioWU87d50WGoAYh3lj8T
+	u1gOBbX8QErP86dG4lOaFvRz8D9HnFfwuWDFmby8m3cOJo0k55uwN/VO
+X-Gm-Gg: AYBFou1FflagZQjFrfL1CeraRXoSL8F9mBbyTOPQ1HsFNhr8JDbgXg5402osOkHNUVE
+	FBqOJ3hpLQVoWzKzj6PmfEx3/HORT0y3fA8W9bACYDF8l0HNHNRBV+h9rhO3WvkCobFyFdb2zKo
+	umG26+ckJdAapJS/a0BnychyiShgh3MoYN9YsFARGZp8wb2LRvbODh+qlS/6am1IOgstAk0RQ0h
+	IGxCWODnGON0fhMIZsn89Dj5O9A+zprAF3RGMLwthzjp/+ctdtq4IB5v0RfqDMuNON+bTwtlpEx
+	GNB5pzUiDwUaqUCyD3QQauY+ND5ymzfZxNIqVoDelO7C7XxDTQiT+fFZu6v5jMU+MdXh/7eftwd
+	7N8XpFedl2cNhC5rnDaq+Yg6ML9ZfpmP0G2W8xJD5UxGTjahWQ/2Skqevvz+hhpq1TnnJKuTzLR
+	dn9u/WsP7xPGUDWl5bZ/uq/LmXP//ARv4scTppY1l3wUZ5WiCLAvDn2vYGkoePE9kPlEFD84XWs
+	d2HCa89UILGovjQmUm91ejza4WPn3h0KI/87hXjBzB8lM1Er86ZMVshBL6JTbB2QRSI5lfa5AH0
+X-Received: by 2002:a17:90b:4c02:b0:39e:2036:8243 with SMTP id 98e67ed59e1d1-39e54eb71f7mr11635098a91.25.1789889727412;
+        Sun, 20 Sep 2026 00:35:27 -0700 (PDT)
+Received: from lenovo-thinkbook.lenovo.com (awork078078.netvigator.com. [203.198.250.78])
+        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-39e6c4ba12csm8015194a91.11.2026.09.20.00.35.19
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sun, 20 Sep 2026 00:35:25 -0700 (PDT)
+From: Yuqi Xu <xuyuqiabc@gmail.com>
+To: linux-crypto@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>,
+	Lukas Wunner <lukas@wunner.de>,
+	Ignat Korchagin <ignat@linux.win>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>,
+	keyrings@vger.kernel.org,
+	stable@vger.kernel.org,
+	Vega <vega@nebusec.ai>,
+	Ren Wei <weir@nebusec.ai>,
+	xuyq21@lenovo.com
+Subject: Re: [PATCH 1/1] KEYS: Account for asymmetric key payload data in the quota
+Date: Sun, 20 Sep 2026 15:35:15 +0800
+Message-ID: <20260920073515.64399-1-xuyuqiabc@gmail.com>
+X-Mailer: git-send-email 2.55.0
+In-Reply-To: <6abaef5a35f2eb9d551a16817df12f786346b7c6.1789801335.git.xuyuqiabc@gmail.com>
+References: <6abaef5a35f2eb9d551a16817df12f786346b7c6.1789801335.git.xuyuqiabc@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <20260919223438.3883567-1-benquike@gmail.com>
-In-Reply-To: <20260919223438.3883567-1-benquike@gmail.com>
-From: Paul Moore <paul@paul-moore.com>
-Date: Sat, 19 Sep 2026 21:21:58 -0400
-X-Gm-Features: AcwNN1XYIQ_wBn8i5ggt4CeI5Ch8V6l0HMTPG10aIvqe5hBWEiugJPjmk6GI8NQ
-Message-ID: <CAHC9VhS7sZQaPaRswKQ1ETrReEPB2f5buNAMGSXqZ1iBKTs+bg@mail.gmail.com>
-Subject: Re: [PATCH] netlabel: calipso, x509: clean up ADDRSELECT on DOI
- removal and check AKID len
-To: Hui Peng <benquike@gmail.com>
-Cc: dhowells@redhat.com, davem@davemloft.net, edumazet@google.com, 
-	kuba@kernel.org, pabeni@redhat.com, keyrings@vger.kernel.org, 
-	linux-security-module@vger.kernel.org, netdev@vger.kernel.org, 
-	linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Transfer-Encoding: 8bit
 
-On Sat, Sep 19, 2026 at 6:34=E2=80=AFPM Hui Peng <benquike@gmail.com> wrote=
-:
->
-> Fix two issues in netlabel CALIPSO and X.509 key parsing:
->
-> 1. In netlbl_calipso_remove_cb() (net/netlabel/netlabel_calipso.c), also
->    inspect NETLBL_NLTYPE_ADDRSELECT entries so IPv6 address-selected
->    mappings referencing a removed CALIPSO DOI are removed.
-> 2. In crypto/asymmetric_keys/x509_public_key.c, guard against zero-
->    length signature/AKID fields before key matching.
->
-> Fixes: cb72d38211ea ("netlabel: Initial support for the CALIPSO netlink p=
-rotocol.")
-> Assisted-by: LLM
-> Signed-off-by: Hui Peng <benquike@gmail.com>
+Hi all,
 
-Thank you for your patch, but as NetLabel and the kernel key code are
-in two very different subsystems, please split this into two patches
-so they can be properly reviewed and potentially merged.
+Thanks for the review.
 
-> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric=
-_keys/x509_public_key.c
-> index 25cf8ac7f257..5c9165a83f91 100644
-> --- a/crypto/asymmetric_keys/x509_public_key.c
-> +++ b/crypto/asymmetric_keys/x509_public_key.c
-> @@ -53,9 +53,11 @@ int x509_get_sig_params(struct x509_certificate *cert)
->
->         if (sig->algo_takes_data) {
->                 /* The signature algorithm does whatever passes for hashi=
-ng. */
-> -               sig->m =3D (u8 *)cert->tbs;
-> +               sig->m =3D kmemdup(cert->tbs, cert->tbs_size, GFP_KERNEL)=
-;
-> +               if (!sig->m)
-> +                       return -ENOMEM;
->                 sig->m_size =3D cert->tbs_size;
-> -               sig->m_free =3D false;
-> +               sig->m_free =3D true;
->                 goto out;
->         }
->
-> diff --git a/net/netlabel/netlabel_calipso.c b/net/netlabel/netlabel_cali=
-pso.c
-> index e1efd888b4a2..3756193b1c49 100644
-> --- a/net/netlabel/netlabel_calipso.c
-> +++ b/net/netlabel/netlabel_calipso.c
-> @@ -283,10 +283,21 @@ static int netlbl_calipso_listall(struct sk_buff *s=
-kb,
->  static int netlbl_calipso_remove_cb(struct netlbl_dom_map *entry, void *=
-arg)
->  {
->         struct netlbl_domhsh_walk_arg *cb_arg =3D arg;
-> +       struct netlbl_af6list *iter6;
-> +       struct netlbl_domaddr6_map *map6;
->
->         if (entry->def.type =3D=3D NETLBL_NLTYPE_CALIPSO &&
->             entry->def.calipso->doi =3D=3D cb_arg->doi)
->                 return netlbl_domhsh_remove_entry(entry, cb_arg->audit_in=
-fo);
-> +       else if (entry->def.type =3D=3D NETLBL_NLTYPE_ADDRSELECT) {
-> +               netlbl_af6list_foreach_rcu(iter6, &entry->def.addrsel->li=
-st6) {
-> +                       map6 =3D netlbl_domhsh_addr6_entry(iter6);
-> +                       if (map6->def.type =3D=3D NETLBL_NLTYPE_CALIPSO &=
-&
-> +                           map6->def.calipso->doi =3D=3D cb_arg->doi)
-> +                               return netlbl_domhsh_remove_entry(entry,
-> +                                                                 cb_arg-=
->audit_info);
-> +               }
-> +       }
->
->         return 0;
->  }
+Sashiko reported the following findings on the patchset page; they have
+not been posted to lore.  I looked at both against the tree; the
+mechanism they describe is real, but it is not reachable by an
+unprivileged user with the default quota, and the root case is not a
+privilege boundary.  Details inline below.
 
+The tree is crypto-2.6.git master at 10396a2d6d41; line numbers below are
+for that revision plus this patch.
 
+> 1) Does this code overflow key->quotalen if pub->keylen is large? While
+>    prep->quotalen is a size_t, the internal key->quotalen field is an
+>    unsigned short with a 16-bit limit of 65,535 bytes. If a user adds an
+>    oversized asymmetric key and the quota capacity check passes (for
+>    example, for the root user, or if kernel.keys.maxbytes is raised),
+>    key->quotalen will silently overflow and truncate the length. When the
+>    key is later destroyed in key_put(), user->qnbytes is decremented by the
+>    truncated amount, permanently leaking the remainder.
 
---=20
-paul-moore.com
+The types are as stated: key->quotalen is unsigned short
+(include/linux/key.h:216), prep->quotalen is size_t
+(include/linux/key-type.h:37), and key_payload_reserve() computes
+"int delta = (int)datalen - key->datalen" and then does
+"key->quotalen += delta" (security/keys/key.c:376 and :396), so a charge
+above USHRT_MAX would indeed truncate.  So the truncation is mechanically
+correct.
+
+It is not reachable by an unprivileged user, though.  key_payload_reserve()
+checks the quota and returns -EDQUOT (key.c:392) *before* it touches
+key->quotalen:
+
+	security/keys/key.c:389
+	if (delta > 0 &&
+	    (key->user->qnbytes + delta > maxbytes || ...))
+		ret = -EDQUOT;
+	else {
+		key->user->qnbytes += delta;
+		key->quotalen += delta;
+	}
+
+For a non-root user maxbytes is key_quota_maxbytes = 20000
+(security/keys/key.c:29).  The reserved amount for a single key cannot
+exceed that: key_alloc() already charged desclen + 1 + def_datalen and set
+key->quotalen to it (key.c:248, :272, :292), and the key_payload_reserve()
+delta is bounded by the remaining quota (maxbytes - qnbytes).  After a
+successful reserve the key's share of qnbytes is desclen + 1 +
+prep->quotalen and it equals key->quotalen, so it is <= 20000 < USHRT_MAX.
+The overflow value can never be committed; add_key() just fails with
+-EDQUOT first.  In our testing, userspace sees errno 122 (EDQUOT) from
+add_key() of a roughly 65000-byte PKCS#8 key, with no charge ever recorded
+above 20000.
+
+The root / raised-maxbytes case is also not a security boundary:
+
+  - /proc/sys/kernel/keys/maxbytes is mode 0644 (security/keys/sysctl.c:26),
+    i.e. only root can raise it, so "if maxbytes is raised" is itself a
+    privileged action; root is not the boundary we are protecting.
+  - Root does not need to raise that sysctl to pass the quota check.
+    key_payload_reserve() selects maxbytes with
+    uid_eq(key->user->uid, GLOBAL_ROOT_UID) (key.c:383), so the global
+    root already uses key_quota_root_maxbytes = 25000000 (key.c:27).
+    A user-namespace root is not GLOBAL_ROOT_UID and still uses
+    key_quota_maxbytes = 20000.
+  - asn1_ber_decoder() rejects a DER blob with datalen > 65535
+    (lib/asn1_decoder.c:197, -EMSGSIZE), so a single key cannot grow
+    without bound.  sizeof(*pub) + keylen can still exceed USHRT_MAX
+    for a large but legal blob, so root (or a raised maxbytes) can hit
+    the truncation.
+  - The direction of the error is an over-charge, not a bypass.  qnbytes is
+    credited with the full delta but debited with the truncated quotalen at
+    key_put() (key.c:659), so the remainder simply stays charged against the
+    same user, who hits EDQUOT sooner.  It cannot let anyone retain more than
+    the accounted quota, and it does not weaken the check that protects
+    unprivileged users.
+
+> 2) Can this dynamically calculated payload size also overflow the 16-bit
+>    limit of key->quotalen?
+
+Same reasoning for the X.509 side.  The new expression is a sum over the
+objects the payload actually retains (public key, parameters, signature,
+authority key IDs and key IDs), and each is bounded by the same 65535-byte
+DER limit.  For a non-root key the whole sum must satisfy the 20000-byte
+quota check before key->quotalen is updated, so it cannot exceed USHRT_MAX
+either.  As above, only root (or a root raising the sysctl) can get a single
+key's charge past 65535, and the result is a self-inflicted quota
+over-charge rather than any kind of bypass.
+
+So we don't see a security issue here and would keep v1 as is.
+
+That said, if you would prefer the byte accounting to stay self-consistent
+even for root or a raised maxbytes, it could be handled by a small separate
+hardening, e.g. having key_payload_reserve() reject a reservation larger
+than USHRT_MAX (or widening key->quotalen to unsigned int).  I left that out
+of this patch on purpose: it changes core quota semantics beyond the
+reported bug and is not needed to close the unprivileged quota-accounting
+bypass this series fixes.  Happy to send it as a follow-up if the
+maintainers want it.
+
+Thanks,
+Yuqi Xu
