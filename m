@@ -1,69 +1,65 @@
-Received: from mail-wm2-f13.google.com (mail-wm2-f13.google.com [74.125.225.141])
+Received: from mail-vs2-f42.google.com (mail-vs2-f42.google.com [74.125.227.42])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7C0644E4C2C
-	for <keyrings@vger.kernel.org>; Tue, 22 Sep 2026 09:58:23 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.225.141
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5E5B4542ED7
+	for <keyrings@vger.kernel.org>; Tue, 22 Sep 2026 12:40:00 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.227.42
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790071107; cv=none; b=PKdyo/ZsGTlxyOqmDdPovZvbT7aQDB/0BDd29Tm5/wnu9RIjGrCdAfXnz7BoqLX+rBo3RxSHEe8xZkit5wqaeeMDHCgTglN3Gyynrt95u6PqpHLO/PHD2+uEXdT8m8Axl7S/cRiyfbQVuyF/kVWVe2BLrS73UmV5+xQIsibhY9I=
+	t=1790080803; cv=none; b=bGS8Q04RWHcuR1Vu6CB+luf9fZM3XtEeHYlp46UokEaRaTj0IqyHb+my3oylndQTWkdrn2RtL+CNI5H19f0oL3XU3ROnFYy0fCXg2hjbCtvUZyq8LMGEBf4dPA0Baamyw6nU+0d+/BPaaRh1ONVUgyYP6BxtY62wcSia/sIozLM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790071107; c=relaxed/simple;
-	bh=zYbfbPSv4oN0DQRZXu+ig0WpHZAE1jueUN/5aUe+dpQ=;
+	s=arc-20240116; t=1790080803; c=relaxed/simple;
+	bh=wFmJBrwWil7bpAeYIpoN4GzUL1HvXOt5ldn6IIIiFHY=;
 	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=ZS6SHX30+GKn3WVUKo40rQpJ35tgorV9tBFp8sXIVBNcsXwW6rN9wEaXlNrG1Uhihj2XcZX5jZSH/bAms6+sHF7ursf6Gpe+wLRVXZKDZ0ku6LfZzvM5wRYCJ/JZHdSVEbwhcsGUUg9BWd615vqaE15HxfqfZyjJ9q4daw2qme8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=suse.com; spf=pass smtp.mailfrom=suse.com; dkim=pass (2048-bit key) header.d=suse.com header.i=@suse.com header.b=VtBoOvXm; arc=none smtp.client-ip=74.125.225.141
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=suse.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.com
+	 In-Reply-To:Content-Type; b=uv+JsT0Yb8zIVSy5mU86bYClC1mSuIj1GrLxmQifRnGxXqKlQtxI0QgjSfDpL2RtdmbI8gWOvX3lZs/9SU1Iu6EFwOM1+tfsSw6Y6uRUdo5B+uCaqW/TxzNcajnKzDwHbGiPqQJW//OSIBT+CwJh8KGvjBB3Yrdb+6GobOUTH+E=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=ieee.org; spf=pass smtp.mailfrom=ieee.org; dkim=pass (1024-bit key) header.d=ieee.org header.i=@ieee.org header.b=O2oXCldz; arc=none smtp.client-ip=74.125.227.42
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=ieee.org
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=ieee.org
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=suse.com header.i=@suse.com header.b="VtBoOvXm"
-Received: by mail-wm2-f13.google.com with SMTP id 5b1f17b1804b1-49b91369d18so29475455e9.0
-        for <keyrings@vger.kernel.org>; Tue, 22 Sep 2026 02:58:23 -0700 (PDT)
+	dkim=pass (1024-bit key) header.d=ieee.org header.i=@ieee.org header.b="O2oXCldz"
+Received: by mail-vs2-f42.google.com with SMTP id 71dfb90a1353d-5c67e4d9197so2604981e0c.0
+        for <keyrings@vger.kernel.org>; Tue, 22 Sep 2026 05:40:00 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=suse.com; s=google; t=1790071102; x=1790675902; darn=vger.kernel.org;
+        d=ieee.org; s=google; t=1790080799; x=1790685599; darn=vger.kernel.org;
         h=content-transfer-encoding:content-type:in-reply-to:from
          :content-language:references:cc:to:subject:user-agent:mime-version
          :date:message-id:from:to:cc:subject:date:message-id:reply-to
          :content-type;
-        bh=nZUNZdA2VreC5ZuzVVTaU77y9kWQRV4FmcQNBHWyLvk=;
-        b=VtBoOvXmAmen9A15P2XUuom5lD/1FL4lYGpdQVlTKAozAKOcuAjxP/fvx0Ao38Exoq
-         5+Z4Hz0ZBE6NheeiWCh5xeWyQPagqjfs4f79S40IPirUpX5MyYP/m4caovC3dzry78uG
-         qLVHF46WMJzE6APh5ToFTevmH6sDFNe8j6X21GWEoW4cLdhNm4hEB96kOS4aoPn79zyN
-         nZrL7X7l5ieVRSVE7emEimSWG9oKJUGSRvLQJGSqXqZQPPgzbooqStbK79ZVMeOIf3FZ
-         Rfg8io+iLrPWZmwv45RZ6QmcYxFygH8ndbcley/wqvpcy8l0XeKLrrX3CsuxOj3R0rI1
-         hMhw==
+        bh=o9blDfaIlaDE7zWOzf7sAkl81n8mIgiGQIMLz8R8dVg=;
+        b=O2oXCldzJ3LpA4QHBbXInqG6gPFkiSS8IpezgH8R+ZrmCNrQGw2qZ3cz2HJXPR/LD3
+         nDnwu+h/q1ydJlARyj62co9tTwdWIgt6A4ziEIgZPoWy6ktNQVyLZgBsOE9UYoUt4d3f
+         ApfWcUtfyoMebnbxzEyQSfJL5IYMdQPZlYtb0=
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1790071102; x=1790675902;
+        d=1e100.net; s=20260707; t=1790080799; x=1790685599;
         h=content-transfer-encoding:content-type:in-reply-to:from
          :content-language:references:cc:to:subject:user-agent:mime-version
          :date:message-id:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
          :message-id:reply-to:content-type;
-        bh=nZUNZdA2VreC5ZuzVVTaU77y9kWQRV4FmcQNBHWyLvk=;
-        b=lNGCvLNzbfbqS7fWFpBv51Grz7/IIGH39nLTnoTlk44FZEeQcuiCdb5oO5QaSc8Lwt
-         z4PNEjguBv28ioqVGzt8tknmO67IuHw7fbDAOvumcGU5l5jugMBwiTiYOgVUZRUMyd7l
-         rOWIyk4l6SpWNzARBcuZk9qo9MsThM7X574amNkkJsyk7nKwBiUAAb444CojbKarwqJS
-         WqNdCpRRYJBVnvdKPZSebD+4K1BSZ3AFeApHS9UvvtiskzpxcqHGFF0yOaiNvFzmJdI3
-         IyJMn1KxsDkQevHAa71WURvVfRqS8ytAbnHTAfLXxISpCyjnikRR3DbKwrlRs6xj+yBb
-         RyiQ==
-X-Forwarded-Encrypted: i=1; AKwUvBwghpvoCW2jX8T7Bv/iXE8vnuUofvKcHmBfDR1zEMt8M6jla/leOc3H6avbyHU7ENxIv+851MIo2g==@vger.kernel.org
-X-Gm-Message-State: AFuF++m06L/GkWzBZ/5XPo7emOJW3om4vvCZG0EBkoSRVY4IYPMv3YcS
-	hy8haR7981nqcpdd/n0rtlz9LwaFdoSfIFPYJbW2H2BwFoTFH5Fxopye7jz6RRc+KvA=
-X-Gm-Gg: AYBFou3JucVU0B/ZfvhvTBD8wENM8D/jKGoekCMRU71DB5noeUaYJsreiEmOTuB72NP
-	IVlYm93skUwYTOsNv15/QkWTIrKqzzX7LsEB0Q98u02siddJRsVyAFJCSDIXk9TKZrl5sbRanSC
-	AwjUKGwUxE4QPYoq76B7rqIUsdr7JayxEfnxJ6bu5RS7DWub8yKrqOqYZEJnl/Vsu/PoXaQzhE4
-	3cEZiCQm830Btu3sFcdaIyal/Y5Ha/DYchESlq/kSgvhwXxIxOGBfNTJumKX4RSGm2wKrsYsZ9r
-	0pTLhTFVlccoCY3ye5kvY30ZX55jfOwSFQURjOLlj/0g0z/CE4EsSxERYHZcGXKS4hhO9VT0L6M
-	LGDYhxf8M6TU2r2UWMlwT7NnPe/9ewKAKpptN5G0fWlGhUrQVaV2CFk97ow/JNYr8vU+1A2B9YP
-	VTtoQ+P1TomkA9EK/T34GWBq/jxHJnW5UHtkUUnzA2aRYOyC3xYxaNjNIHLmort+1byHPSHvKoY
-	cX6kLocmzp5ooTO+64K+bOwg5TSUHdlaZaWRety4tffTGuy8fjAu7WD9QgGzdnphwzqIxv6ikm9
-	VVB75yiEe9ebMNa0Y8R8njHmgjebP+IrWJUwxIYv
-X-Received: by 2002:a05:600c:a0a:b0:49e:84bf:6110 with SMTP id 5b1f17b1804b1-49fc56dbb49mr199597855e9.6.1790071101618;
-        Tue, 22 Sep 2026 02:58:21 -0700 (PDT)
-Received: from ?IPV6:2a00:1028:838d:271e:8e3b:4aff:fe4c:a100? (dynamic-2a00-1028-838d-271e-8e3b-4aff-fe4c-a100.ipv6.o2.cz. [2a00:1028:838d:271e:8e3b:4aff:fe4c:a100])
-        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-49fdab0c240sm27108755e9.4.2026.09.22.02.58.19
+        bh=o9blDfaIlaDE7zWOzf7sAkl81n8mIgiGQIMLz8R8dVg=;
+        b=l0jG2HJkdbu7ghnhfO2/mvuZRzMXm0xjG6hFHH45a+XeFYT5Z/mMegPjo7ib2kohNw
+         NoutZqCiiI0D2TwJ7bwQua6IaXnMf10X4iaxuVYYMlDXxHgTPyggZLagWnp6og5J+S93
+         TiptHtcvMlp0yHf0G0LX9f1qoM4BoKqstUyLZW2BZCrWKNcbyINQzgIltNxi7k0RNpmc
+         S33XHlS4VFrXPwyYUnNvZjErxjNnrTgOhKQKmUXmnhcADDwWnh87Vy6UXCsO1TWY9NRl
+         BXZlBoPA/wD+yIapS5Bs0DblZrOrrDMx0TZ3VIj3HQsm8VX+dsto8OVBjrbLqfOTf+pS
+         GA7A==
+X-Forwarded-Encrypted: i=1; AKwUvBzwRd0GM5mJjluNOv/SUE2GpK7glNlUHzeQkRE9s0C/VOXYM4km+cmec2qUhAnLUHR7ZeflGnqNlQ==@vger.kernel.org
+X-Gm-Message-State: AFuF++kTWgmByEIiEzVjeqKDZ8ArJE1ihtKQ/o0T5ipDEohd8rHqKdWc
+	8ML/DEoZHfRec/OGUUQnKr5fDbdg82Q2M0kLcyKJG4/KwAd0fKk705T99GlTr4Gf4w==
+X-Gm-Gg: AYBFou2XfXJkbLd/zHGGdIEAkA8vkiK1saeUASB2Zja45qhCM3MyZ8aWLwl7r/E/jo3
+	pc6y7j+um+3vmAEtuzNxeJxHvK7nkw5Ew850mk48k8PCCS0ZYJ4GYven3QsFPq+rmOrPKXSP3cI
+	1EdR9P5VhQgLvnDQhAmsILKOKkLbcEN+MibzT0ncdR4UoUL1o4wyWkyq0kgVIKA/6gZkH9Dmm5P
+	zMvXpqFtfVmMFNUw53oaVjwcO12AR5UZ/JoeIayfd+9bY5PUVNFFoZMymEXMltzOxNVXm0H32Jx
+	+vTzDNRM8M6fyI9q+9Uoe2pwPPQIPBxKTzyYSpHjqJDPgUsgcFgJ/6do3JE4/+wF96hX26uQ1BG
+	XlZ/fcC8JoLMNybZpstwIcD1H7p1Qgw5MUvPkGAHfy3YaWO8lExIITUJJi0f1SzI8rf5aqZIhSV
+	TTwPMwlYpCpm2iY7WjGgsWrYVGe3YVmlsXBQTp2TvFfQsy2V/KFlt3fOG84CtihkpJU/lH0NEUR
+	NJY
+X-Received: by 2002:a05:6122:e22b:b0:5c9:a60c:2736 with SMTP id 71dfb90a1353d-5c9b598e442mr8405960e0c.14.1790080799199;
+        Tue, 22 Sep 2026 05:39:59 -0700 (PDT)
+Received: from [172.22.22.28] ([73.62.185.64])
+        by smtp.googlemail.com with ESMTPSA id 6a1803df08f44-91402535ce1sm14566906d6.48.2026.09.22.05.39.48
         (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Tue, 22 Sep 2026 02:58:21 -0700 (PDT)
-Message-ID: <2bf82e0b-a032-4ee7-8d93-c5604222723d@suse.com>
-Date: Tue, 22 Sep 2026 11:58:18 +0200
+        Tue, 22 Sep 2026 05:39:53 -0700 (PDT)
+Message-ID: <d2052425-3fb4-4104-b1ed-f2d53e5a710d@ieee.org>
+Date: Tue, 22 Sep 2026 07:39:47 -0500
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -71,12 +67,12 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v3 0/3] Bring includes in linux/kmod.h up to date
-To: petr.pavlu@suse.com
-Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
- Thomas Gleixner <tglx@kernel.org>, Ingo Molnar <mingo@redhat.com>,
- Dave Hansen <dave.hansen@linux.intel.com>, x86@kernel.org,
- "H. Peter Anvin" <hpa@zytor.com>,
+Subject: Re: [PATCH v3 1/3] umh, treewide: Explicitly include linux/umh.h
+ where needed
+To: Petr Pavlu <petr.pavlu@suse.com>, Tony Luck <tony.luck@intel.com>,
+ Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@kernel.org>,
+ Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@linux.intel.com>,
+ x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
  Philipp Reisner <philipp.reisner@linbit.com>,
  Lars Ellenberg <lars.ellenberg@linbit.com>,
  =?UTF-8?Q?Christoph_B=C3=B6hmwalder?= <christoph.boehmwalder@linbit.com>,
@@ -106,8 +102,8 @@ Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
  Jarkko Sakkinen <jarkko@kernel.org>, Paul Moore <paul@paul-moore.com>,
  James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
  Kentaro Takeda <takedakn@nttdata.co.jp>,
- Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
- linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+ Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
  drbd-dev@lists.linux.dev, linux-block@vger.kernel.org,
  greybus-dev@lists.linaro.org, linuxppc-dev@lists.ozlabs.org,
  linux-acpi@vger.kernel.org, linux-fbdev@vger.kernel.org,
@@ -118,36 +114,85 @@ Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
  bridge@lists.linux.dev, netdev@vger.kernel.org, keyrings@vger.kernel.org,
  linux-security-module@vger.kernel.org
 References: <20260911-module-include-kmod-v3-0-6ebccc3e0731@suse.com>
+ <20260911-module-include-kmod-v3-1-6ebccc3e0731@suse.com>
 Content-Language: en-US
-From: Petr Pavlu <petr.pavlu@suse.com>
-In-Reply-To: <20260911-module-include-kmod-v3-0-6ebccc3e0731@suse.com>
-Content-Type: text/plain; charset=UTF-8
+From: Alex Elder <elder@ieee.org>
+In-Reply-To: <20260911-module-include-kmod-v3-1-6ebccc3e0731@suse.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 
-On 9/11/26 4:46 PM, Petr Pavlu wrote:
+On 9/11/26 9:46 AM, Petr Pavlu wrote:
 > The usermode helper declarations were previously provided by linux/kmod.h
 > but commit c1f3fa2a4fde ("kmod: split off umh headers into its own file")
-> moved them to linux/umh.h in 2017. Add explicit includes of linux/umh.h to
-> files that use usermode helpers and remove linux/kmod.h where it is no
-> longer needed.
+> moved them to linux/umh.h in 2017.
 > 
-> Also add a missing include of linux/sysctl.h to kernel/time/jiffies.c.
+> Add explicit includes of linux/umh.h to files that use usermode helpers and
+> remove linux/kmod.h where it is no longer needed.
 > 
-> Finally, clean up linux/kmod.h so that it includes only the headers that it
-> actually requires, importantly removing the compat linux/umh.h include.
-> 
-> This cleanup is motivated by trying to reduce the preprocessed size of
-> linux/module.h, which includes linux/kmod.h. linux/module.h appears in
-> roughly 15k #include directives across the kernel. This makes it a "hot"
-> header, so it should avoid pulling in unnecessary definitions. Note that
-> this series doesn't immediately improve the situation, since most of the
-> files included by linux/kmod.h are, for now, also included by
-> linux/module.h through other paths.
-> 
-> Apologies for the wide distribution. Acked-bys are appreciated.
+> Signed-off-by: Petr Pavlu <petr.pavlu@suse.com>
+> ---
+>   arch/x86/kernel/cpu/mce/dev-mcelog.c | 2 +-
+>   drivers/block/drbd/drbd_nl.c         | 1 +
+>   drivers/greybus/svc_watchdog.c       | 1 +
 
-I've queued the series on modules-next for 7.4-rc1.
+For Greybus:
 
--- 
-Thanks,
-Petr
+Acked-by: Alex Elder <elder@riscstar.com>
+
+>   drivers/macintosh/windfarm_core.c    | 1 +
+>   drivers/pnp/pnpbios/core.c           | 2 +-
+>   drivers/video/fbdev/uvesafb.c        | 1 +
+>   fs/coredump.c                        | 2 +-
+>   fs/nfs/cache_lib.c                   | 2 +-
+>   fs/nfsd/nfs4layouts.c                | 2 +-
+>   fs/nfsd/nfs4recover.c                | 1 +
+>   fs/ocfs2/stackglue.c                 | 1 +
+>   kernel/cgroup/cgroup-v1.c            | 2 +-
+>   kernel/module/kmod.c                 | 1 +
+>   kernel/power/process.c               | 2 +-
+>   kernel/reboot.c                      | 2 +-
+>   kernel/umh.c                         | 2 +-
+>   lib/kobject_uevent.c                 | 2 +-
+>   net/bridge/br_stp_if.c               | 2 +-
+>   security/keys/request_key.c          | 2 +-
+>   security/tomoyo/common.h             | 2 +-
+>   20 files changed, 20 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mce/dev-mcelog.c b/arch/x86/kernel/cpu/mce/dev-mcelog.c
+> index 053555206d81..af4e76babe7a 100644
+> --- a/arch/x86/kernel/cpu/mce/dev-mcelog.c
+> +++ b/arch/x86/kernel/cpu/mce/dev-mcelog.c
+> @@ -11,7 +11,7 @@
+>   
+>   #include <linux/miscdevice.h>
+>   #include <linux/slab.h>
+> -#include <linux/kmod.h>
+> +#include <linux/umh.h>
+>   #include <linux/poll.h>
+>   
+>   #include "internal.h"
+> diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+> index b77f901fc3ef..6f5d059394b3 100644
+> --- a/drivers/block/drbd/drbd_nl.c
+> +++ b/drivers/block/drbd/drbd_nl.c
+> @@ -14,6 +14,7 @@
+>   #define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
+>   
+>   #include <linux/module.h>
+> +#include <linux/umh.h>
+>   #include <linux/drbd.h>
+>   #include <linux/in.h>
+>   #include <linux/fs.h>
+> diff --git a/drivers/greybus/svc_watchdog.c b/drivers/greybus/svc_watchdog.c
+> index 16e6de5e9eff..b318eb34bcca 100644
+> --- a/drivers/greybus/svc_watchdog.c
+> +++ b/drivers/greybus/svc_watchdog.c
+> @@ -7,6 +7,7 @@
+>   
+>   #include <linux/delay.h>
+>   #include <linux/suspend.h>
+> +#include <linux/umh.h>
+>   #include <linux/workqueue.h>
+>   #include <linux/greybus.h>
+>   
+. . .
