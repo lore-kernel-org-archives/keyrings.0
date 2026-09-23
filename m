@@ -1,198 +1,82 @@
-Received: from mail-vs2-f42.google.com (mail-vs2-f42.google.com [74.125.227.42])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from abb.hmeau.com (abb.hmeau.com [180.181.231.80])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5E5B4542ED7
-	for <keyrings@vger.kernel.org>; Tue, 22 Sep 2026 12:40:00 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.227.42
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 621B14052D1;
+	Wed, 23 Sep 2026 08:47:04 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=180.181.231.80
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790080803; cv=none; b=bGS8Q04RWHcuR1Vu6CB+luf9fZM3XtEeHYlp46UokEaRaTj0IqyHb+my3oylndQTWkdrn2RtL+CNI5H19f0oL3XU3ROnFYy0fCXg2hjbCtvUZyq8LMGEBf4dPA0Baamyw6nU+0d+/BPaaRh1ONVUgyYP6BxtY62wcSia/sIozLM=
+	t=1790153237; cv=none; b=LaczoZbw2dLybA7ttuD747pbasQOP04ob11z0CNtWrdkFR826VAabkdn8EiDMI9clJXz12Ct4f2zJW3jS82e3Jiq+dN8BYQFAw6fMTwLiFH8c1s34Dra3D4VAnOmvgTkcjXOk9TiFpbBu0LIBqvEYHXcRgOzQaA8A/uLv6A2Uxg=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790080803; c=relaxed/simple;
-	bh=wFmJBrwWil7bpAeYIpoN4GzUL1HvXOt5ldn6IIIiFHY=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=uv+JsT0Yb8zIVSy5mU86bYClC1mSuIj1GrLxmQifRnGxXqKlQtxI0QgjSfDpL2RtdmbI8gWOvX3lZs/9SU1Iu6EFwOM1+tfsSw6Y6uRUdo5B+uCaqW/TxzNcajnKzDwHbGiPqQJW//OSIBT+CwJh8KGvjBB3Yrdb+6GobOUTH+E=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=ieee.org; spf=pass smtp.mailfrom=ieee.org; dkim=pass (1024-bit key) header.d=ieee.org header.i=@ieee.org header.b=O2oXCldz; arc=none smtp.client-ip=74.125.227.42
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=ieee.org
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=ieee.org
+	s=arc-20240116; t=1790153237; c=relaxed/simple;
+	bh=MudnynUlGJlpFDLhq7LmhZ5I0ob72cqhMcdhNB/ouEo=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=XwWlacRgNkgfmK3txsQkHutmyFQyi3hGIlZJkWaf1NQ6D1XAAu2gqNWejBf3i3IKEe++9nDZ0sRKpaKed7gekic9XT1XrnvFZY5sLHEF1l41yRGCO/vRu7rhsQ1BFRcy2ulYGcioR8aPeahcq2xr5lcr0jfdWpnf4lLE0uIrUAc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au; spf=pass smtp.mailfrom=gondor.apana.org.au; dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b=MgZjH3rT; arc=none smtp.client-ip=180.181.231.80
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gondor.apana.org.au
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=ieee.org header.i=@ieee.org header.b="O2oXCldz"
-Received: by mail-vs2-f42.google.com with SMTP id 71dfb90a1353d-5c67e4d9197so2604981e0c.0
-        for <keyrings@vger.kernel.org>; Tue, 22 Sep 2026 05:40:00 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=ieee.org; s=google; t=1790080799; x=1790685599; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:in-reply-to:from
-         :content-language:references:cc:to:subject:user-agent:mime-version
-         :date:message-id:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=o9blDfaIlaDE7zWOzf7sAkl81n8mIgiGQIMLz8R8dVg=;
-        b=O2oXCldzJ3LpA4QHBbXInqG6gPFkiSS8IpezgH8R+ZrmCNrQGw2qZ3cz2HJXPR/LD3
-         nDnwu+h/q1ydJlARyj62co9tTwdWIgt6A4ziEIgZPoWy6ktNQVyLZgBsOE9UYoUt4d3f
-         ApfWcUtfyoMebnbxzEyQSfJL5IYMdQPZlYtb0=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1790080799; x=1790685599;
-        h=content-transfer-encoding:content-type:in-reply-to:from
-         :content-language:references:cc:to:subject:user-agent:mime-version
-         :date:message-id:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=o9blDfaIlaDE7zWOzf7sAkl81n8mIgiGQIMLz8R8dVg=;
-        b=l0jG2HJkdbu7ghnhfO2/mvuZRzMXm0xjG6hFHH45a+XeFYT5Z/mMegPjo7ib2kohNw
-         NoutZqCiiI0D2TwJ7bwQua6IaXnMf10X4iaxuVYYMlDXxHgTPyggZLagWnp6og5J+S93
-         TiptHtcvMlp0yHf0G0LX9f1qoM4BoKqstUyLZW2BZCrWKNcbyINQzgIltNxi7k0RNpmc
-         S33XHlS4VFrXPwyYUnNvZjErxjNnrTgOhKQKmUXmnhcADDwWnh87Vy6UXCsO1TWY9NRl
-         BXZlBoPA/wD+yIapS5Bs0DblZrOrrDMx0TZ3VIj3HQsm8VX+dsto8OVBjrbLqfOTf+pS
-         GA7A==
-X-Forwarded-Encrypted: i=1; AKwUvBzwRd0GM5mJjluNOv/SUE2GpK7glNlUHzeQkRE9s0C/VOXYM4km+cmec2qUhAnLUHR7ZeflGnqNlQ==@vger.kernel.org
-X-Gm-Message-State: AFuF++kTWgmByEIiEzVjeqKDZ8ArJE1ihtKQ/o0T5ipDEohd8rHqKdWc
-	8ML/DEoZHfRec/OGUUQnKr5fDbdg82Q2M0kLcyKJG4/KwAd0fKk705T99GlTr4Gf4w==
-X-Gm-Gg: AYBFou2XfXJkbLd/zHGGdIEAkA8vkiK1saeUASB2Zja45qhCM3MyZ8aWLwl7r/E/jo3
-	pc6y7j+um+3vmAEtuzNxeJxHvK7nkw5Ew850mk48k8PCCS0ZYJ4GYven3QsFPq+rmOrPKXSP3cI
-	1EdR9P5VhQgLvnDQhAmsILKOKkLbcEN+MibzT0ncdR4UoUL1o4wyWkyq0kgVIKA/6gZkH9Dmm5P
-	zMvXpqFtfVmMFNUw53oaVjwcO12AR5UZ/JoeIayfd+9bY5PUVNFFoZMymEXMltzOxNVXm0H32Jx
-	+vTzDNRM8M6fyI9q+9Uoe2pwPPQIPBxKTzyYSpHjqJDPgUsgcFgJ/6do3JE4/+wF96hX26uQ1BG
-	XlZ/fcC8JoLMNybZpstwIcD1H7p1Qgw5MUvPkGAHfy3YaWO8lExIITUJJi0f1SzI8rf5aqZIhSV
-	TTwPMwlYpCpm2iY7WjGgsWrYVGe3YVmlsXBQTp2TvFfQsy2V/KFlt3fOG84CtihkpJU/lH0NEUR
-	NJY
-X-Received: by 2002:a05:6122:e22b:b0:5c9:a60c:2736 with SMTP id 71dfb90a1353d-5c9b598e442mr8405960e0c.14.1790080799199;
-        Tue, 22 Sep 2026 05:39:59 -0700 (PDT)
-Received: from [172.22.22.28] ([73.62.185.64])
-        by smtp.googlemail.com with ESMTPSA id 6a1803df08f44-91402535ce1sm14566906d6.48.2026.09.22.05.39.48
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Tue, 22 Sep 2026 05:39:53 -0700 (PDT)
-Message-ID: <d2052425-3fb4-4104-b1ed-f2d53e5a710d@ieee.org>
-Date: Tue, 22 Sep 2026 07:39:47 -0500
+	dkim=pass (2048-bit key) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.b="MgZjH3rT"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=gondor.apana.org.au; s=h01; h=In-Reply-To:Content-Type:MIME-Version:
+	References:Message-ID:Subject:Cc:To:From:Date:cc:to:subject:message-id:date:
+	from:content-type:reply-to; bh=tg2a81G5BrGxfF/cHjXvw3X5l0+e85gD5tlgL4N1MKk=; 
+	b=MgZjH3rTJ0zAZFdy4NEH0TO//TqjQ2c7+4z0FzjcUDgdnoMDi/aNpayRJsaXRlmbgewmtCeI3a/
+	4FR/6g8ZknEyCKjuMz5H9UmVBjFA108jaqGHk1xGknljQueD2/XayhgkIJ32sqQLUyafyB4yAv2O0
+	I8QZRjx0j8zD2vVWc7jIc/lw6g5PCFVwhjk12wO3+4aWH8wCUTojSvmjP+717YANqjkLE8huAV2L4
+	XpsP9C8P8wCnWS3AfUpEZ8MufEcjGcqreLqOEt0Apyluq0tZ7OYzcCvOjIr2s7aGj/wdXPuwKpB/l
+	Q8wd7IzcXXFgVjyGFWuETWBa2jthqrF7+5rw==;
+Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
+	by formenos.hmeau.com with smtp (Exim 4.98.2 #2 (Debian))
+	id 1x9Icn-0000000Gy8v-2kVt;
+	Wed, 23 Sep 2026 16:46:46 +0800
+Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Wed, 23 Sep 2026 18:46:45 +1000
+Date: Wed, 23 Sep 2026 18:46:45 +1000
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: =?iso-8859-1?B?Suly6W15?= Jean <Jeremy.Jean@oss.cyber.gouv.fr>
+Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
+	Ignat Korchagin <ignat@linux.win>,
+	"David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
+	linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto: asymmetric_keys: copy X.509 TBS for data
+ signature algorithms
+Message-ID: <arOR9UZ4_5mtD7RC@gondor.apana.org.au>
+References: <20260821192502.3942767-2-Jeremy.Jean@oss.cyber.gouv.fr>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v3 1/3] umh, treewide: Explicitly include linux/umh.h
- where needed
-To: Petr Pavlu <petr.pavlu@suse.com>, Tony Luck <tony.luck@intel.com>,
- Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@kernel.org>,
- Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@linux.intel.com>,
- x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
- Philipp Reisner <philipp.reisner@linbit.com>,
- Lars Ellenberg <lars.ellenberg@linbit.com>,
- =?UTF-8?Q?Christoph_B=C3=B6hmwalder?= <christoph.boehmwalder@linbit.com>,
- Jens Axboe <axboe@kernel.dk>, Johan Hovold <johan@kernel.org>,
- Alex Elder <elder@kernel.org>,
- Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
- "Rafael J. Wysocki" <rafael@kernel.org>,
- Michal Januszewski <spock@gentoo.org>, Helge Deller <deller@gmx.de>,
- Alexander Viro <viro@zeniv.linux.org.uk>,
- Christian Brauner <brauner@kernel.org>, Jan Kara <jack@suse.cz>,
- Trond Myklebust <trondmy@kernel.org>, Anna Schumaker <anna@kernel.org>,
- Chuck Lever <cel@kernel.org>, Jeff Layton <jlayton@kernel.org>,
- NeilBrown <neil@brown.name>, Olga Kornievskaia <okorniev@redhat.com>,
- Dai Ngo <Dai.Ngo@oracle.com>, Tom Talpey <tom@talpey.com>,
- Mark Fasheh <mark@fasheh.com>, Joel Becker <jlbec@evilplan.org>,
- Joseph Qi <joseph.qi@linux.alibaba.com>, Tejun Heo <tj@kernel.org>,
- Johannes Weiner <hannes@cmpxchg.org>, =?UTF-8?Q?Michal_Koutn=C3=BD?=
- <mkoutny@suse.com>, Luis Chamberlain <mcgrof@kernel.org>,
- Daniel Gomez <da.gomez@kernel.org>, Sami Tolvanen <samitolvanen@google.com>,
- Aaron Tomlin <atomlin@atomlin.com>, Pavel Machek <pavel@kernel.org>,
- Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
- Danilo Krummrich <dakr@kernel.org>, Nikolay Aleksandrov
- <razor@blackwall.org>, Ido Schimmel <idosch@nvidia.com>,
- "David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
- Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>,
- Simon Horman <horms@kernel.org>, David Howells <dhowells@redhat.com>,
- Jarkko Sakkinen <jarkko@kernel.org>, Paul Moore <paul@paul-moore.com>,
- James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
- Kentaro Takeda <takedakn@nttdata.co.jp>,
- Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
- drbd-dev@lists.linux.dev, linux-block@vger.kernel.org,
- greybus-dev@lists.linaro.org, linuxppc-dev@lists.ozlabs.org,
- linux-acpi@vger.kernel.org, linux-fbdev@vger.kernel.org,
- dri-devel@lists.freedesktop.org, linux-fsdevel@vger.kernel.org,
- linux-nfs@vger.kernel.org, ocfs2-devel@lists.linux.dev,
- cgroups@vger.kernel.org, linux-modules@vger.kernel.org,
- linux-pm@vger.kernel.org, driver-core@lists.linux.dev,
- bridge@lists.linux.dev, netdev@vger.kernel.org, keyrings@vger.kernel.org,
- linux-security-module@vger.kernel.org
-References: <20260911-module-include-kmod-v3-0-6ebccc3e0731@suse.com>
- <20260911-module-include-kmod-v3-1-6ebccc3e0731@suse.com>
-Content-Language: en-US
-From: Alex Elder <elder@ieee.org>
-In-Reply-To: <20260911-module-include-kmod-v3-1-6ebccc3e0731@suse.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20260821192502.3942767-2-Jeremy.Jean@oss.cyber.gouv.fr>
 
-On 9/11/26 9:46 AM, Petr Pavlu wrote:
-> The usermode helper declarations were previously provided by linux/kmod.h
-> but commit c1f3fa2a4fde ("kmod: split off umh headers into its own file")
-> moved them to linux/umh.h in 2017.
+On Fri, Aug 21, 2026 at 07:25:03PM +0000, Jérémy Jean wrote:
+> For signature algorithms operating on a message rather than a digest,
+> x509_get_sig_params() points sig->m directly into cert->tbs.
+> cert->tbs is the preparsed add_key() payload.  The syscall wipes and frees
+> it on return, while the instantiated key retains public_key_signature.
 > 
-> Add explicit includes of linux/umh.h to files that use usermode helpers and
-> remove linux/kmod.h where it is no longer needed.
+> A later KEYCTL_LINK into an asymmetric restricted keyring therefore passes
+> a dangling message pointer to ML-DSA.  KASAN reports a slab-use-after-free
+> in mldsa_verify(), with allocation and free provenance both leading to
+> __do_sys_add_key().  Reuse is also an integrity issue: bytes occupying the
+> freed object become the authenticated message instead of the certificate's
+> own TBSCertificate.
 > 
-> Signed-off-by: Petr Pavlu <petr.pavlu@suse.com>
+> Give the signature object its own copy of the TBS, as is already done for
+> a precomputed digest, and release it through the existing m_free contract.
+> 
+> Fixes: f3eccecd782d ("pkcs7: Allow the signing algo to do whatever digestion it wants itself")
+> Signed-off-by: Jérémy Jean <Jeremy.Jean@oss.cyber.gouv.fr>
+> Assisted-by: Codex:gpt-5
 > ---
->   arch/x86/kernel/cpu/mce/dev-mcelog.c | 2 +-
->   drivers/block/drbd/drbd_nl.c         | 1 +
->   drivers/greybus/svc_watchdog.c       | 1 +
+>  crypto/asymmetric_keys/x509_public_key.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 
-For Greybus:
-
-Acked-by: Alex Elder <elder@riscstar.com>
-
->   drivers/macintosh/windfarm_core.c    | 1 +
->   drivers/pnp/pnpbios/core.c           | 2 +-
->   drivers/video/fbdev/uvesafb.c        | 1 +
->   fs/coredump.c                        | 2 +-
->   fs/nfs/cache_lib.c                   | 2 +-
->   fs/nfsd/nfs4layouts.c                | 2 +-
->   fs/nfsd/nfs4recover.c                | 1 +
->   fs/ocfs2/stackglue.c                 | 1 +
->   kernel/cgroup/cgroup-v1.c            | 2 +-
->   kernel/module/kmod.c                 | 1 +
->   kernel/power/process.c               | 2 +-
->   kernel/reboot.c                      | 2 +-
->   kernel/umh.c                         | 2 +-
->   lib/kobject_uevent.c                 | 2 +-
->   net/bridge/br_stp_if.c               | 2 +-
->   security/keys/request_key.c          | 2 +-
->   security/tomoyo/common.h             | 2 +-
->   20 files changed, 20 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mce/dev-mcelog.c b/arch/x86/kernel/cpu/mce/dev-mcelog.c
-> index 053555206d81..af4e76babe7a 100644
-> --- a/arch/x86/kernel/cpu/mce/dev-mcelog.c
-> +++ b/arch/x86/kernel/cpu/mce/dev-mcelog.c
-> @@ -11,7 +11,7 @@
->   
->   #include <linux/miscdevice.h>
->   #include <linux/slab.h>
-> -#include <linux/kmod.h>
-> +#include <linux/umh.h>
->   #include <linux/poll.h>
->   
->   #include "internal.h"
-> diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-> index b77f901fc3ef..6f5d059394b3 100644
-> --- a/drivers/block/drbd/drbd_nl.c
-> +++ b/drivers/block/drbd/drbd_nl.c
-> @@ -14,6 +14,7 @@
->   #define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
->   
->   #include <linux/module.h>
-> +#include <linux/umh.h>
->   #include <linux/drbd.h>
->   #include <linux/in.h>
->   #include <linux/fs.h>
-> diff --git a/drivers/greybus/svc_watchdog.c b/drivers/greybus/svc_watchdog.c
-> index 16e6de5e9eff..b318eb34bcca 100644
-> --- a/drivers/greybus/svc_watchdog.c
-> +++ b/drivers/greybus/svc_watchdog.c
-> @@ -7,6 +7,7 @@
->   
->   #include <linux/delay.h>
->   #include <linux/suspend.h>
-> +#include <linux/umh.h>
->   #include <linux/workqueue.h>
->   #include <linux/greybus.h>
->   
-. . .
+Patch applied.  Thanks.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
