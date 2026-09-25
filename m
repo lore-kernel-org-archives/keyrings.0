@@ -1,138 +1,199 @@
-Received: from mail-pz2-f27.google.com (mail-pz2-f27.google.com [74.125.228.27])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1CCF747ACE3
-	for <keyrings@vger.kernel.org>; Fri, 25 Sep 2026 09:53:23 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.228.27
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BF9E43822A3;
+	Fri, 25 Sep 2026 11:21:52 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790330005; cv=none; b=NqSDsLkDABs0nqDFqH3Guju8fFtapW+lwgkVFqW8UH09Sk/w9SRdpREX14eGvnzvnjqumcrZaZ+BHE8/Q6PHxxZVXGGoTZnRSXDXhkhDbKSKmhw1Tfx6FPzhAZ0/iRD6j5t/0eFtV5Q7ZWkOoM0WLrDyzQoOmIHnLaHyA3gXGyY=
+	t=1790335314; cv=none; b=sLtQC56lLTauuEOAzBjMqafCeDIoM6OfFqfXMbLlYuiJSg+XJBsi7rK+W/Az/oNASLFoPlbUxKEqJLeICxJpayNzeqlGcxZsoM2qTJ3kTTRpSv75fxjlZrtWZUhb2C6gm60vhXCugvwz8yh1M+xeJoG7UZPttDCXoa72DweXKGU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790330005; c=relaxed/simple;
-	bh=6GRmHPLR3TCBKfBWB4SA0tOdNi5yoK35GggbLziGW1k=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=J40iKey9EJFj1nT7x+otfi0m+zLRMPZF3h/WnXdk8wsjAvbByl5osuIlLPqg7znK2WqKDlXCHjYWHwUpCn7kZ4gZXKWfsNtQw46NbHOZYqxW+b86wgXsGoTkYef/cadvTjOLyroN80DBCInEHF4czhqqNOTxjRW9VQh6egjZ0BU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=A17fV1CN; arc=none smtp.client-ip=74.125.228.27
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1790335314; c=relaxed/simple;
+	bh=UHCMywZvfWdwa8q7+cyUrN+GwHK+fEj70J00xQNWtrk=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=IQ1FGttqKE563sRs4pS2/0PQJ7vHsRt3EdpquetV2HWXwq8CMJYiM5iOcunUwK36SYmzpWTsgFO3rUBSbG2sewxY3Gra23Vc/P9yOizP5mIHhuHvN8HZUJeDJmKTx9QrE9cRWP72C7ABsvRqv3IP9lkixU9HUftT8P3FQJxpBns=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=ExAFe32Z; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="A17fV1CN"
-Received: by mail-pz2-f27.google.com with SMTP id 41be03b00d2f7-cc1cea50dc3so250303a12.3
-        for <keyrings@vger.kernel.org>; Fri, 25 Sep 2026 02:53:23 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1790330003; x=1790934803; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=UGO9gkMm/hjzd0yK8CgZnet7IwsFNqJtn1zmuKbVxic=;
-        b=A17fV1CNmzpX8DYQKR5KtWko7KWDsPPZcJU4zFxVkAQYBNz1vvUjfD4vSL7GrA/5/m
-         HDXY6JCeMEp8y+k/KTFxj6J4vTvI/Mom7Bcl46NdwfuLNvFTMFwmNj51bGImrkNPZX2J
-         yqtVxMtUtpfnkLpmi/KsO4GZv8V5MlmKgBFK2MfHqRACiJAtbEs2ElFjjxejbEl2xCxy
-         /p7I1bhaKeBz7UvWxWWGZPO3DgNepS3AcoTMHVxcTBxEMB6+ILqUk1E4Qv0sEUd86y2y
-         xL+8ucnmNiVwHQbO272R4Ett0IY0vBBWAyfVlHBigqfzxYFDPr9OLJs9rxkM6r+OckRZ
-         mJ0A==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1790330003; x=1790934803;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=UGO9gkMm/hjzd0yK8CgZnet7IwsFNqJtn1zmuKbVxic=;
-        b=pDChFWrSGlG6E+mLU8TvIhmiS8xlqqerQjF6ZJj9QMHt7vn0/Y8+2RqWHptqatu7xw
-         aA5pA4bFIl/Nnz0V1YHpLp4R2Eb6rHQLOHHgN9FQVZ2bqrIU17XEV07ieT59LfOyCYYc
-         bpxhAULqzArN4vZaszWBjqm94kYkl0/LU2ZNIwW1bwSbH0hnzMKutPwRUt+MewFmB/+B
-         vLbHvxcdudoGnx4jIhZybr5XAlMlQ72eF69QwhNVZ387IpEUeTytxAAHjpInN2ofkbpT
-         36IFgO/S792Y2SXzHmjJRyN6Zwf2Nb9f5B76VXWMAlxFVgTeoiPvL0VRcEdaw6kToBbw
-         nraQ==
-X-Forwarded-Encrypted: i=1; AKwUvBzsoT0ApDbIuxpcL15qPpeBr4z2VVldssa6NXcAnZ2OYtf5toPXuhWOjjwwPGJG0F5U2+9byRhC2g==@vger.kernel.org
-X-Gm-Message-State: AFuF++l2weBjokN0Z3TBSnG7ckn0rrmuGUreynMVpVUq6GnzhuEV58Qd
-	gUkWNH8mKXw807H6boplCr+R7RZfMu8ZJUag96You1sgHQ4kdH2EY0wy
-X-Gm-Gg: AYBFou2SxqS7PCiHfco/IoPg6TDJwcmHlSjkhk76SP1w3LwLPNDM+PKXLB7QDEAXENq
-	l0xWDckrM8DuEnuM6WP64uYiee4DqIL+kaHrhHU9BfmMKswiB/TQkqrpK5D9ixpBtYOKlkV6ZSR
-	aarKDKdP518xhPfKkzsyIGHrot3lCY6x/+jtioAaohhyNxEsQDA4iwIDdqYdxCbVetUFwPzNOuJ
-	DYjkfc1PzIrRaythvsmjwupFNzcKe/5Gm8K7dIZdKGQ5iq8XtfmNXj2SYA/rdqtdDoTnAhsU5oH
-	kHisbNhLSlGVFOEA7FYvrRlxFBCQ507MJ3PnZ+O0l+go8x+wRIvZmrkOtl2+wBxv88pyiNmUNST
-	/XBrMnTKhwdlh3+DEaefAKbtTibrnjlC3VoCL+2LtNoiCVnVl3x1aeaWbAybsKpSpsTCSnL7qRQ
-	6nOmFre03QeFsgC4D1C1QZx1SwGQOo4NJAXf+DVLEH4Ia45pjh6egqKn3x252YOqzvRjDyi3Gax
-	HyKv9x7n36U
-X-Received: by 2002:a05:6a20:3d20:b0:3db:3d0b:31fd with SMTP id adf61e73a8af0-3de0e703d8dmr5190620637.1.1790330003117;
-        Fri, 25 Sep 2026 02:53:23 -0700 (PDT)
-Received: from ancienth-X870E-Nova-WiFi ([125.186.72.2])
-        by smtp.gmail.com with ESMTPSA id 41be03b00d2f7-cc78796cf39sm924154a12.32.2026.09.25.02.53.20
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Fri, 25 Sep 2026 02:53:22 -0700 (PDT)
-From: Daehyeon Ko <4ncienth@gmail.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Mimi Zohar <zohar@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: [PATCH] KEYS: trusted: Reject short TPM2 public areas
-Date: Fri, 25 Sep 2026 18:53:08 +0900
-Message-ID: <20260925095308.3248297-1-4ncienth@gmail.com>
-X-Mailer: git-send-email 2.55.0
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="ExAFe32Z"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A89E71F0089A;
+	Fri, 25 Sep 2026 11:21:51 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1790335312;
+	bh=miLcBRngihWIVYaaly2PlwDdE5WcdS69bqsIYC/yY88=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=ExAFe32ZaHq9tV7YAL98GC/Oxpj8VBEVauV/HekqNCJKTpHuHMJyDHp3F9UJYrJ/a
+	 AqBCRkz8tZWgp2Mq0SRKNVxVu9rSevh0DrGp9x4iH4GP/BR8Ec1vb2wCsJwXtd6oNY
+	 11zdbuN3mrp1z2SlG2inv85H0hH2uNbu5ry/laA9KqPfpKKgpc15DJSUgkAYGyQGdI
+	 y6X87ZqMZkIiqfL9JasVjFDvn+YxTcABFqJvnH82nyTeHjR9y9ccCGlAcB5WKBXy6/
+	 xoW1mULxMTM4q18CjTJ/hcXf6UPaMKw55qi5iy+YWNe0XNaRAjrwNk2sYM2xEcEdOp
+	 R3Q4PGU6tk4ag==
+Date: Fri, 25 Sep 2026 14:21:48 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Srish Srinivasan <ssrish@linux.ibm.com>
+Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+	James.Bottomley@hansenpartnership.com, zohar@linux.ibm.com,
+	stefanb@linux.ibm.com, linux-kernel@vger.kernel.org,
+	linux-security-module@vger.kernel.org, nayna@linux.ibm.com,
+	rnsastry@linux.ibm.com
+Subject: Re: [PATCH v2] keys/trusted/tpm2: Validate TPM2_Create object sizes
+ separately
+Message-ID: <arZZTGtmo1ZLit0j@kernel.org>
+References: <20260910100222.247529-1-ssrish@linux.ibm.com>
+ <aqydqxpVmp67kTQO@kernel.org>
+ <e05d8ca7-ac48-47ef-bc47-bef5b22cb723@linux.ibm.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <e05d8ca7-ac48-47ef-bc47-bef5b22cb723@linux.ibm.com>
 
-tpm2_load_cmd() reads TPMA_OBJECT with get_unaligned_be32(pub + 4), but
-does not require public_len to cover that field.
+On Fri, Sep 18, 2026 at 12:18:25PM +0530, Srish Srinivasan wrote:
+> 
+> On 9/18/26 7:40 AM, Jarkko Sakkinen wrote:
+> > On Thu, Sep 10, 2026 at 03:32:22PM +0530, Srish Srinivasan wrote:
+> > > TPM2_Create returns outPrivate, outPublic, creationData, creationHash and
+> > > creationTicket in its response parameter area. However, only outPrivate and
+> > > outPublic are included in the trusted key blob. The size of the blob is
+> > > therefore not determined by the size of the complete response parameter
+> > > area.
+> > > 
+> > > tpm2_seal_trusted() currently compares the size of the complete response
+> > > parameter area against MAX_BLOB_SIZE. This can reject a valid response
+> > > when the remaining response outputs cause the entire response parameter
+> > > area to exceed MAX_BLOB_SIZE, even though the outPrivate and outPublic
+> > > TPM2B structures consumed by tpm2_key_encode() remain small enough to be
+> > > encoded in the key blob.
+> > > 
+> > > This is observed when creating larger trusted keys using an swtpm TPM 2.0
+> > > emulator backed by libtpms.
+> > > 
+> > > For example, requesting a 113-byte key succeeds, 114 fails.
+> > > 
+> > > ~$ keyctl add trusted trusted_key1 "new 113 keyhandle=0x81000001" @u
+> > > 520504613
+> > > ~$ keyctl add trusted trusted_key2 "new 114 keyhandle=0x81000001" @u
+> > > add_key: Argument list too long
+> > > ~$
+> > > 
+> > > Remove the MAX_BLOB_SIZE check on the complete response parameter area.
+> > > Instead, use the response length passed to tpm2_key_encode() to validate
+> > > that the outPrivate and outPublic TPM2B structures are fully contained
+> > > in the response before accessing them.
+> > > 
+> > > Previously, a response parameter area larger than MAX_BLOB_SIZE was
+> > > rejected with -E2BIG before ASN.1 encoding. With this change, if the
+> > > resulting encoded blob does not fit in payload->blob, the error returned by
+> > > asn1_encode_sequence() is propagated instead.
+> > > 
+> > > Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
+> > > ---
+> > > Changelog:
+> > > 
+> > >   v2:
+> > >    - Exclude a comment pointed out by Jarkko
+> > > 
+> > >   security/keys/trusted-keys/trusted_tpm2.c | 35 +++++++++++++++++------
+> > >   1 file changed, 27 insertions(+), 8 deletions(-)
+> > > 
+> > > diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+> > > index 01f18bb37047..cbec4f591952 100644
+> > > --- a/security/keys/trusted-keys/trusted_tpm2.c
+> > > +++ b/security/keys/trusted-keys/trusted_tpm2.c
+> > > @@ -24,24 +24,42 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
+> > >   			   u8 *src, u32 len)
+> > >   {
+> > >   	const int SCRATCH_SIZE = PAGE_SIZE;
+> > > -	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
+> > > -	u8 *work = scratch, *work1;
+> > > -	u8 *end_work = scratch + SCRATCH_SIZE;
+> > > +	u8 *scratch;
+> > > +	u8 *work, *work1;
+> > > +	u8 *end_work;
+> > >   	u8 *priv, *pub;
+> > > -	u16 priv_len, pub_len;
+> > > +	u32 priv_len, pub_len;
+> > >   	int ret;
+> > > -	priv_len = get_unaligned_be16(src) + 2;
+> > > +	if (len < sizeof(__be16))
+> > > +		return -EFAULT;
+> > > +
+> > > +	priv_len = get_unaligned_be16(src);
+> > > +	if (priv_len > len - sizeof(__be16))
+> > > +		return -EFAULT;
+> > > +
+> > > +	priv_len += sizeof(__be16);
+> > >   	priv = src;
+> > > +	if (len - priv_len < sizeof(__be16))
+> > > +		return -EFAULT;
+> > This caused for me some head scrathing tbh.
+> > 
+> > See:
+> > 
+> > 1. len >= 2
+> > 2. priv_len <= len - 2
+> > 3. 2 - priv_len + priv_len <= 2 - priv_len + len - 2
+> > 4. 2 <= len - priv_len
+> > 
+> > Is this check required?
+> 
+> 
+> Hi Jarkko,
+> Thanks for taking a look.
+> 
+> The preceding check,
+> 
+> 
+>     if (priv_len > len - sizeof(__be16))
+>         return -EFAULT;
+> 
+> 
+> ensures that the complete TPM2B_PRIVATE, including its size field,
+> fits within len. After this check, priv_len is incremented by 2 and
+> therefore represents the complete TPM2B_PRIVATE length.
+> 
+> 
+> The check you pointed out,
+> 
+> 
+>     if (len - priv_len < sizeof(__be16))
+>         return -EFAULT;
+> 
+> 
+> then ensures that at least 2 bytes remain for reading the following
+> TPM2B_PUBLIC size field.
 
-A new-format blob with public_len zero makes the read begin at the end of
-the B + 4-byte decoded allocation, causing a four-byte heap out-of-bounds
-read before the TPM command is transmitted. This is reachable from an
-unprivileged add_key() call when TPM trusted keys and a TPM2 device are
-available.
+OK, maybe I got something wrong in my deduction but I'm not
+still entirely sure whether this is leanest way to do these
+checks.
 
-This affects v5.13-rc1 and later kernels built with CONFIG_TRUSTED_KEYS=y
-and CONFIG_TRUSTED_KEYS_TPM=y when a TPM2 device is present. A KASAN run
-as UID 1000 with no effective capabilities reported:
+I'll iterate some other remarks so that this can move forward.
 
-BUG: KASAN: slab-out-of-bounds in tpm2_unseal_trusted
-Read of size 4 at addr ffff888106273b48 by task exploit/160
-CPU: 1 UID: 1000 PID: 160 Comm: exploit
-The buggy address belongs to the object at ffff888106273b40
- which belongs to the cache kmalloc-8 of size 8
-The buggy address is located 0 bytes to the right of
- allocated 8-byte region [ffff888106273b40, ffff888106273b48)
+I was not either entirely sure why this was done:
 
-TPMT_PUBLIC starts with the two-byte type, two-byte nameAlg and four-byte
-objectAttributes fields. Require public_len to cover all eight bytes before
-reading the attributes.
+-	u16 priv_len, pub_len;
++	u32 priv_len, pub_len;
 
-The exact input produced the KASAN read in 3/3 fresh boots. The fixed build
-rejected it with -E2BIG and no KASAN report in 3/3 boots; valid new- and
-old-format trusted-key loads continued to succeed.
+Why wrong len causes -EFAULT and not -EINVAL? EFAULT is for
+memory failures. Probably two that follow should return -EIO.
 
-Fixes: e5fb5d2c5a03 ("security: keys: trusted: Make sealed key properly interoperable")
-Cc: stable@vger.kernel.org
-Assisted-by: LLM
-Signed-off-by: Daehyeon Ko <4ncienth@gmail.com>
----
-Tested with QEMU tpm-tis and swtpm: vulnerable 3/3 KASAN reports,
-fixed 3/3 clean -E2BIG rejections, with public_len 7/8 and new/old-format
-controls passing. Stable 5.15+ requires 114f00d738f1 first; both patches
-apply cleanly in that order.
+One more that came to mind:
 
-The source reproducer and full logs are available privately on request.
+-	priv_len = get_unaligned_be16(src) + 2;
++	if (len < sizeof(__be16))
++		return -EFAULT;
++
++	priv_len = get_unaligned_be16(src);
++	if (priv_len > len - sizeof(__be16))
++		return -EFAULT;
++
++	priv_len += sizeof(__be16);
 
- security/keys/trusted-keys/trusted_tpm2.c | 2 ++
- 1 file changed, 2 insertions(+)
+Removing the line above is not necessary and neither is the last
+the last statement if you just change your check accordingly.
 
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index c2a69bcf381d7..b3109e0a924f5 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -418,6 +418,8 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
- 	public_len = get_unaligned_be16(blob + 2 + private_len);
- 	if (private_len + 2 + public_len + 2 > blob_len)
- 		return -E2BIG;
-+	if (public_len < 8)
-+		return -E2BIG;
- 
- 	pub = blob + 2 + private_len + 2;
- 	/* key attributes are always at offset 4 */
 
-base-commit: 27d14d3b15d5691bcbf0683883a2ea12469edbea
+BR, Jarkko
