@@ -1,46 +1,41 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5DE4E3FFF9D;
-	Fri, 25 Sep 2026 22:49:15 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BB27B4EE844;
+	Fri, 25 Sep 2026 22:57:19 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790376556; cv=none; b=iojOprUhKvNuw5AxLRCqOnGslTeUgDM0C9GC+n3KPPL/tYXv33fbymK82qcFGr+WqeiyhOaSfam3xYJxQyaW4/t0LFRjOkc+uZazJBRUB/1xaFSUa5jMwlF5i5kjBue1P72TdqaQnuRPLWp5xjC2KxEuVx9OSWcvV/5ZlsBr2so=
+	t=1790377040; cv=none; b=tmyiXGs/qpVs+kwh8+sXIrYsyC1J+galK4wK1QB3jsdlHX/qPYQDF+2x1z05NGG0apR1+6bxrmhEjS1ZMGrdvSnEaUZtkRzwXIE3GczsK9suH7LZPas59WpVQ3xfK7NWKsNgfadsCcaX682v/G4TyCd8CN1p/RJFX8nmacdHzs0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790376556; c=relaxed/simple;
-	bh=Y95UQmeT/ukjLgSezHbUyqHff6vAEDwkJco7fGSM0Tc=;
+	s=arc-20240116; t=1790377040; c=relaxed/simple;
+	bh=J1TPWHHnfoUo2nYN3xrPs5nZiLeeK2BR1CVQDLQBzPw=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=s/V3qgu1iWm86i6rUiIwopSuwvHLTafzZq5Wp1uEPCMH1sS3fTF2LsRzQcg/uUdJid5MuVkaM9T7XQkVB0DPVQ57KjQViWM0lSSouKQadAcSLtAd3kyE/lA5su5jibXPz0cLI/wVV0cOTbgx1s2JwqgeKMZK3H4OeNwzYxqLhNA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=RaafAq5M; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=sd8nv0yRUqfJCaOoGsZH2/RvnNMihJgM7sQZbU2hlJFM+iTmTKOtFKHjfOAYpFbtOwa2l1OeDW3o2WC4r2+QbyyW7pVi4fR0KD/FD7eZweC+C1o8Hh/kdXJFFUtduPDvvaRGIMsAT1C62baaSd4FTP1xbtQKaq/kXPRPdeBpXkM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=ZMoZuTW+; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="RaafAq5M"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 706D91F000FF;
-	Fri, 25 Sep 2026 22:49:14 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="ZMoZuTW+"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B982E1F000FF;
+	Fri, 25 Sep 2026 22:57:18 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1790376555;
-	bh=TkaMhPcU6EN6kseIWAWRa1q3PMr7Fv4dOgRgKGXTDnw=;
+	s=k20260515; t=1790377039;
+	bh=YjXDn+XCSuMiREjh9cg06zpaUOVtfg1ul5tnYcpaZAQ=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=RaafAq5M511Ogj3VnsexZWp3/jc59DqjKSNhfxE4IQYF/6p9yKlIRcN/Dhljb09v9
-	 pFmtRJa9m/qoRIuVblqBOBeoD4cdBh/fcgrMxhYiT399NGkPYOf5qiNUuWfX4xQXPL
-	 7YwsbvvyS2q+RIBleu7mZu/ntBkqs7BwuejqXQuqsa/MvApIKJbqNhTvx3SYmdkwkr
-	 VWjgHC+QjdCWJ8OLqmY+friWmUhN47NWSCTJNL00Kwuf6wH6y6UIYGrwMw8TchLrzq
-	 eKisgXkeGnIRB/zauYD+ZE3ItU+IjpilRCeETeweO9ERZc4D4QiB8IzdzBDHKrJdBt
-	 roGKG56hDaqyw==
-Date: Sat, 26 Sep 2026 01:49:11 +0300
+	b=ZMoZuTW+l3cRejGlnzs3iIz1Mb0pp66Ykly3tiijrPG7J48FLbhEpR51MVJvsjK9H
+	 kI30YvjqC29dryBF4Ak38ziASSsxFQw3sjCmCF15pd9+zwpSlMETU+jVwLekPMpKxy
+	 msBla9QQXYamYxCr8FnPvAfK2Oo854GGjm/QAr6XtMe4vqjVYwNeCmIP+66zIn6TTc
+	 7fYQUNKoAo3/bpedb8InrBfPwZrrsPf9zan1Xwdz8xT9NlK6WkHgcPuExulbQfO7Sz
+	 vNQoXcclNsmZ8x4Ug1ec6SX8CjDGXW0KgpjBIqIntpS819PGbaliFz+K+01ovH39Ba
+	 ZFhO9+kyh0P7w==
+Date: Sat, 26 Sep 2026 01:57:15 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Stefano Garzarella <sgarzare@redhat.com>
-Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-	David Howells <dhowells@redhat.com>,
-	James Morris <jmorris@namei.org>,
-	linux-security-module@vger.kernel.org,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	Paul Moore <paul@paul-moore.com>
-Subject: Re: [PATCH] KEYS: trusted: Fix blob allocation size in
- tpm2_key_decode()
-Message-ID: <arb6Z3s3mLu45Bau@kernel.org>
-References: <20260923173506.41519-1-sgarzare@redhat.com>
+To: Daehyeon Ko <4ncienth@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+	Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org,
+	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KEYS: trusted: Reject short TPM2 public areas
+Message-ID: <arb8S05PULLMYfD8@kernel.org>
+References: <20260925095308.3248297-1-4ncienth@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -49,50 +44,72 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260923173506.41519-1-sgarzare@redhat.com>
+In-Reply-To: <20260925095308.3248297-1-4ncienth@gmail.com>
 
-On Wed, Sep 23, 2026 at 07:35:06PM +0200, Stefano Garzarella wrote:
-> From: Stefano Garzarella <sgarzare@redhat.com>
+On Fri, Sep 25, 2026 at 06:53:08PM +0900, Daehyeon Ko wrote:
+> tpm2_load_cmd() reads TPMA_OBJECT with get_unaligned_be32(pub + 4), but
+> does not require public_len to cover that field.
 > 
-> tpm2_key_decode() allocates 4 bytes more than needed. The ASN.1
-> callbacks tpm2_key_priv() and tpm2_key_pub() provide the lengths
-> of TPM2B_PRIVATE and TPM2B_PUBLIC, so ctx.priv_len and ctx.pub_len
-> already account for the 2-byte `size` field each of those structures
-> starts with.
+> A new-format blob with public_len zero makes the read begin at the end of
+> the B + 4-byte decoded allocation, causing a four-byte heap out-of-bounds
+> read before the TPM command is transmitted. This is reachable from an
+> unprivileged add_key() call when TPM trusted keys and a TPM2 device are
+> available.
 > 
-> I noticed this while reviewing commit 114f00d738f1 ("KEYS: trusted:
-> Fix tpm2_load_cmd() boundary check"), which correctly reports
-> ctx.priv_len + ctx.pub_len as the decoded blob size [1].
+> This affects v5.13-rc1 and later kernels built with CONFIG_TRUSTED_KEYS=y
+> and CONFIG_TRUSTED_KEYS_TPM=y when a TPM2 device is present. A KASAN run
+> as UID 1000 with no effective capabilities reported:
 > 
-> Let's allocate exactly that amount, matching the data copied into
-> the blob.
+> BUG: KASAN: slab-out-of-bounds in tpm2_unseal_trusted
+> Read of size 4 at addr ffff888106273b48 by task exploit/160
+> CPU: 1 UID: 1000 PID: 160 Comm: exploit
+> The buggy address belongs to the object at ffff888106273b40
+>  which belongs to the cache kmalloc-8 of size 8
+> The buggy address is located 0 bytes to the right of
+>  allocated 8-byte region [ffff888106273b40, ffff888106273b48)
 > 
-> [1] https://lore.kernel.org/linux-integrity/apfoKo-BdwaLXtkT@sgarzare-redhat/
+> TPMT_PUBLIC starts with the two-byte type, two-byte nameAlg and four-byte
+> objectAttributes fields. Require public_len to cover all eight bytes before
+> reading the attributes.
 > 
-> Fixes: f2219745250f ("security: keys: trusted: use ASN.1 TPM2 key format for the blobs")
-> Signed-off-by: Stefano Garzarella <sgarzare@redhat.com>
+> The exact input produced the KASAN read in 3/3 fresh boots. The fixed build
+> rejected it with -E2BIG and no KASAN report in 3/3 boots; valid new- and
+> old-format trusted-key loads continued to succeed.
+> 
+> Fixes: e5fb5d2c5a03 ("security: keys: trusted: Make sealed key properly interoperable")
+> Cc: stable@vger.kernel.org
+> Assisted-by: LLM
+> Signed-off-by: Daehyeon Ko <4ncienth@gmail.com>
 > ---
->  security/keys/trusted-keys/trusted_tpm2.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Tested with QEMU tpm-tis and swtpm: vulnerable 3/3 KASAN reports,
+> fixed 3/3 clean -E2BIG rejections, with public_len 7/8 and new/old-format
+> controls passing. Stable 5.15+ requires 114f00d738f1 first; both patches
+> apply cleanly in that order.
+> 
+> The source reproducer and full logs are available privately on request.
+> 
+>  security/keys/trusted-keys/trusted_tpm2.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
 > diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-> index 01f18bb37047..a9b8a31a637c 100644
+> index c2a69bcf381d7..b3109e0a924f5 100644
 > --- a/security/keys/trusted-keys/trusted_tpm2.c
 > +++ b/security/keys/trusted-keys/trusted_tpm2.c
-> @@ -115,7 +115,7 @@ static int tpm2_key_decode(struct trusted_key_payload *payload,
->  	if (ctx.priv_len + ctx.pub_len > MAX_BLOB_SIZE)
->  		return -EINVAL;
+> @@ -418,6 +418,8 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+>  	public_len = get_unaligned_be16(blob + 2 + private_len);
+>  	if (private_len + 2 + public_len + 2 > blob_len)
+>  		return -E2BIG;
+> +	if (public_len < 8)
+> +		return -E2BIG;
 >  
-> -	blob = kmalloc(ctx.priv_len + ctx.pub_len + 4, GFP_KERNEL);
-> +	blob = kmalloc(ctx.priv_len + ctx.pub_len, GFP_KERNEL);
->  	if (!blob)
->  		return -ENOMEM;
->  
-> -- 
-> 2.55.0
+>  	pub = blob + 2 + private_len + 2;
+>  	/* key attributes are always at offset 4 */
 > 
+> base-commit: 27d14d3b15d5691bcbf0683883a2ea12469edbea
 
-Yeah, we talked this over so not much to say about this:
+Yeah, makes sense as those eight bytes is what covers the data needed
+to identify the key.
+
 
 Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
