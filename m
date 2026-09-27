@@ -1,66 +1,77 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-dl2-f12.google.com (mail-dl2-f12.google.com [74.125.229.140])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4A1043803D2;
-	Sat, 26 Sep 2026 18:43:07 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4DC9E3B14D7
+	for <keyrings@vger.kernel.org>; Sun, 27 Sep 2026 16:25:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.229.140
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790448188; cv=none; b=sIDptHg+tl32qlnWjrSs65NMTlIHOMjzHWxqsdMtUv7Ks+nH/tPTCSaPPo/kFUPnBg63hb27nXNCmgqLun1wLMivuWuN/HQicVoOh3SsAc3Q2X7bhwgS5ovocutoawDDlh38nXRoNZvmTJEJanjzu8s6EcV069IBCKktdeKhM8Y=
+	t=1790526346; cv=none; b=iReirln+ehXafw3+fUcR/rjDe5c3Qb1q/EAuPTeSrQrvJ8Mov9btiQTUNZnhDok5++fXN3dgPziD/cL8zbYSQ3V41qzZGLqSyp4JIeWrMK0oR8IfFHR4zw3W7pBgHPWzyEMCLH45J86Bda6mLh1KxnIomlOk3UIdl+b1p0anv4I=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790448188; c=relaxed/simple;
-	bh=xsGuJk232I4PLTQmWUF7L02T34ag+5omrFDsR297W3w=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=fWX8Ke3zQqOrzUlTGyzcDUo1dFyW4WqWX1cTSh5nvFd8aBKmUDo8cZLKpvNfV5P+XjbnNeI17yVqiCjMTZps6U9vEC0yrgBBFiLgB3VQ6HcEvDILS1nDwXT6gvfNZPsBacv0sCiqOKRQXlO8oHE+e8y0p6RG1P9v1myfC1kbLlM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=JOdraxMQ; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1790526346; c=relaxed/simple;
+	bh=p8H/veHYTzpsvpAbzEQ0MMeP9P0nDzZxFLy3CSDNRPA=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=DJ981hBAlaQYmFq9SEDcjsQ713+YTa9Hc5dWXuNhx3BIl1DZXDPvQcvfy55oCH2ZK+wWA3mOOxPmstg8dB0I+E7gYbD6vQguYAvRg+6Nw2IAfIRhKWA3qnpl33ZIfnWdav/phUlAhKxIK1+h4X/ZrYgJaqiybeZEoVu8m4pT3Pk=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=qwLWIL4h; arc=none smtp.client-ip=74.125.229.140
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="JOdraxMQ"
-Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 68QH6ptI3178453;
-	Sat, 26 Sep 2026 18:42:57 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:date:from:message-id:mime-version
-	:subject:to; s=pp1; bh=5NWAaCwDcHhIw1u+lP8Elc0CPonTbbi0EH2sp3ZDw
-	v8=; b=JOdraxMQfCw6O5nhANanq2KcsYdLDVbjNbD3pW5MZAjU9ZEisTxr59Cj9
-	1qbwMrTigOdf6AJTWh+i62jFcM7b7AQOoCbbX5aI/HA2eQmux57ztqwhQfUoFWKu
-	gfXjtwDHmk1ugIvHzITie9MXSR1MhLG/j1arAxroAwnstuI3BJdrBzoEa6nmIXWV
-	G9DeDaMrhdvsRPiMv3ZRhW9GxLoArv4xMESmp1jhPIzXMlIARhdkoqctHkCqRGXf
-	cE3AQd+HWrxkwQeL9/AENsJyWRRtSeTl1c9PujOvB14LGN53S79nhHav8mZTpi6M
-	e86sEPvWg79+4DPm++XR7Hh+iEaZA==
-Received: from ppma22.wdc07v.mail.ibm.com (5c.69.3da9.ip4.static.sl-reverse.com [169.61.105.92])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4gx4fdtey0-1
-	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
-	Sat, 26 Sep 2026 18:42:57 +0000 (GMT)
-Received: from pps.filterd (ppma22.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma22.wdc07v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 68QH2Zrd1541370;
-	Sat, 26 Sep 2026 18:42:56 GMT
-Received: from smtprelay07.fra02v.mail.ibm.com ([9.218.2.229])
-	by ppma22.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4gvbu9730u-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Sat, 26 Sep 2026 18:42:56 +0000 (GMT)
-Received: from smtpav01.fra02v.mail.ibm.com (smtpav01.fra02v.mail.ibm.com [10.20.54.100])
-	by smtprelay07.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 68QIgqkW37814682
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Sat, 26 Sep 2026 18:42:52 GMT
-Received: from smtpav01.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 120CC20040;
-	Sat, 26 Sep 2026 18:42:52 +0000 (GMT)
-Received: from smtpav01.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id EE50920043;
-	Sat, 26 Sep 2026 18:42:47 +0000 (GMT)
-Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.ibm.com (unknown [9.67.84.252])
-	by smtpav01.fra02v.mail.ibm.com (Postfix) with ESMTP;
-	Sat, 26 Sep 2026 18:42:47 +0000 (GMT)
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
-Cc: James.Bottomley@HansenPartnership.com, jarkko@kernel.org,
-        zohar@linux.ibm.com, stefanb@linux.ibm.com,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        nayna@linux.ibm.com, rnsastry@linux.ibm.com, ssrish@linux.ibm.com
-Subject: [PATCH v3] keys/trusted/tpm2: Validate TPM2_Create object sizes separately
-Date: Sun, 27 Sep 2026 00:12:03 +0530
-Message-ID: <20260926184203.479203-1-ssrish@linux.ibm.com>
-X-Mailer: git-send-email 2.55.0
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="qwLWIL4h"
+Received: by mail-dl2-f12.google.com with SMTP id a92af1059eb24-141a5cf1370so58875c88.3
+        for <keyrings@vger.kernel.org>; Sun, 27 Sep 2026 09:25:45 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1790526344; x=1791131144; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=3ouNoglngZNElMele84FQctp5cVfzFDP+DtrEx06OLo=;
+        b=qwLWIL4hPn41jCZCWLGzqaDxy73pDKAiiY/ASdnRuPiR1IyWL4mST/FU1Xvq7gNeoq
+         k7FDA5zcfTjgAox3c0uFPsGQDZR6YIsjL8H298zSAVrt9SeQUKIkhYbBX+QGXL+w4A30
+         fePvGKhNgaWaKJqVXqyAacDHPUJkoWHQc8+E90l646ttw9WvBOfbm+zdlu/jd4tjOLGZ
+         TcFiIVX5v6iNn+Z9AcUHRfaT95iMvIHfCCE992elCp9msi8WtgncWQGLIMfimZRKCjTF
+         gafR+mZvtWNFMJhuRDtF/FsrEmNwrLHu0Jq/Z1gb4SqWw3kCDDHJExEF5S1fNn0V49O0
+         7lyQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1790526344; x=1791131144;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=3ouNoglngZNElMele84FQctp5cVfzFDP+DtrEx06OLo=;
+        b=XAedqCt9wlWw+KCcqx8omp3NjbjTEjIO3URRUuVGRaQTNdNRlm8IV9ZR3vYKP2tUhj
+         /OV+A2o985+cjgVkrUQVXq2Ox4PK48XmZH5flgKAJIZROF+/cnzy3W+tExro3r+m+GfN
+         8naGFrPJpNQmVUSVMmDBde4conHsv3l8lSs7emmMuz02dHwnp5z/O4/K6dDVE/iIl6kL
+         B6Ctx28XjwcTS8dIfgDSUNCq+1u1IbI9VzlhVc0tqUAut2pbvLtbXfnCuNxOlMLU/MZc
+         RRNVU8M9pVkprX81A4Kqx7O5AWvY8AIXqSE6lj6SpUj9qXpY/5om75Bc8M08ONpssFQ9
+         ZAbg==
+X-Forwarded-Encrypted: i=1; AKwUvBzkVVHNgyMOJ2F8UTZyivTsHjCv0qfSYU8J3KnlgzqHwovbhQZmndpWqf8Ab90LRUMlTzL5JCUAGg==@vger.kernel.org
+X-Gm-Message-State: AFuF++lnpCAd3dKAlAK3ZlEbzakdCryCqaPFUfihCs8ahNoY7GHEhFBE
+	aQ1/MKVKFFcRM8ND9RnrsbxtlmILhsG2BytY1wVQ2saTojzrBWkQOrxpGcmabfA0nGAJow==
+X-Gm-Gg: AYBFou1VPCzxgQHB1i8xErMFGzEBqmiKCm1ZyJAHI2e4DXCAJI2A4SkHBcXQ/9iSCfE
+	MZji0790OGaQUXPG5voF0eL8SaDN6iT6X3fp+3u1sfo0cQIuEGOqryStttjEGg1j6+BqE4yWWBA
+	kwxb2tq09M+nAz5MvF+c+JZubB6PxLrKxd4TNiDwBkPJdDR6z/ZD+YrDk3MOJB/JklTVuRWMv2P
+	AszeO7F1C1Ho/on2uRtfFUqgklNBv6f+/0wCv/eQRrXWoJysxNvCovK6+uFA8N9brbkrKyIf5B9
+	taKfGDDywhkI8OH8AXdHB2PCpxnoBeLRTRL0hVhIOWWny71SD0r5e9TVbXSXRF44Af9G9IbtEIc
+	1K6cPaqmy4ScmUtq36AMfiqMDtOh+J/IhMswIgHvHTGT01iAUiocIvdwOBzcaPwQe9uhyp+a9yr
+	m073/1aM4RUUCR2P0Qmqv9k91M1RwNckx8STbN31AV2a3pEVTGvk1e5t6TpcXIAOguVUkMJFbXG
+	kVSggwXEDvrcf4MHXuo3xPyYYQru4DqVTpCCjviomO+wXZiPSYTJawNAYike4lcJcl+YHYjU9v3
+	BcZN9A==
+X-Received: by 2002:a05:701b:4542:20b0:139:81c6:67a1 with SMTP id a92af1059eb24-146cf7ee6efmr10726441c88.1.1790526344154;
+        Sun, 27 Sep 2026 09:25:44 -0700 (PDT)
+Received: from localhost.localdomain (95.169.12.199.16clouds.com. [95.169.12.199])
+        by smtp.gmail.com with ESMTPSA id a92af1059eb24-145a7318afcsm18498575c88.0.2026.09.27.09.25.41
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sun, 27 Sep 2026 09:25:43 -0700 (PDT)
+From: Chengfeng Ye <nicoyip.dev@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Chengfeng Ye <nicoyip.dev@gmail.com>
+Subject: [PATCH v3 0/2] keys: Fix ownership lifetime and accounting races
+Date: Mon, 28 Sep 2026 00:25:26 +0800
+Message-ID: <20260927162528.943886-1-nicoyip.dev@gmail.com>
+X-Mailer: git-send-email 2.43.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -68,185 +79,52 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Authority-Analysis: v=2.4 cv=FYWiV5+6 c=1 sm=1 tr=0 ts=6ab81231 cx=c_pps
- a=5BHTudwdYE3Te8bg5FgnPg==:117 a=5BHTudwdYE3Te8bg5FgnPg==:17
- a=VdqzKS8jKosA:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
- a=V8glGbnc2Ofi9Qvn3v5h:22 a=VnNF1IyMAAAA:8 a=70sryTsWxkqKhW1QF0gA:9
-X-Proofpoint-Spam-Info: AW1haW4tMjYwOTI2MDA3NCBTYWx0ZWRfX6ms4ER1n89SF
- v5ScGXfhmUPBtnZVn7KNaLJsT9s68Huso7yXUvV1Ofg53TOR1JkJhC/qBipYrV/2k0Mi/PePA4M
- QlBSWpSJMWQfnJLkR1gZVAraRxrjExw=
-X-Proofpoint-ORIG-GUID: nTdd4-vL3TZhM0jIA4rjZRaRNcD007tn
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwOTI2MDA3NCBTYWx0ZWRfX2KowHOEgSA2O
- LSCnrc3hHUR0OVkJ85Ju2qaJRBhl/6jdLkO5ZkX6f8ScLS91RzEMmv5VRAP2XjEZD/cekDr5/MI
- 5STEWF02USQm9vlWfM2Nku4e+28Zimg27SlWlI4RYTVaiCpWBJyqB4IFyxABjHsNbm3Lq3MUM5F
- vJ+emynSGR8CqPyKwc1SP4v1ihikbbABB5FjPV6K3VoAWznz2qGXtdNTIGSHY3+i/53znWG0BEV
- QOADBAr0kn2hqjxMDN2o6qSkwOfGETTJLRM4lAeVUSSA6nrD6982AttHc72Ej8KGEqfw0bybOhF
- qx7pFSTe6lBiA6rmz5hUDUw4imdJHW7KxG1WpIwFfm6KaAmDvYJ0ZEDjB2WWhJAwbpAaBee6QxL
- lMpHQHY+RbbmknVwvn9wgEWqdy4W3nbMdLGkw2JY8fijYAYpnf3zNMzyV4gbB74C+376YZbnkpc
- 6/w6tMTY8PyUjTbz1Mw==
-X-Proofpoint-GUID: nTdd4-vL3TZhM0jIA4rjZRaRNcD007tn
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-09-26_05,2026-09-21_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- adultscore=0 clxscore=1015 impostorscore=0 spamscore=0 phishscore=0
- priorityscore=1501 malwarescore=0 bulkscore=0 lowpriorityscore=0
- suspectscore=0 classifier=typeunknown authscore=0 authtc= authcc=
- route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2609040000
- definitions=main-2609260074
 
-TPM2_Create returns outPrivate, outPublic, creationData, creationHash and
-creationTicket in its response parameter area. However, only outPrivate and
-outPublic are included in the trusted key blob. The size of the blob is
-therefore not determined by the size of the complete response parameter
-area.
+This series splits the previous bundled fix into two logical changes,
+as requested by Jarkko.
 
-tpm2_seal_trusted() currently compares the size of the complete response
-parameter area against MAX_BLOB_SIZE. This can reject a valid response
-when the remaining response outputs cause the entire response parameter
-area to exceed MAX_BLOB_SIZE, even though the outPrivate and outPublic
-TPM2B structures consumed by tpm2_key_encode() remain small enough to be
-encoded in the key blob.
+Patch 1 protects key_user lifetime while key->user is replaced. It covers
+namespace filtering, quota reservation and instantiated-key count updates,
+with explicit locking at the affected access sites.
 
-This is observed when creating larger trusted keys using the swtpm TPM 2.0
-emulator backed by libtpms.
+Patch 2 depends on patch 1 and extends the same critical sections so that
+quota and instantiated-key accounting move together with ownership.
+Notifications and reference release remain outside the spinlock.
 
-For example, requesting a 113-byte key succeeds, 114 fails.
+The combined code change is identical to v2 applied to the current base.
+Patch 1 fixes the lifetime race; the existing accounting races remain until
+patch 2 is applied. Each commit has its own explanation and interleaving.
 
-~$ keyctl add trusted trusted_key1 "new 113 keyhandle=0x81000001" @u
-520504613
-~$ keyctl add trusted trusted_key2 "new 114 keyhandle=0x81000001" @u
-add_key: Argument list too long
-~$
+Changes in v3:
+- Split v2 into a lifetime fix and an accounting-serialization fix.
+- Rebase onto fd179f8a05be (current mainline at preparation time).
+- Include a short, explicitly historical instrumented KASAN excerpt in
+  patch 1, and add stable trailers for these long-standing bugs.
+- Keep explicit lock acquisition at each reader; no locking accessor.
 
-Remove the MAX_BLOB_SIZE check on the complete response parameter area.
-Instead, use the response length passed to tpm2_key_encode() to validate
-that the outPrivate and outPublic TPM2B structures are fully contained
-in the response before accessing them.
+Validation:
+- Built the four affected objects after each patch.
+- Built the full x86_64 kernel after applying both patches, with KEYS,
+  PROC_FS, USER_NS, WATCH_QUEUE and KEY_NOTIFICATIONS enabled.
+- Both patches pass checkpatch --strict without errors or warnings.
 
-Previously, a response parameter area larger than MAX_BLOB_SIZE was
-rejected with -E2BIG before ASN.1 encoding. With this change, if the
-resulting encoded blob does not fit in payload->blob, the error returned by
-asn1_encode_sequence() is propagated instead.
+Previous version:
+https://lore.kernel.org/r/20260904080940.575882-1-nicoyip.dev@gmail.com/
+Reviewer request:
+https://lore.kernel.org/r/aqHhZO0GjMTOer4j@kernel.org/
 
-Also, use scope-based cleanup to simplify resource management.
+Chengfeng Ye (2):
+  keys: Protect key_user lifetime during ownership changes
+  keys: Serialize ownership transfers with key accounting
 
-Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
----
-Changelog:
+ security/keys/key.c     | 13 +++++++++++--
+ security/keys/keyctl.c  |  4 ++++
+ security/keys/keyring.c |  7 ++++++-
+ security/keys/proc.c    | 15 +++++++++++++--
+ 4 files changed, 34 insertions(+), 5 deletions(-)
 
- v3:
-  - Simplify the TPM2B_PRIVATE and TPM2B_PUBLIC bounds checks
-  - Use appropriate error codes for failure returns
-  - Use scope-based cleanup to simplify resource management
 
- v2:
-  - Exclude a comment pointed out by Jarkko
-
- security/keys/trusted-keys/trusted_tpm2.c | 42 +++++++++++++----------
- 1 file changed, 24 insertions(+), 18 deletions(-)
-
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index 906700c3d7f0..920f45c7864b 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -25,24 +25,36 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
- {
- 	struct trusted_key_tpm *private = options->private;
- 	const int SCRATCH_SIZE = PAGE_SIZE;
--	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
--	u8 *work = scratch, *work1;
--	u8 *end_work = scratch + SCRATCH_SIZE;
-+	u8 *scratch __free(kfree) = NULL;
-+	u8 *work, *work1;
-+	u8 *end_work;
- 	u8 *priv, *pub;
--	u16 priv_len, pub_len;
-+	u32 priv_len, pub_len;
- 	int ret;
- 
-+	if (len < 4)
-+		return -EINVAL;
-+
- 	priv_len = get_unaligned_be16(src) + 2;
--	priv = src;
-+	if (priv_len + 2 > len)
-+		return -EIO;
- 
-+	priv = src;
- 	src += priv_len;
- 
- 	pub_len = get_unaligned_be16(src) + 2;
-+	if (pub_len + priv_len > len)
-+		return -EIO;
-+
- 	pub = src;
- 
-+	scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
- 	if (!scratch)
- 		return -ENOMEM;
- 
-+	work = scratch;
-+	end_work = scratch + SCRATCH_SIZE;
-+
- 	work = asn1_encode_oid(work, end_work, tpm2key_oid,
- 			       asn1_oid_len(tpm2key_oid));
- 
-@@ -50,10 +62,9 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
- 		unsigned char bool[3], *w = bool;
- 		/* tag 0 is emptyAuth */
- 		w = asn1_encode_boolean(w, w + sizeof(bool), true);
--		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode")) {
--			ret = PTR_ERR(w);
--			goto err;
--		}
-+		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode"))
-+			return PTR_ERR(w);
-+
- 		work = asn1_encode_tag(work, end_work, 0, bool, w - bool);
- 	}
- 
-@@ -65,8 +76,7 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
- 	 */
- 	if (WARN(work - scratch + pub_len + priv_len + 14 > SCRATCH_SIZE,
- 		 "BUG: scratch buffer is too small")) {
--		ret = -EINVAL;
--		goto err;
-+		return -EINVAL;
- 	}
- 
- 	work = asn1_encode_integer(work, end_work, private->keyhandle);
-@@ -79,15 +89,10 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
- 	if (IS_ERR(work1)) {
- 		ret = PTR_ERR(work1);
- 		pr_err("BUG: ASN.1 encoder failed with %d\n", ret);
--		goto err;
-+		return ret;
- 	}
- 
--	kfree(scratch);
- 	return work1 - payload->blob;
--
--err:
--	kfree(scratch);
--	return ret;
- }
- 
- struct tpm2_key_context {
-@@ -340,10 +345,11 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		goto out;
- 
- 	blob_len = tpm_buf_read_u32(buf, &offset);
--	if (blob_len > MAX_BLOB_SIZE || buf->flags & TPM_BUF_INVALID) {
-+	if (buf->flags & TPM_BUF_INVALID) {
- 		rc = -E2BIG;
- 		goto out;
- 	}
-+
- 	if (buf->length - offset < blob_len) {
- 		rc = -EFAULT;
- 		goto out;
+base-commit: fd179f8a05be3ccae366b9b96e176b51fbe54aab
 -- 
-2.53.0
+2.43.0
 
