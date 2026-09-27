@@ -1,195 +1,180 @@
-Received: from mail-dl2-f12.google.com (mail-dl2-f12.google.com [74.125.229.140])
+Received: from mail-ed2-f33.google.com (mail-ed2-f33.google.com [74.125.228.97])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C691E41379A
-	for <keyrings@vger.kernel.org>; Sun, 27 Sep 2026 16:26:02 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.229.140
-ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790526364; cv=none; b=YkWUrNyfA5CjAdPkJdk9++3mv8LiY1Lr9VXVR3AXwfII2XHlRFMl/Oh91/31leJSfExdEhy2UTLpI8oED+/z8vsMmBjVwuxBPXgl+XKfFHYSYnJSE361m2vqhsu5FP19CDbWoKeGwUb5WKyKe21oJO8/cIY2TvSU2IEz3ygeAJI=
-ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790526364; c=relaxed/simple;
-	bh=w7hXOZR3kGcBhr0hjg4B5lwGJGB/KZcZNRTsshLVPPs=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=LaR5FT4+1Xm6jz7GmS8H6EgoHmlLyRw0U7sqMc5cNU6twGQKWia69WvgrsKDxjzIG0hRdpUKUAurgJOSuaFdhJN75fYEETfJ8ma1wJPiLrP3MA2rznzTwGximqmC0elcYm8/wOSZZm/0o+BtU+n2JShbdjLf/nn5W2F2gxp4Wb4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=B7exR3oT; arc=none smtp.client-ip=74.125.229.140
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 239D933DEE9
+	for <keyrings@vger.kernel.org>; Sun, 27 Sep 2026 17:19:57 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=74.125.228.97
+ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1790529600; cv=pass; b=qlf/HcbhwM6a2viHS8KC8Ihg1zOr7YyRf0gmzxjdOFL6kP2+NqfnAlRk/mtvH5b52WqQPTzKIC6frUaNkhX2kNKYLr7376OdtbYnZQRH9LE6ew1HsXmZH+iQiCSDdD9bm9J3G4G9eIEbyc6aGLLylzt1rQm59lmES/nPSXLKIZU=
+ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1790529600; c=relaxed/simple;
+	bh=NgU7t86W/VexiwqKV9fxVLNSEaHoaTI7MJusd6ZnYzw=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=rR8k5lpSADU2WAz48OPSNwYmIfRf+UdUGTrlMh0lz3WBJE2FnIJUDp0T0dzfthIap5M7NF1mh6osT6ysXHTCqKx2L+SPhrQwwK2GR85SKFKB1FmLftaAqANXD36WTu2HppaYk7rgxBOyeyo/r1IfGXc5gO+CnNHv4I3CzXyveGU=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=JN/dTztp; arc=pass smtp.client-ip=74.125.228.97
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="B7exR3oT"
-Received: by mail-dl2-f12.google.com with SMTP id a92af1059eb24-141a5cf1370so58888c88.3
-        for <keyrings@vger.kernel.org>; Sun, 27 Sep 2026 09:26:02 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="JN/dTztp"
+Received: by mail-ed2-f33.google.com with SMTP id 4fb4d7f45d1cf-6ac6fb4b2a3so86573a12.3
+        for <keyrings@vger.kernel.org>; Sun, 27 Sep 2026 10:19:57 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1790529596; cv=none;
+        d=google.com; s=arc-20260327;
+        b=WGvVPYLbCa0WRK9BF1RU/GbUSjWHOvVnhhU/jIdj6cPa3bq/yJIZRbGCWGFouxKAak
+         rL04+pdXkrt583b+kA6LKIvDWXKaGMeJErqa6vVNih7KafSEH9XwsZXmcGBVjFI3ruiQ
+         lcs8xFBDNrH6xnL+sRzmYN6dGOHl4D/SnUvlcJOmX5fCFxHzcY1cDk19b96CRTmO3e0U
+         EVwaZlJzBosbUUqmti7d785UNyhTnvi4ZPzDU2OteGaH55SGqZlXlu8csqtY8o0aPfQC
+         C1nbnhBUZuBXPh4mbpPjvMndKoC5yfuwZJA4mUZcvqcr4VIXl1n6XLSbBxwIsl9FqTrJ
+         MQOA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:dkim-signature;
+        bh=/R4IpN8egmbt+t8Ci9l3zcVKOJVLWdh83YYmUmU9rXA=;
+        fh=i5uIXVmZgPTOnNDS44PUjlLJBzkEuqLeD5PRmanQ+1o=;
+        b=AYVhd1vK0crP27aEiX7yZYj9Pu1KTwd9N9ZnMkwcnm9RvFPXs0C3cG57gOBzXdpM9W
+         DRz1BbYziyPO8f0LGgqQeevm5uwrcL1ur1muXwlcNyj3KHvaoD+e8kqeWO0k+YtvFvSW
+         HAwS5CJwMuWn4MJtSifo6hdyUlP/BY2OdeJ+h9DP5JX3zqKdOKnq+lS/swMUPaitQxK1
+         TO6IEy7hZWtlWjMi5N/puyH1mvfc7HAWfcHA8KIWukEavxp2GU1BlImjS6L/6+OnJ9tZ
+         P1xVzP02o/sU9EAzoJHPfbXQxOft45vow+uRxvEZfc/5hIDjlbGhXDatBGMiHX/5B4Rc
+         wuPw==;
+        darn=vger.kernel.org
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1790526362; x=1791131162; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=N3ycCXPKuJpAbU8om5dCwVVH3DJubz8qaLeZTTofQWI=;
-        b=B7exR3oTA2rtdJVTHBE7Acu8x7bnuCAqkFk08S12qAvZWwp8QVYfUl+ztUKhoVtLTj
-         vnG13LeURACVwp1m6PzG1DvWdspEel0XinKQvk14tbR3xo5UpBMKYoou4vOp9CVxigmV
-         cQmcZLeQ3q4BtrsIKRAT/fxyRg0sn6pCyNwiZF+WmYwR4jAVD5ujH/yIl4lx9OTt8/ch
-         cFNntNL9wadNBByttKaoBGBoS0R2LSTiBnFSudl3RWvxQ7+fWiig4fjVlTe49zFRp7oR
-         cSshj1LjLmT0ZEGXHWN3OM7yVJMRRQl84xc0C7m20z/bsbangzmgk5+6YjEVW8beKldq
-         stmw==
+        d=gmail.com; s=20251104; t=1790529596; x=1791134396; darn=vger.kernel.org;
+        h=content-transfer-encoding:content-type:cc:to:subject:message-id
+         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
+         :date:message-id:reply-to:content-type;
+        bh=/R4IpN8egmbt+t8Ci9l3zcVKOJVLWdh83YYmUmU9rXA=;
+        b=JN/dTztp5uBkVnr6owRPG+oeELNoohat3/eUjTx6gvx9CdxgoF3JZth2R8/9CJJV/X
+         Lki27GSbXucwze04slXd5e3AonvCAk0x8uHm+2Hk43pycy1aL8vXk4GFMQJqI28h/C4r
+         TjtUuJlnwB7onadn0T3OLEZYnD5DEqEYVmM8Q78B/U2QCfLtc2JCGuYwLQrwILT703Du
+         yY5KJcnwWtSX/MWqg2q8xkAJwXXMyvBiWlXoJ+5eF4p3aQDrFUcH/WJW0HBYOsClO9S0
+         BWOSQZ7/JoLxZIZ4ocvWr13cxXcVqvVxZYerW42xk3p4011Ympib5kWh1G6pLABoq8Kg
+         hCdQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1790526362; x=1791131162;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=N3ycCXPKuJpAbU8om5dCwVVH3DJubz8qaLeZTTofQWI=;
-        b=eZU/9wVRD0Kmf0TVYR0zYNqv8Unk7+J3n0ExPO3zdNmDKQezN/63uP6WpWBYJ/0pp8
-         912SPgqenfl9+R81WjjjPE6TmjIOL00h0aj4ZMQ6UXtkB8lmp32ygn5qnuKNQq5QJELL
-         ksB4/awb5UKcRhn8vUODLuzFkri2sPc4KVbnANij0VUbvDoHaGaP8a5tpVkpqeINHktd
-         v5dYHqrMnGswseFINu3onzCA104CEENVxHOmNUuxlyaoAA0JQHHbqW7Ev0Doyc4KjvUE
-         /eB7uIqRF2VGVUM0oJqSJirTKMEV6IOeAMRDKADWDysHi+bJSx6vS+leBunFkL23eoTO
-         fubw==
-X-Forwarded-Encrypted: i=1; AKwUvBxfGR2fVEC3HPMK2fufn990Fppyi4L5I43PzzP2q95HN+3uAlvodX61wfxcAaCnIw2e7zgqGHHNSw==@vger.kernel.org
-X-Gm-Message-State: AFuF++ncqNpsf0Qll0mABJ9LpWo6gFYKeULTFg7On7lyfH3m3U9aCnYo
-	49WNgfJf4hb1uhgXrUHJ1fOJLw5inEFFW7WCwop3Kb7bhxSumFpCbwld
-X-Gm-Gg: AYBFou32PjLr4/r3g/8USENnYMXVmXxMeG7Hj1PmSXgYQgeRFWXA0Vt8a8x4TzzkTwp
-	ZeIr16e9jEW0hHpYhhOchOQNEaiA+uSW06ffwHA4sJYObvEhZ4Nmy7ljRQEZ6/Q4yDig3LVjDwp
-	RiKHOo7L2DpRbScZJ+Wf9xrNni8tHkM2fw4VOPN3csCt2+1xecND76zLLgjY4ila+vHsMpi2YNM
-	L+swSdc99XqsSU7KwjzfEChwt9YEsWJdQza3HYSfV3lBVEH5xQZo6BItVwKDON1ctVlZiWZcf+U
-	eDIj70Yhl701n2kKnvoq9SmBN3yus6AlVbf2wuz7M750+rkkKfLThGuqWqQpTO/fuBf59iPUbpA
-	iJOUEi8qvl8H+8j41PPcEaOQtdW7Kls9EjaITLhM4Dc7ya50yL12U8axab5uxj1KPNgqZMz1G+Z
-	1eBSAD1y1IMHFtsO+fOfXSd8OW+AlsAIhZ8QEzC1TsKSUB/q0ajABOnd6yhN846j7V+xEGYmEGk
-	hSrm3rh/BsANKZBQOyhRdZlWfN3Pkr9/S7Cabwndj0Jrc1I+oLlrfh2dMfFj4R7iVen7w==
-X-Received: by 2002:a05:701b:418f:20b0:144:fd17:3b21 with SMTP id a92af1059eb24-146cb50233emr12002309c88.0.1790526361709;
-        Sun, 27 Sep 2026 09:26:01 -0700 (PDT)
-Received: from localhost.localdomain (95.169.12.199.16clouds.com. [95.169.12.199])
-        by smtp.gmail.com with ESMTPSA id a92af1059eb24-145a7318afcsm18498575c88.0.2026.09.27.09.25.58
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sun, 27 Sep 2026 09:26:01 -0700 (PDT)
-From: Chengfeng Ye <nicoyip.dev@gmail.com>
-To: David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E . Hallyn" <serge@hallyn.com>,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Chengfeng Ye <nicoyip.dev@gmail.com>,
-	stable@vger.kernel.org
-Subject: [PATCH v3 2/2] keys: Serialize ownership transfers with key accounting
-Date: Mon, 28 Sep 2026 00:25:28 +0800
-Message-ID: <20260927162528.943886-3-nicoyip.dev@gmail.com>
-X-Mailer: git-send-email 2.43.0
-In-Reply-To: <20260927162528.943886-1-nicoyip.dev@gmail.com>
-References: <20260927162528.943886-1-nicoyip.dev@gmail.com>
+        d=1e100.net; s=20260707; t=1790529596; x=1791134396;
+        h=content-transfer-encoding:content-type:cc:to:subject:message-id
+         :date:from:in-reply-to:references:mime-version:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=/R4IpN8egmbt+t8Ci9l3zcVKOJVLWdh83YYmUmU9rXA=;
+        b=EYbPB46bY/kiiRmitpIOAbjP3b0ECrU/hX629N8+atPThxwWfAqWn/3Di5+GCPa7/g
+         wUApdGeiNxGnKpeBz735kXUYGXOqEgCb5La62aa7Yo8hEAblj3QRtAdGSRjT9bEVS/pO
+         r9whTpv4ZHUs9OThUuKPVmSGypnXgkylFQjB4NBulbn2g/PB2HSbnGLu4rFEWWD8eJMp
+         SJnabV4f2nmA+92GakN8W/AsACzvksBaUuBV7z+gm2opazREj+ST1dLyb0ufwa+9GC0z
+         AwTO230d63toMh6N0q1PrqPYIfdhBL68ydsQ+BXD6haxZ1NbJ7fdxTWwcHcB9QbclKMh
+         cpaw==
+X-Forwarded-Encrypted: i=1; AKwUvByBDyPlUtIzMpDPbNZkLrLRQavwonfgrZD4jXRiKH4L0kICgKCTPoLYQqBlvewFDxNyfVTOD6H5vg==@vger.kernel.org
+X-Gm-Message-State: AFq9FYL6D1WVV6qHzY08UzAT1l1j7oSyxz1T5ZzWJYhMSl3l9YCTn8DG
+	nViPT8i5ie+XTv5vUV895TdTP0orCK6MOsXgIfa31+ImlB/JS7fFAIPIvVatr2QLOEG3eeiHuo9
+	P303pbb01U/3HlMScRjmQzr+FIQfYIbN0vgWLxTiWlvlh
+X-Gm-Gg: AYBFou0xlEtKQNcDZJIA32RdruSz7bv5taOajn5LSDdID9zBMjuIrcE5qXuO0y6wWfw
+	lXo938UTOdHmClvnEkgJkYpBX52ltFBS12v5cRG3hV0rhNf/TLzqEYMtVWE8Rw8Ft+5SbiEEpg9
+	Da2Hv4f2+5pfO8AFq4RrwbNSNd9iaXRc2Adcs3bnTYjEwatvkZPx3qpcKIhYMJRKRX3micMZMEG
+	1hVNxCe/27x6WEAhzdUIT9iNrr36kVdHHI4gaYEZKmrH7lUnFl0T7UTh4DPzXlU2+zru76C21pn
+	4efSvGbGAHEEPnHdnwx/bU1WGvH8Q4eIjF5RhepGsHwsZsoGiK8uJXhg8l7K3H1Awq3uTTCGdor
+	S10pkJHl2mIA=
+X-Received: by 2002:a05:6402:13ca:b0:6aa:490e:5518 with SMTP id
+ 4fb4d7f45d1cf-6aae1fcf708mr7295949a12.2.1790529596172; Sun, 27 Sep 2026
+ 10:19:56 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+References: <20260904080940.575882-1-nicoyip.dev@gmail.com> <aqHhZO0GjMTOer4j@kernel.org>
+In-Reply-To: <aqHhZO0GjMTOer4j@kernel.org>
+From: Chengfeng Ye <nicoyip.dev@gmail.com>
+Date: Mon, 28 Sep 2026 01:19:44 +0800
+X-Gm-Features: AclHuK8YMIA5n5DLx6saWD3JedHa-zp1toc5aC5wKE4OHA3Bf05WcoKKBxjw3MI
+Message-ID: <CAAo+4rW_kT_GL_3cr8aSHkAM29yQQgNL4EJktfTirOi4nHwOOA@mail.gmail.com>
+Subject: Re: [PATCH v2] keys: Fix key_user use-after-free during ownership changes
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>, 
+	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
+	Andrew Morton <akpm@linux-foundation.org>, keyrings@vger.kernel.org, 
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Protecting individual accesses to key->user does not make ownership
-transfers atomic with accounting updates. keyctl_chown_key() holds
-key->sem, but instantiation is serialized by key_construction_mutex and
-need not hold that semaphore. KEY_LOOKUP_PARTIAL also permits chown of
-an uninstantiated key.
+On Thu, Sep 10, 2026 at 6:44=E2=80=AFAM Jarkko Sakkinen <jarkko@kernel.org>=
+ wrote:
+>
+> On Fri, Sep 04, 2026 at 04:09:40PM +0800, Chengfeng Ye wrote:
+> > keyctl_chown_key() replaces key->user and then drops the key's
+> > reference to the previous key_user. Several paths access key->user
+> > without any common synchronization with this replacement, including
+> > the /proc/keys iterators, find_keyring_by_name(), quota accounting, and
+> > key instantiation.
+> >
+> > This allows an ownership change to free the previous key_user while a
+> > reader is still accessing it:
+> >
+> >   CPU 0 (/proc/keys)            CPU 1 (KEYCTL_CHOWN)
+> >   user =3D key->user
+> >                                 old =3D key->user
+> >                                 key->user =3D newowner
+> >                                 key_user_put(old)
+> >                                   kfree(old)
+> >   uid =3D user->uid
+> >
+> > The same missing synchronization also can corrupt instantiated-key
+> > accounting. KEY_LOOKUP_PARTIAL allows keyctl_chown_key() to change the
+> > owner of a key while it is still being instantiated:
+> >
+> >   CPU 0 (instantiate)           CPU 1 (KEYCTL_CHOWN)
+> >   atomic_inc(old->nikeys)
+> >                                 observe KEY_IS_UNINSTANTIATED
+> >                                 skip the nikeys transfer
+> >                                 key->user =3D newowner
+> >   mark key instantiated
+> >
+> > The increment remains charged to the previous owner. Quota reservation
+> > can similarly select one owner for its quota limit and another owner
+> > for the usage update, or access an owner that has already been freed.
+> >
+> > The existing locks do not provide common exclusion for these
+> > operations. keyctl_chown_key() holds key->sem, key construction uses
+> > key_construction_mutex, and the affected readers hold their respective
+> > tree or list locks.
+> >
+> > Use key_user_lock to serialize access to key ownership. Hold it across
+> > the accounting transfer and key->user replacement in keyctl_chown_key()=
+.
+> > Use the same lock while readers copy the owner's UID, while quota usage
+> > is updated, and while the instantiated-key count and key state are
+> > committed.
+> >
+> > key_user_lock already serializes final key_user removal, so an old
+> > owner cannot be freed while one of these readers is accessing it.
+> >
+> > Fixes: 5801649d8b83 ("[PATCH] keys: let keyctl_chown() change a key's o=
+wner")
+> > Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
+> > ---
+> > Changes in v2:
+> > - Audit every user->uid occurrence and all direct key->user accesses.
+> > - Take key_user_lock explicitly at each namespace-filtering reader inst=
+ead
+> >   of hiding the lock acquisition in an accessor.
+> > - Serialize quota reservation and construction accounting with ownershi=
+p
+> >   changes while preserving the existing direct key->user accesses.
+> > - Use the commit that introduced ownership changes as the Fixes target.
+> >
+> > Link: https://lore.kernel.org/keyrings/20260823170448.3856516-1-nicoyip=
+.dev@gmail.com/ [v1]
+>
+> https://www.kernel.org/doc/html/latest/process/submitting-patches.html#se=
+parate-your-changes
+>
+> I.e. no bundle commits. This unreviewable.
 
-The instantiated-key count can therefore be charged to the wrong owner:
+Thanks for the review. I have split the changes into two patches
+and sent them as v3:
 
-  instantiate                       keyctl_chown_key()
-  lock key_user_lock
-  increment old->nikeys
-  unlock key_user_lock
-                                    observe KEY_IS_UNINSTANTIATED
-                                    skip the nikeys transfer
-                                    replace key->user
-  mark key instantiated
+https://lists.openwall.net/linux-kernel/2026/09/27/734
 
-The key becomes instantiated under the new owner while the increment
-remains with the old owner. Negative instantiation has the same race.
-
-Quota reservation can likewise run between charging the new owner and
-replacing key->user. It then adjusts the old owner's quota and changes
-key->quotalen while chown is transferring that quota burden.
-
-Extend the key_user_lock critical section in keyctl_chown_key() across
-the quota and key-count transfers, state check, and owner replacement.
-Also extend the instantiation critical sections across the state update,
-so chown observes the count increment and instantiated state together.
-The existing per-user quota locks continue to serialize quota changes
-against other keys owned by the same user.
-
-Keep allocations, notifications and reference release outside
-key_user_lock, and release it on the quota-overrun path.
-
-Fixes: 5801649d8b83 ("[PATCH] keys: let keyctl_chown() change a key's owner")
-Cc: stable@vger.kernel.org
-Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
----
-Changes in v3:
-- Split from v2 as patch 2/2; see the cover letter for the full split.
-- Rebase onto current mainline and retain explicit reader-side locking.
-
-v2: https://lore.kernel.org/r/20260904080940.575882-1-nicoyip.dev@gmail.com/
-
- security/keys/key.c    | 4 ++--
- security/keys/keyctl.c | 6 ++++--
- 2 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/security/keys/key.c b/security/keys/key.c
-index d0d583194b05..54c675b3b58d 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -454,8 +454,8 @@ static int __key_instantiate_and_link(struct key *key,
- 			/* mark the key as being instantiated */
- 			spin_lock(&key_user_lock);
- 			atomic_inc(&key->user->nikeys);
--			spin_unlock(&key_user_lock);
- 			mark_key_instantiated(key, 0);
-+			spin_unlock(&key_user_lock);
- 			notify_key(key, NOTIFY_KEY_INSTANTIATED, 0);
- 
- 			if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
-@@ -613,8 +613,8 @@ int key_reject_and_link(struct key *key,
- 		/* mark the key as being negatively instantiated */
- 		spin_lock(&key_user_lock);
- 		atomic_inc(&key->user->nikeys);
--		spin_unlock(&key_user_lock);
- 		mark_key_instantiated(key, -error);
-+		spin_unlock(&key_user_lock);
- 		notify_key(key, NOTIFY_KEY_INSTANTIATED, -error);
- 		key_set_expiry(key, ktime_get_real_seconds() + timeout);
- 
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index c17924609317..83a9575b084e 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1004,6 +1004,8 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
- 		if (!newowner)
- 			goto error_put;
- 
-+		spin_lock(&key_user_lock);
-+
- 		/* transfer the quota burden to the new user */
- 		if (test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
- 			unsigned maxkeys = uid_eq(uid, GLOBAL_ROOT_UID) ?
-@@ -1036,11 +1038,10 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
- 			atomic_inc(&newowner->nikeys);
- 		}
- 
--		spin_lock(&key_user_lock);
- 		zapowner = key->user;
- 		key->user = newowner;
--		spin_unlock(&key_user_lock);
- 		key->uid = uid;
-+		spin_unlock(&key_user_lock);
- 	}
- 
- 	/* change the GID */
-@@ -1060,6 +1061,7 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
- 
- quota_overrun:
- 	spin_unlock_irqrestore(&newowner->lock, flags);
-+	spin_unlock(&key_user_lock);
- 	zapowner = newowner;
- 	ret = -EDQUOT;
- 	goto error_put;
--- 
-2.43.0
-
+Best regards,
+Chengfeng
