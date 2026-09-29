@@ -1,43 +1,44 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9CB82485CE4;
-	Tue, 29 Sep 2026 21:15:58 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E7D933BAD9A;
+	Tue, 29 Sep 2026 21:19:58 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790716561; cv=none; b=SoUcFttTB1I64TLvSUs7XfFP0Uz4aA+sRUK22ppf7q5zI9C4z7XYrcftanO6Gr/dEdX5oEiXuxTA6NFy9DyiJWTSuSYrnTrUlM4zAgfxtNRA8dZwcy1kmAIWApNSeHS1b5/Z/RvN8upML3hf9xRc0vDs+rte7jzvgZSjStueM/0=
+	t=1790716801; cv=none; b=ReWdcrcRjVibSrINWY82sTDqNMCuB6iSMHZQbyk/Bs4a1kgiHr8tyHnQ46CzdA8I82uapBgpHfeq2Dbwa0Yxst5ME7YQJlet8a9iNKrSvh3Yi3hpjM0/GB+xfj4j7sLopx+1Ch2p0K+fkUR1iTq4kZ2pUwYWUrOTa8l3xxYkHkE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790716561; c=relaxed/simple;
-	bh=lqKCHgsKbEJemEkDs5GbCaDQUfzPaZ5VmXNb6+ZPzQE=;
+	s=arc-20240116; t=1790716801; c=relaxed/simple;
+	bh=3rLP5N1LpYgEhCQOLjeczUKJNl2ZEh39ctQnGA5rNes=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=dx0vfErrr/QLzq4NmTcLU0/O/+lFJIXewm38W8mOm2oB0+aHOYcHyMXj5K0mfTAYvxMBIDMKIkXoRIBLDTUinkYCaELVBX0GO/6gB54omlYnMcl7yUcKuzVAgRU/CfnL9VdqBzVbbZZA8Yki3ZVzEfY1B/Jol8kFT2Ibr3B0Nzk=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Og93w8eD; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=OiJKknM6fTlGcANnveqwNYDP7cYyqyjX2so5g5UTanvvMaBik6a8hnZkj1FnXciMvZSZi5Yr/n4S8/6oSKmK1bCLZVvo595jSp2+gxtwt9bLdE30S/bFa08ZEtKcJ/hJTN+mhzcDFM/6/BIM1qKQzIvXVcV1EUT/q3gmXYWtGbo=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=IkPlANd5; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Og93w8eD"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D24001F000FF;
-	Tue, 29 Sep 2026 21:15:55 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="IkPlANd5"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DA1A81F000FF;
+	Tue, 29 Sep 2026 21:19:57 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1790716556;
-	bh=3VCk6G2yobohI05M306uWdferP+m03q1q/h6npkFLfA=;
+	s=k20260515; t=1790716798;
+	bh=5giZyhrmYxSSrsaONI31j8V3dahHnScR7YB3YH7b6Ak=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=Og93w8eD/ywaCGakV6C6bl5CGVCjJvAsEooV3gdPanemCwxEKKjvWDWBEC8Flvxwb
-	 CEj/omwhZvf4OeHsnF9O0Y1lPDlLyxNoI5juCsKWqss8XKea1LFUGidLc9tEtzvt3Z
-	 w8W1qo1ntWGMLDGTMBHxC3qsbuzBYbqZzVJfYU8cLlxyToffmhqRUQnm0/tEZxKo6w
-	 cx1SpP8dZ+DImZibfWsWKMhjsLJk98KO2bitoxiDZs622+lo83kLz2SbjjIXVye5kw
-	 QGGIkVRJ7Ij+TRZLM/reH9zljkWgwfszdF9+47ZEQFfVsGGUkUUVRwhYGSTs/V1UWN
-	 +CSvDDuqPBhXA==
-Date: Wed, 30 Sep 2026 00:15:52 +0300
+	b=IkPlANd5jEXlMI9PYFyYubApEaTuXYmIqhQXA/FN9dSSRSoZqxAGF0zgq0o+Pg38b
+	 SqgrzgiS88HK2gLGm+IbmwfvZdra0vMsa6OIrNoq6icJcKbO3e/U4w6QA985o8aAU2
+	 G79lBPt74vWaMoAMnn7YPubcjV2vYQg1EHB36D3GOOROWC6FfpyrxulSK2bFpSJS6a
+	 oN41WhDrCgrZHI3bHUJuqa7thubZpksMB0cGSQ1xzxnh5ZITOMrLgKNbPT37JfPs5k
+	 ff5fhzAHG12tvDmlDjxhZcT5uQJ3mhB5EfNN4tKpAH3AA3sOnlRID/SqwN+FHDr3KT
+	 GLzt9BVQFXSKg==
+Date: Wed, 30 Sep 2026 00:19:54 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Srish Srinivasan <ssrish@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-	James.Bottomley@hansenpartnership.com, zohar@linux.ibm.com,
-	stefanb@linux.ibm.com, linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org, nayna@linux.ibm.com,
-	rnsastry@linux.ibm.com
-Subject: Re: [PATCH v3] keys/trusted/tpm2: Validate TPM2_Create object sizes
- separately
-Message-ID: <arwqiNal3ElcgfON@kernel.org>
-References: <20260926184203.479203-1-ssrish@linux.ibm.com>
+To: Chengfeng Ye <nicoyip.dev@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] keys: Protect key_user lifetime during ownership
+ changes
+Message-ID: <arwreqyrz-aRTxs8@kernel.org>
+References: <20260927162528.943886-1-nicoyip.dev@gmail.com>
+ <20260927162528.943886-2-nicoyip.dev@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -46,167 +47,206 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260926184203.479203-1-ssrish@linux.ibm.com>
+In-Reply-To: <20260927162528.943886-2-nicoyip.dev@gmail.com>
 
-On Sun, Sep 27, 2026 at 12:12:03AM +0530, Srish Srinivasan wrote:
-> TPM2_Create returns outPrivate, outPublic, creationData, creationHash and
-> creationTicket in its response parameter area. However, only outPrivate and
-> outPublic are included in the trusted key blob. The size of the blob is
-> therefore not determined by the size of the complete response parameter
-> area.
+On Mon, Sep 28, 2026 at 12:25:27AM +0800, Chengfeng Ye wrote:
+> keyctl_chown_key() replaces key->user under key->sem and drops the
+> reference to the previous owner after releasing the semaphore. Readers
+> which do not hold that semaphore can still be using the previous owner
+> when key_user_put() frees it.
 > 
-> tpm2_seal_trusted() currently compares the size of the complete response
-> parameter area against MAX_BLOB_SIZE. This can reject a valid response
-> when the remaining response outputs cause the entire response parameter
-> area to exceed MAX_BLOB_SIZE, even though the outPrivate and outPublic
-> TPM2B structures consumed by tpm2_key_encode() remain small enough to be
-> encoded in the key blob.
+> For example, namespace filtering in /proc/keys can race with chown:
 > 
-> This is observed when creating larger trusted keys using the swtpm TPM 2.0
-> emulator backed by libtpms.
+>   /proc/keys reader                 keyctl_chown_key()
+>   user = key->user
+>                                     key->user = newowner
+>                                     key_user_put(old)
+>                                       kfree(old)
+>   read user->uid
 > 
-> For example, requesting a 113-byte key succeeds, 114 fails.
+> An earlier instrumented run reported:
 > 
-> ~$ keyctl add trusted trusted_key1 "new 113 keyhandle=0x81000001" @u
-> 520504613
-> ~$ keyctl add trusted trusted_key2 "new 114 keyhandle=0x81000001" @u
-> add_key: Argument list too long
-> ~$
+>   BUG: KASAN: slab-use-after-free in proc_keys_start+0x353/0x440
+>   Read of size 4 at addr ffff8881128abbc0 by task poc/88
+>   Call Trace:
+>    proc_keys_start+0x353/0x440
+>    seq_read_iter+0x25d/0x1190
+>    proc_reg_read_iter+0x19e/0x260
+>   Allocated by task 86:
+>    key_user_lookup+0x1b4/0x540
+>    keyctl_chown_key+0x3cc/0xbf0
+>   Freed by task 87:
+>    kfree+0x149/0x330
+>    keyctl_chown_key+0x7b0/0xbf0
 > 
-> Remove the MAX_BLOB_SIZE check on the complete response parameter area.
-> Instead, use the response length passed to tpm2_key_encode() to validate
-> that the outPrivate and outPublic TPM2B structures are fully contained
-> in the response before accessing them.
+> Serialize pointer replacement and the affected readers with key_user_lock,
+> which already protects final key_user removal. Take the lock explicitly
+> while /proc/keys and find_keyring_by_name() copy the owner's UID. Retain
+> the quota-owner UID rather than substituting key->uid, since they may
+> differ for thread keyrings.
 > 
-> Previously, a response parameter area larger than MAX_BLOB_SIZE was
-> rejected with -E2BIG before ASN.1 encoding. With this change, if the
-> resulting encoded blob does not fit in payload->blob, the error returned by
-> asn1_encode_sequence() is propagated instead.
+> Also hold the lock across owner accesses in key_payload_reserve() and
+> across the instantiated-key count increments. Instantiation need not hold
+> the target key's semaphore, so these paths need the same lifetime
+> protection. Leave key-state publication and the chown accounting transfer
+> outside the new critical sections for the separate accounting fix.
 > 
-> Also, use scope-based cleanup to simplify resource management.
-> 
-> Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
+> Fixes: 5801649d8b83 ("[PATCH] keys: let keyctl_chown() change a key's owner")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
 > ---
-> Changelog:
+> Changes in v3:
+> - Split from v2 as patch 1/2; see the cover letter for the full split.
+> - Rebase onto current mainline and retain explicit reader-side locking.
 > 
->  v3:
->   - Simplify the TPM2B_PRIVATE and TPM2B_PUBLIC bounds checks
->   - Use appropriate error codes for failure returns
->   - Use scope-based cleanup to simplify resource management
+> v2: https://lore.kernel.org/r/20260904080940.575882-1-nicoyip.dev@gmail.com/
 > 
->  v2:
->   - Exclude a comment pointed out by Jarkko
+>  security/keys/key.c     | 13 +++++++++++--
+>  security/keys/keyctl.c  |  2 ++
+>  security/keys/keyring.c |  7 ++++++-
+>  security/keys/proc.c    | 15 +++++++++++++--
+>  4 files changed, 32 insertions(+), 5 deletions(-)
 > 
->  security/keys/trusted-keys/trusted_tpm2.c | 42 +++++++++++++----------
->  1 file changed, 24 insertions(+), 18 deletions(-)
-> 
-> diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-> index 906700c3d7f0..920f45c7864b 100644
-> --- a/security/keys/trusted-keys/trusted_tpm2.c
-> +++ b/security/keys/trusted-keys/trusted_tpm2.c
-> @@ -25,24 +25,36 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
+> diff --git a/security/keys/key.c b/security/keys/key.c
+> index b34a64d81d47..d0d583194b05 100644
+> --- a/security/keys/key.c
+> +++ b/security/keys/key.c
+> @@ -21,6 +21,7 @@ struct rb_root		key_serial_tree; /* tree of keys indexed by serial */
+>  DEFINE_SPINLOCK(key_serial_lock);
+>  
+>  struct rb_root	key_user_tree; /* tree of quota records indexed by UID */
+> +/* Protects key_user_tree and key ownership changes. */
+>  DEFINE_SPINLOCK(key_user_lock);
+>  
+>  unsigned int key_quota_root_maxkeys = 1000000;	/* root's key count quota */
+> @@ -380,9 +381,12 @@ int key_payload_reserve(struct key *key, size_t datalen)
+>  
+>  	/* contemplate the quota adjustment */
+>  	if (delta != 0 && test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
+> -		unsigned maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
+> -			key_quota_root_maxbytes : key_quota_maxbytes;
+>  		unsigned long flags;
+> +		unsigned int maxbytes;
+> +
+> +		spin_lock(&key_user_lock);
+> +		maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
+> +			key_quota_root_maxbytes : key_quota_maxbytes;
+>  
+>  		spin_lock_irqsave(&key->user->lock, flags);
+>  
+> @@ -396,6 +400,7 @@ int key_payload_reserve(struct key *key, size_t datalen)
+>  			key->quotalen += delta;
+>  		}
+>  		spin_unlock_irqrestore(&key->user->lock, flags);
+> +		spin_unlock(&key_user_lock);
+>  	}
+>  
+>  	/* change the recorded data length if that didn't generate an error */
+> @@ -447,7 +452,9 @@ static int __key_instantiate_and_link(struct key *key,
+>  
+>  		if (ret == 0) {
+>  			/* mark the key as being instantiated */
+> +			spin_lock(&key_user_lock);
+>  			atomic_inc(&key->user->nikeys);
+> +			spin_unlock(&key_user_lock);
+>  			mark_key_instantiated(key, 0);
+>  			notify_key(key, NOTIFY_KEY_INSTANTIATED, 0);
+>  
+> @@ -604,7 +611,9 @@ int key_reject_and_link(struct key *key,
+>  	/* can't instantiate twice */
+>  	if (key->state == KEY_IS_UNINSTANTIATED) {
+>  		/* mark the key as being negatively instantiated */
+> +		spin_lock(&key_user_lock);
+>  		atomic_inc(&key->user->nikeys);
+> +		spin_unlock(&key_user_lock);
+>  		mark_key_instantiated(key, -error);
+>  		notify_key(key, NOTIFY_KEY_INSTANTIATED, -error);
+>  		key_set_expiry(key, ktime_get_real_seconds() + timeout);
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index d14ace88e529..c17924609317 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -1036,8 +1036,10 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+>  			atomic_inc(&newowner->nikeys);
+>  		}
+>  
+> +		spin_lock(&key_user_lock);
+>  		zapowner = key->user;
+>  		key->user = newowner;
+> +		spin_unlock(&key_user_lock);
+>  		key->uid = uid;
+>  	}
+>  
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index 15bf4af8f282..5943e8b48c0f 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -1148,6 +1148,7 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
 >  {
->  	struct trusted_key_tpm *private = options->private;
->  	const int SCRATCH_SIZE = PAGE_SIZE;
-> -	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
-> -	u8 *work = scratch, *work1;
-> -	u8 *end_work = scratch + SCRATCH_SIZE;
-> +	u8 *scratch __free(kfree) = NULL;
-> +	u8 *work, *work1;
-> +	u8 *end_work;
->  	u8 *priv, *pub;
-> -	u16 priv_len, pub_len;
-> +	u32 priv_len, pub_len;
->  	int ret;
+>  	struct user_namespace *ns = current_user_ns();
+>  	struct key *keyring;
+> +	kuid_t uid;
 >  
-> +	if (len < 4)
-> +		return -EINVAL;
-> +
->  	priv_len = get_unaligned_be16(src) + 2;
-> -	priv = src;
-> +	if (priv_len + 2 > len)
-> +		return -EIO;
->  
-> +	priv = src;
->  	src += priv_len;
->  
->  	pub_len = get_unaligned_be16(src) + 2;
-> +	if (pub_len + priv_len > len)
-> +		return -EIO;
-> +
->  	pub = src;
->  
-> +	scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
->  	if (!scratch)
->  		return -ENOMEM;
->  
-> +	work = scratch;
-> +	end_work = scratch + SCRATCH_SIZE;
-> +
->  	work = asn1_encode_oid(work, end_work, tpm2key_oid,
->  			       asn1_oid_len(tpm2key_oid));
->  
-> @@ -50,10 +62,9 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
->  		unsigned char bool[3], *w = bool;
->  		/* tag 0 is emptyAuth */
->  		w = asn1_encode_boolean(w, w + sizeof(bool), true);
-> -		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode")) {
-> -			ret = PTR_ERR(w);
-> -			goto err;
-> -		}
-> +		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode"))
-> +			return PTR_ERR(w);
-> +
->  		work = asn1_encode_tag(work, end_work, 0, bool, w - bool);
->  	}
->  
-> @@ -65,8 +76,7 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
+>  	if (!name)
+>  		return ERR_PTR(-EINVAL);
+> @@ -1158,7 +1159,11 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
+>  	 * grants Search permission and that hasn't been revoked
 >  	 */
->  	if (WARN(work - scratch + pub_len + priv_len + 14 > SCRATCH_SIZE,
->  		 "BUG: scratch buffer is too small")) {
-> -		ret = -EINVAL;
-> -		goto err;
-> +		return -EINVAL;
->  	}
->  
->  	work = asn1_encode_integer(work, end_work, private->keyhandle);
-> @@ -79,15 +89,10 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
->  	if (IS_ERR(work1)) {
->  		ret = PTR_ERR(work1);
->  		pr_err("BUG: ASN.1 encoder failed with %d\n", ret);
-> -		goto err;
-> +		return ret;
->  	}
->  
-> -	kfree(scratch);
->  	return work1 - payload->blob;
-> -
-> -err:
-> -	kfree(scratch);
-> -	return ret;
->  }
->  
->  struct tpm2_key_context {
-> @@ -340,10 +345,11 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
->  		goto out;
->  
->  	blob_len = tpm_buf_read_u32(buf, &offset);
-> -	if (blob_len > MAX_BLOB_SIZE || buf->flags & TPM_BUF_INVALID) {
-> +	if (buf->flags & TPM_BUF_INVALID) {
->  		rc = -E2BIG;
->  		goto out;
->  	}
+>  	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
+> -		if (!kuid_has_mapping(ns, keyring->user->uid))
+> +		spin_lock(&key_user_lock);
+> +		uid = keyring->user->uid;
+> +		spin_unlock(&key_user_lock);
 > +
->  	if (buf->length - offset < blob_len) {
->  		rc = -EFAULT;
->  		goto out;
+> +		if (!kuid_has_mapping(ns, uid))
+>  			continue;
+>  
+>  		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
+> diff --git a/security/keys/proc.c b/security/keys/proc.c
+> index 4f4e2c1824f1..e507c500c068 100644
+> --- a/security/keys/proc.c
+> +++ b/security/keys/proc.c
+> @@ -68,7 +68,13 @@ static struct rb_node *key_serial_next(struct seq_file *p, struct rb_node *n)
+>  	n = rb_next(n);
+>  	while (n) {
+>  		struct key *key = rb_entry(n, struct key, serial_node);
+> -		if (kuid_has_mapping(user_ns, key->user->uid))
+> +		kuid_t uid;
+> +
+> +		spin_lock(&key_user_lock);
+> +		uid = key->user->uid;
+> +		spin_unlock(&key_user_lock);
+> +
+> +		if (kuid_has_mapping(user_ns, uid))
+>  			break;
+>  		n = rb_next(n);
+>  	}
+> @@ -80,6 +86,7 @@ static struct key *find_ge_key(struct seq_file *p, key_serial_t id)
+>  	struct user_namespace *user_ns = seq_user_ns(p);
+>  	struct rb_node *n = key_serial_tree.rb_node;
+>  	struct key *minkey = NULL;
+> +	kuid_t uid;
+>  
+>  	while (n) {
+>  		struct key *key = rb_entry(n, struct key, serial_node);
+> @@ -100,7 +107,11 @@ static struct key *find_ge_key(struct seq_file *p, key_serial_t id)
+>  		return NULL;
+>  
+>  	for (;;) {
+> -		if (kuid_has_mapping(user_ns, minkey->user->uid))
+> +		spin_lock(&key_user_lock);
+> +		uid = minkey->user->uid;
+> +		spin_unlock(&key_user_lock);
+> +
+> +		if (kuid_has_mapping(user_ns, uid))
+>  			return minkey;
+>  		n = rb_next(&minkey->serial_node);
+>  		if (!n)
 > -- 
-> 2.53.0
+> 2.43.0
 > 
 
-Now we can say that it leaves the tree to cleaner state than it was
-before applying this patch. The first version, despite doing the right
-thing was simply too convoluted.
+Thanks, great work!
 
 Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
