@@ -1,168 +1,114 @@
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-ej2-f43.google.com (mail-ej2-f43.google.com [74.125.228.171])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 53E54492199
-	for <keyrings@vger.kernel.org>; Fri,  2 Oct 2026 11:48:36 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3081B2110E
+	for <keyrings@vger.kernel.org>; Fri,  2 Oct 2026 16:11:05 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.228.171
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790941717; cv=none; b=utqbb82P70166CNeV2PFhuPsX7YWntLZlXJGR7JtR0RVn2ZqtPMn0Xd8CK2ohwseKd1BBiHP9lmIExDQTjgqahdx5iaqJuczuqxN8WABujWAte2yMBxddJwz9n4awJKb/YWdFdoF9RNHp/jbT+ppsGEBBw8ptXbT7/2pRCUH7g0=
+	t=1790957468; cv=none; b=q38U/SSTbtojjfvf+nS6LPeSOt7seUg8VLJy619TZPDUb5iFiiFptuAioWz49LdtE66idpkwT+vLZdYiqKLeW6gXKdkp97KzZGHxmAoBsvHHdaJuarP9YgFRVdYl0qlwI/bF31HiJKH2LH/4J8cAy61u7BcM/FP3+h6bN0j6eno=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790941717; c=relaxed/simple;
-	bh=tzXbpGlSJGY1eG7pyJ3Hw4M0sXvdlNE59Ym/kPErX0Q=;
-	h=Date:From:To:cc:Subject:In-Reply-To:Message-ID:References:
-	 MIME-Version:Content-Type; b=QVNsh3eD1I9q1An7TNvmvDm1CxNFSfz7c/3Axt9R1fMEpvafkIDWGjc/FPHpwkogFTHCKUTfwCMmlCzTtJAATpyWbWZkMco7UgLRlvix1qC/sjuIXi8E4VcVrf75U7Og2D9+tjdnr4qC2IJH1PF2L18/ol6Yi1SOtasqf9bg8vY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=Laji1caC; arc=none smtp.client-ip=170.10.133.124
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
+	s=arc-20240116; t=1790957468; c=relaxed/simple;
+	bh=k6EIrKXphmVYtwYT1711/8oYKVo3ADl2w1gIDOT/428=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=NRe3XOs8rhfPzCdRyNSKsCqYYuBYKzqnTc78MhHxTR33vDC9QwyhobV+RMsRXwUYfe3AKbwhx7srSzBhSnWOenPNxgfEWWSIBVqVE7b+FxrSZHJ59UnZMtNuEuXzbQxMDRXGmg8br80nA9O4ubo/7qY2/zYT/7iyaM+Bj2vl9+g=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux-foundation.org; spf=pass smtp.mailfrom=linuxfoundation.org; dkim=pass (1024-bit key) header.d=linux-foundation.org header.i=@linux-foundation.org header.b=SyIpzk7W; arc=none smtp.client-ip=74.125.228.171
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux-foundation.org
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linuxfoundation.org
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="Laji1caC"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1790941715;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=VqN5mrFTIgkZSeI2M8frnfxOaXKmJhzuyw4sP+cfndg=;
-	b=Laji1caCB58rqxuco13Xgz39YIoKgWucUe6ZVg5FClGuBbAUx/9WkCMK9ozL8a21WDM11X
-	e3NX3nCzgEA0UnMwd4xGfNejLAUplAbvR5BbFA4w+/NDpoO8ZLRgs2EenqtUT4mxHkA6Rw
-	v/47aqn2KidxPMyeo41GlsEhDjdWaUE=
-Received: from mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com
- (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
- relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-488-yxuRXQ1KN2ioW-91s1mDzQ-1; Fri,
- 02 Oct 2026 07:48:32 -0400
-X-MC-Unique: yxuRXQ1KN2ioW-91s1mDzQ-1
-X-Mimecast-MFC-AGG-ID: yxuRXQ1KN2ioW-91s1mDzQ_1790941710
-Received: from mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.95])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 0B3531800576;
-	Fri,  2 Oct 2026 11:48:30 +0000 (UTC)
-Received: from mpatocka-thinkpadx1carbongen12.rmtcz.csb (headnet05.pony-001.prod.iad2.dc.redhat.com [10.2.32.117])
-	by mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id C25305BC;
-	Fri,  2 Oct 2026 11:48:26 +0000 (UTC)
-Date: Fri, 2 Oct 2026 13:48:23 +0200 (CEST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-To: Lorenz Kofler <lorenz@sigma-star.at>, Eric Biggers <ebiggers@google.com>
-cc: Mike Snitzer <snitzer@kernel.org>, 
-    Benjamin Marzinski <bmarzins@redhat.com>, Alasdair Kergon <agk@redhat.com>, 
-    dm-devel@lists.linux.dev, linux-kernel@vger.kernel.org, 
-    upstream+dm@sigma-star.at, David Howells <dhowells@redhat.com>, 
-    Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] dm-integrity: support keys in the kernel
- keyring
-In-Reply-To: <b0f8f47a-beb0-426e-bdee-5d0d80ade8ad@sigma-star.at>
-Message-ID: <1e53661e-42f4-72b2-3331-33af21e9fe0f@redhat.com>
-References: <20260928062734.3805458-1-lorenz@sigma-star.at> <20260928062734.3805458-2-lorenz@sigma-star.at> <6e7bd72b-6f1a-211d-16a8-a35a530af408@redhat.com> <b0f8f47a-beb0-426e-bdee-5d0d80ade8ad@sigma-star.at>
+	dkim=pass (1024-bit key) header.d=linux-foundation.org header.i=@linux-foundation.org header.b="SyIpzk7W"
+Received: by mail-ej2-f43.google.com with SMTP id a640c23a62f3a-c2e2050feb1so11954566b.1
+        for <keyrings@vger.kernel.org>; Fri, 02 Oct 2026 09:11:05 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=linux-foundation.org; s=google; t=1790957463; x=1791562263; darn=vger.kernel.org;
+        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
+         :references:mime-version:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=HxVPiCTrxqmZkgyyCrGRaSaA/i4Dd2Lh1oLkXXkYEhk=;
+        b=SyIpzk7WdLc0zFMHMC++NW7dVImEkeJdrbA61PmSly4Eop1d9PJ7CVnDjCqFybhH/P
+         G4otyqCw/1HxspFB6t4/UDyRCSDsTuq/JysYWTPmURsvcHt6a/LEd9/ynB0Xu9APRqdc
+         SH4EqdKnORkbSsvSs+pG4Rtlanludd1EqeaWY=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1790957463; x=1791562263;
+        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
+         :references:mime-version:x-gm-gg:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to:content-type;
+        bh=HxVPiCTrxqmZkgyyCrGRaSaA/i4Dd2Lh1oLkXXkYEhk=;
+        b=IXvm5VFOMfN34WKPqn59Xgqi2i3ol4FVsQlnAYm+5uwswnzEs1vaOf0r5yLlCTqZ8S
+         dwPbyWNInEiaEKv/1U5n2Hhd8I3wU0UfqPl1zFMAZgFxSnnn2RJBDQ86ro4sTzZl94lz
+         mghKYyulJWjBFrKL6arkcbUvSKUU7fnZxMJ1gSzaxZbwiHWtMKjlAS6UJVUzID56DQPo
+         wpdDIT//5O6xLrjp7cMhZDn3IFbRl6FD7fhvxUjXIwvkALr5MvvF8dzL36/0iyBK5zxn
+         +szqPenv2W0xT8attGTZTyXPhXHsHRYKC9G7UcqxY1mX/nf1QyBKhh2IeJfQ1DroJeV0
+         iwZw==
+X-Forwarded-Encrypted: i=1; AKwUvBw4EHmskNvAAScpvCCRfXHjdr5hYuILEEENssmbXzygTZVpPYHd8pgbMSoWIWHI3XQqVcViXMjt7w==@vger.kernel.org
+X-Gm-Message-State: AFuF++mn2BZ/jtNg1MsngJY37RNeq9zocdJwzQ0IP6200rbHOh0OlTBg
+	WNk6eW+xwnmh9Z+kIlr+U6hnlZDtbcC1CLfoQtNQbZL19GwEI+G89AN/tUhd+Ub19i08fxAXSg+
+	mhSmN3NI=
+X-Gm-Gg: AYBFou1ch+TAY93eJ2dxv/WeTzL/HjELEwpHpxlZvPwxA0KBcPpyCoeqYk4j2mTGvf0
+	iFuq7BRVsgFH7Z/ohWRACCYpjadnRtQYVPE0sDcuRNFS0K45rWnXihTuScIcfOiIoz/euBVn+6Z
+	Ji9ct+MoHUmYkvTvNrfux/EiQEdFonLivBiO76bQ8cNJTyXxGCVRTOoH5gQvh72toQGg2Yp5eHq
+	opd9tUUfEdz0XcWLXE4K4KA50Lob2273Rjn9MdRj8/e+90r7sG/zFqmglDLlsUXeAcQHPGTm2aq
+	jGkWLLC0iG+oNw0dgl8BWpBQ5k2a1NnXj0iBc95OQl6fBR2NVjaxfmmKMLMWY/ps50lkOUDvUC9
+	ThLcFRtfFQJc032fo3aULsQPXXItw/VstgkMJvur2kfudtwxRW0/S68qG/GHvdvHPC0hVGhxIPB
+	A7IxNPKW8y6yBiuKFrxSq2uETTIE5EdufMctRb0CON0WXvmMPHXLSNUwJA3hewPGMQysxGSrmOV
+	lSPEg7epEVHQDsVt5LM1FGCl+oFhTRLaTmUPgcLPkx9jEZ+cw==
+X-Received: by 2002:a17:907:841:b0:c2a:b1cc:158d with SMTP id a640c23a62f3a-c2e4afb7b9emr247540566b.32.1790957463237;
+        Fri, 02 Oct 2026 09:11:03 -0700 (PDT)
+Received: from mail-ej2-f43.google.com (mail-ej2-f43.google.com. [74.125.228.171])
+        by smtp.gmail.com with ESMTPSA id a640c23a62f3a-c2e4cf5fc87sm106928466b.43.2026.10.02.09.11.02
+        for <keyrings@vger.kernel.org>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Fri, 02 Oct 2026 09:11:02 -0700 (PDT)
+Received: by mail-ej2-f43.google.com with SMTP id a640c23a62f3a-c2e20bb4583so10746066b.3
+        for <keyrings@vger.kernel.org>; Fri, 02 Oct 2026 09:11:02 -0700 (PDT)
+X-Forwarded-Encrypted: i=1; AKwUvByZuuU4hSMwLkoLFsCHquUWmGJqghYuodaDQRceWVQhbE0vSvGvOMLoDj0+ktArSFpWF6LtGaZ4Kg==@vger.kernel.org
+X-Received: by 2002:a17:907:e1d1:10b0:c2e:4e08:19a8 with SMTP id
+ a640c23a62f3a-c2e4e081c49mr157712766b.5.1790957461853; Fri, 02 Oct 2026
+ 09:11:01 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Scanned-By: MIMEDefang 3.6 on 10.30.177.95
+References: <ar9D-mM-KA9P_pJC@kernel.org>
+In-Reply-To: <ar9D-mM-KA9P_pJC@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 2 Oct 2026 09:10:45 -0700
+X-Gmail-Original-Message-ID: <CAHk-=wjeUnds=_XoHpuPt2A0ZefYC4RUvOp0=LfPR2jzQFaeLQ@mail.gmail.com>
+X-Gm-Features: AclHuK-xk4Cejur6T8G1Bze0Dr20QtZHSq4M1Cl_MKyKmEbexAadoObtNJQHGiw
+Message-ID: <CAHk-=wjeUnds=_XoHpuPt2A0ZefYC4RUvOp0=LfPR2jzQFaeLQ@mail.gmail.com>
+Subject: Re: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-v7.3-rc6
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, David Howells <dhowells@redhat.com>, 
+	keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, 
+	linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
 
+On Thu, 1 Oct 2026 at 22:41, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+>
+> Please pull these bug fixes, which have landed after v7.3-rc1.
 
+Jarkko, I've asked you before: please write an explanation for your
+pull requests.
 
-On Fri, 2 Oct 2026, Lorenz Kofler wrote:
+"Please pull" is not a reason to pull. The "which landed after
+v7.3-rc1" is also not talking about what they do.
 
-> Hi Mikulas,
-> 
-> thank you for the review!
-> 
-> Some notes below.
-> 
-> >> +#ifdef CONFIG_KEYS
-> >> +
-> >> +static bool contains_whitespace(const char *str)
-> >> +{
-> >> +	while (*str)
-> >> +		if (isspace(*str++))
-> >> +			return true;
-> >> +	return false;
-> >> +}
-> >> +
-> >> +static int set_key_user(struct alg_spec *a, struct key *key)
-> >> +{
-> >> +	const struct user_key_payload *ukp;
-> >> +
-> >> +	ukp = user_key_payload_locked(key);
-> >> +	if (!ukp)
-> >> +		return -EKEYREVOKED;
-> >> +
-> >> +	if (a->key_size != ukp->datalen)
-> >> +		return -EINVAL;
-> >> +
-> >> +	memcpy(a->key, ukp->data, a->key_size);
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int set_key_encrypted(struct alg_spec *a, struct key *key)
-> >> +{
-> >> +	const struct encrypted_key_payload *ekp;
-> >> +
-> >> +	ekp = key->payload.data[0];
-> >> +	if (!ekp)
-> >> +		return -EKEYREVOKED;
-> >> +
-> >> +	if (a->key_size != ekp->decrypted_datalen)
-> >> +		return -EINVAL;
-> >> +
-> >> +	memcpy(a->key, ekp->decrypted_data, a->key_size);
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int set_key_trusted(struct alg_spec *a, struct key *key)
-> >> +{
-> >> +	const struct trusted_key_payload *tkp;
-> >> +
-> >> +	tkp = key->payload.data[0];
-> >> +	if (!tkp)
-> >> +		return -EKEYREVOKED;
-> >> +
-> >> +	if (a->key_size != tkp->key_len)
-> >> +		return -EINVAL;
-> >> +
-> >> +	memcpy(a->key, tkp->key, a->key_size);
-> >> +
-> >> +	return 0;
-> >> +}
-> > 
-> > These four functions are copied from dm-crypt.c and dm-inlinecrypt.c.
-> > Copying code is generally malpattern, they should be unified and moved to
-> > an include file (that would be included in all three targets) or to the
-> > key management code (that would be called from all three targets).
-> > 
-> 
-> Yes that is the issue I described in the cover letters. But I don't
-> actually know which way is the preferred one. Afaik there are now
-> three options:
-> 
-> 1. static inline helpers in a drivers/md header, so dm-crypt and
->    dm-integrity each compile their own copy
-> 2. a small library module, similar to dm-bufio, so there is one copy
->    that follows the value (y/m) of dm-crypt and dm-integrity
-> 3. integration into key management code
-> 
-> Please tell me which option you prefer.
+The tag contains three lines of text, and none of those lines are in
+the least helpful or relevant to the contents of the pull.
 
-Try 3, if not possible then 1. I think that introducing a module with this 
-would be overkill.
+It doesn't have to be much. For simple driver fixes it can sometimes
+be as trivial as just "Misc trivial fixes". But in this case it
+clearly could have been something like "Fix tpm error handling and
+buffer size bugs". Merge messages and pull requests  don't need the
+_details_ - those are in the individual commits - but they should have
+a high-level "what happened" overview.
 
-The "if (!strncmp(key_string, "logon:", key_desc - key_string + 1)) {" 
-lines are duplicated as well, so I would refactor them and move them to 
-the helper too.
+And this pull request is actively hard to parse. The subject line says
+"for-next". So I have to look at an email that is actively *trying* to
+make it hard for me to decide whether I should pull and gives me *no*
+information at all about what it contains.
 
-I don't know why dm-inlinecrypt only uses the "logon:" key while dm-crypt 
-uses "user:", "encrypted:", "trusted:" as well (Eric - could you 
-explain?). So, perhaps, dm-inlinecrypt could be extended to use all four 
-key types as well.
+Be better. Please.
 
-I CC'd keyrings maintainers - so, if they have some suggestions or 
-objections regarding moving the code there, let them say.
-
-Mikulas
-
+                LInus
