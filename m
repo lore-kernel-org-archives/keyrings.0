@@ -1,237 +1,168 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.133.124])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 116B8418A33;
-	Fri,  2 Oct 2026 07:11:19 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 53E54492199
+	for <keyrings@vger.kernel.org>; Fri,  2 Oct 2026 11:48:36 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.133.124
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790925081; cv=none; b=g4xptxrB7iqEaNzjLuQ8vHrLE8KPBWNJmJsV4WvZ2ys4oopgAGN7gWs5P8PWpVHM5lx62G+6sFDM9Z6aLNN53CkVW9oH8mPT1HzK0Godn4aGAgsGDMN2e9cGorEKYqVIadrMH2UwTj85Vyddnso0GqVyl2Rh4tDTec87I/b2LA8=
+	t=1790941717; cv=none; b=utqbb82P70166CNeV2PFhuPsX7YWntLZlXJGR7JtR0RVn2ZqtPMn0Xd8CK2ohwseKd1BBiHP9lmIExDQTjgqahdx5iaqJuczuqxN8WABujWAte2yMBxddJwz9n4awJKb/YWdFdoF9RNHp/jbT+ppsGEBBw8ptXbT7/2pRCUH7g0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790925081; c=relaxed/simple;
-	bh=yDCRRgDd0sb5f/bBTA2w/WwIAnw4vFHFS80lhIyLL3I=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=lAgNNkTtDsPNGgOLlXTShcpSD9T8Uf04jkWK8KZvDq3fEgZNXhomWysrcZtZ4qECvujFDsen4u9pq/U9WBu2IxsSkBq6GL8XLLpqQjLVTEGlJ7RDv0vNJNoCzeKVkUL4F/n3+OMvL2UBBMRi3k8gZTH1FD1GYqYRCNp1qFwXop4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=aF9vYtMr; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1790941717; c=relaxed/simple;
+	bh=tzXbpGlSJGY1eG7pyJ3Hw4M0sXvdlNE59Ym/kPErX0Q=;
+	h=Date:From:To:cc:Subject:In-Reply-To:Message-ID:References:
+	 MIME-Version:Content-Type; b=QVNsh3eD1I9q1An7TNvmvDm1CxNFSfz7c/3Axt9R1fMEpvafkIDWGjc/FPHpwkogFTHCKUTfwCMmlCzTtJAATpyWbWZkMco7UgLRlvix1qC/sjuIXi8E4VcVrf75U7Og2D9+tjdnr4qC2IJH1PF2L18/ol6Yi1SOtasqf9bg8vY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=Laji1caC; arc=none smtp.client-ip=170.10.133.124
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="aF9vYtMr"
-Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 69266gZi2684610;
-	Fri, 2 Oct 2026 07:11:16 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:date:from:message-id:mime-version
-	:subject:to; s=pp1; bh=79K4JGGj8PXo7JbUTPqX7WgOYDnMsT4XTaPOSfQIm
-	Wc=; b=aF9vYtMrjJE5dz+hQN6Um3KTNoC3oGuNWvfSZhna9joKP/HLQcYNZ7O+U
-	FuX0p8K6BhXqa+FlHmBvoRkw/+rUXewZUWbxz526NUgSWdvI2Onu9ozUxhX+o0AT
-	M3SBItvJahOoRf7X71h6nT8vnPliJNKXhJSbyP0sUuZKu5BxMIVUBM+2uhI+pUhS
-	Zz+YaG3E8cRr/5HyycOBVn0fl1VuZOzAf3HBgQCrJE7rnHVhIrUZJs0o8v7+h4WQ
-	3UQjBttyFaJXV5tMv05BEISlO7iT4YuxDodl7H4oovIGYMVbN4hg8D5nYgO5j2Sf
-	nrZUYQUVL7cQ7epLaeRC9ZT/ldcYg==
-Received: from ppma11.dal12v.mail.ibm.com (db.9e.1632.ip4.static.sl-reverse.com [50.22.158.219])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4gx4fepm1b-1
-	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
-	Fri, 02 Oct 2026 07:11:16 +0000 (GMT)
-Received: from pps.filterd (ppma11.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma11.dal12v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 6925lVgw2088576;
-	Fri, 2 Oct 2026 07:11:16 GMT
-Received: from smtprelay01.fra02v.mail.ibm.com ([9.218.2.227])
-	by ppma11.dal12v.mail.ibm.com (PPS) with ESMTPS id 4h21nu150m-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Fri, 02 Oct 2026 07:11:15 +0000 (GMT)
-Received: from smtpav04.fra02v.mail.ibm.com (smtpav04.fra02v.mail.ibm.com [10.20.54.103])
-	by smtprelay01.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6927BCIU38339048
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Fri, 2 Oct 2026 07:11:12 GMT
-Received: from smtpav04.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 23D1320043;
-	Fri,  2 Oct 2026 07:11:12 +0000 (GMT)
-Received: from smtpav04.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 8ED7820040;
-	Fri,  2 Oct 2026 07:11:01 +0000 (GMT)
-Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.ibm.com (unknown [9.67.94.93])
-	by smtpav04.fra02v.mail.ibm.com (Postfix) with ESMTP;
-	Fri,  2 Oct 2026 07:11:00 +0000 (GMT)
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
-Cc: James.Bottomley@HansenPartnership.com, jarkko@kernel.org,
-        zohar@linux.ibm.com, stefanb@linux.ibm.com,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        nayna@linux.ibm.com, rnsastry@linux.ibm.com, ssrish@linux.ibm.com
-Subject: [PATCH v2] keys/trusted_keys: reuse TPM version in option handling
-Date: Fri,  2 Oct 2026 12:40:50 +0530
-Message-ID: <20261002071050.179879-1-ssrish@linux.ibm.com>
-X-Mailer: git-send-email 2.55.0
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="Laji1caC"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1790941715;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+	 in-reply-to:in-reply-to:references:references;
+	bh=VqN5mrFTIgkZSeI2M8frnfxOaXKmJhzuyw4sP+cfndg=;
+	b=Laji1caCB58rqxuco13Xgz39YIoKgWucUe6ZVg5FClGuBbAUx/9WkCMK9ozL8a21WDM11X
+	e3NX3nCzgEA0UnMwd4xGfNejLAUplAbvR5BbFA4w+/NDpoO8ZLRgs2EenqtUT4mxHkA6Rw
+	v/47aqn2KidxPMyeo41GlsEhDjdWaUE=
+Received: from mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-488-yxuRXQ1KN2ioW-91s1mDzQ-1; Fri,
+ 02 Oct 2026 07:48:32 -0400
+X-MC-Unique: yxuRXQ1KN2ioW-91s1mDzQ-1
+X-Mimecast-MFC-AGG-ID: yxuRXQ1KN2ioW-91s1mDzQ_1790941710
+Received: from mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.95])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 0B3531800576;
+	Fri,  2 Oct 2026 11:48:30 +0000 (UTC)
+Received: from mpatocka-thinkpadx1carbongen12.rmtcz.csb (headnet05.pony-001.prod.iad2.dc.redhat.com [10.2.32.117])
+	by mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id C25305BC;
+	Fri,  2 Oct 2026 11:48:26 +0000 (UTC)
+Date: Fri, 2 Oct 2026 13:48:23 +0200 (CEST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+To: Lorenz Kofler <lorenz@sigma-star.at>, Eric Biggers <ebiggers@google.com>
+cc: Mike Snitzer <snitzer@kernel.org>, 
+    Benjamin Marzinski <bmarzins@redhat.com>, Alasdair Kergon <agk@redhat.com>, 
+    dm-devel@lists.linux.dev, linux-kernel@vger.kernel.org, 
+    upstream+dm@sigma-star.at, David Howells <dhowells@redhat.com>, 
+    Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
+Subject: Re: [RFC PATCH 1/1] dm-integrity: support keys in the kernel
+ keyring
+In-Reply-To: <b0f8f47a-beb0-426e-bdee-5d0d80ade8ad@sigma-star.at>
+Message-ID: <1e53661e-42f4-72b2-3331-33af21e9fe0f@redhat.com>
+References: <20260928062734.3805458-1-lorenz@sigma-star.at> <20260928062734.3805458-2-lorenz@sigma-star.at> <6e7bd72b-6f1a-211d-16a8-a35a530af408@redhat.com> <b0f8f47a-beb0-426e-bdee-5d0d80ade8ad@sigma-star.at>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Authority-Analysis: v=2.4 cv=FYWiV5+6 c=1 sm=1 tr=0 ts=6abf5914 cx=c_pps
- a=aDMHemPKRhS1OARIsFnwRA==:117 a=aDMHemPKRhS1OARIsFnwRA==:17
- a=660iZSQnnn4A:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
- a=V8glGbnc2Ofi9Qvn3v5h:22 a=VnNF1IyMAAAA:8 a=R0B3_GDsR3QM9wD39lMA:9
-X-Proofpoint-Spam-Info: AW1haW4tMjYxMDAyMDAyOCBTYWx0ZWRfX6b2lljiTufGn
- 5be/k+hI53UadjEWAqfITaPgjQsDIjL7T/6hNZJLKE1OcM7vkGc3/5RAHyIf+Hpq4yyztQGxvCE
- Kb7vEhwaEvuY3IE4dYTO3y0o5Ni9Oe8=
-X-Proofpoint-ORIG-GUID: EVSJl2fUxA04MaxYYCxGH8dAZskXpvh4
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMDAyMDAyOCBTYWx0ZWRfX8lQPPGKRuZpa
- sCKTfxHH8qLHFs4te8EyoGtvysL2XOKJKgC4VdqcGliuj9UIIy6ANZJX+gdp9Kcamhncuf+3coh
- A8vheHpKiY3o33JKmpcmIqhyUlGX2TLqa5bYvz/ebFfb5rZSTEhKISc0NnAjBeALyBn3JbWqAwK
- yT50G/h144lFupleUGwsY+x6ZD3bdyguxn18sLExWB6H5nqYb0NlzevElbrBdx8OC9fvMIJv836
- ic6CUlIxx8JlOpF4C+DidREmXwEsyvdX0kA8XGE80TOjlpdpkKps+DH0Q7LgD3wBOKVuCBCPHtZ
- e22nBB5oC/HE9LIZRbBWX57fEqlQRbWI6bonBQDfgqjzJLHKG3kjNgkvrSXJtbf7Jx2vYmn4zhj
- hDLzgnc7C4DBl68zE1DBcFGH2o+IJemx8a0O/1SCf/cmWq6+PqMuGktnLy031OtiW+mupw9dsVd
- AGZoho0PwjDzqTIivyg==
-X-Proofpoint-GUID: EVSJl2fUxA04MaxYYCxGH8dAZskXpvh4
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-10-02_02,2026-10-01_01,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- adultscore=0 clxscore=1015 impostorscore=0 spamscore=0 phishscore=0
- priorityscore=1501 malwarescore=0 bulkscore=0 lowpriorityscore=0
- suspectscore=0 classifier=typeunknown authscore=0 authtc= authcc=
- route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2609040000
- definitions=main-2610020028
+Content-Type: text/plain; charset=US-ASCII
+X-Scanned-By: MIMEDefang 3.6 on 10.30.177.95
 
-Determine the TPM version once in the seal and unseal paths and reuse it
-when allocating and parsing trusted key options. This avoids redundant TPM
-version checks.
 
-Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
-Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
----
-Changelog:
 
- v2:
-  - Use bool to indicate whether the chip is TPM 2.0 in the option helpers
+On Fri, 2 Oct 2026, Lorenz Kofler wrote:
 
- security/keys/trusted-keys/trusted_tpm1.c | 35 +++++++++--------------
- 1 file changed, 13 insertions(+), 22 deletions(-)
+> Hi Mikulas,
+> 
+> thank you for the review!
+> 
+> Some notes below.
+> 
+> >> +#ifdef CONFIG_KEYS
+> >> +
+> >> +static bool contains_whitespace(const char *str)
+> >> +{
+> >> +	while (*str)
+> >> +		if (isspace(*str++))
+> >> +			return true;
+> >> +	return false;
+> >> +}
+> >> +
+> >> +static int set_key_user(struct alg_spec *a, struct key *key)
+> >> +{
+> >> +	const struct user_key_payload *ukp;
+> >> +
+> >> +	ukp = user_key_payload_locked(key);
+> >> +	if (!ukp)
+> >> +		return -EKEYREVOKED;
+> >> +
+> >> +	if (a->key_size != ukp->datalen)
+> >> +		return -EINVAL;
+> >> +
+> >> +	memcpy(a->key, ukp->data, a->key_size);
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static int set_key_encrypted(struct alg_spec *a, struct key *key)
+> >> +{
+> >> +	const struct encrypted_key_payload *ekp;
+> >> +
+> >> +	ekp = key->payload.data[0];
+> >> +	if (!ekp)
+> >> +		return -EKEYREVOKED;
+> >> +
+> >> +	if (a->key_size != ekp->decrypted_datalen)
+> >> +		return -EINVAL;
+> >> +
+> >> +	memcpy(a->key, ekp->decrypted_data, a->key_size);
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static int set_key_trusted(struct alg_spec *a, struct key *key)
+> >> +{
+> >> +	const struct trusted_key_payload *tkp;
+> >> +
+> >> +	tkp = key->payload.data[0];
+> >> +	if (!tkp)
+> >> +		return -EKEYREVOKED;
+> >> +
+> >> +	if (a->key_size != tkp->key_len)
+> >> +		return -EINVAL;
+> >> +
+> >> +	memcpy(a->key, tkp->key, a->key_size);
+> >> +
+> >> +	return 0;
+> >> +}
+> > 
+> > These four functions are copied from dm-crypt.c and dm-inlinecrypt.c.
+> > Copying code is generally malpattern, they should be unified and moved to
+> > an include file (that would be included in all three targets) or to the
+> > key management code (that would be called from all three targets).
+> > 
+> 
+> Yes that is the issue I described in the cover letters. But I don't
+> actually know which way is the preferred one. Afaik there are now
+> three options:
+> 
+> 1. static inline helpers in a drivers/md header, so dm-crypt and
+>    dm-integrity each compile their own copy
+> 2. a small library module, similar to dm-bufio, so there is one copy
+>    that follows the value (y/m) of dm-crypt and dm-integrity
+> 3. integration into key management code
+> 
+> Please tell me which option you prefer.
 
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index 3ec078ca3f97..6dbce058368f 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -700,7 +700,7 @@ static const match_table_t key_tokens = {
- 
- /* can have zero or more token= options */
- static int getoptions(char *c, struct trusted_key_payload *pay,
--		      struct trusted_key_options *opt)
-+		      struct trusted_key_options *opt, bool is_tpm2)
- {
- 	struct trusted_key_tpm *private = opt->private;
- 	substring_t args[MAX_OPT_ARGS];
-@@ -712,13 +712,8 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 	unsigned long token_mask = 0;
- 	unsigned int digest_len;
- 	int i;
--	int tpm2;
--
--	tpm2 = tpm_is_tpm2(chip);
--	if (tpm2 < 0)
--		return tpm2;
- 
--	private->hash = tpm2 ? HASH_ALGO_SHA256 : HASH_ALGO_SHA1;
-+	private->hash = is_tpm2 ? HASH_ALGO_SHA256 : HASH_ALGO_SHA1;
- 
- 	if (!c)
- 		return 0;
-@@ -773,7 +768,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 				break;
- 			}
- 
--			if (tpm2 &&
-+			if (is_tpm2 &&
- 			    private->blobauth_len <=
- 			    sizeof(private->blobauth)) {
- 				memcpy(private->blobauth, args[0].from,
-@@ -808,14 +803,15 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 			}
- 			if (i == HASH_ALGO__LAST)
- 				return -EINVAL;
--			if  (!tpm2 && i != HASH_ALGO_SHA1) {
-+			if (!is_tpm2 && i != HASH_ALGO_SHA1) {
- 				pr_info("TPM 1.x only supports SHA-1.\n");
- 				return -EINVAL;
- 			}
- 			break;
- 		case Opt_policydigest:
- 			digest_len = hash_digest_size[private->hash];
--			if (!tpm2 || strlen(args[0].from) != (2 * digest_len))
-+			if (!is_tpm2 ||
-+			    strlen(args[0].from) != (2 * digest_len))
- 				return -EINVAL;
- 			res = hex2bin(private->policydigest, args[0].from,
- 				      digest_len);
-@@ -824,7 +820,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 			private->policydigest_len = digest_len;
- 			break;
- 		case Opt_policyhandle:
--			if (!tpm2)
-+			if (!is_tpm2)
- 				return -EINVAL;
- 			res = kstrtoul(args[0].from, 16, &handle);
- 			if (res < 0)
-@@ -838,15 +834,10 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 	return 0;
- }
- 
--static struct trusted_key_options *trusted_options_alloc(void)
-+static struct trusted_key_options *trusted_options_alloc(bool is_tpm2)
- {
- 	struct trusted_key_tpm *private;
- 	struct trusted_key_options *options;
--	int tpm2;
--
--	tpm2 = tpm_is_tpm2(chip);
--	if (tpm2 < 0)
--		return NULL;
- 
- 	options = kzalloc_obj(*options);
- 	if (options) {
-@@ -858,7 +849,7 @@ static struct trusted_key_options *trusted_options_alloc(void)
- 			kfree_sensitive(options);
- 			options = NULL;
- 		} else {
--			if (!tpm2)
-+			if (!is_tpm2)
- 				private->keyhandle = SRKHANDLE;
- 			options->private = private;
- 		}
-@@ -877,13 +868,13 @@ static int trusted_tpm_seal(struct trusted_key_payload *p, char *datablob)
- 	if (tpm2 < 0)
- 		return tpm2;
- 
--	options = trusted_options_alloc();
-+	options = trusted_options_alloc(tpm2);
- 	if (!options)
- 		return -ENOMEM;
- 
- 	private = options->private;
- 
--	ret = getoptions(datablob, p, options);
-+	ret = getoptions(datablob, p, options, tpm2);
- 	if (ret < 0)
- 		return ret;
- 	dump_options(options);
-@@ -922,12 +913,12 @@ static int trusted_tpm_unseal(struct trusted_key_payload *p, char *datablob)
- 	if (tpm2 < 0)
- 		return tpm2;
- 
--	options = trusted_options_alloc();
-+	options = trusted_options_alloc(tpm2);
- 	if (!options)
- 		return -ENOMEM;
- 	private = options->private;
- 
--	ret = getoptions(datablob, p, options);
-+	ret = getoptions(datablob, p, options, tpm2);
- 	if (ret < 0)
- 		return ret;
- 	dump_options(options);
--- 
-2.53.0
+Try 3, if not possible then 1. I think that introducing a module with this 
+would be overkill.
+
+The "if (!strncmp(key_string, "logon:", key_desc - key_string + 1)) {" 
+lines are duplicated as well, so I would refactor them and move them to 
+the helper too.
+
+I don't know why dm-inlinecrypt only uses the "logon:" key while dm-crypt 
+uses "user:", "encrypted:", "trusted:" as well (Eric - could you 
+explain?). So, perhaps, dm-inlinecrypt could be extended to use all four 
+key types as well.
+
+I CC'd keyrings maintainers - so, if they have some suggestions or 
+objections regarding moving the code there, let them say.
+
+Mikulas
 
