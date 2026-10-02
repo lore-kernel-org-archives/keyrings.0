@@ -1,95 +1,103 @@
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 440D73B27F5
-	for <keyrings@vger.kernel.org>; Fri,  2 Oct 2026 21:09:38 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=170.10.129.124
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 833023B5837;
+	Fri,  2 Oct 2026 23:02:27 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1790975380; cv=none; b=dmh/nxM5xIAoWJ0yzQq2xJGoy6EBtqRQWW2GWtoPtUpUnEDJw0UjVt/AUXFTghF6/FsxArng80CZFizhe9ikbgtol6Aacy/UY5gz9vRsbjHp4Vz/H/rbZo3zLNne4/ovhQkTaz/+rfhSVfRXL4GJhXo9VUpmOsvKdTYJ4nnZy68=
+	t=1790982148; cv=none; b=A+I8nESGaxxY5xwhxQDzTs3n4jLDOzOJX4zlt6FCDtAgKIkM7AppUdIQWCbPtvyjqeDyBrxZA3UnNJPmTGP8P34wdg8ImpNQsFwxh7LM4BdHJd0XnebVoL8CDi1EFAmf9Co+t07ei4NRVav8Wq5zBKSWVpn5GcFinM/aj/kp4N8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1790975380; c=relaxed/simple;
-	bh=MpIoTBBXxdNSspdULR8GCp9JszZpUItsvrZUtwxm1XQ=;
-	h=Date:From:To:cc:Subject:In-Reply-To:Message-ID:References:
-	 MIME-Version:Content-Type; b=O6JIEdm5aKGdpfbE9aQO7TSL3ICzi3WRYBLBOe+135AucXwlcEkTV5j7JHgVf2GLvdGwW76gQFDQMdoBuWkrW2460BfKlATswLgAUGePONt5KiJvKWzmtudzYB5zOxSRd4DE2WObBuZzZhImYomdjF5jGr6tnJXHB2UGCz99DEA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com; spf=pass smtp.mailfrom=redhat.com; dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b=NfiZXk52; arc=none smtp.client-ip=170.10.129.124
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
+	s=arc-20240116; t=1790982148; c=relaxed/simple;
+	bh=CDPAZWuIdj8ZaOf7KeaFjUL9Xy7OhSX+pUmQQ7bVSu0=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=Of4HUnnPoISA0XqGFxupiAZA9rdgWhAHwiglnEi2djsfsoRAxFtfAOoSXwBbcpF5t9kJgRkwB0+DqWTSYfyejqAvRCqtvjfd0zk1KOitxRlGbCMn4FiZpXSAmmIetJSDcw8eRjYuNfaVFrAprQWPsob9c2ySDYtvxvxK/KpY4x0=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=cgnTgpM/; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.b="NfiZXk52"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1790975378;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=9PDlFKZuG83RD1GvxW6bUR6/hm5hUc293+hbuEuqEAg=;
-	b=NfiZXk524A3DIX+4Eqmbi5OMVkHaefoY/Bsq5yL5n4EBhtxusJGGbg1AJ2fEDhOry5zPG7
-	Ev5YofesLsVduCVrAs6Hq+5+iVV3c51VZfHS49XoopL4nUzN+wiVM8rZuqOGCqGWfmzT39
-	3o3ed98Oot9/kf0cZ1TUNa0p7hyxDDE=
-Received: from mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com
- (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
- relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-513-yM_L3XyLPUK4YPNaccZQgw-1; Fri,
- 02 Oct 2026 17:09:34 -0400
-X-MC-Unique: yM_L3XyLPUK4YPNaccZQgw-1
-X-Mimecast-MFC-AGG-ID: yM_L3XyLPUK4YPNaccZQgw_1790975373
-Received: from mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.95])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id CD83B1977528;
-	Fri,  2 Oct 2026 21:09:32 +0000 (UTC)
-Received: from mpatocka-thinkpadx1carbongen12.rmtcz.csb (headnet05.pony-001.prod.iad2.dc.redhat.com [10.2.32.117])
-	by mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 47B4F41D;
-	Fri,  2 Oct 2026 21:09:29 +0000 (UTC)
-Date: Fri, 2 Oct 2026 23:09:26 +0200 (CEST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-To: Eric Biggers <ebiggers@kernel.org>
-cc: Lorenz Kofler <lorenz@sigma-star.at>, Mike Snitzer <snitzer@kernel.org>, 
-    Benjamin Marzinski <bmarzins@redhat.com>, Alasdair Kergon <agk@redhat.com>, 
-    dm-devel@lists.linux.dev, linux-kernel@vger.kernel.org, 
-    upstream+dm@sigma-star.at, David Howells <dhowells@redhat.com>, 
-    Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] dm-integrity: support keys in the kernel
- keyring
-In-Reply-To: <20261002201419.GA205250@google.com>
-Message-ID: <bf54a398-a6b0-a188-85a5-5c3f3fc139fc@redhat.com>
-References: <20260928062734.3805458-1-lorenz@sigma-star.at> <20260928062734.3805458-2-lorenz@sigma-star.at> <6e7bd72b-6f1a-211d-16a8-a35a530af408@redhat.com> <b0f8f47a-beb0-426e-bdee-5d0d80ade8ad@sigma-star.at> <1e53661e-42f4-72b2-3331-33af21e9fe0f@redhat.com>
- <20261002201419.GA205250@google.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="cgnTgpM/"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9BB1E1F000FF;
+	Fri,  2 Oct 2026 23:02:26 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1790982147;
+	bh=2bPcJ1Vj8h7H8XnZ0ivuQvN1htMPEcW/dLYM4Htgp5s=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=cgnTgpM/kS7Nbx22UEUHqd5lcEz7b/smakh7FJslcgsz4RkBoIYkqfseT0SMSaR6s
+	 LPxggm7TrmRjkOkbB673kDEGKRsG6Ix0hTKnhrZt1lczoL2iHm9265DeU/BUW5Y0TE
+	 SzoUmMVo3rXC+ueQr2kbAx3ELeX/YhYPQ4Q3fUZA+5QZL+0vp8BrMZ+gvAP6ONyN6C
+	 zGN8+bLORDsMuELHiZA2EGDjhwLHkzZQVw79N+pFLUC4Ai2evz954INxoMJzHo42pe
+	 750tdYvXn+SNzt21Kgf4/qxTheoqaA7KGsRp1A70zsmzYj5mOZv+WoylT4cZfM1eRL
+	 FVPWU0gwFbAWg==
+Date: Sat, 3 Oct 2026 02:02:23 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
+	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] TPM DEVICE DRIVER: for-next-tpm-v7.3-rc6
+Message-ID: <asA3_3lVVcm-v9F_@kernel.org>
+References: <ar9D-mM-KA9P_pJC@kernel.org>
+ <CAHk-=wjeUnds=_XoHpuPt2A0ZefYC4RUvOp0=LfPR2jzQFaeLQ@mail.gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Scanned-By: MIMEDefang 3.6 on 10.30.177.95
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHk-=wjeUnds=_XoHpuPt2A0ZefYC4RUvOp0=LfPR2jzQFaeLQ@mail.gmail.com>
 
-
-
-On Fri, 2 Oct 2026, Eric Biggers wrote:
-
-> >From what I understand, the point of the keyring support in
-> dm-{crypt,inlinecrypt,integrity} is:
+On Fri, Oct 02, 2026 at 09:10:45AM -0700, Linus Torvalds wrote:
+> On Thu, 1 Oct 2026 at 22:41, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+> >
+> > Please pull these bug fixes, which have landed after v7.3-rc1.
 > 
-> - To support "trusted" keys.  But that is not what was actually
->   implemented in dm-inlinecrypt.
+> Jarkko, I've asked you before: please write an explanation for your
+> pull requests.
 > 
-> - To avoid having the key be readable with STATUSTYPE_TABLE.  But that
->   is not what was actually implemented in dm-inlinecrypt.  Keyrings are
->   also unnecesary to solve that problem.
+> "Please pull" is not a reason to pull. The "which landed after
+> v7.3-rc1" is also not talking about what they do.
 > 
-> - To cause security bugs such as https://lwn.net/Articles/1090568/ .
->   Since otherwise things aren't exciting enough, I guess.
-> 
-> Not sure what I'm missing.
-> 
-> But if you really do want to support all four key types in all three of
-> these targets anyway though, then sure, the code might as well be
-> shared since it would otherwise be the same code in each.
-> 
-> - Eric
+> The tag contains three lines of text, and none of those lines are in
+> the least helpful or relevant to the contents of the pull.
 
-Yes, I think that the key support in these targets should be unified.
+I do remember that you've said about this a few times. 
 
-Mikulas
+> 
+> It doesn't have to be much. For simple driver fixes it can sometimes
+> be as trivial as just "Misc trivial fixes". But in this case it
+> clearly could have been something like "Fix tpm error handling and
+> buffer size bugs". Merge messages and pull requests  don't need the
+> _details_ - those are in the individual commits - but they should have
+> a high-level "what happened" overview.
 
+I meditated for a while before answering.
+
+It's best to not do what I've done or try to fix it. Nothing works;
+neither me nor the process...
+
+I'll start faithfully writing cover letters progressively on side
+while reviewing. That resolves about 75% of "what words to use"
+and that type of stuff.
+
+I mean I'm also right now zeroing my hard effort from code reviews
+by not writing down the facts when they are still are fresh.
+
+> 
+> And this pull request is actively hard to parse. The subject line says
+> "for-next". So I have to look at an email that is actively *trying* to
+> make it hard for me to decide whether I should pull and gives me *no*
+> information at all about what it contains.
+
+I'll change it to:
+
+"[GIT PULL] TPM DEVICE DRIVER changes for vX.Y.Z-rcW"
+
+> 
+> Be better. Please.
+> 
+>                 LInus
+
+I'll do exactly what said above I will do, which I hope will equal to
+that :-)
+
+Br, Jarkko
