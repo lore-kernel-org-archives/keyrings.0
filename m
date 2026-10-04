@@ -1,51 +1,42 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0B1AB3DA7CC;
-	Sun,  4 Oct 2026 17:29:40 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 00B0B246778;
+	Sun,  4 Oct 2026 17:54:10 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791134982; cv=none; b=g3sDLtR9N54+RfP9+Vs0s938VYsQbhdZTh+C0Aa86RiGtLXyuCrKcA8swmZj5iffwtbAv2e81ml9RFjG7iqHVCAL3/n1KNQrTztdeU2OeskejM5FF+WVEtekNPxmKYre+vye3yA2i0VY0HmBqCrL1tJt/jHxcQRipGsXwbSfOQ0=
+	t=1791136453; cv=none; b=oePsOQ8ohnp0dt7aJc80ju5g7JDs7rdqLPCr2ZnB59JoIq8owLXt/SsilD8XWqbjntcIOY8G03JS/jBbvWBzEz3+rif/Ivbk93WP6vVQOSZxf4sS/Jr/b4oh7yqrigg0V+UseWABloOiLInLCR5xFT1IJjAWy3KtBoJ4Vt1Ylag=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791134982; c=relaxed/simple;
-	bh=9Gg0CV4F8u+OGP3kkxNT4Wqro3Q7p8v0lDtJ2w78I98=;
+	s=arc-20240116; t=1791136453; c=relaxed/simple;
+	bh=bIpBpwSDMTaU8BXN8CxrzjQJkRxgkHLzToHm5hjgwr4=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=Mcc1s6t3KIwd5i5s4TXJ9qkwCVna7ziVpThh4Usgr26ngtPHWXRmsgPHtr6F+Qe6ivY/nouKE/giQ2gjyyCdDXiL+XSTG6T2zrkae8HZXHqu0OYl9A0YIG2n8PbHTBU/jftDMqA46tqHcrs/3M+awQS43jyZRxT9ieIvfzlEgnA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=MrBCAF0l; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=DMi2v6gftCMqXvh77ixnf34Wj+DtcBDl/mGmBzStHYUdIdqUH/uBM36iRd1/fnAX+YrHSan/3AXw1GOlAOorT7va2rX+Uq5YTB2iqotF0WU7r4i7FMVY9/jjttCf95M28JP5lHBB1x+lcHEsjue0w1AGhfVuaCF2+J0TUhp+QVU=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=eLwf4tyy; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="MrBCAF0l"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id E32141F000FF;
-	Sun,  4 Oct 2026 17:29:37 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="eLwf4tyy"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9FEA41F000FF;
+	Sun,  4 Oct 2026 17:54:09 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791134980;
-	bh=Pt6fR7x8I6BlCIwQDroB4QMZ4hSu7qb3GBY64qZyK3E=;
+	s=k20260515; t=1791136450;
+	bh=s1bBFTOMd9m2tkNcN4VP+RVchshr8UAmNsEx4KkZNLw=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=MrBCAF0lhqrPwv3XkO8Px5NBB1kePBxfnhbbeh7cM/ys1auj/mHuhUtfJCfQCkR9r
-	 84cVNCi3E3YTpDsfZ/SDiEymff8fJew/T+TzHcwOQ5yY8zAXXNC6MxgO4v5kTbCpV1
-	 QdsZI6Ld8jHw965GEUOUGcp0qPlSb01i5lPXKYceAzAMI2saMukZVGy3YMxTczFlL9
-	 WgPuMrh9uwnYaNtI9JUMJGCvqN912O6flsxRjMBJ+miqz9VZ+OrB6I+4NUxhmpQ350
-	 W01Isnl13Q0RIMG/qxf8prHJa3RBCnaqRCtkxsQD1tjtWDRzNIZWWTSnoh7z1ifmvv
-	 wMXuMtesO/q8w==
-Date: Sun, 4 Oct 2026 19:29:34 +0200
-From: Eric Biggers <ebiggers@kernel.org>
-To: Milan Broz <gmazyland@gmail.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-	Lorenz Kofler <lorenz@sigma-star.at>,
-	Mike Snitzer <snitzer@kernel.org>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	Alasdair Kergon <agk@redhat.com>, dm-devel@lists.linux.dev,
-	linux-kernel@vger.kernel.org, upstream+dm@sigma-star.at,
+	b=eLwf4tyyd5mGT72nG216gHgHkhDJTrhCEqosXbfVBHKoq6I6LlE+HnqZuL7B+8hVo
+	 KQYFklWS7GJOzqGqiHU1gtS1dYMkG6m5G9MC0Ghwl8SDqPPnspr8F9cbOmEEgkpdZk
+	 5tVRxk6zlPlmg6x8tLGLqT9g9yo0pSRBSjMctzT830MNAreqE5qIdp9J7Ydm+Ncl/5
+	 8BmqwrvE/I56whU7mbMDyZ78a9RuqBtKC9fqi7EzmQSfenwBhk+Bzl9sBQq0SsxE9/
+	 YyET9k4u+cpvWDqTE6N8kvjEjWKRyTNdG8bDVx31cfkMdUvK/Dd8mcgyp0bq0M+mxU
+	 G7X3tvobYE6uQ==
+Date: Sun, 4 Oct 2026 20:54:06 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: keyrings@vger.kernel.org
+Cc: Jann Horn <jannh@google.com>, linux-kernel@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
 	David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] dm-integrity: support keys in the kernel keyring
-Message-ID: <20261004172934.GC1906@quark>
-References: <20260928062734.3805458-1-lorenz@sigma-star.at>
- <20260928062734.3805458-2-lorenz@sigma-star.at>
- <6e7bd72b-6f1a-211d-16a8-a35a530af408@redhat.com>
- <b0f8f47a-beb0-426e-bdee-5d0d80ade8ad@sigma-star.at>
- <1e53661e-42f4-72b2-3331-33af21e9fe0f@redhat.com>
- <20261002201419.GA205250@google.com>
- <d737b17e-7872-4afb-b4c2-bfa8f4e119df@gmail.com>
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [RFC PATCH 0/2] keys: Address lookup_user_key() mutability
+Message-ID: <asKSvjz2YLZhFI4t@kernel.org>
+References: <20260924055521.1981957-1-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -54,35 +45,32 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <d737b17e-7872-4afb-b4c2-bfa8f4e119df@gmail.com>
+In-Reply-To: <20260924055521.1981957-1-jarkko@kernel.org>
 
-On Sun, Oct 04, 2026 at 09:44:57AM +0200, Milan Broz wrote:
-> On 10/2/26 10:14 PM, Eric Biggers wrote:
-> ...
-> >  From what I understand, the point of the keyring support in
-> > dm-{crypt,inlinecrypt,integrity} is:
-> > 
-> > - To support "trusted" keys.  But that is not what was actually
-> >    implemented in dm-inlinecrypt.
-> > 
-> > - To avoid having the key be readable with STATUSTYPE_TABLE.  But that
-> >    is not what was actually implemented in dm-inlinecrypt.  Keyrings are
-> >    also unnecesary to solve that problem.
+On Thu, Sep 24, 2026 at 08:55:16AM +0300, Jarkko Sakkinen wrote:
+> The main objective in these patches is to remove to unneeded mutability
+> from key look ups. It does harm and brings no value so it is pretty obvious
+> to me that addressing this harmful behaviour is what we should do.
 > 
-> There is more to that
+> I based the first patch on what Jann suggested in [1]. Nothing too clever here
+> and I'm ofc open for further suggestions.
 > 
-> - to avoid key cached in dm-crypt (or other target)
-> (dmsetup must be able to retrieve mapping table in the form directly
-> reusable for recreating DM mapping, so raw key must be available)
+> [1] https://lore.kernel.org/keyrings/CAG48ez0XjVSR=M--UBauTm8sJuc+ZbhKzaPa3a6wrSVHyoKevw@mail.gmail.com/
+> 
+> Jarkko Sakkinen (2):
+>   keys: Return user session keyring on lookup
+>   keys: Reject keyring creation with overridden credentials
+> 
+>  Documentation/security/keys/core.rst |  7 ++-
+>  security/keys/process_keys.c         | 65 +++++++++++++++-------------
+>  2 files changed, 40 insertions(+), 32 deletions(-)
+> 
+> --
+> 2.47.3
+> 
 
-It's of course still there anyway, so that the data can be encrypted or
-decrypted.  crypt_config::cipher_tfm for dm-crypt, inlinecrypt_ctx::key
-for dm-inlinecrypt, or dm_integrity_c::internal_shash for dm-integrity.
+So.. should I move forward to with non-RFC v2?
 
-> - to avoid inclusion of key in DM ioctl calls (mapping table again)
+Note that some tags (e.g., Fixes) are missing simply because this is RFC.
 
-Unless the "trusted" key type is being used it just makes the raw key be
-passed to the kernel using a different syscall: add_key() instead of
-ioctl().  It doesn't seem fundamentally different.
-
-- Eric
+Br, Jarkko
