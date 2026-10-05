@@ -1,180 +1,243 @@
-Received: from mail-wm2-f13.google.com (mail-wm2-f13.google.com [74.125.225.141])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7C597331EA0
-	for <keyrings@vger.kernel.org>; Mon,  5 Oct 2026 06:20:17 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.225.141
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BFDA9347BAF;
+	Mon,  5 Oct 2026 06:27:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791181219; cv=none; b=pG0GrQN73jueYiVs42OOHatf+PGoee67Y+VGW/uzviPENwQhS/UKwqnqNMpM2RCZkfV/tcMKeVk23bjAW56JAJPkPslhywatpiCs5BGpmxEuJad9+YV7N1HYcX+WialDJp3MegLQ+CHJcrBDQDZR0HzHxY7eDvIeqRJlU5AxfNg=
+	t=1791181667; cv=none; b=kY3HjSoDLGyFmuBaLB2cRphQOYiBBsF4b+W2KNncouyqHG0lcc+pJuYwtK/VmBAdtLt9WO9Ald1zMGylDTK/g+HdSwhjtxIWtsM5FuOdyY3UebUlqL3OIqzC5Al1Qw4pQOti+95jlLHyD75nMb5f7LebwC2+AIn7UCMJk3vz8cg=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791181219; c=relaxed/simple;
-	bh=0ExWA1l1yPQaHfCJdCeIV2uvEiOA/vQlQ+Irax5DPyI=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=dostawjwZBNKGR812H6u+34nTGjKsc5/c+GphZRbmFC4XE1Hr8JUSOluWxgFth73n+0AAJGxoBFWr8ctU93K6oQ5EZ+z6YBlQpoPN5BeBlEGrmzaXDU6cRWohbJVC7+UiXe4WxAUJTw524v+7tKkRrAfO8bTOFnFkvpMXMXnOks=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=q9KBmsWh; arc=none smtp.client-ip=74.125.225.141
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1791181667; c=relaxed/simple;
+	bh=YKhMdesrFcsShgS/YkWJwsmF+udLu87KaB0poBt6/tc=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=lBaU2aZMUf/nq0g9MJo8q4cJAxOL4raJEop/TVFnSlLZh35h8zQqtIrYqkPXpdHV/s7PoOtyHnm4WwDNdFjGnvZwLQJbzRjKw+FZrtxE6Kga2G2Grx1h64yZjpEXICq7I44vF3PwJyy6cfxVF76+5usJM1OnUOIzVC6WAPsYltU=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=TN915XRu; arc=none smtp.client-ip=148.163.158.5
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="q9KBmsWh"
-Received: by mail-wm2-f13.google.com with SMTP id 5b1f17b1804b1-4a024e16179so7439635e9.2
-        for <keyrings@vger.kernel.org>; Sun, 04 Oct 2026 23:20:17 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1791181216; x=1791786016; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:in-reply-to:autocrypt:from
-         :content-language:references:cc:to:subject:user-agent:mime-version
-         :date:message-id:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=l0FuaBTKJktE8SOUhXZCNhOW7/MvZW2r4riGHbubmm4=;
-        b=q9KBmsWhfZMVyRclrbFV8f7IbGpLSWluuU/gbU3jxm8cOtIjRVFba2WSHKwaRrkqcb
-         1fhHLrT5EgPRFh5riFLIzyoNsDN1UqKStbwOjTMNTe4EggulZPSZfaNwGtj3oi+EzGak
-         jE239znaCP7800R0O6f3/nB1goV1SDFU6ZPEXbgZ/i4qB65caC7YCOIqfmkZWUPW17Ey
-         i89SREcmNpZev12POteSKn1kMaCRGbUsPHEGWWtdYzsodAHIspHZ/br+QeoGnZ+6O3kY
-         z3PfqvcR1oc2PG+7TgHYW4wSYll+zTPBU9RFMia80L+kMkvBoph3GxadP3gxefx2LrG5
-         eJKg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791181216; x=1791786016;
-        h=content-transfer-encoding:content-type:in-reply-to:autocrypt:from
-         :content-language:references:cc:to:subject:user-agent:mime-version
-         :date:message-id:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=l0FuaBTKJktE8SOUhXZCNhOW7/MvZW2r4riGHbubmm4=;
-        b=JeTstbPzawtM3kMliABFOW8LIPGLkwaiiL0/s8J1OPjZaZJj6r0gLLk2qHX/eaIJF1
-         HhhUAMEYMPZN5hLSPtUOWQmZMcbyT44PW6CZUwOT8K1JEoBPTX+7A049qIEVqD2pSUWL
-         Ujjg0CwDUhIBCSUoAEUw4bU+gjoloamwSVmednbSQwsjnjBtPX3S4IAMx4bttTFg8deM
-         OUiihwZc4xJLqKYJXkd3iOQjK1KGyWVPab0jTl3Xtja/d35FEtjok2ydVLIdOQabV+NE
-         fSVtYYX8Ur24UNk32rZFfYQ94jj3v6E7HV3g9KYJC4eKJZo2v39bBy+qi1fsjYnmY24p
-         PjYQ==
-X-Forwarded-Encrypted: i=1; AKwUvBy9RiN2AaRHGBH+IV/QUNV0cQVfXQGk+cXuf3OaNtvXjR/KU7op/CazRkU/LC73Hi7ulk1LPXVw3A==@vger.kernel.org
-X-Gm-Message-State: AFuF++lEJW3YX5YMje6V5wZzmNDW0f854djYDYQl7ikryKyjKWiT4Hc6
-	Jo4EeEnjjQwAdiEDsYEe3q9/mqk5eDfRHpp8XsYqYstQugJsyhMngSARS0/O8gLY
-X-Gm-Gg: AYBFou0yMzQX13QM9aWbh46Zi7p1pQ7Uy02M3LsaGkJcmVLzwHSaUE/DL0p4G8MoiAo
-	iSAvxh9CJA8xg+Y0mjCoTaXilp8ER4f4fZmrdU+1vQVO0YKNbjxXxZN9JGfQmSNyYz5qvVhFKiI
-	PZxR7yDtYYUgr9LPHYIFOGlw1O1MHa5YfGmxr+Bp4yn+FncFvAtw/SzxkATYPiHS0E8T4Xy7I+a
-	3aVqamTx1cxD3ZeA9FRuzT9pU8LUffDN5hrRomrCRvvH/sau8Pk0KRZVqypCHyQw58Jz13iYnF5
-	41L7aZy/gTvonKoFDb1nTE9i5QcAV85SqZ+yEfNeLiKFFPFJuEWD5dRRjPmzQZS1jVgPzY0zVJH
-	mQoa03Erbz/gqicSshjas487yYpjFyj39X8UUZaJi6maImABPq9vXBYM4+eGkAbjudWZ8QDuVHL
-	M4BBh5jHCyZfFiAMjfUV3Zg4wH1Lo+YMNL8KX05A/l3u4WVeoGbzloB7HtwilYfa3KWBGLGoM=
-X-Received: by 2002:a05:600c:1e0f:b0:49e:6249:268b with SMTP id 5b1f17b1804b1-4a027697ef2mr157549445e9.32.1791181215479;
-        Sun, 04 Oct 2026 23:20:15 -0700 (PDT)
-Received: from [192.168.1.109] ([178.17.7.30])
-        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-48c622704a5sm3189409f8f.15.2026.10.04.23.20.14
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Sun, 04 Oct 2026 23:20:15 -0700 (PDT)
-Message-ID: <ff601118-7ef4-4ece-94a3-9671e78fa3c8@gmail.com>
-Date: Mon, 5 Oct 2026 08:20:14 +0200
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="TN915XRu"
+Received: from pps.filterd (m0360072.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 695165wP3291450;
+	Mon, 5 Oct 2026 06:27:42 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:date:from:message-id:mime-version
+	:subject:to; s=pp1; bh=eBOdU4bbrn9Y819oJUNB6uuympUKXhDiDovpQ4qdW
+	j8=; b=TN915XRu6jk4v126nzpgquifrDxKfX15SZDWRHZcD7X/VsJdN69qni2WV
+	0Fm95qny2NxS6VyrfronwwEZQKh6kheRqQfdlZE+FkUjpzJg/qcl2Y5cHZHHmcF1
+	Snnl1Wv1aL16qmhbadxcB88P/2oZDOtKjU6HW9NPjAWjh44Ml1d9NEN8jyerxC3b
+	27d0mxqWKLUkgD8rQRRCDiSYGa60NoErDmaqBv/vnL3a4fIFzg4QRp8sfbida4oG
+	xr91zO1pJrHkkX9ncmTtF/NiFFi+1cXFKtVYGgyOuVR+dPyNkcz2rBMHOVepKAI3
+	o8RZPNlPT7EFEAWs0rG3c1c8r9HfA==
+Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4h2sbuyxm3-1
+	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
+	Mon, 05 Oct 2026 06:27:42 +0000 (GMT)
+Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
+	by ppma12.dal12v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 6956Exam2165217;
+	Mon, 5 Oct 2026 06:27:41 GMT
+Received: from smtprelay07.fra02v.mail.ibm.com ([9.218.2.229])
+	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4h3c1pmdf3-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Mon, 05 Oct 2026 06:27:41 +0000 (GMT)
+Received: from smtpav05.fra02v.mail.ibm.com (smtpav05.fra02v.mail.ibm.com [10.20.54.104])
+	by smtprelay07.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6956Rbd240239500
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Mon, 5 Oct 2026 06:27:37 GMT
+Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id C31452004B;
+	Mon,  5 Oct 2026 06:27:37 +0000 (GMT)
+Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 555FA20043;
+	Mon,  5 Oct 2026 06:27:35 +0000 (GMT)
+Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.bl1-in.ibm.com (unknown [9.123.14.23])
+	by smtpav05.fra02v.mail.ibm.com (Postfix) with ESMTP;
+	Mon,  5 Oct 2026 06:27:35 +0000 (GMT)
+From: Srish Srinivasan <ssrish@linux.ibm.com>
+To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
+Cc: James.Bottomley@HansenPartnership.com, jarkko@kernel.org,
+        zohar@linux.ibm.com, stefanb@linux.ibm.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        nayna@linux.ibm.com, rnsastry@linux.ibm.com, ssrish@linux.ibm.com
+Subject: [PATCH v3] keys/trusted_keys: reuse TPM version in option handling
+Date: Mon,  5 Oct 2026 11:57:32 +0530
+Message-ID: <20261005062732.140733-1-ssrish@linux.ibm.com>
+X-Mailer: git-send-email 2.55.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [RFC PATCH 1/1] dm-integrity: support keys in the kernel keyring
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
- Lorenz Kofler <lorenz@sigma-star.at>, Mike Snitzer <snitzer@kernel.org>,
- Benjamin Marzinski <bmarzins@redhat.com>, Alasdair Kergon <agk@redhat.com>,
- dm-devel@lists.linux.dev, linux-kernel@vger.kernel.org,
- upstream+dm@sigma-star.at, David Howells <dhowells@redhat.com>,
- Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org
-References: <20260928062734.3805458-1-lorenz@sigma-star.at>
- <20260928062734.3805458-2-lorenz@sigma-star.at>
- <6e7bd72b-6f1a-211d-16a8-a35a530af408@redhat.com>
- <b0f8f47a-beb0-426e-bdee-5d0d80ade8ad@sigma-star.at>
- <1e53661e-42f4-72b2-3331-33af21e9fe0f@redhat.com>
- <20261002201419.GA205250@google.com>
- <d737b17e-7872-4afb-b4c2-bfa8f4e119df@gmail.com>
- <20261004172934.GC1906@quark>
-Content-Language: en-US
-From: Milan Broz <gmazyland@gmail.com>
-Autocrypt: addr=gmazyland@gmail.com; keydata=
- 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
-In-Reply-To: <20261004172934.GC1906@quark>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-ORIG-GUID: us9bSo0CG4I9kdkDzTr7YGN2CXd-y_ku
+X-Authority-Analysis: v=2.4 cv=KJHPn1Fo c=1 sm=1 tr=0 ts=6ac3435e cx=c_pps
+ a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
+ a=660iZSQnnn4A:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
+ a=RzCfie-kr_QcCd8fBx8p:22 a=VnNF1IyMAAAA:8 a=R0B3_GDsR3QM9wD39lMA:9
+X-Proofpoint-GUID: us9bSo0CG4I9kdkDzTr7YGN2CXd-y_ku
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMDA1MDAyNCBTYWx0ZWRfX33SVWNkKhkSv
+ tfgDs9deS1RNE1rgjvp+2sj0hEijc18RlXrK1VoNzjxsn4Lg3JgE+sTaA5ZD4M84PNwC62o+vT6
+ 2yD0uVT05AU5f+NjjZdHKl1rPtydG8vvD2TDPg9VNr0s0eqC79cKynIVKA83f9AZo/1cjk6ZbV2
+ /1WdIFSDjLI1GOi/6BetKLR6QxOe1CaesB0jj6IDBa9UpS2ORLzVXI1nU3eFVBsepZ4DeyAsrTw
+ 2WEF/L7Fg1gWeC6cdn6eJ8Joxp90TY6YrLre5bsQjMsqzDv2RCxGN5QzXvHL2XGGoKQfZ99iTI8
+ ci9+hxGM7CjI6i2uawsq9YbEolrLE/N/FKdLdmixiaNujvkLKVF20CqaCLoVzAYxokr3DHbm7j2
+ 0OomiMd/gmDSrSysBGC1dLstfL5qb4UIerkm7FokGVq7xOyD0k7fLt1SqtRvRsKHXf5XDcUk7oq
+ 9b/58LSCJC1bjEAcz5g==
+X-Proofpoint-Spam-Info: AW1haW4tMjYxMDA1MDAyNCBTYWx0ZWRfX/PdPXmo2Q2Xu
+ Hv9BJSbrVpfnHrcdTyT+lhcaXSPhXmgMR1XuSdBXNSvfXZaXl+SZO27AWtDO6HjWm8h7lQlTrHj
+ 2DUMx5bUkeugxP1AO256r/oBKgEsOew=
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
+ definitions=2026-10-05_01,2026-10-02_02,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ suspectscore=0 malwarescore=0 spamscore=0 lowpriorityscore=0
+ priorityscore=1501 phishscore=0 impostorscore=0 adultscore=0 clxscore=1015
+ bulkscore=0 classifier=typeunknown authscore=0 authtc= authcc= route=outbound
+ adjust=0 reason=mlx scancount=1 engine=8.22.0-2609040000
+ definitions=main-2610050024
 
-On 10/4/26 7:29 PM, Eric Biggers wrote:
-> On Sun, Oct 04, 2026 at 09:44:57AM +0200, Milan Broz wrote:
->> On 10/2/26 10:14 PM, Eric Biggers wrote:
->> ...
->>>   From what I understand, the point of the keyring support in
->>> dm-{crypt,inlinecrypt,integrity} is:
->>>
->>> - To support "trusted" keys.  But that is not what was actually
->>>     implemented in dm-inlinecrypt.
->>>
->>> - To avoid having the key be readable with STATUSTYPE_TABLE.  But that
->>>     is not what was actually implemented in dm-inlinecrypt.  Keyrings are
->>>     also unnecesary to solve that problem.
->>
->> There is more to that
->>
->> - to avoid key cached in dm-crypt (or other target)
->> (dmsetup must be able to retrieve mapping table in the form directly
->> reusable for recreating DM mapping, so raw key must be available)
-> 
-> It's of course still there anyway, so that the data can be encrypted or
-> decrypted.  crypt_config::cipher_tfm for dm-crypt, inlinecrypt_ctx::key
-> for dm-inlinecrypt, or dm_integrity_c::internal_shash for dm-integrity.
+Determine the TPM version once in the seal and unseal paths, and reuse
+it when allocating and parsing trusted key options.
 
-Raw key is then not part of internal dm-crypt structures, that was the point.
-Crypto API needs key, obviously. I did not check recent dm-inline crypt, though.
->> - to avoid inclusion of key in DM ioctl calls (mapping table again)
-> 
-> Unless the "trusted" key type is being used it just makes the raw key be
-> passed to the kernel using a different syscall: add_key() instead of
-> ioctl().  It doesn't seem fundamentally different.
+This reduces the number of fallible calls to tpm_is_tpm2() and avoids
+unnecessary I/O between the kernel and the TPM.
 
-Technically, yes.  Just the key is now sent through ioctl that (should)
-be designed for it, not in DM-ioctls that are used extensively for all other
-parameters.
-We had to add wiping of all buffers there exactly for this reason.
-And I think the split is better also for tracing calls etc.
+Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
+Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
+---
+Changelog:
 
-And while all these subsystems are not perfect, they are compatible for many
-years. IMO this is very important. We are not in Google monorepo environment
-where anything can be changed anytime as you know all users.
+ v3:
+  - Tweak the commit message to highlight the reduced failure surface and
+    TPM I/O
 
-Milan
+ v2:
+  - Use bool to indicate whether the chip is TPM 2.0 in the option helpers
+
+ security/keys/trusted-keys/trusted_tpm1.c | 35 +++++++++--------------
+ 1 file changed, 13 insertions(+), 22 deletions(-)
+
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index 3ec078ca3f97..6dbce058368f 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -700,7 +700,7 @@ static const match_table_t key_tokens = {
+ 
+ /* can have zero or more token= options */
+ static int getoptions(char *c, struct trusted_key_payload *pay,
+-		      struct trusted_key_options *opt)
++		      struct trusted_key_options *opt, bool is_tpm2)
+ {
+ 	struct trusted_key_tpm *private = opt->private;
+ 	substring_t args[MAX_OPT_ARGS];
+@@ -712,13 +712,8 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 	unsigned long token_mask = 0;
+ 	unsigned int digest_len;
+ 	int i;
+-	int tpm2;
+-
+-	tpm2 = tpm_is_tpm2(chip);
+-	if (tpm2 < 0)
+-		return tpm2;
+ 
+-	private->hash = tpm2 ? HASH_ALGO_SHA256 : HASH_ALGO_SHA1;
++	private->hash = is_tpm2 ? HASH_ALGO_SHA256 : HASH_ALGO_SHA1;
+ 
+ 	if (!c)
+ 		return 0;
+@@ -773,7 +768,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 				break;
+ 			}
+ 
+-			if (tpm2 &&
++			if (is_tpm2 &&
+ 			    private->blobauth_len <=
+ 			    sizeof(private->blobauth)) {
+ 				memcpy(private->blobauth, args[0].from,
+@@ -808,14 +803,15 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 			}
+ 			if (i == HASH_ALGO__LAST)
+ 				return -EINVAL;
+-			if  (!tpm2 && i != HASH_ALGO_SHA1) {
++			if (!is_tpm2 && i != HASH_ALGO_SHA1) {
+ 				pr_info("TPM 1.x only supports SHA-1.\n");
+ 				return -EINVAL;
+ 			}
+ 			break;
+ 		case Opt_policydigest:
+ 			digest_len = hash_digest_size[private->hash];
+-			if (!tpm2 || strlen(args[0].from) != (2 * digest_len))
++			if (!is_tpm2 ||
++			    strlen(args[0].from) != (2 * digest_len))
+ 				return -EINVAL;
+ 			res = hex2bin(private->policydigest, args[0].from,
+ 				      digest_len);
+@@ -824,7 +820,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 			private->policydigest_len = digest_len;
+ 			break;
+ 		case Opt_policyhandle:
+-			if (!tpm2)
++			if (!is_tpm2)
+ 				return -EINVAL;
+ 			res = kstrtoul(args[0].from, 16, &handle);
+ 			if (res < 0)
+@@ -838,15 +834,10 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 	return 0;
+ }
+ 
+-static struct trusted_key_options *trusted_options_alloc(void)
++static struct trusted_key_options *trusted_options_alloc(bool is_tpm2)
+ {
+ 	struct trusted_key_tpm *private;
+ 	struct trusted_key_options *options;
+-	int tpm2;
+-
+-	tpm2 = tpm_is_tpm2(chip);
+-	if (tpm2 < 0)
+-		return NULL;
+ 
+ 	options = kzalloc_obj(*options);
+ 	if (options) {
+@@ -858,7 +849,7 @@ static struct trusted_key_options *trusted_options_alloc(void)
+ 			kfree_sensitive(options);
+ 			options = NULL;
+ 		} else {
+-			if (!tpm2)
++			if (!is_tpm2)
+ 				private->keyhandle = SRKHANDLE;
+ 			options->private = private;
+ 		}
+@@ -877,13 +868,13 @@ static int trusted_tpm_seal(struct trusted_key_payload *p, char *datablob)
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+-	options = trusted_options_alloc();
++	options = trusted_options_alloc(tpm2);
+ 	if (!options)
+ 		return -ENOMEM;
+ 
+ 	private = options->private;
+ 
+-	ret = getoptions(datablob, p, options);
++	ret = getoptions(datablob, p, options, tpm2);
+ 	if (ret < 0)
+ 		return ret;
+ 	dump_options(options);
+@@ -922,12 +913,12 @@ static int trusted_tpm_unseal(struct trusted_key_payload *p, char *datablob)
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+-	options = trusted_options_alloc();
++	options = trusted_options_alloc(tpm2);
+ 	if (!options)
+ 		return -ENOMEM;
+ 	private = options->private;
+ 
+-	ret = getoptions(datablob, p, options);
++	ret = getoptions(datablob, p, options, tpm2);
+ 	if (ret < 0)
+ 		return ret;
+ 	dump_options(options);
+-- 
+2.53.0
 
