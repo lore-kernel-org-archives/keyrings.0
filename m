@@ -1,106 +1,87 @@
-Received: from mail-oo1-f44.google.com (mail-oo1-f44.google.com [209.85.161.44])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mail.hallyn.com (mail.hallyn.com [178.63.66.53])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C8370478868
-	for <keyrings@vger.kernel.org>; Mon,  5 Oct 2026 10:42:28 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.161.44
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D11A754707A;
+	Mon,  5 Oct 2026 13:09:26 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=178.63.66.53
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791196950; cv=none; b=DwQpqDzcqtBO2VoCnP9tXzv5lowUufrR5cf16buREXjfkej6+xC9ZVWGCj2HGy3JFGGrQIrBo5JelZWBJXmIyaZANtsJLAVLKLdIZ5w5b8YWI/jhtKRNAVQydMLfejMZIM1UK171u60yQ8y0YXsfSEW+xKFc6uBBZvxHBVPeCkA=
+	t=1791205770; cv=none; b=Vsv60BrOXIwe5P9AqzfZQ20S7Wd1xxxE6w7qPCd6ocEWjsC9Vh9CQS/rSMMP0YAYRbCmGGIW1MJ1/wJ2acq3Gmj1V1JZFvkGwHU36hKtcdgoRPEaRey5kFy+fa1ihUECn+tWe2Y5q5tiyXgrbVM63lO9dCg+9VCH5WRDoPj2cS8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791196950; c=relaxed/simple;
-	bh=g3WAI0eivk5jo8bQtBDps6JicY1tctt8M31bkXXsQ4M=;
-	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version; b=ERIhMExH3YfdCLnHx68kmZrkS/vDECnv4St7iwss0XgQJcL4qFdfApMMXxVrz3Z4FeXiZGk0vRZ6YImm7qovYz4yP3lIXxgtvD9lwdmtMGz8DInryEdaMyk5K6Jk/RVu6OpcA2bw9UhHz06FmH0mc5K75ozSK2rWB+wyIaq9f1U=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=akdQVgWx; arc=none smtp.client-ip=209.85.161.44
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1791205770; c=relaxed/simple;
+	bh=H9zE4uvfn8C1W52XUXt7b9IG3lDap5iEdUSer6sY4II=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=uDwRPOxmaEn415T26PhcRPky6Zst7E4cPsnIgRvE92jRlP/GGQ858p2MXrzDxJUtMIebGv3J2CnwEUo6AdmtNAEqs5O1FxOXPRHCwsFuD0lRIA0kdqHkCJsFz1lZXwjt5kIOjUBRhiug/lDN36oba0AgHxYaToRXeHFxR04uMYE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=hallyn.com; spf=unknown smtp.mailfrom=hallyn.com; dkim=pass (2048-bit key) header.d=hallyn.com header.i=@hallyn.com header.b=flXsFurU; arc=none smtp.client-ip=178.63.66.53
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=hallyn.com
+Authentication-Results: smtp.subspace.kernel.org; spf=tempfail smtp.mailfrom=hallyn.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="akdQVgWx"
-Received: by mail-oo1-f44.google.com with SMTP id 006d021491bc7-6d7a9e2eb24so1052938eaf.1
-        for <keyrings@vger.kernel.org>; Mon, 05 Oct 2026 03:42:28 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1791196947; x=1791801747; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=H2kHfNSeYaeYMrgsze1G9NeSnG7fHB8VySZBNT3TbR4=;
-        b=akdQVgWx/CJ0AU79VgOTv6VmPHyQR+iVp5BxmzPanpnUgltYlP1xorXw41bPrmEfEU
-         515KVkmpk524ZgqfwdLzJkRPNZ/gsjj+deS65Lk3kCGVHTbd81w0hlpOXKFj6aAFUKIJ
-         O/4D4u2EyEgYr2Ja9NCYDhwrcQTWvFFRs73ol1y5imy+yVXleAvSsmpiQgasrBzVWmwl
-         +IFm6cYugGsIXAadK82hNCs1finHfWOt23YCPXyhQ9HWb32V5NG3duzkYYd5R07lX+AR
-         aaIHsBCAek+kgxgF7oM+A6UbiQt+HyM+n0y63EFgaP1gRi39laa/fv4+7NZa8HlmGL+I
-         2ePA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791196947; x=1791801747;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=H2kHfNSeYaeYMrgsze1G9NeSnG7fHB8VySZBNT3TbR4=;
-        b=YR0ooxFFtzTO1NyiMfP7u1jjz5FBLSHxGh2/jxpg5tKplBBAQ+lR+HXLXin00k1aa0
-         LiXDGUKgKcOrvQcipatKhMrnrimlWTaXvsinfwnprog40m0aoOaznBhDXoYPKg0/mb8P
-         b8ePaohWZAvsoCKJudNlOfi6RZNIaZc9d0/elV/igC2Qu2vV9zcVzPGI0j6+ukCKri9l
-         Ph19/j98IJDdvYk//4e+GTJMtiPGIGyRVigo26p2gr/13rA0H9CXdGQ2eNYvSd5pmT6v
-         U0q+Pj+hVh3prMDpNqOlG9IrDi1a2UOKiU7wF/27Ws3nqntcX0QvHEg9I0y02H+PO2Tv
-         t+yg==
-X-Gm-Message-State: AFuF++m1DPpEWmj0xO/f273BlLiUybUg/pC9eSeEnXqpUs5PwWz/Lc7i
-	/9TMdZu4bhJXyG1h5CHvMqoI4zgbvVJ6Axs3TSlauoOmWBBic+5zoASG
-X-Gm-Gg: AYBFou1aeTOp+a+wi84JdikhTlACHpDEmlSQ/V5yovSCNDbsaNMzDzc48NvP6J2A/34
-	PmsTsZj5Yuw49mqvGMWHHmaDfijS1CrWWex4fQ11pxD8vgqgKSajre9OOdmZ+cvTNM1HqAsg+u7
-	iDgr53RnXpw4u5lRgnYv8zqxSmikJ4SfWUgxTZlsshQoFntlSBL6PKNXt5eLxFhv2y69DXq28TN
-	zCqjuKywRW34Qi+gxAGRICo8UZaWKPWQmWQHjFWYTpTelrG0cl/CLX/5Q06AICVb1lnRxPgk/YG
-	SyRfbzd94jR25ifWiDlWbA9b1GdYoYn0Gy+Nju4bWbue5wz6K86vkPjQtUnvp4H50Zyi+SI0Yew
-	tHgwXBFaNkJUKd6L17o1fiTcV6SsXSBULF0fKnaSEyyX/mqXRQ0RWAGaewOiTCUagIIfc7EBeit
-	MZp2vgEa93lySjPNrSkezZYNsdYNM5WbiWGahSX44LT+IA0Doownu4R9cV3RKWAFchsYQcb7hfN
-	yRARRalVI+x
-X-Received: by 2002:a05:6820:2204:b0:6c1:ad08:a4d2 with SMTP id 006d021491bc7-6e09f2322eamr5598948eaf.67.1791196947700;
-        Mon, 05 Oct 2026 03:42:27 -0700 (PDT)
-Received: from sheng2080.cmix.louisiana.edu ([130.70.15.5])
-        by smtp.gmail.com with ESMTPSA id 46e09a7af769-8227a16aaadsm11375915a34.18.2026.10.05.03.42.25
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 05 Oct 2026 03:42:26 -0700 (PDT)
-From: lzhan011 <lzsx618@gmail.com>
-To: dhowells@redhat.com,
-	dwmw2@infradead.org
-Cc: keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: [PATCH] insert-sys-cert: fix use of uninitialized pointer with an empty System.map
-Date: Mon,  5 Oct 2026 05:42:17 -0500
-Message-Id: <20261005104217.1788155-1-lzsx618@gmail.com>
-X-Mailer: git-send-email 2.34.1
+	dkim=pass (2048-bit key) header.d=hallyn.com header.i=@hallyn.com header.b="flXsFurU"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=hallyn.com; s=mail;
+	t=1791205764; bh=H9zE4uvfn8C1W52XUXt7b9IG3lDap5iEdUSer6sY4II=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=flXsFurUJ9ftkBREpduIIKSrgQWqzZkWIlwM5OU3d69/8exUdPpzgDfrBRcg6YQR/
+	 MV6LzwU38tKVK17zLuYAZ1JRAaTZteOttOsxrtG7qa2Q2OCsVemxEKWoFC4/Atz1MF
+	 slnWeqmqn73TCrRVaCe6xLbncmQadPHIIWPXT8AFB54Vrp7uaDisIDbpzl3fpCeF5M
+	 psXkdU2L67RxT2yHTw53Vs7pFdDb/eHQ7h4uTUB7pPoVeJA2sH7b0Ii8Ld7iUsFDwn
+	 hrF0ZHFKoXWbpC+rb0/XB3HkqF8WYoBK5F3Dx8R6V801dG74x6St9R8wBHvrL2oK05
+	 D8aDtgBzKyauw==
+Received: by mail.hallyn.com (Postfix, from userid 1001)
+	id 7D49A5A9; Mon,  5 Oct 2026 08:09:24 -0500 (CDT)
+Date: Mon, 5 Oct 2026 08:09:24 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: keyrings@vger.kernel.org, Jann Horn <jannh@google.com>,
+	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+	David Howells <dhowells@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>
+Subject: Re: [RFC PATCH 0/2] keys: Address lookup_user_key() mutability
+Message-ID: <asOhhCION3dwTAo+@hallyn.com>
+References: <20260924055521.1981957-1-jarkko@kernel.org>
+ <asKSvjz2YLZhFI4t@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <asKSvjz2YLZhFI4t@kernel.org>
 
-From: lzhan011 <zhangleizhen645@gmail.com>
+On Sun, Oct 04, 2026 at 08:54:06PM +0300, Jarkko Sakkinen wrote:
+> On Thu, Sep 24, 2026 at 08:55:16AM +0300, Jarkko Sakkinen wrote:
+> > The main objective in these patches is to remove to unneeded mutability
+> > from key look ups. It does harm and brings no value so it is pretty obvious
+> > to me that addressing this harmful behaviour is what we should do.
+> > 
+> > I based the first patch on what Jann suggested in [1]. Nothing too clever here
+> > and I'm ofc open for further suggestions.
+> > 
+> > [1] https://lore.kernel.org/keyrings/CAG48ez0XjVSR=M--UBauTm8sJuc+ZbhKzaPa3a6wrSVHyoKevw@mail.gmail.com/
+> > 
+> > Jarkko Sakkinen (2):
+> >   keys: Return user session keyring on lookup
+> >   keys: Reject keyring creation with overridden credentials
+> > 
+> >  Documentation/security/keys/core.rst |  7 ++-
+> >  security/keys/process_keys.c         | 65 +++++++++++++++-------------
+> >  2 files changed, 40 insertions(+), 32 deletions(-)
+> > 
+> > --
+> > 2.47.3
+> > 
+> 
+> So.. should I move forward to with non-RFC v2?
 
-get_symbol_from_map() only assigns n inside the loop that reads the
-System.map file. If the file is empty, the loop body never runs and n is
-then tested while uninitialized, as reported by MemorySanitizer.
+Patch 2 absolutely makes sense, "doc, it hurts when I do this", "don't do
+that then."
 
-Initialize n to NULL.
+Regarding patch 1, that seems like quite a change in behavior, right?  I
+don't see any docs or comments that promise the current behavior, but
+has any userspace or subsystem come to depend on it?  I guess that, if so,
+then it just has to create a link to the user session keyring like pam
+(according to what I've read) does?
 
-Fixes: c4c361059585 ("KEYS: Reserve an extra certificate symbol for inserting without recompiling")
-Assisted-by: Claude:claude-opus-5-5 MSan
-Signed-off-by: lzhan011 <zhangleizhen645@gmail.com>
----
- scripts/insert-sys-cert.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/insert-sys-cert.c b/scripts/insert-sys-cert.c
-index 8902836c2..e0bf0afc1 100644
---- a/scripts/insert-sys-cert.c
-+++ b/scripts/insert-sys-cert.c
-@@ -94,7 +94,7 @@ static void get_symbol_from_map(Elf_Ehdr *hdr, FILE *f, char *name,
- 				struct sym *s)
- {
- 	char l[LINE_SIZE];
--	char *w, *p, *n;
-+	char *w, *p, *n = NULL;
- 
- 	s->size = 0;
- 	s->address = 0;
--- 
-2.34.1
-
+> Note that some tags (e.g., Fixes) are missing simply because this is RFC.
+> 
+> Br, Jarkko
