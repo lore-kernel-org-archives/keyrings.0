@@ -1,243 +1,231 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BFDA9347BAF;
-	Mon,  5 Oct 2026 06:27:45 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C21B036197E;
+	Mon,  5 Oct 2026 06:39:58 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791181667; cv=none; b=kY3HjSoDLGyFmuBaLB2cRphQOYiBBsF4b+W2KNncouyqHG0lcc+pJuYwtK/VmBAdtLt9WO9Ald1zMGylDTK/g+HdSwhjtxIWtsM5FuOdyY3UebUlqL3OIqzC5Al1Qw4pQOti+95jlLHyD75nMb5f7LebwC2+AIn7UCMJk3vz8cg=
+	t=1791182400; cv=none; b=OiqsjxgipCGJjmW6HmafPPoI4vq9xCwkNVTyaJga0PURtME+cG/KBIgaedcB0PDt7sfbf6Blq2/cRNkBU+nrMvMhW9HCIvXr6P/HEkKGr3U4F/M2WG/gJTZtxV5a1dCwtwGJi3l0nHnFNvQ0u3Q7M4yY+F2lDf1jz9GZIF8vBHE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791181667; c=relaxed/simple;
-	bh=YKhMdesrFcsShgS/YkWJwsmF+udLu87KaB0poBt6/tc=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=lBaU2aZMUf/nq0g9MJo8q4cJAxOL4raJEop/TVFnSlLZh35h8zQqtIrYqkPXpdHV/s7PoOtyHnm4WwDNdFjGnvZwLQJbzRjKw+FZrtxE6Kga2G2Grx1h64yZjpEXICq7I44vF3PwJyy6cfxVF76+5usJM1OnUOIzVC6WAPsYltU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=TN915XRu; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1791182400; c=relaxed/simple;
+	bh=kvZ8iK2XNg8Pj0Y1AckmPYP3vHm3VWgMIyBgcTgaZUI=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=UGih+ITm1wdfhfmlK9uOsvINzU1eMO3lIKur23C5sHUDyZT/qqxFGYPdBLGYBnC7sHmqoV3wGisnK708SiApXF0aO8/I1XFkDdmhPQyfEjTqM4jr9YaIMHWRkxkSukuL8mF3INvemqPaY7fBEjUgQANbEibM1A7PuellPsTYbC8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=jC4VNCLN; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="TN915XRu"
-Received: from pps.filterd (m0360072.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 695165wP3291450;
-	Mon, 5 Oct 2026 06:27:42 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:date:from:message-id:mime-version
-	:subject:to; s=pp1; bh=eBOdU4bbrn9Y819oJUNB6uuympUKXhDiDovpQ4qdW
-	j8=; b=TN915XRu6jk4v126nzpgquifrDxKfX15SZDWRHZcD7X/VsJdN69qni2WV
-	0Fm95qny2NxS6VyrfronwwEZQKh6kheRqQfdlZE+FkUjpzJg/qcl2Y5cHZHHmcF1
-	Snnl1Wv1aL16qmhbadxcB88P/2oZDOtKjU6HW9NPjAWjh44Ml1d9NEN8jyerxC3b
-	27d0mxqWKLUkgD8rQRRCDiSYGa60NoErDmaqBv/vnL3a4fIFzg4QRp8sfbida4oG
-	xr91zO1pJrHkkX9ncmTtF/NiFFi+1cXFKtVYGgyOuVR+dPyNkcz2rBMHOVepKAI3
-	o8RZPNlPT7EFEAWs0rG3c1c8r9HfA==
-Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4h2sbuyxm3-1
-	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
-	Mon, 05 Oct 2026 06:27:42 +0000 (GMT)
-Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma12.dal12v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 6956Exam2165217;
-	Mon, 5 Oct 2026 06:27:41 GMT
-Received: from smtprelay07.fra02v.mail.ibm.com ([9.218.2.229])
-	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4h3c1pmdf3-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Mon, 05 Oct 2026 06:27:41 +0000 (GMT)
-Received: from smtpav05.fra02v.mail.ibm.com (smtpav05.fra02v.mail.ibm.com [10.20.54.104])
-	by smtprelay07.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6956Rbd240239500
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Mon, 5 Oct 2026 06:27:37 GMT
-Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id C31452004B;
-	Mon,  5 Oct 2026 06:27:37 +0000 (GMT)
-Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 555FA20043;
-	Mon,  5 Oct 2026 06:27:35 +0000 (GMT)
-Received: from li-fc74f8cc-3279-11b2-a85c-ef5828687581.bl1-in.ibm.com (unknown [9.123.14.23])
-	by smtpav05.fra02v.mail.ibm.com (Postfix) with ESMTP;
-	Mon,  5 Oct 2026 06:27:35 +0000 (GMT)
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-To: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
-Cc: James.Bottomley@HansenPartnership.com, jarkko@kernel.org,
-        zohar@linux.ibm.com, stefanb@linux.ibm.com,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        nayna@linux.ibm.com, rnsastry@linux.ibm.com, ssrish@linux.ibm.com
-Subject: [PATCH v3] keys/trusted_keys: reuse TPM version in option handling
-Date: Mon,  5 Oct 2026 11:57:32 +0530
-Message-ID: <20261005062732.140733-1-ssrish@linux.ibm.com>
-X-Mailer: git-send-email 2.55.0
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="jC4VNCLN"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 248591F00893;
+	Mon,  5 Oct 2026 06:39:57 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1791182398;
+	bh=1d2EodIpxVWoMlO3htkWgV6Xs1hq7/mTcOa8KBS+yIo=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=jC4VNCLN0EGBCCGXxGRHtcZCQgkf0hOYGVr0JAiiDy/iGBJkVdIByKI6uhNBdFKgJ
+	 1bTYbeoBg3tSIb79WFo/DzKGIu+RTPuHUnfGlbP+MnveQdLuBtLUM2eExiwlEEG8JQ
+	 zr4adR7xeuq5pwM/YbS+7udYT+q8QCyR5p0eDQa1IDUXqaTPBg650hOgXz7YC70S/v
+	 mHi3O+UKtxXTptKantJLMA69VEMSjkE5bx3oC4Bjs/rp0sjjIDXtFbJKagRDgpJS1a
+	 uYlc60NdmOOiLx3DMMhOY1sCA22/2qHyZOEhJ7fU4mA285Ysc6qacYebpC+JvI1Lv2
+	 Rj8M0hbeIiKrw==
+Date: Mon, 5 Oct 2026 09:39:54 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Chengfeng Ye <nicoyip.dev@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] keys: Serialize ownership transfers with key
+ accounting
+Message-ID: <asNCIs3OshLwGWrB@kernel.org>
+References: <20260927162528.943886-1-nicoyip.dev@gmail.com>
+ <20260927162528.943886-3-nicoyip.dev@gmail.com>
+ <asMIwpXXWQaD3gAD@kernel.org>
+ <asMQMzqVkmYhwgMB@kernel.org>
+ <CAAo+4rULBiu6tOrdOjsgFcudjvyQO+DR9oZK=wms_3KxgFPNHA@mail.gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-ORIG-GUID: us9bSo0CG4I9kdkDzTr7YGN2CXd-y_ku
-X-Authority-Analysis: v=2.4 cv=KJHPn1Fo c=1 sm=1 tr=0 ts=6ac3435e cx=c_pps
- a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
- a=660iZSQnnn4A:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
- a=RzCfie-kr_QcCd8fBx8p:22 a=VnNF1IyMAAAA:8 a=R0B3_GDsR3QM9wD39lMA:9
-X-Proofpoint-GUID: us9bSo0CG4I9kdkDzTr7YGN2CXd-y_ku
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMDA1MDAyNCBTYWx0ZWRfX33SVWNkKhkSv
- tfgDs9deS1RNE1rgjvp+2sj0hEijc18RlXrK1VoNzjxsn4Lg3JgE+sTaA5ZD4M84PNwC62o+vT6
- 2yD0uVT05AU5f+NjjZdHKl1rPtydG8vvD2TDPg9VNr0s0eqC79cKynIVKA83f9AZo/1cjk6ZbV2
- /1WdIFSDjLI1GOi/6BetKLR6QxOe1CaesB0jj6IDBa9UpS2ORLzVXI1nU3eFVBsepZ4DeyAsrTw
- 2WEF/L7Fg1gWeC6cdn6eJ8Joxp90TY6YrLre5bsQjMsqzDv2RCxGN5QzXvHL2XGGoKQfZ99iTI8
- ci9+hxGM7CjI6i2uawsq9YbEolrLE/N/FKdLdmixiaNujvkLKVF20CqaCLoVzAYxokr3DHbm7j2
- 0OomiMd/gmDSrSysBGC1dLstfL5qb4UIerkm7FokGVq7xOyD0k7fLt1SqtRvRsKHXf5XDcUk7oq
- 9b/58LSCJC1bjEAcz5g==
-X-Proofpoint-Spam-Info: AW1haW4tMjYxMDA1MDAyNCBTYWx0ZWRfX/PdPXmo2Q2Xu
- Hv9BJSbrVpfnHrcdTyT+lhcaXSPhXmgMR1XuSdBXNSvfXZaXl+SZO27AWtDO6HjWm8h7lQlTrHj
- 2DUMx5bUkeugxP1AO256r/oBKgEsOew=
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-10-05_01,2026-10-02_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- suspectscore=0 malwarescore=0 spamscore=0 lowpriorityscore=0
- priorityscore=1501 phishscore=0 impostorscore=0 adultscore=0 clxscore=1015
- bulkscore=0 classifier=typeunknown authscore=0 authtc= authcc= route=outbound
- adjust=0 reason=mlx scancount=1 engine=8.22.0-2609040000
- definitions=main-2610050024
+In-Reply-To: <CAAo+4rULBiu6tOrdOjsgFcudjvyQO+DR9oZK=wms_3KxgFPNHA@mail.gmail.com>
 
-Determine the TPM version once in the seal and unseal paths, and reuse
-it when allocating and parsing trusted key options.
+On Mon, Oct 05, 2026 at 01:53:29PM +0800, Chengfeng Ye wrote:
+> On Mon, Oct 5, 2026 at 10:49 AM Jarkko Sakkinen <jarkko@kernel.org> wrote:
+> >
+> > On Mon, Oct 05, 2026 at 05:17:42AM +0300, Jarkko Sakkinen wrote:
+> > > On Mon, Sep 28, 2026 at 12:25:28AM +0800, Chengfeng Ye wrote:
+> > > > Protecting individual accesses to key->user does not make ownership
+> > > > transfers atomic with accounting updates. keyctl_chown_key() holds
+> > > > key->sem, but instantiation is serialized by key_construction_mutex and
+> > > > need not hold that semaphore. KEY_LOOKUP_PARTIAL also permits chown of
+> > > > an uninstantiated key.
+> > > >
+> > > > The instantiated-key count can therefore be charged to the wrong owner:
+> > > >
+> > > >   instantiate                       keyctl_chown_key()
+> > > >   lock key_user_lock
+> > > >   increment old->nikeys
+> > > >   unlock key_user_lock
+> > > >                                     observe KEY_IS_UNINSTANTIATED
+> > > >                                     skip the nikeys transfer
+> > > >                                     replace key->user
+> > > >   mark key instantiated
+> > > >
+> > > > The key becomes instantiated under the new owner while the increment
+> > > > remains with the old owner. Negative instantiation has the same race.
+> > > >
+> > > > Quota reservation can likewise run between charging the new owner and
+> > > > replacing key->user. It then adjusts the old owner's quota and changes
+> > > > key->quotalen while chown is transferring that quota burden.
+> > > >
+> > > > Extend the key_user_lock critical section in keyctl_chown_key() across
+> > > > the quota and key-count transfers, state check, and owner replacement.
+> > > > Also extend the instantiation critical sections across the state update,
+> > > > so chown observes the count increment and instantiated state together.
+> > > > The existing per-user quota locks continue to serialize quota changes
+> > > > against other keys owned by the same user.
+> > > >
+> > > > Keep allocations, notifications and reference release outside
+> > > > key_user_lock, and release it on the quota-overrun path.
+> > > >
+> > > > Fixes: 5801649d8b83 ("[PATCH] keys: let keyctl_chown() change a key's owner")
+> > > > Cc: stable@vger.kernel.org
+> > > > Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
+> > > > ---
+> > > > Changes in v3:
+> > > > - Split from v2 as patch 2/2; see the cover letter for the full split.
+> > > > - Rebase onto current mainline and retain explicit reader-side locking.
+> > > >
+> > > > v2: https://lore.kernel.org/r/20260904080940.575882-1-nicoyip.dev@gmail.com/
+> > > >
+> > > >  security/keys/key.c    | 4 ++--
+> > > >  security/keys/keyctl.c | 6 ++++--
+> > > >  2 files changed, 6 insertions(+), 4 deletions(-)
+> > > >
+> > > > diff --git a/security/keys/key.c b/security/keys/key.c
+> > > > index d0d583194b05..54c675b3b58d 100644
+> > > > --- a/security/keys/key.c
+> > > > +++ b/security/keys/key.c
+> > > > @@ -454,8 +454,8 @@ static int __key_instantiate_and_link(struct key *key,
+> > > >                     /* mark the key as being instantiated */
+> > > >                     spin_lock(&key_user_lock);
+> > > >                     atomic_inc(&key->user->nikeys);
+> > > > -                   spin_unlock(&key_user_lock);
+> > > >                     mark_key_instantiated(key, 0);
+> > > > +                   spin_unlock(&key_user_lock);
+> > > >                     notify_key(key, NOTIFY_KEY_INSTANTIATED, 0);
+> > > >
+> > > >                     if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
+> > > > @@ -613,8 +613,8 @@ int key_reject_and_link(struct key *key,
+> > > >             /* mark the key as being negatively instantiated */
+> > > >             spin_lock(&key_user_lock);
+> > > >             atomic_inc(&key->user->nikeys);
+> > > > -           spin_unlock(&key_user_lock);
+> > > >             mark_key_instantiated(key, -error);
+> > > > +           spin_unlock(&key_user_lock);
+> > > >             notify_key(key, NOTIFY_KEY_INSTANTIATED, -error);
+> > > >             key_set_expiry(key, ktime_get_real_seconds() + timeout);
+> > > >
+> > > > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> > > > index c17924609317..83a9575b084e 100644
+> > > > --- a/security/keys/keyctl.c
+> > > > +++ b/security/keys/keyctl.c
+> > > > @@ -1004,6 +1004,8 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+> > > >             if (!newowner)
+> > > >                     goto error_put;
+> > > >
+> > > > +           spin_lock(&key_user_lock);
+> > > > +
+> > > >             /* transfer the quota burden to the new user */
+> > > >             if (test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
+> > > >                     unsigned maxkeys = uid_eq(uid, GLOBAL_ROOT_UID) ?
+> > > > @@ -1036,11 +1038,10 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+> > > >                     atomic_inc(&newowner->nikeys);
+> > > >             }
+> > > >
+> > > > -           spin_lock(&key_user_lock);
+> > > >             zapowner = key->user;
+> > > >             key->user = newowner;
+> > > > -           spin_unlock(&key_user_lock);
+> > > >             key->uid = uid;
+> > > > +           spin_unlock(&key_user_lock);
+> > > >     }
+> > > >
+> > > >     /* change the GID */
+> > > > @@ -1060,6 +1061,7 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+> > > >
+> > > >  quota_overrun:
+> > > >     spin_unlock_irqrestore(&newowner->lock, flags);
+> > > > +   spin_unlock(&key_user_lock);
+> > > >     zapowner = newowner;
+> > > >     ret = -EDQUOT;
+> > > >     goto error_put;
+> > > > --
+> > > > 2.43.0
+> > > >
+> > >
+> > > I double-checked this patch too given the concerns on 1/2 but nope, this
+> > > does not raise similar concerns as every critical section is strictly
+> > > related to ownership change.
+> > >
+> > > E.g., I can be sure that the granularity is where it should be and locks
+> > > are actually needed in the first place.
+> > >
+> > > Thus, I'm still including this patch to my next PR, and drop the first
+> > > one.
+> >
+> > By dropping 1/2 I found out that 2/2 key.c becomes:
+> >
+> > diff --git a/security/keys/key.c b/security/keys/key.c
+> > index a438c4508595..de63120c51ad 100644
+> > --- a/security/keys/key.c
+> > +++ b/security/keys/key.c
+> > @@ -449,6 +449,7 @@ static int __key_instantiate_and_link(struct key *key,
+> >                         /* mark the key as being instantiated */
+> >                         atomic_inc(&key->user->nikeys);
+> >                         mark_key_instantiated(key, 0);
+> > +                       spin_unlock(&key_user_lock);
+> >                         notify_key(key, NOTIFY_KEY_INSTANTIATED, 0);
+> >
+> >                         if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
+> > @@ -606,6 +607,7 @@ int key_reject_and_link(struct key *key,
+> >                 /* mark the key as being negatively instantiated */
+> >                 atomic_inc(&key->user->nikeys);
+> >                 mark_key_instantiated(key, -error);
+> > +               spin_unlock(&key_user_lock);
+> >                 notify_key(key, NOTIFY_KEY_INSTANTIATED, -error);
+> >                 key_set_expiry(key, ktime_get_real_seconds() + timeout);
+> >
+> > This type of interleaving should never happen in a patch series.
+> >
+> > Please don't rush your changes like this in future.
+> >
+> > Br, Jarkko
+> 
+> Sorry for the mistake, I should have carefully verified that the tree
+> remained valid at each step of the series.
+> 
+> I will rework the locking on 1/2 to inspect if there might be any
+> unnecessary coverage, and verify each intermediate commit
+> independently before sending a revised version for the patch series.
 
-This reduces the number of fallible calls to tpm_is_tpm2() and avoids
-unnecessary I/O between the kernel and the TPM.
+No problem. I just wanted to underline this :-) And I will gladly take
+part of the blame given that I also rushed and this should have been
+catched and fixed during the review cycle.
 
-Signed-off-by: Srish Srinivasan <ssrish@linux.ibm.com>
-Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
----
-Changelog:
+So let's just address this, phase down a bit so that at least correct
+stuff gets out (and as many review cycles that requires).
 
- v3:
-  - Tweak the commit message to highlight the reduced failure surface and
-    TPM I/O
+The basis of the fix is not rotten. It does address the correct
+root cause and is going into right direction. It's just not taken
+to the end.
 
- v2:
-  - Use bool to indicate whether the chip is TPM 2.0 in the option helpers
+> 
+> Best regards,
+> Chengfeng
 
- security/keys/trusted-keys/trusted_tpm1.c | 35 +++++++++--------------
- 1 file changed, 13 insertions(+), 22 deletions(-)
-
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index 3ec078ca3f97..6dbce058368f 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -700,7 +700,7 @@ static const match_table_t key_tokens = {
- 
- /* can have zero or more token= options */
- static int getoptions(char *c, struct trusted_key_payload *pay,
--		      struct trusted_key_options *opt)
-+		      struct trusted_key_options *opt, bool is_tpm2)
- {
- 	struct trusted_key_tpm *private = opt->private;
- 	substring_t args[MAX_OPT_ARGS];
-@@ -712,13 +712,8 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 	unsigned long token_mask = 0;
- 	unsigned int digest_len;
- 	int i;
--	int tpm2;
--
--	tpm2 = tpm_is_tpm2(chip);
--	if (tpm2 < 0)
--		return tpm2;
- 
--	private->hash = tpm2 ? HASH_ALGO_SHA256 : HASH_ALGO_SHA1;
-+	private->hash = is_tpm2 ? HASH_ALGO_SHA256 : HASH_ALGO_SHA1;
- 
- 	if (!c)
- 		return 0;
-@@ -773,7 +768,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 				break;
- 			}
- 
--			if (tpm2 &&
-+			if (is_tpm2 &&
- 			    private->blobauth_len <=
- 			    sizeof(private->blobauth)) {
- 				memcpy(private->blobauth, args[0].from,
-@@ -808,14 +803,15 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 			}
- 			if (i == HASH_ALGO__LAST)
- 				return -EINVAL;
--			if  (!tpm2 && i != HASH_ALGO_SHA1) {
-+			if (!is_tpm2 && i != HASH_ALGO_SHA1) {
- 				pr_info("TPM 1.x only supports SHA-1.\n");
- 				return -EINVAL;
- 			}
- 			break;
- 		case Opt_policydigest:
- 			digest_len = hash_digest_size[private->hash];
--			if (!tpm2 || strlen(args[0].from) != (2 * digest_len))
-+			if (!is_tpm2 ||
-+			    strlen(args[0].from) != (2 * digest_len))
- 				return -EINVAL;
- 			res = hex2bin(private->policydigest, args[0].from,
- 				      digest_len);
-@@ -824,7 +820,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 			private->policydigest_len = digest_len;
- 			break;
- 		case Opt_policyhandle:
--			if (!tpm2)
-+			if (!is_tpm2)
- 				return -EINVAL;
- 			res = kstrtoul(args[0].from, 16, &handle);
- 			if (res < 0)
-@@ -838,15 +834,10 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 	return 0;
- }
- 
--static struct trusted_key_options *trusted_options_alloc(void)
-+static struct trusted_key_options *trusted_options_alloc(bool is_tpm2)
- {
- 	struct trusted_key_tpm *private;
- 	struct trusted_key_options *options;
--	int tpm2;
--
--	tpm2 = tpm_is_tpm2(chip);
--	if (tpm2 < 0)
--		return NULL;
- 
- 	options = kzalloc_obj(*options);
- 	if (options) {
-@@ -858,7 +849,7 @@ static struct trusted_key_options *trusted_options_alloc(void)
- 			kfree_sensitive(options);
- 			options = NULL;
- 		} else {
--			if (!tpm2)
-+			if (!is_tpm2)
- 				private->keyhandle = SRKHANDLE;
- 			options->private = private;
- 		}
-@@ -877,13 +868,13 @@ static int trusted_tpm_seal(struct trusted_key_payload *p, char *datablob)
- 	if (tpm2 < 0)
- 		return tpm2;
- 
--	options = trusted_options_alloc();
-+	options = trusted_options_alloc(tpm2);
- 	if (!options)
- 		return -ENOMEM;
- 
- 	private = options->private;
- 
--	ret = getoptions(datablob, p, options);
-+	ret = getoptions(datablob, p, options, tpm2);
- 	if (ret < 0)
- 		return ret;
- 	dump_options(options);
-@@ -922,12 +913,12 @@ static int trusted_tpm_unseal(struct trusted_key_payload *p, char *datablob)
- 	if (tpm2 < 0)
- 		return tpm2;
- 
--	options = trusted_options_alloc();
-+	options = trusted_options_alloc(tpm2);
- 	if (!options)
- 		return -ENOMEM;
- 	private = options->private;
- 
--	ret = getoptions(datablob, p, options);
-+	ret = getoptions(datablob, p, options, tpm2);
- 	if (ret < 0)
- 		return ret;
- 	dump_options(options);
--- 
-2.53.0
-
+Br, Jarkko
