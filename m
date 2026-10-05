@@ -1,32 +1,32 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 55AD3547073;
-	Mon,  5 Oct 2026 00:59:02 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 57F6B154425;
+	Mon,  5 Oct 2026 02:17:42 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791161943; cv=none; b=qRfKKktJ0Cb3czv/qOCKQRORAhgP6iJWSZ/RgwGoJ0Sb0KgHMczBMI9jxgqLl5zki05BLIesNA8L59QleDRcSPSI2PNZ3Py8UrJE6k9lg6ygEWVQSP04XoE3GsEQymkINB8nyTuIhruCuhZYuTY4wuzz236ja/LLvU9EYVne3rc=
+	t=1791166663; cv=none; b=cnW6cmH9O9C0AMpkOdWmOFZxQx/mnEptP9pEfSuTgzKZksH71De+tZUw1BhiOZOAcrVNALyuUxACcWc3Np1CRO9EMIQBn8I7K5XJ7BbAPrPaRtw/8tYnIeE5kfxT9AeBGuCa5MTv63NLENUp1Vi5Fma8H/ggWCXnAvPqwX/WY7U=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791161943; c=relaxed/simple;
-	bh=M2+TvvQC1xeBQe1EBP0Mj/6nPJqDm5DZDX8zZN8hAVw=;
+	s=arc-20240116; t=1791166663; c=relaxed/simple;
+	bh=ylS8TTzsyrZM1GQKOw7m7unyXnN+OPv6+bY0H7Z7XjU=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=TsU3o9fHNGnfarSCwxG47uFsjf2MoJtLRpm+qytkmoz9fuaJ+VpXiENJjJqw3qi17TGZfZ9UN2pQe14UPQtBFGyacESXuAPIQQnjwl6sJ8LEEvr6vUXvy9rJUAngeZgJyT+UvcdTvTam69saQnw1nNxT7hG8E/ECHQXx356P2Ts=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=C+MGEhBq; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=e5HdUB7ZmAjmi7lKxB3uJhOuRnMInxRpLLs9YLQB89pvVBjUXLTmDKtJvT8gwossuZBQbuVdhPNXiKCH7vPXC/5YYFCRxEvGluRVIMs8hRVfjiaYG2b4xXTCgWONpVMuFIt+FMkJhWsTZ1HjHZyWDsUj3ODKS6vjPpkWoPuoKUk=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=UIbA6BcF; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="C+MGEhBq"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 520A71F000FF;
-	Mon,  5 Oct 2026 00:59:01 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="UIbA6BcF"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5F8411F000FF;
+	Mon,  5 Oct 2026 02:17:41 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791161941;
-	bh=GvNRAx7nbNSFO/BRLKhYAnDBuujlG6qX3d+ce8CaBII=;
+	s=k20260515; t=1791166661;
+	bh=YODgHxeSs/DUqBefSwV60XuzUgb+9/IYbG0yXc4NXV8=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=C+MGEhBqmGXrNg6ldjGnUOH0i6huNVsUTFBhv6OpQp/RTpViZMmj6bEnREYkvOu96
-	 MbDZ9FT8tY+5RqiW3Q19lFJlV9jetRZnTERXpIq2QQIS++Vl74od5F9WPhDVWgAv5z
-	 dZ87ZWEF7esSw6f7YLF5BWMz1mnliOmuYF6QwSpz/pMhSG9sMFge77+vCMAwHtIttC
-	 syI3kHH9YKNMM5g4fL37lAKv1HdBJMfiLHMpeXHVN67MvmxTbweFgC+eBmyLkKpDSC
-	 FFhWg53EjlB50HvLxn2te0BEbAABLUQpl4O8DD7aKPdPnS6g6/gGET7jADHBE0qa3S
-	 JB1+ld/p12Z6g==
-Date: Mon, 5 Oct 2026 03:58:57 +0300
+	b=UIbA6BcFA7VhilW1+zO1fYqVop+Yxbyqyby1oAuBepvwk0gqeYnv8y4I0eYyYkFsY
+	 ZLQIOAS6wLqn/obMkimWDnTFHWtFe078NNo0HHz+UoBX6KE6qw7oyoY3nwr7zLfQgw
+	 GU0pAQ2YvpAE6UFE/68oDMC2oU67rxzGzrgcTJdZOtGxMCiHYJzu1SiO+BExQlO+tN
+	 0yCmKSj5zoGrgoaLBIgRhExZbhrPyI3bDNyEZ5ydIyXoA5t6iB8f+FsIJiVHANjHkX
+	 7W3MvJ/RQGSC8NF2Fqz5AYJzNsHR1658FvWL4fxsbHusTXiqUzPATq5+T3raCoMQ7/
+	 NTJG1bU8pSDuQ==
+Date: Mon, 5 Oct 2026 05:17:38 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Chengfeng Ye <nicoyip.dev@gmail.com>
 Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
@@ -34,11 +34,11 @@ Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
 	"Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
 	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
 	stable@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] keys: Protect key_user lifetime during ownership
- changes
-Message-ID: <asL2UQjYCxt9SF9K@kernel.org>
+Subject: Re: [PATCH v3 2/2] keys: Serialize ownership transfers with key
+ accounting
+Message-ID: <asMIwpXXWQaD3gAD@kernel.org>
 References: <20260927162528.943886-1-nicoyip.dev@gmail.com>
- <20260927162528.943886-2-nicoyip.dev@gmail.com>
+ <20260927162528.943886-3-nicoyip.dev@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -47,237 +47,127 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20260927162528.943886-2-nicoyip.dev@gmail.com>
+In-Reply-To: <20260927162528.943886-3-nicoyip.dev@gmail.com>
 
-While preparing PR some changes in this patch started to bother me so
-let's do a sanity check.
-
-On Mon, Sep 28, 2026 at 12:25:27AM +0800, Chengfeng Ye wrote:
-> keyctl_chown_key() replaces key->user under key->sem and drops the
-> reference to the previous owner after releasing the semaphore. Readers
-> which do not hold that semaphore can still be using the previous owner
-> when key_user_put() frees it.
+On Mon, Sep 28, 2026 at 12:25:28AM +0800, Chengfeng Ye wrote:
+> Protecting individual accesses to key->user does not make ownership
+> transfers atomic with accounting updates. keyctl_chown_key() holds
+> key->sem, but instantiation is serialized by key_construction_mutex and
+> need not hold that semaphore. KEY_LOOKUP_PARTIAL also permits chown of
+> an uninstantiated key.
 > 
-> For example, namespace filtering in /proc/keys can race with chown:
+> The instantiated-key count can therefore be charged to the wrong owner:
 > 
->   /proc/keys reader                 keyctl_chown_key()
->   user = key->user
->                                     key->user = newowner
->                                     key_user_put(old)
->                                       kfree(old)
->   read user->uid
+>   instantiate                       keyctl_chown_key()
+>   lock key_user_lock
+>   increment old->nikeys
+>   unlock key_user_lock
+>                                     observe KEY_IS_UNINSTANTIATED
+>                                     skip the nikeys transfer
+>                                     replace key->user
+>   mark key instantiated
 > 
-> An earlier instrumented run reported:
+> The key becomes instantiated under the new owner while the increment
+> remains with the old owner. Negative instantiation has the same race.
 > 
->   BUG: KASAN: slab-use-after-free in proc_keys_start+0x353/0x440
->   Read of size 4 at addr ffff8881128abbc0 by task poc/88
->   Call Trace:
->    proc_keys_start+0x353/0x440
->    seq_read_iter+0x25d/0x1190
->    proc_reg_read_iter+0x19e/0x260
->   Allocated by task 86:
->    key_user_lookup+0x1b4/0x540
->    keyctl_chown_key+0x3cc/0xbf0
->   Freed by task 87:
->    kfree+0x149/0x330
->    keyctl_chown_key+0x7b0/0xbf0
+> Quota reservation can likewise run between charging the new owner and
+> replacing key->user. It then adjusts the old owner's quota and changes
+> key->quotalen while chown is transferring that quota burden.
 > 
-> Serialize pointer replacement and the affected readers with key_user_lock,
-> which already protects final key_user removal. Take the lock explicitly
-> while /proc/keys and find_keyring_by_name() copy the owner's UID. Retain
-> the quota-owner UID rather than substituting key->uid, since they may
-> differ for thread keyrings.
+> Extend the key_user_lock critical section in keyctl_chown_key() across
+> the quota and key-count transfers, state check, and owner replacement.
+> Also extend the instantiation critical sections across the state update,
+> so chown observes the count increment and instantiated state together.
+> The existing per-user quota locks continue to serialize quota changes
+> against other keys owned by the same user.
 > 
-> Also hold the lock across owner accesses in key_payload_reserve() and
-> across the instantiated-key count increments. Instantiation need not hold
-> the target key's semaphore, so these paths need the same lifetime
-> protection. Leave key-state publication and the chown accounting transfer
-> outside the new critical sections for the separate accounting fix.
+> Keep allocations, notifications and reference release outside
+> key_user_lock, and release it on the quota-overrun path.
 > 
 > Fixes: 5801649d8b83 ("[PATCH] keys: let keyctl_chown() change a key's owner")
 > Cc: stable@vger.kernel.org
 > Signed-off-by: Chengfeng Ye <nicoyip.dev@gmail.com>
 > ---
 > Changes in v3:
-> - Split from v2 as patch 1/2; see the cover letter for the full split.
+> - Split from v2 as patch 2/2; see the cover letter for the full split.
 > - Rebase onto current mainline and retain explicit reader-side locking.
 > 
 > v2: https://lore.kernel.org/r/20260904080940.575882-1-nicoyip.dev@gmail.com/
 > 
->  security/keys/key.c     | 13 +++++++++++--
->  security/keys/keyctl.c  |  2 ++
->  security/keys/keyring.c |  7 ++++++-
->  security/keys/proc.c    | 15 +++++++++++++--
->  4 files changed, 32 insertions(+), 5 deletions(-)
+>  security/keys/key.c    | 4 ++--
+>  security/keys/keyctl.c | 6 ++++--
+>  2 files changed, 6 insertions(+), 4 deletions(-)
 > 
 > diff --git a/security/keys/key.c b/security/keys/key.c
-> index b34a64d81d47..d0d583194b05 100644
+> index d0d583194b05..54c675b3b58d 100644
 > --- a/security/keys/key.c
 > +++ b/security/keys/key.c
-> @@ -21,6 +21,7 @@ struct rb_root		key_serial_tree; /* tree of keys indexed by serial */
->  DEFINE_SPINLOCK(key_serial_lock);
->  
->  struct rb_root	key_user_tree; /* tree of quota records indexed by UID */
-> +/* Protects key_user_tree and key ownership changes. */
-
-This type of extras in bug fixes do not make any possible sense and set
-an extra backporting cost.
-
->  DEFINE_SPINLOCK(key_user_lock);
->  
->  unsigned int key_quota_root_maxkeys = 1000000;	/* root's key count quota */
-> @@ -380,9 +381,12 @@ int key_payload_reserve(struct key *key, size_t datalen)
->  
->  	/* contemplate the quota adjustment */
->  	if (delta != 0 && test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
-> -		unsigned maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
-> -			key_quota_root_maxbytes : key_quota_maxbytes;
->  		unsigned long flags;
-> +		unsigned int maxbytes;
-> +
-> +		spin_lock(&key_user_lock);
-> +		maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
-> +			key_quota_root_maxbytes : key_quota_maxbytes;
->  
->  		spin_lock_irqsave(&key->user->lock, flags);
->  
-> @@ -396,6 +400,7 @@ int key_payload_reserve(struct key *key, size_t datalen)
->  			key->quotalen += delta;
->  		}
->  		spin_unlock_irqrestore(&key->user->lock, flags);
-> +		spin_unlock(&key_user_lock);
-
-I don't understand the necessity of key_user_lock here.
-
->  	}
->  
->  	/* change the recorded data length if that didn't generate an error */
-> @@ -447,7 +452,9 @@ static int __key_instantiate_and_link(struct key *key,
->  
->  		if (ret == 0) {
+> @@ -454,8 +454,8 @@ static int __key_instantiate_and_link(struct key *key,
 >  			/* mark the key as being instantiated */
-> +			spin_lock(&key_user_lock);
+>  			spin_lock(&key_user_lock);
 >  			atomic_inc(&key->user->nikeys);
-> +			spin_unlock(&key_user_lock);
+> -			spin_unlock(&key_user_lock);
 >  			mark_key_instantiated(key, 0);
+> +			spin_unlock(&key_user_lock);
 >  			notify_key(key, NOTIFY_KEY_INSTANTIATED, 0);
 >  
-> @@ -604,7 +611,9 @@ int key_reject_and_link(struct key *key,
->  	/* can't instantiate twice */
->  	if (key->state == KEY_IS_UNINSTANTIATED) {
+>  			if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
+> @@ -613,8 +613,8 @@ int key_reject_and_link(struct key *key,
 >  		/* mark the key as being negatively instantiated */
-> +		spin_lock(&key_user_lock);
+>  		spin_lock(&key_user_lock);
 >  		atomic_inc(&key->user->nikeys);
-> +		spin_unlock(&key_user_lock);
-
-atomic_inc() is wrapped under spinlock in the two changes above. Why
-is that necessary?
-
+> -		spin_unlock(&key_user_lock);
 >  		mark_key_instantiated(key, -error);
+> +		spin_unlock(&key_user_lock);
 >  		notify_key(key, NOTIFY_KEY_INSTANTIATED, -error);
 >  		key_set_expiry(key, ktime_get_real_seconds() + timeout);
+>  
 > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> index d14ace88e529..c17924609317 100644
+> index c17924609317..83a9575b084e 100644
 > --- a/security/keys/keyctl.c
 > +++ b/security/keys/keyctl.c
-> @@ -1036,8 +1036,10 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+> @@ -1004,6 +1004,8 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
+>  		if (!newowner)
+>  			goto error_put;
+>  
+> +		spin_lock(&key_user_lock);
+> +
+>  		/* transfer the quota burden to the new user */
+>  		if (test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
+>  			unsigned maxkeys = uid_eq(uid, GLOBAL_ROOT_UID) ?
+> @@ -1036,11 +1038,10 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
 >  			atomic_inc(&newowner->nikeys);
 >  		}
 >  
-> +		spin_lock(&key_user_lock);
+> -		spin_lock(&key_user_lock);
 >  		zapowner = key->user;
 >  		key->user = newowner;
-> +		spin_unlock(&key_user_lock);
-
-This is where I get it as you swap the key->user.
-
+> -		spin_unlock(&key_user_lock);
 >  		key->uid = uid;
+> +		spin_unlock(&key_user_lock);
 >  	}
 >  
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> index 15bf4af8f282..5943e8b48c0f 100644
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
-> @@ -1148,6 +1148,7 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
->  {
->  	struct user_namespace *ns = current_user_ns();
->  	struct key *keyring;
-> +	kuid_t uid;
+>  	/* change the GID */
+> @@ -1060,6 +1061,7 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
 >  
->  	if (!name)
->  		return ERR_PTR(-EINVAL);
-> @@ -1158,7 +1159,11 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
->  	 * grants Search permission and that hasn't been revoked
->  	 */
->  	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
-> -		if (!kuid_has_mapping(ns, keyring->user->uid))
-> +		spin_lock(&key_user_lock);
-> +		uid = keyring->user->uid;
-> +		spin_unlock(&key_user_lock);
-
-In this and similar site I do not get it. Why key->user->-lock could not
-be instead?
-
-> +
-> +		if (!kuid_has_mapping(ns, uid))
->  			continue;
->  
->  		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
-> diff --git a/security/keys/proc.c b/security/keys/proc.c
-> index 4f4e2c1824f1..e507c500c068 100644
-> --- a/security/keys/proc.c
-> +++ b/security/keys/proc.c
-> @@ -68,7 +68,13 @@ static struct rb_node *key_serial_next(struct seq_file *p, struct rb_node *n)
->  	n = rb_next(n);
->  	while (n) {
->  		struct key *key = rb_entry(n, struct key, serial_node);
-> -		if (kuid_has_mapping(user_ns, key->user->uid))
-> +		kuid_t uid;
-> +
-> +		spin_lock(&key_user_lock);
-> +		uid = key->user->uid;
-> +		spin_unlock(&key_user_lock);
-> +
-> +		if (kuid_has_mapping(user_ns, uid))
->  			break;
->  		n = rb_next(n);
-
-Isn't procfs change at least out of scope? It
-
->  	}
-> @@ -80,6 +86,7 @@ static struct key *find_ge_key(struct seq_file *p, key_serial_t id)
->  	struct user_namespace *user_ns = seq_user_ns(p);
->  	struct rb_node *n = key_serial_tree.rb_node;
->  	struct key *minkey = NULL;
-> +	kuid_t uid;
->  
->  	while (n) {
->  		struct key *key = rb_entry(n, struct key, serial_node);
-> @@ -100,7 +107,11 @@ static struct key *find_ge_key(struct seq_file *p, key_serial_t id)
->  		return NULL;
->  
->  	for (;;) {
-> -		if (kuid_has_mapping(user_ns, minkey->user->uid))
-> +		spin_lock(&key_user_lock);
-> +		uid = minkey->user->uid;
-> +		spin_unlock(&key_user_lock);
-> +
-> +		if (kuid_has_mapping(user_ns, uid))
->  			return minkey;
->  		n = rb_next(&minkey->serial_node);
->  		if (!n)
+>  quota_overrun:
+>  	spin_unlock_irqrestore(&newowner->lock, flags);
+> +	spin_unlock(&key_user_lock);
+>  	zapowner = newowner;
+>  	ret = -EDQUOT;
+>  	goto error_put;
 > -- 
 > 2.43.0
 > 
 
-By putting global lock every possible site the bug does get fixed but
-nothing really makes the case that this is ultimately least intrusive
-way to fix this.
+I double-checked this patch too given the concerns on 1/2 but nope, this
+does not raise similar concerns as every critical section is strictly
+related to ownership change.
 
-I could fix almost any possible race condition if there was a preference
-to use global lock for everything. I'm neither sure whether this is a
-superset change that covers the bug fix or not.
+E.g., I can be sure that the granularity is where it should be and locks
+are actually needed in the first place.
 
-Br, Jarkko
+Thus, I'm still including this patch to my next PR, and drop the first
+one.
 
 Br, Jarkko
