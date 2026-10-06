@@ -1,95 +1,98 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-ej1-f49.google.com (mail-ej1-f49.google.com [209.85.218.49])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CBFAC358378;
-	Mon,  5 Oct 2026 22:46:44 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6136E282F05
+	for <keyrings@vger.kernel.org>; Tue,  6 Oct 2026 03:04:01 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.218.49
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791240405; cv=none; b=j5qmvHBZjsik3CHs4Bzb/ZqAMQu+CbNR7nVG6QMrqoXkTCQTBECOIYSvsouzFJQHIrs2TTN7Y7cRO5x3rjLdCJE8CtEFMLpEN+PC5r1y4Mnb/9mcOhrfso8HwEnjNW02LrH+pIDjFY6ggCnCEiAI0CfMGkHFRZC9wruSPVyshxU=
+	t=1791255843; cv=none; b=mznHZx5kbqYEwOpqLHbb70e/Jmn2OmKpiuGkkJ9Vr6admhHQdzsoZkdPZDQfWgVn8nrkNlz/9nUQaW4xf5JIQF1TYn6XKOMXnmrfkfKWbjLRz3AK8MyrlpM9GgvX0Supu/shSzIBzIgQBLH0en1UtESznwGFZSbZ0JKsu17sLO8=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791240405; c=relaxed/simple;
-	bh=wpcUYiuuJ2s1L5IZGWhATXeXgoxRvxanQmPZDT3mPcE=;
-	h=Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:
-	 Content-Disposition; b=J9dtmM6kSdIiUpOc8BHnISPb3i2RrDV8qHDCKtsK7IYWqRRIKbmDsgBEi2u6olsWyrPZcAJN4O+SLvCVwVxJoZrjl8bxkOMeaPJ1KNAnyMpr3CgU1fhQMBB/4tKdQKT3W981beNlpHE439g6qNbCAAU5LF6Tak0XAb4tFU8CjFU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=LkrB1/Gh; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1791255843; c=relaxed/simple;
+	bh=+iRtHVWesahzFEipR/js2nH5JPwfcMhBKYLMp7reF/E=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=FAGmPBCbf7Gc5vP23sn9xCyj0J5c+OC5BqwrgWojBepo+BKY0a1K2hkhmtwTJHbZN/VyQamKm2BvwV6LL7z/m11Wz8ZOvCrReQhiwU15j8XrChFf8qLDQj7xQ/ZklA6kddlidqmU4TekstD0FFCnLi31XNtrEGXEzMKaKqHVojQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux-foundation.org; spf=pass smtp.mailfrom=linuxfoundation.org; dkim=pass (1024-bit key) header.d=linux-foundation.org header.i=@linux-foundation.org header.b=Dz4cfvw0; arc=none smtp.client-ip=209.85.218.49
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux-foundation.org
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linuxfoundation.org
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="LkrB1/Gh"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DE5CB1F000FF;
-	Mon,  5 Oct 2026 22:46:43 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791240404;
-	bh=cPZgMUryOgJLNtBZJUJKmeCHqfhJTZMkraZmCaTi35c=;
-	h=Date:From:To:Cc:Subject;
-	b=LkrB1/GhAfmmquVuhDZEXn2ehlJiP5NyoOAt9lxXYhfX5ksWPGsBMa1XEcEFM/J2u
-	 JIJYiZW16MzYpGpKk7zlGdCODIH0qX494fW/jpT3fk0vNt7IW3gdpnnIeEXjhPK/J+
-	 HrWJoUiWXoUHotc2jitbKaKZIn/vkHdW4K/0V/+ZGISpAj+aH1EPJi6ph2tn5DHAlX
-	 Uy9TvWhWb7msMeszqVqH5nIeYlm0NK+LcOZUQu7PkknCMB3pnHG7dcU1/9WdBU0qE3
-	 0TQEZ+gCiDH6oSslbdteUCLThgnq41bFkh/x648pnei4VNfzQdlxGDYZs6ftWfZRc9
-	 jT1MRsWDylYew==
-Date: Tue, 6 Oct 2026 01:46:40 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org
-Subject: [GIT PULL] KEYS changes for v7.3-rc7
-Message-ID: <asQo0Kb0SF0vZcHa@kernel.org>
+	dkim=pass (1024-bit key) header.d=linux-foundation.org header.i=@linux-foundation.org header.b="Dz4cfvw0"
+Received: by mail-ej1-f49.google.com with SMTP id a640c23a62f3a-c315a445752so4527566b.3
+        for <keyrings@vger.kernel.org>; Mon, 05 Oct 2026 20:04:01 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=linux-foundation.org; s=google; t=1791255839; x=1791860639; darn=vger.kernel.org;
+        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
+         :references:mime-version:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=UkS28LzVsZhO5NSW9OoNXPMGjm1DC13xh2NDUcHdEi0=;
+        b=Dz4cfvw0ltQkUoX8D9E8CMo9eS3fO0Vobp9YTfI8ZVqbg8rNOjhWoTcDC4XsDpbMKs
+         ok3jRuN4MiGwNy/vuQcfJMy5feEtbJy6vK/C6kCyd1XNMMXoVYMBPFQx+du7yNM51Dr6
+         ZGFcXNM7/QLFYJdV1VgyIEfd2DPemZNG46zyY=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1791255839; x=1791860639;
+        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
+         :references:mime-version:x-gm-gg:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to:content-type;
+        bh=UkS28LzVsZhO5NSW9OoNXPMGjm1DC13xh2NDUcHdEi0=;
+        b=LEeoTiuqSMF5EVlYV6MZeiZZu8CcuNrozbz86bsY7zhkKG/f4E3BrXPJrlwu2QHLBG
+         9xPmF3Te7LKFlacSm7LhuLEKeATigw1b4vGB6H6/V9xxzgWEfDso0Kp2ZtrcUJtoMA+V
+         Xa0xoulcDDGyErus4vIXPnMW4mnvKiCAJ9ab5Almj7A9SeTmeYlmywXSsTRFIxGDBOMn
+         b3OCmMhl4WOAn82n+zrwFgns5WRe2o9Ubepemvdh/vokiD6u8ZL8BHF5SWfrS/wq+hEs
+         wkQw0owEDLWWOVpTW/iC4qYrdbRsIEccq8hvL+IQsid08bWShYWKZWAhZGSIeXucQGW6
+         405Q==
+X-Forwarded-Encrypted: i=1; AKwUvBzxEKC2tI1BcVQD9wcvmBMlz/GS+7y+vliL+/IELhY9VXmPSEzW/yyRD2B4HUP0dSaycr26dF2IWQ==@vger.kernel.org
+X-Gm-Message-State: AFuF++kgcA7SAvY2RFV86QPB7LV2m2L3rs/I+jIAgMA/JZ+Z7g7U0Onm
+	1MF9Z8wdJsbnvPSojM11UfDjj2eHA7pNUQMuDbS/+dP522LOIXFFKaczIxOXTh2qadSJwEsqH6n
+	9Bj/9ClA=
+X-Gm-Gg: AYBFou02xrdXZAHTa6xGd+9+OkTLyMCAyVIOseagOo9A644d37wj+9OPuimbe7yedqa
+	sNbEkVa/zh1Bzv0TPc4y02TiNI/33M7vJK9zveC/KUCWrdQm2oIXeT6VLfpbUxbXvVQDVenKZjr
+	BKJzXuCXc/9ZIAQnivvID9QkMoKfjk9V69lNk5UIIXB9BEATRrDWFiYCfyEO5JVPFMbFVj1kaPM
+	gCcOxF4xSOf0TxxX+8XUExS72EasCQpCVDU0J2gqHXAKqR5/MoXD64TYWIMrU5Rsby5aTamXB81
+	vbD/67+aHScLi+4BJadRsXBEDcguk+Q3n0jHpAkGnP0Fs6NQNUVw7jvN1/cv3GJV8rv0iAK1/bT
+	3pRqmS7OCPVlGS4VeRvrV5UxIMtrfJ2HO6/1OzcJeQlfl0SHSZGlu4PsvmS7w6Vw5Jognufy9Hb
+	MKKNXMEdGaG5RrMCmqukerbofKLLwe3bI66PEyeomwetj0xelUf+qD7jC2eNVxEG0tf/PK7dsB5
+	G5cV9UCets91NcXSwCWJyPGSky4beIhThcOKOzSPiVhGPqA
+X-Received: by 2002:a17:906:dc91:b0:c25:5faf:b207 with SMTP id a640c23a62f3a-c3169ce727dmr12967666b.3.1791255839516;
+        Mon, 05 Oct 2026 20:03:59 -0700 (PDT)
+Received: from mail-ed1-f43.google.com (mail-ed1-f43.google.com. [209.85.208.43])
+        by smtp.gmail.com with ESMTPSA id a640c23a62f3a-c31562da31esm152444066b.38.2026.10.05.20.03.59
+        for <keyrings@vger.kernel.org>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Mon, 05 Oct 2026 20:03:59 -0700 (PDT)
+Received: by mail-ed1-f43.google.com with SMTP id 4fb4d7f45d1cf-6acba4bf65eso285428a12.1
+        for <keyrings@vger.kernel.org>; Mon, 05 Oct 2026 20:03:59 -0700 (PDT)
+X-Forwarded-Encrypted: i=1; AKwUvBzDvwy8zPV7ooCqArJCCtraIwwaVTLcOdCLKRy+3OUWOVRk19FVGa+dseurUvujKISIP5KvAhAAyg==@vger.kernel.org
+X-Received: by 2002:a05:6402:510b:b0:6ac:686f:91db with SMTP id
+ 4fb4d7f45d1cf-6afe29be63dmr21481a12.11.1791255838871; Mon, 05 Oct 2026
+ 20:03:58 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-Mailer: aerc
+References: <asQo0Kb0SF0vZcHa@kernel.org>
+In-Reply-To: <asQo0Kb0SF0vZcHa@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 6 Oct 2026 05:03:42 +0200
+X-Gmail-Original-Message-ID: <CAHk-=wgXU50=KgZNZc1JDxsSxg9Z+DjG1_2yU-fNXpZtUe4XDw@mail.gmail.com>
+X-Gm-Features: AclHuK_NZp_-mPHhcS8aNBup4i1rRUZq8vjroRbwWPtPYmjv6VfHjj3cm0et3aY
+Message-ID: <CAHk-=wgXU50=KgZNZc1JDxsSxg9Z+DjG1_2yU-fNXpZtUe4XDw@mail.gmail.com>
+Subject: Re: [GIT PULL] KEYS changes for v7.3-rc7
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, 
+	"David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, 
+	linux-integrity@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
 
-Hi,
+On Tue, 6 Oct 2026 at 00:46, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+>
+> I've started to take steps towards better quality PRs.
 
-I've started to take steps towards better quality PRs. 
+Looks better.
 
-Br, Jarkko
+It reads like an llm, but that's perfectly acceptable use of tooling.
+If it was an llm, you can tell it to be a bit less verbose, and that
+it should prefer imperative voice ("Fix it by" vs "The bug was fixed
+by")
 
-The following changes since commit 7704c4c5bb127673b4f0ead839919db573559e38:
-
-  Merge tag 'i2c-fixes-7.3-rc6' of git://git.kernel.org/pub/scm/linux/kernel/git/andi.shyti/linux (2026-10-04 09:38:11 -0700)
-
-are available in the Git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/keys-v7.3-rc7
-
-for you to fetch changes up to dd3ea3fcba7c75493760cdbccd35f029597e8d5e:
-
-  KEYS: Fix add_key() race with keyring restriction (2026-10-04 21:09:32 +0300)
-
-----------------------------------------------------------------
-KEYS changes for v7.3-rc7
-
-This pull request contains two critical bug fixes, which can be briefly
-descibed as follows:
-
-1. key_get_persistent() creates a new persisten keyring for UID  if it does
-   not exist yet, and creates a link from it to the nominated keyring.
-   Function did not set timeout when linking failed, therefore preventing
-   GC. The bug was addressed by calling key_set_timeout() regardless of
-   key_link() result when the persistent keyring gets created by
-   key_get_persistent().
-2. __key_create_or_update() made a copy of keyring->restrict_link before
-   holding keyring->sem, which can cause add_key() to be executed against
-   stale keyring restrictions. The bug was fixed by copying the value only
-   after keyring->sem was taken.
-
-Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-
-----------------------------------------------------------------
-Karl Mehltretter (1):
-      keys: finalize persistent keyring timeout after link attempt
-
-성병찬 (1):
-      KEYS: Fix add_key() race with keyring restriction
-
- security/keys/key.c        |  6 ++---
- security/keys/persistent.c | 55 +++++++++++++++++++++++++++-------------------
- 2 files changed, 35 insertions(+), 26 deletions(-)
+                Linus
