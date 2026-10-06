@@ -1,242 +1,660 @@
-Received: from mail-qv1-f51.google.com (mail-qv1-f51.google.com [209.85.219.51])
+Received: from mail-pj1-f42.google.com (mail-pj1-f42.google.com [209.85.216.42])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D6BEF4A0152
-	for <keyrings@vger.kernel.org>; Tue,  6 Oct 2026 15:44:53 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.219.51
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BC5384A2063
+	for <keyrings@vger.kernel.org>; Tue,  6 Oct 2026 17:38:28 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.42
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791301497; cv=none; b=Mo7xHbB55V4QnZh+wP6w3MEDw+2+RCzkfiUKLYKoRzbTklBHDYQbYv+vEobYiD9a21v38FaGnIDtfuyqd10swLCAQMbBy7oZ8Ln102jtKNKombRe53V77OiEd+qHxabmh4whcWj8SY9+/sWtutW4bJ0phRs63oG200sB0kK3M5M=
+	t=1791308312; cv=none; b=VWV0GjrVXKyD2p2kNWcAJyK9+tDBFKLUOx7svaQt2Q1bsSh2c1z7QabP1WALyTyFWy8W16tRNtIJ2uDQxdrQZvbWeLCMqgOpAdcNy+3DtCJCtWd+HXKOEqLrIUnpv9vy/zeV7rBk78rM0alVIVg53skAxKd4ZNKRUMGdmHTpyTo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791301497; c=relaxed/simple;
-	bh=8vkzyF59g32RtfmPZXkdpM3bmDGASCtX3QXPvfTT0t0=;
-	h=From:Date:Subject:MIME-Version:Content-Type:Message-Id:References:
-	 In-Reply-To:To:Cc; b=WxjmrFmjXmJHQhpuHyT226JF7Su6DhgWpqcEO68byscx1E3sP0pman0EwiD7q+LYbYxsn//WAFR/COCFBFMv2bRHZR8/7lfV1f4/f+gAKk7ssxr0dCAYwaiB0vhWBYY7EXlGVxVAbSVwRgKKcUzZoa5zUlwLSht5+zwryTTys0E=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=toxicpanda.com; spf=pass smtp.mailfrom=toxicpanda.com; dkim=pass (2048-bit key) header.d=toxicpanda.com header.i=@toxicpanda.com header.b=OS/v21t2; arc=none smtp.client-ip=209.85.219.51
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=toxicpanda.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=toxicpanda.com
+	s=arc-20240116; t=1791308312; c=relaxed/simple;
+	bh=pd67cU0FBdmqDRxaxHXk6LSJYPtEpj4AhXWlA4YlUUw=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=ItXO1xp5nHFcvtvTy4zJNyg+aQOWKd0dIlfeP1mBaqEfQcAvoT6bAha5DoJ+SF3xg+HHUrRtEN216X9RI7rpOc2OqQgatSjkdMmtHovM/uxXahtPAu7H7Rb6MtN7+9vGTPwIcTV+b1QPM/5ekpKMYKOW+bM9txaBDJawdtXfPmc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=X7U1Q7jO; arc=none smtp.client-ip=209.85.216.42
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=toxicpanda.com header.i=@toxicpanda.com header.b="OS/v21t2"
-Received: by mail-qv1-f51.google.com with SMTP id 6a1803df08f44-918df06abaaso10394296d6.0
-        for <keyrings@vger.kernel.org>; Tue, 06 Oct 2026 08:44:53 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="X7U1Q7jO"
+Received: by mail-pj1-f42.google.com with SMTP id 98e67ed59e1d1-3a0aaa0fd13so1519738a91.2
+        for <keyrings@vger.kernel.org>; Tue, 06 Oct 2026 10:38:28 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=toxicpanda.com; s=google; t=1791301492; x=1791906292; darn=vger.kernel.org;
-        h=cc:to:in-reply-to:references:message-id:content-transfer-encoding
-         :content-type:mime-version:subject:date:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=/k5W5gRBGKOnv0GDUCR5h+EZBe1kD+dGC7pkS9kRVb8=;
-        b=OS/v21t25O6jQ72j2LBDZjZ8jz044uYh7yz3bYrMBeyNcGKFYyn9gWledD6gwEXQkt
-         MSsaLHB3Ugl7MWDi+OQ6YF8F2UYeB47TDLpaZtGiVEXh26OHWJhV9cypO4aEbp1+JDzN
-         BN/uUSjV6oRreqABPwygMn2LoJaXl3TXWTn27gurXiDMKjihDxFXLn9Cd0DqOhIp273T
-         DPdDz3vkEXjU7rFSujovkgNKGzOrBNnf3WnexeseBx2+X8Lf5N7TvJklAPeBk0uAqEby
-         Pu1phf3ec6qz3woHq0B1cjItldyGstAAboyuyU6iHAcDut1HCWtrlQwy/sOchQXAoSJm
-         jZ9A==
+        d=gmail.com; s=20251104; t=1791308308; x=1791913108; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=HCfJTS20c+ItBMZ1oGEmWRyitdQv98mivq2M6xOdyVc=;
+        b=X7U1Q7jOWEJ9mtGGwMsj8KsoKhXSm09hmMeYwk4D3OcU5YolQEjIFtQdV1cE5ly7pf
+         DnRPpqzhmkG56MOpWuiVxxC81a3HCa6yV6kQjyRce6LXZHGOgHEDTcyf1h6BpIzSFUVa
+         oH4CXf21TXERERGbdX5uhxebhF4hko5mSDegLX6SsWz80B3GP+tRd8Hey2trUnSVwQdY
+         OUFIY7r/8PCmm41BP1uUzwhhl3/LtcagkQOTcCeyt9V+zyuXvtxQ4lDda/sq34JpfY5O
+         B+qeacyTNB8GU8t6VRoQ6Rm2naD/u7XQQqGuwc3BdngdbOw97pMrvc7tmMb5KblUwDif
+         pnKw==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791301492; x=1791906292;
-        h=cc:to:in-reply-to:references:message-id:content-transfer-encoding
-         :content-type:mime-version:subject:date:from:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=/k5W5gRBGKOnv0GDUCR5h+EZBe1kD+dGC7pkS9kRVb8=;
-        b=RIDxzyp4dXIGQ+5/Vn6ywKAtSJdrVgLC8sTD1Ujl1qYGUfQ0feX/qkd9nDlUmJ3tTG
-         kk1ySyOQtrpMibkEZWyTY1ZGw74QSxGj37l3JZea4N9J/UVAzv8SXCzyJRuYxGHFJK3C
-         pUWcb8liFIIlufkmP2SX4he/ajmd32J2QjI9aB3KHTKj3hJt3AsOceA0sy60LruE8mzT
-         J5m7lNbNZMej/oSFAfriBvhw6PoFdU7hhqgh0NI8tR+wwLIXpjfIK18VP6dFn9qskYai
-         wUBOj30t/+SG6nrSAExa9eBm8moeWnHwtkiz6EqUw8UkpWdwhrNt3EdJ2qeRXvn1U0xV
-         aL8w==
-X-Forwarded-Encrypted: i=1; AKwUvByc0uabnXDqicIParwgSypDxKAV/ke+QWd6fepHJibp8mmK5LklJBXfm8G3a++qg54tfTU/0gQ2Lg==@vger.kernel.org
-X-Gm-Message-State: AFuF++mJUhtUqiSPk524mWnucmLTJj+KNpD3LkIDTP8zOSH0BjvNHuSl
-	w9Q/AUwajSTk22vpgTka1fPN8iFcLMUOlTHDytmaW8p0ww7gsf1LkT+tB3PPUH5ZwLOG2cgM0zZ
-	cGAvG
-X-Gm-Gg: AYBFou1kxYNiaBsoU6jwGqxKateW8WbAUfFuPxzR7fFsNzIhoehUBDUzxsVuYUHaRiX
-	4HupbtfL2AZMflSDEG4sYDGo2iqNE/jB7fP2+32vc8Zl6iTnc6VSjZuu+9eTPOlfiw07vVNYEjw
-	Ghzsgh1QwckEDbN2Of0nh1/PWBLCOq9p+TbroLbShn8RcYKECDEvnlGre9Y1J2A95/rIAy+8307
-	tb0m3pDS0wPQvhlCZ2MwzV5xUPEtf1WAifSuCSPdcGq+57bpkAwW/ovs9DSP+GKNdql4ldWL+Jd
-	8YyvR+uJmNRSg+4/FNpkYmxAoGVB3Bz/dGMrsfQtU5l6K/XYnqpSsCwXPJglNpqq+KHtHb/l8j4
-	wHUL8b5bw57tr4QXmYZEHVUgBG5bAHwDs/KRLymek/0kdPo1Y4TnL1uNv3I4HafbVT+9EwNBJvF
-	WoJaU+Oyyy3CaM7W1qOBhVnEKjm7GNIQAP3QsVXF9Sp8NASz1EDQGd0JY99Tz5DLkvSbYpED4xu
-	8pV2NpcQupQRh0=
-X-Received: by 2002:a05:620a:1786:b0:93e:54d2:2285 with SMTP id af79cd13be357-93e8f37a03dmr301921185a.33.1791301491617;
-        Tue, 06 Oct 2026 08:44:51 -0700 (PDT)
-Received: from toxicpanda.com ([153.61.196.240])
-        by smtp.gmail.com with ESMTPSA id af79cd13be357-93cca1a7a40sm1142936285a.7.2026.10.06.08.44.50
+        d=1e100.net; s=20260707; t=1791308308; x=1791913108;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=HCfJTS20c+ItBMZ1oGEmWRyitdQv98mivq2M6xOdyVc=;
+        b=eB/4yBt3IpLTxBPpzsUMQRSYTXqqgHQt4Q7FalZ6ox1Znn0NCTGkR95uUcw/1l7XNu
+         9d1XqHR7q6NYF/+gzjooWXs1yvMSIsIUWDNy/++KAWMaOJSWxA9qUhkFPhaFRVKYfYGq
+         BF/FOtp+7GmyIF9SkN86bKG+KmIo7+mQPYy40EIBLJz+SxE5d4p0gEmo7P/042mzyj1W
+         OWja7jePIju7nswZLI55/jdFkvgM1url4iQVzdXshRlbTg7feY8dWG5ODby0EWMCfiha
+         hzdS0iEGEDUDj4uU7mFI7+9k7zvbk0Nh5fdZ+mUPKHTWzKp/gEwsKPMLzUM8O0N5au7J
+         NI3Q==
+X-Forwarded-Encrypted: i=1; AKwUvBzvCfgvQQyPyyeXxQGn/qAAb0WSvqdaS7lcpxfFh5ovIF7Js4jfv/1D0/QRaXGa1g0qnXo6dSF6Ig==@vger.kernel.org
+X-Gm-Message-State: AFq9FYL1GE8HhmpVGsjP3z8twq7iACPDmJL3wsTa8ZHJcXJRXuJ4c6B3
+	a5TXD/Oi0zYX2ncroUzsSGcEVfX26e725+K6+GGBdEDQNsnV/rMfw+Ak
+X-Gm-Gg: AYBFou10/OVWw6QZqqVVB192G9y8H9bRdNVYpxQH5iRMIAiXK19on4Iw3XdYJrLc+d8
+	Q933HfsW7CrWn4owpfUIHVa6LasXgcAF9w3S+P9ymWn7xHeSByzl7jL0YW3tIu6yjG+yQZJ9R20
+	dNQucZh3ij/XCUlBAFrQbpLJV8NwcRwPg2sZ6ku36THPnaUx1udc0/V6sNebzTR0cEhlRplGNET
+	X1L3ebQVojTb6Tf5A9m+P0I6vRk5H2jCZO1Fcj2L5TdjljxDN2ton54Gf65dnQAHgQwlq81hpi1
+	3lyfg8YGs2xUrDNBqEyrHak1HooemXqpng8/yOxYoUxwx50otQGnS3JP3Hx1nNyVBhigJPhOf8h
+	eevLzdSB3awnYcE4Ko+xtIREawEeLLdZaKXvtDN98ivfnJ++ym2NMKnZIiyLJHNdx0LPlrbx2rJ
+	m2ZdASm9NJX4qQ+cgweZ3KlGxRGDdiLHT4uvLuXgXgB9t8JSlPwpApFVwPOXkDMZizQk0uw/Mfk
+	dNmnjw5F2y6hAAHNdWllnsJLaE=
+X-Received: by 2002:a17:90b:55c4:b0:3a7:b2d4:e411 with SMTP id 98e67ed59e1d1-3a8734eb7b5mr1570939a91.21.1791308307749;
+        Tue, 06 Oct 2026 10:38:27 -0700 (PDT)
+Received: from obadmin-Precision-3680.atlascopco.group ([167.103.3.1])
+        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3a89b71eedesm476291a91.15.2026.10.06.10.38.25
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 06 Oct 2026 08:44:51 -0700 (PDT)
-From: Josef Bacik <josef@toxicpanda.com>
-Date: Tue, 06 Oct 2026 15:44:21 +0000
-Subject: [PATCH 5/5] capabilities: don't let ptrace borrow CAP_SETFCAP
+        Tue, 06 Oct 2026 10:38:27 -0700 (PDT)
+From: Sahaj Chaudhari <sahaj123.sc@gmail.com>
+To: shuah@kernel.org
+Cc: linux-kselftest@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	dhowells@redhat.com,
+	jarkko@kernel.org,
+	keyrings@vger.kernel.org
+Subject: [PATCH] selftests/keys: Add persistent keyring expiry regression test
+Date: Tue,  6 Oct 2026 23:09:02 +0530
+Message-ID: <20261006173902.78344-1-sahaj123.sc@gmail.com>
+X-Mailer: git-send-email 2.43.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <20261006-b4-setfcap-userns-v1-5-f47e7ed66072@toxicpanda.com>
-References: <20261006-b4-setfcap-userns-v1-0-f47e7ed66072@toxicpanda.com>
-In-Reply-To: <20261006-b4-setfcap-userns-v1-0-f47e7ed66072@toxicpanda.com>
-To: Serge Hallyn <serge@hallyn.com>, Paul Moore <paul@paul-moore.com>, 
- Christian Brauner <brauner@kernel.org>
-Cc: James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>, 
- Jarkko Sakkinen <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, 
- Serge Hallyn <sergeh@kernel.org>, linux-security-module@vger.kernel.org, 
- linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, 
- linux-fsdevel@vger.kernel.org, Josef Bacik <josef@toxicpanda.com>
-X-Mailer: b4 0.15.2
-X-Developer-Signature: v=1; a=openssh-sha256; t=1791301478; l=6195;
- i=josef@toxicpanda.com; h=from:subject:message-id;
- bh=8vkzyF59g32RtfmPZXkdpM3bmDGASCtX3QXPvfTT0t0=;
- b=U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgUBr36M/n0nWN0DNbnxwzIiCZez6MG
- JiruuNaSCI/zXsAAAAGcGF0YXR0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5AAAA
- QHNGGw1vUwvXcplc29Z3TsCoIHmp/GbPMb9KUsV94Rc3EGWtTYg/cXaPnamHbE91Nwb4n74qJXR
- 0+AE3tg1rkwU=
-X-Developer-Key: i=josef@toxicpanda.com; a=openssh;
- fpr=SHA256:C8kOX2QUJCMqnCX+KEeoqRAjLo9L+ELOSH2NSAJHqGA
+Content-Transfer-Encoding: 8bit
 
-A task that entered a user namespace while it held CAP_SETFCAP outside may
-map uid 0 of the parent and write file capabilities that are honoured
-there.  That is the one privilege it keeps outside of its namespace, and
-the ptrace checks don't know about it: for a target in another user
-namespace cap_ptrace_access_check() is satisfied with CAP_SYS_PTRACE over
-the target's namespace, which the owner rule hands to any task with the
-right euid, and inside the namespace everybody has a full set.
+KEYCTL_GET_PERSISTENT creates and registers a persistent keyring before
+linking it into the caller's destination keyring. If the destination is
+restricted, the link returns -EPERM. Verify that the keyring's configured
+expiry is still applied after the failed link.
 
-  task A: uid 0, full caps          task B: uid 0, no CAP_SETFCAP
-  unshare(CLONE_NEWUSER)
-                                    ptrace(PTRACE_ATTACH, A)
-                                      uids match, euid == ns->owner
-                                    make A write "0 0 1" to its uid_map,
-                                    or set file capabilities
-                                      A is entitled -> allowed
+Register the test in kselftest and document direct and QEMU/GDB execution.
+The failure case is intended for a disposable VM: an unexpired persistent
+keyring may remain registered until its user namespace is torn down.
 
-The same goes for /proc/<pid>/mem, process_vm_writev() and pidfd_getfd().
+Tested:
 
-Require for PTRACE_MODE_ATTACH and PTRACE_TRACEME that CAP_SETFCAP of the
-tracer reaches as far up as the target can make use of: to the topmost
-ancestor, within the target's setfcap_level, whose root user is mapped
-into the target's namespace, or can still be mapped because the namespace
-has no uid map yet.  CAP_SYS_PTRACE over that ancestor is accepted too,
-since it gives control of tasks there that have CAP_SETFCAP anyway.
+  make -C tools/testing/selftests/keys
 
-Targets in the initial namespace, in namespaces that were entered without
-CAP_SETFCAP (what unprivileged users create) and in namespaces that don't
-map the root user of an ancestor (the usual container) are not affected.
-What remains is a tracer that gave up CAP_SETFCAP and CAP_SYS_PTRACE and a
-target that didn't, in a namespace that shares its root user with the
-tracer's.  PTRACE_MODE_READ is unchanged.
+  QEMU guest with fixed kernel: TAP pass 1/1
 
-Fixes: db2e718a4798 ("capabilities: require CAP_SETFCAP to map uid 0")
-Assisted-by: LLM
-Signed-off-by: Josef Bacik <josef@toxicpanda.com>
+Signed-off-by: Sahaj Chaudhari <sahaj123.sc@gmail.com>
 ---
- security/commoncap.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 52 insertions(+), 4 deletions(-)
+ tools/testing/selftests/Makefile              |   1 +
+ tools/testing/selftests/keys/.gitignore       |   2 +
+ tools/testing/selftests/keys/Makefile         |   6 +
+ tools/testing/selftests/keys/README           |  50 +++
+ .../testing/selftests/keys/initramfs-init.sh  |  10 +
+ .../keys/persistent_keyring_expiry.c          | 367 ++++++++++++++++++
+ tools/testing/selftests/keys/run_qemu.sh      |  64 +++
+ 7 files changed, 500 insertions(+)
+ create mode 100644 tools/testing/selftests/keys/.gitignore
+ create mode 100644 tools/testing/selftests/keys/Makefile
+ create mode 100644 tools/testing/selftests/keys/README
+ create mode 100755 tools/testing/selftests/keys/initramfs-init.sh
+ create mode 100644 tools/testing/selftests/keys/persistent_keyring_expiry.c
+ create mode 100755 tools/testing/selftests/keys/run_qemu.sh
 
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 26798d62e6b1..7263c78b6397 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -195,14 +195,52 @@ int cap_settime(const struct timespec64 *ts, const struct timezone *tz)
- 	return 0;
- }
- 
-+/*
-+ * CAP_SETFCAP of a task can count in ancestors of its user namespace, see
-+ * cap_setfcap_level().  That is a privilege outside of the namespace, so
-+ * capabilities over the namespace are not enough to take control of the task.
-+ */
-+static bool cap_covers_setfcap(const struct cred *cred,
-+			       const struct cred *child_cred)
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 273853937c25..d74ad9370bd1 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -62,6 +62,7 @@ TARGETS += ipc
+ TARGETS += ir
+ TARGETS += kcmp
+ TARGETS += kexec
++TARGETS += keys
+ TARGETS += kselftest_harness
+ TARGETS += kvm
+ TARGETS += landlock
+diff --git a/tools/testing/selftests/keys/.gitignore b/tools/testing/selftests/keys/.gitignore
+new file mode 100644
+index 000000000000..48c2900d780e
+--- /dev/null
++++ b/tools/testing/selftests/keys/.gitignore
+@@ -0,0 +1,2 @@
++# SPDX-License-Identifier: GPL-2.0-only
++persistent_keyring_expiry
+diff --git a/tools/testing/selftests/keys/Makefile b/tools/testing/selftests/keys/Makefile
+new file mode 100644
+index 000000000000..33984d1eceb3
+--- /dev/null
++++ b/tools/testing/selftests/keys/Makefile
+@@ -0,0 +1,6 @@
++# SPDX-License-Identifier: GPL-2.0
++CFLAGS += -g -Wall $(KHDR_INCLUDES)
++
++TEST_GEN_PROGS := persistent_keyring_expiry
++
++include ../lib.mk
+diff --git a/tools/testing/selftests/keys/README b/tools/testing/selftests/keys/README
+new file mode 100644
+index 000000000000..dd92abc1ddfe
+--- /dev/null
++++ b/tools/testing/selftests/keys/README
+@@ -0,0 +1,50 @@
++The persistent_keyring_expiry selftest verifies that a failed link from
++KEYCTL_GET_PERSISTENT still gives a newly created persistent keyring its
++configured expiry. It requires CONFIG_KEYS, CONFIG_PERSISTENT_KEYRINGS,
++CONFIG_PROC_FS, procfs, and root privileges. The test temporarily changes
++/proc/sys/kernel/keys/persistent_keyring_expiry and restores its original value.
++
++Build and run it against a kernel containing the fix with:
++
++    make -C tools/testing/selftests/keys
++    sudo tools/testing/selftests/keys/persistent_keyring_expiry
++
++The QEMU/GDB instructions assume a configured Linux source tree with an
++existing `.config` and the standard kernel build toolchain. The QEMU runner
++requires `cpio`, `qemu-system-x86_64`, `busybox`, and `ldd`; GDB is required
++for the interactive debugging steps.
++
++For a QEMU/GDB run, build an x86 kernel with debug symbols and
++CONFIG_PERSISTENT_KEYRINGS=y. Starting from an existing `.config`, enable
++the required options and build `bzImage` and `vmlinux`:
++
++    scripts/config --enable KEYS --enable PERSISTENT_KEYRINGS \
++        --enable PROC_FS --enable DEVTMPFS --enable DEVTMPFS_MOUNT \
++        --disable DEBUG_INFO_NONE --enable DEBUG_INFO \
++        --enable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT \
++        --enable GDB_SCRIPTS --enable FRAME_POINTER
++    make olddefconfig
++    make -j2 bzImage
++
++Then run:
++
++    tools/testing/selftests/keys/run_qemu.sh path/to/bzImage path/to/vmlinux
++
++In another terminal, attach GDB and continue the paused guest:
++
++    gdb path/to/vmlinux
++    (gdb) target remote localhost:1234
++    (gdb) break key_get_persistent
++    (gdb) break key_set_timeout
++    (gdb) continue
++
++At `key_get_persistent`, inspect `uid` with `info args`. Continue until
++`key_set_timeout` is hit, check `timeout` with `print timeout` (300 seconds),
++then continue to let the test finish. The result is printed on the QEMU serial
++console.
++
++To reproduce the bug, run this test against a kernel built from the parent of
++commit 25bf14f81716. It reports a permanent ("perm") expiry. With the fix, the
++restricted link returns -EPERM and the new keyring has a finite expiry.
++The pre-fix bug can leave a permanent keyring in the test's user namespace
++until that namespace is torn down, so run this reproduction in a disposable VM.
+diff --git a/tools/testing/selftests/keys/initramfs-init.sh b/tools/testing/selftests/keys/initramfs-init.sh
+new file mode 100755
+index 000000000000..47cbfcb68d64
+--- /dev/null
++++ b/tools/testing/selftests/keys/initramfs-init.sh
+@@ -0,0 +1,10 @@
++#!/bin/busybox sh
++# SPDX-License-Identifier: GPL-2.0
++# shellcheck shell=dash
++
++/bin/busybox mount -t proc procfs /proc
++/keys/persistent_keyring_expiry
++status=$?
++/bin/busybox echo "keyring expiry selftest exit status: $status"
++/bin/busybox poweroff -f
++exit "$status"
+diff --git a/tools/testing/selftests/keys/persistent_keyring_expiry.c b/tools/testing/selftests/keys/persistent_keyring_expiry.c
+new file mode 100644
+index 000000000000..55dbd8ce74ec
+--- /dev/null
++++ b/tools/testing/selftests/keys/persistent_keyring_expiry.c
+@@ -0,0 +1,367 @@
++// SPDX-License-Identifier: GPL-2.0
++#define _GNU_SOURCE
++
++#include <errno.h>
++#include <fcntl.h>
++#include <linux/keyctl.h>
++#include <limits.h>
++#include <stdarg.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/syscall.h>
++#include <sys/types.h>
++#include <unistd.h>
++
++#include "../kselftest.h"
++
++#define EXPIRY_PATH "/proc/sys/kernel/keys/persistent_keyring_expiry"
++#define TEST_EXPIRY 300
++
++static int read_expiry(unsigned int *expiry)
 +{
-+	struct user_namespace *ns = child_cred->user_ns, *seen, *p, *top = NULL;
++	char buf[32];
++	char *end;
++	unsigned long value;
++	ssize_t len;
++	int fd;
 +
-+	if (child_cred->setfcap_level >= ns->level)
-+		return true;
++	fd = open(EXPIRY_PATH, O_RDONLY);
++	if (fd < 0)
++		return -1;
 +
-+	/*
-+	 * It is of use only for root users that are mapped into the namespace,
-+	 * or that can still be because there is no map yet.
-+	 */
-+	seen = READ_ONCE(ns->uid_map.nr_extents) ? ns : ns->parent;
-+	for (p = ns->parent; p; p = p->parent) {
-+		if (p->level < child_cred->setfcap_level)
-+			break;
-+		if (kuid_has_mapping(seen, make_kuid(p, 0)))
-+			top = p;
++	len = read(fd, buf, sizeof(buf) - 1);
++	close(fd);
++	if (len <= 0)
++		return -1;
++
++	buf[len] = '\0';
++	errno = 0;
++	value = strtoul(buf, &end, 10);
++	if (errno || end == buf || (*end != '\n' && *end != '\0') ||
++	    value > UINT_MAX) {
++		errno = EINVAL;
++		return -1;
 +	}
-+	if (!top)
-+		return true;
 +
-+	if (cred->user_ns == ns)
-+		return cred->setfcap_level <= top->level;
-+
-+	/* CAP_SYS_PTRACE up there gives control of tasks with CAP_SETFCAP. */
-+	return cap_setfcap_level(cred, ns->parent) <= top->level ||
-+	       !cap_capable(cred, top, CAP_SYS_PTRACE, CAP_OPT_NOAUDIT);
++	*expiry = value;
++	return 0;
 +}
 +
- /**
-  * cap_ptrace_access_check - Determine whether the current process may access
-  *			   another
-  * @child: The process to be accessed
-  * @mode: The mode of attachment.
-  *
-- * If we are in the same or an ancestor user_ns and have all the target
-- * task's capabilities, then ptrace access is allowed.
-+ * For PTRACE_MODE_ATTACH, if the target task may make use of CAP_SETFCAP in
-+ * an ancestor of its user_ns that our CAP_SETFCAP or CAP_SYS_PTRACE doesn't
-+ * reach, then ptrace access is denied.
-+ * Otherwise, if we are in the same or an ancestor user_ns and have all the
-+ * target task's capabilities, then ptrace access is allowed.
-  * If we have the ptrace capability to the target user_ns, then ptrace
-  * access is allowed.
-  * Else denied.
-@@ -223,11 +261,15 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
- 		caller_caps = &cred->cap_effective;
- 	else
- 		caller_caps = &cred->cap_permitted;
-+	if ((mode & PTRACE_MODE_ATTACH) &&
-+	    !cap_covers_setfcap(cred, child_cred))
-+		goto deny;
- 	if (cred->user_ns == child_cred->user_ns &&
- 	    cap_issubset(child_cred->cap_permitted, *caller_caps))
- 		goto out;
- 	if (ns_capable(child_cred->user_ns, CAP_SYS_PTRACE))
- 		goto out;
-+deny:
- 	ret = -EPERM;
- out:
- 	rcu_read_unlock();
-@@ -238,8 +280,11 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
-  * cap_ptrace_traceme - Determine whether another process may trace the current
-  * @parent: The task proposed to be the tracer
-  *
-- * If parent is in the same or an ancestor user_ns and has all current's
-- * capabilities, then ptrace access is allowed.
-+ * If current may make use of CAP_SETFCAP in an ancestor of its user_ns that
-+ * parent's CAP_SETFCAP or CAP_SYS_PTRACE doesn't reach, then ptrace access
-+ * is denied.
-+ * Otherwise, if parent is in the same or an ancestor user_ns and has all
-+ * current's capabilities, then ptrace access is allowed.
-  * If parent has the ptrace capability to current's user_ns, then ptrace
-  * access is allowed.
-  * Else denied.
-@@ -255,11 +300,14 @@ int cap_ptrace_traceme(struct task_struct *parent)
- 	rcu_read_lock();
- 	cred = __task_cred(parent);
- 	child_cred = current_cred();
-+	if (!cap_covers_setfcap(cred, child_cred))
-+		goto deny;
- 	if (cred->user_ns == child_cred->user_ns &&
- 	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
- 		goto out;
- 	if (has_ns_capability(parent, child_cred->user_ns, CAP_SYS_PTRACE))
- 		goto out;
-+deny:
- 	ret = -EPERM;
- out:
- 	rcu_read_unlock();
-
++static int write_expiry(unsigned int expiry)
++{
++	char buf[32];
++	size_t len;
++	ssize_t written;
++	int fd;
++
++	len = snprintf(buf, sizeof(buf), "%u\n", expiry);
++	fd = open(EXPIRY_PATH, O_WRONLY);
++	if (fd < 0)
++		return -1;
++
++	written = write(fd, buf, len);
++	if (written != len) {
++		int saved_errno = errno;
++
++		close(fd);
++		errno = written >= 0 ? EIO : saved_errno;
++		return -1;
++	}
++	if (close(fd) < 0)
++		return -1;
++
++	return 0;
++}
++
++static long add_keyring(const char *description)
++{
++	return syscall(SYS_add_key, "keyring", description, NULL, 0,
++		       KEY_SPEC_SESSION_KEYRING);
++}
++
++static int unlink_key(int key, int keyring)
++{
++	return syscall(SYS_keyctl, KEYCTL_UNLINK, key, keyring, 0, 0);
++}
++
++static int find_persistent_expiry(uid_t uid, char *expiry, size_t expiry_len)
++{
++	char description[32];
++	char *line = NULL;
++	size_t line_len = 0;
++	ssize_t len;
++	FILE *keys;
++	int found = 0;
++
++	snprintf(description, sizeof(description), "_persistent.%u", uid);
++	keys = fopen("/proc/keys", "r");
++	if (!keys)
++		return -1;
++
++	while ((len = getline(&line, &line_len, keys)) >= 0) {
++		char *fields[9];
++		char *saveptr;
++		char *field;
++		unsigned int n = 0;
++		size_t description_len = strlen(description);
++
++		for (field = strtok_r(line, " \t\n", &saveptr);
++		     field && n < ARRAY_SIZE(fields);
++		     field = strtok_r(NULL, " \t\n", &saveptr))
++			fields[n++] = field;
++
++		if (n == ARRAY_SIZE(fields) &&
++		    strncmp(fields[8], description, description_len) == 0 &&
++		    (fields[8][description_len] == '\0' ||
++		     fields[8][description_len] == ':')) {
++			snprintf(expiry, expiry_len, "%s", fields[3]);
++			found = 1;
++			break;
++		}
++	}
++
++	free(line);
++	fclose(keys);
++	return found;
++}
++
++static void dump_persistent_keys(void)
++{
++	char *line = NULL;
++	size_t line_len = 0;
++	FILE *keys = fopen("/proc/keys", "r");
++
++	if (!keys)
++		return;
++
++	while (getline(&line, &line_len, keys) >= 0) {
++		if (strstr(line, "_persistent."))
++			ksft_print_msg("visible key: %s", line);
++	}
++
++	free(line);
++	fclose(keys);
++}
++
++static void set_failure(char *reason, size_t reason_len, const char *fmt, ...)
++{
++	va_list args;
++
++	va_start(args, fmt);
++	vsnprintf(reason, reason_len, fmt, args);
++	va_end(args);
++}
++
++static void report_skip(const char *reason)
++{
++	ksft_test_result_skip("%s\n", reason);
++	ksft_finished();
++}
++
++int main(void)
++{
++	char expiry[32] = {};
++	char reason[256] = {};
++	unsigned int saved_expiry;
++	uid_t test_uid = getuid();
++	int destination = -1;
++	int cleanup_destination = -1;
++	int linked_persistent = -1;
++	int cleanup_persistent = -1;
++	long ret;
++	bool restore_expiry = false;
++	bool passed = false;
++	bool skipped = false;
++	int get_persistent_errno;
++	int attempt;
++	int found;
++
++	ksft_print_header();
++	ksft_set_plan(1);
++
++	if (geteuid() != 0)
++		report_skip("requires root to set persistent_keyring_expiry");
++
++	if (read_expiry(&saved_expiry) < 0)
++		report_skip("CONFIG_PERSISTENT_KEYRINGS or procfs is unavailable");
++
++	found = find_persistent_expiry(test_uid, expiry, sizeof(expiry));
++	if (found < 0)
++		report_skip("/proc/keys is unavailable");
++	if (found) {
++		test_uid = 50000 + (getpid() % 10000);
++		for (attempt = 0; attempt < 128; attempt++) {
++			found = find_persistent_expiry(test_uid, expiry,
++						       sizeof(expiry));
++			if (found < 0)
++				report_skip("cannot read /proc/keys");
++			if (!found)
++				break;
++			test_uid++;
++		}
++		if (attempt == 128)
++			report_skip("could not find an unused persistent keyring UID");
++	}
++
++	/* The inherited session keyring may have been revoked. */
++	ret = syscall(SYS_keyctl, KEYCTL_JOIN_SESSION_KEYRING, NULL, 0, 0, 0);
++	if (ret < 0) {
++		set_failure(reason, sizeof(reason),
++			    "KEYCTL_JOIN_SESSION_KEYRING failed: %s",
++			    strerror(errno));
++		goto out;
++	}
++
++	if (write_expiry(TEST_EXPIRY) < 0) {
++		if (write_expiry(saved_expiry) < 0)
++			ksft_exit_fail_msg("failed to restore persistent keyring expiry: %s\n",
++					   strerror(errno));
++		report_skip("cannot change persistent_keyring_expiry");
++	}
++	restore_expiry = true;
++
++	{
++		char description[64];
++
++		snprintf(description, sizeof(description), "keyring-expiry-test-%d",
++			 getpid());
++		ret = add_keyring(description);
++	}
++	if (ret < 0) {
++		set_failure(reason, sizeof(reason), "add_key(keyring) failed: %s",
++			    strerror(errno));
++		goto out;
++	}
++	destination = ret;
++
++	ret = syscall(SYS_keyctl, KEYCTL_RESTRICT_KEYRING, destination,
++		      0, 0, 0);
++	if (ret < 0) {
++		set_failure(reason, sizeof(reason),
++			    "KEYCTL_RESTRICT_KEYRING failed: %s", strerror(errno));
++		goto out;
++	}
++
++	ret = syscall(SYS_keyctl, KEYCTL_GET_PERSISTENT, test_uid,
++		      destination, 0, 0);
++	get_persistent_errno = errno;
++	ksft_print_msg("GET_PERSISTENT returned %ld (%s)\n", ret,
++		       ret < 0 ? strerror(get_persistent_errno) : "success");
++	if (ret >= 0) {
++		linked_persistent = ret;
++		set_failure(reason, sizeof(reason),
++			    "GET_PERSISTENT unexpectedly linked key %ld", ret);
++		goto out;
++	}
++	if (get_persistent_errno != EPERM) {
++		set_failure(reason, sizeof(reason),
++			    "GET_PERSISTENT failed with %s instead of EPERM",
++			    strerror(get_persistent_errno));
++		goto out;
++	}
++
++	ret = find_persistent_expiry(test_uid, expiry, sizeof(expiry));
++	if (ret < 0) {
++		set_failure(reason, sizeof(reason), "cannot read /proc/keys");
++		goto out;
++	}
++	if (!ret) {
++		dump_persistent_keys();
++		set_failure(reason, sizeof(reason),
++			    "GET_PERSISTENT did not create the requested keyring");
++		skipped = true;
++		goto out;
++	}
++	if (!strcmp(expiry, "perm") || !strcmp(expiry, "expd")) {
++		set_failure(reason, sizeof(reason),
++			    "failed link left _persistent.%u with expiry %s",
++			    test_uid, expiry);
++		{
++			char description[64];
++
++			snprintf(description, sizeof(description),
++				 "keyring-expiry-cleanup-%d", getpid());
++			ret = add_keyring(description);
++		}
++		if (ret >= 0) {
++			cleanup_destination = ret;
++			ret = syscall(SYS_keyctl, KEYCTL_GET_PERSISTENT, test_uid,
++				      cleanup_destination, 0, 0);
++			if (ret >= 0) {
++				cleanup_persistent = ret;
++				if (unlink_key(cleanup_persistent,
++					       cleanup_destination) < 0) {
++					ksft_print_msg("warning: unlink temporary key: %s\n",
++						       strerror(errno));
++				} else {
++					cleanup_persistent = -1;
++				}
++			} else {
++				ksft_print_msg("warning: expiry cleanup failed: %s\n",
++					       strerror(errno));
++			}
++		} else {
++			ksft_print_msg("warning: unable to create cleanup keyring: %s\n",
++				       strerror(errno));
++		}
++		goto out;
++	}
++
++	passed = true;
++
++out:
++	if (linked_persistent > 0 &&
++	    unlink_key(linked_persistent, destination) < 0) {
++		ksft_print_msg("warning: unable to unlink persistent key from test keyring: %s\n",
++			       strerror(errno));
++		if (passed)
++			set_failure(reason, sizeof(reason),
++				    "unable to clean up linked persistent key: %s",
++				    strerror(errno));
++		passed = false;
++	}
++	if (cleanup_persistent > 0 && cleanup_destination > 0 &&
++	    unlink_key(cleanup_persistent, cleanup_destination) < 0) {
++		ksft_print_msg("warning: unable to unlink temporary persistent key: %s\n",
++			       strerror(errno));
++	}
++	if (cleanup_destination > 0 &&
++	    unlink_key(cleanup_destination, KEY_SPEC_SESSION_KEYRING) < 0) {
++		ksft_print_msg("warning: unable to unlink cleanup keyring: %s\n",
++			       strerror(errno));
++		if (passed)
++			set_failure(reason, sizeof(reason),
++				    "unable to clean up temporary keyring: %s",
++				    strerror(errno));
++		passed = false;
++	}
++	if (destination > 0 &&
++	    unlink_key(destination, KEY_SPEC_SESSION_KEYRING) < 0) {
++		ksft_print_msg("warning: unable to unlink test keyring: %s\n",
++			       strerror(errno));
++		if (passed)
++			set_failure(reason, sizeof(reason),
++				    "unable to clean up test keyring: %s",
++				    strerror(errno));
++		passed = false;
++	}
++	if (restore_expiry && write_expiry(saved_expiry) < 0) {
++		set_failure(reason, sizeof(reason),
++			    "failed to restore persistent_keyring_expiry: %s",
++			    strerror(errno));
++		passed = false;
++	}
++
++	if (passed) {
++		ksft_print_msg("restricted link returned EPERM; _persistent.%u expires in %s\n",
++			       test_uid, expiry);
++		ksft_test_result_pass("failed link still applies persistent keyring expiry\n");
++	} else if (skipped) {
++		ksft_test_result_skip("%s\n", reason);
++	} else {
++		ksft_test_result_fail("%s\n", reason);
++	}
++	ksft_finished();
++}
+diff --git a/tools/testing/selftests/keys/run_qemu.sh b/tools/testing/selftests/keys/run_qemu.sh
+new file mode 100755
+index 000000000000..522cc8495ca2
+--- /dev/null
++++ b/tools/testing/selftests/keys/run_qemu.sh
+@@ -0,0 +1,64 @@
++#!/bin/sh
++# SPDX-License-Identifier: GPL-2.0
++set -eu
++
++script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
++repo_root=$(CDPATH='' cd -- "$script_dir/../../../.." && pwd)
++kernel_image=${1:-"$repo_root/arch/x86/boot/bzImage"}
++vmlinux=${2:-"$repo_root/vmlinux"}
++test_binary="$script_dir/persistent_keyring_expiry"
++
++for tool in cpio qemu-system-x86_64 busybox ldd; do
++	if ! command -v "$tool" >/dev/null 2>&1; then
++		echo "required tool not found: $tool" >&2
++		exit 1
++	fi
++done
++
++make -C "$script_dir"
++if [ ! -r "$kernel_image" ] || [ ! -r "$vmlinux" ]; then
++	echo "usage: $0 [bzImage] [vmlinux]" >&2
++	exit 1
++fi
++
++tmpdir=$(mktemp -d)
++trap 'rm -rf "$tmpdir"' EXIT HUP INT TERM
++rootfs="$tmpdir/rootfs"
++initrd="$tmpdir/initramfs.cpio"
++mkdir -p "$rootfs/bin" "$rootfs/dev" "$rootfs/proc" "$rootfs/keys"
++
++copy_binary()
++{
++	source=$1
++	destination=$2
++	install -D "$source" "$rootfs$destination"
++
++	ldd "$source" 2>/dev/null |
++		awk '$2 == "=>" && $3 ~ /^\// { print $3 }
++		     $1 ~ /^\// { print $1 }' |
++		sort -u |
++		while IFS= read -r library; do
++			[ -f "$library" ] || continue
++			cp -L --parents "$library" "$rootfs"
++		done
++}
++
++copy_binary "$(command -v busybox)" /bin/busybox
++copy_binary "$test_binary" /keys/persistent_keyring_expiry
++install -m 755 "$script_dir/initramfs-init.sh" "$rootfs/init"
++
++(
++	cd "$rootfs"
++	find . -print0 | cpio --null -o --format=newc
++) > "$initrd"
++
++echo "QEMU is paused at startup; attach GDB to localhost:1234 and continue."
++qemu-system-x86_64 \
++	-kernel "$kernel_image" \
++	-initrd "$initrd" \
++	-append "console=ttyS0 nokaslr rdinit=/init" \
++	-display none \
++	-serial stdio \
++	-monitor none \
++	-gdb tcp::1234 \
++	-S
 -- 
-2.55.0
+2.43.0
 
