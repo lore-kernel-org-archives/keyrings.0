@@ -1,34 +1,35 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9E73546C821;
-	Tue,  6 Oct 2026 15:24:30 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7956049CF4C;
+	Tue,  6 Oct 2026 15:31:17 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791300272; cv=none; b=lcNyUs1RX6m1XvD2FF3BLk+URWSXnwbwFiE6KVRYSWVSNQLeT1bqr+eqcVFOJBPxuM/3hdKPNZnnDVb8KY6XOVESZWDEiFaufb8NSvLdxyMuV2y2nqPdysp8x5kY1kKozirhs1GGa9gjmUiih5Nq84pjIWD4da1soyzFqaQ6Hxs=
+	t=1791300678; cv=none; b=p8Yu9m89hzC8AD8BXTTqqMX0WTBEkBdrAAkn4HBvK5VaynVU+X2vXrG+7SOUI0WjZez1+1TDp3otUdwsn3e/KOeWfUjdwEIacP49fftvEo35Nt0LJ/PTU7SrG7aUO0knMHwOROY3w8lb2+WlM0W5NiLrKEpjIUeXngHHfV409fE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791300272; c=relaxed/simple;
-	bh=FLfziQZLPnu6y3z2fWxofxw5KtIfaVhBmkfb5/S3Xb4=;
-	h=From:Date:Subject:MIME-Version:Content-Type:Message-Id:References:
-	 In-Reply-To:To:Cc; b=iZL1pbyNGFKViU6GA8dU2zdXLgvQYQ5hi2wXKndFQispIj0tNKt9ziprWJZSxuXYMgEfKPkd+5VOLv1vsyUXNK6LEyIUxNZbuhN7PJ2wLH8jqbg+WorSf8FqRe9r3n0s6M76lmk5Wrces1hOzr8EB0dLbnYVCum+gFH9F/RjXjM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=N1sU4RoP; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1791300678; c=relaxed/simple;
+	bh=F5B3CZTA65su7M8ff7YsR1a8Jb5cnIE6Zoa8egmFADc=;
+	h=From:Subject:Date:Message-Id:MIME-Version:Content-Type:To:Cc; b=n9AHIjb6tv4k3Py8DUXTQvXCjlmSXPKUK+/mb2hBpbZzmU5c3UnN9Gh3Cmyrj+4itmEqyOKgKvQCePAjvzTamn3WAxmBrYfUb0I6T5+hrFJ+KMEbG48veKBPEI6I4v/U20YJz8WvTNqsQ8S9N24yQpyochJCG6e2wfznMf+KtHA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=n1nB5XDQ; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="N1sU4RoP"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 9636D1F0089C;
-	Tue,  6 Oct 2026 15:24:28 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="n1nB5XDQ"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id ACD871F0089B;
+	Tue,  6 Oct 2026 15:31:15 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791300270;
-	bh=PVvkiHtxln9Mn3ExYwHOY9OExYSN010VAj8STzkHraI=;
-	h=From:Date:Subject:References:In-Reply-To:To:Cc;
-	b=N1sU4RoPVLpu9rsKw8RkFOxgwoJSNA3WqTUK/wPxHoAdizPqCusscolEeKXO4COw4
-	 xlBIx68fBBZxApunbKJKSQ7afYlO1DFF86F03aUfSHm9kiBy0JYny9cyplH9FEy4s9
-	 SXtbNFOtKcSRvxIxi1stI/57ov7E5vnt6PVEhYMDHqxGrs6NsOr3upENKGlAUJPG+i
-	 MVcw+n21dVrhAuENXY49G1gYAcJl/xTgDDtS3yUizoJ+75aQHinUMnriirDwSIFv0Z
-	 gqQcms0oN41FzPVCiUfjQeXhLlwmldEDFM9Sq8JAGyllhdOP+TD2DgK6g1in64xwdE
-	 M5EtvSB2Rb+rA==
+	s=k20260515; t=1791300677;
+	bh=Swn7cPNxeZeaH9+lQJyU84fhbw9MKElYXahSa5rMa54=;
+	h=From:Subject:Date:To:Cc;
+	b=n1nB5XDQeAv4op2oWJ8o2DQGELIp+MH/Gtf0Vd/khq/f2bSOVVDgwOJzRcfSqljjL
+	 LpeUzgPrTPnqbr55HkD1IXS2s03A0gEILN3EghTOOHhAxSt7Ad3UZZGF2r16Qwi7xg
+	 lq0jx8oMGFEXNwtbndHwgFs+UnT+fod6+z9HBr8UzOz7b7JkfYuDlXvHEskesuvwlS
+	 JXi5hanMGHE29e/FaOxAJrOStJ3iBkwRxSkrjZLRMLcaj7gs9fdcfPeaSFnEFAYiTI
+	 P4u4EK6QVB4lXWA1JZx73aIrHlWFpklzGPv9ZRpOcGj44//mpDhKtkYG5OeRDmgbtH
+	 7nouALSfuPVrA==
 From: Chuck Lever <cel@kernel.org>
-Date: Tue, 06 Oct 2026 11:24:02 -0400
-Subject: [PATCH RFC v3 1/5] NFS: name the init_nfs_fs() error labels
+Subject: [PATCH v4 0/5] NFS: isolate mTLS client credentials by network
+ namespace
+Date: Tue, 06 Oct 2026 11:31:11 -0400
+Message-Id: <20261006-nfs-mtls-identity-v4-0-1fdf8cc65da7@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -37,9 +38,12 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <20261006-nfs-mtls-identity-v3-1-58a69fb107cc@kernel.org>
-References: <20261006-nfs-mtls-identity-v3-0-58a69fb107cc@kernel.org>
-In-Reply-To: <20261006-nfs-mtls-identity-v3-0-58a69fb107cc@kernel.org>
+X-B4-Tracking: v=1; b=H4sIAAAAAAAC/23OTW7DIBAF4KtErEPEjw04q96j6gLDENMkuAKKa
+ kW+eyFVolb18s3A9+aGEkQPCR13NxSh+OTnUEO33yEz6XAC7G3NiBEmyEAlDi7ha76kOoeQfV4
+ w6QztnHC8UxbVfx8RnP+6m69vPzl9ju9gcoPai1EnwGPUwUxtVOSB42hEW00+5Tku93sKbcSjW
+ m1UF4oJpoOEXigrlZYvZ4gBLoc5nlDrLuwXwfotglVCa64tldYKo/4R/ElQQsQWwSvRKy0GN1I
+ ijflDrOv6Df8DLTRmAQAA
+X-Change-ID: 20260917-nfs-mtls-identity-04c14f6f348d
 To: Trond Myklebust <trondmy@kernel.org>, Anna Schumaker <anna@kernel.org>, 
  "David S. Miller" <davem@davemloft.net>, Jakub Kicinski <kuba@kernel.org>, 
  Paolo Abeni <pabeni@redhat.com>, Simon Horman <horms@kernel.org>, 
@@ -51,127 +55,94 @@ Cc: linux-nfs@vger.kernel.org, keyrings@vger.kernel.org,
  kernel-tls-handshake@lists.linux.dev, netdev@vger.kernel.org, 
  linux-doc@vger.kernel.org, Chuck Lever <cel@kernel.org>
 X-Mailer: b4 0.16-dev-da966
-X-Developer-Signature: v=1; a=openpgp-sha256; l=2220; i=cel@kernel.org;
- h=from:subject:message-id; bh=FLfziQZLPnu6y3z2fWxofxw5KtIfaVhBmkfb5/S3Xb4=;
- b=owEBbQKS/ZANAwAKATNqszNvZn+XAcsmYgBqxRKqjJYzq8z155Qz9eW2KzYfr33fKWjWGXrC+
- z/nOWKZTeeJAjMEAAEKAB0WIQQosuWwEobfJDzyPv4zarMzb2Z/lwUCasUSqgAKCRAzarMzb2Z/
- l43mD/9Gcicn6SdVyF5GBt06A9c7IdQCIzYrelBebc4k3LSz+vljg9SUw2LtISKuaJkcI3NiCx4
- l9ou/If83HzAOsQecblM9OA01qjVSKQCVoo4iW7J1VcRhdcyjUV+b9iQxIsF9iLr9kXVw6byHz1
- Y0mc03aVrWtjEgIaOoXbHdHG8/1P1HJhc7NfF7h3N7SH+YR4zMdiWLXpT0FxjU/hPk7hu/ojxJm
- w8Z7ftsXgSseQ3HIkaiS8WqFk8woDQfA3+CKBpXM/4zcJvxsOpDz5rvjGTq6zg+IRykePKkYGi/
- catn02IXTPkSuXPozGmC3KovWQLL9gDXBreS8JxX4CX4wawFqcVl8+1qoN/aUUCm0jJzB0zHZaG
- EPm/7yQgirg7+awTv/kdMXCOTUG43rU/gVkGzGRgk46LWaC8635sKIQ4riNl2XABfq065GobcZL
- k7lxrvclkzPpmMKXBfSJ5WQ0JJCs78EHfMkaQyq2Gw3sJs525JAoWAEspN2fe9b08xZzhINuc+w
- xN/k6ao9q3rT7AR0xCs2te5wYqNSR0X0LFJCFGcJudH6uADQ/kPWiKrJr99GMUbUE5vZZ1MTSUe
- UgUuRwVE+eod3Idno0K1ImOc4/OMN3TyhVkkcJ21Muqh70x3EZ3LhmN4BTtH/fXbArxu2DNQNbG
- d3hpvHZMgifW17Q==
+X-Developer-Signature: v=1; a=openpgp-sha256; l=3193; i=cel@kernel.org;
+ h=from:subject:message-id; bh=F5B3CZTA65su7M8ff7YsR1a8Jb5cnIE6Zoa8egmFADc=;
+ b=owEBbQKS/ZANAwAKATNqszNvZn+XAcsmYgBqxRRDChWfWxzkw8FvxZf7RMzIgy2Ous9I+ecT9
+ Bj+ws/tOS6JAjMEAAEKAB0WIQQosuWwEobfJDzyPv4zarMzb2Z/lwUCasUUQwAKCRAzarMzb2Z/
+ l+GPEACuoGzlUyANfpnFrQBefFUvNcHO3RIAkCPoJb0WdjZzK+9CKaUIUkraGgk6j9InIFU8TO4
+ vog21EXGu0tIDqpWQGAyjSOj1s3jlMGtRUeCF+9RF8bpSXgmIUU8HFP+++rX4oHwoNbYZZVFHV+
+ gM/DE3VUkCOX6Nm7RdMPkKidRS14hdu9txjkTM6MZlSyhx4DLkXO4opvva+LVaP+IGBmVn0b0OW
+ HC7kGULkZRwCwkhEk/nmrHw85qd8bYYsRl7WTK25aZEjfCoCwIRYwa7n1aircKpNTDYOKvT3gVP
+ szBw0YuMWRhUE0W5bp7A5EcVkvzOVAiaNifsu6tw8VjKf8cNiTZEcOfkXnQ3yaop7mlBc56Cp8l
+ o4goMhxneM7q13RFewgn93roxSk33Vm5brdK4ksuTLUK3VvhUlEG8oe9pqmiyFvrjVD8VnXkaoX
+ GpiB1qd8Wrcf7/y00wsAyUecOF7ltUq3m9ZcJc4sYgJu+fBSJDd5dh1WhiawEt1xQz31tSw+HER
+ YbyUo+Rto6ejjD9ZOmJDydT0QYPbhn4IQ0ebeXl7XPe/lVoSORVee7aR1hY+b/1+IJR5xRZ2w02
+ 0c+fDsZDGkZ1DW9c93QSZCBqj8rBrflCaJa959qLIrxVP6G9lH03IeASRtf3P5BxVNfuaSzzZb0
+ NFa5JWkORvM5j4g==
 X-Developer-Key: i=cel@kernel.org; a=openpgp;
  fpr=28B2E5B01286DF243CF23EFE336AB3336F667F97
 
-The unwind labels in init_nfs_fs() are numbered, and the numbering
-already skips out8, so a reader has to count the label block to
-learn what each one undoes. Inserting an init step means either
-renumbering every label below it or leaving the sequence out of
-order, and a goto that picks the wrong number unwinds the wrong
-step.
+An xprtsec=mtls mount names its client certificate and private key
+by keyring serial number. tlshd reads those keys with its own
+credentials. Each key has to grant user read permission, and any
+tlshd on the host that learns a serial number can read it.
 
-Name each label for the step it undoes, as coding-style.rst asks.
+The RFC thread asked whether the user or mount namespace is a
+better binding than the network namespace. tlshd services the
+handshake socket of one network namespace, so that is the namespace
+tlshd already lives in.
 
-Signed-off-by: Chuck Lever <cel@kernel.org>
+  https://lore.kernel.org/linux-nfs/20260602154740.49861-1-cel@kernel.org/
+
+After this series each network namespace has its own .nfs keyring,
+and the keyring's serial number travels with each handshake (patches
+3-4). Possessing that keyring lets tlshd read a key that does not
+grant user read permission. tls_handshake_accept() and tlshd already
+link a keyring named in the handshake. The handshake genetlink ABI
+and the cert_serial= and privkey_serial= mount options are not
+changed.
+
+The owner of the network namespace's user namespace now owns the
+keyring, so global root on the host cannot write to a container's
+keyring from outside.
+
+nfstlskey, the provisioning tool that consumes the key type, is in
+https://github.com/linux-nfs/ktls-utils/ .
+
+Tested on v7.3-rc4 plus this series, on one Fedora VM as both NFS
+client and NFSD, with tlshd from ktls-utils 1.4.0.
+
 ---
- fs/nfs/inode.c | 40 ++++++++++++++++++++--------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+Changes in v4:
+- Repost in full; only part of v3 reached the list
+- Drop the "RFC" Subject prefix that v3 carried by mistake
+- No code changes since v3
+- Link to v3: https://patch.msgid.link/20261006-nfs-mtls-identity-v3-0-58a69fb107cc@kernel.org
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 3022454f7698..832923be43a9 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -2722,64 +2722,64 @@ static int __init init_nfs_fs(void)
- 
- 	err = nfs_sysfs_init();
- 	if (err < 0)
--		goto out10;
-+		goto err_keyring;
- 
- 	err = register_pernet_subsys(&nfs_net_ops);
- 	if (err < 0)
--		goto out9;
-+		goto err_sysfs;
- 
- 	err = nfsiod_start();
- 	if (err)
--		goto out7;
-+		goto err_pernet;
- 
- 	err = nfs_fs_proc_init();
- 	if (err)
--		goto out6;
-+		goto err_nfsiod;
- 
- 	err = nfs_init_nfspagecache();
- 	if (err)
--		goto out5;
-+		goto err_proc;
- 
- 	err = nfs_init_inodecache();
- 	if (err)
--		goto out4;
-+		goto err_nfspagecache;
- 
- 	err = nfs_init_readpagecache();
- 	if (err)
--		goto out3;
-+		goto err_inodecache;
- 
- 	err = nfs_init_writepagecache();
- 	if (err)
--		goto out2;
-+		goto err_readpagecache;
- 
- 	err = nfs_init_directcache();
- 	if (err)
--		goto out1;
-+		goto err_writepagecache;
- 
- 	err = register_nfs_fs();
- 	if (err)
--		goto out0;
-+		goto err_directcache;
- 
- 	return 0;
--out0:
-+err_directcache:
- 	nfs_destroy_directcache();
--out1:
-+err_writepagecache:
- 	nfs_destroy_writepagecache();
--out2:
-+err_readpagecache:
- 	nfs_destroy_readpagecache();
--out3:
-+err_inodecache:
- 	nfs_destroy_inodecache();
--out4:
-+err_nfspagecache:
- 	nfs_destroy_nfspagecache();
--out5:
-+err_proc:
- 	nfs_fs_proc_exit();
--out6:
-+err_nfsiod:
- 	nfsiod_stop();
--out7:
-+err_pernet:
- 	unregister_pernet_subsys(&nfs_net_ops);
--out9:
-+err_sysfs:
- 	nfs_sysfs_exit();
--out10:
-+err_keyring:
- 	nfs_exit_keyring();
- 	return err;
- }
+Changes in v3:
+- Rebased on v7.3-rc6
+- No reviews received; stripped the "RFC" Subject prefix
+- Link to v2: https://patch.msgid.link/20260925-nfs-mtls-identity-v2-0-aa3ad17dd6c8@kernel.org
 
--- 
-2.55.0
+Changes in v2:
+- Write "serial number" rather than "serial" throughout (Randy)
+- Give the .nfs keyring to the netns's user_ns owner (sashiko)
+- Link to v1: https://patch.msgid.link/20260918-nfs-mtls-identity-v1-0-197e568d78a7@kernel.org
+
+---
+Chuck Lever (5):
+      NFS: name the init_nfs_fs() error labels
+      NFS: allocate the .nfs keyring per network namespace
+      SUNRPC: pass a keyring serial number to the TLS handshake
+      NFS: name the namespace .nfs keyring in the x509 handshake
+      NFS: add a key type that reveals the namespace .nfs keyring serial number
+
+ Documentation/filesystems/nfs/index.rst   |   1 +
+ Documentation/filesystems/nfs/keyring.rst |  69 ++++++++++
+ fs/nfs/client.c                           |   9 +-
+ fs/nfs/fs_context.c                       |   1 +
+ fs/nfs/inode.c                            | 211 ++++++++++++++++++++++--------
+ fs/nfs/netns.h                            |   9 ++
+ fs/nfs/nfs3client.c                       |   1 +
+ fs/nfs/nfs4client.c                       |   1 +
+ include/linux/sunrpc/xprt.h               |   1 +
+ net/sunrpc/xprtsock.c                     |   1 +
+ 10 files changed, 248 insertions(+), 56 deletions(-)
+---
+base-commit: a90ee4305c4a5df72c11b31dacfdc76e00fcf78a
+change-id: 20260917-nfs-mtls-identity-04c14f6f348d
+
+Best regards,
+--  
+Chuck Lever <cel@kernel.org>
 
