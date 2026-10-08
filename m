@@ -1,109 +1,183 @@
-Received: from mail-ot1-f52.google.com (mail-ot1-f52.google.com [209.85.210.52])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from SA9PR02CU001.outbound.protection.outlook.com (mail-southcentralusazon11013021.outbound.protection.outlook.com [40.93.196.21])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3A9F23C73F7
-	for <keyrings@vger.kernel.org>; Thu,  8 Oct 2026 10:51:35 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.210.52
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D94434A43EA;
+	Thu,  8 Oct 2026 13:25:47 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=fail smtp.client-ip=40.93.196.21
 ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791456697; cv=pass; b=F1DQQ1/XZZl79rggp4JcpqREw3mKyPSyy4eBAMNVqyxPaQk3J2Hy4ZP+4yobcztEcvmM8hT6RRG+eyWQ1bRI4eQ7bUSnlCbHlNOAJJ6+SFW7YE4agQ3184Y5SbsGG1jHt1uhutL4hrKkc8AKEVX74pkEiRh1WbhIvmwuAP592XA=
+	t=1791465951; cv=fail; b=Fow8o8qTPdULmLDCRGYSB+Nl+MA5LAjVVojokxetlwQTBCYnvxq0vStQZ1Cx556pJ4/NIYS0vPM/IzuaoMQLR+JTvuCqNSQs3wyQOmaKDEumK4ZVvv7yNGAAsfr1vow0Ufx4BvLekin8Wc83EXrVxIEarM64JdekRg05IE5Oq4I=
 ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791456697; c=relaxed/simple;
-	bh=waEYwU6s0rfg95pT6ZKFiPUyBmp+lu1t0GLS/lCY70Y=;
-	h=From:MIME-Version:Date:Message-ID:Subject:To:Cc:Content-Type; b=ctx5Lhkff9FWr9plsBXhzoC8chtoEZCW2t47JmrPHp7wFB2mWEx+NIiIiWNKgrMz7vTKZnmMxgHVwWCQaQBTkiDR2vSYPQnmAePFD7Pa8JvAmIalWJ5mznlJTpq/SpuhddJvA7vQY4JCaR+mEUDdTddMnZ09TM++kDwcHvho7RU=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=DnMCatrT; arc=pass smtp.client-ip=209.85.210.52
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1791465951; c=relaxed/simple;
+	bh=6DdFO2Bc87UqZHGtJepqM5fOmUbWxexRjRBtsUYIwAY=;
+	h=From:To:Cc:Subject:Date:Message-ID:Content-Type:MIME-Version; b=eMWRNmzKxh+ZXGpetaxwyOhAJmesIwAHxQdsq95T+VuwpMCn2Trzh6r4lB71+uxvmviMksso8jxCDWduLRJjE4L1O17sH3ZO/oHdmf7fQ/dfZZCQ8vKg8bak1nxULzKaxYeFADqs6IjDzMSukKLydufe8WJfB8x8IV3NURV+sD0=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=nvidia.com; spf=fail smtp.mailfrom=nvidia.com; dkim=pass (2048-bit key) header.d=Nvidia.com header.i=@Nvidia.com header.b=Ke9+nAXV; arc=fail smtp.client-ip=40.93.196.21
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=nvidia.com
+Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=nvidia.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="DnMCatrT"
-Received: by mail-ot1-f52.google.com with SMTP id 46e09a7af769-825487fb37bso2372736a34.3
-        for <keyrings@vger.kernel.org>; Thu, 08 Oct 2026 03:51:35 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1791456694; cv=none;
-        d=google.com; s=arc-20260327;
-        b=rU4Se5g5MaH/etV0J9uzXEvgJV+jn2CuCgkpuX4o3ufAWseBCznCDFHPqpAtGiD91f
-         wvIu6V8Zdw2Gpmc0nW3nua8qy0n7AvI5eF7YDVOL34A5xbH91CrSxtOXRDY8YtGapH0c
-         mgF0hb3JmuqooMeqHKHEvm5TRDqP+68ERtOmqtwM96BHuK84XjjtUCP0iETozMGwBYOh
-         48DY8VYIjMtfpWF/lbQ/Lz5ntHz+FiwTk/0QYFHtnDIZm84sr9kvAQyQSJ50lSupyeqC
-         ex9OGmwqKRezFLdeWCRfQ//ZNDFaCpKLrNi0fphAr3USJVt9QJ2aUsgJfa8SrD/c8SZJ
-         sl/Q==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=cc:to:subject:message-id:date:mime-version:from:dkim-signature;
-        bh=waEYwU6s0rfg95pT6ZKFiPUyBmp+lu1t0GLS/lCY70Y=;
-        fh=e2hw30cY2Evhogwwrx7+SnmKC5+G3MBeg+70CGHeGmk=;
-        b=qiwGTxycakYMFSt+PX2/sGqva0ZUU4kNAXpB+cdqG/ZYYZoGqQVIhAJTzkoRUcrZHQ
-         q3hvFiYecjCBUTTAmdTTnAcAaKrWhICMUZpY1Hy48fCoGQmP2A75QjSRDvrrkBC3ULOg
-         WYKchh1VWAzxPN67r15yjKtcWXnHxQ7AVw9CrHTByx8Q+aTPIGUKruJ/TE2HQwPZ4MGv
-         S8z4tsxr8+hMu+O21x+uHibJ11EkJESw4Dummem6rVxCBoWSbCHvuvG+iNC1zfmPM5Jz
-         HeC5Us6gillYjIGHSXy2aL0mFcfa2Zy/1QIb2cWaduGjHOWbjjQmQIc+zgO9lBJM5pyl
-         5YKQ==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1791456694; x=1792061494; darn=vger.kernel.org;
-        h=content-type:cc:to:subject:message-id:date:mime-version:from:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=waEYwU6s0rfg95pT6ZKFiPUyBmp+lu1t0GLS/lCY70Y=;
-        b=DnMCatrT1ZUzgpt5QrJWZhv7izUfRIwbLrYGVwLxyLjb9BR2nBTugN/WSOgjwI+xNt
-         6yRfOjqrF1X+97lrTyYf7pkaDF+uE/uE/3CjsmlqWvwhT5RN7S2DnJ6KMPbNGvLvXSWM
-         hK14IVU+tCGLwRrurWgX9jOHfKPT4A+oXlez9dQYJlm4QX8/EI96ZLtySBcXV1hAMPIe
-         lXtio2pLhYvKPZ7UELgHCFZpMWiGC54bVsPwwxRVNZUjCfEkYfuM3B0clkSY81gzSUKF
-         bMYkYp8uKDXFFhuf3I/frI5Svh4ds7K6EReWpWG5cH3JEC2K6Pn5xzjaLDOipZhuFwJz
-         wK+Q==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791456694; x=1792061494;
-        h=content-type:cc:to:subject:message-id:date:mime-version:from
-         :x-gm-gg:x-gm-message-state:from:to:cc:subject:date:message-id
-         :reply-to:content-type;
-        bh=waEYwU6s0rfg95pT6ZKFiPUyBmp+lu1t0GLS/lCY70Y=;
-        b=MnFcDOIjd3GjUb7lZIS3MToo30c06JRvKsazgeFO+wIxH9ftCo5iBmtQI0S0tOUBor
-         zz/P6XSi64Z7D13mU32Khes57azcQ/CGeTzRDNEVL/Ro+9MH93U+LaFGOc1nbtxaLIDN
-         EBhRz721jCUj6og9HtQNq66rCDqK/xb/siR8mc5m5uXRX4hVxrgcsQYNFrsihpbuYvCt
-         aQ5brhytnS0dM7w2MuhuV3LDasVSHnoGxq2CT5imxHa0iSs2NyKgRLYRB/OOVzy7zeCW
-         BGa6Fw5qlY7Xeh20xgjYXHtZ+QwJY3oENQs8/tjpgu+2SvSKSgbAs0uExLa9z6SGamQA
-         nD6A==
-X-Gm-Message-State: AFuF++kGEK8LnNMhk6FDm/bkQhOjTodIHBykVpKcS33UKEW1CrKOGG+D
-	9oRaFcO+RZBIN5Fgop7tBRSSYaKnlZejrUwoN7EaQYwfsTFbz1cRsdYqrwtWaJQrYOtQxYpy2ZF
-	UuhEXZeHQamioBxFMF+upTAz+Rep1+ksFioKq
-X-Gm-Gg: AYBFou1N9bccPLho0/3mcekS3257QKZ5LRC2f9x1RZ4bngtwKDVcMKDc+pq5cKbtn6E
-	ICHY0MZSNfAmXauTBjoeCw8VxIj/d6pvhOGZl/oFZtvirS2sye50/xSN8cV+4eZIVfTu4e53rKp
-	64PKiCjW3YmiGwN6ZO2HdOfA9wVbpsFS4Hwklpk1DjAILM9mOGBMeE/688gDHxk3lwzx9mntRQO
-	IhVm3X83ZEbB1pB+lZpIDyuCX4W1rFtYKb+iqhUcn4w0SQ5yHnseM+6m/a9STnFcrJEoatNyFxh
-	ovCpA+OrAdjpRV7lQ19M195HtazU1+QqHY/qLX52u6D7k6UfTz4UZqBBJ8XWdm91Vwu0eI7IJWC
-	WF3A3Hq4lOYT1823moAGGNn006aU2YedAUCqYzChZsoszoE9Z5W3BkWI9
-X-Received: by 2002:a05:6808:14d6:b0:4d7:17d5:6c9b with SMTP id
- 5614622812f47-4fc435fc5ddmr4908352b6e.9.1791456694045; Thu, 08 Oct 2026
- 03:51:34 -0700 (PDT)
-Received: from 138594053405 named unknown by gmailapi.google.com with
- HTTPREST; Thu, 8 Oct 2026 03:51:32 -0700
-Received: from 138594053405 named unknown by gmailapi.google.com with
- HTTPREST; Thu, 8 Oct 2026 03:51:32 -0700
-From: adrimg3196@gmail.com
+	dkim=pass (2048-bit key) header.d=Nvidia.com header.i=@Nvidia.com header.b="Ke9+nAXV"
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=aTjCWzNOTXnPBcRZIJvYaQZk8Ij+X/XjRPZcyhXGn9v2zd+G/BLgp0TFdO62ImCqb0xNwSlVHn9kb7W8JknsUpyYPaXpO2IFOJZruKQZDlYbzugLIEZP1FZQJmwIob+L6iPYg5Y5hb/k3txxM3hBhy+qtjzKviIUq84MiKBrks8IY0MjNL4CUSqaVoNNhtwOASFPWJQL6voYR8GvkgdIDgue6wqVz75g00fMG3BTs893rHabQib4GgneUjOTl+hRlnQV+JkMFmeM9zyU6JaJ63H4v74LGkzV+u3PqZr6X9tAsxfbgjdhBomWB3Oq7/A/U3/tibdg0kZrb+99BffZEA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=zIATemvBmA+Q0oylSvdsTZAC83k07ipQncbAwWwBTIk=;
+ b=HqgNxKNTV+LTsh5gVW1Od56fJ5xEhiXlhxYWnz98nauSbv7uR5/zTQVbDSDZUV/62f0FPDn5EQa/Wx1nlemclxvi15TV1pX+av3om8qih4EoihCOebnNdKy2zxLvuOVhBS/GCMCXzXDYqsic+FHeI81EDxx4E8tPposGR4dCa3j3FhKirUGySGQiIR5E59bAonq4E1jBZX/qiBK8D6x0bp87q3QpuiLUlN6gdX+8hTya57yROTn+fe84yzttytvH9SEf9q5Zie1gcbU28mVWVeM/zKr67/dj7E10zHBdoHyih402YIloXyHAxQtBiXSNWCtZq+92ywh/l0ejkpPuFw==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=nvidia.com; dmarc=pass action=none header.from=nvidia.com;
+ dkim=pass header.d=nvidia.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=Nvidia.com;
+ s=selector2;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=zIATemvBmA+Q0oylSvdsTZAC83k07ipQncbAwWwBTIk=;
+ b=Ke9+nAXVD/KCPY+VezokJrXRh7HLaJjmoR2dKTN6lSe/TJRTN01Rl5A6gJOFvZXcocnW5tLiZxeZEUaTNavGd3UtY381Ijpt0hzdKtXV/ramF9ukTaUgCeyxqUtBLupvL8P4cUv8hKS9519Y5AqXBf2JhQU3heUu9zELIY2WeUNJDMZcPqrwreOpPkOkfDradpoAPkhk7Kp5Hmnfhx3FEhqdnCSkVuBaDjuo/eqHCZBX4Y4m3w667w1ebdXx2Vi7Y8wPYNLgIdqCh9cS3ZfPimAAs3nfic8BD6tFCBZFKWrexCEjtZnSmtXyFn9ldXEVWkP5Ixlon+GHT8pDQ2MmQg==
+Authentication-Results: mx.microsoft.com 1; dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=nvidia.com;
+Received: from CH8PR12MB9741.namprd12.prod.outlook.com (2603:10b6:610:27a::21)
+ by DS4PR12MB9796.namprd12.prod.outlook.com (2603:10b6:8:2a2::21) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.21.496.17; Thu, 8 Oct
+ 2026 13:25:43 +0000
+Received: from CH8PR12MB9741.namprd12.prod.outlook.com
+ ([fe80::43a6:8d0:7081:65d7]) by CH8PR12MB9741.namprd12.prod.outlook.com
+ ([fe80::43a6:8d0:7081:65d7%5]) with mapi id 15.21.0472.016; Thu, 8 Oct 2026
+ 13:25:43 +0000
+From: Matthew Garrett <matthewg@nvidia.com>
+To: mjg59@srcf.ucam.org
+Cc: keyrings@vger.kernel.org,
+	James.Bottomley@HansenPartnership.com,
+	linux-integrity@vger.kernel.org,
+	rafael@kernel.org,
+	linux-pm@vger.kernel.org,
+	linux-efi@vger.kernel.org
+Subject: [RFC] Make hibernation work with lockdown
+Date: Thu,  8 Oct 2026 06:20:16 -0700
+Message-ID: <20261008132532.1155166-1-matthewg@nvidia.com>
+X-Mailer: git-send-email 2.43.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-ClientProxiedBy: FR2P281CA0163.DEUP281.PROD.OUTLOOK.COM
+ (2603:10a6:d10:99::6) To CH8PR12MB9741.namprd12.prod.outlook.com
+ (2603:10b6:610:27a::21)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Date: Thu, 8 Oct 2026 03:51:32 -0700
-X-Gm-Features: AclHuK_P5vf9ra4U09whLUCH-Dc59ntNx3hzUSPQNjtu0g-6sMr6RIovrXySKmA
-Message-ID: <CACO1+RSZuymnONwwmmRj=2ji=hNP4MTyOZOPKvR-Rr1OXQtJ0A@mail.gmail.com>
-Subject: [PATCH] KEYS: Fix key_reject_and_link() race with keyring restriction
-To: linux-kernel@vger.kernel.org
-Cc: keyrings@vger.kernel.org, dhowells@redhat.com
-Content-Type: text/plain; charset="UTF-8"
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: CH8PR12MB9741:EE_|DS4PR12MB9796:EE_
+X-MS-Office365-Filtering-Correlation-Id: 107f4602-b932-4c9e-e056-08df253fa754
+X-MS-Exchange-SenderADCheck: 1
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam:
+	BCL:0;ARA:13230040|23010399003|1800799024|376014|366016|6133799003|18002099003|10067099003|3023799007|5023799004|11063799006|56012099006;
+X-Microsoft-Antispam-Message-Info:
+	UhMDQJEGA27n/LrkuDlHLzfaRQ75IFS9htSeUmrWc1AZWvnSslrPJqiBeNukPQhc638W6HXcILl7+vTfk0XH3o22nKi8VmnTNsMErW2fhgjqi8snqXBDCspKRaKCl5xXnHJoXwD9iIi7P8dC7+1p7SQas5wwhzlay531bsQhMxKKBh+E/uI4JqCNfLgy0tOqX07Y/pg9bxWtbFmFPKYqPX/J9SCW4TQ0W7Z0ZwqscxAZb6ekJSp71JnkLeYNDAPDzZsxoCuvpkGg3MfHWoDo1fjN8EW0aqkWCaWM0VzpgwhJYKXo/eIOaxmHwfiDzkqq7Cv6ghFylMNqFGYa2mKCkhOTH23MXsMXD88QUxA7MOoxEdpKrL8qyZy3X5fiiruCCirsBGWyMdPKjYuh+ia0J5hN23FC5dWbHXyGovmjfJuxWd93VtKYXYjJVCG4WG1O8Df5JhUy5sNUY1EbN54nb1G1hQWSxmReLDJSWtn2s4awk8FbxuvhBDEMb3VLSutGCCvEQgbLGO1Khpj4Ho+v2VNdvZVVVycnYO1evQuS0voylda8hRY9j9iqWR4hJlbF+Ssb2irw8aymDQoUWqjhmbtTHzORBXjMI+vVn1dF7a8dL/ncLewC+x+fCvp3X5RFCdAcSKYl5Q+w912Kp8c3hRlv5KHd498QSHNnrXILCMg=
+X-Forefront-Antispam-Report:
+	CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:CH8PR12MB9741.namprd12.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230040)(23010399003)(1800799024)(376014)(366016)(6133799003)(18002099003)(10067099003)(3023799007)(5023799004)(11063799006)(56012099006);DIR:OUT;SFP:1101;
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-MessageData-0:
+	=?us-ascii?Q?oB68rEPBRNPNH0+yxLDL6Yis3voOzPS/rZtRk/XtCMzKjqm+Iii/gMOcWdzS?=
+ =?us-ascii?Q?KnUg/UYuewsTltv87ZgJyx8zaAz+KU9AR3bO45xzcyg07kfc4QPpMze0BGeN?=
+ =?us-ascii?Q?0EqyvnRnZlw2Ae2nh1v0ux+GY0IiTLJDUvAp0lMs1uFRtaGY5gb2SFYWLQCT?=
+ =?us-ascii?Q?a38FPAWDXpfcsHKW8G0b41nXELET2YbajHSrpRJWTlbovyaWok0EbQsMp97a?=
+ =?us-ascii?Q?Zp7h44WsCouF7SPeR0dwDIfuKRQq0kq1Z0jgj8NNMCryqv4ou10DPca/rc3Z?=
+ =?us-ascii?Q?b2Nxq6SLpOQhQ1Zl6DCJR9+DjGN1kV4OkWVsTEMj8DIkGO4GlMIh2xULg7gP?=
+ =?us-ascii?Q?4FWlrB97oZs1ScKysRIdjs6c51EjArmn5QG73WOXasvKfQ/QL2FjTehg+OlW?=
+ =?us-ascii?Q?Yx+1WCVSV7lTbrOOls4GiBVraAWup6Tkc0x9IL8LtbqLQKoClVFM1zVmapC7?=
+ =?us-ascii?Q?ktPFn2fS7lHnSENO2p6UM5aTapevHpUu7nqQzpuYO4t0AOFNzwN7O0jtnrTL?=
+ =?us-ascii?Q?Yvv7EdtoHKcuyDKGV5LZurYJxbbkAnXIUlt/jxzw4rpY5lP7oRLXHTtZXMnq?=
+ =?us-ascii?Q?f1dwPwg3Ulr4ACyRwjIIHZgwtuDr/wJ9UCIe/wBi/6/ZV8gekOfuxBryIs1E?=
+ =?us-ascii?Q?OGCnRfEOE4/apZpAt9wqpUsmmgHg3g+MB0cMrdP4KWI+LTkOoYHBJR1ZVgji?=
+ =?us-ascii?Q?dAvuGkob2zdG0w7ECHWUsaoZGw9JAucFJ9FW5LDz+LLfSyTZqTFRhvTNARxq?=
+ =?us-ascii?Q?3XGOlbgKVt3hBRCMwFSXFojjQOWibBOgHfD1Ws2oLNo1WgjdAG+Q2baVg5Sg?=
+ =?us-ascii?Q?fMf+xLQLv3tfQdFtMF1tJcH0oHqQD2KucCQ/HZNSDtC1AqB2VeUaF3zwCLB8?=
+ =?us-ascii?Q?vYDn29cD3HP8qCsnw4GGhTR6J3C61+XUYyMP4vNaf/XSWS8qGg8aZxeHzDjK?=
+ =?us-ascii?Q?DJlp3AIL8jd2ZY57OW4+b4ka8VTtUpya/P+uWo7zwD+Cw21EmTmrv959vTGi?=
+ =?us-ascii?Q?niz3rZBf7SJXJKQ5Hx7q/IPxFbMDVhzbEulnYIBly3+y+Ueymf9Fpu3bVeQX?=
+ =?us-ascii?Q?bIpx5E/qRGPJDvVLsz2Rjs3Afqk2F2MAzVhjCKYK2ZxnvpItd0/QNlaRk/vU?=
+ =?us-ascii?Q?7GjYfYg3Cg+212yXFOMsgAqhy3jxfTWDNmQApSTvJKglkJZpUKYif3IaRD61?=
+ =?us-ascii?Q?YzkgPhJTmY6kicRJi7Jnnv/jxttASIczN0pz+NnueZbZPtq0isJxGQbaXxJ2?=
+ =?us-ascii?Q?PKNRnlwUWc1jXdby+7xBxUARt/Od3d6nvarpx6RJ3RZsB6RLylJxHZY8PubW?=
+ =?us-ascii?Q?lbgunApKrfeF0Qj6AIvJ7NB/EZNuxZP+y+qqFwOiEPc7jPwPq+/qdG2/QS9W?=
+ =?us-ascii?Q?oZSGNRciQfsMLcrBO/h+xJJn8y+p/OAYVQ9KhigWKyi/R6Wk6i2dEllrFqw6?=
+ =?us-ascii?Q?t2bpwFDnp8k1Z5bBu3LDoyqXLbAE/GqzSW8+8Kl6AUoEtD/h/KUWeGYngeK9?=
+ =?us-ascii?Q?d9SvcmIqOTT6QwhL9XJVI2EB3GitzqFTbctsz6DQnW6ZjjNJSBsTyGBrCIFm?=
+ =?us-ascii?Q?j8Mru3KNY5g6YLE0xXPneLrGrg/ccH42EgSAMSlTIvZ3zYtkpfI97refB36W?=
+ =?us-ascii?Q?/x3mmk5piIJOKbRClo8jYX1tcJHzYJ8aUwe5U0MekSRBAVrcUWnZ1qIbl4Bd?=
+ =?us-ascii?Q?AfglAqOQlLYZ2rG9liddjcb6X6cnTm6AV0eNZ2wHOwOYvxTf2+34E1h0Epe4?=
+ =?us-ascii?Q?8dxXCifwew=3D=3D?=
+X-OriginatorOrg: Nvidia.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 107f4602-b932-4c9e-e056-08df253fa754
+X-MS-Exchange-CrossTenant-AuthSource: CH8PR12MB9741.namprd12.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Oct 2026 13:25:43.1261
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 43083d15-7273-40c1-b7db-39efd9ccc17a
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: 1IzIjXFnnoMxqGDfy/pSaee5g49jmy6vkwead+7Gl2RBrLf5JqD4/eIEoqC+VvhkEPvs5iXSbEJVaSdU0feSRw==
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DS4PR12MB9796
 
-The restrict_link check in key_reject_and_link() is done before taking
-the keyring semaphore, racing with a concurrent keyring_restrict()
-that installs the restriction while holding the semaphore in write
-mode.
+Hibernation writes out the full system state to disk in an unencrypted 
+and unauthenticated manner. Resuming from hibernate reads that data and 
+throws it directly into RAM, then jumps into it. This is effectively an 
+entirely unauthenticated mechanism for putting whatever you want into 
+kernel space. This violates the assumptions around lockdown (root can 
+write whatever they want to the swap partition and then trigger a 
+resume), and as such lockdown blocks hibernate.
 
-This is the same pattern that commit dd3ea3fc ("KEYS: Fix add_key()
-race with keyring restriction") just fixed in __key_create_or_update()
-by moving the restrict_link snapshot to after the semaphore is taken.
+This has made many people unhappy.
 
-Move the check under __key_link_lock() so a restriction installed
-concurrently cannot be bypassed when linking a negative key.
+This patchset seeks to solve this problem. In order for hibernation to 
+be trustworthy we need to be able to prove that the image was generated 
+by the kernel and not modified after that. This is not an easy task, and 
+requires some infrastructural framework. To that end, this patchset does 
+the following:
 
-Signed-off-by: Adrian Martinez <adrimg3196@gmail.com>
----
- security/keys/key.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+1) Co-opts a TPM NV index for the kernel's sole use. This is currently a 
+placeholder and we should register one explicitly from an appropriate 
+range in order to ensure that we don't conflict with userland.
+
+2) Does something horrifying with PCR 5 in order to prove that a given 
+kernel supports (1). We need to extend and cap a PCR before userland is 
+running in order to prove that the kernel has support for this feature, 
+but since we don't currently cap any PCRs there's nothing stopping 
+userland from doing the same and so achieving the same state. The way 
+around this is to rely on a feature of PCR 5 - it is extended as a 
+result of ExitBootServices being called, and since the boot stub can 
+execute code before that happens we can perform the proof extension 
+there and then have it implicitly capped by the firmware's extension.
+
+3) Adds support for audited TPM sessions in the kernel, allowing us to 
+generate signed digests of the commands that were executed in that 
+session and their results
+
+4) Adds support for generating a predictable AK that can be used to sign 
+digests from those audit sessions
+
+5) Adds support for generating a TPM signing key in such a session, and 
+using the signed digest to prove that the session took place in the 
+kernel
+
+6) Signs the hibernation image with such a key
+
+An old kernel that doesn't implement (1) won't be able to mimic the same 
+PCR 5 value. Userland won't be able to mimic the NV index value because 
+the kernel will block it. This means that the only way that key could 
+have been created is by the kernel, and so we can trust that the image 
+was generated by the kernel.
+
+QUESTIONS:
+
+1) I haven't tried to make the key management generic, since this isn't 
+intended to ever be exposed to userland in any way. Should it be 
+integrated into the trusted keys layer anyway?
+
+2) Filtering TPM commands from userland isn't ideal - anyone able to 
+poke commands into the TPM directly is in a position to violate the 
+assumptions here. Is there any way we can get a secret into the kernel 
+that can be used as an auth value? It would need to be impossible to 
+obtain from userland and it would need to be consistent over platform 
+reboots.
+
