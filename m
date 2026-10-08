@@ -1,111 +1,122 @@
-Received: from mail-oi1-f169.google.com (mail-oi1-f169.google.com [209.85.167.169])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from lamorak.hansenpartnership.com (lamorak.hansenpartnership.com [198.37.111.173])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CCF381E5B70
-	for <keyrings@vger.kernel.org>; Thu,  8 Oct 2026 16:41:46 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.167.169
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 257D23AEF4F;
+	Thu,  8 Oct 2026 16:45:19 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=198.37.111.173
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791477708; cv=none; b=a4IcNi3FmmkvLib0glXrNSKnRBaje/wo0HQLO2fdNrRnufMEjUgTkXOMa0G3XruDN+tjlEAlR8Fy1G6g463sVcoyHGG91v7EsD4RwifdFGbB6H0xcpCrEL543kEcJvFtJbxFNyFFh+cI/1qfLm4ad5b0YPZZ5Qg/ofyIz6edzhQ=
+	t=1791477922; cv=none; b=jBzboD3glNzDkZVJPPi5jOoWTX2y8CA+uJVbst08mp3G8Bt2OUj1LqI7yEANpjPzA8ys870XFqsJe+8qtKZz3haTtLQD7ih+/KfGxuskvygSU1C4Z8mzLMlyPCQajOYxMoqLKIZboDPZ3o09sQzGkSesHaWXZIWAKZQgJkDY8p0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791477708; c=relaxed/simple;
-	bh=Nhe4QdZ05WxGERe/2m4l7C4Dh1nyoZLPP684bAXzbfE=;
-	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version; b=uccdiU/kB2A1d2I23YSq9adF77Zh1DFO3eQdKAgyGr7khM27Lh+Dbn7xf05CPYnVvNcSQrH+msM1yeGK+0NYFUpfLbTcMhayZtmO8nqsDHvRg+97yL3wbTg51AtfeL1td/Y/mdXyurYMUagbRCyyJShV6qRuYKx8IVzV10pgQ3U=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=jp/5jffO; arc=none smtp.client-ip=209.85.167.169
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1791477922; c=relaxed/simple;
+	bh=OMOHRU+xJ2Adb/yorn/o8MTrvtiwSFZIvb8OuMXMjtU=;
+	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
+	 Content-Type:MIME-Version; b=RhgqpcRQLUPscuWv1QTOA5iMLMk+hnOcask7f2SjQJhUlnMxTjirAHjS1MNAVgNdBy6dW/SnhVvRuD38KkFOOMsaWe7/IxXE+6GhYCJzmxQOETog6xdCmKv+RwwN84WAyQPwP8VzcvQ8ThCeeceHl/MJSjhbzdvPjE5Vy7kXzOQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com; spf=pass smtp.mailfrom=HansenPartnership.com; dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b=b+x2uL2y; arc=none smtp.client-ip=198.37.111.173
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=HansenPartnership.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="jp/5jffO"
-Received: by mail-oi1-f169.google.com with SMTP id 5614622812f47-4b28d7c729fso2976636b6e.0
-        for <keyrings@vger.kernel.org>; Thu, 08 Oct 2026 09:41:46 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1791477706; x=1792082506; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=FVRbwfsptP26mC4/pKVYDrVCO0uNaRNaX7O0Iiwj1nw=;
-        b=jp/5jffOaeTYXhVeuysJCNsvzDtGyOYlFJhcY+Bm7r6HnciFlMSbanHdrk/pi3nlSd
-         cqOUNtXMwUP27zjdcyIgysl8AnZ8J9tB9Z0CAoRzuorvdMNyB3mPuCplOaqeIotRUenC
-         bWXiUGbx8SxZokVE7xN645+lHrf1GHSDX57oC/C2Ch3vXIutugO5E3dDzaIu+vt9YzOF
-         F1Y6UcSZjFAkCuINHtIXSs2v/9/CF6tB/jf/xh3EM+xQ4UigaI5W3KPx5O9qoJv8FKA+
-         eClx2at+ji1i3Qrq7M7hp5cInduF2HmV17mfPbDQA1HpAr4AckY2aOY1vUmN2r8p5XQw
-         ajKg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791477706; x=1792082506;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=FVRbwfsptP26mC4/pKVYDrVCO0uNaRNaX7O0Iiwj1nw=;
-        b=eBEV9qqtty/CfWLyI1DJQMe4KQNPC27tanNnZdeNFJz2mmmr3+Aa+TNK1eAb5I8/Ty
-         ewP734W2m4LEvu3chmSOEjaKS7ygI4aDyp1RLbQOEZo9rJMR3fAWDZZhoirg9AiZvMpr
-         qIoVn16czrdU0wLk3dA8245j18XLAFx9sbH5oG+9d9XMODdFDHRnfckE+RV5/FFc2Psg
-         48a/QKX1uMtrf75hP9e14QXxGVASsvEmAgh7YB92QL0569XWjpRTKbv/Wecx2vSRKpim
-         IEFLMcOj9BKnMhkmHSIUf7eQfdhcpr3rKdwi31CesHePCaAmcDupsewobvSX5O4Pn+dO
-         neAQ==
-X-Gm-Message-State: AFuF++n4qnf3UtV/bdDpom54N15JVUkdWi32l4Z2HZw5UrWTZoq7KRM4
-	L+aJ3wgIn1xe++rkqU2ZfzoWirC5ThcD6qj3MnU/z8MfNKHcvabghQEZ
-X-Gm-Gg: AYBFou0jYo7R5UMhbQRDf56BB/+VnUswj0zXJsi5cS1fwCBGEQF9Rstdwt4awZEfc+z
-	4srGVg9eU1H19BUQ0LNDikFwxwZOOAug9tt+kSDcubHO+OdAAPkmjtyPEPStpn0sqxvYmmOebcK
-	qa8NVI0DdMMT+uRQ7fNrz5jhV5bcS52xXuZxUdMle4kpivPbCRgm+K66MoWRSmDSyLZ7oq08fte
-	FqoalT6UDOcahPFmVgqoUpciIuSWBg9LHqUNjn15rEBBNpE+6kunJo/Utd9g6VcPclAS4IEJebO
-	x4qNOagITawnkIGMwVEcb4WsOLX8quaShIT9g1qDsTEMLRsLdTwHz4M+GjY6qfs78hBH3vZ5lM1
-	EOx0yqhsoeEBgMC2UFgIthTuzY6OPaJxrCiNtCG16vTb7B/X+x00eCN8kDu2uns7kosg1T1eLoo
-	4AttcraHdyeohEU3jmopS0fqOToCwqDMGAGCbaWDjBVKLzDIPzlhdIPRqWVmITlNXT6en8jyZF2
-	yFQUwJDnAbr
-X-Received: by 2002:a05:6808:6716:b0:4c3:4e34:c69e with SMTP id 5614622812f47-4fc4249bb58mr5304050b6e.8.1791477705661;
-        Thu, 08 Oct 2026 09:41:45 -0700 (PDT)
-Received: from sheng2080.cmix.louisiana.edu ([130.70.15.5])
-        by smtp.gmail.com with ESMTPSA id 5614622812f47-4fc484f6d10sm6310506b6e.3.2026.10.08.09.41.45
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 08 Oct 2026 09:41:45 -0700 (PDT)
-From: Leizhen Zhang <lzsx618@gmail.com>
-To: dhowells@redhat.com,
-	dwmw2@infradead.org,
-	akpm@linux-foundation.org
-Cc: keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: [PATCH v2] insert-sys-cert: fix use of uninitialized pointer with an empty System.map
-Date: Thu,  8 Oct 2026 11:41:37 -0500
-Message-Id: <20261008164137.3671294-1-lzsx618@gmail.com>
-X-Mailer: git-send-email 2.34.1
+	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="b+x2uL2y"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+	d=hansenpartnership.com; s=20151216; t=1791477919;
+	bh=OMOHRU+xJ2Adb/yorn/o8MTrvtiwSFZIvb8OuMXMjtU=;
+	h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
+	b=b+x2uL2yKevnqmEtBmzLXT4bnxSilmpKkdmGLyxQrGTfNyQ+lB1m9mlngDU6GKBlK
+	 3eElE2FdK1ydIYgz8g13MbanUril0+VVNPVg6DhQpofD9b2VAkg27VoZLxQ9qpNpVM
+	 oSxoj63ircJlfBX76wJ/3hPw3/NMMIBnAm0qK68M=
+Received: from [10.23.23.248] (unknown [80.188.228.74])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519MLKEM768 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id 080821C0025;
+	Thu, 08 Oct 2026 12:45:17 -0400 (EDT)
+Message-ID: <c5d1b69763362db8a681d00d3325dd673c4db08b.camel@HansenPartnership.com>
+Subject: Re: [PATCH 05/17] tpm: Add a kernel attestation key and signed
+ audit digest retrieval
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <matthewg@nvidia.com>, mjg59@srcf.ucam.org
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, 
+	rafael@kernel.org, linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
+Date: Thu, 08 Oct 2026 18:45:15 +0200
+In-Reply-To: <20261008132532.1155166-6-matthewg@nvidia.com>
+References: <20261008132532.1155166-1-matthewg@nvidia.com>
+	 <20261008132532.1155166-6-matthewg@nvidia.com>
+Autocrypt: addr=James.Bottomley@HansenPartnership.com;
+ keydata=mQENBE58FlABCADPM714lRLxGmba4JFjkocqpj1/6/Cx+IXezcS22azZetzCXDpm2MfNE
+ lecY3qkFjfnoffQiw5rrOO0/oRSATOh8+2fmJ6el7naRbDuh+i8lVESfdlkoqX57H5R8h/UTIp6gn
+ 1mpNlxjQv6QSZbl551zQ1nmkSVRbA5TbEp4br5GZeJ58esmYDCBwxuFTsSsdzbOBNthLcudWpJZHU
+ RfMc0ew24By1nldL9F37AktNcCipKpC2U0NtGlJjYPNSVXrCd1izxKmO7te7BLP+7B4DNj1VRnaf8
+ X9+VIApCi/l4Kdx+ZR3aLTqSuNsIMmXUJ3T8JRl+ag7kby/KBp+0OpotABEBAAG0N0phbWVzIEJvd
+ HRvbWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT6JAVgEEwEIAEICGw
+ MGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAhkBFiEE1WBuc8i0YnG+rZrfgUrkfCFIVNYFAml2ZBI
+ FCS3GUMIACgkQgUrkfCFIVNZKjQf/deRzlXZClKxTC/Ee2yEPqqS7mm/INUA49KdQQ5oIhSxkUBy0
+ 9J4qjMIo5F8ZFkFTqikBqeL35LKu7O7rn8WETfX8Bxvos3HUsl3jHo34DES4MUFIpoQPgtiLRGwLb
+ K0cVCAArR2u2qj4ABmTRrs1I1kvdjEw6gatOuXtEe/j5O2fvfzTq9GBr0Q3n2IAsFXi4hLlx6VPE8
+ tyWUZ8BWJKtih3JAeUiXFvASL3McV0rV9RnU0VbjEQEhSE7PMYhWpnDC9AyBb0lXJllQRvC3NSkUB
+ 8KVQgNNxRPss0WE/nBoZ4dFA42jTyzTz8lNylxZoAWV7WJb3QxVg4oCodRVrxxrQhSmFtZXMgQm90
+ dG9tbGV5IDxqZWpiQGtlcm5lbC5vcmc+iQFVBBMBCAA/AhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeA
+ QIXgBYhBNVgbnPItGJxvq2a34FK5HwhSFTWBQJgS5mYBQkbNYS9AAoJEIFK5HwhSFTWBpwIAL5Bk3
+ 5FB34U6iHmDzzgdCbxLTs43T/YQyJpcGIvopBvnI/fDY8oSG6Df64/O6B+1R+A8TDp6ZG5ysUWnCC
+ 6GuIaEHemBYkitMPglR6+sGCMQY7O0mlsPvdssvKK1KI9Bno4VU6ogaF2qVzefSqg1Djmf/DcsxWP
+ rI/jdJ8FB5AYR2rjIdDFc+zRdAJuavo1/anyY2wgpFh/3R8IOYAEfWV9nGgYkf9+tA4EIn1sxE0I3
+ L5oW2N3mbyRrkzuBwO8ztMCwqEPk7moWzhokcZqMXiAIahaZdkashJC+s2X2RZSGCy+g+pvY5NN4B
+ BVG5XwLgVBqbHMTcxE0fbmPqz+q6O0LEphbWVzIEJvdHRvbWxleSA8amVqYkBoYW5zZW5wYXJ0bmV
+ yc2hpcC5jb20+iQFXBBMBCABBFiEE1WBuc8i0YnG+rZrfgUrkfCFIVNYFAmODZ5ACGwMFCRs1hL0F
+ CwkIBwICIgIGFQoJCAsCBBYCAwECHgcCF4AACgkQgUrkfCFIVNZu0Af/TzvL2/NdgAcw9uN3x60H8
+ jc4QUq14VpxcFEFEMpcj1morkX/G93V+56HBBaXZj+yK8PhxIA/SIz+sU7C/0YvKuvzakP8ZX/7WJ
+ e32SOUtjfr/VTaqjIBzNj6OxLvZpmNbBw7s6DwhhNpHOWqJ/1ml+PtDRDV71IB58yVqQjp1xlNKVl
+ ZppcJ5908EJzsFnRIVjiQiDSKoppqB2BCibBbrWcln7CiWMyOC/cco6SIn6twH+f7+aivJ3xGcOE2
+ a9gBKF5rNi9TBoX9oyPmshv/TDmnohsVrH7AYXlGYfZTk15SWEiROh1QX8/uD9wl/gcIv5EDUpT/F
+ L2jzOsA5663bw==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+User-Agent: Evolution 3.56.2 
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 
-get_symbol_from_map() only assigns n inside the loop that reads the
-System.map file. If the file is empty, the loop body never runs and n is
-then tested while uninitialized, as reported by MemorySanitizer.
+On Thu, 2026-10-08 at 06:20 -0700, Matthew Garrett wrote:
+[...]
+> +/**
+> + * tpm2_create_kernel_ak() - create the kernel attestation key
+> + * @chip:	the TPM chip
+> + * @handle:	set to the transient handle of the AK on success
+> + * @x:		if not NULL, filled with the X coordinate of the AK
+> public key
+> + * @y:		if not NULL, filled with the Y coordinate of the AK
+> public key
+> + *
+> + * Creates the kernel AK as a primary key in the owner hierarchy
+> using a
+> + * fixed template, so the same key is returned on every call until
+> the
+> + * TPM is cleared.=C2=A0 The owner hierarchy must have an empty auth
+> value.
+> + * The caller must hold the chip's ops lock and is responsible for
+> + * flushing @handle with tpm2_flush_context().
+> + *
+> + * Return:
+> + * * 0		- OK
+> + * * -errno	- A system error
+> + * * TPM_RC	- A TPM error
+> + */
+> +int tpm2_create_kernel_ak(struct tpm_chip *chip, u32 *handle, u8 *x,
+> u8 *y)
 
-Initialize n to NULL.
+Oof, there's a lot of duplication in here.  Basically you're creating a
+signing primary key (technically it's not an attestation key because
+they're supposed to be non-primary; this isn't a criticism because the
+only consumer is the machine owner who doesn't need to use privacy
+preserving AKs because they know all about the TPM in their own
+machine).  The primary generation routines that exist in tpm2-
+sessions.c:tpm2_create_primary() et al. already does most of this.  The
+only real current difference is that it creates an encryption key not a
+signing key, but that could have an additional bool argument
+(signing=3Dtrue/encryption=3Dfalse) rather than duplicating the entire
+routine set.
 
-Fixes: c4c361059585 ("KEYS: Reserve an extra certificate symbol for inserting without recompiling")
-Assisted-by: Claude:claude-opus-5-5 MSan
-Signed-off-by: Leizhen Zhang <lzsx618@gmail.com>
----
-v2:
- - Use my real name in the From and Signed-off-by lines. No code
-   changes.
+Regards,
 
-v1: https://lore.kernel.org/r/20261005104217.1788155-1-lzsx618@gmail.com
-
- scripts/insert-sys-cert.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/insert-sys-cert.c b/scripts/insert-sys-cert.c
-index 8902836c23..e0bf0afc1b 100644
---- a/scripts/insert-sys-cert.c
-+++ b/scripts/insert-sys-cert.c
-@@ -94,7 +94,7 @@ static void get_symbol_from_map(Elf_Ehdr *hdr, FILE *f, char *name,
- 				struct sym *s)
- {
- 	char l[LINE_SIZE];
--	char *w, *p, *n;
-+	char *w, *p, *n = NULL;
- 
- 	s->size = 0;
- 	s->address = 0;
--- 
-2.34.1
-
+James
