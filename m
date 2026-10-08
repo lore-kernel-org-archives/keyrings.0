@@ -1,181 +1,363 @@
-Received: from mail-yw1-f172.google.com (mail-yw1-f172.google.com [209.85.128.172])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C30583AAF5E
-	for <keyrings@vger.kernel.org>; Thu,  8 Oct 2026 17:07:16 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.128.172
-ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791479238; cv=pass; b=MA6Nv1FL+tE5FFxD6K421p8/gXrpO30u4hGe4D6vkdY7f3/8lmsyuqSlIQEPPxF+6C9z9wNeTYQzZ6I6k/nf5rcm/DbbPXaQ2lv4oDEihX0BqpMcU9ekCUUmvrP58+zbcqivs/A3FhNYS+2aET0moefQ0RmvgHsq5sY/GhIdtvA=
-ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791479238; c=relaxed/simple;
-	bh=QqDI6Bbid4Z5TSJM6uhAIwDVDE3XcRkTjQOjWmVeRn4=;
-	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=ayPJP0fupBGmfNbFdxzxG/o3ChI0cIWb7+yQH1mjWheUNaE0v1b/9JE0z86y/ttndUE7VqeAN6o31s8leDcQHumPALpJ4qe7MsFerq1O/A8Hr7+U31f2dFVQzCVknjt2zlEjEPGZx1Dr1O46ETUZjdXdFB7M6tXTo0wX4J8Huo0=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linaro.org; spf=pass smtp.mailfrom=linaro.org; dkim=pass (2048-bit key) header.d=linaro.org header.i=@linaro.org header.b=CjskiTdX; arc=pass smtp.client-ip=209.85.128.172
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linaro.org
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linaro.org
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BB2BC3AEF3A;
+	Thu,  8 Oct 2026 17:28:04 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1791480486; cv=none; b=ASv5Gh0pE0hdL0UrW2dO/R82cW+TnweB9dOlkUmcMlZwsi6aA8oCux7wVeW/KqbmZ0ffIUjjy5txBuyqoBeTck0JUBW4cstQynjcKvChU1idlUoFHrSYbGrnWdhddNkoroJuVOf2QkakdXR0u21g7xyjTvfskOJgVthHIODG3Ag=
+ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1791480486; c=relaxed/simple;
+	bh=/U2lphRr6npPlYS1erXpLu2mq3qjh0J8PqShg0Xymu8=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=ZVup16H5gLNjkLXjvaqC9T9h0kYEl/LdfWph5bYAkwhjUpShAGMj1bv3jHQRIfC9Omp4/De2xoKFsvzt5LWwGPOYnIUMMLE10FaQXOykdcDOyNOHEZ8sEv8z+tNlpQGPcH6BT9iRtjSMfx/uOPzQfFdK1azMHCAbcvAt2Vuv8DU=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=nTobY/78; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=linaro.org header.i=@linaro.org header.b="CjskiTdX"
-Received: by mail-yw1-f172.google.com with SMTP id 00721157ae682-87ab6e5f91eso31513307b3.2
-        for <keyrings@vger.kernel.org>; Thu, 08 Oct 2026 10:07:16 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1791479236; cv=none;
-        d=google.com; s=arc-20260327;
-        b=OSFsSNzeXjHtaPtlApoYOxX7CVj3ghvqw34DqixBIotq4fji7BQb9zHibzhIxzZTZI
-         K2AlArm/cxg8k3zkhAxW7/sx9SUUsGBBjdutF+smRfvvps9H+26QGusPjCKTCBaZQxl8
-         7EWojlvezruUqeWcJfoUpSlMjAKG9YIfDh7kf8OC2i1zXymAB7w6wFzs5EAzVZ8I65wA
-         1jp6PwAn9HqB+qJQDvpk343ex/TgtGmiMgXvLtkbwtj0HB61QITqAc8UlO94xRSVg9hO
-         MRD2z+XBgxnYBTuY/dBsHR0y1XTCiA1E21acTQQtvAVyFFtLcCBeTeYWKuaKvExI41x5
-         1/iQ==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=cc:to:subject:message-id:date:from:in-reply-to:references
-         :mime-version:dkim-signature;
-        bh=2vxAQYqUPu2IyOv6/hcaTpeROBNAxx/kWZ9+SB1EYqQ=;
-        fh=d0BGee87TXmKAPaFXsHk95k1y7WujOf8Rdz1Gg/8jvc=;
-        b=SqoTYhPy3gkWFO6SDJIuyGI+KHrerZoE6G2d35M1snG4tBMNN6LMonsF0g2SA7YCD7
-         jj80/y1IAHKgQgIDIBKMknTkMGvYkbg6cUnaUnlq31aOOXw++d0heI15axPweu4EB8MM
-         UWcilGkSKMXXLRDJQsYjpy0WkKXN9lDDZJEH/Dl9P7ePmKdLSM3QfFY2GsgkiyUhEmNM
-         /UVieWMPxrdgHatqFk5745WJ3hTv7TtZCxppjmz9W0wWK0MDhx6jns4NLBNbC7C/rFJL
-         fm6KcCaos4kmqmmze2DiwwjnA6dvI1nHYt7Jihj6cKoNPJWnM6+M7KOFSNIPP0PW6dsd
-         Jnzg==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=linaro.org; s=google; t=1791479236; x=1792084036; darn=vger.kernel.org;
-        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
-         :references:mime-version:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=2vxAQYqUPu2IyOv6/hcaTpeROBNAxx/kWZ9+SB1EYqQ=;
-        b=CjskiTdXhMBCOIOnG/ji8z7M7K/m2VM8bxynqze80Ch/Mad0y202dkdou7i8ZDrmGh
-         pLXt6tEMMlu6isPmJjYONw0zlbyXN57WCSfJK2IqcD5y9CXWdpou684S3S3UefBh8m08
-         d2fyETfcYmd/aBr6Fff9lHWFaF9d3TIbPFf5hE2ZYufrgNTosPdvW3Vws0Zn2h/+2r80
-         wssMtraSEYY4zJmFsPiAzFjNq+j3E1lRC5s4fLoNSHhoYsIgrzDHSyjl5h+YzswXRf5c
-         hEHXMo0+NUFC5JKAFGzM2Ff/yA4yX77jDoyM66BbKKiZWRqsL4WIOtSXFu5Y8BZjmozm
-         cU6A==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791479236; x=1792084036;
-        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
-         :references:mime-version:x-gm-gg:x-gm-message-state:from:to:cc
-         :subject:date:message-id:reply-to:content-type;
-        bh=2vxAQYqUPu2IyOv6/hcaTpeROBNAxx/kWZ9+SB1EYqQ=;
-        b=SpHPHFxGPjqYAUZ//jh2yzN/lXcSBCmooQaswM3t815aLPYYt6/Toj4a3UOP8Oa41l
-         8OgC6JWfLU+DGv2ouxLrNJH3Fwu8idv9bySM/Z3WTxwbrYe6SLEptTuO8OF0zidY736p
-         bBe57FSgnhlKFmKlBGegtMXf7iCcKObcs050x26pbGaHcdSjBl4HBb1UEdE6Dqmpm3Lo
-         lyFe3+1sYedlDFn32RceIOh3hT5LBwyg6olrksrDnGMjwcCcns/VV/eB7wd2DWVQP53a
-         YvTnfHjBkRtP/LfdplwEa0jOiXt7s2gjOSEn8QD1jFDZrgvc2tIxfADnyZ7BcibB5w0C
-         yvOw==
-X-Forwarded-Encrypted: i=1; AKwUvBxpkChXATj7OI6VLS7qoE02xKgO25zOUA1nzjcmdvDy4DZvHIdxKGBR3HmOBPJDaSuvs4ClFtRj7w==@vger.kernel.org
-X-Gm-Message-State: AFq9FYIadO9aolryFGMwV3I8YFRPXC1x0BnVvpc+VUDfQck7bEShgDwH
-	F4bbrO6ugt3mOMwc3+s2AXW9KI77n12AmW46sg/4AcmDVY5uoXfCIQCrrhx61AHPZ+OdoAbl//E
-	elTMgry8GZPkSdYSg5vJajl9aSkTjMzrUzuLc4wg0Kw==
-X-Gm-Gg: AYBFou1vB3L0Q/jBocfaKKLGWUDYWqSXzfCvbgF2oTG6Ma6sKmYb9049+svW4LooNTi
-	VtEV/QX0T0NdgKYX0hCbTp/z/gheYVnZxTXlGkd8XPzdDMOPMOxPMSK9giQ0s2rhPG/YNZlOFps
-	3y0tDFqYyIgW83wufvJJxSQgt6gjgyW8JkADV4WkvJur/ExTKdEbILRA2Mqesxp1K/eZjkGpyFc
-	Anr7GzY2ZPNzcvohCvJQdLm9zCqs5rXsceCWSZKzWJWunZcL2oECUTLahDemK6OfakPjp2K40Dv
-	4faewTZ2cX9QCLYu/IT5j64FWUxztR2o8YwCahVb5cKlWC3eysahvVo4OvD4UqoWpiyFjKYkBkB
-	SYbJ7EXrMBwwJb2sbQp1kcEDXMI4Yy6pmfMZzjqUfF40p5+el2ZQL9EeXTGE9M35UYKIlSWX4yZ
-	89gvTQJ/waxLyz/pc2vKIvEBelmyZnLC8RmXElpSP30dBFyQX7pMb1fkwKWmIF7vNhd0Wucn7jq
-	i+fE+ZSOMASDS17ex01EZejRP+EY0R7KZ00Gb/uHoSL16n6vnBWXGGGChd6Z3OZPoyY2GFkPjCe
-	xbIvoIeTO9iu1TzpeU9SVvCTRSkeXW6vOCDgkqXPfUuUh/Ym7r/9k+7kq5gfLIQrs2Gczh4PpN4
-	+wBaOxH8CjjzTuZs81S8h+eqjTk0a8X6R7Hia0YzbW558yKrf80IT/ZBXbwCDGtuH
-X-Received: by 2002:a05:690c:6d84:b0:8ae:b617:7113 with SMTP id
- 00721157ae682-8b05ae92339mr32919307b3.6.1791479235462; Thu, 08 Oct 2026
- 10:07:15 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="nTobY/78"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id CCCD51F000FF;
+	Thu,  8 Oct 2026 17:28:03 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1791480484;
+	bh=QbSNvMSvd0vDRp1ZmrnAQYBIpsOVj4OsTYhiY+DWIbY=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=nTobY/78fdjTLcGSs5RDAMqDcO93rZw23LYOSNVKY/4b9bCqWE06l7Lp7VKW/AMth
+	 DRcd4lM1SA1s6Tz1vTIkwZTBwuTNh9OFOhoYlPj4xzEYqi2VJTgEXOBqDfrMp94ncF
+	 skWPEadT1P8kl/vJHgi9Rl+lkqirclsq9Poa9o7bpqHE6affCsuQ4QnS4FJsII2+Fb
+	 Ldzrt2fOLZ1rLXCtf+a6UL0jggFsCNVDXpW7hL6591nZS1zQ0chCuZmg4YMfjfMtCZ
+	 S2EW7N+/61+lFwX+RpqUZ5vbwnZPs9KiYYpeTJ3d3gZstURt9KwIMBTSQXg9TGy4BH
+	 JOYJOGlnPixIQ==
+Date: Thu, 8 Oct 2026 20:28:00 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Kyle Zeng <kylebot@openai.com>, dhowells@redhat.com
+Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-security-module@vger.kernel.org, dhowells@redhat.com,
+	outbounddisclosures@openai.com
+Subject: Re: [PATCH] keys: make keyring indexes independent of kernel
+ addresses
+Message-ID: <asfSoKL_0NreaEnz@kernel.org>
+References: <20261006223746.48940-1-kylebot@openai.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-References: <20261008132532.1155166-1-matthewg@nvidia.com> <20261008132532.1155166-2-matthewg@nvidia.com>
-In-Reply-To: <20261008132532.1155166-2-matthewg@nvidia.com>
-From: Ilias Apalodimas <ilias.apalodimas@linaro.org>
-Date: Thu, 8 Oct 2026 20:06:39 +0300
-X-Gm-Features: AclHuK_axRHHNMJXbXP5qGzIg8glDqrcsSviR3SuESczjar1LzYO3sHRH5FmG7w
-Message-ID: <CAC_iWjJJMgTCPwmVA+vhDq+qfh5U36TbBiqyzPaKeDxTaYjqsQ@mail.gmail.com>
-Subject: Re: [PATCH 01/17] tpm: Define a kernel-owned TPM NV index that can't
- be modified by userland
-To: Matthew Garrett <matthewg@nvidia.com>
-Cc: mjg59@srcf.ucam.org, keyrings@vger.kernel.org, 
-	James.Bottomley@hansenpartnership.com, linux-integrity@vger.kernel.org, 
-	rafael@kernel.org, linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261006223746.48940-1-kylebot@openai.com>
 
-Hi Matthew,
-
-On Thu, 8 Oct 2026 at 16:25, Matthew Garrett <matthewg@nvidia.com> wrote:
->
-> TPM NV indexes can be used for various purposes, including using them as
-> PCRs without depleting the limited number of hardware PCRs. It would be
-> beneficial to have one that's under control of the kernel in order to be
-> able to prove whether certain TPM operations occurred within the kernel
-> or not.
->
-> Reserve NV index 0x014c4853 for use by the kernel, and filter commands
-> submitted through /dev/tpm* and /dev/tpmrm* so that userspace cannot
-> undefine or modify it. Blocking definition is more awkward so let's
-> allow that for now, not being able to modify it means there's nothing
-> interesting they can do there. The filter simply validates which handle
-> the relevant set of commands is referring to and returns -EPERM if it's
-> the kernel one.
->
-> NV indexes are from allocated ranges and this is a range allocated to
-> Linux, so there should be no userland depending on the ability to access
-> this - but let's gate it behind a default N config option anyway.
-
-I think the idea is useful overall.
-
->
-> Signed-off-by: Matthew Garrett <matthewg@nvidia.com>
+On Tue, Oct 06, 2026 at 03:37:46PM -0700, Kyle Zeng wrote:
+> KEYCTL_READ returns the serial numbers in a keyring in associative-array
+> traversal order.  The first word of the index is a public, deterministic
+> hash of the type pointer, domain pointer and description.  An unprivileged
+> user can therefore insert keys with known descriptions, predict their
+> order for each possible KASLR slide, and recover the kernel image address.
+> On an x86-64 build with 16 MiB alignment, 45 user keys suffice to
+> distinguish the candidate slides.
+> 
+> Remove the addresses from the whole index, not just its first hash word.
+> Assign each key type and domain a nonzero 64-bit ID and hash those IDs and
+> the description with a once-initialized SipHash key.  Use the full IDs in
+> the later index chunks as well.  Truncating or hashing the IDs there would
+> lose the guarantee that distinct type/domain/description tuples have a
+> differing index bit.
+> 
+> Allocate IDs lazily since private key types need not be registered.  Cache
+> them in the index key so tree walks and copies of an existing index do not
+> need to dereference a type descriptor that may have been unregistered.
+> Keep the 32-bit chunk layout and diff_objects() bit offsets consistent,
+> and retain the separate root slot for keyrings used by recursive search.
+> The key comparison, permissions and userspace data format are unchanged;
+> only the address-dependent in-memory ordering is replaced.
+> 
+> Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
+> Assisted-by: Codex:gpt-6-astra
+> Signed-off-by: Kyle Zeng <kylebot@openai.com>
 > ---
 
-[...]
+I personally am for this approach  but I'd like to have ACK or feedback
+from David for this before moving further.
 
-> +static bool tpm2_dev_cmd_is_blocked(const u8 *buf, size_t bufsiz)
-> +{
-> +       const struct tpm_header *header = (const void *)buf;
-> +       size_t len = min_t(size_t, be32_to_cpu(header->length), bufsiz);
+David, please take a look at this.
 
-I haven't read the entire code base but don't you have to check bufsiz
-and make sure it's a valid header before dereferencing header->length?
+>  include/linux/key-type.h |   1 +
+>  include/linux/key.h      |   5 ++
+>  security/keys/keyring.c  | 145 +++++++++++++++++++++------------------
+>  3 files changed, 83 insertions(+), 68 deletions(-)
+> 
+> diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+> index bb97bd3e5af4..c4f329b6ae3f 100644
+> --- a/include/linux/key-type.h
+> +++ b/include/linux/key-type.h
+> @@ -161,6 +161,7 @@ struct key_type {
+>  				     const void *in, const void *in2);
+>  
+>  	/* internal fields */
+> +	atomic64_t		index_id;	/* Opaque keyring index ID */
+>  	struct list_head	link;		/* link in types list */
+>  	struct lock_class_key	lock_class;	/* key->sem lock class */
+>  } __randomize_layout;
+> diff --git a/include/linux/key.h b/include/linux/key.h
+> index 81b8f05c6898..e40b5267658f 100644
+> --- a/include/linux/key.h
+> +++ b/include/linux/key.h
+> @@ -107,6 +107,7 @@ struct keyring_name;
+>  
+>  struct key_tag {
+>  	struct rcu_head		rcu;
+> +	atomic64_t		index_id;	/* Opaque keyring index ID */
+>  	refcount_t		usage;
+>  	bool			removed;	/* T when subject removed */
+>  };
+> @@ -129,6 +130,8 @@ struct keyring_index_key {
+>  	struct key_type		*type;
+>  	struct key_tag		*domain_tag;	/* Domain of operation */
+>  	const char		*description;
+> +	u64			type_id;	/* Cached index IDs */
+> +	u64			domain_id;
+>  };
+>  
+>  union key_payload {
+> @@ -251,6 +254,8 @@ struct key {
+>  			struct key_type	*type;		/* type of key */
+>  			struct key_tag	*domain_tag;	/* Domain of operation */
+>  			char		*description;
+> +			u64		type_id;
+> +			u64		domain_id;
+>  		};
+>  	};
+>  
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index 15bf4af8f282..c03e394b885d 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -14,6 +14,9 @@
+>  #include <linux/err.h>
+>  #include <linux/user_namespace.h>
+>  #include <linux/nsproxy.h>
+> +#include <linux/once.h>
+> +#include <linux/random.h>
+> +#include <linux/siphash.h>
+>  #include <keys/keyring-type.h>
+>  #include <keys/user-type.h>
+>  #include <linux/assoc_array_priv.h>
+> @@ -147,49 +150,46 @@ static int keyring_instantiate(struct key *keyring,
+>  }
+>  
+>  /*
+> - * Multiply 64-bits by 32-bits to 96-bits and fold back to 64-bit.  Ideally we'd
+> - * fold the carry back too, but that requires inline asm.
+> + * Give key types and domains address-independent identities.  Zero means that
+> + * an ID has not yet been allocated.  As with inode sequence numbers used by
+> + * futexes, this relies on the 64-bit counter not wrapping in a machine's
+> + * lifetime.
+>   */
+> -static u64 mult_64x32_and_fold(u64 x, u32 y)
+> +static u64 key_index_id(atomic64_t *id)
+>  {
+> -	u64 hi = (u64)(u32)(x >> 32) * y;
+> -	u64 lo = (u64)(u32)(x) * y;
+> -	return lo + ((u64)(u32)hi << 32) + (u32)(hi >> 32);
+> +	static atomic64_t next_id;
+> +	u64 old, new;
+> +
+> +	old = atomic64_read(id);
+> +	if (likely(old))
+> +		return old;
+> +
+> +	do {
+> +		new = atomic64_inc_return(&next_id);
+> +	} while (WARN_ON_ONCE(!new));
+> +
+> +	old = 0;
+> +	if (!atomic64_try_cmpxchg_relaxed(id, &old, new))
+> +		return old;
+> +	return new;
+>  }
+>  
+>  /*
+> - * Hash a key type and description.
+> + * Hash a key type, domain and description.  KEYCTL_READ exposes the tree's
+> + * traversal order, so no part of the index may contain kernel addresses.
+>   */
+>  static void hash_key_type_and_desc(struct keyring_index_key *index_key)
+>  {
+> +	static siphash_key_t hash_key __read_mostly;
+>  	const unsigned level_shift = ASSOC_ARRAY_LEVEL_STEP;
+>  	const unsigned long fan_mask = ASSOC_ARRAY_FAN_MASK;
+> -	const char *description = index_key->description;
+> -	unsigned long hash, type;
+> -	u32 piece;
+> +	unsigned long hash;
+>  	u64 acc;
+> -	int n, desc_len = index_key->desc_len;
+> -
+> -	type = (unsigned long)index_key->type;
+> -	acc = mult_64x32_and_fold(type, desc_len + 13);
+> -	acc = mult_64x32_and_fold(acc, 9207);
+> -	piece = (unsigned long)index_key->domain_tag;
+> -	acc = mult_64x32_and_fold(acc, piece);
+> -	acc = mult_64x32_and_fold(acc, 9207);
+> -
+> -	for (;;) {
+> -		n = desc_len;
+> -		if (n <= 0)
+> -			break;
+> -		if (n > 4)
+> -			n = 4;
+> -		piece = 0;
+> -		memcpy(&piece, description, n);
+> -		description += n;
+> -		desc_len -= n;
+> -		acc = mult_64x32_and_fold(acc, piece);
+> -		acc = mult_64x32_and_fold(acc, 9207);
+> -	}
+> +
+> +	get_random_once(&hash_key, sizeof(hash_key));
+> +	acc = siphash(index_key->description, index_key->desc_len, &hash_key);
+> +	acc = siphash_3u64(index_key->type_id, index_key->domain_id, acc,
+> +			   &hash_key);
+>  
+>  	/* Fold the hash down to 32 bits if need be. */
+>  	hash = acc;
+> @@ -209,7 +209,7 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
+>  
+>  /*
+>   * Finalise an index key to include a part of the description actually in the
+> - * index key, to set the domain tag and to calculate the hash.
+> + * index key, to set the domain tag and index IDs, and to calculate the hash.
+>   */
+>  void key_set_index_key(struct keyring_index_key *index_key)
+>  {
+> @@ -225,6 +225,14 @@ void key_set_index_key(struct keyring_index_key *index_key)
+>  			index_key->domain_tag = &default_domain_tag;
+>  	}
+>  
+> +	/* Preserve the IDs when copying an existing key's index.  In
+> +	 * particular, its type may already have been unregistered.
+> +	 */
+> +	if (!index_key->type_id)
+> +		index_key->type_id = key_index_id(&index_key->type->index_id);
+> +	if (!index_key->domain_id)
+> +		index_key->domain_id = key_index_id(&index_key->domain_tag->index_id);
+> +
+>  	hash_key_type_and_desc(index_key);
+>  }
+>  
+> @@ -263,11 +271,14 @@ void key_remove_domain(struct key_tag *domain_tag)
+>  /*
+>   * Build the next index key chunk.
+>   *
+> + * The hash and inline description are followed by the 64-bit type and domain
+> + * IDs, low word first, and then by the rest of the description.
+>   * We return it one word-sized chunk at a time.
+>   */
+>  static unsigned long keyring_get_key_chunk(const void *data, int level)
+>  {
+>  	const struct keyring_index_key *index_key = data;
+> +	const unsigned int id_chunks = sizeof(u64) / sizeof(unsigned long);
+>  	unsigned long chunk = 0;
+>  	const u8 *d;
+>  	int desc_len = index_key->desc_len, n = sizeof(chunk);
+> @@ -279,27 +290,30 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
+>  		return index_key->hash;
+>  	case 1:
+>  		return index_key->x;
+> -	case 2:
+> -		return (unsigned long)index_key->type;
+> -	case 3:
+> -		return (unsigned long)index_key->domain_tag;
+> -	default:
+> -		level -= 4;
+> -		offset = sizeof(index_key->desc) + level * sizeof(long);
+> -		if (desc_len <= offset)
+> -			return 0;
+> -
+> -		d = index_key->description + offset;
+> -		desc_len -= offset;
+> -		if (desc_len > n)
+> -			desc_len = n;
+> -		d += desc_len;
+> -		do {
+> -			chunk <<= 8;
+> -			chunk |= *--d;
+> -		} while (--desc_len > 0);
+> -		return chunk;
+>  	}
+> +
+> +	level -= 2;
+> +	if (level < id_chunks)
+> +		return index_key->type_id >> (level * ASSOC_ARRAY_KEY_CHUNK_SIZE);
+> +	level -= id_chunks;
+> +	if (level < id_chunks)
+> +		return index_key->domain_id >> (level * ASSOC_ARRAY_KEY_CHUNK_SIZE);
+> +	level -= id_chunks;
+> +
+> +	offset = sizeof(index_key->desc) + level * sizeof(long);
+> +	if (desc_len <= offset)
+> +		return 0;
+> +
+> +	d = index_key->description + offset;
+> +	desc_len -= offset;
+> +	if (desc_len > n)
+> +		desc_len = n;
+> +	d += desc_len;
+> +	do {
+> +		chunk <<= 8;
+> +		chunk |= *--d;
+> +	} while (--desc_len > 0);
+> +	return chunk;
+>  }
+>  
+>  static unsigned long keyring_get_object_key_chunk(const void *object, int level)
+> @@ -330,6 +344,7 @@ static int keyring_diff_objects(const void *object, const void *data)
+>  	const struct keyring_index_key *a = &key_a->index_key;
+>  	const struct keyring_index_key *b = data;
+>  	unsigned long seg_a, seg_b;
+> +	u64 diff;
+>  	int level, i;
+>  
+>  	level = 0;
+> @@ -339,28 +354,22 @@ static int keyring_diff_objects(const void *object, const void *data)
+>  		goto differ;
+>  	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
+>  
+> -	/* The number of bits contributed by the hash is controlled by a
+> -	 * constant in the assoc_array headers.  Everything else thereafter we
+> -	 * can deal with as being machine word-size dependent.
+> -	 */
+> +	/* The inline description contributes one machine-word-sized chunk. */
+>  	seg_a = a->x;
+>  	seg_b = b->x;
+>  	if ((seg_a ^ seg_b) != 0)
+>  		goto differ;
+>  	level += sizeof(unsigned long);
+>  
+> -	/* The next bit may not work on big endian */
+> -	seg_a = (unsigned long)a->type;
+> -	seg_b = (unsigned long)b->type;
+> -	if ((seg_a ^ seg_b) != 0)
+> -		goto differ;
+> -	level += sizeof(unsigned long);
+> +	diff = a->type_id ^ b->type_id;
+> +	if (diff)
+> +		return level * 8 + __ffs64(diff);
+> +	level += sizeof(u64);
+>  
+> -	seg_a = (unsigned long)a->domain_tag;
+> -	seg_b = (unsigned long)b->domain_tag;
+> -	if ((seg_a ^ seg_b) != 0)
+> -		goto differ;
+> -	level += sizeof(unsigned long);
+> +	diff = a->domain_id ^ b->domain_id;
+> +	if (diff)
+> +		return level * 8 + __ffs64(diff);
+> +	level += sizeof(u64);
+>  
+>  	i = sizeof(a->desc);
+>  	if (a->desc_len <= i)
+> -- 
+> 2.53.0
+> 
 
-> +       u32 cc;
-> +       int i, index;
-> +
-> +       if (len < TPM_HEADER_SIZE)
-> +               return false;
-> +
-> +       cc = be32_to_cpu(header->ordinal);
-> +
-> +       for (i = 0; i < ARRAY_SIZE(tpm2_nv_modify_cmds); i++) {
-> +               size_t offset;
-> +
-> +               if (tpm2_nv_modify_cmds[i].cc != cc)
-> +                       continue;
-> +
-> +               offset = TPM_HEADER_SIZE +
-> +                        tpm2_nv_modify_cmds[i].handle * sizeof(u32);
-> +               if (len < offset + sizeof(u32))
-> +                       return false;
-> +
-> +               index = get_unaligned_be32(&buf[offset]);
-
-nit, but get_unaligned_be32() returns a u32, might as well define the
-index as such
-
-> +
-> +               if (index == TPM2_KERNEL_NV_INDEX)
-> +                       return true;
-> +       }
-> +
-> +       return false;
-> +}
-> +#else
-> +static inline bool tpm2_dev_cmd_is_blocked(const u8 *buf, size_t bufsiz)
-> +{
-> +       return false;
-> +}
-
-[...]
-
-Regards
-/Ilias
+Br, Jarkko
