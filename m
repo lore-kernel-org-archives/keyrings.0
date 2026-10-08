@@ -1,153 +1,124 @@
-Received: from mail-lj1-f181.google.com (mail-lj1-f181.google.com [209.85.208.181])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 04EA44D9F74
-	for <keyrings@vger.kernel.org>; Thu,  8 Oct 2026 15:40:56 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.208.181
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1580B4A4829;
+	Thu,  8 Oct 2026 15:56:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791474059; cv=none; b=Y4sM5rgNb4ehx5KRlGlNBuBkcnPfMn1YpApnL3eodwGwH1XfmtlH9+OStT7n8XzDnhNHscURPSIN4Gby6n5qq0xnbB6igbDgKT2D8Y3NVtTuaO/UFDuck+VfGcJcTMATjv2ihzvOHjaenOt4Ha+362Wbs9Wb6BsniVhp13nLxmk=
+	t=1791475007; cv=none; b=ePXukucp544rBjKUKhmO6lQXrCWLntvCEYGfS0oQaB4K6A9roMeQ1faLwhz2TRFo8lP5CmxffLYfsNTq1Ytj7rRSQZh/Ta5CQATGWOdyKtPSqpYwrNS06ccisbEjd3CX4S1LxLA/xefQEStehiXZ+WQxMTe5OaVdGb/nfQ6Sy/w=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791474059; c=relaxed/simple;
-	bh=XcA+nLpj94/DJ/Rraklqza+8j4Qcoc86Vhgyq9rdRJc=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 Content-Type:MIME-Version; b=f5JeflnDdAgc91zzUNOUMfr51t4NzM2TBXTCPrSdgdJR6fdz94m23yCfSpix+UHlBE9c2SB6gaMbDQ4wwMemm5/ihS9Xuyyv3of05Fa7gXuSwnsrNUng/c1R+6uiEzsfFrqvdG+cWZzFc6iPXMdHi86PW12iNxjACZiLCPZuVPM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=toxicpanda.com; spf=pass smtp.mailfrom=toxicpanda.com; dkim=pass (2048-bit key) header.d=toxicpanda.com header.i=@toxicpanda.com header.b=ZO275+t/; arc=none smtp.client-ip=209.85.208.181
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=toxicpanda.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=toxicpanda.com
+	s=arc-20240116; t=1791475007; c=relaxed/simple;
+	bh=4T7+kwqeLF1iaqtHRRItlcp3UQ9M8yFbOlUgCboL7Zo=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=SVh6JWh3QJGIWb8GTxcOej+sfd/CJDeVkaH0SV818eRxqqGthsrLWugbFWTG15Tpdkn0ARVe400fePf5g3xP2WXmkfYqBcP2nf6TlhxmTbUJbYi6rkr5yvKJQNsGAH9VfPzKLJ1dIBi2us4wEsHjqfPYUEzB+c5ZH59FK+IQAk8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=DOopBNKS; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=toxicpanda.com header.i=@toxicpanda.com header.b="ZO275+t/"
-Received: by mail-lj1-f181.google.com with SMTP id 38308e7fff4ca-3a980c01033so41099801fa.3
-        for <keyrings@vger.kernel.org>; Thu, 08 Oct 2026 08:40:56 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=toxicpanda.com; s=google; t=1791474055; x=1792078855; darn=vger.kernel.org;
-        h=mime-version:content-transfer-encoding:content-type:references
-         :in-reply-to:message-id:date:subject:cc:to:from:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=Qg3REX0qNPfLJEc1GEYkRVmVRk5EMast5JpkHxdhxbk=;
-        b=ZO275+t/DUVWDWIWddvW08EnNAla5QG5HRaw/WrR2CPI/WlxsRzs1uvQxEr+eHKiX8
-         FDYOAZcDR2GAklNBoF4mE5TJ/z/A63yoD66P6HYQd1N5jDO0Q98SYqsRS6L9dyftyNRi
-         GwvyJgB9bxhujZ2cROIMYrHx35wWL8YL0A9shoeTr1WZ0ZftMIiqOBB23rjEGiJp4gqs
-         LrFwVG6gMI/t1S0IfJdrrEw+e2bX51tk2pmPFtjof+UNsFidTWbZQSzxDtfcFX3hvKTX
-         Y/NkkqgTW/s53r/Jd8tcZrP66P0zjYmU+xwR+TrGS52ogOddYFqEyO5FlEXVg/qIzYpi
-         ia0g==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791474055; x=1792078855;
-        h=mime-version:content-transfer-encoding:content-type:references
-         :in-reply-to:message-id:date:subject:cc:to:from:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=Qg3REX0qNPfLJEc1GEYkRVmVRk5EMast5JpkHxdhxbk=;
-        b=MFV5aqOpxnTa6Do0VSJkkSKgm/forwHs6oNRwQ7FPFPpoJv028Ywf7bffmQK3FMCL8
-         3JGowZHBJALitFeSSVwM8X60ozch4YUo6kYRBi4Y40SbLQxXgJJrL6tsD57fmnRS2VxD
-         OEccseAuQ70FXoL/Ijtd9kyASJ3uQ+z4kIFSiKE/E6KlwVaOsJFkK3KCbQpYpI0KvHwi
-         QnL2lxtMd/Y8i/2h6ocalhLpss4AHwtaElNnlSlP2LDLub7N3rLzjSyId79KutC38Y3X
-         9Zd+bxj8CbgNOneEzIoPMeE3JL1QvFqI+a7I7WsT4vG3SwgZex6dpvzJy1H0sxHbJMOf
-         EEOw==
-X-Forwarded-Encrypted: i=1; AKwUvBwjPW72jgQgT9OFqyNxvZb5Q8RlJ5HvC0s6N5mgY2PJ0gg5Q4f5KgrhT/3adt6EyUN4rHmjc20h8A==@vger.kernel.org
-X-Gm-Message-State: AFq9FYKQFxJINyeVQnES2fZBf7qm4BahOsCcO1LhMJlwDZwX0ENOKvbn
-	9vC5FKj/kT2ms9XdKBChdFT5prc2usmM1GEXwLD7QYR57CEicRE1cFGHHpB4NkSblLg=
-X-Gm-Gg: AYBFou1MH2yl8tvr8e//ZvHffQUOb4f+PuMdYse7lUlvaT147wcyIqIkjkmyacME0I/
-	hc6D/+hoN0+lB1lkoLZ7vGl809TzeIhRx32+rnrhdYGXv7PMoj4VsHMI1JwKXRo25cjhEJ5lGpj
-	sr62em1R4McgXb6SoWccw0A1M6mnsVjInJ+nn1noNf/QXqgjIbftVk8XjGKE9JzQUs3qhIjEsPc
-	mWydpqe4CJ4b8qFSowdrlm/x8bPq9GHVuzGdZTC/8PG3m7xfrNmuvKmF3R92nI3I6/cjz8qcXTZ
-	Q8ymjVxvTdyeV4hOWoz7B4WsVe7/nQ6rt6vsk/GcocVHDEN4xHrRt4xsWVcJMZA4zq4wu311hCo
-	ZwOXo5hiey799AkcukQsEgKz4MDKPG7yn8HbfDSXf6FV7hFN/5LzSpFePVg/ilpJL+W8LU/Ffkh
-	Ob7aLcfgboo7UHvxb0s4M7VaR6FWh0C891HKMnwx/hdq09ZLEpFtGTUeZbf2pTGQmRDO8P3uLmE
-	R3lsMkPF6KlZw8=
-X-Received: by 2002:a05:6512:a83:b0:5b8:fa05:e49c with SMTP id 2adb3069b0e04-5bcd0702f0amr2360032e87.34.1791474054654;
-        Thu, 08 Oct 2026 08:40:54 -0700 (PDT)
-Received: from toxicpanda.com ([153.61.196.251])
-        by smtp.gmail.com with ESMTPSA id 2adb3069b0e04-5bcd309dab7sm1398142e87.75.2026.10.08.08.40.53
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 08 Oct 2026 08:40:53 -0700 (PDT)
-From: Josef Bacik <josef@toxicpanda.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Paul Moore <paul@paul-moore.com>, Christian Brauner <brauner@kernel.org>,
- James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
- Jarkko Sakkinen <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>,
- Serge Hallyn <sergeh@kernel.org>, linux-security-module@vger.kernel.org,
- linux-kernel@vger.kernel.org, keyrings@vger.kernel.org,
- linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] capabilities: close the ways around the CAP_SETFCAP
- rule for uid 0
-Date: Thu, 08 Oct 2026 15:39:30 +0000
-Message-ID: <179147397027.4.15064782992163283819@toxicpanda.com>
-In-Reply-To: <asehZEWAwsJcbqvM@hallyn.com>
-References: <20261006-b4-setfcap-userns-v1-0-f47e7ed66072@toxicpanda.com>
- <asehZEWAwsJcbqvM@hallyn.com>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="DOopBNKS"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 082A71F000FF;
+	Thu,  8 Oct 2026 15:56:44 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1791475005;
+	bh=t/k6GBykoXXVVoctwLm8isejRieFbFuiEFi85fJbtkw=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=DOopBNKS6yal4lzmfYSh/GV3nywKxLzLrX2CjGpOtbTLj+Bo+jGJPN8a/2xVmqxXl
+	 I2UOMs6WCThc+spuZ6DNCeAQWMC5t+dIXmzb4Olg5kQw5a6T0AC4uAT4+gmYPq7nW+
+	 eg5cakOMYQKJhFbrrS5x9xHBxW32txP0bRr5v2cPturlh5Gm9k3Suil89ips4jn5vu
+	 8txFCM4DnlAIIYeFF2XzCssFGXolLNkJzk76BwNaTLEuB0PFFJ4UnqcKY6H4WBqoHv
+	 Cwa2tKcDW9yWOAu5MRqcbLOKFPl5Ervl2qpLBFBEekQwz/hEVTsuUyAz/4TPQl4cH+
+	 ACEkDx1UqtTVw==
+Date: Thu, 8 Oct 2026 18:56:41 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Matthew Garrett <matthewg@nvidia.com>
+Cc: mjg59@srcf.ucam.org, keyrings@vger.kernel.org,
+	James.Bottomley@hansenpartnership.com,
+	linux-integrity@vger.kernel.org, rafael@kernel.org,
+	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Make hibernation work with lockdown
+Message-ID: <ase9OQGWtEvDp0qH@kernel.org>
+References: <20261008132532.1155166-1-matthewg@nvidia.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261008132532.1155166-1-matthewg@nvidia.com>
 
-On Thu, Oct 08, 2026 at 08:57:56AM -0500, Serge E. Hallyn wrote:
-> Would you mind describing what other solutions you considered?  I've been
-> looking over this set since Tuesday, and finding it hard to reason about.
-> (Part of that is certainly the nature of the problem, and it's possible
-> that this is the best/simplest solution.)
+On Thu, Oct 08, 2026 at 06:20:16AM -0700, Matthew Garrett wrote:
+> Hibernation writes out the full system state to disk in an unencrypted 
+> and unauthenticated manner. Resuming from hibernate reads that data and 
+> throws it directly into RAM, then jumps into it. This is effectively an 
+> entirely unauthenticated mechanism for putting whatever you want into 
+> kernel space. This violates the assumptions around lockdown (root can 
+> write whatever they want to the swap partition and then trigger a 
+> resume), and as such lockdown blocks hibernate.
+> 
+> This has made many people unhappy.
+> 
+> This patchset seeks to solve this problem. In order for hibernation to 
+> be trustworthy we need to be able to prove that the image was generated 
+> by the kernel and not modified after that. This is not an easy task, and 
+> requires some infrastructural framework. To that end, this patchset does 
+> the following:
+> 
+> 1) Co-opts a TPM NV index for the kernel's sole use. This is currently a 
+> placeholder and we should register one explicitly from an appropriate 
+> range in order to ensure that we don't conflict with userland.
+> 
+> 2) Does something horrifying with PCR 5 in order to prove that a given 
+> kernel supports (1). We need to extend and cap a PCR before userland is 
+> running in order to prove that the kernel has support for this feature, 
+> but since we don't currently cap any PCRs there's nothing stopping 
+> userland from doing the same and so achieving the same state. The way 
+> around this is to rely on a feature of PCR 5 - it is extended as a 
+> result of ExitBootServices being called, and since the boot stub can 
+> execute code before that happens we can perform the proof extension 
+> there and then have it implicitly capped by the firmware's extension.
+> 
+> 3) Adds support for audited TPM sessions in the kernel, allowing us to 
+> generate signed digests of the commands that were executed in that 
+> session and their results
+> 
+> 4) Adds support for generating a predictable AK that can be used to sign 
+> digests from those audit sessions
+> 
+> 5) Adds support for generating a TPM signing key in such a session, and 
+> using the signed digest to prove that the session took place in the 
+> kernel
+> 
+> 6) Signs the hibernation image with such a key
+> 
+> An old kernel that doesn't implement (1) won't be able to mimic the same 
+> PCR 5 value. Userland won't be able to mimic the NV index value because 
+> the kernel will block it. This means that the only way that key could 
+> have been created is by the kernel, and so we can trust that the image 
+> was generated by the kernel.
+> 
+> QUESTIONS:
+> 
+> 1) I haven't tried to make the key management generic, since this isn't 
+> intended to ever be exposed to userland in any way. Should it be 
+> integrated into the trusted keys layer anyway?
 
-Everything we looked at kept the state in the cred.  We model checked
-the variants before writing the code, and these fell over:
+If we don't have a use case, I don't think so...
 
-- a bool per cred for "had CAP_SETFCAP over the parent when it entered".
-  It breaks on two hops: setns() into a namespace that maps 0, unshare
-  again, and the bool says yes for the second namespace.  Hence the
-  level.
-- checking only at uid_map write time.  That misses setxattr of
-  security.capability in a namespace that already maps 0, hence patch 4.
+> 
+> 2) Filtering TPM commands from userland isn't ideal - anyone able to 
+> poke commands into the TPM directly is in a position to violate the 
+> assumptions here. Is there any way we can get a secret into the kernel 
+> that can be used as an auth value? It would need to be impossible to 
+> obtain from userland and it would need to be consistent over platform 
+> reboots.
 
-We didn't look at keeping the state on the namespace.
+We could generate a primary key and a keyedhash key that would be stored
+outside kernel while data is at rest. Then during power on they could be
+read to the kernel memory.
 
-> If we replaced the userns->parent_could_setfcap bool with a ref to the
-> creator's cred, then at both setns and write we could check the actor's
-> credentials, right?  There are probably issues with that specific idea,
-> but that's why it would be good to see what else you've considered.
+I did not consider who would create the files in the first place.
 
-Checking at write time alone doesn't work: once a task is inside the
-namespace its cred says nothing about what it could do outside, so a
-joiner and the creator look the same.
+I neither did look at the code yet meaning that my comments should
+definitely be taken with a grain of salt. Just writing down a remark.
 
-It does work if setns() refuses to join a namespace that maps, or can
-still map, the parent's uid 0 unless the joiner has CAP_SETFCAP over the
-parent.  Then everybody in a namespace has the same reach, and it can be
-a level stored on the namespace at create time instead of a cred ref,
-which would pin keyrings and the rest for the life of the namespace.
-The checks would be setns(), the map write (opener and writer are in the
-parent, so a plain capable check), setxattr of security.capability, and
-ptrace.
-
-The difference in behaviour is that the -EPERM moves to setns(): a root
-task without CAP_SETFCAP couldn't enter a root-owned container that maps
-host uid 0 at all, where with this series it can enter and is refused
-only for the map, fscaps and ptrace.  I can prototype it if you prefer
-that.
-
-> Of course UID 0 will always continue to carry privileges even with an
-> empty cap_eff.  Here we're stopping it from writing filecaps to uid 0
-> owned files, but if it can open a 0 owned file on the host, like
-> /bin/sh or a systemd init file, or ptrace a process (in a child ns that
-> maps parent uid 0) doing so, it can still cause damage.  My point being,
-> we do need to keep in mind the tradeoff of keeping the code simple
-> versus the realistic threat of the problem being addressed.
-
-On the same kernels, the restricted root task can copy a binary and
-chmod 4755 it (it owns it, no capability needed), and a uid 1000 user
-runs it with a full CapEff.  With SECBIT_NOROOT that setuid copy gives
-uid 1000 nothing, while the fscap file still gives it what's in the
-xattr on an unpatched kernel.  So SECBIT_NOROOT is the case the series
-adds anything for, the same case db2e718a4798 covers.
-
-A smaller version is patches 1, 4 and 5, with cap_root_level() moved
-from 2 into 4.  I built that and ran the same flows: every route that
-ends in a file capability still gets -EPERM and uid 1000 gets nothing.
-The uid 0 map writes refused by 2 and 3 go through again, but the fscap
-write after them is refused.
-
-Let me know which way you'd like to go and I'll rework it.
-
-Thanks,
-Josef
+Br, Jarkko
