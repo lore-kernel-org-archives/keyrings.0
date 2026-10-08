@@ -1,134 +1,144 @@
-Received: from mail-yx1-f47.google.com (mail-yx1-f47.google.com [74.125.224.47])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 44A1B43CE65
-	for <keyrings@vger.kernel.org>; Thu,  8 Oct 2026 20:58:09 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.224.47
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AEB79357D08;
+	Thu,  8 Oct 2026 20:58:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791493091; cv=none; b=ce69qb7FUoQb48No2kfUF5cGZOn1553EqC44r8AT4bOQeFW1IJvTlzz13DsRK0BT4Ap95fRrWqFxmkQLHq468FHpB4azI+BqLUaajTj98yJSzTLT247QuMjyEhW5ZAn5pilgu3eZPjgDQ9U/bgaaRk5PFgbHFR66xIDrzP/3tEI=
+	t=1791493126; cv=none; b=hxx9s1OniTOGrdG06Wt/IYJ0DASvPlA4nlCKDEPmTOoeg9N8DHO2xoiy/zi13Fl6p61NAEaDjX/F2jI4JpMKSbj06tDYoM3vGeVsaKJbJ23JqP4velBHV6IAkEYhxyQYlPMvrP1AkGdLYoxFUgJTR36ocKQMNGBQEa8Ac4GWGns=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791493091; c=relaxed/simple;
-	bh=vQAwyxNj3AED0ZWDQ7B3q4d5Ag5/7cRBweYxf4EerGQ=;
-	h=From:Date:Subject:MIME-Version:Content-Type:Message-Id:References:
-	 In-Reply-To:To:Cc; b=svN6/LCyE2AATAClLpO8y1595TS6nKk7rcAGXs6+KxTlugveXHTFzQIK4+nwOh2JVJX8LruFwxpHT8kOV1TMvE2F/9VsP3yZA7HUsQ0dG6RSY0node3EZCliklz/drq2RlI6ioTYR8oaKgaypMMZOwv40rAt1cpN9Ng6Uk7Iyts=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=amutable.com; spf=pass smtp.mailfrom=amutable.com; dkim=pass (2048-bit key) header.d=amutable-com.20251104.gappssmtp.com header.i=@amutable-com.20251104.gappssmtp.com header.b=MxrzNy9+; arc=none smtp.client-ip=74.125.224.47
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=amutable.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=amutable.com
+	s=arc-20240116; t=1791493126; c=relaxed/simple;
+	bh=lHg/uyQ0fkAT6uAgONudVUOSkjJurJvPC8rGOkEpNx4=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=j0ugSbw9jcFh6y+XV4rYG8vuiY8hB1cPNqhACl8wFYPzULzNLBhgEbKabkg1HPrmkXJGjCJ8rlnUrsNv268QFI08CyE6fKjPyMHvwHzMlT11J5PhKuuXTlzwGEfSbEHQdmbDTY3RTkY4E95LbZRVQ/VgBb1T2i6sNk8cKc9L7TY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=c3zw5MC3; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=amutable-com.20251104.gappssmtp.com header.i=@amutable-com.20251104.gappssmtp.com header.b="MxrzNy9+"
-Received: by mail-yx1-f47.google.com with SMTP id 956f58d0204a3-66c9995ca60so1205737d50.1
-        for <keyrings@vger.kernel.org>; Thu, 08 Oct 2026 13:58:09 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=amutable-com.20251104.gappssmtp.com; s=20251104; t=1791493088; x=1792097888; darn=vger.kernel.org;
-        h=cc:to:in-reply-to:references:message-id:content-transfer-encoding
-         :content-type:mime-version:subject:date:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=LSvHBJQxiIqbp6o9z5pfgV7EhGFvpIA3j/HhyOfsFYA=;
-        b=MxrzNy9+XPKZgP/QHITHgidKnejBpCbBqpde0Jhs8zaDZ8YVcC0/bmDnKthvi8QN7N
-         XA3O6jQt1FITSUNJH1/lcjC5FrPLvMU1GLKEG5KFeSoTg1wFJl7cqPRPvtTJLnjJZTqi
-         nVzlADlP+KdoC+dE/CA8m7BBtHxJKE5VAnPEmYfU36WeVhhtTDSWsevHAfI75wPEQ8u0
-         mLAiZsDSApZH6fNtaB9NS2/gej1wpXBjHpaGLfA9KZVHWcRUmoBfUnqWJauupHmhmykS
-         DKJ7g3T1Hf03AHzIcTFMuRsVtHif8zUYHlF4gRXmUF5H9+7VAUcD/pGLdPIBer445z0L
-         uSjg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791493088; x=1792097888;
-        h=cc:to:in-reply-to:references:message-id:content-transfer-encoding
-         :content-type:mime-version:subject:date:from:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=LSvHBJQxiIqbp6o9z5pfgV7EhGFvpIA3j/HhyOfsFYA=;
-        b=QRstKXLFxSzBCjtJgB7dfjtunJgPtciwg6tE6pXZorH4bzOBWaWA/PMa4gigzFUkgS
-         2p1R/KsJ8+UPpsi7YU7Jdm/sJ+RRso3KhKLeggihEpWgguqLl/ZWQnlMy024Vp+7mi7T
-         gTtKKAvAFM3H/E2+EuKxFkrC6iXa77YVyw1pPnbT8pTfwnUNfe3GbOipFCHXdCrPDX51
-         6fO5N3/AIBjvI9YJkBxUipPvMKrsh8p79ZKz/IirohmjdqpTcqzlVm0C3+RzKZeO0nqw
-         ziXLcaTrnFVSELeCYIGFTFdEMGQKJp13ITiP66yliJAKiK5aSveJN2+072Tuu8FERlqG
-         zrJw==
-X-Forwarded-Encrypted: i=1; AKwUvBzPLmcmuaV4PAl8DXMrZ7mVcPUd2zOvzO9D3HJvdGc0eQ6xp6/17n0R3273nOqpLzqa/l9uGOZGKA==@vger.kernel.org
-X-Gm-Message-State: AFq9FYLbaOdUrgHKv4Wqk2SlikPhiA/7MqfMVOwqm5QFDEgwW1bmimqT
-	EMYxgYwgY/JfJpI5RVhuCY6xpXcmJzclgi2iCfQzc7pnXDb3/+dexMiyvlen3uOGZvaw
-X-Gm-Gg: AYBFou2sjQ6bVVsrnMRCep5y3MnO9mhv5SVztY4IWWCUI5M28v61sgCIG7Hl4OvUKgN
-	EuZGDqA7l73VGdWEreZUUqQeJnLVJAOqrLBQS/JYvGTesCummyVHURgxmRmEQGzocXh0lNnvl26
-	3Jgy3uIsGBG7qxDdvE+rj5K3UdBBGMnkPmCWRIZn97Wnj5p8uZ1Np/XA85JiIxp0B9NRv2XRon2
-	Z/4BG5IvMMluxeEBcXnhqfTU7RGUJNFNFVf5l5UbKJXtAJeyXKw9IcSNNKtJ/vPPZNbsG6EfiAW
-	SNyI5Y0V9JsiWEq5kbSnED0QUfYXF0Q3UJsUGUo6iBVW2VHs0ll1InUq88JhMCUKEKCj9pS+E58
-	OGoF0+5f02iYJL71LRBphrZwFbLQQkZDd0xvKc/ZeeUKwwc+4dQ3xT6MfGRNmwybNIR2PdPs9AV
-	Ur8jQYB7fHX79fHf5oAyK/DX7EE1TITfjPLejtQd1NVVpJDsZ+j+7HkMXTUQ8ARZ5WnYNvRVbEM
-	Fuq1EtJ8S1iLi/Bn8tkF6+5ys6yWQ6izx0+yDEkQYKX8pzRPS/Naho=
-X-Received: by 2002:a05:690e:4391:b0:675:6803:98bf with SMTP id 956f58d0204a3-6793628b5b5mr14774d50.45.1791493088070;
-        Thu, 08 Oct 2026 13:58:08 -0700 (PDT)
-Received: from [192.168.1.110] (104-53-165-62.lightspeed.stlsmo.sbcglobal.net. [104.53.165.62])
-        by smtp.gmail.com with ESMTPSA id 956f58d0204a3-67935707401sm78814d50.24.2026.10.08.13.58.06
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 08 Oct 2026 13:58:07 -0700 (PDT)
-From: Andrew Halaney <andrew@amutable.com>
-Date: Thu, 08 Oct 2026 15:57:37 -0500
-Subject: [PATCH bpf-next v2 3/3] Documentation: keys: document IDs added
- since KEY_SPEC_REQKEY_AUTH_KEY
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="c3zw5MC3"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id EB9761F000FF;
+	Thu,  8 Oct 2026 20:58:44 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1791493125;
+	bh=pDwKVy4Aoq1GoydvAush+WkC9ECSHjmdPN6on930qJs=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=c3zw5MC3zAEUmnxFTgRZR2kUn2UNZZEEnfO12xznqShOPXBfsMwZaeCZZN1aACNos
+	 nSonp/nbrMe69otjBlADe3+g63SR07Nk3Q0upHmFtsUvlKJvQOOCFgQA1OvgGaYTNI
+	 wXxJwol8EqS5hit41O6ihQVzQxEsmS7dU+VBlKrJQCMJSSzt1y5LZy66nAbqQRLnhK
+	 u5tANoj3kdmXo80sVPLCrH9FzNTAOPSZvZvzEOLsIkN0jyuiLcORNRbff1iUtf4PpM
+	 Er//1pjI3GjLCybp691L0sDY00dyE40ApqkDnM3puvoxBcZcKjppkW2JmbIQ4nWFZi
+	 GF9GLwMUJbgUQ==
+Date: Thu, 8 Oct 2026 23:58:41 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: adrimg3196@gmail.com
+Cc: linux-kernel@vger.kernel.org, keyrings@vger.kernel.org,
+	dhowells@redhat.com
+Subject: Re: [PATCH v2] KEYS: Fix key_reject_and_link() race with keyring
+ restriction
+Message-ID: <asgEAcvTSQ6PBI_m@kernel.org>
+References: <CACO1+RQ5KXAAbjpiQ=cs0wLZ=z+=JQbW_-pgG+BM0f23W112Tg@mail.gmail.com>
+ <asf5kyDXUQ3z6RMv@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <20261008-ajhalaney-dmverity-key-identifier-v2-3-008456d189cb@amutable.com>
-References: <20261008-ajhalaney-dmverity-key-identifier-v2-0-008456d189cb@amutable.com>
-In-Reply-To: <20261008-ajhalaney-dmverity-key-identifier-v2-0-008456d189cb@amutable.com>
-To: Alexei Starovoitov <ast@kernel.org>, 
- Daniel Borkmann <daniel@iogearbox.net>, Andrii Nakryiko <andrii@kernel.org>, 
- Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@kernel.org>, 
- Mikulas Patocka <mpatocka@redhat.com>, 
- Benjamin Marzinski <bmarzins@redhat.com>, 
- David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, 
- Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, 
- "Serge E. Hallyn" <serge@hallyn.com>, Eric Biggers <ebiggers@kernel.org>, 
- "Theodore Y. Ts'o" <tytso@mit.edu>, Jonathan Corbet <corbet@lwn.net>, 
- Shuah Khan <skhan@linuxfoundation.org>, 
- Randy Dunlap <rdunlap@infradead.org>
-Cc: dm-devel@lists.linux.dev, linux-kernel@vger.kernel.org, 
- keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, 
- bpf@vger.kernel.org, fsverity@lists.linux.dev, linux-doc@vger.kernel.org, 
- Andrew Halaney <andrew@amutable.com>, 
- "Christian Brauner (Amutable)" <brauner@kernel.org>
-X-Mailer: b4 0.14.3
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <asf5kyDXUQ3z6RMv@kernel.org>
 
-The table of special key IDs stops at KEY_SPEC_REQKEY_AUTH_KEY.
-Fill in all the new ones.
+On Thu, Oct 08, 2026 at 11:14:16PM +0300, Jarkko Sakkinen wrote:
+> On Thu, Oct 08, 2026 at 11:18:02AM -0700, adrimg3196@gmail.com wrote:
+> > Jarkko, you're right — v1 arrived without the diff. Here's v2 with the
+> > full patch.
+> 
+> And it would not be your fault if it had gone to my PR as I have
+> ultimate responsibility for that part.
+> 
+> Anyhow, put side-notes under '---'. It's a good place for these
+> as it does not get pulled into the commit log.
+> 
+> For single-patch submission it is also great place to maintain
+> changelog.
+> 
+> > 
+> > The restrict_link check in key_reject_and_link() is done before taking
+> > the keyring semaphore, racing with a concurrent keyring_restrict()
+> > that installs the restriction while holding the semaphore in write
+> > mode.
+> > 
+> > This is the same pattern that commit dd3ea3fc ("KEYS: Fix add_key()
+> > race with keyring restriction") just fixed in __key_create_or_update()
+> > by moving the restrict_link snapshot to after the semaphore is taken.
+> > 
+> > Move the check under __key_link_lock() so a restriction installed
+> > concurrently cannot be bypassed when linking a negative key.
+> > 
+> 
+> Fixes: 5ac7eace2d00 ("KEYS: Add a facility to restrict new links into a keyring")o
+> > Signed-off-by: Adrian Martinez <adrimg3196@gmail.com>
+> > ---
+> Here.
+> >  security/keys/key.c | 17 +++++++++++------
+> >  1 file changed, 11 insertions(+), 6 deletions(-)
+> > 
+> > --- a/security/keys/key.c
+> > +++ b/security/keys/key.c
+> > @@ -588,10 +588,17 @@ int key_reject_and_link(struct key *key,
+> >  	ret = -EBUSY;
+> > 
+> >  	if (keyring) {
+> > -		if (keyring->restrict_link)
+> > -			return -EPERM;
+> > -
+> >  		link_ret = __key_link_lock(keyring, &key->index_key);
+> >  		if (link_ret == 0) {
+> > +			/*
+> > +			 * Check the restriction under the keyring semaphore.
+> > +			 * keyring_restrict() installs it while holding the
+> > +			 * semaphore, so testing it beforehand races with a
+> > +			 * concurrent restriction install (cf. the fix for
+> > +			 * __key_create_or_update()).
+> > +			 */
+> > +			if (keyring->restrict_link) {
+> > +				__key_link_end(keyring, &key->index_key, edit);
+> > +				return -EPERM;
+> > +			}
+> >  			link_ret = __key_link_begin(keyring, &key->index_key, &edit);
+> >  			if (link_ret < 0)
+> >  				__key_link_end(keyring, &key->index_key, edit);
+> 
+> 
+> Looks good to me, thank you.
+> 
+> Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Suggested-by: Christian Brauner (Amutable) <brauner@kernel.org>
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
-Reviewed-by: Christian Brauner (Amutable) <brauner@kernel.org>
-Signed-off-by: Andrew Halaney <andrew@amutable.com>
+So send v3 that addresses:
+
+(141) $ b4 shazam https://lore.kernel.org/keyrings/asf5kyDXUQ3z6RMv@kernel.org/T/#t
+Grabbing thread from lore.kernel.org/all/asf5kyDXUQ3z6RMv@kernel.org/t.mbox.gz
+Checking for newer revisions
+Grabbing search results from lore.kernel.org
+Analyzing 3 messages in the thread
+Checking attestation on all messages, may take a moment...
 ---
- Documentation/security/keys/core.rst | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+  ✓ [PATCH v2] KEYS: Fix key_reject_and_link() race with keyring restriction
+    + Fixes: 5ac7eace2d00 ("KEYS: Add a facility to restrict new links into a keyring")o (✓ DKIM/kernel.org)
+    + Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org> (✓ DKIM/kernel.org)
+  ---
+  ✓ Signed: DKIM/gmail.com
+---
+Total patches: 1
+---
+Applying: KEYS: Fix key_reject_and_link() race with keyring restriction
+Patch failed at 0001 KEYS: Fix key_reject_and_link() race with keyring restriction
+error: corrupt patch at line 31
+hint: Use 'git am --show-current-patch=diff' to see the failed patch
+hint: When you have resolved this problem, run "git am --continue".
+hint: If you prefer to skip this patch, run "git am --skip" instead.
+hint: To restore the original branch and stop patching, run "git am --abort".
+hint: Disable this message with "git config advice.mergeConflict false"
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index 326b8a973828..37ed42382f16 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -372,6 +372,19 @@ process making the call::
- 	KEY_SPEC_GROUP_KEYRING		-6	GID-specific keyring
- 	KEY_SPEC_REQKEY_AUTH_KEY	-7	assumed request_key()
- 						  authorisation key
-+	KEY_SPEC_REQUESTOR_KEYRING	-8	request_key() destination
-+						  keyring
-+
-+There are also values that refer to a specific kernel keyring rather than to
-+anything belonging to the caller.  These keyrings are not linked into any
-+keyring, so a search cannot reach them and the ID is the only way to name
-+one::
-+
-+	CONSTANT			VALUE	KEY REFERENCED
-+	==============================	======	===========================
-+	KEY_SPEC_BPF_KEYRING		-9	the ".bpf" keyring
-+	KEY_SPEC_DM_VERITY_KEYRING	-10	the ".dm-verity" keyring
-+	KEY_SPEC_FS_VERITY_KEYRING	-11	the ".fs-verity" keyring
- 
- 
- The main syscalls are:
+You can retain my reviewed-by and please add fixes tag while at it.
 
--- 
-2.55.0
-
+Br, Jarkko
