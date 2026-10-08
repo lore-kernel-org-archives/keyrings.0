@@ -1,41 +1,42 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A666F35F162;
-	Thu,  8 Oct 2026 17:56:05 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EC1B23AD518;
+	Thu,  8 Oct 2026 17:57:20 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791482166; cv=none; b=t1JfrpnWr92GybJmh11jepMycQuB7wyl75qhjJR7QgF+PkB7vSPwafVpuOBPzLlQdDglpRVIRyiFTstS4wkzcL2HPl6Qz6HLlR9MosE6Df2555ChMY2DVhfcdsZy8ovQ9Dmr/5oVrLc5Sft02mp3GHrOS8EGwtyg0LkVZiamJHg=
+	t=1791482242; cv=none; b=kPRXlpBaqOmEPdGeBi2rXQbVs46NVBdOnXURUlbwlsJIf8y4POLALjgOFAP13HW69jDUzK4gjFfsVbJolDLr8ZRFnX/63J4mErfgkvafkUsqSsyA+2AGTfhfsan7qofgpkdK7HbZnKKdk2gI2sGpJF0wCioq2aYJkrTg+ayJqCM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791482166; c=relaxed/simple;
-	bh=HQZ4gFi5PR+FBjYSBtVkDftACIDoBU7AfOolqYic2JY=;
+	s=arc-20240116; t=1791482242; c=relaxed/simple;
+	bh=ARACZaJWZi6XvED7B1ko9+K4pNkaiSXt1Cyp2r+vidI=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=i0Qi9ThWsZEhqZjolusdmLPYdViHhLOsCFJg6EU1dX6zXYx54Z9nJBnDEA81zIVNtTvQlMIR69YyzLi5Nwf935HLZ7mFT7PnBuCJR1YZQzk383IfPqM45kpKKPcwdz9b1ZwMgDTNNtLQEaadlALpeKnXCOnuWQHCaGHSc9pOUd4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=OfQvSAxw; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=DvXu2SUyZdNyMX8B/YSHDub4HfM9xjDovMD3E9lbBSyVXeBHwzLnCDb4/HvpR3LjnO4grtKwAt4HN3dhoAbFvEaMSX2fM/QYeqU8jd2fm8kZ5gPIlsxPn88Z1KKbkUOqEH3vTIFevckz71Clnwl+jntSkyMkHTIiTClV3bfWC+o=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=H3cn3B+3; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="OfQvSAxw"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 920251F000FF;
-	Thu,  8 Oct 2026 17:56:04 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="H3cn3B+3"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 11DED1F000FF;
+	Thu,  8 Oct 2026 17:57:19 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791482165;
-	bh=fZWzcMj2XJRKRBpiesRoOZzWEEWA3zzLxuCOn1lzEiM=;
+	s=k20260515; t=1791482240;
+	bh=wXKO4mA2Pv6Ty2TKma1XUjYTYNEMbxIkaVkmM6+j5PY=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=OfQvSAxwvEl+kNKczSiVX6Ec+uaqfhu/AjuIalgqK0wnPjmRUYgc1lI4wMvfgYEJB
-	 pncLVRJH6utIM8W/OMpgT/7P+fbVKqT2ebMldeHxvTxxcUYVqKFaXz5/42zE20Y7xz
-	 quBNVuAA4WkYMnbInhQItAGczYYpO2JZdzGiN2EQlraOUsdyxISIljXJzYEBYoEjXH
-	 FU8jteYlIM6r0VmkoNvDgnJe1mUyTEJESnS4SeaN/q0zX5optCQ2G1csm1OLcN8KnU
-	 chlytDMMNIR2R3g20Dh4HARwlXTY/aqzNjUs3OypXzo/if/8HOsViiBUj0eur0WbMa
-	 EykM0XTg4HCMg==
-Date: Thu, 8 Oct 2026 20:56:01 +0300
+	b=H3cn3B+3poQeQztWT2Q42rdQK9TJWkhlUSCiBCw42r1d8o89fWBhEEpvGJlEH307R
+	 OJzGtb2Mhrn0CznVleLi0RUXJksQlfBfqk341tDSI5Sef8w7UaO76wwtaPZYlWlog2
+	 Y4C+JjjIxyWurFbKLeonlPBZiV7plU4yl8fPdODEne00MgFKF48q+wOdahZ4kyZgjr
+	 NwgwHK8yEWuBuamiNwWvfuZvMs1o3jPnuEZ+mVbqF8fEmhP8YyJN5jqDp+/8eOuUWO
+	 ex2ONrX67W7Bwxy/JYKqut3rPQOGAM+PwbnVG8bf6jPnFItK2JoBBhwv6Am1VaEWFZ
+	 sLBXFcqg9sOjA==
+Date: Thu, 8 Oct 2026 20:57:17 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Cen Zhang <zzzccc427@gmail.com>
 Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
-	serge@hallyn.com, keyrings@vger.kernel.org,
+	serge@hallyn.com, sergeh@kernel.org, keyrings@vger.kernel.org,
 	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
 	baijiaju1990@gmail.com, jjzuming@gmail.com
-Subject: Re: [PATCH] keys: Protect the type name while describing a key
-Message-ID: <asfZMToWNmQDTk4W@kernel.org>
-References: <pm-key-management-objects-candidate-0009-v3-43bbf21d1c452f23d829@gmail.com>
+Subject: Re: [PATCH] keys: Avoid the owner account dereference in named
+ keyring lookup
+Message-ID: <asfZfZcusHMRiUYY@kernel.org>
+References: <pm-key-management-objects-candidate-0002-v2-dd6c20a1d92928b33ab7@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -44,125 +45,152 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <pm-key-management-objects-candidate-0009-v3-43bbf21d1c452f23d829@gmail.com>
+In-Reply-To: <pm-key-management-objects-candidate-0002-v2-dd6c20a1d92928b33ab7@gmail.com>
 
-On Thu, Oct 08, 2026 at 02:30:06PM +0800, Cen Zhang wrote:
-> keyctl_describe_key() must keep the key type's name alive until
-> kasprintf() has consumed it. The retained key reference keeps the key
-> and its description alive, but does not pin the module providing its
-> type. The name is passed to kasprintf() without holding key->sem.
+On Thu, Oct 08, 2026 at 02:30:46PM +0800, Cen Zhang wrote:
+> Named keyring lookup must keep the storage containing the owner UID
+> alive through the namespace mapping check.  find_keyring_by_name()
+> reads keyring->user->uid under keyring_name_lock, but that lock protects
+> the keyring's name entry and allocation, not its separate key_user.
 > 
-> kvasprintf() uses the saved name pointer in two formatting passes, with
-> a GFP_KERNEL allocation between them. With AF_RXRPC=m, a task that
-> passes View permission before type retirement can overlap a privileged
-> module unload in this order:
+> A named session-keyring join can overlap a privileged KEYCTL_CHOWN on
+> another CPU.  If the keyring holds the last reference to its old dynamic
+> key_user and the ownership transfer succeeds, the following ordering is
+> possible:
 > 
-> 1. KEYCTL_DESCRIBE looks up the key, saves key->type->name in the
->    kasprintf() arguments and completes the first formatting pass.
-> 2. While the formatter is delayed before its second pass,
->    af_rxrpc_exit() calls unregister_key_type(), which removes the type
->    from the registry and waits for key_gc_keytype().
-> 3. The collector takes key->sem for writing, retypes the retained key
->    to key_type_dead and completes retirement. Unregistration and module
->    exit return, allowing free_module() to release the type and name.
-> 4. The formatter resumes its second pass and reads the saved name from
->    released module storage, which can fault in string().
+>     Named join                         Chown
+>     find_keyring_by_name()              keyctl_chown_key()
+>       read_lock(keyring_name_lock)       down_write(key->sem)
+>       load old keyring->user
+>                                          replace key->user and key->uid
+>                                          up_write(key->sem)
+>                                          key_put(key)
+>                                          key_user_put(old user): free
+>       read old user->uid
+>       read_unlock(keyring_name_lock)
 > 
-> Hold key->sem for reading across kasprintf(). The collector then cannot
-> retype the key or complete retirement until both formatting passes have
-> finished. If retirement wins the lock first, formatting uses the core
-> key_type_dead name instead. Release the semaphore immediately after
-> kasprintf(), including on allocation failure, before copying to
-> userspace.
+> Chown neither takes keyring_name_lock nor key_session_mutex, so it can
+> free the old account between the pointer load and the UID read.  The
+> lookup then reads freed memory even though the keyring itself is alive.
 > 
-> Oops report as below:
+> Use keyring->uid for the mapping check.  key_alloc() initializes this
+> inline owner UID and keyctl_chown_key() updates it on chown.
+> The existing name lock keeps its containing keyring allocated throughout
+> the check, so lookup no longer depends on the account's lifetime.  This
+> also matches the owner UID used by the permission check.
+> 
+> KASAN report as below:
+> 
+>     BUG: KASAN: slab-use-after-free in find_keyring_by_name+0x577/0x5d0
+>     Read of size 4 at addr ffff8881128ae2ec by task keycase/500
 
-Just a small nit. Cut just the snippet of the report that is necessary.
+Similar nit. Not sure but I think even just having these two lines would
+be sufficient or is there something that follows that would be
+meaningful?
 
 > 
->     BUG: unable to handle page fault for address: fffffbfff8054794
->     #PF: supervisor read access in kernel mode
->     #PF: error_code(0x0000) - not-present page
->     PGD 1a7ff6067 P4D 1a7ff6067 PUD 1a7ff2067 PMD 100b0b067 PTE 0
->     Oops: Oops: 0000 [#1] SMP KASAN NOPTI
->     CPU: 0 UID: 0 PID: 500 Comm: key-fixture Tainted: G           O        7.2.0-rc5-pmb-bt-functional-v1+ #1 PREEMPT(lazy)
->     Tainted: [O]=OOT_MODULE
+>     CPU: 2 UID: 0 PID: 500 Comm: keycase Not tainted 7.2.0-rc5-pmb-bt-functional-v1+ #1 PREEMPT(lazy)
 >     Hardware name: QEMU Ubuntu 24.04 PC v2 (i440FX + PIIX, arch_caps fix, 1996), BIOS 1.16.3-debian-1.16.3-2 04/01/2014
->     RIP: 0010:string+0x23f/0x470
->     Code: 48 8b 04 24 48 83 c3 01 41 83 c6 01 48 39 c5 74 34 e8 f5 2e 5e fb 48 89 ef 48 83 c5 01 48 89 f8 48 89 fa 48 c1 e8 03 83 e2 07 <42> 0f b6 04 38 38 d0 7f 08 84 c0 0f 85 d6 01 00 00 44 0f b6 65 ff
->     RSP: 0018:ffff888116307b80 EFLAGS: 00010246
->     RAX: 1ffffffff8054794 RBX: ffff88810a4a52c0 RCX: ffffffff8626be7b
->     RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffffffffc02a3ca0
->     RBP: ffffffffc02a3ca1 R08: 0000000000000001 R09: 0000000000000001
->     R10: ffffffff893cfe57 R11: ffff88811404d700 R12: 00000000ffffffff
->     R13: ffff88810a4a52d4 R14: 0000000000000000 R15: dffffc0000000000
->     FS:  00007fad30f2a780(0000) GS:ffff8881fd7d6000(0000) knlGS:0000000000000000
->     CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->     CR2: fffffbfff8054794 CR3: 0000000104fb7004 CR4: 0000000000770ef0
->     PKRU: 55555554
 >     Call Trace:
 >      <TASK>
->      ? __pfx_string+0x10/0x10
->      vsnprintf+0x330/0x1110
-
-I would cut away the rest (what follows).
-
-
->      ? pmbd_probe_hit_cookie+0xee/0x1c0
->      ? __pfx_vsnprintf+0x10/0x10
+>      dump_stack_lvl+0x93/0xd0
+>      print_report+0xce/0x630
+>      ? find_keyring_by_name+0x577/0x5d0
 >      ? srso_alias_return_thunk+0x5/0xfbef5
->      ? kasprintf+0xc7/0x100
->      kvasprintf+0xe4/0x1a0
->      ? __pfx_kvasprintf+0x10/0x10
->      ? pmbd_gate_site_armed+0x14e/0x1c0
->      ? pmbd_site_is_armed+0xa1/0xd0
+>      ? __virt_addr_valid+0x20d/0x410
+>      ? find_keyring_by_name+0x577/0x5d0
+>      kasan_report+0xe0/0x110
+>      ? find_keyring_by_name+0x577/0x5d0
+>      find_keyring_by_name+0x577/0x5d0
+>      ? __pfx_find_keyring_by_name+0x10/0x10
 >      ? srso_alias_return_thunk+0x5/0xfbef5
->      ? map_id_range_up+0x286/0x370
->      kasprintf+0xc7/0x100
->      ? __pfx_kasprintf+0x10/0x10
+>      ? security_prepare_creds+0x4f/0xb0
 >      ? srso_alias_return_thunk+0x5/0xfbef5
->      ? from_kuid_munged+0xa3/0x130
->      ? __pfx_from_kuid_munged+0x10/0x10
->      keyctl_describe_key+0x26d/0x600
->      __do_sys_keyctl+0x2ed/0x4f0
+>      join_session_keyring+0x89/0x310
+>      keyctl_join_session_keyring+0x81/0xe0
+>      __do_sys_keyctl+0x3c6/0x460
 >      do_syscall_64+0x115/0x6a0
 >      entry_SYSCALL_64_after_hwframe+0x77/0x7f
->     RIP: 0033:0x7fad3103b7b9
+>     RIP: 0033:0x7f562a4817b9
 >     Code: ff c3 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 8b 0d 27 66 0d 00 f7 d8 64 89 01 48
->     RSP: 002b:00007ffeda509798 EFLAGS: 00000246 ORIG_RAX: 00000000000000fa
->     RAX: ffffffffffffffda RBX: 000000000b61be23 RCX: 00007fad3103b7b9
->     RDX: 00007ffeda5097a0 RSI: 000000000b61be23 RDI: 0000000000000006
->     RBP: 00007ffeda5097a0 R08: 0000000000000000 R09: 0000000000000000
->     R10: 0000000000000200 R11: 0000000000000246 R12: 0000000000000000
->     R13: 00007ffeda509b90 R14: 00007fad31168000 R15: 000055ba831cdd08
+>     RSP: 002b:00007ffcb80b34a8 EFLAGS: 00000246 ORIG_RAX: 00000000000000fa
+>     RAX: ffffffffffffffda RBX: 00007ffcb80b3638 RCX: 00007f562a4817b9
+>     RDX: 0000000000000000 RSI: 0000563212976004 RDI: 0000000000000001
+>     RBP: 00000000000001f5 R08: 0000000000000000 R09: 5200000000000000
+>     R10: 0000000000000000 R11: 0000000000000246 R12: 0000000000000001
+>     R13: 00007ffcb80b3658 R14: 00007f562a5ae000 R15: 0000563212977cf0
 >      </TASK>
->     Modules linked in: [last unloaded: rxrpc(O)]
->     CR2: fffffbfff8054794
->     ---[ end trace 0000000000000000 ]---
 > 
-> Fixes: aa9d4437893f ("KEYS: Fix the size of the key description passed to/from userspace")
+>     Allocated by task 501:
+>      kasan_save_stack+0x33/0x60
+>      kasan_save_track+0x14/0x30
+>      __kasan_kmalloc+0xaa/0xb0
+>      __kmalloc_cache_noprof+0x251/0x630
+>      key_user_lookup+0x181/0x530
+>      key_alloc+0x164/0x11e0
+>      keyring_alloc+0x49/0xa0
+>      join_session_keyring+0x296/0x310
+>      keyctl_join_session_keyring+0x81/0xe0
+>      __do_sys_keyctl+0x3c6/0x460
+>      do_syscall_64+0x115/0x6a0
+>      entry_SYSCALL_64_after_hwframe+0x77/0x7f
+> 
+>     Freed by task 502:
+>      kasan_save_stack+0x33/0x60
+>      kasan_save_track+0x14/0x30
+>      kasan_save_free_info+0x3b/0x60
+>      __kasan_slab_free+0x5f/0x80
+>      kfree+0x236/0x5a0
+>      key_user_put+0x57/0x60
+>      keyctl_chown_key+0x5a7/0xda0
+>      __do_sys_keyctl+0x1ba/0x460
+>      do_syscall_64+0x115/0x6a0
+>      entry_SYSCALL_64_after_hwframe+0x77/0x7f
+> 
+>     The buggy address belongs to the object at ffff8881128ae200
+>      which belongs to the cache kmalloc-256 of size 256
+>     The buggy address is located 236 bytes inside of
+>      freed 256-byte region [ffff8881128ae200, ffff8881128ae300)
+> 
+>     The buggy address belongs to the physical page:
+>     page: refcount:0 mapcount:0 mapping:0000000000000000 index:0x0 pfn:0x1128ae
+>     head: order:1 mapcount:0 entire_mapcount:0 nr_pages_mapped:0 pincount:0
+>     flags: 0x200000000000040(head|node=0|zone=2)
+>     page_type: f5(slab)
+>     raw: 0200000000000040 ffff888100043400 dead000000000100 dead000000000122
+>     raw: 0000000000000000 0000000000100010 00000000f5000000 0000000000000000
+>     head: 0200000000000040 ffff888100043400 dead000000000100 dead000000000122
+>     head: 0000000000000000 0000000000100010 00000000f5000000 0000000000000000
+>     head: 0200000000000001 ffffffffffffff81 00000000ffffffff 00000000ffffffff
+>     head: 0000000000000000 0000000000000000 00000000ffffffff 0000000000000000
+>     page dumped because: kasan: bad access detected
+> 
+>     Memory state around the buggy address:
+>      ffff8881128ae180: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+>      ffff8881128ae200: fa fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+>     >ffff8881128ae280: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+>                                                               ^
+>      ffff8881128ae300: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+>      ffff8881128ae380: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+>     ==================================================================
+> 
+> Fixes: 2ea190d0a006 ("keys: skip keys from another user namespace")
 > Assisted-by: LLM
 > Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
 > ---
 > 
-> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> index d14ace88e529cb77de5386f1f3a99905d4b7688c..5a5efa26ed0ece3a5ab22e37ad7bda7a5a744b83 100644
-> --- a/security/keys/keyctl.c
-> +++ b/security/keys/keyctl.c
-> @@ -677,12 +677,14 @@ long keyctl_describe_key(key_serial_t keyid,
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index 15bf4af8f28218ec3f12c97630d1c76939af7eca..46f774be72967a9bd16b0ddfdf323eda36edeff4 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -1158,7 +1158,7 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
+>  	 * grants Search permission and that hasn't been revoked
+>  	 */
+>  	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
+> -		if (!kuid_has_mapping(ns, keyring->user->uid))
+> +		if (!kuid_has_mapping(ns, keyring->uid))
+>  			continue;
 >  
->  	/* calculate how much information we're going to return */
->  	ret = -ENOMEM;
-> +	down_read(&key->sem);
->  	infobuf = kasprintf(GFP_KERNEL,
->  			    "%s;%d;%d;%08x;",
->  			    key->type->name,
->  			    from_kuid_munged(current_user_ns(), key->uid),
->  			    from_kgid_munged(current_user_ns(), key->gid),
->  			    key->perm);
-> +	up_read(&key->sem);
->  	if (!infobuf)
->  		goto error2;
->  	infolen = strlen(infobuf);
+>  		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
 
 Br, Jarkko
