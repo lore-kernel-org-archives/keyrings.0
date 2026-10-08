@@ -1,363 +1,189 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BB2BC3AEF3A;
-	Thu,  8 Oct 2026 17:28:04 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0295F3624B3;
+	Thu,  8 Oct 2026 17:33:48 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791480486; cv=none; b=ASv5Gh0pE0hdL0UrW2dO/R82cW+TnweB9dOlkUmcMlZwsi6aA8oCux7wVeW/KqbmZ0ffIUjjy5txBuyqoBeTck0JUBW4cstQynjcKvChU1idlUoFHrSYbGrnWdhddNkoroJuVOf2QkakdXR0u21g7xyjTvfskOJgVthHIODG3Ag=
+	t=1791480830; cv=none; b=cWUY77rdyLd+h8uUP4rw65/MII9GE2zm+dFV51ngOfCV4o3YYgSYQ+wzGIZfvOK6UDgUCqfy9qvLYxW8wzvQYjvJG9+6XzBfVKPYZh/xQ38J7U/D6n8G6zPvKlzoEPhwybTZaZUn8XHl41Lq+zSHeIpFF+cpt5gAklckQpfKZqM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791480486; c=relaxed/simple;
-	bh=/U2lphRr6npPlYS1erXpLu2mq3qjh0J8PqShg0Xymu8=;
+	s=arc-20240116; t=1791480830; c=relaxed/simple;
+	bh=qjUkLXreYg8MXdiceVPsiNnpljXYWMTyIQ0/Bl5CPWY=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=ZVup16H5gLNjkLXjvaqC9T9h0kYEl/LdfWph5bYAkwhjUpShAGMj1bv3jHQRIfC9Omp4/De2xoKFsvzt5LWwGPOYnIUMMLE10FaQXOykdcDOyNOHEZ8sEv8z+tNlpQGPcH6BT9iRtjSMfx/uOPzQfFdK1azMHCAbcvAt2Vuv8DU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=nTobY/78; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=VxwIyO/w5ZEleo4k9PWNQPogf9PoNm1WxEqpwS5bW7nQZtWUaZoiInTsvRCDxNt4Jmdf7d7ypA0KQKxJnWJ7kbbd3V1gvoCWnzdJW+Ho6AoC6HiXGsVGWMsDpbz5S/J11AmdEZ7x2mNSKGt9QLuAVpz+QrVuruqxPt/9b8gFLmM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=hL8aekWD; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="nTobY/78"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id CCCD51F000FF;
-	Thu,  8 Oct 2026 17:28:03 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="hL8aekWD"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 3E0771F000FF;
+	Thu,  8 Oct 2026 17:33:48 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791480484;
-	bh=QbSNvMSvd0vDRp1ZmrnAQYBIpsOVj4OsTYhiY+DWIbY=;
+	s=k20260515; t=1791480828;
+	bh=G4v32k8/a/EW1WFqBk/X57CZyQESBg0MOmvtF2yjKvU=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=nTobY/78fdjTLcGSs5RDAMqDcO93rZw23LYOSNVKY/4b9bCqWE06l7Lp7VKW/AMth
-	 DRcd4lM1SA1s6Tz1vTIkwZTBwuTNh9OFOhoYlPj4xzEYqi2VJTgEXOBqDfrMp94ncF
-	 skWPEadT1P8kl/vJHgi9Rl+lkqirclsq9Poa9o7bpqHE6affCsuQ4QnS4FJsII2+Fb
-	 Ldzrt2fOLZ1rLXCtf+a6UL0jggFsCNVDXpW7hL6591nZS1zQ0chCuZmg4YMfjfMtCZ
-	 S2EW7N+/61+lFwX+RpqUZ5vbwnZPs9KiYYpeTJ3d3gZstURt9KwIMBTSQXg9TGy4BH
-	 JOYJOGlnPixIQ==
-Date: Thu, 8 Oct 2026 20:28:00 +0300
+	b=hL8aekWDig0eQ/IB3W4TdhsV9BzgYHbYp6k6GUoeKwLB0Sw94BQw6k5bNTEfG6we+
+	 CmS19CDTrA+i3vY3gxsUou4g5KeSTL6RktPkWzFyFnIACLQ9/1iJJAWRJ1SKctNQPR
+	 h5zQPYUUhBouwf/IV/JMUXzktSx3NhyHLzdEns+nlYQuUA2jrIjlD+8+orpETlNI07
+	 EUw+hF6ngIpgDdXYrw7pHI4CJBQCMnKtmD/hvFwzXYtJCtdCa2xdJ4ASq9w8KT0Y1c
+	 fvBg49iGVWPDPPI3vPl0qanx5AYZhTIYwPbz3FcES98yY3s52n6tuJdMCh5IjHo08p
+	 Q9K74wOx4Ycbg==
+Date: Thu, 8 Oct 2026 20:33:45 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Kyle Zeng <kylebot@openai.com>, dhowells@redhat.com
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org, dhowells@redhat.com,
-	outbounddisclosures@openai.com
-Subject: Re: [PATCH] keys: make keyring indexes independent of kernel
- addresses
-Message-ID: <asfSoKL_0NreaEnz@kernel.org>
-References: <20261006223746.48940-1-kylebot@openai.com>
+To: Andrew Halaney <andrew@amutable.com>
+Cc: David Howells <dhowells@redhat.com>, Alasdair Kergon <agk@redhat.com>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Eric Biggers <ebiggers@kernel.org>,
+	"Theodore Y. Ts'o" <tytso@mit.edu>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Randy Dunlap <rdunlap@infradead.org>, dm-devel@lists.linux.dev,
+	linux-kernel@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, bpf@vger.kernel.org,
+	fsverity@lists.linux.dev, linux-doc@vger.kernel.org,
+	"Christian Brauner (Amutable)" <brauner@kernel.org>
+Subject: Re: [PATCH 1/3] keys: add KEY_SPEC_DM_VERITY_KEYRING
+Message-ID: <asfT-SLkty5DC_Rx@kernel.org>
+References: <aqyiCavj3xeNqyAo@kernel.org>
+ <20260914-ajhalaney-dmverity-key-identifier-v1-0-01922dc1366a@amutable.com>
+ <20260914-ajhalaney-dmverity-key-identifier-v1-1-01922dc1366a@amutable.com>
+ <715249.1789718726@warthog.procyon.org.uk>
+ <aq2VxlttdlTNlHo6@toolbx>
+ <arYzQN1ViuiCBemo@kernel.org>
+ <asZlNEFdvidvMdJ5@toolbx>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20261006223746.48940-1-kylebot@openai.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <asZlNEFdvidvMdJ5@toolbx>
 
-On Tue, Oct 06, 2026 at 03:37:46PM -0700, Kyle Zeng wrote:
-> KEYCTL_READ returns the serial numbers in a keyring in associative-array
-> traversal order.  The first word of the index is a public, deterministic
-> hash of the type pointer, domain pointer and description.  An unprivileged
-> user can therefore insert keys with known descriptions, predict their
-> order for each possible KASLR slide, and recover the kernel image address.
-> On an x86-64 build with 16 MiB alignment, 45 user keys suffice to
-> distinguish the candidate slides.
+On Wed, Oct 07, 2026 at 10:30:14AM -0500, Andrew Halaney wrote:
+> On Fri, Sep 25, 2026 at 11:39:28AM +0300, Jarkko Sakkinen wrote:
+> > On Fri, Sep 18, 2026 at 02:59:49PM -0500, Andrew Halaney wrote:
+> > > On Fri, Sep 18, 2026 at 09:05:26AM +0100, David Howells wrote:
+> > > > Jarkko Sakkinen <jarkko@kernel.org> wrote:
+> > > > 
+> > > > > This is great for discussion but what we want for the commit message
+> > > > > is just motivation and resolution.
+> > > > 
+> > > > Actually, I think it's useful that Andrew wrote up the issues in the commit
+> > > > message - and I think it shows part of the motivation.  The 'writing a fake
+> > > > /proc/keys line in the description' is something I hadn't considered.
+> > > 
+> > > I'll defer to what you all want in the message here, I found it valuable
+> > > but I trend on the side of overly verbose admittedly!
+> > > 
+> > > > 
+> > > > > I don't think we need all this just to say that /proc/keys in a racy
+> > > > > query mechanism for production, which is an issue for dm-verity, given
+> > > > > that nothing else is available.
+> > > > 
+> > > > I think at some point, we will need a system call to search all for all
+> > > > accessible keys matching certain criteria by actually walking the key
+> > > > database.  The problem there is that there may be multiple hits, so we may
+> > > > need something like:
+> > > > 
+> > > > 	int count = find_key(key_serial_t start_id,
+> > > > 			     const char *type, const char *desc_prefix,
+> > > > 			     key_serial_t *results, size_t results_size,
+> > > > 			     unsigned int flags);
+> > > > 
+> > > > Allowing you to do:
+> > > > 
+> > > > 	key_serial_t dm_key;
+> > > > 	int n = find_key(0, "keyring", ".dm_verity", &dm_key, 1,
+> > > > 			 FIND_KEY_EXACT_DESC);
+> > > > 
+> > > > This wouldn't be as fast as a direct lookup since it would have to walk the
+> > > > key tree, doing name comparisons and perm checks on each key of the type.
+> > > > 
+> > > > > And secondly special keys are meant for implicit keyrings so isn't
+> > > > > that all there's to it?
+> > > > 
+> > > > I have no particular objection to setting aside a block of negative key IDs
+> > > > for special keyrings that need to be accessed a lot - though I would make
+> > > > common reg/unreg functions that take the ID to be registered and, say, set the
+> > > > block at -257..-512.  Moving the BFP keyring to -257 and DM to -258.
+> > > 
+> > > To be clear are you suggesting I do that for v2 here? Happy to make the
+> > > change and add some reuse to the registration functions, etc. I'm
+> > > guessing its fine to change the bpf id since its still only in -next?
+> > > 
+> > > The only awkward bit with making that more generic is that dm-verity
+> > > isn't __ro_after_init since its coming from a module possibly, and
+> > > because of the module usage I also protected it with a spinlock in case
+> > > someone's accessing it while you unload the module. Could just use one
+> > > spinlock for the whole generic array, and drop the __ro_after_init I
+> > > suppose.
+> > > 
+> > > Let me know if I'm not following properly!
+> > 
+> > I just read David's response and I think he made fair arguments,
+> > and patches look fine to me.
+> > 
+> > David, did you have anything? I could pick these.
+> > 
+> > Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+> > 
 > 
-> Remove the addresses from the whole index, not just its first hash word.
-> Assign each key type and domain a nonzero 64-bit ID and hash those IDs and
-> the description with a once-initialized SipHash key.  Use the full IDs in
-> the later index chunks as well.  Truncating or hashing the IDs there would
-> lose the guarantee that distinct type/domain/description tuples have a
-> differing index bit.
-> 
-> Allocate IDs lazily since private key types need not be registered.  Cache
-> them in the index key so tree walks and copies of an existing index do not
-> need to dereference a type descriptor that may have been unregistered.
-> Keep the 32-bit chunk layout and diff_objects() bit offsets consistent,
-> and retain the separate root slot for keyrings used by recursive search.
-> The key comparison, permissions and userspace data format are unchanged;
-> only the address-dependent in-memory ordering is replaced.
-> 
-> Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-> Assisted-by: Codex:gpt-6-astra
-> Signed-off-by: Kyle Zeng <kylebot@openai.com>
-> ---
+> Gentle ping :)
 
-I personally am for this approach  but I'd like to have ACK or feedback
-from David for this before moving further.
+Understandable :-)
 
-David, please take a look at this.
+> 
+> Are we happy with these to get picked up?
 
->  include/linux/key-type.h |   1 +
->  include/linux/key.h      |   5 ++
->  security/keys/keyring.c  | 145 +++++++++++++++++++++------------------
->  3 files changed, 83 insertions(+), 68 deletions(-)
+Can you just do a resend that applies on top of latest mainline
+or my tree? I.e. b4 shazam was not happy about this.
+
+Full log:
+
+$ b4 shazam https://lore.kernel.org/keyrings/20260914-ajhalaney-dmverity-key-identifier-v1-2-01922dc1366a@amutable.com/
+Grabbing thread from lore.kernel.org/all/20260914-ajhalaney-dmverity-key-identifier-v1-2-01922dc1366a@amutable.com/t.mbox.gz
+
+Breaking thread to remove parents of 20260914-ajhalaney-dmverity-key-identifier-v1-0-01922dc1366a@amutable.com
+Checking for newer revisions
+Grabbing search results from lore.kernel.org
+Analyzing 10 messages in the thread
+Analyzing 0 code-review messages
+Checking attestation on all messages, may take a moment...
+---
+  ✗ [PATCH 1/3] keys: add KEY_SPEC_DM_VERITY_KEYRING
+    + Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org> (✓ DKIM/kernel.org)
+    + Reviewed-by: Christian Brauner (Amutable) <brauner@kernel.org> (✓ DKIM/kernel.org)
+  ✗ [PATCH 2/3] keys: add KEY_SPEC_FS_VERITY_KEYRING
+    + Reviewed-by: Christian Brauner (Amutable) <brauner@kernel.org> (✓ DKIM/kernel.org)
+  ✗ [PATCH 3/3] Documentation: keys: document IDs added since KEY_SPEC_REQKEY_AUTH_KEY
+    + Reviewed-by: Christian Brauner (Amutable) <brauner@kernel.org> (✓ DKIM/kernel.org)
+  ---
+  ✗ BADSIG: DKIM/amutable-com.20251104.gappssmtp.com
+---
+Total patches: 3
+---
+ Base: base-commit 1a1de54f7369cd2b5bac0f265910e60ad3a6b4c3 not known, ignoring
+Applying: keys: add KEY_SPEC_DM_VERITY_KEYRING
+Patch failed at 0001 keys: add KEY_SPEC_DM_VERITY_KEYRING
+error: patch failed: include/linux/key.h:441
+error: include/linux/key.h: patch does not apply
+error: patch failed: include/uapi/linux/keyctl.h:25
+error: include/uapi/linux/keyctl.h: patch does not apply
+error: patch failed: security/keys/process_keys.c:25
+error: security/keys/process_keys.c: patch does not apply
+hint: Use 'git am --show-current-patch=diff' to see the failed patch
+hint: When you have resolved this problem, run "git am --continue".
+hint: If you prefer to skip this patch, run "git am --skip" instead.
+hint: To restore the original branch and stop patching, run "git am --abort".
+hint: Disable this message with "git config advice.mergeConflict false"
+
 > 
-> diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-> index bb97bd3e5af4..c4f329b6ae3f 100644
-> --- a/include/linux/key-type.h
-> +++ b/include/linux/key-type.h
-> @@ -161,6 +161,7 @@ struct key_type {
->  				     const void *in, const void *in2);
->  
->  	/* internal fields */
-> +	atomic64_t		index_id;	/* Opaque keyring index ID */
->  	struct list_head	link;		/* link in types list */
->  	struct lock_class_key	lock_class;	/* key->sem lock class */
->  } __randomize_layout;
-> diff --git a/include/linux/key.h b/include/linux/key.h
-> index 81b8f05c6898..e40b5267658f 100644
-> --- a/include/linux/key.h
-> +++ b/include/linux/key.h
-> @@ -107,6 +107,7 @@ struct keyring_name;
->  
->  struct key_tag {
->  	struct rcu_head		rcu;
-> +	atomic64_t		index_id;	/* Opaque keyring index ID */
->  	refcount_t		usage;
->  	bool			removed;	/* T when subject removed */
->  };
-> @@ -129,6 +130,8 @@ struct keyring_index_key {
->  	struct key_type		*type;
->  	struct key_tag		*domain_tag;	/* Domain of operation */
->  	const char		*description;
-> +	u64			type_id;	/* Cached index IDs */
-> +	u64			domain_id;
->  };
->  
->  union key_payload {
-> @@ -251,6 +254,8 @@ struct key {
->  			struct key_type	*type;		/* type of key */
->  			struct key_tag	*domain_tag;	/* Domain of operation */
->  			char		*description;
-> +			u64		type_id;
-> +			u64		domain_id;
->  		};
->  	};
->  
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> index 15bf4af8f282..c03e394b885d 100644
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
-> @@ -14,6 +14,9 @@
->  #include <linux/err.h>
->  #include <linux/user_namespace.h>
->  #include <linux/nsproxy.h>
-> +#include <linux/once.h>
-> +#include <linux/random.h>
-> +#include <linux/siphash.h>
->  #include <keys/keyring-type.h>
->  #include <keys/user-type.h>
->  #include <linux/assoc_array_priv.h>
-> @@ -147,49 +150,46 @@ static int keyring_instantiate(struct key *keyring,
->  }
->  
->  /*
-> - * Multiply 64-bits by 32-bits to 96-bits and fold back to 64-bit.  Ideally we'd
-> - * fold the carry back too, but that requires inline asm.
-> + * Give key types and domains address-independent identities.  Zero means that
-> + * an ID has not yet been allocated.  As with inode sequence numbers used by
-> + * futexes, this relies on the 64-bit counter not wrapping in a machine's
-> + * lifetime.
->   */
-> -static u64 mult_64x32_and_fold(u64 x, u32 y)
-> +static u64 key_index_id(atomic64_t *id)
->  {
-> -	u64 hi = (u64)(u32)(x >> 32) * y;
-> -	u64 lo = (u64)(u32)(x) * y;
-> -	return lo + ((u64)(u32)hi << 32) + (u32)(hi >> 32);
-> +	static atomic64_t next_id;
-> +	u64 old, new;
-> +
-> +	old = atomic64_read(id);
-> +	if (likely(old))
-> +		return old;
-> +
-> +	do {
-> +		new = atomic64_inc_return(&next_id);
-> +	} while (WARN_ON_ONCE(!new));
-> +
-> +	old = 0;
-> +	if (!atomic64_try_cmpxchg_relaxed(id, &old, new))
-> +		return old;
-> +	return new;
->  }
->  
->  /*
-> - * Hash a key type and description.
-> + * Hash a key type, domain and description.  KEYCTL_READ exposes the tree's
-> + * traversal order, so no part of the index may contain kernel addresses.
->   */
->  static void hash_key_type_and_desc(struct keyring_index_key *index_key)
->  {
-> +	static siphash_key_t hash_key __read_mostly;
->  	const unsigned level_shift = ASSOC_ARRAY_LEVEL_STEP;
->  	const unsigned long fan_mask = ASSOC_ARRAY_FAN_MASK;
-> -	const char *description = index_key->description;
-> -	unsigned long hash, type;
-> -	u32 piece;
-> +	unsigned long hash;
->  	u64 acc;
-> -	int n, desc_len = index_key->desc_len;
-> -
-> -	type = (unsigned long)index_key->type;
-> -	acc = mult_64x32_and_fold(type, desc_len + 13);
-> -	acc = mult_64x32_and_fold(acc, 9207);
-> -	piece = (unsigned long)index_key->domain_tag;
-> -	acc = mult_64x32_and_fold(acc, piece);
-> -	acc = mult_64x32_and_fold(acc, 9207);
-> -
-> -	for (;;) {
-> -		n = desc_len;
-> -		if (n <= 0)
-> -			break;
-> -		if (n > 4)
-> -			n = 4;
-> -		piece = 0;
-> -		memcpy(&piece, description, n);
-> -		description += n;
-> -		desc_len -= n;
-> -		acc = mult_64x32_and_fold(acc, piece);
-> -		acc = mult_64x32_and_fold(acc, 9207);
-> -	}
-> +
-> +	get_random_once(&hash_key, sizeof(hash_key));
-> +	acc = siphash(index_key->description, index_key->desc_len, &hash_key);
-> +	acc = siphash_3u64(index_key->type_id, index_key->domain_id, acc,
-> +			   &hash_key);
->  
->  	/* Fold the hash down to 32 bits if need be. */
->  	hash = acc;
-> @@ -209,7 +209,7 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
->  
->  /*
->   * Finalise an index key to include a part of the description actually in the
-> - * index key, to set the domain tag and to calculate the hash.
-> + * index key, to set the domain tag and index IDs, and to calculate the hash.
->   */
->  void key_set_index_key(struct keyring_index_key *index_key)
->  {
-> @@ -225,6 +225,14 @@ void key_set_index_key(struct keyring_index_key *index_key)
->  			index_key->domain_tag = &default_domain_tag;
->  	}
->  
-> +	/* Preserve the IDs when copying an existing key's index.  In
-> +	 * particular, its type may already have been unregistered.
-> +	 */
-> +	if (!index_key->type_id)
-> +		index_key->type_id = key_index_id(&index_key->type->index_id);
-> +	if (!index_key->domain_id)
-> +		index_key->domain_id = key_index_id(&index_key->domain_tag->index_id);
-> +
->  	hash_key_type_and_desc(index_key);
->  }
->  
-> @@ -263,11 +271,14 @@ void key_remove_domain(struct key_tag *domain_tag)
->  /*
->   * Build the next index key chunk.
->   *
-> + * The hash and inline description are followed by the 64-bit type and domain
-> + * IDs, low word first, and then by the rest of the description.
->   * We return it one word-sized chunk at a time.
->   */
->  static unsigned long keyring_get_key_chunk(const void *data, int level)
->  {
->  	const struct keyring_index_key *index_key = data;
-> +	const unsigned int id_chunks = sizeof(u64) / sizeof(unsigned long);
->  	unsigned long chunk = 0;
->  	const u8 *d;
->  	int desc_len = index_key->desc_len, n = sizeof(chunk);
-> @@ -279,27 +290,30 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
->  		return index_key->hash;
->  	case 1:
->  		return index_key->x;
-> -	case 2:
-> -		return (unsigned long)index_key->type;
-> -	case 3:
-> -		return (unsigned long)index_key->domain_tag;
-> -	default:
-> -		level -= 4;
-> -		offset = sizeof(index_key->desc) + level * sizeof(long);
-> -		if (desc_len <= offset)
-> -			return 0;
-> -
-> -		d = index_key->description + offset;
-> -		desc_len -= offset;
-> -		if (desc_len > n)
-> -			desc_len = n;
-> -		d += desc_len;
-> -		do {
-> -			chunk <<= 8;
-> -			chunk |= *--d;
-> -		} while (--desc_len > 0);
-> -		return chunk;
->  	}
-> +
-> +	level -= 2;
-> +	if (level < id_chunks)
-> +		return index_key->type_id >> (level * ASSOC_ARRAY_KEY_CHUNK_SIZE);
-> +	level -= id_chunks;
-> +	if (level < id_chunks)
-> +		return index_key->domain_id >> (level * ASSOC_ARRAY_KEY_CHUNK_SIZE);
-> +	level -= id_chunks;
-> +
-> +	offset = sizeof(index_key->desc) + level * sizeof(long);
-> +	if (desc_len <= offset)
-> +		return 0;
-> +
-> +	d = index_key->description + offset;
-> +	desc_len -= offset;
-> +	if (desc_len > n)
-> +		desc_len = n;
-> +	d += desc_len;
-> +	do {
-> +		chunk <<= 8;
-> +		chunk |= *--d;
-> +	} while (--desc_len > 0);
-> +	return chunk;
->  }
->  
->  static unsigned long keyring_get_object_key_chunk(const void *object, int level)
-> @@ -330,6 +344,7 @@ static int keyring_diff_objects(const void *object, const void *data)
->  	const struct keyring_index_key *a = &key_a->index_key;
->  	const struct keyring_index_key *b = data;
->  	unsigned long seg_a, seg_b;
-> +	u64 diff;
->  	int level, i;
->  
->  	level = 0;
-> @@ -339,28 +354,22 @@ static int keyring_diff_objects(const void *object, const void *data)
->  		goto differ;
->  	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
->  
-> -	/* The number of bits contributed by the hash is controlled by a
-> -	 * constant in the assoc_array headers.  Everything else thereafter we
-> -	 * can deal with as being machine word-size dependent.
-> -	 */
-> +	/* The inline description contributes one machine-word-sized chunk. */
->  	seg_a = a->x;
->  	seg_b = b->x;
->  	if ((seg_a ^ seg_b) != 0)
->  		goto differ;
->  	level += sizeof(unsigned long);
->  
-> -	/* The next bit may not work on big endian */
-> -	seg_a = (unsigned long)a->type;
-> -	seg_b = (unsigned long)b->type;
-> -	if ((seg_a ^ seg_b) != 0)
-> -		goto differ;
-> -	level += sizeof(unsigned long);
-> +	diff = a->type_id ^ b->type_id;
-> +	if (diff)
-> +		return level * 8 + __ffs64(diff);
-> +	level += sizeof(u64);
->  
-> -	seg_a = (unsigned long)a->domain_tag;
-> -	seg_b = (unsigned long)b->domain_tag;
-> -	if ((seg_a ^ seg_b) != 0)
-> -		goto differ;
-> -	level += sizeof(unsigned long);
-> +	diff = a->domain_id ^ b->domain_id;
-> +	if (diff)
-> +		return level * 8 + __ffs64(diff);
-> +	level += sizeof(u64);
->  
->  	i = sizeof(a->desc);
->  	if (a->desc_len <= i)
-> -- 
-> 2.53.0
-> 
+> Thanks,
+> Andrew
 
 Br, Jarkko
