@@ -1,65 +1,66 @@
-Received: from mail-qk1-f228.google.com (mail-qk1-f228.google.com [209.85.222.228])
+Received: from mail-pl1-f227.google.com (mail-pl1-f227.google.com [209.85.214.227])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3128F3DAAD2
-	for <keyrings@vger.kernel.org>; Fri,  9 Oct 2026 08:31:33 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.222.228
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 953FC3E49DE
+	for <keyrings@vger.kernel.org>; Fri,  9 Oct 2026 08:33:08 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.214.227
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791534694; cv=none; b=UZ1SlrPBf9cD8fnt5hn5f4m/4hByYhxOtwL88VJ9eSPpqzMAVMkDjftfa/r7RjxhO+I4Jr5OjtMJIIu3chjfS7xgM8guj3T3lDf86Fsj0NgtEdvnIBueoqsuDusD7k9fqC/K395bthx2TzE0WpecBQK6fQ1jNqM4rN9mN03KeHI=
+	t=1791534790; cv=none; b=IVS/u2MaCH8UxozJhmf2LMmLJMmYI0pGmcBnZI+lbfeb3u/ZqjivT5VzLNyWu4JJB+San89eTl6Ba629b+iQNBVVKRm3EzOIO3cQFrNFvwhEAr2PRNA8kTZr3fF/R+7V5T2fQibr8tlSsGUNmr0nZit8K8ZeBjrS1MpWkwjCmb4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791534694; c=relaxed/simple;
-	bh=WATkgCQ/kmtG5HulqnoTUl0JCJKYR2K92PtDB5Opiv8=;
+	s=arc-20240116; t=1791534790; c=relaxed/simple;
+	bh=J4a7upmFwO+cU/sHwsmNf67cBdZkLVJd4Qid6QJFvAs=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=f3WU1HnJz/MBc/It1a2k2cFAiIf3mW20aLpMv/brF8p/gPc46uxNsbgZxFk1ZMO8kPS8Gx97/NzZ4RNo/fTecp1gVNgvZT2Lq+VpA2bmRRa0ATdPuY44ZYQQ4hW8sJuz85yi2bdlVVMhGu/GweK7hS+erjc7FeSr6oD3NLScjTI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org; spf=pass smtp.mailfrom=cavan.codon.org.uk; arc=none smtp.client-ip=209.85.222.228
+	 Content-Type:Content-Disposition:In-Reply-To; b=L06MIhVV0TSEDJZOxDgJVO9H2dE1CuGAPlPBQDHZKoXn7y5KD2ecnT1RhGkWaVRxNX6xzpRl9LSkAsRw6TGwvPYh/Vurj9usXL01r3HAR+O7OTlzRDzBl7s8s0nIP8R3MW2E0UxKOMy2ALn5VBWatp68wAxQykRLO3FsgRUiPSs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org; spf=pass smtp.mailfrom=cavan.codon.org.uk; arc=none smtp.client-ip=209.85.214.227
 Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cavan.codon.org.uk
-Received: by mail-qk1-f228.google.com with SMTP id af79cd13be357-92f0b5ed131so463550785a.3
-        for <keyrings@vger.kernel.org>; Fri, 09 Oct 2026 01:31:33 -0700 (PDT)
+Received: by mail-pl1-f227.google.com with SMTP id d9443c01a7336-2e812e2b31bso9283225ad.3
+        for <keyrings@vger.kernel.org>; Fri, 09 Oct 2026 01:33:08 -0700 (PDT)
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791534692; x=1792139492;
+        d=1e100.net; s=20260707; t=1791534788; x=1792139588;
         h=in-reply-to:content-disposition:content-type:mime-version
          :references:message-id:subject:cc:to:from:date:x-gm-gg
          :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
          :content-type;
-        bh=W+Ti0O2O4lnX/hVbcn12QwKSuhI8bbGy+WYpeuSvKe4=;
-        b=0rv4NnSTGV8rHa71ErnSsaAkG0bMrmxfwRvhKwBUlLTFpXfv7QfOASMkhyF3mnLsPN
-         MTeVsfKYcA58qZXLRbMn/hrZUltDN441dZXvQ8TOAC5GnOQZ9KUIrR3n6ZvS/PDrT9s0
-         oY00fVVdVcNf4KA/ehI4OhO5biT/wV8QK+wuLT/sU8n2GMSc50+f9wu6PMw+CoymA92O
-         1Zj8Bu72nVy16zDPi4borKADq/Kc/nypLLxTLa27RjZhdcwMQ69/QtV6Zd/s0KVMWBW+
-         AFeBqSdWFXBAmVyOdFHEDFqn+1eMEjQLGCS4At0HzzATHA/WsJAegmfXdZSuwCoDg2Ca
-         gwLQ==
-X-Forwarded-Encrypted: i=1; AKwUvBywMmsEFdUq3VyoK+4hesi3KaQtWM2PdjVO5JsvkZnAvpTmsIYdy5x6p5lPUqRYjr5Pd4ARnqG87g==@vger.kernel.org
-X-Gm-Message-State: AFuF++m9eJMLM7VIvBLa55kmm0JLXJbEuHaYZJdLSwYew7pz9Yl2A8wc
-	8st6aE/wqj9idBDwM3IiMN+fKkurPnR+AvXlMLlyVmQj6SONlcmhA/nMrbJdiqiEzirnJwVCVDk
-	2Y112oSYVc3ubRq3thOvmQF3nPGyJ9L5tX0mz8ut1+9ye1vMQD0Nr
-X-Gm-Gg: AYBFou37KVKngKIZPIjYjl4qKnvpDHMHwUb8d9J6IwnobhWdXWbaYk5QV+D0ROrdVts
-	iPJb7ymIypu1p5y7VeLTKxFSbw/75/1YLiOZKsfwKRDKzk/7dLU1TBCf6N69vgO34R3VvTud4rI
-	QWkDjVSKpcnF8YQqEKb81wn8jMNP8A5arDuMqpCMOv0u7GjentDByPRKbjMoFHE43ztrqPIHocG
-	YRaoLx8Fh8NSdqDz+BTp0g13QzQg6Q2Po2pyzce8+g4kguXqyurFa+K9F5MRwmtY1oWQ5WsrVrg
-	tqi37+TfrJ9k6GPyoAp+ace2WxaWY30dF3uaEskm/XypMC3lXum8BLBcKcECyManQ2YFyZP+72q
-	E7v0=
-X-Received: by 2002:a05:620a:4013:b0:937:27fb:96f8 with SMTP id af79cd13be357-93ebd25c85bmr177526785a.41.1791534692184;
-        Fri, 09 Oct 2026 01:31:32 -0700 (PDT)
-Received: from cavan.codon.org.uk ([2607:f598:b99a:160:8a88:88ff:fe88:8788])
-        by smtp-relay.gmail.com with ESMTPS id af79cd13be357-93eb986adf7sm29407285a.9.2026.10.09.01.31.32
+        bh=5SJdflHLsTV8n6Eka/t1oY8KzfLbWWcjpATxg+lrvcw=;
+        b=07zvXODMNCAqMi/VJOmiEp6ATowv7y8Zj2LVU60qUOYh1nBbNOUnqTIU7RXOiPXwV/
+         3ciFfkjRvy0CW2SwqHXe4V/9KkASgvuomF+HBi3XnVaug7gDxBcv7uocXI7ep4noaM8r
+         ZYVbG3Kehny+4/JoM/IPXQqbQJzAtUw3L2GTssV4hdRh9cdY4GzjF2gGHfC+MMBMddyS
+         6IN9qYWJH5ApBoLAIWv3Bc33LnT8PCR8ltFyrjvrbutAFSCOQwENCW67MdgsfzHLAjBz
+         uuvjgWG9jvBOotOdioSJRU+wnU+2bqarzW5da3yXtEFKqcd4E3I9+hYvxdTr4qNAVfeE
+         1SPw==
+X-Forwarded-Encrypted: i=1; AKwUvByRBoWZ1GVfgV+50ZPtlq2rTd2SQrcXQRyROQyCWKaDKygsphmCG/XQRo3u54k3BglI0u7QRScSaA==@vger.kernel.org
+X-Gm-Message-State: AFq9FYJ1lxBlFlmR0i55NX1/UqNawmfTwO3pvvjpKTg4FGD2Fhl4xHoQ
+	F7NgNh4Ze3PNWOy+pcZSgkAzQEcSVdk9B/vZmcYN2De8Xq35M+i82TwHCJUQ/7UXdxda76TByJ0
+	BHOG8WJN4VZ1YdaVdKpt2MmljIPP4tP8Exp58
+X-Gm-Gg: AYBFou1WdIegx2w8Mxtb7RyzNPAPv99z9AXQCa15tT/Kw+sed6n6tBc/JX3CSDto5Lw
+	JmTORW29d9YpgbGMGG/k0UUvNg3CNhK2R/OyXLNhGhQiCqVcm661WCnlA6LMPTCSRc7TNBD/Zx7
+	39s8+syfzbOf+dKOc9KCHqcIEFEl/Em58KaSn1ZLgwZhZu+gKMHO67/qNhmvJwTljzBXfLKSgr2
+	sQBJOIpkX5hXsSyJ/jXZ1bilIUxiujifszO1NHV16kGJgglJB3oY5joS+CrnYs8nV+v8AnE66pc
+	EKWXx1qNUZQFhKKXpFOdy1Heb4+RKoaCfyzFgLtHub3/tosjwMmNd754OH+IZFve3jOxctv/Ma0
+	tknGrFtaHvJGBJsGG/7zhhuH+myeh8dm0/IPlMIc5
+X-Received: by 2002:a17:903:32cd:b0:2e2:d7d6:6563 with SMTP id d9443c01a7336-2e842ce162fmr8538245ad.43.1791534787870;
+        Fri, 09 Oct 2026 01:33:07 -0700 (PDT)
+Received: from cavan.codon.org.uk (207-53-253-74.PUBLIC.monkeybrains.net. [207.53.253.74])
+        by smtp-relay.gmail.com with ESMTPS id d9443c01a7336-2e841f88d23sm606575ad.22.2026.10.09.01.33.07
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Fri, 09 Oct 2026 01:31:32 -0700 (PDT)
+        Fri, 09 Oct 2026 01:33:07 -0700 (PDT)
 X-Relaying-Domain: codon.org.uk
 Received: by cavan.codon.org.uk (Postfix, from userid 1000)
-	id D784A12862D5; Fri, 09 Oct 2026 01:31:30 -0700 (PDT)
-Date: Fri, 9 Oct 2026 01:31:30 -0700
+	id 2332C12862DD; Fri, 09 Oct 2026 01:33:07 -0700 (PDT)
+Date: Fri, 9 Oct 2026 01:33:07 -0700
 From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>
 Cc: Matthew Garrett <matthewg@nvidia.com>, keyrings@vger.kernel.org,
+	James.Bottomley@hansenpartnership.com,
 	linux-integrity@vger.kernel.org, rafael@kernel.org,
 	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH 11/17] tpm: Add kernel signing key creation with audited
- provenance
-Message-ID: <asimYsZxxGvPAFiZ@srcf.ucam.org>
+Subject: Re: [PATCH 01/17] tpm: Define a kernel-owned TPM NV index that can't
+ be modified by userland
+Message-ID: <asimw1D5J0ZqM4i3@srcf.ucam.org>
 References: <20261008132532.1155166-1-matthewg@nvidia.com>
- <20261008132532.1155166-12-matthewg@nvidia.com>
- <bd131221bca29b5f8ba348adadf1e3930a5b57fe.camel@HansenPartnership.com>
+ <20261008132532.1155166-2-matthewg@nvidia.com>
+ <asfDZiuFKCuuRysC@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -68,21 +69,18 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <bd131221bca29b5f8ba348adadf1e3930a5b57fe.camel@HansenPartnership.com>
+In-Reply-To: <asfDZiuFKCuuRysC@kernel.org>
 
-On Thu, Oct 08, 2026 at 07:00:28PM +0200, James Bottomley wrote:
-> On Thu, 2026-10-08 at 06:20 -0700, Matthew Garrett wrote:
-> > Add tpm2_kernel_key_create(), which creates an ECDSA P-256 signing
-> > key for the kernel along with evidence that the kernel, rather than
-> > userspace, created it. The key is created with TPM2_CreateLoaded
->  
-> I don't think you want to do this.  TPM2_CreateLoaded was added in spec
-> version 1.38.  A lot of current TPMs on the market today have spec
-> versions lower than this and would reject the command (The spec version
-> of the Nuvoton in my Dell XPS-13 is 1.16). Since it's really just a
-> shorthand for TPM2_Create followed by TPM2_Load, you can simply do that
-> instead, which would save us from a load of complaints about this not
-> working.
+On Thu, Oct 08, 2026 at 07:23:02PM +0300, Jarkko Sakkinen wrote:
 
-This is what I get for working to the spec instead of reality. Thanks, 
-I'll split that up.
+> > +static bool tpm2_dev_cmd_is_blocked(const u8 *buf, size_t bufsiz)
+> 
+> This function could have less generic name.
+> 
+> tpm2_dev_is_kernel_nv_change?
+> 
+> I'm not a huge fan of this name either but it does say quite clearly
+> what the function does at least. Just a suggestion.
+
+I left it that way on the assumption that it might get extended at some 
+point - maybe that's not a big concern.
