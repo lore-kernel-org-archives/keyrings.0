@@ -1,118 +1,87 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-qk1-f225.google.com (mail-qk1-f225.google.com [209.85.222.225])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 664853D5253;
-	Fri,  9 Oct 2026 07:42:11 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B895C3D79FE
+	for <keyrings@vger.kernel.org>; Fri,  9 Oct 2026 08:29:53 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.222.225
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791531732; cv=none; b=eZidsAh9kWOhp3/bc+8cVOkGpzjCuvRBS33wtVYBpWJlU6fBIrCDocfRvt6qdKKZzU1CMjbRWQnK92wWajv0Vfj/OwrYhUv9RFyj0I932tI9Q3docCpeNQySronH7qUfsjwhyoDTd5v7UFeRUJyXfhAcgg35gmeEx42mn/16n1o=
+	t=1791534594; cv=none; b=LTZL3Bo0rTFALm7ez/3gIf27NW+2kAqAtffdDdItBglubELu+VMLye/jjHAKuhATvOgugr91VwEbY2pZkuz/lRwaNMG6vuqK0GJNjSFUu5Cknfme76/0XcKLmaeLbdyszMhX7X4XxBgUoavBUIN91aIfAg8Ke4uLlhKydvJ4++o=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791531732; c=relaxed/simple;
-	bh=KK6hcUKNzTpjT+w6oo43Mdn+G6BEcfvhF7hhxgjxngY=;
+	s=arc-20240116; t=1791534594; c=relaxed/simple;
+	bh=KdOxe03RJFJSOXfBnXYN+A603ShkIe/cWcsUKZ0d0NU=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=ckFItoeic3oCGi5azoS3lmT9nbNrxTPQ1/u6bXJEP4DWXtYoQZzgskfk3cdO2CfND3WHihv14jboE2Dr0d5ddz0721lJXhe97W0PQRQC47CzgW3bVDuFQqEyle0OTiJVDUUOyn8Wg/3V9WU4dZ5UTM6DeMfJyiehWTjbGNwRTgI=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=bKF431mt; arc=none smtp.client-ip=100.103.45.18
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="bKF431mt"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 6FC4C1F000FF;
-	Fri,  9 Oct 2026 07:42:04 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791531731;
-	bh=rsMBX361Kx8vQKVV8EDRN0Xn/Nazwk8m05yUWcWSqiE=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=bKF431mtCCHYf2ieQl6MAF9ntDhRWeap5NdD5hWqa5qemmI1u1uieuJcu98D4E3Rn
-	 5vE/DEoYSPXDgjUeOh7NV6MHRk/zK5wcN2bc1VNASWN49xYyizDS7NMRK3zpROSMh6
-	 mOUE3gkK6h+pwFMF25O6lUO1N1rvuUA1bEkpPn7gUWseDUhqGN3jB3GDLTJJCfQDT1
-	 UGVXAx4BlYPjHzofLX0QWC+/0QNKymWEiKcn7w54tXyY2uuRnSPSn4bV0TjcdSlOCK
-	 +A/hkfmtsJJ4EpClcFzqByEfTrbueo7DxsP9sEQv/wDUgPVMsShwGgZhPmj6ljFhkk
-	 nNzm/R7xwQlaA==
-Date: Fri, 9 Oct 2026 09:41:59 +0200
-From: Christian Brauner <brauner@kernel.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Josef Bacik <josef@toxicpanda.com>, Paul Moore <paul@paul-moore.com>, 
-	James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>, 
-	Jarkko Sakkinen <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, 
-	Serge Hallyn <sergeh@kernel.org>, linux-security-module@vger.kernel.org, 
-	linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] capabilities: close the ways around the CAP_SETFCAP
- rule for uid 0
-Message-ID: <20261009-aussicht-wortbruch-bohnenkraut-9e7a1cfd7580@brauner>
-References: <20261006-b4-setfcap-userns-v1-0-f47e7ed66072@toxicpanda.com>
- <asehZEWAwsJcbqvM@hallyn.com>
- <179147397027.4.15064782992163283819@toxicpanda.com>
- <asfBRYy597qvzdCW@hallyn.com>
+	 Content-Type:Content-Disposition:In-Reply-To; b=vBePPzYiA9qpLzqangNWCvWcpLF2AXUffa58jfmSgp4PRROUMhgc9I/vCeEk/pmoFtgpMQRxWibLi27uOuC2a3X0iAeASvhV5nkmgwVT7xYQDHRHzPEGuBjG3aJo/JGeCbMxv3OQE3DdVkXOTBoWatpzdI7lJcENeAH3AtfEHis=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org; spf=pass smtp.mailfrom=cavan.codon.org.uk; arc=none smtp.client-ip=209.85.222.225
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cavan.codon.org.uk
+Received: by mail-qk1-f225.google.com with SMTP id af79cd13be357-93e6eb77f0bso499335085a.3
+        for <keyrings@vger.kernel.org>; Fri, 09 Oct 2026 01:29:53 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1791534592; x=1792139392;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=cq8gQSDpD+5YFxqUsScItWyxOjZQR+1g4Dz/3bcOwAM=;
+        b=2hTkvq/dvJuD6rSXlO9ka7d81F9/1uj82tYG9uZ8PT9Dh99+b96MH7FIeMUdJPmn4Z
+         v7zWu/YXkoP1ez+NGV12V5/fKxqx2ZJRkidrMdO0YeX9Dzs7W8NMEPPBYZ7lI+tiM9z2
+         HO51oyjlsrvh/C8RauYXXg0AugEn/h7jf54C2Ts5sL5nF0FZapxOQKRK39ToO3/nQr4o
+         rtmo6cTy37kFVsi4Azkz0hWA4h4OuId75ftYw4ho4bZ9qnIYvlEP5KUWeFZW9/3tVzC/
+         K+cLUNd2dUy8W/n1+Cgc6OA5/GpiSHgYoLlAt1yGmzVwoaz0TlJz0ID+dsrukqSccCz1
+         plHw==
+X-Forwarded-Encrypted: i=1; AKwUvBwmFZCCUkGPe02xKmi6C/s4tKH2BJSR3YG7T8y6VCH8fRKW7xL0OTrREEwZvFvs0yd5SYFq0v24eQ==@vger.kernel.org
+X-Gm-Message-State: AFuF++khs06jIqkT8agBik/UTpmtpygaDWoJfYSVXk6KYKoLiDotSv3y
+	efprZr4iYCZWsZxHuc4teN8c301SEtQsHoontPQ4xvjcWe4iRee70UQSfPeDg94VXNIVa9+o1bS
+	riFUXEHluRCIGoTc807n/YpOO+bhW4GNJrvbc
+X-Gm-Gg: AYBFou29MjosXvuJIIRaKpwCcASux6D/Hl1FFJuP34Pv1LrkKSMK29e7/Vblz17A+EX
+	QTTpYirHHj3p8Knw3boixFM3074rtsMBFTOvKp+HIjYpjmw3QgbWABNTLq1SR9EnID8XzZ8b3Zj
+	UWyeEJFW/sHxKTPb8g10J20CaSoILz5biQlk5/40AstHDVTt5k6i0ASjvdahocQHMu9C4Afryq1
+	tBJNuxT+9AzurKYAWeY+2qXEr4LxBgv4N2UvGJHR6Xv6XRcHXJgaZc0buRP/q0OB2W2Y9OQFiNH
+	CH/M1+eQ+KKL7V69gYr2KtPDzpnIL8yGrjjVrc8+GxnNNN293Iq+2O0VRbc1B2749Iiaa0VTK8S
+	oZpQYtRAmb54I2sqmpHIpqW9qlFYRX64FhwdTvzr4
+X-Received: by 2002:a05:620a:471f:b0:93c:2c15:e510 with SMTP id af79cd13be357-93ebd2085ddmr144845685a.37.1791534592672;
+        Fri, 09 Oct 2026 01:29:52 -0700 (PDT)
+Received: from cavan.codon.org.uk (207-53-253-74.PUBLIC.monkeybrains.net. [207.53.253.74])
+        by smtp-relay.gmail.com with ESMTPS id af79cd13be357-93eb9811a3csm31984285a.3.2026.10.09.01.29.52
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Fri, 09 Oct 2026 01:29:52 -0700 (PDT)
+X-Relaying-Domain: codon.org.uk
+Received: by cavan.codon.org.uk (Postfix, from userid 1000)
+	id 72C7C12862CC; Fri, 09 Oct 2026 01:29:51 -0700 (PDT)
+Date: Fri, 9 Oct 2026 01:29:51 -0700
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Matthew Garrett <matthewg@nvidia.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, rafael@kernel.org,
+	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 05/17] tpm: Add a kernel attestation key and signed audit
+ digest retrieval
+Message-ID: <asil_22hdNKBXH2p@srcf.ucam.org>
+References: <20261008132532.1155166-1-matthewg@nvidia.com>
+ <20261008132532.1155166-6-matthewg@nvidia.com>
+ <c5d1b69763362db8a681d00d3325dd673c4db08b.camel@HansenPartnership.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <asfBRYy597qvzdCW@hallyn.com>
+In-Reply-To: <c5d1b69763362db8a681d00d3325dd673c4db08b.camel@HansenPartnership.com>
 
-On Thu, Oct 08, 2026 at 11:13:57AM -0500, Serge Hallyn wrote:
-> On Thu, Oct 08, 2026 at 03:39:30PM +0000, Josef Bacik wrote:
-> > On Thu, Oct 08, 2026 at 08:57:56AM -0500, Serge E. Hallyn wrote:
-> > > Would you mind describing what other solutions you considered?  I've been
-> > > looking over this set since Tuesday, and finding it hard to reason about.
-> > > (Part of that is certainly the nature of the problem, and it's possible
-> > > that this is the best/simplest solution.)
-> > 
-> > Everything we looked at kept the state in the cred.  We model checked
-> > the variants before writing the code, and these fell over:
-> > 
-> > - a bool per cred for "had CAP_SETFCAP over the parent when it entered".
-> >   It breaks on two hops: setns() into a namespace that maps 0, unshare
-> >   again, and the bool says yes for the second namespace.  Hence the
-> >   level.
-> > - checking only at uid_map write time.  That misses setxattr of
-> >   security.capability in a namespace that already maps 0, hence patch 4.
-> > 
-> > We didn't look at keeping the state on the namespace.
-> > 
-> > > If we replaced the userns->parent_could_setfcap bool with a ref to the
-> > > creator's cred, then at both setns and write we could check the actor's
-> > > credentials, right?  There are probably issues with that specific idea,
-> > > but that's why it would be good to see what else you've considered.
-> > 
-> > Checking at write time alone doesn't work: once a task is inside the
-> > namespace its cred says nothing about what it could do outside, so a
-> > joiner and the creator look the same.
-> > 
-> > It does work if setns() refuses to join a namespace that maps, or can
-> > still map, the parent's uid 0 unless the joiner has CAP_SETFCAP over the
-> > parent.  Then everybody in a namespace has the same reach, and it can be
-> 
-> Yeah, that's what I was thinking.  Or even stricter: ensure that to join
-> any user namespace, a process must have a superset of the namespace
-> creator's capabilities.
+On Thu, Oct 08, 2026 at 06:45:15PM +0200, James Bottomley wrote:
 
-I think both are fine and I like this proposal.
+> Oof, there's a lot of duplication in here.  Basically you're creating a
+> signing primary key (technically it's not an attestation key because
+> they're supposed to be non-primary; this isn't a criticism because the
+> only consumer is the machine owner who doesn't need to use privacy
+> preserving AKs because they know all about the TPM in their own
+> machine).  The primary generation routines that exist in tpm2-
+> sessions.c:tpm2_create_primary() et al. already does most of this.  The
+> only real current difference is that it creates an encryption key not a
+> signing key, but that could have an additional bool argument
+> (signing=true/encryption=false) rather than duplicating the entire
+> routine set.
 
-> 
-> > a level stored on the namespace at create time instead of a cred ref,
-> > which would pin keyrings and the rest for the life of the namespace.
-
-Yeah, that's what I was worrying as well.
-
-Fwiw, this brings me to another general idea of mine: I want to be able
-to pin a "creds" light variant that doesn't pin all the unnecessary cred
-cruft like keyrings that you really don't need in a lot of cases. Like a
-core cred reference that does namespaces uids/gids, caps and ucount but
-drops all the rest.
-
-> > The checks would be setns(), the map write (opener and writer are in the
-> > parent, so a plain capable check), setxattr of security.capability, and
-> > ptrace.
-> > 
-> > The difference in behaviour is that the -EPERM moves to setns(): a root
-> > task without CAP_SETFCAP couldn't enter a root-owned container that maps
-> > host uid 0 at all, where with this series it can enter and is refused
-> > only for the map, fscaps and ptrace.  I can prototype it if you prefer
-> > that.
-> 
-> Sorry let me think about it (or let us talk about it) a bit more.
-
-I think that this is an acceptable restriction. Mapping uid 0 to 0 and
-dropping caps is borderline useless.
+ACK, that's fair. I'll respin with that in mind.
