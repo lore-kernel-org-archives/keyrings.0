@@ -1,42 +1,65 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pj1-f99.google.com (mail-pj1-f99.google.com [209.85.216.99])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BEA523451B5;
-	Sat, 10 Oct 2026 21:24:24 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8A3BB3603DF
+	for <keyrings@vger.kernel.org>; Sat, 10 Oct 2026 21:26:32 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.99
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791667465; cv=none; b=Xb9fNAKtK8Xn0UZOfpaAFq89eczIbTrylrGIZa1E4z6y5wEDEJubNkhhuM+gdHSKHje0iIVvzIrqSm3EyLeN3s4Hjjmtwg5jve7pjWafq6WQdrj7ZnIB5pnNzD550TG1xPJhD3AGWYjXbqMvE/jRRDsgmdvBJHleSywg5RCUJak=
+	t=1791667593; cv=none; b=aFGc/bJpi5+6ArAZDrLkZM0yWrNO1q9LpR1Ms98C8Y1M+pzUBy945wFLA6IhuiWvNUHMcJkoSnYWQKjzDeBJxuJ9IOA357CNUKszdwx79TVwfuO8ByDlxHDvWuaezZ8WLOSj+n9Jd6iBxU/ESfQa1fwNS8BOm5lOry93QItPGA0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791667465; c=relaxed/simple;
-	bh=PQIc33haqgfB37R9stfcBA66YFExdO+vCOa5OnWXm/A=;
+	s=arc-20240116; t=1791667593; c=relaxed/simple;
+	bh=cd6DBvfY/V0vH3X7czk1rG4Fa13vQUKczFzwYCCmz+g=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=AkeA8qRdl9jm03lNBz3xi0yYlImI6ymPamMyYV7XozGxMUrKp55UQ9fSMnVfe4Wfu2KKXZImdvNU1SEvLxviw8OlPfm0AabmoP14+sjlIeQ6+T7A6RhxP5MV2Zpf4VsD+hQjp0u2YjajkE7cQ+O0eRxh+UcKEWzGEUYJAdr/L+I=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=AwM/2b1e; arc=none smtp.client-ip=100.103.45.18
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="AwM/2b1e"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id C6EF31F000FF;
-	Sat, 10 Oct 2026 21:24:23 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791667464;
-	bh=QWHSjEKCe02bd/smuesOf/w4AU5v5XzesQ7Kwu/UJXs=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=AwM/2b1ezf1XGwLA3JWq72alTLNCufFZ+3trhjUQGYCMA2sr2pU6CCyGQ2tOswaio
-	 VPKOGOQUaQgrTO5AX2EMRuRceZBW5eGoTjHVkzycuSDK4sI4CnON5g9x6FHZQ24tny
-	 1UF+39EGSGSAW49E8ipoQ9dxMX9VEviffkA1CPlBaivRWh8VY6CYQA5dMFMgs96QWR
-	 eQj7iHZ1a5drnr5Ba7lbtbWc9cDFa8/1ptN+HP+RG5uLuGkbAYzyBemT6HNAmlZD7w
-	 tTONRBFASI758ZboJdA1gEM2MWus307K2dWIzm1GD8n4dNXqYU0fY4is6mF6TBBx0+
-	 J8dkYJRndbmpQ==
-Date: Sun, 11 Oct 2026 00:24:20 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Cen Zhang <zzzccc427@gmail.com>
-Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
-	serge@hallyn.com, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	baijiaju1990@gmail.com, jjzuming@gmail.com
-Subject: Re: [PATCH] keys: Check the authorization payload in process keyring
- searches
-Message-ID: <asqtBDX8112XvcRT@kernel.org>
-References: <pm-key-management-objects-candidate-0004-v3-598361863b76bc25d58d@gmail.com>
+	 Content-Type:Content-Disposition:In-Reply-To; b=I8a3Kysqa4BPssyavSffFH3pQEkbGC3qPojFDW5Wy1XMsj4NgDKWv+iD/EOfKkhyO8KMYXLe26rKilrQcmHQAw628TjfZdGIkW19t6Ggj++FkLUXLpkDIZFy4Gv6knyAR4H1Cbny/J/INRe+vlm6+shsEOB2/zQ5kciCkRpgr+8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org; spf=pass smtp.mailfrom=cavan.codon.org.uk; arc=none smtp.client-ip=209.85.216.99
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cavan.codon.org.uk
+Received: by mail-pj1-f99.google.com with SMTP id 98e67ed59e1d1-3ab41538192so547419a91.0
+        for <keyrings@vger.kernel.org>; Sat, 10 Oct 2026 14:26:32 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1791667592; x=1792272392;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=xQ+BvwTajbJuDLtdFxXsbhV1xx7cCxJdnpKMHHdw0X0=;
+        b=E4r7XUwCEfVOX84+M6PhnJdzJYaWPhTV3dmKfhH3wTUW/yuXPLg0FbbP7Sp4T/sj0q
+         CvrNq4CpVRHuYsNUTOSKzVIW+EBZ4mTxBXLsvImYkRXl7eF2VcmzMK4rQ/58tX1PfSsu
+         0yGk4KLLVzmkz+vmsQj6y1+k6IEsHe6dlo9UsIw9BdtCeU27ERSBp5djEYIoA4ywtNbX
+         LbEok9Km+IW5C1F5woxEr2Dnd7Z4kQ/jsHZVWlGYZfRe5T71vZge0JB5lRGb9dXG9HR/
+         RwBuu8GMrflpZUQdttDddohgpCSImlLp7XMinApf8I1J89bQ8WjP0Y7JwyEQ9BR1SXBI
+         GBvA==
+X-Forwarded-Encrypted: i=1; AKwUvBzklCu6nzBaYfpwHwsj8EzbsJv6DpR1ZWAGWQkyZUJVBOpQXCd6Bz7WOkyeGTPA5ChRwIhdaDaEmQ==@vger.kernel.org
+X-Gm-Message-State: AFq9FYJPP1SBkbf+TGwISGo1fwTlOFdnKILUCLMKKbJF76PVD0557kqn
+	020wCZv3L0DKnqkTJ8cuMbyCijj/m9zQ5HgQP05WKmRKWX0NaCIVKW4KJE1ZDYIHyDoF7vWefJk
+	/HiwO/fl3Pi0KweH3yDqyqAjM9i1lYSpbjelKyIy/0DtH6OX9mZWP
+X-Gm-Gg: AYBFou0nmv/DtKJCv90+K+wvZL1Nzj12FIBAOU2rDkFUH2/7mkc3FYjWDLp6GuqboXE
+	g3kX2sKNpkJeme2kiC9kxvbnue3v952nHCGfcasLhPcU4NjJTM8KcjnCKIJ9T3wv0Ft5B1siMeq
+	EBoadlHtiEG9xNtzeWTS1WTGL7j3bv2TEW1ej+n0Nx0hVsHqrH1XWqi+P2029pVUdiDaZskJsL7
+	PyJaDCLwduwXVQ6Ou1e4mAIj0Axmx8oJWg8Quu1i+VqQzVjwlCzbLwCw5JPXkz84qQ5KUFdaUEb
+	s1M5/R6oamDRjtkMbnz7BxiMdB/MCaJEWM+DVBMHQ9J+AHHiVhte90K5EU1miK5hVxKj0Qf/BfP
+	Ifj8=
+X-Received: by 2002:a17:90a:e7ca:b0:3a4:f75d:d194 with SMTP id 98e67ed59e1d1-3ab3a8ce801mr5220265a91.36.1791667591856;
+        Sat, 10 Oct 2026 14:26:31 -0700 (PDT)
+Received: from cavan.codon.org.uk ([2607:f598:b99a:160:8a88:88ff:fe88:8788])
+        by smtp-relay.gmail.com with ESMTPS id 98e67ed59e1d1-3ab39631932sm1330977a91.2.2026.10.10.14.26.31
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 10 Oct 2026 14:26:31 -0700 (PDT)
+X-Relaying-Domain: codon.org.uk
+Received: by cavan.codon.org.uk (Postfix, from userid 1000)
+	id 1A99E1287AF5; Sat, 10 Oct 2026 14:26:31 -0700 (PDT)
+Date: Sat, 10 Oct 2026 14:26:31 -0700
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Matthew Garrett <matthewg@nvidia.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, rafael@kernel.org,
+	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 01/17] tpm: Define a kernel-owned TPM NV index that can't
+ be modified by userland
+Message-ID: <asqthz69ohnMVCye@srcf.ucam.org>
+References: <20261008132532.1155166-1-matthewg@nvidia.com>
+ <20261008132532.1155166-2-matthewg@nvidia.com>
+ <435907614242e82ecde1767a967a3110fca6fb37.camel@HansenPartnership.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -45,75 +68,53 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <pm-key-management-objects-candidate-0004-v3-598361863b76bc25d58d@gmail.com>
+In-Reply-To: <435907614242e82ecde1767a967a3110fca6fb37.camel@HansenPartnership.com>
 
-On Fri, Oct 09, 2026 at 01:52:16PM +0800, Cen Zhang wrote:
-> An authorization payload and its saved credentials must remain valid
-> while search_process_keyrings_rcu() searches the requestor's keyrings.
-> The function validates the authorization key, then separately loads
-> payload.data[0] and unconditionally reads rka->cred. Validation does
-> not prevent request_key_auth_revoke() from clearing the payload.
-> 
-> A request-key helper can assume authority and fork a descendant that
-> inherits the authorization key. If the descendant misses in its own
-> keyrings, it falls back to the saved requestor credentials. Successful
-> target instantiation invalidates the authorization key without clearing
-> the payload. After the helper exits, UMH_WAIT_PROC returns to the
-> requester, which calls complete_request_key() and revokes that key.
-> 
-> With the descendant paused after validation, the paths can interleave
-> as follows:
-> 
->   1. The descendant enters search_process_keyrings_rcu() under RCU and
->      key_validate() succeeds.
->   2. The helper instantiates the target, invalidates the authorization
->      key, and exits.
->   3. The requester resumes from UMH_WAIT_PROC, calls
->      complete_request_key(), and revokes the authorization key.
->      request_key_auth_revoke() sets its payload pointer to NULL.
->   4. The descendant loads NULL and dereferences rka->cred.
-> 
-> This NULL dereference can oops the kernel. RCU delays payload disposal
-> but does not prevent the pointer from being cleared.
-> 
-> Load the payload with dereference_key_rcu() and require a non-NULL
-> result before validating the authorization key and searching its saved
-> credentials. A non-NULL payload and its credentials remain alive for
-> the caller's RCU read-side section; a cleared payload skips the fallback
-> search and follows the existing error selection.
-> 
-> KASAN report as below:
-> 
->     Oops: general protection fault, probably for non-canonical address 0xdffffc0000000005: 0000 [#1] SMP KASAN NOPTI
->     KASAN: null-ptr-deref in range [0x0000000000000028-0x000000000000002f]
->     RIP: 0010:search_process_keyrings_rcu+0x32b/0x790
-> 
-> Fixes: e59428f721ee ("keys: Move the RCU locks outwards from the keyring search functions")
-> Assisted-by: LLM
-> Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
-> ---
-> 
-> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-> index a63c46bb2d148080add6a194579f7b1093c04d82..76da13fa07fab70115966e9ea8360af66390dd85 100644
-> --- a/security/keys/process_keys.c
-> +++ b/security/keys/process_keys.c
-> @@ -556,9 +556,8 @@ key_ref_t search_process_keyrings_rcu(struct keyring_search_context *ctx)
->  	    ) {
->  		const struct cred *cred = ctx->cred;
->  
-> -		if (key_validate(cred->request_key_auth) == 0) {
-> -			rka = ctx->cred->request_key_auth->payload.data[0];
-> -
-> +		rka = dereference_key_rcu(cred->request_key_auth);
-> +		if (rka && key_validate(cred->request_key_auth) == 0) {
->  			//// was search_process_keyrings() [ie. recursive]
->  			ctx->cred = rka->cred;
->  			key_ref = search_cred_keyrings_rcu(ctx);
+On Sat, Oct 10, 2026 at 11:22:34AM +0200, James Bottomley wrote:
 
-Thanks.
+> The reason I never really proposed such a scheme is the rollback
+> problem (old version of OS or non-Linux OS can create the NV index from
+> user space bypassing the kernel only block) which you try to solve with
+> PCR5.  Do you have any data for how widespread measuring
+> exitbootservices is?  I know edk2 does it, but I just looked on my
+> XPS13 and I only have two PCR5 events: a separator and the GPT table,
+> so it's definitely in violation, but if Dells don't do this then it's
+> indicative that many other manufacturers might not as well.
 
+Does your log replay correctly for PCR 5? It's *extremely* common for 
+the extension to happen without logging, since logging needs to be done 
+into the late events table and almost nobody got that right until a few 
+years ago (hence 
+https://github.com/google/go-attestation/blob/master/attest/eventlog_workarounds.go#L70)
 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+> If we do have a problem with lack of manufacturer compliance, one other
+> way I've got on my todo list is fake trusted launch: now that
+> Trenchboot is heading upstream, we have the real trusted launch, but
+> that's usually too fiddly for most people, so I was thinking if we
+> could get enough of the TXT launch to happen to open the localities
+> (without bothering too much about anything else) that might be easier
+> and give us the ability to run the Kernel in locality 2.
 
+Remember that many consumer devices don't implement TXT, it's only the 
+enterprise SKUs that tend to. But that would be funny - it's the same 
+sort of shape as an awful hack that's used on some of the Qualcomm 
+laptops to get access to EL2. Localities are very clearly the Right Way 
+to deal with this and ugh if we'd been having this conversation 20 years 
+ago instead.
+ 
+> > Reserve NV index 0x014c4853 for use by the kernel, and filter
+> > commands submitted through /dev/tpm* and /dev/tpmrm* so that
+> > userspace cannot undefine or modify it. Blocking definition is more
+> > awkward so let's allow that for now, not being able to modify
+> > ithttps://www.bbc.co.uk/sounds/play/p0pfxh72
+> > means there's nothing interesting they can do there. The filter
+> > simply validates which handle the relevant set of commands is
+> > referring to and returns -EPERM if it's the kernel one.
+> 
+> As you say there are several other use cases, including mine above and
+> NV PCRs, that can only be extended by the kernel, so I think this
+> should be a range from the get go.
 
-Br, Jarkko
+I've got a single index from the UAPI people's range right now, if we 
+want more the easiest thing would probably be to ask TCG for our own 
+carve out. I don't think the process would be difficult.
