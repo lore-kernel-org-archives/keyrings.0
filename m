@@ -1,41 +1,65 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-qv1-f99.google.com (mail-qv1-f99.google.com [209.85.219.99])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5BD2F2E03EA;
-	Sat, 10 Oct 2026 20:55:57 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BDEB931282F
+	for <keyrings@vger.kernel.org>; Sat, 10 Oct 2026 21:18:42 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.219.99
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791665758; cv=none; b=RPm1W4cRlXmNqsmEhjMFzxEuH31Un9Inh9wqGvZQAMJp1fABif9w1j3z2C/zebHhI2NpCGHpO1ZVoi85yenfdLxArDamsQSgl2z1excWBxe8Ur/McmTev5Gq29kou5PDlSPXIUUK/0mY4kkzavSF/21BOsE/dCs3CVCTaA9s1Yo=
+	t=1791667124; cv=none; b=jQOVnIBRLTvhnQ/fs9+Zyoqdn0KAu41209hm9cYFIvfZb0Xb0kTA7FB9HZrPzoDL2P5tisVG4UF/5dt7fhWlniqOpwn9PDvR1ifbZ5wfnazr+O1rzfqIAOkpRbo6Q6bVdiP9QD/Ne/CTiGdRds75HWF3n2shbWIQvh4PfALr2xQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791665758; c=relaxed/simple;
-	bh=B7FwboySNJhXoXOTjqJs0Cx/s3J7X0tdvMhwugEzy/k=;
+	s=arc-20240116; t=1791667124; c=relaxed/simple;
+	bh=tcL6A5SoUYWty+VXbzXNe06G0pu698TmKup8qJ97Wco=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=K8Tm7qhkSGeUFXgKNh4SPcbUpupUug+m1Sz8zj1gczVfFbz/kMyHdDFW9m8sYqnkwvRFavv6CIrjCltBnpyF28disCl0MCQ64EqwmZUJa3xTL1HRGBYz+i2iNtG+XXsMhHkzJ0XFWSUDMpGUbPUYG2yifI6yT/c+IVMn/aii1Ew=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=e5hwmrp1; arc=none smtp.client-ip=100.103.45.18
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="e5hwmrp1"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 6D28C1F000FF;
-	Sat, 10 Oct 2026 20:55:56 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791665757;
-	bh=LAMdS7RYosard+6Ju0D4tY4PcUD2Zf3++eAo0mdjotQ=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=e5hwmrp1pZGCk3bT23OlpmAUTrWwk8ANDx2q3lFZdhKQcAjjku8oFPuCcOdvR0NlQ
-	 Au0hMPGF0oU68wmZGQ4c44kMzGetqAhM9OSnn88AjisvqwWqO2T8+rNaZ4wRPg7O7j
-	 CryBMLpfowRipVNomVKc2kXf5MporU3Y2hX12HbIuiSyUmDqFo/i+TSTNZHf9fYjKI
-	 63XbHNoFHrwPXnDh65el1FkO8WMMvIzEx5ZaSFp45NWDUGE6BsvrA31wACDfSWYRUh
-	 E383Vs8PTGtlKBK1PEouMrYliKkkUhhZ9B3cXnJZHliI3U+tCraJ4mHIxJNemNbCAx
-	 wzfQl0Kd3ezZg==
-Date: Sat, 10 Oct 2026 23:55:53 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Kyle Zeng <kylebot@openai.com>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org, dhowells@redhat.com,
-	outbounddisclosures@openai.com
-Subject: Re: [PATCH] keys: make keyring indexes independent of kernel
- addresses
-Message-ID: <asqmWfrcvZps0152@kernel.org>
-References: <20261006223746.48940-1-kylebot@openai.com>
+	 Content-Type:Content-Disposition:In-Reply-To; b=Vky+b96gkMHcmdOZHT0ZM0RHiTZEzqDNSEyNLdb+jFQgObV+aVXzoWQhqJHjnIvZkwHhcOWQ3+o5iq1gQPGSJq6G9OG1uz7OVMMKayTEgyIfs7RsLzF4EEysCzoxO0OCsWDOWHgf7EfXPmlnpiUiD6NyY97VOisoSwo1I+QpNvI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org; spf=pass smtp.mailfrom=cavan.codon.org.uk; arc=none smtp.client-ip=209.85.219.99
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cavan.codon.org.uk
+Received: by mail-qv1-f99.google.com with SMTP id 6a1803df08f44-917ad52d7b6so10993916d6.2
+        for <keyrings@vger.kernel.org>; Sat, 10 Oct 2026 14:18:42 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1791667121; x=1792271921;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=WXTNApq6aSI569pIUAzzE6jSpAQWrYRivHcZV0gC9AQ=;
+        b=UmHCiCVoGi59pNacmP/Wwvw9TKDpXwPdhjGC9DA+GTX1my9VVfh4XGVX8apWSrb26L
+         P8dzdoOutNrDZdpmv/VFsxZFrA7CjZI7+7PDKfQJ/Em3p7RfWVG7WGGg7WI5Qko0gbL7
+         HL4+sn597xKpDoh1tIn1OpcO4DxJZW5bVlatiygphD/8GO87FzLhNZu/goYqbsnZA/Wl
+         61GWjbMTc5zi7L0znqMls/PoVO4SyAgbc9BcsM9YjCA5lO6Gdh+9OM0HtYfMgNbOqJwb
+         hv3ea1rvsQogLPkwNiUF/Rtd6cwmVxobfvifvLJe7JaXlB/CROhenmTrMzApPeFU0GTu
+         2DQg==
+X-Forwarded-Encrypted: i=1; AKwUvBwOLJHYi+p5MWOM+ls2bc69UVHaoibvWDCxP1AWIQrmjUpaszijsGZJaZya51R3q/e04TL/9c5fGQ==@vger.kernel.org
+X-Gm-Message-State: AFq9FYJN5GPUrRkS2AA7ltakvmXvwblmEGVO8wy7Ird8Qhy35W/C4fEE
+	V9uVAa3At/lDh7cQwujRcaVicB9XjHZFRKsMTIJgnTDEJpi7GPbalFVO3SxnS0CiAK0locESAyg
+	kA+Fq1wKkP+665dU6NwfPs6KbwQCLNYysSPRO
+X-Gm-Gg: AYBFou2ThcnlLoT/HZrmHhGX6fUTVnSysK5D0bHcQIYt+Lnm75+SjXMGzuoorB9gYz6
+	4+3kM760OdWcudw6Cizd5/AbRcphq8ZayU94F4B/Resc6K9Jc91mPq2eRQzC+8x6ROk0p/lEchs
+	NwI07ZsKB4yMWlt8qED9/tu9RLUAl4vNnK/FP0VM4kZAAyI30FFHxiYuUokE0TpXJMH3HQvEecG
+	P8/UTRb9gx/A8qhveS13srJhtAAppSPNVSeRHRnSjf6M8unKwpWePZXrZA1ldKyGxD/p8o1IkJe
+	2vaZxfhyzPBSwCmgIWj9/SFaeESpASUdnCB6Wp3sbxMx5qngEsgHt+EENET68hcJreNfOch9Cq7
+	LI/MYaRNDLc2HG0YH05m7Qc6CCSRrZ2X068gOpxlJ
+X-Received: by 2002:a05:620a:2b49:b0:93e:83a9:d59f with SMTP id af79cd13be357-93ebd23f1ddmr876491385a.57.1791667121467;
+        Sat, 10 Oct 2026 14:18:41 -0700 (PDT)
+Received: from cavan.codon.org.uk (207-53-253-74.PUBLIC.monkeybrains.net. [207.53.253.74])
+        by smtp-relay.gmail.com with ESMTPS id af79cd13be357-93eb986adf7sm109798385a.9.2026.10.10.14.18.41
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 10 Oct 2026 14:18:41 -0700 (PDT)
+X-Relaying-Domain: codon.org.uk
+Received: by cavan.codon.org.uk (Postfix, from userid 1000)
+	id 273C51287ADC; Sat, 10 Oct 2026 14:18:40 -0700 (PDT)
+Date: Sat, 10 Oct 2026 14:18:40 -0700
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Matthew Garrett <matthewg@nvidia.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, rafael@kernel.org,
+	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 13/17] tpm: Add verification of kernel signing key
+ provenance
+Message-ID: <asqrsIij3KjUWQev@srcf.ucam.org>
+References: <20261008132532.1155166-1-matthewg@nvidia.com>
+ <20261008132532.1155166-14-matthewg@nvidia.com>
+ <0e47c22afbce2f94673bcc77d640cd9da410c2f2.camel@HansenPartnership.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -44,324 +68,27 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261006223746.48940-1-kylebot@openai.com>
+In-Reply-To: <0e47c22afbce2f94673bcc77d640cd9da410c2f2.camel@HansenPartnership.com>
 
-OK, so coming back to this.
+On Sat, Oct 10, 2026 at 11:34:10AM +0200, James Bottomley wrote:
 
-I think the gist is dead obvious and decoupling is needed so I don't see
-no reason not to apply this, just couple of cosmetic nits.
+> I get that PCR 5 measures boot configuration and isn't supposed to
+> change from boot to boot, but what about across things like firmware
+> upgrades ... do you have any idea how brittle it actually is?
 
-On Tue, Oct 06, 2026 at 03:37:46PM -0700, Kyle Zeng wrote:
-> KEYCTL_READ returns the serial numbers in a keyring in associative-array
-> traversal order.  The first word of the index is a public, deterministic
-> hash of the type pointer, domain pointer and description.  An unprivileged
-> user can therefore insert keys with known descriptions, predict their
-> order for each possible KASLR slide, and recover the kernel image address.
-> On an x86-64 build with 16 MiB alignment, 45 user keys suffice to
-> distinguish the candidate slides.
-> 
-> Remove the addresses from the whole index, not just its first hash word.
-> Assign each key type and domain a nonzero 64-bit ID and hash those IDs and
-> the description with a once-initialized SipHash key.  Use the full IDs in
-> the later index chunks as well.  Truncating or hashing the IDs there would
-> lose the guarantee that distinct type/domain/description tuples have a
-> differing index bit.
-> 
-> Allocate IDs lazily since private key types need not be registered.  Cache
-> them in the index key so tree walks and copies of an existing index do not
-> need to dereference a type descriptor that may have been unregistered.
-> Keep the 32-bit chunk layout and diff_objects() bit offsets consistent,
-> and retain the separate root slot for keyrings used by recursive search.
-> The key comparison, permissions and userspace data format are unchanged;
-> only the address-dependent in-memory ordering is replaced.
-> 
-> Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-> Assisted-by: Codex:gpt-6-astra
-> Signed-off-by: Kyle Zeng <kylebot@openai.com>
-> ---
->  include/linux/key-type.h |   1 +
->  include/linux/key.h      |   5 ++
->  security/keys/keyring.c  | 145 +++++++++++++++++++++------------------
->  3 files changed, 83 insertions(+), 68 deletions(-)
-> 
-> diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-> index bb97bd3e5af4..c4f329b6ae3f 100644
-> --- a/include/linux/key-type.h
-> +++ b/include/linux/key-type.h
-> @@ -161,6 +161,7 @@ struct key_type {
->  				     const void *in, const void *in2);
->  
->  	/* internal fields */
-> +	atomic64_t		index_id;	/* Opaque keyring index ID */
->  	struct list_head	link;		/* link in types list */
->  	struct lock_class_key	lock_class;	/* key->sem lock class */
->  } __randomize_layout;
-> diff --git a/include/linux/key.h b/include/linux/key.h
-> index 81b8f05c6898..e40b5267658f 100644
-> --- a/include/linux/key.h
-> +++ b/include/linux/key.h
-> @@ -107,6 +107,7 @@ struct keyring_name;
->  
->  struct key_tag {
->  	struct rcu_head		rcu;
-> +	atomic64_t		index_id;	/* Opaque keyring index ID */
->  	refcount_t		usage;
->  	bool			removed;	/* T when subject removed */
->  };
-> @@ -129,6 +130,8 @@ struct keyring_index_key {
->  	struct key_type		*type;
->  	struct key_tag		*domain_tag;	/* Domain of operation */
->  	const char		*description;
-> +	u64			type_id;	/* Cached index IDs */
-> +	u64			domain_id;
->  };
->  
->  union key_payload {
-> @@ -251,6 +254,8 @@ struct key {
->  			struct key_type	*type;		/* type of key */
->  			struct key_tag	*domain_tag;	/* Domain of operation */
->  			char		*description;
-> +			u64		type_id;
-> +			u64		domain_id;
->  		};
->  	};
->  
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> index 15bf4af8f282..c03e394b885d 100644
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
-> @@ -14,6 +14,9 @@
->  #include <linux/err.h>
->  #include <linux/user_namespace.h>
->  #include <linux/nsproxy.h>
-> +#include <linux/once.h>
-> +#include <linux/random.h>
-> +#include <linux/siphash.h>
->  #include <keys/keyring-type.h>
->  #include <keys/user-type.h>
->  #include <linux/assoc_array_priv.h>
-> @@ -147,49 +150,46 @@ static int keyring_instantiate(struct key *keyring,
->  }
->  
->  /*
-> - * Multiply 64-bits by 32-bits to 96-bits and fold back to 64-bit.  Ideally we'd
-> - * fold the carry back too, but that requires inline asm.
-> + * Give key types and domains address-independent identities.  Zero means that
-> + * an ID has not yet been allocated.  As with inode sequence numbers used by
-> + * futexes, this relies on the 64-bit counter not wrapping in a machine's
-> + * lifetime.
->   */
-> -static u64 mult_64x32_and_fold(u64 x, u32 y)
-> +static u64 key_index_id(atomic64_t *id)
->  {
-> -	u64 hi = (u64)(u32)(x >> 32) * y;
-> -	u64 lo = (u64)(u32)(x) * y;
-> -	return lo + ((u64)(u32)hi << 32) + (u32)(hi >> 32);
-> +	static atomic64_t next_id;
-> +	u64 old, new;
-> +
-> +	old = atomic64_read(id);
-> +	if (likely(old))
-> +		return old;
-> +
-> +	do {
-> +		new = atomic64_inc_return(&next_id);
-> +	} while (WARN_ON_ONCE(!new));
-> +
-> +	old = 0;
-> +	if (!atomic64_try_cmpxchg_relaxed(id, &old, new))
-> +		return old;
-> +	return new;
->  }
->  
->  /*
-> - * Hash a key type and description.
-> + * Hash a key type, domain and description.  KEYCTL_READ exposes the tree's
-> + * traversal order, so no part of the index may contain kernel addresses.
->   */
->  static void hash_key_type_and_desc(struct keyring_index_key *index_key)
->  {
-> +	static siphash_key_t hash_key __read_mostly;
->  	const unsigned level_shift = ASSOC_ARRAY_LEVEL_STEP;
->  	const unsigned long fan_mask = ASSOC_ARRAY_FAN_MASK;
-> -	const char *description = index_key->description;
-> -	unsigned long hash, type;
-> -	u32 piece;
-> +	unsigned long hash;
->  	u64 acc;
-> -	int n, desc_len = index_key->desc_len;
-> -
-> -	type = (unsigned long)index_key->type;
-> -	acc = mult_64x32_and_fold(type, desc_len + 13);
-> -	acc = mult_64x32_and_fold(acc, 9207);
-> -	piece = (unsigned long)index_key->domain_tag;
-> -	acc = mult_64x32_and_fold(acc, piece);
-> -	acc = mult_64x32_and_fold(acc, 9207);
-> -
-> -	for (;;) {
-> -		n = desc_len;
-> -		if (n <= 0)
-> -			break;
-> -		if (n > 4)
-> -			n = 4;
-> -		piece = 0;
-> -		memcpy(&piece, description, n);
-> -		description += n;
-> -		desc_len -= n;
-> -		acc = mult_64x32_and_fold(acc, piece);
-> -		acc = mult_64x32_and_fold(acc, 9207);
-> -	}
-> +
-> +	get_random_once(&hash_key, sizeof(hash_key));
-> +	acc = siphash(index_key->description, index_key->desc_len, &hash_key);
-> +	acc = siphash_3u64(index_key->type_id, index_key->domain_id, acc,
-> +			   &hash_key);
->  
->  	/* Fold the hash down to 32 bits if need be. */
->  	hash = acc;
-> @@ -209,7 +209,7 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
->  
->  /*
->   * Finalise an index key to include a part of the description actually in the
-> - * index key, to set the domain tag and to calculate the hash.
-> + * index key, to set the domain tag and index IDs, and to calculate the hash.
->   */
->  void key_set_index_key(struct keyring_index_key *index_key)
->  {
-> @@ -225,6 +225,14 @@ void key_set_index_key(struct keyring_index_key *index_key)
->  			index_key->domain_tag = &default_domain_tag;
->  	}
->  
-> +	/* Preserve the IDs when copying an existing key's index.  In
-> +	 * particular, its type may already have been unregistered.
-> +	 */
-> +	if (!index_key->type_id)
-> +		index_key->type_id = key_index_id(&index_key->type->index_id);
-> +	if (!index_key->domain_id)
-> +		index_key->domain_id = key_index_id(&index_key->domain_tag->index_id);
-> +
->  	hash_key_type_and_desc(index_key);
->  }
->  
-> @@ -263,11 +271,14 @@ void key_remove_domain(struct key_tag *domain_tag)
->  /*
->   * Build the next index key chunk.
->   *
-> + * The hash and inline description are followed by the 64-bit type and domain
-> + * IDs, low word first, and then by the rest of the description.
->   * We return it one word-sized chunk at a time.
->   */
->  static unsigned long keyring_get_key_chunk(const void *data, int level)
->  {
->  	const struct keyring_index_key *index_key = data;
-> +	const unsigned int id_chunks = sizeof(u64) / sizeof(unsigned long);
->  	unsigned long chunk = 0;
->  	const u8 *d;
->  	int desc_len = index_key->desc_len, n = sizeof(chunk);
-> @@ -279,27 +290,30 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
->  		return index_key->hash;
->  	case 1:
->  		return index_key->x;
-> -	case 2:
-> -		return (unsigned long)index_key->type;
-> -	case 3:
-> -		return (unsigned long)index_key->domain_tag;
-> -	default:
-> -		level -= 4;
-> -		offset = sizeof(index_key->desc) + level * sizeof(long);
-> -		if (desc_len <= offset)
-> -			return 0;
-> -
-> -		d = index_key->description + offset;
-> -		desc_len -= offset;
-> -		if (desc_len > n)
-> -			desc_len = n;
-> -		d += desc_len;
-> -		do {
-> -			chunk <<= 8;
-> -			chunk |= *--d;
-> -		} while (--desc_len > 0);
-> -		return chunk;
->  	}
-> +
-> +	level -= 2;
-> +	if (level < id_chunks)
-> +		return index_key->type_id >> (level * ASSOC_ARRAY_KEY_CHUNK_SIZE);
-> +	level -= id_chunks;
-> +	if (level < id_chunks)
-> +		return index_key->domain_id >> (level * ASSOC_ARRAY_KEY_CHUNK_SIZE);
-> +	level -= id_chunks;
-> +
-> +	offset = sizeof(index_key->desc) + level * sizeof(long);
-> +	if (desc_len <= offset)
-> +		return 0;
-> +
-> +	d = index_key->description + offset;
-> +	desc_len -= offset;
-> +	if (desc_len > n)
-> +		desc_len = n;
-> +	d += desc_len;
-> +	do {
-> +		chunk <<= 8;
-> +		chunk |= *--d;
-> +	} while (--desc_len > 0);
-> +	return chunk;
->  }
->  
->  static unsigned long keyring_get_object_key_chunk(const void *object, int level)
-> @@ -330,6 +344,7 @@ static int keyring_diff_objects(const void *object, const void *data)
->  	const struct keyring_index_key *a = &key_a->index_key;
->  	const struct keyring_index_key *b = data;
->  	unsigned long seg_a, seg_b;
-> +	u64 diff;
->  	int level, i;
+It is likely somewhat brittle, but: firmware updates may also change the 
+memory map, at which point we'll bail out of resume and lose user data 
+anyway. I think the appropriate guidance is for userland to unstage any 
+pending updates before allowing hibernation.
 
-Maybe going over the top, but reverse Christmas tree order per line size
-would be nice. I just comment one instance as a representive of similar
-sites in this patch.
+> If it is brittle, one way out of this might be only to care about the
+> last log entries, so make sure the log hashes to PCR5 then find your
+> EFI_ACTION and the exit boot services mark in the right order rather
+> than caring about exact value match.
 
->  
->  	level = 0;
-> @@ -339,28 +354,22 @@ static int keyring_diff_objects(const void *object, const void *data)
->  		goto differ;
->  	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
->  
-> -	/* The number of bits contributed by the hash is controlled by a
-> -	 * constant in the assoc_array headers.  Everything else thereafter we
-> -	 * can deal with as being machine word-size dependent.
-> -	 */
-> +	/* The inline description contributes one machine-word-sized chunk. */
->  	seg_a = a->x;
->  	seg_b = b->x;
->  	if ((seg_a ^ seg_b) != 0)
->  		goto differ;
->  	level += sizeof(unsigned long);
->  
-> -	/* The next bit may not work on big endian */
-> -	seg_a = (unsigned long)a->type;
-> -	seg_b = (unsigned long)b->type;
-> -	if ((seg_a ^ seg_b) != 0)
-> -		goto differ;
-> -	level += sizeof(unsigned long);
-> +	diff = a->type_id ^ b->type_id;
-> +	if (diff)
-> +		return level * 8 + __ffs64(diff);
-> +	level += sizeof(u64);
->  
-> -	seg_a = (unsigned long)a->domain_tag;
-> -	seg_b = (unsigned long)b->domain_tag;
-> -	if ((seg_a ^ seg_b) != 0)
-> -		goto differ;
-> -	level += sizeof(unsigned long);
-> +	diff = a->domain_id ^ b->domain_id;
-> +	if (diff)
-> +		return level * 8 + __ffs64(diff);
-> +	level += sizeof(u64);
->  
->  	i = sizeof(a->desc);
->  	if (a->desc_len <= i)
-> -- 
-> 2.53.0
-> 
-
-Br, Jarkko
+So include the old event log as part of the hibernation image? We 
+wouldn't be able to trust the event type because that's not part of the 
+measured payload, but altering that should fail safe so that shouldn't 
+be an issue. My gut feeling is that this makes things more complicated, 
+but all of this is opaque to userland so if it turns out to be a problem 
+we could revisit it?
