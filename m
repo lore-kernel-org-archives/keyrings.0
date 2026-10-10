@@ -1,65 +1,42 @@
-Received: from mail-pf1-f228.google.com (mail-pf1-f228.google.com [209.85.210.228])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 80D63331EB8
-	for <keyrings@vger.kernel.org>; Sat, 10 Oct 2026 21:20:29 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.228
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BEA523451B5;
+	Sat, 10 Oct 2026 21:24:24 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791667230; cv=none; b=sDoIzvcKBLApTTOSGY619aATTWZ23HpOGRQeWQabEgbYWBDOEWSr0w+kH3BrYO2V7hTJMBvgvejB8sJTvWm2t8xSi0KV0E7JMhCylFPLW0fPgLzI2Ki8xHitEqPmDdJ2fBnOVv8aPQ/azKKjm1aCCzzuR4qRWRcDPmalnVGSZcs=
+	t=1791667465; cv=none; b=Xb9fNAKtK8Xn0UZOfpaAFq89eczIbTrylrGIZa1E4z6y5wEDEJubNkhhuM+gdHSKHje0iIVvzIrqSm3EyLeN3s4Hjjmtwg5jve7pjWafq6WQdrj7ZnIB5pnNzD550TG1xPJhD3AGWYjXbqMvE/jRRDsgmdvBJHleSywg5RCUJak=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791667230; c=relaxed/simple;
-	bh=l2Rg6OHGxNhrquADY2PNe8wejzKKsSn3puAVABR9uw4=;
+	s=arc-20240116; t=1791667465; c=relaxed/simple;
+	bh=PQIc33haqgfB37R9stfcBA66YFExdO+vCOa5OnWXm/A=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=fshiUCzqrDpJ8L0tuzIlsKMr9cWMTykWb7kRgm2arj21pG3WdwNHLh7Rx/RFPeC61wsKnGEpO4Tn072vXAq6sqhYwyAAG2++JZDtKmpc7m9MecqIGEldyMyCUwWSWPA8uUTnorHK6eP1/ZIwRs353QHC3JqjZVZSzwAgzenzS+Y=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org; spf=pass smtp.mailfrom=cavan.codon.org.uk; arc=none smtp.client-ip=209.85.210.228
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=srcf.ucam.org
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cavan.codon.org.uk
-Received: by mail-pf1-f228.google.com with SMTP id d2e1a72fcca58-8917c712f32so280881b3a.2
-        for <keyrings@vger.kernel.org>; Sat, 10 Oct 2026 14:20:29 -0700 (PDT)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791667229; x=1792272029;
-        h=in-reply-to:content-disposition:content-type:mime-version
-         :references:message-id:subject:cc:to:from:date:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=FpfqyCSTiDIx8bI640+p9clkC+s+ooT/bqQ5SHe1jVs=;
-        b=jaAV5gdPxI/kcbn8yHUHCp8yQli4WG+Q3FG2JadHz+08anzeznDKTER8CNcKhWDdju
-         ZW6C7ir9foAOww2BeGJgQvu9Vgn2VzEyhx8FFd3uzxxQaPinVCJXPGMZOoHmu0d6LgLA
-         gTo3y2P/pYko9s9NprdhF6FXreUCOxt9Dn6DG3wHfmu0X1V/YHmWRNSXx6eEToEgaU1R
-         Y4BPqW2nSgaU8Aj1QXWe8LWYmUwfS5+FBCXignDNqi6UVQ2xbaQxlMwzwDT8iT2/cvba
-         3yJ7TqMTcgDw3TPgYkaMAW5RD4Z4hBMWi7+4tXq1BrHp4BCrtmiF7FrJKqZwMC5mRuek
-         HW5g==
-X-Forwarded-Encrypted: i=1; AKwUvBxdwxk+hOd7KlSN/S/Q8uvP9zChg1FJ9o83DJ3kOT2l99/SJBv7pBlYUtuAfNhDmsYeBHV3FcYLXw==@vger.kernel.org
-X-Gm-Message-State: AFq9FYJLxoZqamZRp/ahuepjR0hue6af+xBz3kDS6/RGzoc5x5rC1hIN
-	UaiBSlFMFuvc363eUiKY3+B/2MR7JqbsAelYjfmFSILRvhhyN9fRMpD7Qyb83kRrIYuYBAb+pJb
-	QNvdRhT3JX3UUgWy5DQugz7/pnHZMLfvqPEXTY9e7PDPiUdGDlMcE
-X-Gm-Gg: AYBFou0IU+hVknrcl336yF5cSt67oisY8rQf4fS1k0FRXpm5xhteIFHZMCDrVABLkwD
-	DsfKPqfHreMYrTpdf/QmP1T3gfbn3FoPqnaxchXznAslZ+JYyTjtWl/Bme4CYAeNba6IrZxfVUK
-	TjmJSXwsl7Oe2Kh6GFSF6MqGpomJQ/FTLichEWLuiJI49rpveBT9mLygUexfJxJmpjW1RqBhTFZ
-	PBeG/fugzZZmSEBrENIaBoFsIk23nOSwkzy7Hh3Bknlvh3RzdA9Ra+4lCJ8yL3yBG6jeRy/TBZh
-	LtMcXqnk3pqHQm1l4wZPZenChrGL75/ySxSLIiitxYBdP/ypAxVyTtc/R1QrdF7RhB10681IbRr
-	Bmrk=
-X-Received: by 2002:a17:90b:3d89:b0:3ab:c6d:2bf9 with SMTP id 98e67ed59e1d1-3ab3afdaaacmr5631535a91.57.1791667228755;
-        Sat, 10 Oct 2026 14:20:28 -0700 (PDT)
-Received: from cavan.codon.org.uk ([2607:f598:b99a:160:8a88:88ff:fe88:8788])
-        by smtp-relay.gmail.com with ESMTPS id 98e67ed59e1d1-3ab3780a473sm3281598a91.4.2026.10.10.14.20.28
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sat, 10 Oct 2026 14:20:28 -0700 (PDT)
-X-Relaying-Domain: codon.org.uk
-Received: by cavan.codon.org.uk (Postfix, from userid 1000)
-	id 0568D1287ADC; Sat, 10 Oct 2026 14:20:28 -0700 (PDT)
-Date: Sat, 10 Oct 2026 14:20:28 -0700
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Matthew Garrett <matthewg@nvidia.com>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org, rafael@kernel.org,
-	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH 13/17] tpm: Add verification of kernel signing key
- provenance
-Message-ID: <asqsHMX1YUUDdy75@srcf.ucam.org>
-References: <20261008132532.1155166-1-matthewg@nvidia.com>
- <20261008132532.1155166-14-matthewg@nvidia.com>
- <aeedde06c51910afe5231d9f359bb8767c01b5bd.camel@HansenPartnership.com>
+	 Content-Type:Content-Disposition:In-Reply-To; b=AkeA8qRdl9jm03lNBz3xi0yYlImI6ymPamMyYV7XozGxMUrKp55UQ9fSMnVfe4Wfu2KKXZImdvNU1SEvLxviw8OlPfm0AabmoP14+sjlIeQ6+T7A6RhxP5MV2Zpf4VsD+hQjp0u2YjajkE7cQ+O0eRxh+UcKEWzGEUYJAdr/L+I=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=AwM/2b1e; arc=none smtp.client-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="AwM/2b1e"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id C6EF31F000FF;
+	Sat, 10 Oct 2026 21:24:23 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1791667464;
+	bh=QWHSjEKCe02bd/smuesOf/w4AU5v5XzesQ7Kwu/UJXs=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=AwM/2b1ezf1XGwLA3JWq72alTLNCufFZ+3trhjUQGYCMA2sr2pU6CCyGQ2tOswaio
+	 VPKOGOQUaQgrTO5AX2EMRuRceZBW5eGoTjHVkzycuSDK4sI4CnON5g9x6FHZQ24tny
+	 1UF+39EGSGSAW49E8ipoQ9dxMX9VEviffkA1CPlBaivRWh8VY6CYQA5dMFMgs96QWR
+	 eQj7iHZ1a5drnr5Ba7lbtbWc9cDFa8/1ptN+HP+RG5uLuGkbAYzyBemT6HNAmlZD7w
+	 tTONRBFASI758ZboJdA1gEM2MWus307K2dWIzm1GD8n4dNXqYU0fY4is6mF6TBBx0+
+	 J8dkYJRndbmpQ==
+Date: Sun, 11 Oct 2026 00:24:20 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Cen Zhang <zzzccc427@gmail.com>
+Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+	serge@hallyn.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	baijiaju1990@gmail.com, jjzuming@gmail.com
+Subject: Re: [PATCH] keys: Check the authorization payload in process keyring
+ searches
+Message-ID: <asqtBDX8112XvcRT@kernel.org>
+References: <pm-key-management-objects-candidate-0004-v3-598361863b76bc25d58d@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -68,21 +45,75 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <aeedde06c51910afe5231d9f359bb8767c01b5bd.camel@HansenPartnership.com>
+In-Reply-To: <pm-key-management-objects-candidate-0004-v3-598361863b76bc25d58d@gmail.com>
 
-On Sat, Oct 10, 2026 at 11:42:58AM +0200, James Bottomley wrote:
+On Fri, Oct 09, 2026 at 01:52:16PM +0800, Cen Zhang wrote:
+> An authorization payload and its saved credentials must remain valid
+> while search_process_keyrings_rcu() searches the requestor's keyrings.
+> The function validates the authorization key, then separately loads
+> payload.data[0] and unconditionally reads rka->cred. Validation does
+> not prevent request_key_auth_revoke() from clearing the payload.
+> 
+> A request-key helper can assume authority and fork a descendant that
+> inherits the authorization key. If the descendant misses in its own
+> keyrings, it falls back to the saved requestor credentials. Successful
+> target instantiation invalidates the authorization key without clearing
+> the payload. After the helper exits, UMH_WAIT_PROC returns to the
+> requester, which calls complete_request_key() and revokes that key.
+> 
+> With the descendant paused after validation, the paths can interleave
+> as follows:
+> 
+>   1. The descendant enters search_process_keyrings_rcu() under RCU and
+>      key_validate() succeeds.
+>   2. The helper instantiates the target, invalidates the authorization
+>      key, and exits.
+>   3. The requester resumes from UMH_WAIT_PROC, calls
+>      complete_request_key(), and revokes the authorization key.
+>      request_key_auth_revoke() sets its payload pointer to NULL.
+>   4. The descendant loads NULL and dereferences rka->cred.
+> 
+> This NULL dereference can oops the kernel. RCU delays payload disposal
+> but does not prevent the pointer from being cleared.
+> 
+> Load the payload with dereference_key_rcu() and require a non-NULL
+> result before validating the authorization key and searching its saved
+> credentials. A non-NULL payload and its credentials remain alive for
+> the caller's RCU read-side section; a cleared payload skips the fallback
+> search and follows the existing error selection.
+> 
+> KASAN report as below:
+> 
+>     Oops: general protection fault, probably for non-canonical address 0xdffffc0000000005: 0000 [#1] SMP KASAN NOPTI
+>     KASAN: null-ptr-deref in range [0x0000000000000028-0x000000000000002f]
+>     RIP: 0010:search_process_keyrings_rcu+0x32b/0x790
+> 
+> Fixes: e59428f721ee ("keys: Move the RCU locks outwards from the keyring search functions")
+> Assisted-by: LLM
+> Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
+> ---
+> 
+> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+> index a63c46bb2d148080add6a194579f7b1093c04d82..76da13fa07fab70115966e9ea8360af66390dd85 100644
+> --- a/security/keys/process_keys.c
+> +++ b/security/keys/process_keys.c
+> @@ -556,9 +556,8 @@ key_ref_t search_process_keyrings_rcu(struct keyring_search_context *ctx)
+>  	    ) {
+>  		const struct cred *cred = ctx->cred;
+>  
+> -		if (key_validate(cred->request_key_auth) == 0) {
+> -			rka = ctx->cred->request_key_auth->payload.data[0];
+> -
+> +		rka = dereference_key_rcu(cred->request_key_auth);
+> +		if (rka && key_validate(cred->request_key_auth) == 0) {
+>  			//// was search_process_keyrings() [ie. recursive]
+>  			ctx->cred = rka->cred;
+>  			key_ref = search_cred_keyrings_rcu(ctx);
 
-> This does strike me as very elaborate, especially the ephemeral key
-> bit; would you countenance a simplification?  Since all you want is
-> proof that the hibernate image hash matches the one the creating kernel
-> made, you could simply create your kernel only NV index as a PCR and
-> measure the hash directly to that.  Since user space is barred from
-> writing, all you need is an audit of the measurement going into the NV
-> register (indeed, it could be an ordinary NV index you simply write the
-> hash value to), coupled with a read of PCR 5.  Then your audit log
-> directly verifies the hibernate image hash and you don't have to bother
-> with the ephemeral keys.
+Thanks.
 
-Just to be clear, "ephemeral keys" here refers to the ephemeral signing 
-keys and not the generated AK, right? I /think/ that would work, but let 
-me ponder that some more.
+
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+
+
+Br, Jarkko
