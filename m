@@ -1,126 +1,165 @@
-Received: from lamorak.hansenpartnership.com (lamorak.hansenpartnership.com [198.37.111.173])
+Received: from DM5PR21CU001.outbound.protection.outlook.com (mail-centralusazon11011063.outbound.protection.outlook.com [52.101.62.63])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 83F6D3644C6;
-	Sun, 11 Oct 2026 08:21:30 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=198.37.111.173
-ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791706892; cv=none; b=cYw1pvvmzTZFWkNPVcwW0zhsSqaEbknAkQANHROW0emk9dXwNyOdqN7v+DI/+39SzPbJJPJaWiY80DXcUpZZb5z86MP0EBcje+FI4bEyPSQtW0N/FIOJNO18z2InYK3+LeXWYihYiKQFFD0EiTmxIhsmJLOkswQ+rEbObEOI3J8=
-ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791706892; c=relaxed/simple;
-	bh=8LdKDzBJ+e+7VR18SRBTbtAqhcjd9xD7lDD0ZUYR4Nw=;
-	h=Message-ID:Subject:From:To:Cc:Date:In-Reply-To:References:
-	 Content-Type:MIME-Version; b=Lege4ZPa3BGdg9xPEmG2Yc+02wb5tVo3rwJj39DjDoVhcrmxYh4612KX4mLS7aibHtdebJWbzCGkmdvsmqomyt4t5JZ/BXBgyw9dTrTQwHRNPNwN2ydWKadfdYfYNxF7/nlu5tn1m8i+hG46an+XYWX6kNFy6gDF4ybNTu+7wNw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com; spf=pass smtp.mailfrom=HansenPartnership.com; dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b=mIxHxx2B; arc=none smtp.client-ip=198.37.111.173
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=HansenPartnership.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E3C3F221FB6;
+	Sun, 11 Oct 2026 09:35:54 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=fail smtp.client-ip=52.101.62.63
+ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1791711356; cv=fail; b=EQiGEMugUl0ITd/m2AYzuGf3YKX8RHEaNM2Gyjfj4W+60SYNPwlsvDP22vCPsE0xM+wtbN32lY8uTikGUtnm/OJRndR1bsVlZ/X09k9BSdQh0OL4CTxyyRCW4iNukc0NZrdG6MbmBbmzk6VnxI+9JPS2v3RVz9uR6GDp5vGQ/2Y=
+ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1791711356; c=relaxed/simple;
+	bh=iK7ZtVlZ5/+eKgYG+KLP/Ya1S8Q8idG7lGzAFm1oFPs=;
+	h=From:To:CC:Subject:Date:Message-ID:References:In-Reply-To:
+	 Content-Type:MIME-Version; b=QKGGJ8C0owcB25LRuU+ET4lzosaZOiaAtyHobpjkEzikTNWf9RFnhtQ8IfXfoE1dZi9LS4rhOrJVWdcoBf0w/v+W12CZJYSmMFwEtSoYDdQFvhAJ01aYeBC8QKzIh1+ULnENVv2j1nI6yKAOUC1PzJvsvkDguKyHAqtOnXtUlAM=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=nvidia.com; spf=fail smtp.mailfrom=nvidia.com; dkim=pass (2048-bit key) header.d=Nvidia.com header.i=@Nvidia.com header.b=uT3pobpC; arc=fail smtp.client-ip=52.101.62.63
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=nvidia.com
+Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=nvidia.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="mIxHxx2B"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-	d=hansenpartnership.com; s=20151216; t=1791706889;
-	bh=8LdKDzBJ+e+7VR18SRBTbtAqhcjd9xD7lDD0ZUYR4Nw=;
-	h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-	b=mIxHxx2BAmwFDRwhjO9zHgghXLZwcoNPZ16RdRFJvEU+MIDsLGuJmxXk+UvaR1tfz
-	 s0T5IkDEowtEqq+GEvNsbs7uGSEec+/aIa2vikXnXEMClOW0OwAxsKHBukrkF/auY1
-	 fqVhKRAPNFjk2MLSj70x/daiDYdQLAac+3G7mk/w=
-Received: from [10.23.23.39] (unknown [80.188.228.74])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519MLKEM768 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id BB6A21C0492;
-	Sun, 11 Oct 2026 04:21:27 -0400 (EDT)
-Message-ID: <916e6cede1a704dd7bc9889829dd8b1598a431e7.camel@HansenPartnership.com>
-Subject: Re: [PATCH 01/17] tpm: Define a kernel-owned TPM NV index that
- can't be modified by userland
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Matthew Garrett <matthewg@nvidia.com>, keyrings@vger.kernel.org, 
-	linux-integrity@vger.kernel.org, rafael@kernel.org,
- linux-pm@vger.kernel.org, 	linux-efi@vger.kernel.org
-Date: Sun, 11 Oct 2026 10:21:23 +0200
-In-Reply-To: <asqthz69ohnMVCye@srcf.ucam.org>
-References: <20261008132532.1155166-1-matthewg@nvidia.com>
-		 <20261008132532.1155166-2-matthewg@nvidia.com>
-		 <435907614242e82ecde1767a967a3110fca6fb37.camel@HansenPartnership.com>
-		 <asqthz69ohnMVCye@srcf.ucam.org>
-Autocrypt: addr=James.Bottomley@HansenPartnership.com;
- keydata=mQENBE58FlABCADPM714lRLxGmba4JFjkocqpj1/6/Cx+IXezcS22azZetzCXDpm2MfNE
- lecY3qkFjfnoffQiw5rrOO0/oRSATOh8+2fmJ6el7naRbDuh+i8lVESfdlkoqX57H5R8h/UTIp6gn
- 1mpNlxjQv6QSZbl551zQ1nmkSVRbA5TbEp4br5GZeJ58esmYDCBwxuFTsSsdzbOBNthLcudWpJZHU
- RfMc0ew24By1nldL9F37AktNcCipKpC2U0NtGlJjYPNSVXrCd1izxKmO7te7BLP+7B4DNj1VRnaf8
- X9+VIApCi/l4Kdx+ZR3aLTqSuNsIMmXUJ3T8JRl+ag7kby/KBp+0OpotABEBAAG0N0phbWVzIEJvd
- HRvbWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT6JAVgEEwEIAEICGw
- MGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAhkBFiEE1WBuc8i0YnG+rZrfgUrkfCFIVNYFAml2ZBI
- FCS3GUMIACgkQgUrkfCFIVNZKjQf/deRzlXZClKxTC/Ee2yEPqqS7mm/INUA49KdQQ5oIhSxkUBy0
- 9J4qjMIo5F8ZFkFTqikBqeL35LKu7O7rn8WETfX8Bxvos3HUsl3jHo34DES4MUFIpoQPgtiLRGwLb
- K0cVCAArR2u2qj4ABmTRrs1I1kvdjEw6gatOuXtEe/j5O2fvfzTq9GBr0Q3n2IAsFXi4hLlx6VPE8
- tyWUZ8BWJKtih3JAeUiXFvASL3McV0rV9RnU0VbjEQEhSE7PMYhWpnDC9AyBb0lXJllQRvC3NSkUB
- 8KVQgNNxRPss0WE/nBoZ4dFA42jTyzTz8lNylxZoAWV7WJb3QxVg4oCodRVrxxrQhSmFtZXMgQm90
- dG9tbGV5IDxqZWpiQGtlcm5lbC5vcmc+iQFVBBMBCAA/AhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeA
- QIXgBYhBNVgbnPItGJxvq2a34FK5HwhSFTWBQJgS5mYBQkbNYS9AAoJEIFK5HwhSFTWBpwIAL5Bk3
- 5FB34U6iHmDzzgdCbxLTs43T/YQyJpcGIvopBvnI/fDY8oSG6Df64/O6B+1R+A8TDp6ZG5ysUWnCC
- 6GuIaEHemBYkitMPglR6+sGCMQY7O0mlsPvdssvKK1KI9Bno4VU6ogaF2qVzefSqg1Djmf/DcsxWP
- rI/jdJ8FB5AYR2rjIdDFc+zRdAJuavo1/anyY2wgpFh/3R8IOYAEfWV9nGgYkf9+tA4EIn1sxE0I3
- L5oW2N3mbyRrkzuBwO8ztMCwqEPk7moWzhokcZqMXiAIahaZdkashJC+s2X2RZSGCy+g+pvY5NN4B
- BVG5XwLgVBqbHMTcxE0fbmPqz+q6O0LEphbWVzIEJvdHRvbWxleSA8amVqYkBoYW5zZW5wYXJ0bmV
- yc2hpcC5jb20+iQFXBBMBCABBFiEE1WBuc8i0YnG+rZrfgUrkfCFIVNYFAmODZ5ACGwMFCRs1hL0F
- CwkIBwICIgIGFQoJCAsCBBYCAwECHgcCF4AACgkQgUrkfCFIVNZu0Af/TzvL2/NdgAcw9uN3x60H8
- jc4QUq14VpxcFEFEMpcj1morkX/G93V+56HBBaXZj+yK8PhxIA/SIz+sU7C/0YvKuvzakP8ZX/7WJ
- e32SOUtjfr/VTaqjIBzNj6OxLvZpmNbBw7s6DwhhNpHOWqJ/1ml+PtDRDV71IB58yVqQjp1xlNKVl
- ZppcJ5908EJzsFnRIVjiQiDSKoppqB2BCibBbrWcln7CiWMyOC/cco6SIn6twH+f7+aivJ3xGcOE2
- a9gBKF5rNi9TBoX9oyPmshv/TDmnohsVrH7AYXlGYfZTk15SWEiROh1QX8/uD9wl/gcIv5EDUpT/F
- L2jzOsA5663bw==
-Content-Type: text/plain; charset="UTF-8"
+	dkim=pass (2048-bit key) header.d=Nvidia.com header.i=@Nvidia.com header.b="uT3pobpC"
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=jAJNI7zGxtekGkUYFcul46YQXKmOabUp8tlm+43IsWnHD8xafSp4WfPCA3/uhFqMdWB7qeUmDYv6exnLcwJC9ZC4EnSuDIbp7ZxdABNe60K7FrPGjfsJiamEQ6EfKy0WSt+5TOV/P3jHJV2efDCgfeNplxxfwnJvri+f8uvdwbfeoap9/0J3iIfnti+E/SwTySv9IPw4SXsCzPQruhlmI4KRYUmB/DZjtX1ekbNPYjmsprAZnapq9TUKY0lmUO0ReAyMM+lQW2nZQ8wLhf9d0TwCN7ZgL7TdUcAXnw3gQzPTVpD4KT/lsEyz/z1PoVECGFdqk4mefWYiSW+tgg7e0A==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=iK7ZtVlZ5/+eKgYG+KLP/Ya1S8Q8idG7lGzAFm1oFPs=;
+ b=uOAkKZkpX8Ae89EaBWfOf1sbjm9GheozAyHUnr9ykWnQIIdl3sNMlwTfIhGAVXV+obbDWaqjG3+iAHdI/Xa+aAji9G80B2Xtdg7k2djMtwTn6uS0PIs/3D8a2HtVcV/81CtDfVsdFapa0b2O/GBhi1V3+9G9uzFfV92PTz7lG8BntneKmrZFAfZf58T/R6CNCU+gGoSgwgMwsuEywRFdcE9Tvgsh7EuSlTj8xPO9VIOJbbqFmRwnXTLt1pgESxl2PedQq71Vk0hWNTVIy5n2r1BHAjHdFx1KInTHuWzIdRlOeuQphSV8C5V0z4/k+s0+zUcJg/Ff2BPA15LwsOaniw==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=nvidia.com; dmarc=pass action=none header.from=nvidia.com;
+ dkim=pass header.d=nvidia.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=Nvidia.com;
+ s=selector2;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=iK7ZtVlZ5/+eKgYG+KLP/Ya1S8Q8idG7lGzAFm1oFPs=;
+ b=uT3pobpCMVyISM2FYJbxMYARRpbIw1D16VoERWgTIfB9DK9vJM/fG60F7HCjeYfgxhX5UBykMerbKGNKnK/ZB9jXIx/eqvetCSZZmxV+Hm2z4gDPyB2HTaI26IRWWf1J0MsYGjAEvTIeGuLa2JvdL4CYAQ6OS4fmEGrF23IsNDcPIV8KeOHwOFtGu0bLpmh9CW6PG1YhlJJ72iXpjAo4ZQ3tpXinsjmniSAmcUnY+8dQsKblyRDotSPAaWQt4fT8Tv7QXn5CL9uy908hhekOxZmSL2DdamX5zws8TEP4WDaFgpxJsbSV7iqrN6XnqEfyWh2vUC3mdC9k3qk/O4+szg==
+Received: from DM4PR12MB6136.namprd12.prod.outlook.com (2603:10b6:8:a9::14) by
+ BL1PR12MB5899.namprd12.prod.outlook.com (2603:10b6:208:397::19) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.21.496.17; Sun, 11 Oct
+ 2026 09:35:44 +0000
+Received: from DM4PR12MB6136.namprd12.prod.outlook.com
+ ([fe80::75c4:de57:e254:243a]) by DM4PR12MB6136.namprd12.prod.outlook.com
+ ([fe80::75c4:de57:e254:243a%6]) with mapi id 15.21.0496.018; Sun, 11 Oct 2026
+ 09:35:43 +0000
+From: Manuel Huber <manuelh@nvidia.com>
+To: Andrew Halaney <andrew@amutable.com>, "bot+bpf-ci@kernel.org"
+	<bot+bpf-ci@kernel.org>
+CC: "ast@kernel.org" <ast@kernel.org>, "daniel@iogearbox.net"
+	<daniel@iogearbox.net>, "andrii@kernel.org" <andrii@kernel.org>,
+	"agk@redhat.com" <agk@redhat.com>, "snitzer@kernel.org" <snitzer@kernel.org>,
+	"mpatocka@redhat.com" <mpatocka@redhat.com>, "bmarzins@redhat.com"
+	<bmarzins@redhat.com>, "dhowells@redhat.com" <dhowells@redhat.com>,
+	"jarkko@kernel.org" <jarkko@kernel.org>, "paul@paul-moore.com"
+	<paul@paul-moore.com>, "jmorris@namei.org" <jmorris@namei.org>,
+	"serge@hallyn.com" <serge@hallyn.com>, "ebiggers@kernel.org"
+	<ebiggers@kernel.org>, "tytso@mit.edu" <tytso@mit.edu>, "corbet@lwn.net"
+	<corbet@lwn.net>, "skhan@linuxfoundation.org" <skhan@linuxfoundation.org>,
+	"rdunlap@infradead.org" <rdunlap@infradead.org>, "dm-devel@lists.linux.dev"
+	<dm-devel@lists.linux.dev>, "linux-kernel@vger.kernel.org"
+	<linux-kernel@vger.kernel.org>, "keyrings@vger.kernel.org"
+	<keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org"
+	<linux-security-module@vger.kernel.org>, "bpf@vger.kernel.org"
+	<bpf@vger.kernel.org>, "fsverity@lists.linux.dev" <fsverity@lists.linux.dev>,
+	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "brauner@kernel.org"
+	<brauner@kernel.org>, "martin.lau@kernel.org" <martin.lau@kernel.org>,
+	"eddyz87@gmail.com" <eddyz87@gmail.com>, "yonghong.song@linux.dev"
+	<yonghong.song@linux.dev>, "mason@kernel.org" <mason@kernel.org>,
+	"ihor.solodrai@linux.dev" <ihor.solodrai@linux.dev>, Fan Wu
+	<wufan@kernel.org>
+Subject: Re: [PATCH bpf-next v2 1/3] keys: add KEY_SPEC_DM_VERITY_KEYRING
+Thread-Topic: [PATCH bpf-next v2 1/3] keys: add KEY_SPEC_DM_VERITY_KEYRING
+Thread-Index: AQFA8w+2C5zyX59jlDtLuO4vqcUrcQHtTXNaAg0PIQi4EQlHsA==
+Date: Sun, 11 Oct 2026 09:35:43 +0000
+Message-ID:
+ <DM4PR12MB61364B4F81AE7A8D1FB71E1BDE902@DM4PR12MB6136.namprd12.prod.outlook.com>
+References:
+ <20261008-ajhalaney-dmverity-key-identifier-v2-1-008456d189cb@amutable.com>
+ <910460850fd4163dadb804fbdf6c17f6a9dfec060f4d865a17df87336ea3e165@mail.kernel.org>
+ <asgQxTE-6YtEgvYZ@toolbx>
+In-Reply-To: <asgQxTE-6YtEgvYZ@toolbx>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach:
+X-MS-TNEF-Correlator:
+authentication-results: mx.microsoft.com 1; dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=nvidia.com;
+x-ms-publictraffictype: Email
+x-ms-traffictypediagnostic: DM4PR12MB6136:EE_|BL1PR12MB5899:EE_
+x-ms-office365-filtering-correlation-id: c99ab713-d20e-4997-fbd4-08df277b0573
+x-ms-exchange-senderadcheck: 1
+x-ms-exchange-antispam-relay: 0
+x-microsoft-antispam:
+ BCL:0;ARA:13230040|366016|1800799024|376014|7416014|23010399003|6133799003|22082099003|18002099003|11063799006|56012099006|4143699003|10067099003|38070700021;
+x-microsoft-antispam-message-info:
+ PRs500bxM3NxZCkCdDr6SkNC0YnwV28TQrsqeh3oDBKFcMdhsOg6Ui6CwWBlCYiwpPvXc3M79/MKI5+VAmzCKCohyNDR2JklmKYLYqVvBXcZjDkGUVdmsAREw34lfL/vx33pKK+pEcP2AGFOsfKpIDWY+MNoGRy7Ikd3FLQ2SSfhq0TY+HXzjQJnLEYQhnLl+VOjfElfpBubWRKyt/s/6AGHrq2XHuOW6CUVXoMFJWNbb53rTE2HRiZSWhau8ra0wG1twgkLLFHUMzR2hRwQgNnLwKz7yhGz8BX5vFP639qFu7ezmWPiB2N5k+xp8qOxAc2Don6Z2ia0kh5uVBspVQlAHgKD88zVEdz16avVe7CLLykTG4OwPZKg5lDK3UVmARhoFfPw7JBOEaaxrjn9Mw2o7kqlsCxYoodXNDEhVnxGYQcUwgJ20TTrGKngR1zKTYDyw3EPdpFhcVdKPDyjZPweZrAKub5Ft/284jWQfZdIjRdxVU7yzfBIj/V7qKdlFPXJKDA0XzlGotZPLMq6e7JlT5GhBbEUrdXqr7rvueaXmyoSDH2gCRj+OPX47fovkSrEyYXj0QqCzNivvoKpFwmFt1ADglhmKvTlxdrbTPmwqR6w+3aZ7xehztvOeaBL0Pl7wUM/Kliwr2i2Bb5w2WiiLgN5fcb25hu0B0SGMq8S8i5809vVvrhPSjWpPLboes9Vi+CNBwsdjJ9s2SsGLMTu8VuncSuHxKfC4TiaH5c=
+x-forefront-antispam-report:
+ CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:DM4PR12MB6136.namprd12.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230040)(366016)(1800799024)(376014)(7416014)(23010399003)(6133799003)(22082099003)(18002099003)(11063799006)(56012099006)(4143699003)(10067099003)(38070700021);DIR:OUT;SFP:1101;
+x-ms-exchange-antispam-messagedata-chunkcount: 1
+x-ms-exchange-antispam-messagedata-0:
+ =?us-ascii?Q?jiS1KVes5yntX9+lEatHLw0Mv5/PrqzyYtSU6u4lDXziYGN0cIBFSEel9sj7?=
+ =?us-ascii?Q?7yN6RuqpvGe4e+8NMFCQJWgzsQjrELkRCqMqjzLuqln8MesvVc31nRNjXtC/?=
+ =?us-ascii?Q?N/T8yfQ7TnIHW0i7jYD9nGuSc0Mzxx7KbdvXnIikf8cKfu88aaToiWEfJrPO?=
+ =?us-ascii?Q?LQ7eEoXHefRoshu0G03+wSCehK0I8Ll7Y50hZ6ZNsgPjEvZdMMxjJJ65cRU0?=
+ =?us-ascii?Q?5i14WaGqDsacaTJe6NlPT9N+M0NzWpl2mH0rLu4MSHyUmtpyT1QtFHC4w5nd?=
+ =?us-ascii?Q?a40pqecAWqxJPnwPjWcKyTM/1vOl67g+kg9gkbgFlknNELg5I6qP6/W225Hf?=
+ =?us-ascii?Q?cV0AMnmB/Gg0TsUsBap+br5STYYK8STxwOJTkMSOtuD93R9cou0oEJwoL4wH?=
+ =?us-ascii?Q?sPEzAbKWCCEXOUKOtwHmWYR31mzb7onxiYn4hJCj4cXtF2Ac+YN5SrpVRSGw?=
+ =?us-ascii?Q?gNi7G5KofyN1umjw9mNY8767YbM4hvBJJCiuDY/Q4OPQKS6L7U+Z0L1hSxpJ?=
+ =?us-ascii?Q?jzh3eDVkXTCGi8CU5USNOVOP9J/AmdxbdXvyiJ6bWlgqSN5tcbP0TgZlDohn?=
+ =?us-ascii?Q?fhkMq+F8scjRZbxQlaCyqXmD2L/VBVRFbzilwkVmj8AFQPaIBf/AODzFpFFn?=
+ =?us-ascii?Q?C+EYJWnmMu8COiR51gqXGs0jOvplsoxpMHBRMU7o7ywwgWEcFg2akwpukveQ?=
+ =?us-ascii?Q?xAF0WOwdRTGgCcT73/FRrxJY7Za0dtYj+EZDIC7kzESf2A86PkGJf9kJDcOE?=
+ =?us-ascii?Q?Q8P4x0ItE9nnEp0iKVlfm+VB+DOv3GAwc1db38GeIH2vQ+gxjSG7J9PWzS5J?=
+ =?us-ascii?Q?MqVsUkJlbNAIrNDIQwF8yYsa4wy5u9sdX26LHV+yRlGiM+vvpQXR9a7FzMvA?=
+ =?us-ascii?Q?MX7PkEdVnph2dx5Qj/iVnaMdBFQzLCIXQfRpAEH0+Zu9zhHrhtM+nPpX8dMI?=
+ =?us-ascii?Q?Nv6GE/YIZtFy3rPdqgvl2W8q77sPZRFD5TbODw8jWHGRhoSofULM7GyVtCSE?=
+ =?us-ascii?Q?nEZ0CEHBEQi8ltDcdErMttBz7db6CzQvKJLkIvmBEVlPwRLel3GZrPxMpM3V?=
+ =?us-ascii?Q?0ZyBlWRGVJHn8K3M+abLVx/c9XV8IAh2MV9HQbQpa6vtd3J0E2L/SqNilTzw?=
+ =?us-ascii?Q?hcV3AHZE8FbSYIBUJwvFCdT61Ng2H/+OSB3qzENSyih6jkxy48apmVZMe7ZL?=
+ =?us-ascii?Q?anfWTARibbNdkRpT+2EHG0tEHYUh3glI/IOpRinkrNuqKRpfi69TNyl5+c0d?=
+ =?us-ascii?Q?WRpLz3cFowVyoUW5F1To9bslb7SUdwmFexwnAnAHzjxhn3dcdEqwoCxMk9R+?=
+ =?us-ascii?Q?KJERWoiSXkdI40FRKfwhtNg56F3Xw7CQm8IKoivaIkRFf0wBFGo9skucEDEX?=
+ =?us-ascii?Q?Fw2iaW9YbNw0umjJ5MGvEFA8NHG3QkoJ6xZr22vZQoxoKLhPb/aivC1zW+n+?=
+ =?us-ascii?Q?mrZVJ6hrBcipWO70Xwtn6krax/IMkkEUumYO3hK0RB9U8DmnO+8/464cQ5jw?=
+ =?us-ascii?Q?Nz7DfNAx29/TwFJlFXtd2X1KBemhW9jbA33j1aG368nlqFrdE4WGTM5guprh?=
+ =?us-ascii?Q?Ln5WPTtPkEYpni9zZwZ6G9Gjo/Imlz4nWNQ17MfFy9bLYM43xylIQzZCG3pi?=
+ =?us-ascii?Q?bZnmyrqbAyRGI8IvklaH9HvbqLFHbTo/PkDvzLHN0u0PLxV4GUeWPbwt6TdR?=
+ =?us-ascii?Q?xehdLDvwkWAmZCXq5G3Apu/6pt1rio+azc3D/O+uiJrZAkdH?=
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
-User-Agent: Evolution 3.56.2 
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+X-OriginatorOrg: Nvidia.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-AuthSource: DM4PR12MB6136.namprd12.prod.outlook.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: c99ab713-d20e-4997-fbd4-08df277b0573
+X-MS-Exchange-CrossTenant-originalarrivaltime: 11 Oct 2026 09:35:43.5474
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 43083d15-7273-40c1-b7db-39efd9ccc17a
+X-MS-Exchange-CrossTenant-mailboxtype: HOSTED
+X-MS-Exchange-CrossTenant-userprincipalname: 1xq2aH5Cit0Q4+wXuGQYfdbAbfOiuDDem7WcQ2OPeVWzHyXb1mweCpPweRPPvWHcIJZ8+YgCQSbabY+yQV5MrA==
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL1PR12MB5899
 
-On Sat, 2026-10-10 at 14:26 -0700, Matthew Garrett wrote:
-[...]
-> > If we do have a problem with lack of manufacturer compliance, one
-> > other way I've got on my todo list is fake trusted launch: now that
-> > Trenchboot is heading upstream, we have the real trusted launch,
-> > but that's usually too fiddly for most people, so I was thinking if
-> > we could get enough of the TXT launch to happen to open the
-> > localities (without bothering too much about anything else) that
-> > might be easier and give us the ability to run the Kernel in
-> > locality 2.
->=20
-> Remember that many consumer devices don't implement TXT, it's only
-> the enterprise SKUs that tend to. But that would be funny - it's the
-> same sort of shape as an awful hack that's used on some of the
-> Qualcomm laptops to get access to EL2.
+On Thu, Oct 08, 2026 at 02:57:00PM -0700, Andrew Halaney wrote:
+> With the BPF keyring ID already being merged here in bpf-next, plus
+> Jarkko's feedback/RB, I continued following the current pattern instead
+> of walking back the BPF keyring ID, and dealing with the
+> builtin/module/rodata differences I alluded to that would make that
+> approach a little more annoying (at least with how I thought it thru).
 
-I haven't really got much farther than a bit of dissassembly of the AC
-block on the theory that if I could work out how the localities get
-opened, I wouldn't even need to do a fake trusted launch.  However, I
-have been doing most of the investigation on random Dell laptops, which
-do claim support for TXT (at least they have a BIOS switch for it) ...
-although I was looking for it now and it seems to have disappeared on
-my XPS, which might be deliberate:
+Another data point for this design choice: after initial discussions
+with Fan Wu, I am about to propose a dedicated .ipe keyring for IPE
+policy-signature verification. The keyring would be exposed to
+userspace so that a trusted entity can provision keys, modeled after
+the .dm-verity keyring.
 
-https://www.dell.com/community/en/conversations/xps/9730-secure-launch/6872=
-f0a3915c657bf9d40ae2
-
->  Localities are very clearly the Right Way to deal with this and ugh
-> if we'd been having this conversation 20 years ago instead.
-
-Yes, I know. I actually have an unpublished patch series that makes the
-kernel enforce locality 2 for its operations and 0 for userspace (to
-demonstrate locality policy for keys) but because of the BIOS block it
-only works on kvm guests, which makes upstreaming it a bit pointless.
-
-Perhaps the way forward on this one is to pressure Intel and AMD to
-tell us how to open the localities absent a trusted launch.  I mean, we
-only need localities 0-2 which would give them an easy way to
-distinguish our use case from trusted launch ... but I bet the bios
-switch is all or nothing ...
-
-Regards,
-
-James
+I do not want to introduce churn to this discussion. I am happy to
+establish the reserved ID range and generic registration interface
+upon proposing my changeset, to establish this separately, or to
+follow any other suggestions. Getting guidance for this subject ahead
+of time for the case where 'yet another keyring' is introduced would be
+highly appreciated.
