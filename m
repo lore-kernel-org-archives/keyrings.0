@@ -1,81 +1,81 @@
-Received: from mail-yw1-f169.google.com (mail-yw1-f169.google.com [209.85.128.169])
+Received: from mail-yw1-f181.google.com (mail-yw1-f181.google.com [209.85.128.181])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8C7C535F60E
-	for <keyrings@vger.kernel.org>; Mon, 12 Oct 2026 13:30:57 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.128.169
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EDF89345750
+	for <keyrings@vger.kernel.org>; Mon, 12 Oct 2026 13:33:18 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.128.181
 ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791811858; cv=pass; b=T/7y7a1qZKMWWE0zG8s1y+022YJaBIpsMRfRlT8XMK0k0io9KgDllj21QVKuTQQEfTgfCTv1vPU74Ka4Ck8b0X3lWze4etQ5VEy4MnI8w16nzxECfCv1bDDx0wgyDnqUp+zIpWK+zL60HWsOm8giilncTirT1o/iuAH8luDI9/A=
+	t=1791812000; cv=pass; b=haz+tTl7ZZWcrcB8VgYZZZ4QWBfRhOtz2quT6aYgR8/zV0zeKm2PXIwwKn4GiovxlZwdh6A3zaUDHyGM1mgb2TeX8vXMLw3irOJGhwCMLSgujQ+DQrcZRs0farhrfBl9kDYzXPl2N9PBBe0CfqzvjbEH60ZysGYtmnsRLDBtYn0=
 ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791811858; c=relaxed/simple;
-	bh=EmjxUhPi9se44vvqI3S6zFF2XZYXEIws4ovhrSHoy+g=;
+	s=arc-20240116; t=1791812000; c=relaxed/simple;
+	bh=Q8kBAHTJFyIMI6V+nJ8Kf/uBpMG3W+HiIvXhG9fBQzI=;
 	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
-	 To:Cc:Content-Type; b=sdSqAw8zjJDhJQ40idt+z/lxSqok+MrZXrj3P/6f9D/cW2diDORshemUtR2Kn2BElQU+XaLzr9qM7+Cx0dcwSbHpbh5DcpzTbqBEYRWytJyP3auN8v2Kh3YSVSx/PDFIk4Zap+SKmPyEY37RhmJ2dBMh5+iA+0aT2Mq27WHQa4c=
-ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=To+M7vtE; arc=pass smtp.client-ip=209.85.128.169
+	 To:Cc:Content-Type; b=oToLPtSVnvfXAh7EqDgZRnMkQ+AeowGsZF4hEm3K+Ka0WCFcIe0j+1jS7l7oQq2qq3Jic31vMcIScZdb/4R1Z6GkXpXScVtJu8yUMtT1KpWgX1zVeLoq7mrpOrdQlmau9IbVEP56vCL5vUqth4I9btIeuocvH6SEbGt/trrnnXY=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=FSzwUVwG; arc=pass smtp.client-ip=209.85.128.181
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="To+M7vtE"
-Received: by mail-yw1-f169.google.com with SMTP id 00721157ae682-836c8bde2dcso10087337b3.0
-        for <keyrings@vger.kernel.org>; Mon, 12 Oct 2026 06:30:57 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1791811856; cv=none;
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="FSzwUVwG"
+Received: by mail-yw1-f181.google.com with SMTP id 00721157ae682-888cbacf70eso21203407b3.1
+        for <keyrings@vger.kernel.org>; Mon, 12 Oct 2026 06:33:18 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1791811998; cv=none;
         d=google.com; s=arc-20260327;
-        b=diM2JX3lBM4yoL6wlm6H8v8iak2QfSOQe1JjPZaeq/XSNI2fdWOG1xrE2cpTQK7joS
-         SEtoH1WoDzORrGMIYdEpAxHrMAl+y+o4ZSgmU9E1xWqw6Yq/5OR+aTRBtYW2b2tjowS4
-         iVMQm+XH3D//WSWDJ0BsKyGOq8D/B1tI94TtoWXvpIWPZDEoQ16jkgexHgybr6/qsDzv
-         qCawdmbzhb2jg/5IiYyL3Y+dV+e9cyUDNx0CzRk4WPPC6fxI0IY3QHwSuzj13eY537ig
-         fsgRVSF/NGbKt4Gfy8M8exKKG1gRGW2Yj8qDpfgjoed+mMLfdyYENI/bIOQPyYv7Ffo0
-         ZSBg==
+        b=sxEn6UDxkPO1MO6vBFfsTTPlTVFXGkcUhZsmCaW4RenmH3vBhd9eTe2Eo1x9JrQk9f
+         Phku7zfKWQMJjrdo0N70gihSt1ysFc24h6+mltiUXtZLf3vgh+X72R2DtBMXtplOs3Kr
+         jEfEL6a/VE/+rGa9bNydeWQhJ0x8e95Kl4LpnzGl7Gq1jHrjaqqOxw3KHvm27e4LelSD
+         zYyMBYMis6i+2EvJ+/nFdDTAycs8Gws7ceNmkaostRxU3X5cIrSIuNnB6VHIA/1EUnkI
+         +78GFLJMaQIvlAAZMj6QPSu2+oFxuAnL1pR7eMfzvBWq59V7aW/WET0HfYUpVbCy17YZ
+         mZ2w==
 ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
         h=content-transfer-encoding:cc:to:subject:message-id:date:from
          :in-reply-to:references:mime-version:dkim-signature;
-        bh=EmjxUhPi9se44vvqI3S6zFF2XZYXEIws4ovhrSHoy+g=;
-        fh=/yejKrFcVZ36oM8+q5yd5jajREP9X8KKNojPWF+GCmQ=;
-        b=mm/llqJ42imZDMGOhVwr5MgxIgljnb3+hL6rtDBv1ujgCjoui8QEbUe/HrRnQKpJsh
-         OpJVcX+gITL4nHXXnY408r15KrkYszj3zUZ24Hht24ExN5jR4EllnvuFcLS1Zsh39hcL
-         M5zijaveNDB2B1gE8+pNMinRTuZtwkesQK1QVcKXgmXHoPhgWdy2AZyYV2H3St54IdAG
-         3m3lRUrpJVp5DHF6GnYx6XgbTHUJPKrvTPG4SjHJon9pgvS9hZ2g1Ib5mim+4XtNtmIw
-         ANUin9Hfoi8WyctwoiUKVDqEjnvTPbz3IL1s+W2EzlZw4eauC/4YsBx44Z4/L0LH1KRV
-         0Xfw==;
+        bh=Q8kBAHTJFyIMI6V+nJ8Kf/uBpMG3W+HiIvXhG9fBQzI=;
+        fh=nxjcRHljruSVbKHKrhSLKT5qKveKPquYKjPUKKrUL9c=;
+        b=kw1cDyS+/dC6kyZNQwVrt4mWsEx2mWthEP0UTwRRMa+0OB/NkkxMF8NAItnIO1gYFj
+         udKs1x2VoKfaK8EZISm/a37xSQlEQA3Ar3g8Z5vCr3WiebDaKnYhXHdB8QwSoEuL4cDk
+         xqHqyqXDFm3hvCINogO4YLYTZBE8vufjigyF5eNEsGdQeRHUELK5QGIX2ZVBtQYwsokZ
+         M+pEu/TfublCXjTkp1fTcfxlm4wTws+L7PaDXcTlVnqXRZxWG05svFIXw+Kv5PyZLs/n
+         MfJGW/TB47NAdtEJCeYfuv8ez3LelRhT5o75eifC0rITqFEIVlE09lCYONozGTMpPYah
+         sYkg==;
         darn=vger.kernel.org
 ARC-Authentication-Results: i=1; mx.google.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1791811856; x=1792416656; darn=vger.kernel.org;
+        d=gmail.com; s=20251104; t=1791811998; x=1792416798; darn=vger.kernel.org;
         h=content-transfer-encoding:content-type:cc:to:subject:message-id
          :date:from:in-reply-to:references:mime-version:from:to:cc:subject
          :date:message-id:reply-to:content-type;
-        bh=EmjxUhPi9se44vvqI3S6zFF2XZYXEIws4ovhrSHoy+g=;
-        b=To+M7vtEZkHjvtni0GIsJBcpb0+VCa/dx3mQlJluv7Qpe9ljPPgmqRSrKAo/OZ99xL
-         3jM5alSXRo2mXSMvFY2cShficiN3ssbSKnQplu+kzxCjE8+VbiZ90UFLksVHJG6ul2u2
-         c+ZObO3y8ocMfuoRfHUqAplNQgNZrVWvFRVXVffPRtSiNgA/I6FVnWKv/QTS3s6V6P3k
-         U5a4GqYXtC3WUOu0wSaQRNagJJLOGHkLi1SVwrCchuWIMFAUOFJe795cA8WdgDa94gcC
-         pC1lApWtK1n+JvxyZK8gXSrDpUAwYE/utCJeTMnOv7a3LGsp5hiKQqpeBgIZX+0fZdo7
-         ofgA==
+        bh=Q8kBAHTJFyIMI6V+nJ8Kf/uBpMG3W+HiIvXhG9fBQzI=;
+        b=FSzwUVwG6G1mDAVrABaSLpBK7Bojaj/Xk3xCR8fmpDJEBquYYdhmlStPb3W6XEf9vs
+         AXyTRDOpU4zWm3geVCbPxF+dj12uuIwg+WX5qtUN9SyObD/8m92TNsx8DtUJLZG35fJM
+         s1rQBXHRvjZk9DrfcVyJPvvJg8VSKrjch/nczCFZoytXGbBBMM8ohIWTTBm/IUyRU+JS
+         UyvnHqe7WmTjZjRAEQ84z32O02JjZ70Ln/mnUE+6w4YDaiZ8TEbsJYbVww1H5Tn3CicH
+         H/33qGybbu70JhgQaXCAEsrp0Kao2a3g9qENJ3JeQXssX1JF528u2Py6rIkNiL48O6wd
+         KATA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791811856; x=1792416656;
+        d=1e100.net; s=20260707; t=1791811998; x=1792416798;
         h=content-transfer-encoding:content-type:cc:to:subject:message-id
          :date:from:in-reply-to:references:mime-version:x-gm-gg
          :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
          :content-type;
-        bh=EmjxUhPi9se44vvqI3S6zFF2XZYXEIws4ovhrSHoy+g=;
-        b=LHF2ZbLj62HmvcfnP7/iKbCceKG47Kdtkr9jMixKLwFhLSRNFTeleQnGC5IYD6GjwY
-         KHgnnE1FT6aJd4/rf5l20eTZDrSYumW8cC7wi13ZL2UrI2Cni/ncLxlfTVtiOlF0jeBD
-         t229BQe+wkUqwy0dx7V96zl4CFoIVhOxhj4x6XHR2CxC+MR+1WAWsoGN58gFJrMpDmci
-         XLiSltlRFt2HuKtwMxlHa12IMo/RcanDDBc3An5bAkyeLeBT4DtTOGIG5TT5hqov9Wa4
-         XJlhm7YhqaHIu7RP64ZCqcRuCq6DOIDlm1tByWzVl5wwKUF75xWpEeJVX/HTYRwbEBOw
-         NDyQ==
-X-Forwarded-Encrypted: i=1; AKwUvByqSvU3zfjmlF3xm/wOrsutLXILDcnUPL2QdMlCYNWg/uSjYju8yYS7kGaWXyHg6NXPjvR9i3HuAw==@vger.kernel.org
-X-Gm-Message-State: AFq9FYIY6bcOc+3cZW6KD3GrhjnSidxpBO+ygNm1AXKs1xqfoT/Tiiyq
-	3CLQ5psEYjOkyPx2TpOwuz4lHrao+3m3hPiYlu2qqBmMY9QQT286LwtZ5Ps5uQmIMsxBhVqodsv
-	SeF80OOOMWeg1tI4NZ1x8RyGY/ogksmE=
-X-Gm-Gg: AYBFou3uRJEebzWxRTEBddX3Vqjo3TiOzerrf1xfVjX6u33wIpGu/b0G6COJFHi9hvu
-	XgHq9xxbMUeDALRc03rxaaLuMVp/PPWRP9BhRGxc1LDu4veJODXXaN940DNOTznoYN9GYGVJwdA
-	tj2C2Saur0eJ3fXvrvcf4z6TXClxN4e4nRW0o4P84VdLa6wSHMZVLyAO1HtNKmxwjfkKqPgWSRv
-	TAtpblv6LrIuYHOaqgtim9zcOcGXU+S460MY4KlXSeKU6M/24pQFR6QBGIItZscmOHPJDR0wejt
-	EsLmpKpR9RpHgYLudcsvv8ZhoLBqmzvFTJsnHdxMC1aoIHQ3RmTo6pxhzQ==
-X-Received: by 2002:a05:690c:d8c:b0:866:7724:3bcd with SMTP id
- 00721157ae682-8b07ed1e667mr44288127b3.16.1791811856206; Mon, 12 Oct 2026
- 06:30:56 -0700 (PDT)
+        bh=Q8kBAHTJFyIMI6V+nJ8Kf/uBpMG3W+HiIvXhG9fBQzI=;
+        b=bk5xX7z5g+jLgftaD2JrfIXjW3Nh0yW0mPHpHD1hFflBNhVDRFnO679yyayMDSLJj0
+         yipI5GLNRmS+vJxpap2fke7cEjx/Rgs1Uw9WySIyIJ62ijxMksGhFEy1iqNHR1j8TK/H
+         ykHm6WpcrI+siURX6PoD0IeV5fobyZDA63lm1oxa8Zbt7Ew4NyY1VYOdbK21lgb3hxIm
+         lfD1Ad3HCWKHhHqCEfwJQfV0uoomuBMFfuBgHCedFQPWluMb6Uosdha0ux508NjNwixk
+         kQzq1LsmVg/ofBJ/tRHqzd/0tw77vICIrt1Z48yj/l8sqVNQiPXUL+Jll3kEFVaJklSZ
+         e83A==
+X-Forwarded-Encrypted: i=1; AKwUvBwLN4ozL6eznNqmTSd/1mxcW4R/lSn7AAf2/KA5WJHyHKE8Z3ttvgJkYh03aqXsA7t/z68eDC+cpw==@vger.kernel.org
+X-Gm-Message-State: AFq9FYJp+FMniUqyNjr7IiJAugy+5uj5QbkXWC1NdHM2Tip/WL5EhnKp
+	/EG+KhFccQ9YAacrsoYBohfwofUPwncWdJdnuJrQw+13s42I56LSIWKJUllDHg8buzwOLKzSDkh
+	AgEUOMmLI2Xej583+6S1fruBRZDPmg9k=
+X-Gm-Gg: AYBFou3+78t46f7c8FjAMYVL1Bwnj7aDHcjDOEv42/qtpRcO+A9YRzawQSZH1XxKl5a
+	zZZZgDfZQ1hRnq1fO9I1Pi0Jtc7HukKSGxlKq593ftWqvMOozrIfooSziSnV0Qk5gbcv2isKT1s
+	/QZ9ySxjDJtc59UldggFsIShN6iRmZ3YA4fTTKYgrTqjWBGg6wL7Nh5R1E/mWxtEoyIGMWFindh
+	ZLVlqRlMAiP13BcbYoC5LDFBcxa5Et+gjz6DyGo8d25TArmKjTajerFdTjzoPyzPr3TwKP0sYnx
+	Qm5pBg/Sr8VlWUtL53opNOI7qAK9UkQfzQ9uBkqZ8nhSjVgJjRG9tp3dEKOqgyGyQ33v
+X-Received: by 2002:a53:ea42:0:b0:676:8b69:97eb with SMTP id
+ 956f58d0204a3-6793634a484mr2435865d50.160.1791811997636; Mon, 12 Oct 2026
+ 06:33:17 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -83,12 +83,12 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 References: <pm-key-management-objects-candidate-0001-v6-9876bf3e2116d47c065e@gmail.com>
- <aszZ3KPvMMHLEJ0s@kernel.org> <aszalro6U6BFO_D3@kernel.org>
-In-Reply-To: <aszalro6U6BFO_D3@kernel.org>
+ <aszZ3KPvMMHLEJ0s@kernel.org> <aszalro6U6BFO_D3@kernel.org> <CAFRLqsUB0MQRoCHg8cXmyofWqbDGyvAr7vV07i0jUpMnSaksVQ@mail.gmail.com>
+In-Reply-To: <CAFRLqsUB0MQRoCHg8cXmyofWqbDGyvAr7vV07i0jUpMnSaksVQ@mail.gmail.com>
 From: Cen Zhang <zzzccc427@gmail.com>
-Date: Mon, 12 Oct 2026 21:30:43 +0800
-X-Gm-Features: AclHuK-JMVmEQk9s9PUAJHaHm55xlb-Is6siTbFN4AUKpBCWpjVUnqE1DSSZ9Ps
-Message-ID: <CAFRLqsUB0MQRoCHg8cXmyofWqbDGyvAr7vV07i0jUpMnSaksVQ@mail.gmail.com>
+Date: Mon, 12 Oct 2026 21:33:06 +0800
+X-Gm-Features: AclHuK8khvWi4McmLLK-ANublHQc9k3MPlNZnAtRVi0Ml1u14dD-i-9XyWHto-8
+Message-ID: <CAFRLqsU7w=ctKeAv5FQwxcPVbdWO7EjC3WmE1JXywe_JWWY+gQ@mail.gmail.com>
 Subject: Re: [PATCH] KEYS: Protect user key quota access during instantiation
 To: Jarkko Sakkinen <jarkko@kernel.org>
 Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org, 
@@ -100,53 +100,68 @@ Content-Transfer-Encoding: quoted-printable
 
 Hi Jarkko,
 
-Thanks very much for the detailed feedback and for your patience with this =
-:).
-
-Jarkko Sakkinen <jarkko@kernel.org> =E4=BA=8E2026=E5=B9=B410=E6=9C=8812=E6=
-=97=A5=E5=91=A8=E4=B8=80 21:03=E5=86=99=E9=81=93=EF=BC=9A
->
->
-> I appreciate the fix but if I'm completely hones the commit message
-> looks like direct LLM output, which is not acceptable.
->
-> It needs to be proof-readed and edited. For this reason, I want a better
-> iteration before I apply this.
->
-> Br, Jarkko
-
-Thanks very much for the detailed feedback and for your patience with this.
-
-Several people have mentioned that my commit messages look like they were
-generated by an LLM =E2=80=94 and to be honest, I did write them with LLM a=
-ssistance.
-However, they often gave me the feeling of being questioned rather
-than explained.
-I spend most of my time looking for bugs, following my interest, so
-I=E2=80=99m more familiar
-with bug patterns than with the deeper details of the subsystem. That
-means I can
-make mistakes. I=E2=80=99m willing to listen to feedback and keep revising =
-the
-patch until it=E2=80=99s in
-good shape, but the pressure sometimes makes me afraid to continue the
-conversation,
-worried about making more mistakes. Your patient explanation this time
-really means a
-lot to me.
-
-Of course, I also fully understand that busy developers feel
-uncomfortable when seeing
-unclear or poorly written messages. I just wanted to express my thanks
-for taking the time
-to gently and patiently explain things clearly.
-
-I=E2=80=99ll carefully rework the commit message following your suggestions=
- to
-make the concurrency
-scenario and the reasoning clearer, and send a new patch once it=E2=80=99s
-ready. I=E2=80=99d appreciate it if
-you could take another look then.
+Sorry for the previous email =E2=80=94 the line wrapping got a bit messy on=
+ my
+side. Hope it was still readable :).
 
 Best regards,
-Cen Zhang
+Cen
+
+Cen Zhang <zzzccc427@gmail.com> =E4=BA=8E2026=E5=B9=B410=E6=9C=8812=E6=97=
+=A5=E5=91=A8=E4=B8=80 21:30=E5=86=99=E9=81=93=EF=BC=9A
+>
+> Hi Jarkko,
+>
+> Thanks very much for the detailed feedback and for your patience with thi=
+s :).
+>
+> Jarkko Sakkinen <jarkko@kernel.org> =E4=BA=8E2026=E5=B9=B410=E6=9C=8812=
+=E6=97=A5=E5=91=A8=E4=B8=80 21:03=E5=86=99=E9=81=93=EF=BC=9A
+> >
+> >
+> > I appreciate the fix but if I'm completely hones the commit message
+> > looks like direct LLM output, which is not acceptable.
+> >
+> > It needs to be proof-readed and edited. For this reason, I want a bette=
+r
+> > iteration before I apply this.
+> >
+> > Br, Jarkko
+>
+> Thanks very much for the detailed feedback and for your patience with thi=
+s.
+>
+> Several people have mentioned that my commit messages look like they were
+> generated by an LLM =E2=80=94 and to be honest, I did write them with LLM=
+ assistance.
+> However, they often gave me the feeling of being questioned rather
+> than explained.
+> I spend most of my time looking for bugs, following my interest, so
+> I=E2=80=99m more familiar
+> with bug patterns than with the deeper details of the subsystem. That
+> means I can
+> make mistakes. I=E2=80=99m willing to listen to feedback and keep revisin=
+g the
+> patch until it=E2=80=99s in
+> good shape, but the pressure sometimes makes me afraid to continue the
+> conversation,
+> worried about making more mistakes. Your patient explanation this time
+> really means a
+> lot to me.
+>
+> Of course, I also fully understand that busy developers feel
+> uncomfortable when seeing
+> unclear or poorly written messages. I just wanted to express my thanks
+> for taking the time
+> to gently and patiently explain things clearly.
+>
+> I=E2=80=99ll carefully rework the commit message following your suggestio=
+ns to
+> make the concurrency
+> scenario and the reasoning clearer, and send a new patch once it=E2=80=99=
+s
+> ready. I=E2=80=99d appreciate it if
+> you could take another look then.
+>
+> Best regards,
+> Cen Zhang
