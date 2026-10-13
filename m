@@ -1,126 +1,157 @@
-Received: from mail-qk1-f182.google.com (mail-qk1-f182.google.com [209.85.222.182])
+Received: from mail-dy1-f198.google.com (mail-dy1-f198.google.com [74.125.82.198])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 03F27549382
-	for <keyrings@vger.kernel.org>; Tue, 13 Oct 2026 20:29:02 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.222.182
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 184A8485511
+	for <keyrings@vger.kernel.org>; Tue, 13 Oct 2026 22:45:57 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=74.125.82.198
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791923344; cv=none; b=FUT+BQKpwqJ84+9n/oTQqI1QGPIZQevfGE+q4htzdn3chYB3vqxCgCA1uBiXR0pSbWk05YW/sMmUR06clnzk5gaz+q118Gs8B0uESc/Cmrj+8bsv5ZUznpFgmQ0tFD/xkKFDce3C27t2RB+B/EMdiOPnwexGtt8ZwGnNtqctGgw=
+	t=1791931559; cv=none; b=BJ+IVS1HGPI1h5tzVZGp21SaK/gXlNpPbPM0mHUlJTmAmoUk9MKsgoL7IuKaiem65Wbwn9YTC3RTOuwPFBf8hBeQcgbCRvNdbr7mKN2Fyt03TBQs8Nv48c8J5f1YAmgQlLNWgWyAOy83Wu8WdqMDTI1/Yoot1h+L/OF5TFfKx+M=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791923344; c=relaxed/simple;
-	bh=6WLrdQptrJArGJMGv3NltYtuEpee2CJJc5BKqgZAghM=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 Content-Type:MIME-Version; b=Z9ohWaOxrsIahJLCjtS4H8FdaQH3BhyGlHEehLSLQdPASXTA9PriJzRKfJqqBUcr70UfqY5kXSh7r1edGQklpqxLLU7Gc29MfKpCrQ3XfEk1e0iPkt0U1eXbvwQz1tErK3HUMZ8Y2dhtuGBBOW0fskRDnWWxTaV1W31EbIhph1Q=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=toxicpanda.com; spf=pass smtp.mailfrom=toxicpanda.com; dkim=pass (2048-bit key) header.d=toxicpanda.com header.i=@toxicpanda.com header.b=cmRYMx/f; arc=none smtp.client-ip=209.85.222.182
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=toxicpanda.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=toxicpanda.com
+	s=arc-20240116; t=1791931559; c=relaxed/simple;
+	bh=7oUfc7/a0wQ7bLyNKzkXv/xXe7gJDQ6XuXtCaXQL7i4=;
+	h=Date:In-Reply-To:Mime-Version:References:Message-ID:Subject:From:
+	 To:Cc:Content-Type; b=cL3P0pPPD8xq4STewuDvVCwzYyq6Jr3l49CWjX+Za4mbsnrr9Z0CJM1kWRfCV3TYZO83W8cdCMq3BBWaFDv6SHyXDMWcTfiIu0OSFudS4DFFRrAo5F0LdH3OR3wDNm2CVe2ZRqIpnuNTGRarMRFLMWzW3eje5XUa0dU/MkFcEyQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--cmllamas.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=AdUQq2n2; arc=none smtp.client-ip=74.125.82.198
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--cmllamas.bounces.google.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=toxicpanda.com header.i=@toxicpanda.com header.b="cmRYMx/f"
-Received: by mail-qk1-f182.google.com with SMTP id af79cd13be357-93e76469b93so193942985a.0
-        for <keyrings@vger.kernel.org>; Tue, 13 Oct 2026 13:29:02 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="AdUQq2n2"
+Received: by mail-dy1-f198.google.com with SMTP id 5a478bee46e88-35a4d2e39acso1202339eec.1
+        for <keyrings@vger.kernel.org>; Tue, 13 Oct 2026 15:45:57 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=toxicpanda.com; s=google; t=1791923342; x=1792528142; darn=vger.kernel.org;
-        h=mime-version:content-transfer-encoding:content-type:references
-         :in-reply-to:message-id:date:subject:cc:to:from:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=dohylkge6OeGVizhzGCANBuwwSEz+KJDIqf/mQitXs8=;
-        b=cmRYMx/fpjMfMXv6/wVBv5oJhiN9q86aQTYmBqJNN2bqq9f8vRJ6Me6D1TNxiDuGV2
-         uLugf+im0ZLsNj+QbBXArtP+LzFQWF4jZ2LGPKQ7SLnoPe6h3WiDfCNEKIopiAGgIZhq
-         HXPtp3e5T6cFlPk9TL+L20YnSwzOPiTI6GVPn1AWROOEIsP90oR9sQUn1gEFaRQvHJ+Y
-         88EikCqPg54See2CAppPtIAHRQJ9bGaFRBlxrcN3IXfrZVxuZUm/McyRPWOKB8cUebOf
-         ZeJqdH5iryIlamTZTkpqvpvSckOfqeOkghpROSKiKipi1hn+/jk0a6v5HVf1aOKM8cLU
-         lTyQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1791923342; x=1792528142;
-        h=mime-version:content-transfer-encoding:content-type:references
-         :in-reply-to:message-id:date:subject:cc:to:from:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+        d=google.com; s=20251104; t=1791931557; x=1792536357; darn=vger.kernel.org;
+        h=content-type:cc:to:from:subject:message-id:references:mime-version
+         :in-reply-to:date:from:to:cc:subject:date:message-id:reply-to
          :content-type;
-        bh=dohylkge6OeGVizhzGCANBuwwSEz+KJDIqf/mQitXs8=;
-        b=bgeSTm75KhXF2FOc7bVJT2HczH30KrNDkK5DHEG3+4MN/5EI8Cur9QYEhJN3zgO7Xh
-         Xh/VEzMA7COyEdFzpek3uI+z0r82aO2YFdSA43Rc76+jQus17iNTcq1N49p9KlWGdLDV
-         KDKp3lsc4b8Vedpuin+RCNpfJ2uidzweEspCLFiZ1RcNxV9S+0oivJaKymGSLHw0wVxU
-         R5b571OfDG4oKKVBWzX4hikF2NgFJMCxetcKoTPkMncKjmw9NML/CkOm3wtffKG9jPky
-         9/DVpRjz5iwJ4SScCewxymg9T7/D7+7ikpFqb75fEWyJUet8xEWUMIRTw4HbXvjJRHQT
-         7x4Q==
-X-Forwarded-Encrypted: i=1; AKwUvByo/A4fYNTaCMT97Af5p88YyveeEJwn8G02Et9xjT/IKtxCGEWhTCzOlrNE5r1eiBJual1VZRFtFA==@vger.kernel.org
-X-Gm-Message-State: AFq9FYKp/Q/AnpuwVhaujfh14WouWA2B/Ogeb0GBHvr4qhwaP3ZRmECg
-	r/A8FtVxVmb5T/jPAMnDGjkJxNCB2pxe0uxUZsYY/d3Fnkgu/dhkld4ABl5Q12VOvAQ=
-X-Gm-Gg: AYBFou0DX/2nEeoBdd0IrcoyJp6QahMszf9GJKG3vw70K6KDKKY+4XdMFNroG10iEv4
-	oHbAwmXz03VCyTX9vUyCAw/ilW8HbUZH8KkPIicmd7fNvkwVBiBB7HhEq3y+/IQaEXjfGgejiWS
-	LwPnJl2eIvTzvLDQzQZvmtf5xZG2aUfnl4I7Le/vPVdfZbkhyvI6mPF0zsb6BfZv2AzXrzKk9Bp
-	ZUmRY4G59Jw1vmXRaigzIEpmtyQZt7ToKLhnqvRgbuEl1DHv6AMxY/dVlBBkUq+X5OGl5XrpyU6
-	On8QAzK414N2uPn5eTvHKcr6n7Kh3rMN528skGmqVBz9PMwvrjB0/Jjp50gEiVUniltnRri4zxu
-	z8RWtzJ2E+rTfgt7nTBpS5s528HpXYu5UNId4wPa1/cLZCw6EcapA/L5c0GknsR5AWx1gKKvq7c
-	9M8FqqIBo0yRrBb/lKQxwlGVmVi3Dyz//1/nYC96LuV8kHncdhi2TD7soc0zwuilBNvyMgfhvBw
-	SKyLYv6VKabtgQ=
-X-Received: by 2002:a05:620a:2591:b0:93b:d7a3:45d4 with SMTP id af79cd13be357-93ebd29c0bcmr2207495885a.61.1791923341761;
-        Tue, 13 Oct 2026 13:29:01 -0700 (PDT)
-Received: from toxicpanda.com ([153.61.196.253])
-        by smtp.gmail.com with ESMTPSA id af79cd13be357-93ef5028051sm321623085a.18.2026.10.13.13.29.00
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 13 Oct 2026 13:29:00 -0700 (PDT)
-From: Josef Bacik <josef@toxicpanda.com>
-To: Christian Brauner <brauner@kernel.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Paul Moore <paul@paul-moore.com>,
- James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
- Jarkko Sakkinen <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>,
- Serge Hallyn <sergeh@kernel.org>, linux-security-module@vger.kernel.org,
- linux-kernel@vger.kernel.org, keyrings@vger.kernel.org,
- linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] capabilities: close the ways around the CAP_SETFCAP
- rule for uid 0
-Date: Tue, 13 Oct 2026 19:32:13 +0000
-Message-ID: <179191993398.6.7035194670175996999@toxicpanda.com>
-In-Reply-To: <20261009-aussicht-wortbruch-bohnenkraut-9e7a1cfd7580@brauner>
-References: <20261006-b4-setfcap-userns-v1-0-f47e7ed66072@toxicpanda.com>
- <asehZEWAwsJcbqvM@hallyn.com>
- <179147397027.4.15064782992163283819@toxicpanda.com>
- <asfBRYy597qvzdCW@hallyn.com>
- <20261009-aussicht-wortbruch-bohnenkraut-9e7a1cfd7580@brauner>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+        bh=VaC5p7lBreXJFrDTlX//tAKrHbRA93HCXS6PgHHIrBY=;
+        b=AdUQq2n2MgCnGOTR/w45BbSdlsFVJG3ic48vAbdefRPGWnaa138K+WbXZlNs8HYZGO
+         n7KX7zQppUHwh9omch07hkoWnnkSkLfwCKy94nNh5VR0puxqLHGJ+/Zw6zKMq6qfx03l
+         SFwqGApMoVCFHMa3hJX78STC4VajgaVHHGZ2EBPrB0WG7Rlk9B5b2RTw3oRxNUgdWvHp
+         Dvuj3GqEyInQYVeuyIgYikntfhX6PZEfy60qrtWtHAhLKZdFzivwXPngKQL1p00zO+e7
+         E1kNZCLcYctIHbofVPm2KzBZT5fFS8hNMtB0i2H8nDtROj3TJOsv9OjzpRwOkjhNT9Fy
+         dgMQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1791931557; x=1792536357;
+        h=content-type:cc:to:from:subject:message-id:references:mime-version
+         :in-reply-to:date:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=VaC5p7lBreXJFrDTlX//tAKrHbRA93HCXS6PgHHIrBY=;
+        b=F/sAI/d2sbY+vXd6Oede/pQwK2qnwOG6ysM9Pvp+l4CPPIZ9MDJdAHbnvdAXNv8LNx
+         v9OJ0dVflv3q4mR523qmRlQkDUkWo38APsdAq60tkCMFcbhm/B0LJAn9gfT+j4C/JdyP
+         C2XvENxtUoxob8zPG1OA6/NK0B1SI5/+SI7fOz/Cq36zOYH/yHcj1AYMqMaPNLmW7DKa
+         BfZC366q/pCL9Yf141Y847IGQtyWKirQjCWN6b9dnc8xGvU1Gpwi4L6Aq3bMoFpvCc0a
+         tTQLoAYIsZC6d/nE3dWl+Pw3pkx1W+nTBXdv2yW5EzK87VSz8BHBL0iHgZHtduHqwE9o
+         luug==
+X-Forwarded-Encrypted: i=1; AKwUvBw9jqh0myVQ43NhdOWlncYfqyc38cWPiEuiF3jjbRgyZjY3Kh55xsxLUBBwyWeUJo4DjUctAm2tKg==@vger.kernel.org
+X-Gm-Message-State: AFq9FYI8WB0LGjnHZhq+xVKBC2ALdTTzeLUm+eAH+4Kg4KMX1hhILRAT
+	mAAHGR63a/D9SXxWinSC0TXwF2Qnj3l5BftKv14RFxdwq99JyRNbmmPNk33XYdMOx/zSZdsgbtk
+	ecv1Hlv+6J1Z7Sw==
+X-Received: from dycph3.prod.google.com ([2002:a05:7300:dd43:b0:35a:5674:dda5])
+ (user=cmllamas job=prod-delivery.src-stubby-dispatcher) by
+ 2002:a05:693c:894c:10b0:351:78e9:944e with SMTP id 5a478bee46e88-3537e0945bamr21650637eec.41.1791931555233;
+ Tue, 13 Oct 2026 15:45:55 -0700 (PDT)
+Date: Tue, 13 Oct 2026 22:45:51 +0000
+In-Reply-To: <8932791855928d9f12b7356648e2ebacfc126bee.camel@xry111.site>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
+Mime-Version: 1.0
+References: <8932791855928d9f12b7356648e2ebacfc126bee.camel@xry111.site>
+X-Mailer: git-send-email 2.56.0.385.gd3acb90ef8-goog
+Message-ID: <20261013224552.557528-1-cmllamas@google.com>
+Subject: [PATCH v3] certs: specify byte alignment
+From: Carlos Llamas <cmllamas@google.com>
+To: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>
+Cc: Sami Tolvanen <samitolvanen@google.com>, Nick Desaulniers <ndesaulniers@google.com>, 
+	Nathan Chancellor <nathan@kernel.org>, Xi Ruoyao <xry111@xry111.site>, 
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Will Deacon <will@kernel.org>, kernel-team@android.com, 
+	linux-kernel@vger.kernel.org, Giuliano Procida <gprocida@google.com>, 
+	Carlos Llamas <cmllamas@google.com>, 
+	"open list:CERTIFICATE HANDLING" <keyrings@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
 
-On Fri, Oct 09, 2026 at 09:41:59AM +0200, Christian Brauner wrote:
-> On Thu, Oct 08, 2026 at 11:13:57AM -0500, Serge Hallyn wrote:
-> > Yeah, that's what I was thinking.  Or even stricter: ensure that to join
-> > any user namespace, a process must have a superset of the namespace
-> > creator's capabilities.
->
-> I think both are fine and I like this proposal.
+From: Giuliano Procida <gprocida@google.com>
 
-One correction to what I wrote: the weaker version isn't enough.  A
-namespace that maps "0 100000 1000" doesn't map the parent's uid 0, so
-it passes that check.  But with an idmapped mount that maps fs 0 to
-100000, a task that joined it can write fscaps that are stored with
-rootid 0 and honoured by the host.  We test that flow.  So it has to be
-Serge's stricter version.
+The alignments specified in system_certificates.S and
+revocation_certificates.S are intended to be byte quantities.
 
-> I think that this is an acceptable restriction. Mapping uid 0 to 0 and
-> dropping caps is borderline useless.
+However, the .align macro is architecture dependent and on arm64 it
+behaves as .p2align. So use the .balign macro to avoid unnecessary
+padding due to over-alignment.
 
-That makes the restriction wider than the 0 to 0 case.  A root task
-without CAP_SETFCAP couldn't join an ordinary "0 100000" container
-either.
+Signed-off-by: Giuliano Procida <gprocida@google.com>
+Acked-by: Will Deacon <will@kernel.org>
+Tested-by: Carlos Llamas <cmllamas@google.com>
+Signed-off-by: Carlos Llamas <cmllamas@google.com>
+---
+v3: tested, collected tags, rebased on top of mainline.
 
-setns() also only covers the routes that go through it.  These don't,
-and need their own checks either way:
+ certs/revocation_certificates.S | 4 ++--
+ certs/system_certificates.S     | 8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-- writing through a uid_map fd opened by a task with CAP_SETFCAP
-- ptrace and pidfd_getfd of an entitled task from outside
-- a task without CAP_SETFCAP creating its own namespace, which a
-  privileged task then maps "0 0 1" for
+diff --git a/certs/revocation_certificates.S b/certs/revocation_certificates.S
+index f21aae8a8f0e..a53b49d49931 100644
+--- a/certs/revocation_certificates.S
++++ b/certs/revocation_certificates.S
+@@ -4,14 +4,14 @@
+ 
+ 	__INITRODATA
+ 
+-	.align 8
++	.balign 8
+ 	.globl revocation_certificate_list
+ revocation_certificate_list:
+ __revocation_list_start:
+ 	.incbin "certs/x509_revocation_list"
+ __revocation_list_end:
+ 
+-	.align 8
++	.balign 8
+ 	.globl revocation_certificate_list_size
+ revocation_certificate_list_size:
+ #ifdef CONFIG_64BIT
+diff --git a/certs/system_certificates.S b/certs/system_certificates.S
+index 003e25d4a17e..ea6984b427c9 100644
+--- a/certs/system_certificates.S
++++ b/certs/system_certificates.S
+@@ -4,7 +4,7 @@
+ 
+ 	__INITRODATA
+ 
+-	.align 8
++	.balign 8
+ 	.globl system_certificate_list
+ system_certificate_list:
+ __cert_list_start:
+@@ -20,14 +20,14 @@ __cert_list_end:
+ system_extra_cert:
+ 	.fill CONFIG_SYSTEM_EXTRA_CERTIFICATE_SIZE, 1, 0
+ 
+-	.align 4
++	.balign 4
+ 	.globl system_extra_cert_used
+ system_extra_cert_used:
+ 	.int 0
+ 
+ #endif /* CONFIG_SYSTEM_EXTRA_CERTIFICATE */
+ 
+-	.align 8
++	.balign 8
+ 	.globl system_certificate_list_size
+ system_certificate_list_size:
+ #ifdef CONFIG_64BIT
+@@ -36,7 +36,7 @@ system_certificate_list_size:
+ 	.long __cert_list_end - __cert_list_start
+ #endif
+ 
+-	.align 8
++	.balign 8
+ 	.globl module_cert_size
+ module_cert_size:
+ #ifdef CONFIG_64BIT
+-- 
+2.56.0.385.gd3acb90ef8-goog
 
-So v2 would be a level on the namespace computed at create time, the
-strict setns() check, and the checks at the map write, setxattr and
-ptrace reading the namespace's level instead of the cred's.  If that
-sounds right I'll put it together.
-
-Thanks,
-Josef
