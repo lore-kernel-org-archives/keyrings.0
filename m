@@ -1,32 +1,32 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E35C24F5DE1;
-	Wed, 14 Oct 2026 11:15:36 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 600273438BE;
+	Wed, 14 Oct 2026 11:34:20 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791976538; cv=none; b=SWQdp0/PZ3m1ZiElmUKionpQtDIM4NJRsVeF252V76Zg/TQJimXqnytPe9SLVaLOW7nYVPBgpDzPhc1Hg8aFBeR+0hzO/fIdz0eItIVRrgBMIIwAiGtvPPgyeSAqUgj3MHw/WwhSJ0+PKD6dSreADz4FxNJ6tUDCm/AvyksjWPE=
+	t=1791977662; cv=none; b=bw7JTwki2RcseTfcysc/vr8iAeSUKKqfoLqKQCV2D0sd7mxK4jvR45QS0/HqaVLJe+gMzzXjV0qp6t9M7QhaUcXV0ruXOhBUJgCND13eEszUXpAuUW7NJC5iKE6Z9lZ+fOwJosLT4k9UER34ZtWyhpE1dxS1MTd9Gjdgs5K0DBQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791976538; c=relaxed/simple;
-	bh=A0w4gnO9XjQELHK0MuumjXMoerd2CLHnfS//LRVLpuM=;
+	s=arc-20240116; t=1791977662; c=relaxed/simple;
+	bh=pgBcEKmkG9yAvAmi8qqEB7pPavUOWQhsahKt8f4vYO0=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=ff5WxhBOy8lgFbbxOJqQgpvLrCxXtxYZaaIQAFm57Bwr6AA4sUFoIKrDzgRYoDD4BgzfaJTjZ/KjuuvmmYNPCnryTjDL8CER7r6F8cKiG14rGdwIbOe3rGHTFrbMwiBVWnFxpcVugGF4IGCXxae9ph8RmqOvBpT0EcOjzW7/45c=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=i6uArUkV; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=roHz8490mZPRapPDcTKzTmKxa6ydlYhjf0+9jDxN3R9+bomNtl0/kiGQWKeSkNjOpydvpZYR+vUvaoc7cRHx5iBr7LSmLeZO6UYcuH/qZSuoXxHC0nKv3p+A8yfV+Ilbm43JFw3/ULoLWzp5IRvhb+hQc+e61BR77qSRsAYqQjw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=mlDu4ow4; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="i6uArUkV"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 189C61F000FF;
-	Wed, 14 Oct 2026 11:15:35 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="mlDu4ow4"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 578D31F000FF;
+	Wed, 14 Oct 2026 11:34:19 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791976536;
-	bh=3bI+npLSmq91kE0GswaCStOMbhNMpTKWxrQIgVLzGcU=;
+	s=k20260515; t=1791977659;
+	bh=jxrFaoqkYIedRaaeR6zxDyjEquhjlwc+5JkmGCJ+eMU=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=i6uArUkVybCBqHaSwQMhxIZvD/dgRdJmSX5qLv/tyx2oCzPYtvuiD9yQ73SF/qDgZ
-	 bfvqVMwHvP/G3ZXe5ZVpCDnzy1Z+x+AgW+9RkCREpfO3s7Qa1Yu8aK6xnbWp9+LR4L
-	 LQnHBwYpuUg6ChZZoIxMb+km2M3elL6ecOS307JAusK+JmI81A25sSS49iC504XJ1x
-	 YuFXcvvrf0l+8Z8Wf7rH4UP3jlkMtcYQ09BjD2SP22RBTgM/6i8/9j99VEFz4fPba9
-	 y3aN68PN0ZndvzxCokHenq9WJJbJP6USvwvSc7px9wWWbY4kKTnmS0jRDa7v19McC9
-	 84UoT5H4NBizw==
-Date: Wed, 14 Oct 2026 14:15:32 +0300
+	b=mlDu4ow4he/1o8eJ5INjeDUjYrvQB7OR5kY1bzt4b6nQURke6Jaa36NsFUm+aodWg
+	 TxQ/3semYNqMMKBNGMiUWcW1xLJOe8EMi1jXXkJXOclZdFq4LCsvb+OHCw7aw/dmRu
+	 7fPH3fD5O6g6WERcC6gmMbtj4rKJppGOdOkdiL2HyPGV29vTFnpKRT0/lY69XXY9Rk
+	 xWO+xvXWHtXhoHHKtPgPtOfcZFLZ5uQea/PC8vhImOyHiSEzfx9M0apde6vMYbjiD6
+	 OWVd+Q5bnPhcGDzXQb0Uucl+vsDMyQcGwrq8b4/HXtTAEhl7iA4ArFdmGis5Hfkc8C
+	 F1w9VH3K5bfVw==
+Date: Wed, 14 Oct 2026 14:34:15 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Chengfeng Ye <nicoyip.dev@gmail.com>
 Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
@@ -36,7 +36,7 @@ Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
 	stable@vger.kernel.org
 Subject: Re: [PATCH v4 1/2] keys: Protect quota-owner reads in namespace
  filters
-Message-ID: <as9kVDN2w53QvKml@kernel.org>
+Message-ID: <as9otxVeOLbhkIMy@kernel.org>
 References: <20261013084056.1070923-1-nicoyip.dev@gmail.com>
  <20261013090358.1178367-1-nicoyip.dev@gmail.com>
 Precedence: bulk
@@ -48,11 +48,6 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20261013090358.1178367-1-nicoyip.dev@gmail.com>
-
-Just checking couple of details before ack/nak just in case, thus the
-delay I'll give feedback as soon as I'm done.
-
-Br, Jarkko
 
 On Tue, Oct 13, 2026 at 05:03:57PM +0800, Chengfeng Ye wrote:
 > keyctl_chown_key() replaces key->user under key->sem and drops the
@@ -83,6 +78,21 @@ On Tue, Oct 13, 2026 at 05:03:57PM +0800, Chengfeng Ye wrote:
 >   Freed by task 87:
 >    kfree+0x149/0x330
 >    keyctl_chown_key+0x7b0/0xbf0
+
+Last night I missed the text below.
+
+It is somewhat messy to the point that frankly I could not read it, or
+at least I did not understand it. Have you read it yourself?
+
+There is a whole eassay and I can only see that key->user can change
+unless key_user_lock is taken, and READ_ONCE() is required to pair with
+the writers.
+
+I don't understand what is going on down there, and what's your goal
+with it?
+
+
+
 > 
 > Take key_user_lock explicitly while /proc/keys and find_keyring_by_name()
 > copy the owner's UID. find_ge_key() is the initial/seek lookup reached
@@ -215,3 +225,5 @@ On Tue, Oct 13, 2026 at 05:03:57PM +0800, Chengfeng Ye wrote:
 > -- 
 > 2.43.0
 > 
+
+Br, Jarkko
