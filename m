@@ -1,41 +1,52 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D357F3002C8;
-	Wed, 14 Oct 2026 16:11:05 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C518D55D876;
+	Wed, 14 Oct 2026 16:36:15 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1791994268; cv=none; b=mDTH0jWsIoaEzOgG/2TMiwGYpqns/fC2nk58LQhJhCpHx0Tk6p3yj6jb4w9Xnp6Fg4apycu9nW2O32vMk68RAQbGT83PWXFqVrGM44J9RCHp5+O8lexiXQfQbss8CGhS11aAViduvg0W66Pj582baDwUtLZJ9w7zFLGDba2AlJo=
+	t=1791995776; cv=none; b=tUVFBVfMdD/cRDo9uRIKMC4ftEUhzX45B/NDOmPvSWoEDMvZo+oQfMd0RtWInSuM3kUDvSV4w6bl9w/daAVblAkjsrIRsflb2qYSTMuwtwFLYQ+APwbibppExH9KWmu0EzMnENjG7RrPPytMWdcf7hIH43+Ug8rd6EzCNLx/tVY=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1791994268; c=relaxed/simple;
-	bh=v0NhpUhMSqrvLLPOALAIgu0MNTPIf/RfIokKvbHjXBM=;
+	s=arc-20240116; t=1791995776; c=relaxed/simple;
+	bh=KMD7Towbunxb3x83kvj/jlmrKN5cUKVMsO6ERTpi9Wg=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=lU+tZ3wQWIN7GoYfVEYCEqDowt8j5pykuominTmzRPH00GVBTjlvfG4lcGcR5i8CrYpMx1cgeDSrtyt/AAWg4DvLqduczve8/+ZBKGNkdDcGgfy4zCWfj29kq3PvkU/deKfrcUNaLSWdzHWgDXUvUqwdzP4ER9CSbf0u0VQQT+I=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=NyngLFQ1; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=sTYvnAtVW4x1kcPnDdXy3+0ekCP7NqrVNzjYGCqy5Em6xqeb1HhvoFKmlxkKVyxgseJ69fNcxUeW4TjAuBAHMKaDHv6+Plbr8aEsHAIu1ZqLmvc5ktEdEQ1D0LaJ18xfmfHLLqhgLxDPz85IyrBxJxRnUBZV77r9AH+ddsVmBG8=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=MflMOJU3; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="NyngLFQ1"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id CD4E81F000C4;
-	Wed, 14 Oct 2026 16:11:04 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="MflMOJU3"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 409121F000C4;
+	Wed, 14 Oct 2026 16:35:59 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1791994265;
-	bh=VEWvC+r/z9vEd4FgfXLCYSC+BNajrvmQfh7OxCDJTXo=;
+	s=k20260515; t=1791995775;
+	bh=Xe9rAmILOBAL5qEj1m6Rs0cQGMnFcSwviGw+I+tsq5w=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=NyngLFQ1w64cw8idojxNlWIrWXxuaG0peMdrxZ4QZ8gKmtjpsWUouycJISjMJgfbp
-	 lnzorwE3mDG3K3hxbt+eIgVsQPWVc8o27o00kY//RQ868wCdiK/tndg3Cfrne6U6RO
-	 HxLD2fEXNz+U0GZpEMDOx0jLjCcuFTL327ytWQZ4Ze86urDerzUyUbo9BTwkqdwQ2i
-	 OH6zmBjKStGscGjMSqHLDARWTP1HrxIE5iCASCWmhzdMpeP+D1qci4pK2Pfr8ppcxZ
-	 FFKjS5sRy/n957vUh5mTSXvP1HFjoZ+7GlOzoHovuMRDbEs8Qf9JzAO6smk0RDXbHE
-	 TQHuPeA1MBqSw==
-Date: Wed, 14 Oct 2026 19:11:01 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Kyle Zeng <kylebot@openai.com>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org, dhowells@redhat.com
-Subject: Re: [PATCH v2] keys: make keyring indexes independent of kernel
- addresses
-Message-ID: <as-plb31O6Lioa1C@kernel.org>
-References: <20261013231251.56170-1-kylebot@openai.com>
- <as941m0HXNruztLc@kernel.org>
+	b=MflMOJU3bk3HTx5E7LUnFFqipXcK3PLvRbYVWE3DAujLB3A1pXCXiq9xHaowtrCy7
+	 AjtOoVn1r1aqkfe2T0GR90AIHVRy7RuUIZ48zl8jG2KBqzpuNvHcUOYa6g2AapxTHF
+	 mXTm95TzOTXQ+QjdFVvo8cDYEj1f46B+dWAr8QTvqBLJl+tfhwFMZVgoGvrlUjSio3
+	 YhOI4GlwscYjapvN0pgu2FKrEV7gDnrELztWh7aROP+6Ug97kKJJU4lY8vteV54ga5
+	 HM619bjWjlR7lGv/t6c5RLO4fYGQbsBg1OTwI9HNaevoJj65PVCUQRewQJ0YBgmtxj
+	 PaXqN8FpNMICg==
+Date: Wed, 14 Oct 2026 18:35:50 +0200
+From: Eric Biggers <ebiggers@kernel.org>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: keyrings@vger.kernel.org, Brendan Higgins <brendan.higgins@linux.dev>,
+	David Gow <david@davidgow.net>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Rae Moar <raemoar63@gmail.com>,
+	Ryota Sakamoto <sakamo.ryota@gmail.com>,
+	Kuan-Wei Chiu <visitorckw@gmail.com>,
+	Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+	Pasha Tatashin <pasha.tatashin@soleen.com>,
+	Kir Chou <note351@hotmail.com>, Petr Mladek <pmladek@suse.com>,
+	Dmitry Antipov <dmantipov@yandex.ru>,
+	Guan-Chun Wu <409411716@gms.tku.edu.tw>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:KERNEL UNIT TESTING FRAMEWORK (KUnit)" <linux-kselftest@vger.kernel.org>,
+	"open list:KERNEL UNIT TESTING FRAMEWORK (KUnit)" <kunit-dev@googlegroups.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] lib/tests: kunit for associative array
+Message-ID: <20261014163550.GA327771@quark>
+References: <20261014160144.1835860-1-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -44,49 +55,37 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <as941m0HXNruztLc@kernel.org>
+In-Reply-To: <20261014160144.1835860-1-jarkko@kernel.org>
 
-On Wed, Oct 14, 2026 at 03:43:06PM +0300, Jarkko Sakkinen wrote:
-> On Tue, Oct 13, 2026 at 04:12:51PM -0700, Kyle Zeng wrote:
-> > KEYCTL_READ returns the serial numbers in a keyring in associative-array
-> > traversal order.  The first word of the index is a public, deterministic
-> > hash of the type pointer, domain pointer and description.  An unprivileged
-> > user can therefore insert keys with known descriptions, predict their
-> > order for each possible KASLR slide, and recover the kernel image address.
-> > On an x86-64 build with 16 MiB alignment, 45 user keys suffice to
-> > distinguish the candidate slides.
-> > 
-> > Remove the addresses from the whole index, not just its first hash word.
-> > Assign each key type and domain a nonzero 64-bit ID and hash those IDs and
-> > the description with a once-initialized SipHash key.  Use the full IDs in
-> > the later index chunks as well.  Truncating or hashing the IDs there would
-> > lose the guarantee that distinct type/domain/description tuples have a
-> > differing index bit.
-> > 
-> > Allocate IDs lazily since private key types need not be registered.  Cache
-> > them in the index key so tree walks and copies of an existing index do not
-> > need to dereference a type descriptor that may have been unregistered.
-> > Keep the 32-bit chunk layout and diff_objects() bit offsets consistent,
-> > and retain the separate root slot for keyrings used by recursive search.
-> > The key comparison, permissions and userspace data format are unchanged;
-> > only the address-dependent in-memory ordering is replaced.
-> > 
-> > Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-> > Assisted-by: Codex:gpt-6-astra
-> > Signed-off-by: Kyle Zeng <kylebot@openai.com>
+On Wed, Oct 14, 2026 at 07:01:38PM +0300, Jarkko Sakkinen wrote:
+> This is a kunit test for lib/assoc_array.c, which maintains a shadow model
+> across assoc_array operations, and checks its integrity after every
+> operation.
 > 
+> I wrote a draft version so that I could properly test 'assoc-array-fixes'
+> tag at Linus' tree, and spent today rewriting a new more polished version
+> with as good description as I could possibly could on how the seeded test
+> keys were cherry-picked. Along the way I also tweaked the numbers to be
+> a bit less messier set than in my original version.
 > 
-> Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+> The transcripts that follow were executed with this command-line:
 > 
-> I'll apply this.
+>     ./tools/testing/kunit/kunit.py run --raw_output assoc_array
+> 
+> With 'assoc-array-fixes' commits and its subsequent tag iterations all
+> eight tests pass, and without them all of them fail.
+> 
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Now I did it, and your patch is now in my master branch (not yet -next,
-will get there). Thank you.
+Would this effort (and Linus's effort) be better spent on converting
+keyrings to use an rhashtable?
 
-It took a while because kunit test for assoc-array took almost the whole
-day [1] (mainly figuring out test data that is not too much pain
-to recap later on that replaced lottery I originally had).
+keyrings is the only user of assoc_array.  So if it's made to use
+something else, assoc_array (all 1724 lines of it!) can just be deleted.
 
-[1] https://lore.kernel.org/keyrings/20261014160144.1835860-1-jarkko@kernel.org/T/#u
+I understand assoc_array.c was intended to be for general use.  But
+clearly that hasn't happened in the 13 years it's been in the kernel.
+Keyrings has always been its only user.  All other kernel code needing a
+map data structure uses something else.
 
-Br, Jarkko
+- Eric
