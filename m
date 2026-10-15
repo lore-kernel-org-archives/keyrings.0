@@ -1,60 +1,60 @@
-Received: from mail-wm1-f47.google.com (mail-wm1-f47.google.com [209.85.128.47])
+Received: from mail-wm1-f52.google.com (mail-wm1-f52.google.com [209.85.128.52])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F111E4D09EC
-	for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 11:08:49 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.128.47
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B88C951FCDA
+	for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 12:45:24 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.128.52
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792062531; cv=none; b=YYwQi2V5Iu/bSNHH3q+F3CW96t/rveiaHlt0dbGEhMJPoDUqEcUhBEeeMCPXRlDBg/jRIwiyYWlgrE003jmpDMW775Y7+BPRhrFa5c88fATuXkRUGSgaedUy+k+B4P/uzpevJzhxIV6KYf52xnFWajfnW9ubnOQvHntHA1CkBnM=
+	t=1792068326; cv=none; b=rhXw/VYNvKeL4K6c4HPu2rDrjy11XMl6I1OiIjn00MS6JnJxzJY+kiTOy6HenObVzgT9P0RPagwJcsqMZJZaW18DurbbvlkPLnHG1kcd3XxaikHcJuQEMkEpkAoRjW+2K5RDzwAt54udtMaT+oxXh/u3+7nLl9+IGBDg6jtBWlg=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792062531; c=relaxed/simple;
-	bh=XJoINwSigmUSFf2dqnHMxDsKhNmQqPxs6uqpqIC4U0I=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=lONEwj5c5sDhpMkRMqwK5eNvjkk9VCzOOhfXHsGPmAP/JHOTdpCsQZlQWw0bPLBsNx5Lj2AOg1II0SannsMyqbwXPDsWm9uT7p7bNiybTqn+8uSFuek4tQq109aiBoZs51mBmAAFBFbhMuq90WIdQcjiUhv4lEMdzhuBZKOxFWo=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=AqLN95jQ; arc=none smtp.client-ip=209.85.128.47
+	s=arc-20240116; t=1792068326; c=relaxed/simple;
+	bh=vylKQQ/G2tNnnLYMwRsPYg1GgKjJI3BVMUSDP2z2GUk=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=lHr6hezPnEkCEQ4AALinNG8oEOuWJpWlzwyvfEf4cLEF6U7eqJSm3IVcYAkTD2KZMxAInEZgDJ0eAa/d+kKvr3JFV/XB/Y5N1t74B0mkhPgQkZqucPEqAfgftkG+xi0CR+DDLDpXYbnYdKpkWIR79FuALF7+QgIqTWxR2OINz4c=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=snhSgmRP; arc=none smtp.client-ip=209.85.128.52
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="AqLN95jQ"
-Received: by mail-wm1-f47.google.com with SMTP id 5b1f17b1804b1-49ff680331aso21478565e9.3
-        for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 04:08:49 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="snhSgmRP"
+Received: by mail-wm1-f52.google.com with SMTP id 5b1f17b1804b1-4a1635f7c89so20832445e9.2
+        for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 05:45:24 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1792062528; x=1792667328; darn=vger.kernel.org;
+        d=gmail.com; s=20251104; t=1792068323; x=1792673123; darn=vger.kernel.org;
         h=content-transfer-encoding:mime-version:message-id:date:subject:cc
          :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=3JPj12lyap6keUb37p7J+0g+WrRr2s4sx+gWyL/wnu4=;
-        b=AqLN95jQ2XnT1cnMrhbgB31/aOeLpWWnkN5wz47YsEHwiCSjtYuLHth/cOHOFn4QeX
-         lapuJImuXnrm5GPGgHBq4FM6+yEszMmAgl9ugJb0pO21FnnwTcsp2CsnJOy92KGPUQFl
-         WZxBjn6BiGVztt+RZBn/9YxHvABezUB4VcOkoKDVxzqIDonaEzJ170n1xsu84xftiO/r
-         KcReyDQDnhFcHiHd3SvUcjluF3MaTW4jHYiNOc0PKvstzBAlquj0JVJXO8Dv6tZWp1PJ
-         JIXOFVF0ZBv13SCRl7sDeUQSk/Hua/QyZgO8R7Urangz0ngDx0E1cnMUK4lr5myQkUHx
-         W8TQ==
+        bh=g5NM70b1gJo1/du8KK7kg4ZTGntVLz97iWXJs9yEjyI=;
+        b=snhSgmRPnsWlEjXREbKlA10vr1u4CtFlnG8j1WZx1UTUi6xIF5kxfGEhT6tPyFNqNq
+         FrE/Bi+iA2P6Pns6d3xBz2aMvdTffRS/NzOGXb8Nsc065KgZcZUqO58xbpipevruJpeZ
+         kebAW4hDpR3jZdITocTwe1xIK/Vf4iyon8Woa4AVr5DPTy6ilgbXaImD8ni0dwbuqsLB
+         2ioJE1Xjw+WMgNuaSAQBwKsqfA8UiCP4SZBG10ep5TPXquT5MySmxDBWr+ReTy+8vlVA
+         V2f+/ZASswo82E590GgBIl2GVkbe5K3Co0V7Q/C1fEazfNPzPhXjrHysdvlajK9ehw0F
+         NwzQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792062528; x=1792667328;
+        d=1e100.net; s=20260707; t=1792068323; x=1792673123;
         h=content-transfer-encoding:mime-version:message-id:date:subject:cc
          :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
          :message-id:reply-to:content-type;
-        bh=3JPj12lyap6keUb37p7J+0g+WrRr2s4sx+gWyL/wnu4=;
-        b=jy7Rne101/g90MorISwFk6/ROXwLyUV/WoWXQhlRcmBJlhcCM26scW+0ksZfhoi/EP
-         DjQZx8AUuDaZ/kiMx8Ys04kcp9SjxV2NM0btd5jnS6XbbZRDCM+SJrp31rjmv9F/hacJ
-         Y96uQx/Zt2W9cUlg0PbgfDRIp7kRAVVFAUqeW4RH8aEoBWI4JIvvsImzxpRh8a2ANnlv
-         pGwltqAMEppRunTk27QgQY0vZk2bRJHYYHoFIR4bvJ1jY2RJ0Jq4Urum+9HzPqYhTFNo
-         5/PwyjPS8oxjSFh3xztYHqGdBl3dU/sKwYIF3OyOkb8C1HwIuOn+9XN54Fofg+n+9O9v
-         j+Cg==
-X-Gm-Message-State: AFq9FYJdFfodgd1MrE1aHj8AiPrm9Kuaat3n7QqT+HuqJsxwvs4w/YUZ
-	rtQMLO84F1hbb3En3/SageucgwAu/pWey9Xsd1gyo+vwvhebRrkcHZib
-X-Gm-Gg: AYBFou1SnkGd3aQvPe3uiOfBClPMhm96TI8w49h2j8bD+83T0IKJgnjcEcl/lUJUcN+
-	uv1usC9QDjeICvge9A0Xw28X5BtKqGh12weNAwSlAZzMzZ5HrEybYCwaVSgp7K2lZrYJ+J70h06
-	60PcYq+/YEBm8WSfTAUY79Ys3YKSI+1Julu8T083A9Ez4w/4eMcgpQ+R/wG9yzu7a/llJG3MMr/
-	z3SmBwi4KHlRRz+bPxz9m22Egi1S9CpIKWENhdWEn+Q2BOCvlt5CvSHj1NiqyiwaCcf4gkcp7Ar
-	pQ/ITz7yVgi/VCf3q71jvivA1TDjcdA1n8zUKZXEEteSVE1/BJvJ/ewZnLjKtCloKJKGFmwXHJL
-	wBA6nos0WFPQPVDhP/5lSWd8CWYkYNe9diM23ysAhSxxrKiNuseBrPEcGPhJ4Zvlh7rAyWHIx5R
-	/ulbThgpmwzIaBbNdby6qTBKLZcC+8PLTlgh8nXVQI3tt/LIP9oz3stfU0FhOmYefNGZI/ai9c
-X-Received: by 2002:a05:600c:699b:b0:4a0:4a8:d444 with SMTP id 5b1f17b1804b1-4a18e4af334mr397244145e9.33.1792062528000;
-        Thu, 15 Oct 2026 04:08:48 -0700 (PDT)
+        bh=g5NM70b1gJo1/du8KK7kg4ZTGntVLz97iWXJs9yEjyI=;
+        b=vZV8AdOeGDUXDwIguqeNdyEHMWLNR8SrlQEVWbSjjI5+roIicFHjaIQDX8EH65dFSt
+         WdpFgrkFNX3foG3+4W4vVbXedHqJMdgWJctYt3soPgHbxOkt8YFZtGhzD63He7qpje+t
+         UadlbCRD30RAjzzGvbyyWPZtlbJHN693Q9IxmZcTbOLJ/Cdk3enMcVD5ldU+R7f/Zm6R
+         uEBglcik4qnenUk5BPI6GnbFLLnuDsuplpS0ILsMfkAzwOkWPBT9PGxL0xWu6JxmbZPT
+         xOVTLpWR9zLexqEz2Qzx55qybd7A7qXZQNZp4zesn2II99Mgwf+IlopbaaeC5Tw90N73
+         0Pag==
+X-Gm-Message-State: AFq9FYLdgXfZXMhVCijhKk7gHI0C+oVm6NWb490mGwXZgrl8dLyJjz1a
+	pUX5T0pUVwSfW+/KQQy/UFP0aG+eik0clGkftvJVafq8+qaIQg4MoKDZ
+X-Gm-Gg: AYBFou3MHEIgaTzRU90NXCQnFAfk4gUGCHkqbMXIbTaWqtccvvzVSAqncsbIXwR3okO
+	UQY92R3JigJJiN68JWr9cctpLXrOuyybeG6t2J13yIlfs+X5mi+X+hQAECNa18kfxEdNQ1pIo7x
+	qXhTNEUKOYILnviwGhwL5/V4YA9taYb8BHX2ZKB1fL3xQubquYTSTVE6glIdpdhfowJj2/yloUD
+	GICqXd/ww9elQwMSt8t+0dS9pp1ChLqIw5tEB6FDa+8teeyPf33no3JNxeT6gg3ZznwIKbCAJRY
+	GHoo7wJkcKmuLelGGp2H6gqAgQjWeWJ9VyVK/Tet/Ji3zT/zhnLPgCkf1Hnozj0DJVqgTMGGq4S
+	u8kTyQ/nVkWAvtQyonHhzQdXkNOQHKd6zorMYzQZe6mMrCyzqdZTF5K0fn49sb6FDDIN1oF3KTr
+	8SL3HivvdewTbtZ0kMBonOnWecYAgcIehl/XLglOTEKWiLQurepe1sUNTxeYHS3A==
+X-Received: by 2002:a05:600c:4f42:b0:4a0:b6:4619 with SMTP id 5b1f17b1804b1-4a18e3ecfc8mr457506165e9.0.1792068322613;
+        Thu, 15 Oct 2026 05:45:22 -0700 (PDT)
 Received: from fedora ([2a02:4540:a7:16c0:b518:4b00:679:375])
-        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-4a1bd99e87csm62639105e9.13.2026.10.15.04.08.41
+        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-4a1bd640be0sm52911945e9.1.2026.10.15.05.45.13
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 15 Oct 2026 04:08:47 -0700 (PDT)
+        Thu, 15 Oct 2026 05:45:20 -0700 (PDT)
 From: Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
 To: David Howells <dhowells@redhat.com>,
 	Lukas Wunner <lukas@wunner.de>,
@@ -65,9 +65,9 @@ Cc: keyrings@vger.kernel.org,
 	linux-crypto@vger.kernel.org,
 	linux-kernel@vger.kernel.org,
 	Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
-Subject: [PATCH] crypto: pkcs7: Return no-digest for data-taking algorithms
-Date: Thu, 15 Oct 2026 14:38:26 +0330
-Message-ID: <20261015110826.126621-1-ampr.mhd@gmail.com>
+Subject: [PATCH] crypto: x509_loader: Use %pe to log error pointer
+Date: Thu, 15 Oct 2026 16:15:00 +0330
+Message-ID: <20261015124500.53228-1-ampr.mhd@gmail.com>
 X-Mailer: git-send-email 2.55.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
@@ -77,60 +77,42 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-pkcs7_get_digest() is documented to return a digest for IMA to use
-when verifying a modsig.  For signature algorithms where the public
-key algorithm consumes the raw data rather than a precomputed hash
-(algo_takes_data, currently ML-DSA), pkcs7_digest() does not produce
-an intermediate digest.
+The error path in x509_load_certificate_list() prints an error pointer
+with %ld and PTR_ERR(), which produces a raw errno value rather than
+the kernel's symbolic error name.
 
-When such a signature has no authenticated attributes, sig->m points
-at the raw data and m_free is false, so the existing check rejects it.
-But when the signature does have authenticated attributes, sig->m is
-an allocated buffer containing a modified copy of the AuthAttrs and
-m_free is true.  The existing check therefore returns that buffer to
-the caller as if it were a digest.
+Use %pe on the error pointer directly so the log reads:
 
-Test for algo_takes_data directly and report that no digest is
-available, before attempting to call pkcs7_digest().  This covers
-both ML-DSA cases consistently and removes the now-dead m_free check.
+  Problem loading in-kernel X.509 certificate (EINVAL)
 
-The only in-tree caller, ima_collect_modsig(), does not check the
-return value of pkcs7_get_digest(); for a data-taking algorithm it
-will now leave the digest fields unset and fall through with no
-digest, which is the correct outcome for an algorithm that does not
-produce an intermediate digest.  Callers that do care can detect the
-new -EOPNOTSUPP return.
+instead of:
+
+  Problem loading in-kernel X.509 certificate (-22)
+
+The new form is easier to read and matches the convention used
+elsewhere in the kernel.  Reported by Coccinelle's
+misc/ptr_err_to_pe.cocci semantic patch.
 
 Signed-off-by: Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
 ---
- crypto/asymmetric_keys/pkcs7_verify.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ crypto/asymmetric_keys/x509_loader.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 474e2c1ae21..7939b08b603 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -147,14 +147,15 @@ int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf, u32 *len,
- 	if (sinfo == NULL || sinfo->next != NULL)
- 		return -EBADMSG;
- 
-+	if (sinfo->sig->algo_takes_data) {
-+		pr_notice_once("%s: No digest for data-taking algorithm\n",
-+			       __func__);
-+		return -EOPNOTSUPP;
-+	}
-+
- 	ret = pkcs7_digest(pkcs7, sinfo);
- 	if (ret)
- 		return ret;
--	if (!sinfo->sig->m_free) {
--		pr_notice_once("%s: No digest available\n", __func__);
--		return -EINVAL; /* TODO: MLDSA doesn't necessarily calculate an
--				 * intermediate digest. */
--	}
- 
- 	*buf = sinfo->sig->m;
- 	*len = sinfo->sig->m_size;
+diff --git a/crypto/asymmetric_keys/x509_loader.c b/crypto/asymmetric_keys/x509_loader.c
+index 0d516c77cc2..373b5106e10 100644
+--- a/crypto/asymmetric_keys/x509_loader.c
++++ b/crypto/asymmetric_keys/x509_loader.c
+@@ -39,8 +39,8 @@ int x509_load_certificate_list(const u8 cert_list[],
+ 					   KEY_ALLOC_BUILT_IN |
+ 					   KEY_ALLOC_BYPASS_RESTRICTION);
+ 		if (IS_ERR(key)) {
+-			pr_err("Problem loading in-kernel X.509 certificate (%ld)\n",
+-			       PTR_ERR(key));
++			pr_err("Problem loading in-kernel X.509 certificate (%pe)\n",
++			       key);
+ 		} else {
+ 			pr_notice("Loaded X.509 cert '%s'\n",
+ 				  key_ref_to_ptr(key)->description);
 -- 
 2.55.0
 
