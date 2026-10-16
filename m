@@ -1,52 +1,44 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 12675455173;
-	Fri, 16 Oct 2026 21:53:49 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3708A3CFF6C;
+	Fri, 16 Oct 2026 21:53:54 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792187631; cv=none; b=qxpkdoRA6u02C+V2xqhk3fV5jEV+FYm+X0AMzd+eWj53LzJaFtzb24wym/7tkXAJE8ksKQ3WymOYMBDwgHw8E0oXaoW5iFj4cz0bmB9RAxlbUJFWIgqkVbTfh/x2GiGQtOn1zve0PLmuSHTnt9VIPshQ9K8mUk5wt7miZXc39m0=
+	t=1792187635; cv=none; b=tLbstHbIP+/xg+byuOR0zT5WHmFzUDrPKy/aKc7BCyt2cx0P4q7ibObjUec1pOefkdgsb//tF1C/gTf3/lb9OawOyGQQQqM9CLut3YnvkRYGWLyFDBYps+4bsFaJOxEpwvbQnwuvXHdNcBKqPrKOGY12AsnI3wbRfHzKYJXVEfE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792187631; c=relaxed/simple;
-	bh=ZK7azRDiS9PvC6iZGVPB6px13u1Gw01tOdsHuvz3mwA=;
+	s=arc-20240116; t=1792187635; c=relaxed/simple;
+	bh=ZcffgeoSSqWIABMNeSCGBrg4hjJ7aeGVv+K3tTqhG4c=;
 	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=rItQP9E5Pfu/gm+bH31Dkr1uxuLQpjLM3r4vtqLLWlD5OHu1X8dtRgdBUmvHTWX4E2yWu77Y8isi8LgHSJ1k0uyGufHJwkWG+UCaVhKPzVmSYv1uhTqdXmVTaIZIwUVdk6/afZ9N5qJdeDTJL/45BrR+27PBbIhv+vuQf5mnT88=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=j+s0sxKA; arc=none smtp.client-ip=100.103.45.18
+	 MIME-Version; b=rmE7mXExq8OUmMHdIvoc/AXnJXTHHbMmBrc4ArilN0Tr+9e4NexSv/7FpiO5Ns28opLPZll+76bOh2por2nUCg0Cvb/Z2LivTtt80hqbTPjzlUIvApVR2yJAZr8n9v9izellbhukLqXIU+glc/hwWAbZ5IYmEd14siVRCb6Ie+Q=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Q+wo8n+r; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="j+s0sxKA"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 0F29E1F000C4;
-	Fri, 16 Oct 2026 21:53:48 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Q+wo8n+r"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 4652B1F000C4;
+	Fri, 16 Oct 2026 21:53:53 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792187629;
-	bh=bCMwZ8mQei7EDDTNVs6DlPqXteYgikRw7RDXBv3wkLk=;
+	s=k20260515; t=1792187633;
+	bh=F3CKgeXNXan1ZtlvQL5RMrO68jNwz1xB8OEfRsOXRsk=;
 	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=j+s0sxKA15LzpHP1KuWt5AxRcy/KHUT7ToKU5j3WjtfMR+5+pFgPQ0v9oiWa3PLE1
-	 mNsAKNcdf+/MPcV0G2FZOsSLH1hZBTBashII1hMH8hKJePofybTaxFqe1jzrdnIh7/
-	 CpOFAFh8AAjenjNMf1tICp62HXQtF07uqnN8TKz5YVgGi5aBrRM6/ykf/gMHwWihUp
-	 17TdB6BCfE+muKJweyGRtG8yMZ/HAFV2TFqY3yoDbQtE8Nuy0PZUVa5yh7Na7zlFbm
-	 WdaTmQOQ0omdyAvMKj62EHgpHj3XXJmAUmh3nXYkb2kyoG2sfjW1rkIKe1eMEPksig
-	 CF2FBgRxMFVMA==
+	b=Q+wo8n+rTvYAW7V7h0awhBnIHMwyvom8iUNH5hAjJwbf7kjdpylSXHETmoPt4/t/j
+	 7WfV7BGzhpx3Fc67d7EdR6PXqvKvv/31beG1fOx5wKoQB5sgolJkRW2MFRar36uqxM
+	 wG6qYacqEqZ9aqw+xKyh9RMib9MoF1qjxb8SJlFGAWKlTHxwAPXxAGh0MHv4o8CFEQ
+	 LieUTC1NyTJymDry2Y+AcZ5CQ0024iPivBWRwBenPelrauIouAZoTEzPD4rIt6VNX6
+	 iXGjff7dOjXAf2HMU8HjfHxE8Cwb/6s825RWXypCF39ml12OTgHu7bgr3hogwpkUFE
+	 puEi5uUB8sNMQ==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org,
 	Linus Torvalds <torvalds@linux-foundation.org>,
 	Jarkko Sakkinen <jarkko@kernel.org>,
-	Paulo Alcantara <pc@manguebit.org>,
-	Namjae Jeon <linkinjeon@kernel.org>,
-	Ronnie Sahlberg <ronniesahlberg@gmail.com>,
-	Shyam Prasad N <sprasad@microsoft.com>,
-	Tom Talpey <tom@talpey.com>,
-	Bharath SM <bharathsm@microsoft.com>,
 	Paul Moore <paul@paul-moore.com>,
 	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	linux-cifs@vger.kernel.org (open list:COMMON INTERNET FILE SYSTEM CLIENT (CIFS and SMB3)),
-	samba-technical@lists.samba.org (moderated list:COMMON INTERNET FILE SYSTEM CLIENT (CIFS and SMB3)),
-	linux-kernel@vger.kernel.org (open list),
-	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
-Subject: [RFC PATCH 1/6] keys: prevent quota overflow and widen quotalen and datalen to 32 bits
-Date: Sat, 17 Oct 2026 00:52:59 +0300
-Message-ID: <20261016215326.4110064-2-jarkko@kernel.org>
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
+	linux-kernel@vger.kernel.org (open list)
+Subject: [RFC PATCH 2/6] keys: reclaim link quota during keyring garbage collection
+Date: Sat, 17 Oct 2026 00:53:00 +0300
+Message-ID: <20261016215326.4110064-3-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
 In-Reply-To: <20261016215326.4110064-1-jarkko@kernel.org>
 References: <20261016215326.4110064-1-jarkko@kernel.org>
@@ -58,159 +50,34 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-In struct key, quotalen and datalen are 16-bit unsigned shorts, limiting
-payload and quota tracking to 64 KiB. With large descriptions or payload
-updates, addition and difference calculations can truncate or overflow,
-corrupting user quota accounting.
+Garbage collection removes dead key links without releasing their quota.
+Repeated collection therefore leaves the owner charged for links that no
+longer exist, eventually preventing further links with -EDQUOT.
 
-Additionally, existing quota checks rely on undefined signed overflow
-checks (e.g. user->qnbytes + quotalen < user->qnbytes) and do not guard
-against user->qnkeys or user->qnbytes reaching INT_MAX.
+Update the payload reservation from the surviving link count while holding
+the keyring semaphore. If assoc_array_gc() fails, the tree and its count
+remain unchanged, so the existing reservation is retained.
 
-Widen quotalen and datalen to unsigned 32-bit integers in struct key.
-Validate description lengths against INT_MAX in key_alloc(), and check
-quota headroom using safe subtraction across key_alloc(),
-key_payload_reserve(), and keyctl_chown_key().
-
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
 Assisted-by: LLM
 Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
- fs/smb/client/cifsacl.c |  6 +++---
- include/linux/key.h     |  4 ++--
- security/keys/key.c     | 25 ++++++++++++++++++++-----
- security/keys/keyctl.c  |  9 +++++----
- 4 files changed, 30 insertions(+), 14 deletions(-)
+ security/keys/keyring.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/smb/client/cifsacl.c b/fs/smb/client/cifsacl.c
-index c5e47a835f99..de2acc7234be 100644
---- a/fs/smb/client/cifsacl.c
-+++ b/fs/smb/client/cifsacl.c
-@@ -385,7 +385,7 @@ id_to_sid(unsigned int cid, uint sidtype, struct smb_sid *ssid)
- 		goto out_revert_creds;
- 	} else if (sidkey->datalen < CIFS_SID_BASE_SIZE) {
- 		rc = smb_EIO1(smb_eio_trace_malformed_sid_key, sidkey->datalen);
--		cifs_dbg(FYI, "%s: Downcall contained malformed key (datalen=%hu)\n",
-+		cifs_dbg(FYI, "%s: Downcall contained malformed key (datalen=%u)\n",
- 			 __func__, sidkey->datalen);
- 		goto invalidate_key;
- 	}
-@@ -403,7 +403,7 @@ id_to_sid(unsigned int cid, uint sidtype, struct smb_sid *ssid)
- 	if (ksid_size > sidkey->datalen) {
- 		rc = smb_EIO2(smb_eio_trace_malformed_ksid_key,
- 			      ksid_size, sidkey->datalen);
--		cifs_dbg(FYI, "%s: Downcall contained malformed key (datalen=%hu, ksid_size=%u)\n",
-+		cifs_dbg(FYI, "%s: Downcall contained malformed key (datalen=%u, ksid_size=%u)\n",
- 			 __func__, sidkey->datalen, ksid_size);
- 		goto invalidate_key;
- 	}
-@@ -498,7 +498,7 @@ sid_to_id(struct cifs_sb_info *cifs_sb, struct smb_sid *psid,
- 	 */
- 	BUILD_BUG_ON(sizeof(uid_t) != sizeof(gid_t));
- 	if (sidkey->datalen != sizeof(uid_t)) {
--		cifs_dbg(FYI, "%s: Downcall contained malformed key (datalen=%hu)\n",
-+		cifs_dbg(FYI, "%s: Downcall contained malformed key (datalen=%u)\n",
- 			 __func__, sidkey->datalen);
- 		key_invalidate(sidkey);
- 		goto out_key_put;
-diff --git a/include/linux/key.h b/include/linux/key.h
-index e40b5267658f..26139c3adf62 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -216,8 +216,8 @@ struct key {
- 	kuid_t			uid;
- 	kgid_t			gid;
- 	key_perm_t		perm;		/* access permissions */
--	unsigned short		quotalen;	/* length added to quota */
--	unsigned short		datalen;	/* payload data length
-+	unsigned int		quotalen;	/* length added to quota */
-+	unsigned int		datalen;	/* payload data length
- 						 * - may not match RCU dereferenced payload
- 						 * - payload should contain own length
- 						 */
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 6ebb8691551f..144745684334 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -245,6 +245,10 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 	}
- 
- 	desclen = strlen(desc);
-+	if (desclen >= INT_MAX || type->def_datalen > INT_MAX - desclen - 1) {
-+		key = ERR_PTR(-EINVAL);
-+		goto error;
-+	}
- 	quotalen = desclen + 1 + type->def_datalen;
- 
- 	/* get hold of the key tracking for this user */
-@@ -261,10 +265,14 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 			key_quota_root_maxbytes : key_quota_maxbytes;
- 
- 		spin_lock_irqsave(&user->lock, irqflags);
-+		if (user->qnkeys == INT_MAX ||
-+		    quotalen > INT_MAX - user->qnbytes)
-+			goto no_quota;
-+
- 		if (!(flags & KEY_ALLOC_QUOTA_OVERRUN)) {
- 			if (user->qnkeys + 1 > maxkeys ||
--			    user->qnbytes + quotalen > maxbytes ||
--			    user->qnbytes + quotalen < user->qnbytes)
-+			    quotalen > maxbytes ||
-+			    user->qnbytes > maxbytes - quotalen)
- 				goto no_quota;
- 		}
- 
-@@ -373,11 +381,16 @@ EXPORT_SYMBOL(key_alloc);
-  */
- int key_payload_reserve(struct key *key, size_t datalen)
- {
--	int delta = (int)datalen - key->datalen;
-+	int delta;
- 	int ret = 0;
- 
- 	key_check(key);
- 
-+	if (datalen > INT_MAX)
-+		return -EINVAL;
-+
-+	delta = (int)datalen - (int)key->datalen;
-+
- 	/* contemplate the quota adjustment */
- 	if (delta != 0 && test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
- 		unsigned maxbytes = uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
-@@ -387,8 +400,10 @@ int key_payload_reserve(struct key *key, size_t datalen)
- 		spin_lock_irqsave(&key->user->lock, flags);
- 
- 		if (delta > 0 &&
--		    (key->user->qnbytes + delta > maxbytes ||
--		     key->user->qnbytes + delta < key->user->qnbytes)) {
-+		    (delta > INT_MAX - key->user->qnbytes ||
-+		     delta > INT_MAX - key->quotalen ||
-+		     delta > maxbytes ||
-+		     key->user->qnbytes > maxbytes - delta)) {
- 			ret = -EDQUOT;
- 		}
- 		else {
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 5a5efa26ed0e..6b528faab1a7 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1014,10 +1014,11 @@ long keyctl_chown_key(key_serial_t id, uid_t user, gid_t group)
- 				key_quota_root_maxbytes : key_quota_maxbytes;
- 
- 			spin_lock_irqsave(&newowner->lock, flags);
--			if (newowner->qnkeys + 1 > maxkeys ||
--			    newowner->qnbytes + key->quotalen > maxbytes ||
--			    newowner->qnbytes + key->quotalen <
--			    newowner->qnbytes)
-+			if (newowner->qnkeys == INT_MAX ||
-+			    newowner->qnkeys + 1 > maxkeys ||
-+			    key->quotalen > INT_MAX - newowner->qnbytes ||
-+			    key->quotalen > maxbytes ||
-+			    newowner->qnbytes > maxbytes - key->quotalen)
- 				goto quota_overrun;
- 
- 			newowner->qnkeys++;
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 7143f3079d20..db987c891811 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -1755,6 +1755,8 @@ void keyring_gc(struct key *keyring, time64_t limit)
+ 	down_write(&keyring->sem);
+ 	assoc_array_gc(&keyring->keys, &keyring_assoc_array_ops,
+ 		       keyring_gc_select_iterator, &limit);
++	key_payload_reserve(keyring,
++			    keyring->keys.nr_leaves_on_tree * KEYQUOTA_LINK_BYTES);
+ 	up_write(&keyring->sem);
+ 	kleave(" [gc]");
+ }
 -- 
 2.47.3
 
