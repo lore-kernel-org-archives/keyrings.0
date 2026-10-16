@@ -1,118 +1,108 @@
-Received: from mail-wm1-f52.google.com (mail-wm1-f52.google.com [209.85.128.52])
+Received: from mail-pj1-f46.google.com (mail-pj1-f46.google.com [209.85.216.46])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B88C951FCDA
-	for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 12:45:24 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.128.52
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7B54222D7A1
+	for <keyrings@vger.kernel.org>; Fri, 16 Oct 2026 00:38:14 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.46
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792068326; cv=none; b=rhXw/VYNvKeL4K6c4HPu2rDrjy11XMl6I1OiIjn00MS6JnJxzJY+kiTOy6HenObVzgT9P0RPagwJcsqMZJZaW18DurbbvlkPLnHG1kcd3XxaikHcJuQEMkEpkAoRjW+2K5RDzwAt54udtMaT+oxXh/u3+7nLl9+IGBDg6jtBWlg=
+	t=1792111095; cv=none; b=NMyH/VlMxBGiSzwyiie25AyhsXlo2stPR0X3VrwHAlWr42yCZhjKfggeScZuc18IcgIfVl5UwNDAqtxdMs9Do3gbUggfpw//gBgdd0hA618/zRzZaCJd/kp2W/P8hsjq+suvXLK12ndqx2TCsYvbruQJJWCP5F7BIIiejJrFYOk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792068326; c=relaxed/simple;
-	bh=vylKQQ/G2tNnnLYMwRsPYg1GgKjJI3BVMUSDP2z2GUk=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=lHr6hezPnEkCEQ4AALinNG8oEOuWJpWlzwyvfEf4cLEF6U7eqJSm3IVcYAkTD2KZMxAInEZgDJ0eAa/d+kKvr3JFV/XB/Y5N1t74B0mkhPgQkZqucPEqAfgftkG+xi0CR+DDLDpXYbnYdKpkWIR79FuALF7+QgIqTWxR2OINz4c=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=snhSgmRP; arc=none smtp.client-ip=209.85.128.52
+	s=arc-20240116; t=1792111095; c=relaxed/simple;
+	bh=wJv6Oy02ZyVpQIEV4S+JLl2ZMXIUTlylj7/wOCMhJJY=;
+	h=Content-Type:Date:Message-Id:Subject:From:To:Cc:In-Reply-To:
+	 References:MIME-Version; b=JyT9NNJp04fXgsteNWen4vbJIq4xqjjY4RVKaIreVEXLWm3D/zZUF9uO3+pB7VwKx9sEpihrvaxm2q9jSw4rKmEHR6L0lKbVRH1Cj7E+zx0wL6Kv1qZ4vN+g3unEJLzMSoow4vaBd1k15oXfNOuUXqjJ1U6Bg6fiZpZFtXGVQc4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=a3bkIh7E; arc=none smtp.client-ip=209.85.216.46
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="snhSgmRP"
-Received: by mail-wm1-f52.google.com with SMTP id 5b1f17b1804b1-4a1635f7c89so20832445e9.2
-        for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 05:45:24 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="a3bkIh7E"
+Received: by mail-pj1-f46.google.com with SMTP id 98e67ed59e1d1-38d489b6b71so3233532a91.0
+        for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 17:38:14 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1792068323; x=1792673123; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=g5NM70b1gJo1/du8KK7kg4ZTGntVLz97iWXJs9yEjyI=;
-        b=snhSgmRPnsWlEjXREbKlA10vr1u4CtFlnG8j1WZx1UTUi6xIF5kxfGEhT6tPyFNqNq
-         FrE/Bi+iA2P6Pns6d3xBz2aMvdTffRS/NzOGXb8Nsc065KgZcZUqO58xbpipevruJpeZ
-         kebAW4hDpR3jZdITocTwe1xIK/Vf4iyon8Woa4AVr5DPTy6ilgbXaImD8ni0dwbuqsLB
-         2ioJE1Xjw+WMgNuaSAQBwKsqfA8UiCP4SZBG10ep5TPXquT5MySmxDBWr+ReTy+8vlVA
-         V2f+/ZASswo82E590GgBIl2GVkbe5K3Co0V7Q/C1fEazfNPzPhXjrHysdvlajK9ehw0F
-         NwzQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792068323; x=1792673123;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+        d=gmail.com; s=20251104; t=1792111094; x=1792715894; darn=vger.kernel.org;
+        h=mime-version:content-transfer-encoding:references:in-reply-to:cc:to
+         :from:subject:message-id:date:content-type:from:to:cc:subject:date
          :message-id:reply-to:content-type;
-        bh=g5NM70b1gJo1/du8KK7kg4ZTGntVLz97iWXJs9yEjyI=;
-        b=vZV8AdOeGDUXDwIguqeNdyEHMWLNR8SrlQEVWbSjjI5+roIicFHjaIQDX8EH65dFSt
-         WdpFgrkFNX3foG3+4W4vVbXedHqJMdgWJctYt3soPgHbxOkt8YFZtGhzD63He7qpje+t
-         UadlbCRD30RAjzzGvbyyWPZtlbJHN693Q9IxmZcTbOLJ/Cdk3enMcVD5ldU+R7f/Zm6R
-         uEBglcik4qnenUk5BPI6GnbFLLnuDsuplpS0ILsMfkAzwOkWPBT9PGxL0xWu6JxmbZPT
-         xOVTLpWR9zLexqEz2Qzx55qybd7A7qXZQNZp4zesn2II99Mgwf+IlopbaaeC5Tw90N73
-         0Pag==
-X-Gm-Message-State: AFq9FYLdgXfZXMhVCijhKk7gHI0C+oVm6NWb490mGwXZgrl8dLyJjz1a
-	pUX5T0pUVwSfW+/KQQy/UFP0aG+eik0clGkftvJVafq8+qaIQg4MoKDZ
-X-Gm-Gg: AYBFou3MHEIgaTzRU90NXCQnFAfk4gUGCHkqbMXIbTaWqtccvvzVSAqncsbIXwR3okO
-	UQY92R3JigJJiN68JWr9cctpLXrOuyybeG6t2J13yIlfs+X5mi+X+hQAECNa18kfxEdNQ1pIo7x
-	qXhTNEUKOYILnviwGhwL5/V4YA9taYb8BHX2ZKB1fL3xQubquYTSTVE6glIdpdhfowJj2/yloUD
-	GICqXd/ww9elQwMSt8t+0dS9pp1ChLqIw5tEB6FDa+8teeyPf33no3JNxeT6gg3ZznwIKbCAJRY
-	GHoo7wJkcKmuLelGGp2H6gqAgQjWeWJ9VyVK/Tet/Ji3zT/zhnLPgCkf1Hnozj0DJVqgTMGGq4S
-	u8kTyQ/nVkWAvtQyonHhzQdXkNOQHKd6zorMYzQZe6mMrCyzqdZTF5K0fn49sb6FDDIN1oF3KTr
-	8SL3HivvdewTbtZ0kMBonOnWecYAgcIehl/XLglOTEKWiLQurepe1sUNTxeYHS3A==
-X-Received: by 2002:a05:600c:4f42:b0:4a0:b6:4619 with SMTP id 5b1f17b1804b1-4a18e3ecfc8mr457506165e9.0.1792068322613;
-        Thu, 15 Oct 2026 05:45:22 -0700 (PDT)
-Received: from fedora ([2a02:4540:a7:16c0:b518:4b00:679:375])
-        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-4a1bd640be0sm52911945e9.1.2026.10.15.05.45.13
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 15 Oct 2026 05:45:20 -0700 (PDT)
-From: Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
-To: David Howells <dhowells@redhat.com>,
-	Lukas Wunner <lukas@wunner.de>,
-	Ignat Korchagin <ignat@linux.win>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S . Miller" <davem@davemloft.net>
-Cc: keyrings@vger.kernel.org,
-	linux-crypto@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
-Subject: [PATCH] crypto: x509_loader: Use %pe to log error pointer
-Date: Thu, 15 Oct 2026 16:15:00 +0330
-Message-ID: <20261015124500.53228-1-ampr.mhd@gmail.com>
-X-Mailer: git-send-email 2.55.0
+        bh=wJv6Oy02ZyVpQIEV4S+JLl2ZMXIUTlylj7/wOCMhJJY=;
+        b=a3bkIh7Ee8Kg3CriNDEwX8oGdI8Qdq5fV8e7jXfgg0J1TidIHQ4ixKF3GGM/J9uPaU
+         e9p3Qhm0hYO6htG8BQo38S6WoWM17XaFGJgXz52hh0QoGrW0FDwdFx014NgxccrzmPDu
+         tgbpiLo9zoTQFGvOXV/dtf2i06sLTA0NjLV7QioPqD/w0Lj9OfYijzAFuzNuiRYVAi6d
+         N0MAhUGZZgq6jxOVaP4SUrgfmC9X+wf0hf06uCR2fckrgo66IiFyfvGxl1JjLyDrCPO/
+         S/vw5NXyrspYxKUnw5D8+EHgJ2a0J83wCznPI/OO3Clz8nc6Gz2YW1YzxBTBClAAqsCa
+         L4Lg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1792111094; x=1792715894;
+        h=mime-version:content-transfer-encoding:references:in-reply-to:cc:to
+         :from:subject:message-id:date:content-type:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=wJv6Oy02ZyVpQIEV4S+JLl2ZMXIUTlylj7/wOCMhJJY=;
+        b=LXCzGklzJz6oimVYXDrQzquIx9dtWDFF6KHvxxIU7Ffi1nelrT+R6ZO0N5sdsBjsRB
+         VzDksZFz2aOM54FxRTFeJxgonqZTd/md+a9cFZibOS/NNv9zX9MYHhbcPluTPfFo6fa9
+         zAWhW5IyrQJZlQItdYAcfBHSoWDMfDOx+MeHoVBRn9OQFqVEzZp1j+bW11+1PnkMSTao
+         Lsxv6lQx16nEqgsx56Joc7j4vOvvcbxZgBSeL1urCByMgKqoaknJfwqyV7EEixuemfAK
+         nUOAE79QtIuEJZvsQgd/PHVDuMMS92HvyXYLNG9RRZgzX0To/HwsGZ8GKryihfxPrkMY
+         6bQA==
+X-Forwarded-Encrypted: i=1; AKwUvByzX8v0zO9iBQ+Wo0+jb0Rlsqs56yiNd4QOp/mxdTppX4uIEyBNmjC8JQGXavNMiGPvmp4SZPuDCg==@vger.kernel.org
+X-Gm-Message-State: AFq9FYL7NmNNmonc85krhzfD1S7wPQ0ioazwRjF5qQETintOnEEDGPYc
+	F85dsbbU329/RD5gUkI9T3E6uGe8DC4+tbK9tju5iHzGtC06OSPVDHgf
+X-Gm-Gg: AYBFou3Rwv8dHWD3IgR7Y7ubZeSyiw4drxf9CjWmFeTllGbqPOGF2HTseNxEVGRmopW
+	W6EF5PlS76a3QAvr0TCvmWU1M1OMjtu++8DZrGvVeKszajKMB/amj7mMS/jgjGbZM5Z7tCg/MVv
+	L1V59kS2qlEkjGqs5aG3lYpXPuRy6i73XDedRX2MzrKC8Nm4ARIxiIfpgaB4DBVCuEgjiJL8bpz
+	cpO3EH8Q+PW+et/3y0iKSxXB9X1vxDDtbgn72fETFAXkizgg9HJjfV32sQaFu0NFDr1KjU033AD
+	MTsW8frofSsvJqG3OKldXH9HE97lD7/J6LxUsS2hHo6rJZasXWK+7CUf5uSvy7ob+tSgu42o+cr
+	86voFJi9ewlnW+Gpa3xRyFulXULxWQVHFhGdkLZ55HTvlRvBI2YVMk8ioQ5UFx3xELFwzT147s/
+	AfEqPOYq+oaw9FJSuMdha9jF5URRnWVCeYVEJORXCV99q9UOjdCPsZKA3aojwrKJpnzBvwN67M9
+	f8LSmOZxl8U7Tq/AiGzMp1drSagouWazvFhTj3VGskCoke4PakfqF+OUuUhZz3Tz9FdELS9a9Sd
+	/MI=
+X-Received: by 2002:a17:90b:1d4f:b0:3ab:c80:936f with SMTP id 98e67ed59e1d1-3ab3a94ffa7mr15824328a91.16.1792111093664;
+        Thu, 15 Oct 2026 17:38:13 -0700 (PDT)
+Received: from localhost ([153.61.198.253])
+        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3ac947dfa00sm6462107a91.17.2026.10.15.17.38.12
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Thu, 15 Oct 2026 17:38:12 -0700 (PDT)
+Content-Type: text/plain; charset=UTF-8
+Date: Fri, 16 Oct 2026 00:38:11 +0000
+Message-Id: <DM5UD20248FG.3BXPS76LK06F5@gmail.com>
+Subject: Re: [PATCH bpf-next v2 0/3] keys: Add well known IDs for
+ fs-verity/dm-verity keys
+From: "Alexei Starovoitov" <alexei.starovoitov@gmail.com>
+To: "Christian Brauner" <brauner@kernel.org>, "Daniel Borkmann"
+ <daniel@iogearbox.net>, "Andrii Nakryiko" <andrii@kernel.org>, "Alasdair
+ Kergon" <agk@redhat.com>, "Mike Snitzer" <snitzer@kernel.org>, "Mikulas
+ Patocka" <mpatocka@redhat.com>, "Benjamin Marzinski" <bmarzins@redhat.com>,
+ "David Howells" <dhowells@redhat.com>, "Jarkko Sakkinen"
+ <jarkko@kernel.org>, "Paul Moore" <paul@paul-moore.com>, "James Morris"
+ <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "Eric Biggers"
+ <ebiggers@kernel.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, "Jonathan
+ Corbet" <corbet@lwn.net>, "Shuah Khan" <skhan@linuxfoundation.org>, "Randy
+ Dunlap" <rdunlap@infradead.org>, "Andrew Halaney" <andrew@amutable.com>
+Cc: <dm-devel@lists.linux.dev>, <linux-kernel@vger.kernel.org>,
+ <keyrings@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
+ <bpf@vger.kernel.org>, <fsverity@lists.linux.dev>,
+ <linux-doc@vger.kernel.org>
+In-Reply-To: <20261012-broschen-inanspruchnahme-gebilde-d72cf2b99cda@brauner>
+References: <20261008-ajhalaney-dmverity-key-identifier-v2-0-008456d189cb@amutable.com> <20261012-broschen-inanspruchnahme-gebilde-d72cf2b99cda@brauner>
+X-Mailer: mkdraft (claude review draft; edit before sending)
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 
-The error path in x509_load_certificate_list() prints an error pointer
-with %ld and PTR_ERR(), which produces a raw errno value rather than
-the kernel's symbolic error name.
+On Mon, Oct 12, 2026 at 12:38 PM Christian Brauner <brauner@kernel.org> wrote:
+> Applied to the vfs-7.4.keyring branch of the vfs/vfs.git tree.
+> Patches in the vfs-7.4.keyring branch should appear in linux-next soon.
 
-Use %pe on the error pointer directly so the log reads:
+What is this branch based on ?
+v2 was sent against bpf-next, because
+commit 264d8fd2794f ("bpf, keys: Add a bpf keyring for program signature validation")
+is only there.
+All hunks in keyctl.h, key.h and process_keys.c have its lines as
+context, so the patches don't apply to -rc as-is.
+And patch 3 documents KEY_SPEC_BPF_KEYRING.
 
-  Problem loading in-kernel X.509 certificate (EINVAL)
-
-instead of:
-
-  Problem loading in-kernel X.509 certificate (-22)
-
-The new form is easier to read and matches the convention used
-elsewhere in the kernel.  Reported by Coccinelle's
-misc/ptr_err_to_pe.cocci semantic patch.
-
-Signed-off-by: Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
----
- crypto/asymmetric_keys/x509_loader.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/x509_loader.c b/crypto/asymmetric_keys/x509_loader.c
-index 0d516c77cc2..373b5106e10 100644
---- a/crypto/asymmetric_keys/x509_loader.c
-+++ b/crypto/asymmetric_keys/x509_loader.c
-@@ -39,8 +39,8 @@ int x509_load_certificate_list(const u8 cert_list[],
- 					   KEY_ALLOC_BUILT_IN |
- 					   KEY_ALLOC_BYPASS_RESTRICTION);
- 		if (IS_ERR(key)) {
--			pr_err("Problem loading in-kernel X.509 certificate (%ld)\n",
--			       PTR_ERR(key));
-+			pr_err("Problem loading in-kernel X.509 certificate (%pe)\n",
-+			       key);
- 		} else {
- 			pr_notice("Loaded X.509 cert '%s'\n",
- 				  key_ref_to_ptr(key)->description);
--- 
-2.55.0
+I'm confused.
 
