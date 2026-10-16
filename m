@@ -1,108 +1,140 @@
-Received: from mail-pj1-f46.google.com (mail-pj1-f46.google.com [209.85.216.46])
+Received: from mail-pj1-f45.google.com (mail-pj1-f45.google.com [209.85.216.45])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7B54222D7A1
-	for <keyrings@vger.kernel.org>; Fri, 16 Oct 2026 00:38:14 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.46
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0BAA52EEE7E
+	for <keyrings@vger.kernel.org>; Fri, 16 Oct 2026 04:00:22 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.45
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792111095; cv=none; b=NMyH/VlMxBGiSzwyiie25AyhsXlo2stPR0X3VrwHAlWr42yCZhjKfggeScZuc18IcgIfVl5UwNDAqtxdMs9Do3gbUggfpw//gBgdd0hA618/zRzZaCJd/kp2W/P8hsjq+suvXLK12ndqx2TCsYvbruQJJWCP5F7BIIiejJrFYOk=
+	t=1792123224; cv=none; b=cwgyMACSLz5t1KU6V5huAdD1CgyP5mSpNQuucPkHpzLw2jyVNUl4yerVuIOUQid0rJhQ4Gs7Vzin4BYifjxC6n4lAZNCiNPw/KVAOCQ8AAR2JxJ70iXVb3ExOT1fTYfLY5/kbIpD/fEgXUhykJtHb+gN6PwiNAOGyj0r3aJCSwU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792111095; c=relaxed/simple;
-	bh=wJv6Oy02ZyVpQIEV4S+JLl2ZMXIUTlylj7/wOCMhJJY=;
-	h=Content-Type:Date:Message-Id:Subject:From:To:Cc:In-Reply-To:
-	 References:MIME-Version; b=JyT9NNJp04fXgsteNWen4vbJIq4xqjjY4RVKaIreVEXLWm3D/zZUF9uO3+pB7VwKx9sEpihrvaxm2q9jSw4rKmEHR6L0lKbVRH1Cj7E+zx0wL6Kv1qZ4vN+g3unEJLzMSoow4vaBd1k15oXfNOuUXqjJ1U6Bg6fiZpZFtXGVQc4=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=a3bkIh7E; arc=none smtp.client-ip=209.85.216.46
+	s=arc-20240116; t=1792123224; c=relaxed/simple;
+	bh=R1f53fZVOQpXpGpCi4RklZRTZOgEf4RFVZqHIV1IEjY=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=kpfomnheejzuSmEG13KY8IzDzThsBTcrmDbqre24jD0tUAJVWDBmm1FH5CG0zbEtrLo8/YH0+13lnuYVa5cMAx+IUWjSgZF/G3TWIsNZIPUssGHH7u2U32tJ9XXWuahPIOosalRJYYgGe4TVdeWf8B52vgPZiXpiEgt4FJLsLfw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=LZIn4Nb8; arc=none smtp.client-ip=209.85.216.45
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="a3bkIh7E"
-Received: by mail-pj1-f46.google.com with SMTP id 98e67ed59e1d1-38d489b6b71so3233532a91.0
-        for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 17:38:14 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="LZIn4Nb8"
+Received: by mail-pj1-f45.google.com with SMTP id 98e67ed59e1d1-3a813079a55so440146a91.0
+        for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 21:00:22 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1792111094; x=1792715894; darn=vger.kernel.org;
-        h=mime-version:content-transfer-encoding:references:in-reply-to:cc:to
-         :from:subject:message-id:date:content-type:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=wJv6Oy02ZyVpQIEV4S+JLl2ZMXIUTlylj7/wOCMhJJY=;
-        b=a3bkIh7Ee8Kg3CriNDEwX8oGdI8Qdq5fV8e7jXfgg0J1TidIHQ4ixKF3GGM/J9uPaU
-         e9p3Qhm0hYO6htG8BQo38S6WoWM17XaFGJgXz52hh0QoGrW0FDwdFx014NgxccrzmPDu
-         tgbpiLo9zoTQFGvOXV/dtf2i06sLTA0NjLV7QioPqD/w0Lj9OfYijzAFuzNuiRYVAi6d
-         N0MAhUGZZgq6jxOVaP4SUrgfmC9X+wf0hf06uCR2fckrgo66IiFyfvGxl1JjLyDrCPO/
-         S/vw5NXyrspYxKUnw5D8+EHgJ2a0J83wCznPI/OO3Clz8nc6Gz2YW1YzxBTBClAAqsCa
-         L4Lg==
+        d=gmail.com; s=20251104; t=1792123222; x=1792728022; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=g9IQw/iWHXUIP0xYQGBwa0OfUNbaaj14Fj4E0JqM4sE=;
+        b=LZIn4Nb86Im+eJt/C2Z8tvysgraS2xt11OqHgABFEDtbc4L9UzgX+rkAmvCaf3qWpZ
+         YrRQ/G9DWEHcA3jaEQVGVLgo1w6xS4ttOxTDJiarb9APKyqPBovADl9C/WFYx5gjuNIp
+         NYxK934bVsZnzU4025+/660RdteqDSkEOjjCLYBYpp75chpAug5MlTcNHiCFHauNf5ee
+         xnPfvK2P7k2P9q/jSGzTildbi5YZA/ZMctd1x+Sw+aJdu1TmqCj/gJ7+qoxkkdY/d6XH
+         x6jcETDeUjBSd72vBER9PuBgP61DzxNIUd1eDYK4dOCXVpCQ5fk4AbXVPxL3+XP5BECO
+         5llw==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792111094; x=1792715894;
-        h=mime-version:content-transfer-encoding:references:in-reply-to:cc:to
-         :from:subject:message-id:date:content-type:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=wJv6Oy02ZyVpQIEV4S+JLl2ZMXIUTlylj7/wOCMhJJY=;
-        b=LXCzGklzJz6oimVYXDrQzquIx9dtWDFF6KHvxxIU7Ffi1nelrT+R6ZO0N5sdsBjsRB
-         VzDksZFz2aOM54FxRTFeJxgonqZTd/md+a9cFZibOS/NNv9zX9MYHhbcPluTPfFo6fa9
-         zAWhW5IyrQJZlQItdYAcfBHSoWDMfDOx+MeHoVBRn9OQFqVEzZp1j+bW11+1PnkMSTao
-         Lsxv6lQx16nEqgsx56Joc7j4vOvvcbxZgBSeL1urCByMgKqoaknJfwqyV7EEixuemfAK
-         nUOAE79QtIuEJZvsQgd/PHVDuMMS92HvyXYLNG9RRZgzX0To/HwsGZ8GKryihfxPrkMY
-         6bQA==
-X-Forwarded-Encrypted: i=1; AKwUvByzX8v0zO9iBQ+Wo0+jb0Rlsqs56yiNd4QOp/mxdTppX4uIEyBNmjC8JQGXavNMiGPvmp4SZPuDCg==@vger.kernel.org
-X-Gm-Message-State: AFq9FYL7NmNNmonc85krhzfD1S7wPQ0ioazwRjF5qQETintOnEEDGPYc
-	F85dsbbU329/RD5gUkI9T3E6uGe8DC4+tbK9tju5iHzGtC06OSPVDHgf
-X-Gm-Gg: AYBFou3Rwv8dHWD3IgR7Y7ubZeSyiw4drxf9CjWmFeTllGbqPOGF2HTseNxEVGRmopW
-	W6EF5PlS76a3QAvr0TCvmWU1M1OMjtu++8DZrGvVeKszajKMB/amj7mMS/jgjGbZM5Z7tCg/MVv
-	L1V59kS2qlEkjGqs5aG3lYpXPuRy6i73XDedRX2MzrKC8Nm4ARIxiIfpgaB4DBVCuEgjiJL8bpz
-	cpO3EH8Q+PW+et/3y0iKSxXB9X1vxDDtbgn72fETFAXkizgg9HJjfV32sQaFu0NFDr1KjU033AD
-	MTsW8frofSsvJqG3OKldXH9HE97lD7/J6LxUsS2hHo6rJZasXWK+7CUf5uSvy7ob+tSgu42o+cr
-	86voFJi9ewlnW+Gpa3xRyFulXULxWQVHFhGdkLZ55HTvlRvBI2YVMk8ioQ5UFx3xELFwzT147s/
-	AfEqPOYq+oaw9FJSuMdha9jF5URRnWVCeYVEJORXCV99q9UOjdCPsZKA3aojwrKJpnzBvwN67M9
-	f8LSmOZxl8U7Tq/AiGzMp1drSagouWazvFhTj3VGskCoke4PakfqF+OUuUhZz3Tz9FdELS9a9Sd
-	/MI=
-X-Received: by 2002:a17:90b:1d4f:b0:3ab:c80:936f with SMTP id 98e67ed59e1d1-3ab3a94ffa7mr15824328a91.16.1792111093664;
-        Thu, 15 Oct 2026 17:38:13 -0700 (PDT)
-Received: from localhost ([153.61.198.253])
-        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3ac947dfa00sm6462107a91.17.2026.10.15.17.38.12
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Thu, 15 Oct 2026 17:38:12 -0700 (PDT)
-Content-Type: text/plain; charset=UTF-8
-Date: Fri, 16 Oct 2026 00:38:11 +0000
-Message-Id: <DM5UD20248FG.3BXPS76LK06F5@gmail.com>
-Subject: Re: [PATCH bpf-next v2 0/3] keys: Add well known IDs for
- fs-verity/dm-verity keys
-From: "Alexei Starovoitov" <alexei.starovoitov@gmail.com>
-To: "Christian Brauner" <brauner@kernel.org>, "Daniel Borkmann"
- <daniel@iogearbox.net>, "Andrii Nakryiko" <andrii@kernel.org>, "Alasdair
- Kergon" <agk@redhat.com>, "Mike Snitzer" <snitzer@kernel.org>, "Mikulas
- Patocka" <mpatocka@redhat.com>, "Benjamin Marzinski" <bmarzins@redhat.com>,
- "David Howells" <dhowells@redhat.com>, "Jarkko Sakkinen"
- <jarkko@kernel.org>, "Paul Moore" <paul@paul-moore.com>, "James Morris"
- <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "Eric Biggers"
- <ebiggers@kernel.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, "Jonathan
- Corbet" <corbet@lwn.net>, "Shuah Khan" <skhan@linuxfoundation.org>, "Randy
- Dunlap" <rdunlap@infradead.org>, "Andrew Halaney" <andrew@amutable.com>
-Cc: <dm-devel@lists.linux.dev>, <linux-kernel@vger.kernel.org>,
- <keyrings@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
- <bpf@vger.kernel.org>, <fsverity@lists.linux.dev>,
- <linux-doc@vger.kernel.org>
-In-Reply-To: <20261012-broschen-inanspruchnahme-gebilde-d72cf2b99cda@brauner>
-References: <20261008-ajhalaney-dmverity-key-identifier-v2-0-008456d189cb@amutable.com> <20261012-broschen-inanspruchnahme-gebilde-d72cf2b99cda@brauner>
-X-Mailer: mkdraft (claude review draft; edit before sending)
-Content-Transfer-Encoding: 8bit
+        d=1e100.net; s=20260707; t=1792123222; x=1792728022;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=g9IQw/iWHXUIP0xYQGBwa0OfUNbaaj14Fj4E0JqM4sE=;
+        b=lcgf6p2mXoJs5Q7z9SYbhhmCkg0yiNXo5RYVbPNJyA32vwDR4/a729Et2m3/rT1iyJ
+         gSfyr+Z7ya1HVDLKNUWGNiqT8GxhRqVhi3hId0q8WTkcLYq0wEo0r21DJ85FgARURa+/
+         79pbUrp50WU++AuIqIKQ9fXOJSFV6Yj/bcN+Qgd4UoNxXb7uB4mfxhmn1VVYnRqw4Vin
+         1iHQui2VTruMEm0kJsTPMQe3qT4EpKp4tVHfAfYBk/4gXj2d6GAIMhGjWhXEtOPJDRBh
+         A/QWFVLLzuk3LzABj4MypSXGVH9H9EN1mlRsodDM9dArX3Ry2HGHXJo62w//JTr9lT1o
+         /row==
+X-Forwarded-Encrypted: i=1; AKwUvBzjGdo7z/bvz3bEWIYSroMmjO+pbsQSy7NJmFHvliHHaeUslwJ/nK7AhM+P6WW84Mv2cDTaZeVsiA==@vger.kernel.org
+X-Gm-Message-State: AFq9FYIamFByIvBm2RV15PnT7c30A+BoQqp6tQTBtoPeLExIUGZeaPZB
+	P0DlLVXFevFa6gWsotM2X33RRJhx05ozc1RRjCXg+RTUpSNXjDL9vbvf
+X-Gm-Gg: AYBFou0JIT0hD1Kz4dM9SiuySt75tz6UdZtyhTJPmUga5C4Q+aLJtbQIKx20HzSw/gL
+	vM7BggiCI2RxNNVD4EPGIQv2174jxyzvZ2qIzyaMAousmaHYPKQQ5heLEfQ6It0hfI7KiLadDk+
+	g2FvPgHfV1MDObhqik0HmcafFhsWaCWv1sSUWNd9+RraO7jleKX+GBDiMhVcQFkLKDNlP3kpu86
+	mhIYz9FMbQnlqtTtovZxmNcuuA+80oVU53vtZ5Xo9/0ow9h1SlQGImY6yAjm7ZfwnebZGEa6ItS
+	wMCdH6YGUkA23WiPv2UihmuxUfcLRXTCEbqvnJ/i8IIW/sl69ozBCh4Sx21LIrT1YkT+GgDpfJG
+	x2WVYWwgmiS2QXFJsjj/7ii0uuMwwO9VUaEC0YOtKwZuUdKHWre9dbZiluUElDCZILN3iT1K1s9
+	g/am+Zq2bqF/6uWxVrFmISX1ldRtml7o8TZeIGgI6I/3mVwEYJz2vUAPe9tbyK0be0gW4Yrb0Je
+	MZ0nuzAdPo=
+X-Received: by 2002:a17:90b:3e89:b0:3aa:412f:b0a7 with SMTP id 98e67ed59e1d1-3acbb689d36mr1258321a91.5.1792123221974;
+        Thu, 15 Oct 2026 21:00:21 -0700 (PDT)
+Received: from ancienth-X870E-Nova-WiFi ([125.186.72.2])
+        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3ac94627250sm7017040a91.8.2026.10.15.21.00.17
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 15 Oct 2026 21:00:20 -0700 (PDT)
+From: Daehyeon Ko <4ncienth@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	"Jason A . Donenfeld" <Jason@zx2c4.com>,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org
+Subject: [PATCH] keys: big_key: Reserve the final quota before destroying the payload
+Date: Fri, 16 Oct 2026 13:00:04 +0900
+Message-ID: <20261016040004.324286-1-4ncienth@gmail.com>
+X-Mailer: git-send-email 2.55.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-On Mon, Oct 12, 2026 at 12:38 PM Christian Brauner <brauner@kernel.org> wrote:
-> Applied to the vfs-7.4.keyring branch of the vfs/vfs.git tree.
-> Patches in the vfs-7.4.keyring branch should appear in linux-next soon.
+A big_key is charged a fixed 16 bytes of key quota, regardless of the
+actual payload size.  big_key_update() currently reserves the actual new
+payload length before destroying the old payload, while the subsequent
+generic_key_instantiate() reserves the fixed quota length.
 
-What is this branch based on ?
-v2 was sent against bpf-next, because
-commit 264d8fd2794f ("bpf, keys: Add a bpf keyring for program signature validation")
-is only there.
-All hunks in keyctl.h, key.h and process_keys.c have its lines as
-context, so the patches don't apply to -rc as-is.
-And patch 3 documents KEY_SPEC_BPF_KEYRING.
+For an update to a payload shorter than 16 bytes, the first reservation
+temporarily returns quota.  Another key operation by the same user can
+consume that quota before generic_key_instantiate() tries to reserve it
+again.  If that second reservation fails, the key remains instantiated but
+its old big_key payload has already been destroyed.  Reading a
+buffer-backed key or revoking a shmem-backed key then dereferences a NULL
+payload pointer.
 
-I'm confused.
+On a KASAN build, reading a buffer-backed key reports:
+
+  BUG: KASAN: null-ptr-deref in big_key_read+0x110/0x310
+  Read of size 64 at addr 0000000000000000
+  ...
+  big_key_read+0x110/0x310
+  keyctl_read_key+0x2da/0x550
+
+Revoking a shmem-backed key reports, with oops=panic:
+
+  Oops: general protection fault
+  KASAN: null-ptr-deref in range [0x68-0x6f]
+  RIP: vfs_truncate+0xa2/0x730
+  big_key_revoke+0xbd/0xe0
+  key_revoke+0xc0/0x1a0
+  Kernel panic - not syncing: Fatal exception
+
+Reserve the final fixed quota length before destroying the old payload.
+The reservation in generic_key_instantiate() then has no quota delta and
+cannot fail for this reason after the destructive step.
+
+Fixes: b6f61c314649 ("keys: Implement update for the big_key type")
+Cc: stable@vger.kernel.org
+Assisted-by: LLM
+Signed-off-by: Daehyeon Ko <4ncienth@gmail.com>
+---
+ security/keys/big_key.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 268f702df380e..6aff1a73c7b38 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -195,7 +195,7 @@ int big_key_update(struct key *key, struct key_preparsed_payload *prep)
+ {
+ 	int ret;
+ 
+-	ret = key_payload_reserve(key, prep->datalen);
++	ret = key_payload_reserve(key, prep->quotalen);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-- 
+2.55.0
 
