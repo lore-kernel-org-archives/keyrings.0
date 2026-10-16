@@ -1,140 +1,259 @@
-Received: from mail-pj1-f45.google.com (mail-pj1-f45.google.com [209.85.216.45])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mgamail.intel.com (mgamail.intel.com [198.175.65.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0BAA52EEE7E
-	for <keyrings@vger.kernel.org>; Fri, 16 Oct 2026 04:00:22 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.45
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D9A3A348C7D;
+	Fri, 16 Oct 2026 05:36:55 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=198.175.65.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792123224; cv=none; b=cwgyMACSLz5t1KU6V5huAdD1CgyP5mSpNQuucPkHpzLw2jyVNUl4yerVuIOUQid0rJhQ4Gs7Vzin4BYifjxC6n4lAZNCiNPw/KVAOCQ8AAR2JxJ70iXVb3ExOT1fTYfLY5/kbIpD/fEgXUhykJtHb+gN6PwiNAOGyj0r3aJCSwU=
+	t=1792129019; cv=none; b=E3y/CF9b5ci8pASJEmby+DvigS6pUA5N5zQI0T8c93/uXZVomswj1xO5R6e1oWvtS52cBx2oQ6jVKz9tOM44K8U5EkEJaoeKkYRdmowovB9sNw7T8zpI4CcasziH/igN63gnsCxH/IZlW0DEQ2K+6aECuq9lsAe6DyB+MBDg2PA=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792123224; c=relaxed/simple;
-	bh=R1f53fZVOQpXpGpCi4RklZRTZOgEf4RFVZqHIV1IEjY=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=kpfomnheejzuSmEG13KY8IzDzThsBTcrmDbqre24jD0tUAJVWDBmm1FH5CG0zbEtrLo8/YH0+13lnuYVa5cMAx+IUWjSgZF/G3TWIsNZIPUssGHH7u2U32tJ9XXWuahPIOosalRJYYgGe4TVdeWf8B52vgPZiXpiEgt4FJLsLfw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=LZIn4Nb8; arc=none smtp.client-ip=209.85.216.45
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1792129019; c=relaxed/simple;
+	bh=OxsimB+IRUojLvT+hziSkxVdTCzcdvyp81HuqPLZG/s=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=aP+s23pj0YxJTegXfeFM1ZEnDQ+R8BWt+3hMfemCUAWFQUC6+Y8jX/ha+mJiu1pQo0IWnJMAhePv1xaIxoScDUH44tgAmZfvTa6kzIKvfO6VljhhgLxHwRV6eSOKOEXB4jrAUHS4nj7ZTTN0o0Cef/4R0vGplx3Bgg0h3mcVZKQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=intel.com; spf=pass smtp.mailfrom=intel.com; dkim=pass (2048-bit key) header.d=intel.com header.i=@intel.com header.b=IFvy02k4; arc=none smtp.client-ip=198.175.65.18
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=intel.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=intel.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="LZIn4Nb8"
-Received: by mail-pj1-f45.google.com with SMTP id 98e67ed59e1d1-3a813079a55so440146a91.0
-        for <keyrings@vger.kernel.org>; Thu, 15 Oct 2026 21:00:22 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1792123222; x=1792728022; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=g9IQw/iWHXUIP0xYQGBwa0OfUNbaaj14Fj4E0JqM4sE=;
-        b=LZIn4Nb86Im+eJt/C2Z8tvysgraS2xt11OqHgABFEDtbc4L9UzgX+rkAmvCaf3qWpZ
-         YrRQ/G9DWEHcA3jaEQVGVLgo1w6xS4ttOxTDJiarb9APKyqPBovADl9C/WFYx5gjuNIp
-         NYxK934bVsZnzU4025+/660RdteqDSkEOjjCLYBYpp75chpAug5MlTcNHiCFHauNf5ee
-         xnPfvK2P7k2P9q/jSGzTildbi5YZA/ZMctd1x+Sw+aJdu1TmqCj/gJ7+qoxkkdY/d6XH
-         x6jcETDeUjBSd72vBER9PuBgP61DzxNIUd1eDYK4dOCXVpCQ5fk4AbXVPxL3+XP5BECO
-         5llw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792123222; x=1792728022;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=g9IQw/iWHXUIP0xYQGBwa0OfUNbaaj14Fj4E0JqM4sE=;
-        b=lcgf6p2mXoJs5Q7z9SYbhhmCkg0yiNXo5RYVbPNJyA32vwDR4/a729Et2m3/rT1iyJ
-         gSfyr+Z7ya1HVDLKNUWGNiqT8GxhRqVhi3hId0q8WTkcLYq0wEo0r21DJ85FgARURa+/
-         79pbUrp50WU++AuIqIKQ9fXOJSFV6Yj/bcN+Qgd4UoNxXb7uB4mfxhmn1VVYnRqw4Vin
-         1iHQui2VTruMEm0kJsTPMQe3qT4EpKp4tVHfAfYBk/4gXj2d6GAIMhGjWhXEtOPJDRBh
-         A/QWFVLLzuk3LzABj4MypSXGVH9H9EN1mlRsodDM9dArX3Ry2HGHXJo62w//JTr9lT1o
-         /row==
-X-Forwarded-Encrypted: i=1; AKwUvBzjGdo7z/bvz3bEWIYSroMmjO+pbsQSy7NJmFHvliHHaeUslwJ/nK7AhM+P6WW84Mv2cDTaZeVsiA==@vger.kernel.org
-X-Gm-Message-State: AFq9FYIamFByIvBm2RV15PnT7c30A+BoQqp6tQTBtoPeLExIUGZeaPZB
-	P0DlLVXFevFa6gWsotM2X33RRJhx05ozc1RRjCXg+RTUpSNXjDL9vbvf
-X-Gm-Gg: AYBFou0JIT0hD1Kz4dM9SiuySt75tz6UdZtyhTJPmUga5C4Q+aLJtbQIKx20HzSw/gL
-	vM7BggiCI2RxNNVD4EPGIQv2174jxyzvZ2qIzyaMAousmaHYPKQQ5heLEfQ6It0hfI7KiLadDk+
-	g2FvPgHfV1MDObhqik0HmcafFhsWaCWv1sSUWNd9+RraO7jleKX+GBDiMhVcQFkLKDNlP3kpu86
-	mhIYz9FMbQnlqtTtovZxmNcuuA+80oVU53vtZ5Xo9/0ow9h1SlQGImY6yAjm7ZfwnebZGEa6ItS
-	wMCdH6YGUkA23WiPv2UihmuxUfcLRXTCEbqvnJ/i8IIW/sl69ozBCh4Sx21LIrT1YkT+GgDpfJG
-	x2WVYWwgmiS2QXFJsjj/7ii0uuMwwO9VUaEC0YOtKwZuUdKHWre9dbZiluUElDCZILN3iT1K1s9
-	g/am+Zq2bqF/6uWxVrFmISX1ldRtml7o8TZeIGgI6I/3mVwEYJz2vUAPe9tbyK0be0gW4Yrb0Je
-	MZ0nuzAdPo=
-X-Received: by 2002:a17:90b:3e89:b0:3aa:412f:b0a7 with SMTP id 98e67ed59e1d1-3acbb689d36mr1258321a91.5.1792123221974;
-        Thu, 15 Oct 2026 21:00:21 -0700 (PDT)
-Received: from ancienth-X870E-Nova-WiFi ([125.186.72.2])
-        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3ac94627250sm7017040a91.8.2026.10.15.21.00.17
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 15 Oct 2026 21:00:20 -0700 (PDT)
-From: Daehyeon Ko <4ncienth@gmail.com>
-To: David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E . Hallyn" <serge@hallyn.com>,
-	"Jason A . Donenfeld" <Jason@zx2c4.com>,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
+	dkim=pass (2048-bit key) header.d=intel.com header.i=@intel.com header.b="IFvy02k4"
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
+  t=1792129017; x=1823665017;
+  h=date:from:to:cc:subject:message-id:references:
+   mime-version:in-reply-to;
+  bh=OxsimB+IRUojLvT+hziSkxVdTCzcdvyp81HuqPLZG/s=;
+  b=IFvy02k40L6WlN0E6Q9Ei3c7kfpQppWK1wrQf3yIck7ebJPhNf2lp6Zn
+   puFGZszpoeRSzSBfzhgilgED09XCaGxQNozKbPHsipg1wRjL8bhYt/9OS
+   kPO8T5gTowL9qxsNw/5OsI4YfQgvk+PZd6ZKJ0BD54s+fZL70gWeS5fgM
+   zRUUtES/g/R2SCqwG4oM1KJE5rF4Px7G9a+wsE2cJoYVtvxsUBtE5kUrL
+   SzQQf75mFcfbAR9xf+nS+lYp/g6mIhHujql3eURcZuy3RjUGlNlGoLAF/
+   Y0lZqgq0WWRxMFKn0h9/7Psu/7xl1tzrzjVAKx5A3fBIRXN1qF7M756Q5
+   w==;
+X-CSE-ConnectionGUID: c7Vg7lllTnCJ05eeJ5FPCg==
+X-CSE-MsgGUID: BcupQumpRBubh7rLvp4JBw==
+X-IronPort-AV: E=McAfee;i="6800,10657,11936"; a="915287"
+X-IronPort-AV: E=Sophos;i="6.27,161,1787036400"; 
+   d="scan'208";a="915287"
+Received: from fmviesa006.fm.intel.com ([10.60.135.146])
+  by orvoesa110.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 15 Oct 2026 22:36:56 -0700
+X-CSE-ConnectionGUID: cV+8eTvqSQ2EgdgT1mW2lg==
+X-CSE-MsgGUID: jlVQO0VBQtCYTbTBdJ3bkg==
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="6.27,161,1787036400"; 
+   d="scan'208";a="2236954"
+Received: from lkp-server01.sh.intel.com (HELO 0caa9d2d175c) ([10.239.97.150])
+  by fmviesa006.fm.intel.com with ESMTP; 15 Oct 2026 22:36:51 -0700
+Received: from kbuild by 0caa9d2d175c with local (Exim 4.98.2)
+	(envelope-from <lkp@intel.com>)
+	id 1xHacZ-00000000Hfu-0y6G;
+	Fri, 16 Oct 2026 05:36:47 +0000
+Date: Fri, 16 Oct 2026 13:36:22 +0800
+From: kernel test robot <lkp@intel.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>, keyrings@vger.kernel.org,
+	Brendan Higgins <brendan.higgins@linux.dev>,
+	David Gow <david@davidgow.net>
+Cc: oe-kbuild-all@lists.linux.dev, Jarkko Sakkinen <jarkko@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Memory Management List <linux-mm@kvack.org>,
+	Rae Moar <raemoar63@gmail.com>,
+	Ryota Sakamoto <sakamo.ryota@gmail.com>,
+	Kuan-Wei Chiu <visitorckw@gmail.com>,
+	Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+	Pasha Tatashin <pasha.tatashin@soleen.com>,
+	Kir Chou <note351@hotmail.com>, Petr Mladek <pmladek@suse.com>,
+	Dmitry Antipov <dmantipov@yandex.ru>,
+	Guan-Chun Wu <409411716@gms.tku.edu.tw>,
 	linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-Subject: [PATCH] keys: big_key: Reserve the final quota before destroying the payload
-Date: Fri, 16 Oct 2026 13:00:04 +0900
-Message-ID: <20261016040004.324286-1-4ncienth@gmail.com>
-X-Mailer: git-send-email 2.55.0
+	"(open list:KERNEL UNIT TESTING FRAMEWORK \\(KUnit\\))" <linux-kselftest@vger.kernel.org>
+Subject: Re: [PATCH] lib/tests: kunit for associative array
+Message-ID: <202610161338.iIHVeJyP-lkp@intel.com>
+References: <20261014160144.1835860-1-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261014160144.1835860-1-jarkko@kernel.org>
 
-A big_key is charged a fixed 16 bytes of key quota, regardless of the
-actual payload size.  big_key_update() currently reserves the actual new
-payload length before destroying the old payload, while the subsequent
-generic_key_instantiate() reserves the fixed quota length.
+Hi Jarkko,
 
-For an update to a payload shorter than 16 bytes, the first reservation
-temporarily returns quota.  Another key operation by the same user can
-consume that quota before generic_key_instantiate() tries to reserve it
-again.  If that second reservation fails, the key remains instantiated but
-its old big_key payload has already been destroyed.  Reading a
-buffer-backed key or revoking a shmem-backed key then dereferences a NULL
-payload pointer.
+kernel test robot noticed the following build warnings:
 
-On a KASAN build, reading a buffer-backed key reports:
+[auto build test WARNING on akpm-mm/mm-nonmm-unstable]
+[also build test WARNING on linus/master v7.3-rc7]
+[cannot apply to next-20261012]
+[If your patch is applied to the wrong git tree, kindly drop us a note.
+And when submitting patch, we suggest to use '--base' as documented in
+https://git-scm.com/docs/git-format-patch#_base_tree_information]
 
-  BUG: KASAN: null-ptr-deref in big_key_read+0x110/0x310
-  Read of size 64 at addr 0000000000000000
-  ...
-  big_key_read+0x110/0x310
-  keyctl_read_key+0x2da/0x550
+url:    https://github.com/intel-lab-lkp/linux/commits/Jarkko-Sakkinen/lib-tests-kunit-for-associative-array/20261014-190138
+base:   https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git mm-nonmm-unstable
+patch link:    https://lore.kernel.org/r/20261014160144.1835860-1-jarkko%40kernel.org
+patch subject: [PATCH] lib/tests: kunit for associative array
+config: arm-randconfig-1001-20261016 (https://download.01.org/0day-ci/archive/20261016/202610161338.iIHVeJyP-lkp@intel.com/config)
+compiler: arm-linux-gnueabi-gcc (GCC) 8.5.0
+reproduce (this is a W=1 build): (https://download.01.org/0day-ci/archive/20261016/202610161338.iIHVeJyP-lkp@intel.com/reproduce)
 
-Revoking a shmem-backed key reports, with oops=panic:
+If you fix the issue in a separate patch/commit (i.e. not just a new version of
+the same patch/commit), kindly add following tags
+| Reported-by: kernel test robot <lkp@intel.com>
+| Closes: https://lore.kernel.org/oe-kbuild-all/202610161338.iIHVeJyP-lkp@intel.com/
 
-  Oops: general protection fault
-  KASAN: null-ptr-deref in range [0x68-0x6f]
-  RIP: vfs_truncate+0xa2/0x730
-  big_key_revoke+0xbd/0xe0
-  key_revoke+0xc0/0x1a0
-  Kernel panic - not syncing: Fatal exception
+All warnings (new ones prefixed by >>):
 
-Reserve the final fixed quota length before destroying the old payload.
-The reservation in generic_key_instantiate() then has no quota delta and
-cannot fail for this reason after the destructive step.
+>> lib/tests/assoc_array_kunit.c:62:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000010UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:63:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000020UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:64:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000030UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:65:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000040UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:66:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000050UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:67:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000060UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:68:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000070UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:69:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000080UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:70:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000090UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:71:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x00000000000000a0UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:72:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x00000000000000b0UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:73:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x00000000000000c0UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:74:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x00000000000000d0UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:75:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x00000000000000e0UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:76:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x00000000000000f0UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:77:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000100UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:78:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000110UL,
+     ^~~~~~~~~~~~~~~~~~~~
+   lib/tests/assoc_array_kunit.c:79:2: warning: conversion from 'long long unsigned int' to 'long unsigned int' changes value from '16045690984503098046' to '3405691582' [-Woverflow]
+     0xdeadbeefcafebabeUL, 0x0000000000000001UL,
+     ^~~~~~~~~~~~~~~~~~~~
 
-Fixes: b6f61c314649 ("keys: Implement update for the big_key type")
-Cc: stable@vger.kernel.org
-Assisted-by: LLM
-Signed-off-by: Daehyeon Ko <4ncienth@gmail.com>
----
- security/keys/big_key.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-index 268f702df380e..6aff1a73c7b38 100644
---- a/security/keys/big_key.c
-+++ b/security/keys/big_key.c
-@@ -195,7 +195,7 @@ int big_key_update(struct key *key, struct key_preparsed_payload *prep)
- {
- 	int ret;
- 
--	ret = key_payload_reserve(key, prep->datalen);
-+	ret = key_payload_reserve(key, prep->quotalen);
- 	if (ret < 0)
- 		return ret;
- 
--- 
-2.55.0
+vim +62 lib/tests/assoc_array_kunit.c
 
+    19	
+    20	/*
+    21	 * As a quick remainder, these are the basic building blocks of an associative
+    22	 * array:
+    23	 *
+    24	 * - struct assoc_array_node: a tree node representing a nibble of the search
+    25	 *   key.
+    26	 * - struct assoc_array_shortcut: a tree node representing a sequence of nibbles
+    27	 *   shared by multiple search keys with no divergence among them.
+    28	 *
+    29	 * The keys in array will be created in order in tests, and is a constructed in
+    30	 * a way that splits reach the level 8:
+    31	 *
+    32	 * - 0..16:  Share prefix 0x21 at levels 0 and 4.
+    33	 * - 17:     Splits root shortcut at level 4.
+    34	 * - 18..34: Share chunk 0.
+    35	 * - 35:     Splits shortcut at chunk boundary.
+    36	 * - 36..46: Share prefix 0xbeef at levels 0..12.
+    37	 * - 47:     Splits shortcut at level 8.
+    38	 * - 48..63: Distinct leaves at level 0.
+    39	 *
+    40	 * The numbers were picked partly based on trial and error, and partly trying to
+    41	 * find smallest possible numbers reaching the level 8.
+    42	 */
+    43	static const unsigned long assoc_array_test_keys[ASSOC_ARRAY_TEST_NR_KEYS * 2] = {
+    44		0x0000000000000121UL, 0x0000000000000000UL,
+    45		0x0000000000000221UL, 0x0000000000000000UL,
+    46		0x0000000000000321UL, 0x0000000000000000UL,
+    47		0x0000000000000421UL, 0x0000000000000000UL,
+    48		0x0000000000000521UL, 0x0000000000000000UL,
+    49		0x0000000000000621UL, 0x0000000000000000UL,
+    50		0x0000000000000721UL, 0x0000000000000000UL,
+    51		0x0000000000000821UL, 0x0000000000000000UL,
+    52		0x0000000000000921UL, 0x0000000000000000UL,
+    53		0x0000000000000a21UL, 0x0000000000000000UL,
+    54		0x0000000000000b21UL, 0x0000000000000000UL,
+    55		0x0000000000000c21UL, 0x0000000000000000UL,
+    56		0x0000000000000d21UL, 0x0000000000000000UL,
+    57		0x0000000000000e21UL, 0x0000000000000000UL,
+    58		0x0000000000000f21UL, 0x0000000000000000UL,
+    59		0x0000000000001021UL, 0x0000000000000000UL,
+    60		0x0000000000001121UL, 0x0000000000000000UL,
+    61		0x0000000000000001UL, 0x0000000000000000UL,
+  > 62		0xdeadbeefcafebabeUL, 0x0000000000000010UL,
+    63		0xdeadbeefcafebabeUL, 0x0000000000000020UL,
+    64		0xdeadbeefcafebabeUL, 0x0000000000000030UL,
+    65		0xdeadbeefcafebabeUL, 0x0000000000000040UL,
+    66		0xdeadbeefcafebabeUL, 0x0000000000000050UL,
+    67		0xdeadbeefcafebabeUL, 0x0000000000000060UL,
+    68		0xdeadbeefcafebabeUL, 0x0000000000000070UL,
+    69		0xdeadbeefcafebabeUL, 0x0000000000000080UL,
+    70		0xdeadbeefcafebabeUL, 0x0000000000000090UL,
+    71		0xdeadbeefcafebabeUL, 0x00000000000000a0UL,
+    72		0xdeadbeefcafebabeUL, 0x00000000000000b0UL,
+    73		0xdeadbeefcafebabeUL, 0x00000000000000c0UL,
+    74		0xdeadbeefcafebabeUL, 0x00000000000000d0UL,
+    75		0xdeadbeefcafebabeUL, 0x00000000000000e0UL,
+    76		0xdeadbeefcafebabeUL, 0x00000000000000f0UL,
+    77		0xdeadbeefcafebabeUL, 0x0000000000000100UL,
+    78		0xdeadbeefcafebabeUL, 0x0000000000000110UL,
+    79		0xdeadbeefcafebabeUL, 0x0000000000000001UL,
+    80		0x000000000001beefUL, 0x0000000000000000UL,
+    81		0x000000000002beefUL, 0x0000000000000000UL,
+    82		0x000000000003beefUL, 0x0000000000000000UL,
+    83		0x000000000004beefUL, 0x0000000000000000UL,
+    84		0x000000000005beefUL, 0x0000000000000000UL,
+    85		0x000000000006beefUL, 0x0000000000000000UL,
+    86		0x000000000007beefUL, 0x0000000000000000UL,
+    87		0x000000000008beefUL, 0x0000000000000000UL,
+    88		0x000000000009beefUL, 0x0000000000000000UL,
+    89		0x00000000000abeefUL, 0x0000000000000000UL,
+    90		0x00000000000bbeefUL, 0x0000000000000000UL,
+    91		0x00000000000000efUL, 0x0000000000000000UL,
+    92		0x0000000000001000UL, 0x0000000000000000UL,
+    93		0x0000000000001001UL, 0x0000000000000000UL,
+    94		0x0000000000001002UL, 0x0000000000000000UL,
+    95		0x0000000000001003UL, 0x0000000000000000UL,
+    96		0x0000000000001004UL, 0x0000000000000000UL,
+    97		0x0000000000001005UL, 0x0000000000000000UL,
+    98		0x0000000000001006UL, 0x0000000000000000UL,
+    99		0x0000000000001007UL, 0x0000000000000000UL,
+   100		0x0000000000001008UL, 0x0000000000000000UL,
+   101		0x0000000000001009UL, 0x0000000000000000UL,
+   102		0x000000000000100aUL, 0x0000000000000000UL,
+   103		0x000000000000100bUL, 0x0000000000000000UL,
+   104		0x000000000000100cUL, 0x0000000000000000UL,
+   105		0x000000000000100dUL, 0x0000000000000000UL,
+   106		0x000000000000100eUL, 0x0000000000000000UL,
+   107		0x000000000000100fUL, 0x0000000000000000UL,
+   108	};
+   109	
+
+--
+0-DAY CI Kernel Test Service
+https://github.com/intel/lkp-tests/wiki
