@@ -1,101 +1,97 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D1DE937DEBE;
-	Sat, 17 Oct 2026 16:31:45 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A62CA3AEB39;
+	Sat, 17 Oct 2026 16:48:10 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792254706; cv=none; b=DkYnnb8gSe2hS4jageRJIjkrzofG4EM5xxf3UQRR4qUrFRyfoXa9rtnCE95E37MwS8OiKDtVQXP1oNhkAjvZvp4ekKvqfvwYIWlW8MdpsomiqHvHT860oCRt0c3f65nGcHFj/df1qmlngfIHDeiVMlfrVeT7zuuJ4NcWVjMxUeo=
+	t=1792255692; cv=none; b=RDyHifA+/9lKdw4mxLj/n0/XuVPNvqmKDUGd6vpJKNwN5/B0zC/lP0JkiC3Z5WPLK3FgKfSD7sntDMvcQg73k/JnYBIZ79eOtJMY9eFy6es2H1JMDPjRnwjtBeyxdlU9SfLUrY9PGJITndkjyNmhr6TpMA7I1TCngzisCtejZsk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792254706; c=relaxed/simple;
-	bh=8jOJa+MbU8Zm+0mXq8N5+ZxMiGN7YFK24PsWDy+GgxU=;
+	s=arc-20240116; t=1792255692; c=relaxed/simple;
+	bh=8ojWc86RX7V8u0uM4niVZYCMAyBamLfXR9yv2unm/3k=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=M400CchHWd1W5OWziTR8j/P4J2lgqsI4SEi9WIinY7XdZSqBeIh2xkq2RwlwrXnAqoagh4YBt+r4sKF+liGLEg53+OS9wl/fGDVdlzv9/mPwQSVRLhMGXvL/6znWAcF6e3ylSND/FDQbopEIRIUy4ct67Tm3amEs2CJHE3zg5c8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=gi34VOLa; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=glbuKqbCkvbldCtfXYDQ7ahYYhymUve+706Wuqp9p6p1hGAQcNHpn/Hcui5/kO9cwLOZSqC8j/c7EDm6XOtm9/y9iJyAz3i3P3/XeLpL4MwAOdlZAQDdImpHs/9dAcl5cFAsSoPuSIFFyTqCmHXyWd/pnLvi0rWkiHBoRNU+2PE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=IkPrACDj; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="gi34VOLa"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 225961F000C4;
-	Sat, 17 Oct 2026 16:31:44 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="IkPrACDj"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id F41E81F000C5;
+	Sat, 17 Oct 2026 16:48:09 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792254705;
-	bh=YhTg6oempNh6mE56zws8dnfYhyHulr2WEOSJFJnU+ro=;
+	s=k20260515; t=1792255690;
+	bh=Nb2TFneEUQBgrIZvaGQf8xHlbD1HYhgoQ6QdXlwfvOY=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=gi34VOLaEeSvRC5JlMaDwNuF2p2dcVt4PDI74uvaClRFmOG4OzRu7L54M4T02MgvE
-	 MjLbCVDcmNHpOPfEQWzhVLmq0pXFIDb8b9oHrXOJmpUKimzrMjxE1cBLP7I7fVQ6G6
-	 r6CnJaGQX5cwDHH0mQj/TDDJWNZVmd2qAVYflim0Puuo/PZ5RZOyg8ExOW5nRzPSG1
-	 7J26ctcJXhHjk1j3Qfvm3/elMUzoZrFJBl3uGJQejTWVZAI0kv0Dx8MiYrdgl5mM/a
-	 iAGqTWNW1sBcA+ENoqhi0IFC71KTZChOxmuZJzpfxVT7ONmyBRhurLseW0oSmBy5BH
-	 Ygs9YNswKfVpQ==
-Date: Sat, 17 Oct 2026 19:31:42 +0300
+	b=IkPrACDjxdJgNPAjPpovmLwHsZz0OJviQv5H8udzGsksLgQJWSSguJzoqrbFtD/f6
+	 /knRlD3+3Tj4gxt+onEhV8L5faPye37WzwqsbieHOPPbHhRrX3WEwRgPNH+WE4t1/9
+	 9ZomrFfwFyDYFcBjJIIpfGFqO1Q0fBTd3SA6fNLxsLmuv3S6LRXPPvofosC1tTsDMn
+	 xPM2nFAvGQvTEiEGtJgs1wuLAH/W3TsfWiXXoLC21cfFLfpmEHyjSWpbv78rkGqKsb
+	 nmHPrUaJCfXSRxYLwDzQBg9/YwGFRNoEl1W1q5FEB/lLPrF3vS7dISGW2GAwBFK8pL
+	 RcwZcLrFuPszw==
+Date: Sat, 17 Oct 2026 19:48:06 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Cen Zhang <zzzccc427@gmail.com>
-Cc: Eric Biggers <ebiggers@kernel.org>, dhowells@redhat.com,
-	paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
-	sergeh@kernel.org, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	baijiaju1990@gmail.com, jjzuming@gmail.com
-Subject: Re: [PATCH v2] keys: Avoid the owner account dereference in named
- keyring lookup
-Message-ID: <atOi7jWhglgRZ0C4@kernel.org>
-References: <pm-key-management-objects-candidate-0002-v3-2baa8cad2bb554364e10@gmail.com>
- <20261017035156.GA29318@sol>
- <CAFRLqsWcV=0MKituMQqALy_2rS3kOPPFpMHxn7yRxoyxOHp6hg@mail.gmail.com>
- <atOiKzlHKH47SMNt@kernel.org>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Paulo Alcantara <pc@manguebit.org>,
+	Namjae Jeon <linkinjeon@kernel.org>,
+	Ronnie Sahlberg <ronniesahlberg@gmail.com>,
+	Shyam Prasad N <sprasad@microsoft.com>, Tom Talpey <tom@talpey.com>,
+	Bharath SM <bharathsm@microsoft.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	"open list:COMMON INTERNET FILE SYSTEM CLIENT (CIFS and SMB3)" <linux-cifs@vger.kernel.org>,
+	"moderated list:COMMON INTERNET FILE SYSTEM CLIENT (CIFS and SMB3)" <samba-technical@lists.samba.org>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/6] keys: prevent quota overflow and widen quotalen
+ and datalen to 32 bits
+Message-ID: <atOmxqPNV2r0qFNi@kernel.org>
+References: <20261016215326.4110064-1-jarkko@kernel.org>
+ <20261016215326.4110064-2-jarkko@kernel.org>
+ <20261017052844.GC29318@sol>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <atOiKzlHKH47SMNt@kernel.org>
+In-Reply-To: <20261017052844.GC29318@sol>
 
-On Sat, Oct 17, 2026 at 07:28:31PM +0300, Jarkko Sakkinen wrote:
-> On Sat, Oct 17, 2026 at 03:47:32PM +0800, Cen Zhang wrote:
-> > Hi Eric,
-> > 
-> > Eric Biggers <ebiggers@kernel.org> 于2026年10月17日周六 11:51写道：
-> > >
-> > > Don't key_serial_next() and find_ge_key() (used when reading from
-> > > /proc/keys) have the same bug?
-> > >
-> > > - Eric
-> > 
-> > Thansk a lot for the reivew. You're right — key_serial_next() and
-> > find_ge_key() have
-> > the same issue.
-> > 
-> > I'll send a follow-up patch to fix those as well.
-> > 
-> > Thanks for the catch again.
-> > 
-> > Best regards,
-> > Cen Zhang
+On Fri, Oct 16, 2026 at 10:28:44PM -0700, Eric Biggers wrote:
+> On Sat, Oct 17, 2026 at 12:52:59AM +0300, Jarkko Sakkinen wrote:
+> > @@ -245,6 +245,10 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+> >  	}
+> >  
+> >  	desclen = strlen(desc);
+> > +	if (desclen >= INT_MAX || type->def_datalen > INT_MAX - desclen - 1) {
+> > +		key = ERR_PTR(-EINVAL);
+> > +		goto error;
+> > +	}
+> >  	quotalen = desclen + 1 + type->def_datalen;
 > 
-> Yeah, please do.
-> 
-> You put so much effort to scenario and you are nailing the bug
-> that way, and I do appreciate that, so here's what you should do
-> with the commit messages:
-> 
-> 1. Do the first half like you always do. That's great. And I've
->    also said that.
-> 2. Think just a moment. If you get anxiety from that something
->    that should be mentioned e.g., something that you did not get
->    immediately yourself at first, write remarks those down. I'm
->    100% sure you know when it might be good tip on something
->    non-obvious.
-> 3. Send that. If we feel it is lacking some info needed, let's
->    iterate that. It's not a big deal.
-> 
-> I'm just underlining this because so little would have to be
-> improved to make this right :-)
+> This should be tightened further to 'desclen > U16_MAX', since desclen
+> is assigned to a u16 later in the function.
 
-And also: I would not complain about anything if I did not want
-you to send patches because it does not make sense to waste time
-like that. So take it this from that angle. And they bring value
-thanks to well described scenarios.
+Thanks for the remark. I think you are right and fits to what I've been
+working on today.
+
+Cutting hairs perhaps but I have really hard time to comprehend this as
+a scoped bug fix.
+
+Today morning I tried different things and what made sense to me is
+instead think the bug scope as three separate integer overflows and and
+one truncation bug.
+
+The net result is here already:
+
+https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git/log/?h=keys-rhashtable
+
+I decided that I retain all fixes as part of the series but eagerly
+apply and drop them series of course. Split series would be a mess.
+And they are any way part of the staircase from "now" to "then".
+
+> 
+> - Eric
 
 Br, Jarkko
