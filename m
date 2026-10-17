@@ -1,160 +1,122 @@
-Received: from mail-pf1-f169.google.com (mail-pf1-f169.google.com [209.85.210.169])
+Received: from mail-yw1-f175.google.com (mail-yw1-f175.google.com [209.85.128.175])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 36872377ABD
-	for <keyrings@vger.kernel.org>; Sat, 17 Oct 2026 07:31:46 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.169
-ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792222308; cv=none; b=RnQrr3IaZi8pYJFygnb9NYLlGZMqWBHAfINdLG01tcV8qM1RQVOW4o1OEqt7A2rS5+SWJJJjrlzHyPo+7bg+w/b3Vewy9mOiVCGrdDLzKgsnUPrRFErSOs+5hsaTevNRhXX3X/udgwUFfbo20naa+xGxAGcvVWnI13AJpkOhXJQ=
-ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792222308; c=relaxed/simple;
-	bh=ByjrDEW+cLHIanPR1r9ZCilmfQtfffG3r6vZkp1Qvgs=;
-	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version:Content-Type; b=rG+KGwqCP0hSIDJNVbwLlxDt92LTVC4sWV7nRAV0EGfpWb/+IE3jeFd7RW5rkiuh3QE07elAUuXimbsSWzIxRXuQzGN/EmKoKbwjxynRd43IiL36k2nU+vLOXWBr5h5bLhBQdBEI6MbhnjiyPTcaFgMyyBPTPXKAYoM/wFbeH48=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=e1RSJXnZ; arc=none smtp.client-ip=209.85.210.169
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0A6693AAF56
+	for <keyrings@vger.kernel.org>; Sat, 17 Oct 2026 07:47:47 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=pass smtp.client-ip=209.85.128.175
+ARC-Seal:i=2; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1792223269; cv=pass; b=fLXE/94bNU/PJgKrJdzjSCgHRU7shK/Kpky2WkLpzXsAzX3lOpIjLGFJ12NMZEMW9bvByznXuDybE0griZ837solMrOyMXlprVvYl5mel2O+aeecp1wWS1RDGiSyIXJXlDQF/N6dn+Sy1nR6me3LdWNJhG4RsnBOwu/BdA7HJJY=
+ARC-Message-Signature:i=2; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1792223269; c=relaxed/simple;
+	bh=eRWmAlIfs3iswnjnTR4TzrAUiVQGOccDgG6x9wZmrjY=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=GGCjp4NdOnAmezJIIJPUPQDsegOR7ulz6br+HbAeiEXLyL2zhzW85W/VKtLImYd0gG4nXO8h0N8z70054c0/CfrIPf5QZdEvfr4EbOV/7qLllbbCeHK59Gt92KoL4x4esGzpHQYLYrOe3cZAyO+H4oDQKTI7mCKemK1oeJOoBXs=
+ARC-Authentication-Results:i=2; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=ehNE3iKR; arc=pass smtp.client-ip=209.85.128.175
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="e1RSJXnZ"
-Received: by mail-pf1-f169.google.com with SMTP id d2e1a72fcca58-89f0a21880aso297963b3a.0
-        for <keyrings@vger.kernel.org>; Sat, 17 Oct 2026 00:31:46 -0700 (PDT)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="ehNE3iKR"
+Received: by mail-yw1-f175.google.com with SMTP id 00721157ae682-8a83d2706fdso4667367b3.0
+        for <keyrings@vger.kernel.org>; Sat, 17 Oct 2026 00:47:47 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1792223267; cv=none;
+        d=google.com; s=arc-20260327;
+        b=RmqnhONlMCd3rieUTTqa4CBMVndEz2F2a8Pks+5ZSpLoSbePk5pM9zxMqbHL7xxxm+
+         GzX3MbMRxmx4dKWKvTGCXJHmL4ZBTpgd54MXcx9GpYMlqxtpa32WL0v8mTpijljTFgbt
+         VA6602lFVwOxCCoO5ppFTrooVJi+6C7YpYF0ProWrFucW3KseSVethOniLzvKb2tE6Pv
+         /MDOKsBQrzg1Q5pS3IV/JJaLxbAyEuORA1nL3tE0mYUJYnkWBYVqXLkBLS0/vFLS62MF
+         om3ektAT7XizuoYChhbchI4UVzwqCRuCmaxKLea4lLSPh8hRkB/6UPAmIpk9vpP/nkxA
+         mJBw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:dkim-signature;
+        bh=eRWmAlIfs3iswnjnTR4TzrAUiVQGOccDgG6x9wZmrjY=;
+        fh=E/T8i/y2opiI8L0ZGR6nzdWmOEwPodItOB7fQgMGKHY=;
+        b=qztkCDUKqqC93r1szD4Cg9VWmMZ1xXv7Wl6SsjhN8Fwpegayc5RN1a/sxoyw+5PwPw
+         lqGQmiXFgExi0W+7CxHSjIpnXuVXsZHRJBsD8RHeo5YGdy8T+AXj9DoHLrZXhzmKz5ji
+         kLcGXxhzOdcUetOdxiBxH8pAe47RiYZLGmfTN7LPpp2WKZ/h4ruausarfo7wAl8ALpSx
+         k8mknF2fvKz+rBWAzVzQ+Xes63EdKK5clBQdzGj0WbP5R1GHH9wI+6aMszfjHD1aMzbn
+         jYVNc8yR/z8RwmzIfhgKraxcxQ3ampFPMGmxS6Phacw/LdAlFEiBoWlRJjf3ZiNU3oA/
+         pT8Q==;
+        darn=vger.kernel.org
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1792222305; x=1792827105; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:mime-version:message-id:date
-         :subject:cc:to:from:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=8hGJqskAm5ijlynAeAUmg/yteXxLufBW9O9YFEmU6Qk=;
-        b=e1RSJXnZ24+lkTH1+xssf5wkeiBfq8/U7/Az45uAm+zHRUOCnti2GFO+tpQRpoARM8
-         qS/aTL+U8kIr2G5waPe+nVn8M1J+P9ZNNpbpVRfR2WzQEMiDBCL+XSM7DLP/6ICgUVLC
-         bxgt16biVtowpz63XgIVCHuMZGR8T8zPENSF9rU1YG8Von7HB9M+eZZKW868xFcKwRki
-         XQlp48NaN6+5Mq3EV4kmPxMG6Cpv2B4JR1EjAx3967kjsnm88ZlddJeTXMngC1y5ZUyP
-         fsa+8BSZ+VwB0mSXiR2iMVw9M0PUtq+C8X4YlaYvCncLcAjWK8rsiaqSP4ZMcGMqux6s
-         eQ2g==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792222305; x=1792827105;
-        h=content-transfer-encoding:content-type:mime-version:message-id:date
-         :subject:cc:to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject
+        d=gmail.com; s=20251104; t=1792223267; x=1792828067; darn=vger.kernel.org;
+        h=content-transfer-encoding:content-type:cc:to:subject:message-id
+         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
          :date:message-id:reply-to:content-type;
-        bh=8hGJqskAm5ijlynAeAUmg/yteXxLufBW9O9YFEmU6Qk=;
-        b=FI/X1r+ulBvftFNoeReJs8+0a07jjtwn2DEA5/uIi0il0hgfvKPYYA4mGGUiUF/jHJ
-         dLS0tyMQwB2rQ44UEB5bDxb+f0b0oc4UVyDnG5hOxVe6eLoiGXIobG1vA8AjBijcFxuA
-         Yp2JQCJmHjmwAH0XzORx6bB1f9YDjJuxlN27bHcihHaBDUD0IKyvvWpiBe1bylZhTsRB
-         gFkGUb/QLzJ3rv5VnQV30AXF3xl6oC4swaTUtYQrYktBUoN3O1ye8asoSvkw8mfs3eQv
-         PDJE8OxdyAEe4E5Fk40YMt/UOdp2I5dTT4oEAmpVIKZgevTwuhzH9mfse8HFHBcx2a8c
-         R3ZA==
-X-Gm-Message-State: AFq9FYKl2WtdU3/n0SX1dz6PZlNY+/+/8/sNQjjo/jtgilE/Mkr9uspZ
-	vzCx7DK61MJOuwJuWZhWL9Q/qYKC/J4TqPiLYTIPap1Wu5YhoIbJb8Ss
-X-Gm-Gg: AYBFou2Nty+EhtByeiqNrRyShG99jK7zx9g/meGbyTzRs4noDHQjYYt37HjHd2vPvFn
-	YMAvebBMlDANSx3SJnFOJ8V85/KlkWnYfPNOmYYRRXvWMF+oYIdyDH9sgvZklpgONR+7Nconna7
-	jHaLDKDgSpq1al378hG3/FleBWameZVzyhHGLD68mhVZlJIW6qwu3F0JmEWoNn6QrCuVlTpU8la
-	DYQyomITpRGomW6B3cj8vyvybixgfkoBQAqAzqMLMXV1x95ZgA66EU8aGKX4M0c3g14evdNPOb8
-	pbEZROPLL3K1rzBCn3h8hKnqFA7maBX1HR12Krt779YIbedYdOWQXRG+/so8uJ+x7cv6b/7YGzV
-	p6keE9Y6r+HRJq6BBINQoyKHUJJmx8SgRBgipT9scPGk4dEKu0YFyzX+iEy90GurQjO5xND4Fj4
-	m0VaxcOtzwradT4jkcay1INju37/MPrTuHl2SpmfTaeuzBuohxwVmIu4zJFuRQf7xEfA==
-X-Received: by 2002:a05:6a00:4506:b0:89e:584:bb77 with SMTP id d2e1a72fcca58-8a04d350f4emr1539150b3a.58.1792222305449;
-        Sat, 17 Oct 2026 00:31:45 -0700 (PDT)
-Received: from localhost ([111.228.63.84])
-        by smtp.gmail.com with ESMTPSA id d2e1a72fcca58-89f5820b344sm2051607b3a.53.2026.10.17.00.31.39
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sat, 17 Oct 2026 00:31:45 -0700 (PDT)
-From: Cen Zhang <zzzccc427@gmail.com>
-To: dhowells@redhat.com,
-	jarkko@kernel.org,
-	paul@paul-moore.com,
-	jmorris@namei.org,
-	serge@hallyn.com
-Cc: keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	baijiaju1990@gmail.com,
-	jjzuming@gmail.com,
-	zzzccc427@gmail.com
-Subject: [PATCH] keys: Protect the read method check against type removal
-Date: Sat, 17 Oct 2026 15:30:56 +0800
-Message-Id: <pm-key-management-objects-candidate-0010-v5-c6b7ca2813c6913e500a@gmail.com>
-X-Mailer: git-send-email 2.34.1
+        bh=eRWmAlIfs3iswnjnTR4TzrAUiVQGOccDgG6x9wZmrjY=;
+        b=ehNE3iKR1FMemamaIhf7rKzmpTd6aUjpZVRlTnXw2rT2KeZFGpgrwgod4rnjB0KvfO
+         O2RP9TFeydIiUuOuRXr9PVaK9SLUsxZ5ioS8yddVbtOZ1jBsLkR7RSGBiIhFZD+R1lxz
+         aoUmGubuN1e70vklWPW3ERDyQC+I8z6DaR2t0h1fWqcxrEgGL1MUZVa0sYhUFA2YP5hk
+         FXUI6VrPBFi3snLVMYVXR4j5vDaGH/n+L1GjQ95+H7A3Kp+du7aa3JLdrUjhyLkzG4H1
+         Pmvy2oL1DK79enzif+W4ZD3rz/3YWvSQSSvDiEVwLJK4Er6SmlVw5AXwvLzSC3DD6mvD
+         y26A==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1792223267; x=1792828067;
+        h=content-transfer-encoding:content-type:cc:to:subject:message-id
+         :date:from:in-reply-to:references:mime-version:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=eRWmAlIfs3iswnjnTR4TzrAUiVQGOccDgG6x9wZmrjY=;
+        b=FdEWgY8/W7fEyz4JkjriBZj9SqDR2I+YUWTJYP3RV/fR9FZs1elRn9lAzDFOEX+4ob
+         7fZcuejKb7wQJ1HAusopNjBp+USbncRKW6wg8dShh6CxfJRTz0iLuzQ5X6DHCfWc7PB5
+         /Rtwbmy7W3gy5+lnGNAwRN8qgL9ysBU2XiD1XQbxQvIJVjdtiakqCjubN4V2r3HaKKjf
+         dQvTx4SVdKnMfysCGwdXp7/4c77z6OrAS4JBGfDCAPBdRdQq9XQTGXoSLflXZZGcY1+9
+         5sXB5j+ZjqeBJ64MHTaq3iU7BZrlHgaA20nvYTx4Upb589yPhlKKU0J+5FPcHtuzK3sO
+         pghA==
+X-Forwarded-Encrypted: i=1; AKwUvBx2fFrUf8Y1g+nZRDwFBM3IqjvcMQIUfOVO4bZSHzxuhNW5zaNlq8I9LrDFWT58mfqEpxttQ0qU3w==@vger.kernel.org
+X-Gm-Message-State: AFq9FYKtBsjaZU5znHJJLWA6I91v0TsUo6zoQWPuvUgVRGHpLsGUJ6vQ
+	2NoUi38mvr4eRPefNHe0BFSZVFW2ei26jaotXgk0wJlDTV15vzNVgIM4Fd21l51+yy2nmb01p51
+	1V1HgkQEKsu/lffkYckY+7NAVBrLyAao=
+X-Gm-Gg: AYBFou1Q4xbnYVs92oc42rV9ew0SmGyqvp/tyHKUPgQ4fIJdnKZTSyulLSM8mLHshn7
+	RCqsdeJkIQfFm8W7YY3kWCoBqf7BkUtx1F1F4DPzjBDEMUDucpeW+VzDVnI3WCGrApgISiTeZmG
+	bdi6B9SrjQQcn7bMagosIfgUbu8UVF85G1hAUVMldMEqolf71QTIaJXwqLw+YQ5urvntmKX7eab
+	dtcy62YY087w5vMkubjgmp90icgsbUSmhbLHypkEoysUS08M0Esmylwv7uhadeWwtxVaayhzp4t
+	RqHf12TEsFNiZBtT8AtKiIJwgIaoubmZ5n0Si4hC3p2aOsk1YPSIg0rHRp3SGvto/102K4DKN6/
+	cHPRDeSIc3g==
+X-Received: by 2002:a05:690c:f:b0:8b0:ac9e:14f7 with SMTP id
+ 00721157ae682-8b0f2164c94mr7719657b3.28.1792223266956; Sat, 17 Oct 2026
+ 00:47:46 -0700 (PDT)
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+References: <pm-key-management-objects-candidate-0002-v3-2baa8cad2bb554364e10@gmail.com>
+ <20261017035156.GA29318@sol>
+In-Reply-To: <20261017035156.GA29318@sol>
+From: Cen Zhang <zzzccc427@gmail.com>
+Date: Sat, 17 Oct 2026 15:47:32 +0800
+X-Gm-Features: AclHuK-HpdMP-grbZn8KpuFXmo2CHX60pojXLGdBgVLSQqCwngEWAu1uK5ALbG8
+Message-ID: <CAFRLqsWcV=0MKituMQqALy_2rS3kOPPFpMHxn7yRxoyxOHp6hg@mail.gmail.com>
+Subject: Re: [PATCH v2] keys: Avoid the owner account dereference in named
+ keyring lookup
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: dhowells@redhat.com, jarkko@kernel.org, paul@paul-moore.com, 
+	jmorris@namei.org, serge@hallyn.com, sergeh@kernel.org, 
+	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, 
+	linux-kernel@vger.kernel.org, baijiaju1990@gmail.com, jjzuming@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The key type must remain alive while its read method is checked.
-keyctl_read_key() holds a reference to the key, but checks
-key->type->read without holding key->sem. The reference keeps the key
-alive, but does not pin the module containing its type.
+Hi Eric,
 
-With AF_RXRPC built as a module, a positive RxRPC key can pass
-key_read_state() and the Read permission or possession checks while
-another task unloads the module. Unload is possible once the module
-refcount reaches zero, e.g. when no RxRPC socket remains open. The
-reader can be delayed between loading key->type and reading its read
-member, allowing this order:
+Eric Biggers <ebiggers@kernel.org> =E4=BA=8E2026=E5=B9=B410=E6=9C=8817=E6=
+=97=A5=E5=91=A8=E5=85=AD 11:51=E5=86=99=E9=81=93=EF=BC=9A
+>
+> Don't key_serial_next() and find_ge_key() (used when reading from
+> /proc/keys) have the same bug?
+>
+> - Eric
 
-  KEYCTL_READ task                  Module unload and key GC
-  lookup_user_key()
-  key_read_state()
-  key_permission() / is_key_possessed()
-  load key->type
-                                    af_rxrpc_exit()
-                                    unregister_key_type()
-                                    key_gc_keytype() schedules the GC
-                                      pass and waits for it
-                                    GC takes key->sem for writing
-                                    GC retypes key to key_type_dead
-                                    GC releases key->sem
-                                    unregister_key_type() returns
-                                    free_module() frees type storage
-  read saved type's read member
+Thansk a lot for the reivew. You're right =E2=80=94 key_serial_next() and
+find_ge_key() have
+the same issue.
 
-The last access reads freed module storage and can fault in
-keyctl_read_key(). The later read invocation is already protected by
-key->sem and key_validate() in __keyctl_read_key(), but neither covers
-this earlier check.
+I'll send a follow-up patch to fix those as well.
 
-Take key->sem for reading around the read-method check. The garbage
-collector retypes the key under a write hold on key->sem, so it must
-wait for the check to finish; key_gc_keytype() in turn waits for that
-GC pass before unregister_key_type() returns, so the module text cannot
-be freed until the check has completed. If retyping happens first, the
-check sees key_type_dead, which has no read method. Release the
-semaphore before returning -EOPNOTSUPP or proceeding to buffer
-allocation, preserving the early unsupported-operation result and
-keeping user copies outside the semaphore.
+Thanks for the catch again.
 
-Oops report as below:
-
-    BUG: unable to handle page fault for address: fffffbfff8048bc5
-    #PF: supervisor read access in kernel mode
-    #PF: error_code(0x0000) - not-present page
-    RIP: 0010:keyctl_read_key+0x1aa/0x600
-    Call Trace:
-     __do_sys_keyctl+0x2a7/0x4f0
-
-Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
-Assisted-by: LLM
-
----
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 5a5efa26ed0e..756368422b7c 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -863,10 +863,13 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
- 
- 	/* the key is probably readable - now try to read it */
- can_read_key:
--	if (!key->type->read) {
--		ret = -EOPNOTSUPP;
-+	down_read(&key->sem);
-+	ret = -EOPNOTSUPP;
-+	if (key->type->read)
-+		ret = 0;
-+	up_read(&key->sem);
-+	if (ret)
- 		goto key_put_out;
--	}
- 
- 	if (!buffer || !buflen) {
- 		/* Get the key length from the read method */
+Best regards,
+Cen Zhang
