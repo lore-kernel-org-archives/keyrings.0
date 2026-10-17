@@ -1,139 +1,111 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-wm1-f43.google.com (mail-wm1-f43.google.com [209.85.128.43])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5C6911F30BB;
-	Sat, 17 Oct 2026 20:39:25 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CB35B39524E
+	for <keyrings@vger.kernel.org>; Sat, 17 Oct 2026 21:05:22 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.128.43
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792269566; cv=none; b=IrXiNlxxhvdq1SsHceyqiWqI1Q0qSu+hZaqNZvVoS41y5GFsNKWLx6KJwc7iinHZ2+cxXx433HV0empg77E86eI5Zbe0MfIb+wMzG3qxArTP1l/Ibfx6CVzEY1WPr/gnTrjph6sBschQ17Kjk/wm1GFl3JXLnJ3aHYt145tz2h4=
+	t=1792271124; cv=none; b=c2fctgEhi04ko9Ui7GPdY3rgipuCTM7pC6Sh81uCMcdHgXMDi/HXfZGN9cK1kwc/cKHcQMLRcTLjFjXpeOoAAIb7Q0ElJ3BHdWx2nKT7Yz2v3fc5Vyj2CFdIGMZvD+Px1sIH/89/+Dy5YqnchtKcEZjY2Jx68xqnkrqjb+UcLgk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792269566; c=relaxed/simple;
-	bh=smM3CHUs9M1sqKEz1ShH+cXz9rl6NKZz2SUXLAExoLg=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=CBSZT6rZfIVHCAaSMIEydc3i1DJcsAYVRPll7MyAuQOvRkffNfdsF3m0D2QrzcddNhuNp1gS8EPY6o8gC2iq/CG+2cIYkMWPe8fx/6vaAlTdQ3KfyNSzdbjYLnjzj37N5xgink4grFLzoDLdfGV0Jgz4SDSJjpJrHXYCn+lJPSA=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=VN7nYibv; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1792271124; c=relaxed/simple;
+	bh=eGw2YuVzGCEWEFpz7eCjB80XmNGsACc8knr9wmw9b0s=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=u5qJpGGzeU1ox9ffNhCs32NmLhxTpyRDsH1f+l5lrg2a0OqSmpu5FZlkR+CXT+9Cs5X55b2AxJPLZQ6lflaItevs5wTK6PH3sgnbPXYynnqNAKwjE8kQYDU6C5ubll1ZbNEopWIjL2n+YXS3bXPsyW+Z2IUspXpGmDo+LgBdrng=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=M23F6Qbf; arc=none smtp.client-ip=209.85.128.43
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="VN7nYibv"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 706551F000C4;
-	Sat, 17 Oct 2026 20:39:24 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792269564;
-	bh=1+zVta6ZRFT7GXOMcKiGSvwMYmCClLq2D4/Bh2F8bmU=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=VN7nYibvvQdZ15HO/WXBgyMlhHtL07VUIbDxKJlcDiPiQVbmPQW6EG1U/uZxGDQHa
-	 YdVlztMimUphjaIZd946qtgxw00MNk/OVZnzMPW75mbcYudUuTUuWVO8Ksb9TvWwR5
-	 gLXc5oS2HgZSkLJEL72qaLK3vUOzM4sfYPAwWV5VS51ZFG3VzVHeTm2efrCCUX9PgB
-	 RB1/sEEFWuTDtcE93sEr615NCH089cp+gCiq1Mg9Vby47FI2bmGw11HXIE+3eMVmEi
-	 +yn8CnUIM5/qIweesiUzXT4kAUo9L+S9Tsp+XySe+bActcWXUUthvrqXMPOOABK74J
-	 11ZCv7ov7icAw==
-Date: Sat, 17 Oct 2026 23:39:20 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Daehyeon Ko <4ncienth@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E . Hallyn" <serge@hallyn.com>,
-	"Jason A . Donenfeld" <Jason@zx2c4.com>, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-Subject: Re: [PATCH v2] keys: big_key: Remove the redundant quota reservation
-Message-ID: <atPc-K1wZtS3lP29@kernel.org>
-References: <20261016040004.324286-1-4ncienth@gmail.com>
- <atK0MnGM2h9IH6FD@kernel.org>
- <atK186hMPBhYyPCN@kernel.org>
- <20261017152123.1200429-1-4ncienth@gmail.com>
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="M23F6Qbf"
+Received: by mail-wm1-f43.google.com with SMTP id 5b1f17b1804b1-4a16af2a232so7496985e9.1
+        for <keyrings@vger.kernel.org>; Sat, 17 Oct 2026 14:05:22 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1792271121; x=1792875921; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=E2w+v6VTOfFscSyBhyB3vO7STl8TgCqdyv6t5/3oCTY=;
+        b=M23F6QbfqBVXu8ZNx6wUUBb0NIQDs+ny89ey/7/BK/LaB3oaw1aOR6gABPLvs8rYLc
+         EWCiMamx5IVvwzBaHi9MVSfv5T1ZCIfeNiE7sA5QbaM2cuVP/SHYqLvTPtHgJR0ZDmfi
+         kEboKpNSSrSeL6gVgg2tT8IqZmqU2+ZmLKAfUm/yEn72727H4kEnOuZEeotrprjTt1Ub
+         75uM+Letz1q7lcU8UT4R1zbctu9JY0iO6fioZpOdPOy21ZiWta4HBMN2JXxQ3sLSslGV
+         8xHk6OlB9nqvKnMMH7rqaGUdaDsMVJXiM2PaIUekt3lQvVLXr0aggP6K+BGRzkur5IjM
+         wcCQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1792271121; x=1792875921;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=E2w+v6VTOfFscSyBhyB3vO7STl8TgCqdyv6t5/3oCTY=;
+        b=VgTx1lp0GQbpzeSsZAscSuoZ3sAi7/dCW+g9ksx3eY+Y0X3QzRMiuwMYXc76InI73B
+         QMJXA+pig1TqwQsuIxdTH8r6YAtGhYGx72vnqTtu863VPEQ2qRoo5eOuyRsucV/CIwiF
+         lVt1Xcp9NIChho3zGMZCrh51ILUEitni/9SuMMhxegeCJh5lOkpyEIE1w0+1SidyIj8k
+         pal1pRR7PqKO3cHP2bDEbEE7vKWVlIILKhWospc00DyOZG+RfWk2G1AOoiiMf1OTHoCa
+         Pa3Jww9SqNK/RKV+0Uhoots8gobVPMN7+pQjW9xA0cyJR+X1j7BjxtooMlNzD5JwyF72
+         /4IA==
+X-Gm-Message-State: AFq9FYJ3GNRkECg/mV2btUl1m8HYIm9X/1cS1/2laDrmqcfWaW0Yrj+8
+	e21ypuHO+lZGZnluNIXWaHhjUNgGLgKPaixtcQb5beloxhXDaOaAAvSdGJB3yhLDk0Ewl5Gokew
+	=
+X-Gm-Gg: AYBFou1DuhV8a8yHIA7+9yRCFBceu83VpmjghLJtWS18W9ZMMbXQ58ADFhS5JW24ICZ
+	zL96yrC3wwxCtGFDgdbAyLGV9vFAZfFGajXuxg90putgsAAIvt4yI5TAncUPaTbT3kTApvvsqmE
+	5Z9AP4tC2YuOGvjP/qzUVhdePhCtNt5c+3WSvxM+np8DV9898HiWSgcZgRo9iGQVZoIoBW65Bzu
+	M9W4W8UUuWFurgVr+ZA0/oh8zP4Sgbin0RXW+uecwKup65rP47IQ87TraaOW15gezdBdBIBOA2t
+	1Fco+8rR/mqXlZewWkoxGgx2KDy8+zBfnl6mt+fOZVV5BU8Rt6mDGFcLKRoXyqdrr7FELtMDVuH
+	zek5D9ke6iMW9mMLEV7XFEh958vYlWct2PMM+EO2VoUbwaTSERgJrd8YVB6SQP80IXo/50YrZ4A
+	LOrQ4pw+jlxbIUyvjczDk12OuDRnWhEeGM5zz5knvpFkRK3WePpfbZb171euQ64tzcE2phyl8Bb
+	VYAefKT
+X-Received: by 2002:a05:600c:8b25:b0:49f:fe39:5bc8 with SMTP id 5b1f17b1804b1-4a1d75f987dmr101048615e9.12.1792271120770;
+        Sat, 17 Oct 2026 14:05:20 -0700 (PDT)
+Received: from fedora.domain.name ([217.218.152.248])
+        by smtp.gmail.com with ESMTPSA id 5b1f17b1804b1-4a1cca26dc8sm109085575e9.3.2026.10.17.14.05.17
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 17 Oct 2026 14:05:20 -0700 (PDT)
+From: m-amirpour <ampr.mhd@gmail.com>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com,
+	lukas@wunner.de,
+	ignat@linux.win,
+	herbert@gondor.apana.org.au,
+	davem@davemloft.net,
+	linux-crypto@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
+Subject: [PATCH] crypto: asymmetric_keys: Fix PKCS#7 selftest error reporting
+Date: Sun, 18 Oct 2026 00:35:13 +0330
+Message-ID: <20261017210513.135540-1-ampr.mhd@gmail.com>
+X-Mailer: git-send-email 2.55.0
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261017152123.1200429-1-4ncienth@gmail.com>
+Content-Transfer-Encoding: 8bit
 
-On Sun, Oct 18, 2026 at 12:21:23AM +0900, Daehyeon Ko wrote:
-> A big_key is charged a fixed 16 bytes of key quota, regardless of its
-> payload size.  big_key_update() nevertheless reserves the new raw payload
-> length before destroying the old payload, and generic_key_instantiate()
-> then reserves the fixed quota length.
-> 
-> For an update shorter than 16 bytes, the first reservation temporarily
-> returns quota.  Another key operation by the same user can consume that
-> quota before generic_key_instantiate() reserves it again.  If the second
-> reservation fails, the key remains positive after its old payload has been
-> destroyed.  Reading a buffer-backed key or revoking a shmem-backed key then
-> dereferences a NULL payload pointer.
-> 
-> On a KASAN build, reading a buffer-backed key reports:
-> 
->   BUG: KASAN: null-ptr-deref in big_key_read+0x110/0x310
->   Read of size 64 at addr 0000000000000000
-> 
-> Revoking a shmem-backed key reports, with oops=panic:
-> 
->   KASAN: null-ptr-deref in range [0x68-0x6f]
->   RIP: vfs_truncate+0xa2/0x730
->   big_key_revoke+0xbd/0xe0
->   Kernel panic - not syncing: Fatal exception
-> 
-> The first reservation is unnecessary.  A positive big_key already has a
-> 16-byte reservation from successful instantiation, so the reservation in
-> generic_key_instantiate() has zero delta and cannot fail after the old
-> payload is destroyed.  A negative key has no old payload to destroy, and
-> generic_key_instantiate() performs the required reservation before
-> publishing the new payload.
-> 
-> Remove the redundant reservation so that the update path adjusts quota only
-> once and cannot expose a temporary quota gap.
-> 
-> Fixes: b6f61c314649 ("keys: Implement update for the big_key type")
-> Cc: stable@vger.kernel.org
-> Assisted-by: LLM
-> Signed-off-by: Daehyeon Ko <4ncienth@gmail.com>
-> ---
-> Changes since v1:
-> - Remove the redundant first reservation instead of changing its length,
->   leaving generic_key_instantiate() as the single quota reservation on the
->   update path, as suggested by Jarkko.
-> - Verify full-quota positive and negative updates separately.  A positive
->   update keeps a zero quota delta; a negative update can still return
->   -EDQUOT before publishing a payload and succeeds after quota is released.
-> 
->  security/keys/big_key.c | 6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-> index 268f702df380e..ef707f2a81a98 100644
-> --- a/security/keys/big_key.c
-> +++ b/security/keys/big_key.c
-> @@ -193,12 +193,6 @@ void big_key_destroy(struct key *key)
->   */
->  int big_key_update(struct key *key, struct key_preparsed_payload *prep)
->  {
-> -	int ret;
-> -
-> -	ret = key_payload_reserve(key, prep->datalen);
-> -	if (ret < 0)
-> -		return ret;
-> -
->  	if (key_is_positive(key))
->  		big_key_destroy(key);
->  
-> 
-> base-commit: 58161ead29e50d70a317ea26b472e0c7508e69da
-> -- 
-> 2.55.0
-> 
+From: Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
 
-Well, that made a difference. I've started actively try to look
-for eager tactics, and in this case it turned out to be worth
-it. The first solution was exactly like weighted answer that
-cut the search too early :-) 
+pkcs7_parse_message() returns an error pointer on failure, but the
+selftest prints ret, which still contains the result of the previous
+x509_load_certificate_list() call.
 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+Print the parser's error pointer with %pe so that a failure reports
+the actual parsing error.
 
-Thank you.
+Signed-off-by: Muhammad Mahdi Amirpour <ampr.mhd@gmail.com>
+---
+ crypto/asymmetric_keys/selftest.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-PS. Not applying til Monday.
+diff --git a/crypto/asymmetric_keys/selftest.c b/crypto/asymmetric_keys/selftest.c
+index 98dc5cdfdeb..42857b02258 100644
+--- a/crypto/asymmetric_keys/selftest.c
++++ b/crypto/asymmetric_keys/selftest.c
+@@ -41,7 +41,7 @@ void fips_signature_selftest(const char *name,
+ 
+ 	pkcs7 = pkcs7_parse_message(sig, sig_len);
+ 	if (IS_ERR(pkcs7))
+-		panic("Certs %s selftest: pkcs7_parse_message() = %d\n", name, ret);
++		panic("Certs %s selftest: pkcs7_parse_message() = %pe\n", name, pkcs7);
+ 
+ 	pkcs7_supply_detached_data(pkcs7, data, data_len);
+ 
+-- 
+2.55.0
 
-Br, Jarkko
