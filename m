@@ -1,42 +1,52 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F30B2332EAE;
-	Sun, 18 Oct 2026 02:16:02 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 926C64CF496;
+	Sun, 18 Oct 2026 02:19:06 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792289764; cv=none; b=b05dWJsaO5QwCwNHSSvKEiFoqbR5a79A1OvSqJY7dYJwBgycUVsqKSQ3EX9ZlrwA2hCiDDPcBGIghBFhxwNqvm8wUhkTvDO/1JTO8XHYGIuc/9lliSn8u93hvjZwaX6XO9CF+z8LJ4nnyJrpSfSr25hydn4WNxIzaXWIAXEKtSA=
+	t=1792289947; cv=none; b=jeCMisbyZUI5lg3OOSGiC+cPmGlQF/h6Ld+P9o2ObzLQteAHjRt+COGF3X5hNhplE4ggRtJAg3L/DGa28PyR+skkBvTA3HaByxk29BP3uzHSWc2izEYOKznQ+R4VZSAAhoT+TrY0r5DnUU7hbF3XmbWadI94DKBjREZyusChw4c=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792289764; c=relaxed/simple;
-	bh=MCBDNn+GAvMyOiNBMihMyhGU843T71BkR+dn5RvRS08=;
+	s=arc-20240116; t=1792289947; c=relaxed/simple;
+	bh=ENoEErGIF45uEZchIneXGytylYZQ4wLdX7Cm1nFVtBY=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=g5ggHsnGv2pRbujNhMwNHqK93ilJi7Rr2UjRMjuN4noRZFyJ6g4qR8Ypyk0I0G3j5wl3M23/0LOHnZQ6tr5zdaBcTxjZ95puGGPMO4gJldVtrbA7YnR0H0BCTdaWQ8Hr05x6F4wbstV7fVX5jguvF2xUF86TWymQ8LnSCP8hFGY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=CK0IWhs/; arc=none smtp.client-ip=100.103.45.18
+	 Content-Type:Content-Disposition:In-Reply-To; b=dUCAOcFKxHLAv/hsoxA646nGKD4Jv+4dOaO7K33Ilc7/ybahE0efm7fdnFgh60w4VX9hd31copNdiq77jmm9R5dMfYp5stFBI7kdXszU+a+kH9vvpCCE0v488VUa57kupQveAMOgJkSQ6x4tZz8wZ+RYFDpI4bB413S1mO8KHRc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Tl+iauia; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="CK0IWhs/"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 095381F000C4;
-	Sun, 18 Oct 2026 02:16:01 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Tl+iauia"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B01011F000C4;
+	Sun, 18 Oct 2026 02:19:05 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792289762;
-	bh=D/3OmxhF3KjupCfKBAayd7RQOmw8hHSPmYeQBhfl3T0=;
+	s=k20260515; t=1792289946;
+	bh=G+8PPkcy5Cj2BcxCWW4Qjj5ncRVjqmwS/D/XD+zSC4s=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=CK0IWhs/+gbPpaOUy3bu/ssu+Jq8qYUN3UxkF/RHgNcLkfGTvuJwFq8VC9l2478e7
-	 CBf0VsQqehGmRaWbOTd7Z2sH02Wjkrd2RsNklzk33uld7j2GjzTFx4DyqTnmt3LQLJ
-	 K7hKYgOAZQvtcDkrrfu4QGOFrKlZoBV0aqPVY8yZyF2WomeDo8U2pHAxPYsOF8CO5v
-	 b3ySNzohaTgGaiy2YEoe4Rg/RdbPnAQ9J0k/+KnQ7J02Ew3zHBoAFnLE9jNwgxpHOp
-	 t2lFl3vTaqifGqoRShnHxsMkYg/J8ORw8bwebL2tCEKJZVMv067fNcb2OXK7lXxFLX
-	 w7p6yPs2f6/HQ==
-Date: Sun, 18 Oct 2026 05:15:59 +0300
+	b=Tl+iauia3v1o5Mz3Mbc8/Y3brVWRvVDdASYboBCbSdkbwW1rl7Vvv6yoK+BS3CH28
+	 qULQrTsDt+zWl+8iWngZfQn6c7/buD5SmiOhcqHTToILa9XV+KDipu8JLdQxz/sW7G
+	 mKVbM6FIUt5BWrgg4Y5y80LzLijjf5CRMTvegY/8O39/eUGjioq2SJmwjymXeGHsk0
+	 YiqfvT1Jftshk6I2KGBOUMYPCPfj+IQprg84ULqxpa/MqFdfgriHuSTSGROWsB3VaM
+	 ylqFOfntMCHqaD8mxI6GP8UcaxQBFjZuYrPjFLcnebAL0HzZYjqUck/Ct9o6CkNkTe
+	 kBeEBsNF7UboA==
+Date: Sun, 18 Oct 2026 05:19:02 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Cen Zhang <zzzccc427@gmail.com>
-Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
-	serge@hallyn.com, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	baijiaju1990@gmail.com, jjzuming@gmail.com
-Subject: Re: [PATCH] keys: Protect the read method check against type removal
-Message-ID: <atQr3xpmgJc5q_t4@kernel.org>
-References: <pm-key-management-objects-candidate-0010-v5-c6b7ca2813c6913e500a@gmail.com>
- <atQoKlA_JfF6JBmc@kernel.org>
+To: list.lkml.keyrings@me.benboeckel.net
+Cc: keyrings@vger.kernel.org, Brendan Higgins <brendan.higgins@linux.dev>,
+	David Gow <david@davidgow.net>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Rae Moar <raemoar63@gmail.com>,
+	Ryota Sakamoto <sakamo.ryota@gmail.com>,
+	Kuan-Wei Chiu <visitorckw@gmail.com>,
+	Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+	Pasha Tatashin <pasha.tatashin@soleen.com>,
+	Kir Chou <note351@hotmail.com>, Petr Mladek <pmladek@suse.com>,
+	Dmitry Antipov <dmantipov@yandex.ru>,
+	Guan-Chun Wu <409411716@gms.tku.edu.tw>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:KERNEL UNIT TESTING FRAMEWORK (KUnit)" <linux-kselftest@vger.kernel.org>,
+	"open list:KERNEL UNIT TESTING FRAMEWORK (KUnit)" <kunit-dev@googlegroups.com>
+Subject: Re: [PATCH] lib/tests: kunit for associative array
+Message-ID: <atQsloTurzo4cl7c@kernel.org>
+References: <20261014160144.1835860-1-jarkko@kernel.org>
+ <atQcpQ-1J28uJyT9@rotor.dev.benboeckel.internal>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -45,110 +55,89 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <atQoKlA_JfF6JBmc@kernel.org>
+In-Reply-To: <atQcpQ-1J28uJyT9@rotor.dev.benboeckel.internal>
 
-On Sun, Oct 18, 2026 at 05:00:14AM +0300, Jarkko Sakkinen wrote:
-> On Sat, Oct 17, 2026 at 03:30:56PM +0800, Cen Zhang wrote:
-> > The key type must remain alive while its read method is checked.
-> > keyctl_read_key() holds a reference to the key, but checks
-> > key->type->read without holding key->sem. The reference keeps the key
-> > alive, but does not pin the module containing its type.
+On Sat, Oct 17, 2026 at 09:11:01PM -0400, Ben Boeckel wrote:
+> On Wed, Oct 14, 2026 at 19:01:38 +0300, Jarkko Sakkinen wrote:
+> > This is a kunit test for lib/assoc_array.c, which maintains a shadow model
+> > across assoc_array operations, and checks its integrity after every
+> > operation.
 > > 
-> > With AF_RXRPC built as a module, a positive RxRPC key can pass
-> > key_read_state() and the Read permission or possession checks while
-> > another task unloads the module. Unload is possible once the module
-> > refcount reaches zero, e.g. when no RxRPC socket remains open. The
-> > reader can be delayed between loading key->type and reading its read
-> > member, allowing this order:
+> > I wrote a draft version so that I could properly test 'assoc-array-fixes'
+> > tag at Linus' tree, and spent today rewriting a new more polished version
+> > with as good description as I could possibly could on how the seeded test
+> > keys were cherry-picked. Along the way I also tweaked the numbers to be
+> > a bit less messier set than in my original version.
 > > 
-> >   KEYCTL_READ task                  Module unload and key GC
-> >   lookup_user_key()
-> >   key_read_state()
-> >   key_permission() / is_key_possessed()
-> >   load key->type
-> >                                     af_rxrpc_exit()
-> >                                     unregister_key_type()
-> >                                     key_gc_keytype() schedules the GC
-> >                                       pass and waits for it
-> >                                     GC takes key->sem for writing
-> >                                     GC retypes key to key_type_dead
-> >                                     GC releases key->sem
-> >                                     unregister_key_type() returns
-> >                                     free_module() frees type storage
-> >   read saved type's read member
+> > The transcripts that follow were executed with this command-line:
 > > 
-> > The last access reads freed module storage and can fault in
-> > keyctl_read_key(). The later read invocation is already protected by
-> > key->sem and key_validate() in __keyctl_read_key(), but neither covers
-> > this earlier check.
+> >     ./tools/testing/kunit/kunit.py run --raw_output assoc_array
 > > 
-> > Take key->sem for reading around the read-method check. The garbage
-> > collector retypes the key under a write hold on key->sem, so it must
-> > wait for the check to finish; key_gc_keytype() in turn waits for that
-> > GC pass before unregister_key_type() returns, so the module text cannot
-> > be freed until the check has completed. If retyping happens first, the
-> > check sees key_type_dead, which has no read method. Release the
-> > semaphore before returning -EOPNOTSUPP or proceeding to buffer
-> > allocation, preserving the early unsupported-operation result and
-> > keeping user copies outside the semaphore.
+> > With 'assoc-array-fixes' commits and its subsequent tag iterations all
+> > eight tests pass, and without them all of them fail.
 > > 
-> > Oops report as below:
-> > 
-> >     BUG: unable to handle page fault for address: fffffbfff8048bc5
-> >     #PF: supervisor read access in kernel mode
-> >     #PF: error_code(0x0000) - not-present page
-> >     RIP: 0010:keyctl_read_key+0x1aa/0x600
-> >     Call Trace:
-> >      __do_sys_keyctl+0x2a7/0x4f0
-> > 
-> > Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
-> > Assisted-by: LLM
-> 
-> Would be better to finish off the work unfinished and fix the patches
-> under circulation instead of spamming new ones while at it. I.e. fix
-> them first and don't starvate us with unfinished patches.
-> 
-> If this was merge ready this would be acceptable, but in this even the
-> tags above are in the wrong order. This is not a lottery machine where
-> you dump whatever LLM gives you without your attention, so please don't
-> do that.
-> 
-> > 
+> > Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 > > ---
-> > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> > index 5a5efa26ed0e..756368422b7c 100644
-> > --- a/security/keys/keyctl.c
-> > +++ b/security/keys/keyctl.c
-> > @@ -863,10 +863,13 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
-> >  
-> >  	/* the key is probably readable - now try to read it */
-> >  can_read_key:
-> > -	if (!key->type->read) {
-> > -		ret = -EOPNOTSUPP;
-> > +	down_read(&key->sem);
-> > +	ret = -EOPNOTSUPP;
-> > +	if (key->type->read)
-> > +		ret = 0;
-> > +	up_read(&key->sem);
-> > +	if (ret)
-> >  		goto key_put_out;
-> > -	}
-> >  
-> >  	if (!buffer || !buflen) {
-> >  		/* Get the key length from the read method */
+> >  lib/Kconfig.debug             |  15 +
+> >  lib/tests/Makefile            |   1 +
+> >  lib/tests/assoc_array_kunit.c | 570 ++++++++++++++++++++++++++++++++++
+> >  3 files changed, 586 insertions(+)
+> >  create mode 100644 lib/tests/assoc_array_kunit.c
+> > 
+> > diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> > index 6b24a2c89b84..3e8d3852f53c 100644
+> > --- a/lib/Kconfig.debug
+> > +++ b/lib/Kconfig.debug
+> > @@ -2857,6 +2857,21 @@ config HASHTABLE_KUNIT_TEST
+> > 
+> >  	  If unsure, say N.
+> > 
+> > +config ASSOC_ARRAY_KUNIT_TEST
+> > +	tristate "KUnit test for assoc_array" if !KUNIT_ALL_TESTS
+> > +	depends on KUNIT
+> > +	default KUNIT_ALL_TESTS
+> > +	select ASSOCIATIVE_ARRAY
+> > +	help
+> > +	  This builds the assoc_array KUnit test suite.
+> > +	  It tests the basic functionality of the API defined in
+> > +	  include/linux/assoc_array.h.
+> > +
+> > +	  For more information on KUnit and unit tests in general please refer
+> > +	  to the KUnit documentation in Documentation/dev-tools/kunit/.
+> > +
+> > +	  If unsure, say N.
+> > +
+> >  config LINEAR_RANGES_TEST
+> >  	tristate "KUnit test for linear_ranges"
+> >  	depends on KUNIT
+> > diff --git a/lib/tests/Makefile b/lib/tests/Makefile
+> > index 3cac3b63a752..107e16b4ebc1 100644
+> > --- a/lib/tests/Makefile
+> > +++ b/lib/tests/Makefile
+> > @@ -4,6 +4,7 @@
+> > 
+> >  # KUnit tests
+> >  CFLAGS_bitfield_kunit.o := $(DISABLE_STRUCTLEAK_PLUGIN)
+> > +obj-$(CONFIG_ASSOC_ARRAY_KUNIT_TEST) += assoc_array_kunit.o
+> >  obj-$(CONFIG_BASE64_KUNIT) += base64_kunit.o
+> >  obj-$(CONFIG_BITOPS_KUNIT) += bitops_kunit.o
+> >  obj-$(CONFIG_BITFIELD_KUNIT) += bitfield_kunit.o
 > 
-> Why did you chose this over embedding the check inside __keyctl_read_key()?
+> Why does this one end with `_TEST` and the others do not? I see
+> `LINEAR_RANGES_TEST` in the context above, but it also lacks `_KUINT`.
+> There is `HASHTABLE_KUNIT_TEST` nearby too, so perhaps consistency has
+> just never been popular around these parts.
+
+A blind spot. I started with that name.
+
+This is phasing down as an RF patch set with rhashtable migration
+is already out.
+
 > 
-> I'm assuming you have considered both options.
+> Thanks,
+> 
+> --Ben
 
-I.e. to reformalize: how does that change guarantee key->type->read
-validity for the __keyctl_read_key() that follow?
-
-My first idea would be put the check inside __keyctl_read_key() 
-while key->sem is taken.
-
-Please explain because I'm not fully following with that change.
-I could get something wrong but it is against the assumed most 
-common sense fix imaginable.
+Regardless, appreciate your feedback, thanks!
 
 Br, Jarkko
