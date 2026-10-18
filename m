@@ -1,193 +1,142 @@
-Received: from fout-b1-smtp.messagingengine.com (fout-b1-smtp.messagingengine.com [202.12.124.144])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DEBCF2868AB
-	for <keyrings@vger.kernel.org>; Sun, 18 Oct 2026 01:11:07 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=202.12.124.144
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9EEF633B6FB;
+	Sun, 18 Oct 2026 02:00:14 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792285869; cv=none; b=qeH2aAum4cUrQVmbAB6NFYjIqq9lxK2nEfPunobu4zvFJfvdOK2/XGXE3Js3I7JKLRNCPdJjWJEEEI/9Hb55ekmew1ZdwoZVMwqUT3+36/klFv6wkJjlgWhBXzuo0pfjhq03bfA6E1Cn2/pZZ1nUB9/JbIPQ5n6sl6wR2IbzSy0=
+	t=1792288815; cv=none; b=tn/qLA8wvizRp+LFSEQD+oLDU4UZpPd+uTuAWY+ny57+dzqcxkYCRGitRuovRFiOA0Wbo1zfi1i5FZ8GnPBAT5m/xNO07jRPMRDXdiiRJJOhDW1DqGinXKc9lhybNI8L3LRYc/C5dOPWCfcTlp3axoaxL8ZfY8t0d13KSDXAkF4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792285869; c=relaxed/simple;
-	bh=iClRPXEe5mR6eqpKMdMBt4IQqiTf2uKaNcox0pzAZ7s=;
+	s=arc-20240116; t=1792288815; c=relaxed/simple;
+	bh=YiO4/TQJ7tRHegRgl99iob/Vjniu6waGoillfU/V2+s=;
 	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=leGeZuW4Y8tc9Tb2RrN/0NWQzNXK8rHCozFc4T9NBlsL4ya8CS6LLHL1EbKwoJDv6pwgyNitB0EcoGCMe12znEsP8Sduce2zS5IiKU4iiRA1wrOvGp8nKBJYrxYotOF3wiqWbmR0TN0iU6zRVGl7v9kjRkOx+ogZBTOxCqg8TKk=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=benboeckel.net; spf=pass smtp.mailfrom=benboeckel.net; dkim=pass (2048-bit key) header.d=benboeckel.net header.i=@benboeckel.net header.b=lvLKv3jN; dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b=tQTzcmLt; arc=none smtp.client-ip=202.12.124.144
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=benboeckel.net
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=benboeckel.net
+	 Content-Type:Content-Disposition:In-Reply-To; b=MlolWfwHhd1AB7BNlqqzAW+i7G9fA/U09gXGdvyeXQYvHDDLSwvTrqkhBwD/nE2RRcK2WR33Gdb4neGxuM1iuZBlcPdAk2fXubjHP6oiq2I6AUCKdGPsJu59jZ1Yq5k6+UXfTrQs/RTeBe4h1u9KULJOgsZUdvBUgp5J19BTg7k=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=MBVrK9YD; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=benboeckel.net header.i=@benboeckel.net header.b="lvLKv3jN";
-	dkim=pass (2048-bit key) header.d=messagingengine.com header.i=@messagingengine.com header.b="tQTzcmLt"
-Received: from phl-compute-06.internal (phl-compute-06.internal [10.202.2.46])
-	by mailfout.stl.internal (Postfix) with ESMTP id 1E9CD1D0007A
-	for <keyrings@vger.kernel.org>; Sat, 17 Oct 2026 21:11:07 -0400 (EDT)
-Received: from phl-frontend-03 ([10.202.2.162])
-  by phl-compute-06.internal (MEProxy); Sat, 17 Oct 2026 21:11:07 -0400
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=benboeckel.net;
-	 h=cc:cc:content-type:content-type:date:date:from:from
-	:in-reply-to:in-reply-to:message-id:mime-version:references
-	:reply-to:reply-to:subject:subject:to:to; s=fm1; t=1792285866;
-	 x=1792372266; bh=IQsgVY0IWPoHORuYJpzS4mkNp1CJYmEIgbOfStHyy7Y=; b=
-	lvLKv3jNBogmMUqjchVm4Nl3Rby3771Nrf2pmqLEmJM6+deNX//3dondo17gC/m5
-	whyaiAZqUXZxtAJt8cSmJY8Qi3htrwdVnF2BCyjCA/UEKLCkOJ2HZ5f1m8670owi
-	sD2GqEO6+WqWqDC84Y3htQISEdEUf1Aed1SKCRTAy3OStefX8tQfNIsnUjvjlc0S
-	944IQcjP2LK7uk+FKS4haRxcis9RUzN45LzQPVpJKRTELzcGuRgR15aP9ID58bpt
-	BUCHxg276iT3Z+6u2lfs+u+kgSO4OzeXGdwl+QcrsGr9obdSebFIIayu1ojkSbC9
-	Y7S/saPjZm+YGl8mh/7U5g==
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=
-	messagingengine.com; h=cc:cc:content-type:content-type:date:date
-	:feedback-id:feedback-id:from:from:in-reply-to:in-reply-to
-	:message-id:mime-version:references:reply-to:reply-to:subject
-	:subject:to:to:x-me-proxy:x-me-sender:x-me-sender:x-sasl-enc; s=
-	fm2; t=1792285866; x=1792372266; bh=IQsgVY0IWPoHORuYJpzS4mkNp1CJ
-	YmEIgbOfStHyy7Y=; b=tQTzcmLtpuziSWN/KwVQLT9e4ctmKj9C/Lobtei15FdS
-	dlIEcfzEYpvoNNME8PiY9KEtOUSCKo77FG8E8dgvQHEnTFNUP2BD5DuKZi87/QgL
-	onLwe/DcVNVuPDCkgp53EmcuwKOZtRqeOCFH6coS8IZKS0SUBq47D4cklRKA+zpQ
-	c3SzMSopSjru7VnfDLXvwjbr9TKJRDvJnj//bVCKCU3xAnLo4R6EbvMUoZj9BDRu
-	QWzwE7uQXbVU6tq2Vi3QBHrp2mAOVLvuqB8Tuunl9TR5luyhYpNiNJJ+e0UoWMud
-	hVhqBtjVO8xDVjMULDhxjfSuNDMXd8HDh2UOPnb0+g==
-X-DKIM2-Info: draft=ietf-dkim-dkim2-spec-06;
-	repo=github.com/dkim2wg/interop; date=2026-10-08; sw=lmtpprox;
-	action=sign d=benboeckel.net a=rsa-sha256;
-DKIM2-Signature: i=1; m=1; t=1792285866; d=benboeckel.net;
-	mf=PG1lQGJlbmJvZWNrZWwubmV0Pg==;
-	rt=PGtleXJpbmdzQHZnZXIua2VybmVsLm9yZz4=;
-	s=fm1:rsa-sha256:CUmEPooBTRCuXysTwEy+C0FfI785dCmdjR4ODsAa9DILqPU
-	KFQkfHWbtnZNGJ0TKv7aXDERDq7/u9W9lY+WGsa7R3rzq1YIwZbBW5bNRjR0adKK
-	Ep/1W4X/4Co8+pOWxAGs3zLtx7OYXeLRW/MW+D+zLqs2BGiqb8k/+JmbidRkh8nM
-	14CDnHtZycuhV6Jon5xvOCm+o9veApn0SMZOUS13J/68I71SnJ9D4oNTGFbdbiXc
-	xW+5FIBQNMm2UqTq8Gx5PNA1SiLjcMRnm3JvpOM74FbYvPXpVoZuWUWDXF7fnwD1
-	/Ni6uunZspMjKeVCpCx8EgqP1bxQpzDV4FGZWzQ==;
-X-DKIM2-Info: draft=ietf-dkim-dkim2-spec-06;
-	repo=github.com/dkim2wg/interop; date=2026-10-08; sw=lmtpprox;
-	action=mi-m=1; hc=14;
-	hn=cc,content-disposition,content-type,date,feedback-id,from,
-	in-reply-to,message-id,mime-version,references,reply-to,subject,
-	to,user-agent;
-Message-Instance: m=1; h=sha256:Vi3N86SJGk1w63md9NbJDlcOb0nEbeK8aupUZx13Qcw=:iClRPXEe5mR6eqpKMdMBt4IQqiTf2uKaNcox0pzAZ7s=;
-X-ME-Sender: <xms:qRzUanjO0lq1_iCh05wWS2AszCPGvjzDid8C-T3UbQZZ9DXNWIrg3A>
-    <xme:qRzUauuRh5pR02mB4Cfrd0JYA2WlTrXDp70WD79zGlUuFlQOuCUG04xiSnDZ1c_19
-    mQAG7LUGACcRTIlNRDCRvJQdewbvnDYKPVJlZHcJvAQkmlsqliLaELF>
-X-ME-Received: <xmr:qRzUatv1NfTgCZll3K0hCPY4u9872BlYnyv4URO7lYAnlhpz7JVZ2Yw3HQ>
-X-ME-Proxy-Cause: dmFkZTEvnTXb7wlPNdbPCo79KPjALe1WyOomyRWhprFt/vGO9Ai679h2SHP/kqZH93QGjI
-    +ozfqZTdZKg7h8D7XL5tDXORgip7Vh/Iw1HAwfLVrotIcUbd7YOIXOUoOee/rBp3M0Vjrg
-    +dCHbCyJpUvgDwj1Sq6UvkNmqYLWR8LGlOPh9uV2QqNtST1P/mE8LA6cwr9Va8hyC94yqA
-    qqkwb0dmWcp6pYePryL50SA2PuYbwEc/oVV6UaV7j3KaFhmXYKYR0BJI2+N0Gws0eA+Nvv
-    w8QrVGxrfUZtk6pI7rj1J/u/MY/qe89NuVYCSQ08nvYnSuJ6oNm4hXM0wwwaygLSlzP9Z2
-    i6YYlf3qZsHFPOoLLyit+n5ap1/Qs4Ie0j6ixsRKNtQlFdAaPTCgdofAa7FPkcFzs6jXLR
-    ho2J8Xr4vG8Y8bqauGwrVN8gMu3StR+YaEd8vQtihFl/gfx0kksVPcbMPbklHSxjzz1TF/
-    j0IVX0HUIWvE29G/xH4eqM/MJ3gn3EuO6IhK5MZSwyr/8xesImV8m7p0dVi3mr6SYr2TKD
-    ZoxnebomkTJciLsrdw9VyavNzukigajK+MJR0voUUXE0mjZWSAwumFi6czU4JSxFZyVE9J
-    L1TMYaATsDxvf3HfUk3zg09csqiR7mNC987cOX1OQ4+AQ0pTmI31L7zzWAvw
-X-ME-Proxy: <xmx:qRzUavML6aKT6Hb0mb0yqO4TlzLkEGfSwRyNvmDZWKkJYnD4W6NQqw>
-    <xmx:qRzUaveHmcbn-gT7gI0J_a5vsZ1ukzaBryWKzcQUtzRAxPODWES-JA>
-    <xmx:qRzUamllVWv-rKXbsIQ3xUZqjMW4HNQUlzybCcm8wxqYr07_9l1wOw>
-    <xmx:qRzUahxD-5JRBjWdwEg6TCNU04-zDCfbBiQX6PWr1JIbzKv5_sGRgw>
-    <xmx:qhzUamTrVIHs9pioam_XAHDlj_qDvXSWKUjHS_1tMb6KEZkl1Q6a07rk>
-Feedback-ID: iffc1478b:Fastmail
-Received: by mail.messagingengine.com (Postfix) with ESMTPA; Sat,
- 17 Oct 2026 21:11:04 -0400 (EDT)
-Date: Sat, 17 Oct 2026 21:11:01 -0400
-From: Ben Boeckel <me@benboeckel.net>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: keyrings@vger.kernel.org, Brendan Higgins <brendan.higgins@linux.dev>,
-	David Gow <david@davidgow.net>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Rae Moar <raemoar63@gmail.com>,
-	Ryota Sakamoto <sakamo.ryota@gmail.com>,
-	Kuan-Wei Chiu <visitorckw@gmail.com>,
-	Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-	Pasha Tatashin <pasha.tatashin@soleen.com>,
-	Kir Chou <note351@hotmail.com>, Petr Mladek <pmladek@suse.com>,
-	Dmitry Antipov <dmantipov@yandex.ru>,
-	Guan-Chun Wu <409411716@gms.tku.edu.tw>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:KERNEL UNIT TESTING FRAMEWORK (KUnit)" <linux-kselftest@vger.kernel.org>,
-	"open list:KERNEL UNIT TESTING FRAMEWORK (KUnit)" <kunit-dev@googlegroups.com>
-Subject: Re: [PATCH] lib/tests: kunit for associative array
-Message-ID: <atQcpQ-1J28uJyT9@rotor.dev.benboeckel.internal>
-Reply-To: list.lkml.keyrings@me.benboeckel.net
-References: <20261014160144.1835860-1-jarkko@kernel.org>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="MBVrK9YD"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B2A9E1F000C4;
+	Sun, 18 Oct 2026 02:00:13 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1792288814;
+	bh=7nCdyqQEN3kYt2DTyrV3GI5+K6iZG9zsVLaL/EWesB4=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=MBVrK9YDjDD44n6HSwGbR5rqLNuK/Gfd8aDXlXegELmq6vavw/ek7qEqEdUkD+stA
+	 LYu6y2lQGLQtlOdwd3CJ4+wHrgSTz1KSpU6NJtoUc1MiKYrjF3qDHYWj2za+FE+6bG
+	 AfaOzUFjjUesZHoii1KokRF2OSUL4l3O8M2YAZ2x/SaMvglMRbQ4NlzNZHSMgIGnOq
+	 v6TP6YVV7yjkwftTIMsjyGNQWRIG9fA/SKiYQT8Y1Rrh5ZpgT2og5DsOgnkkeQaLiU
+	 M9LX7D83GiJRXgG5RGze3mjMAi15g5X6gZ6V4lEenT/QVDXTy+bh7xO6/cMRy2h5yu
+	 h1FOXHPyj9C4g==
+Date: Sun, 18 Oct 2026 05:00:10 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Cen Zhang <zzzccc427@gmail.com>
+Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+	serge@hallyn.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	baijiaju1990@gmail.com, jjzuming@gmail.com
+Subject: Re: [PATCH] keys: Protect the read method check against type removal
+Message-ID: <atQoKlA_JfF6JBmc@kernel.org>
+References: <pm-key-management-objects-candidate-0010-v5-c6b7ca2813c6913e500a@gmail.com>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261014160144.1835860-1-jarkko@kernel.org>
-User-Agent: Mutt/2.4.2 (2026-08-30)
+In-Reply-To: <pm-key-management-objects-candidate-0010-v5-c6b7ca2813c6913e500a@gmail.com>
 
-On Wed, Oct 14, 2026 at 19:01:38 +0300, Jarkko Sakkinen wrote:
-> This is a kunit test for lib/assoc_array.c, which maintains a shadow model
-> across assoc_array operations, and checks its integrity after every
-> operation.
+On Sat, Oct 17, 2026 at 03:30:56PM +0800, Cen Zhang wrote:
+> The key type must remain alive while its read method is checked.
+> keyctl_read_key() holds a reference to the key, but checks
+> key->type->read without holding key->sem. The reference keeps the key
+> alive, but does not pin the module containing its type.
 > 
-> I wrote a draft version so that I could properly test 'assoc-array-fixes'
-> tag at Linus' tree, and spent today rewriting a new more polished version
-> with as good description as I could possibly could on how the seeded test
-> keys were cherry-picked. Along the way I also tweaked the numbers to be
-> a bit less messier set than in my original version.
+> With AF_RXRPC built as a module, a positive RxRPC key can pass
+> key_read_state() and the Read permission or possession checks while
+> another task unloads the module. Unload is possible once the module
+> refcount reaches zero, e.g. when no RxRPC socket remains open. The
+> reader can be delayed between loading key->type and reading its read
+> member, allowing this order:
 > 
-> The transcripts that follow were executed with this command-line:
+>   KEYCTL_READ task                  Module unload and key GC
+>   lookup_user_key()
+>   key_read_state()
+>   key_permission() / is_key_possessed()
+>   load key->type
+>                                     af_rxrpc_exit()
+>                                     unregister_key_type()
+>                                     key_gc_keytype() schedules the GC
+>                                       pass and waits for it
+>                                     GC takes key->sem for writing
+>                                     GC retypes key to key_type_dead
+>                                     GC releases key->sem
+>                                     unregister_key_type() returns
+>                                     free_module() frees type storage
+>   read saved type's read member
 > 
->     ./tools/testing/kunit/kunit.py run --raw_output assoc_array
+> The last access reads freed module storage and can fault in
+> keyctl_read_key(). The later read invocation is already protected by
+> key->sem and key_validate() in __keyctl_read_key(), but neither covers
+> this earlier check.
 > 
-> With 'assoc-array-fixes' commits and its subsequent tag iterations all
-> eight tests pass, and without them all of them fail.
+> Take key->sem for reading around the read-method check. The garbage
+> collector retypes the key under a write hold on key->sem, so it must
+> wait for the check to finish; key_gc_keytype() in turn waits for that
+> GC pass before unregister_key_type() returns, so the module text cannot
+> be freed until the check has completed. If retyping happens first, the
+> check sees key_type_dead, which has no read method. Release the
+> semaphore before returning -EOPNOTSUPP or proceeding to buffer
+> allocation, preserving the early unsupported-operation result and
+> keeping user copies outside the semaphore.
 > 
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+> Oops report as below:
+> 
+>     BUG: unable to handle page fault for address: fffffbfff8048bc5
+>     #PF: supervisor read access in kernel mode
+>     #PF: error_code(0x0000) - not-present page
+>     RIP: 0010:keyctl_read_key+0x1aa/0x600
+>     Call Trace:
+>      __do_sys_keyctl+0x2a7/0x4f0
+> 
+> Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
+> Assisted-by: LLM
+
+Would be better to finish off the work unfinished and fix the patches
+under circulation instead of spamming new ones while at it. I.e. fix
+them first and don't starvate us with unfinished patches.
+
+If this was merge ready this would be acceptable, but in this even the
+tags above are in the wrong order. This is not a lottery machine where
+you dump whatever LLM gives you without your attention, so please don't
+do that.
+
+> 
 > ---
->  lib/Kconfig.debug             |  15 +
->  lib/tests/Makefile            |   1 +
->  lib/tests/assoc_array_kunit.c | 570 ++++++++++++++++++++++++++++++++++
->  3 files changed, 586 insertions(+)
->  create mode 100644 lib/tests/assoc_array_kunit.c
-> 
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 6b24a2c89b84..3e8d3852f53c 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -2857,6 +2857,21 @@ config HASHTABLE_KUNIT_TEST
-> 
->  	  If unsure, say N.
-> 
-> +config ASSOC_ARRAY_KUNIT_TEST
-> +	tristate "KUnit test for assoc_array" if !KUNIT_ALL_TESTS
-> +	depends on KUNIT
-> +	default KUNIT_ALL_TESTS
-> +	select ASSOCIATIVE_ARRAY
-> +	help
-> +	  This builds the assoc_array KUnit test suite.
-> +	  It tests the basic functionality of the API defined in
-> +	  include/linux/assoc_array.h.
-> +
-> +	  For more information on KUnit and unit tests in general please refer
-> +	  to the KUnit documentation in Documentation/dev-tools/kunit/.
-> +
-> +	  If unsure, say N.
-> +
->  config LINEAR_RANGES_TEST
->  	tristate "KUnit test for linear_ranges"
->  	depends on KUNIT
-> diff --git a/lib/tests/Makefile b/lib/tests/Makefile
-> index 3cac3b63a752..107e16b4ebc1 100644
-> --- a/lib/tests/Makefile
-> +++ b/lib/tests/Makefile
-> @@ -4,6 +4,7 @@
-> 
->  # KUnit tests
->  CFLAGS_bitfield_kunit.o := $(DISABLE_STRUCTLEAK_PLUGIN)
-> +obj-$(CONFIG_ASSOC_ARRAY_KUNIT_TEST) += assoc_array_kunit.o
->  obj-$(CONFIG_BASE64_KUNIT) += base64_kunit.o
->  obj-$(CONFIG_BITOPS_KUNIT) += bitops_kunit.o
->  obj-$(CONFIG_BITFIELD_KUNIT) += bitfield_kunit.o
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index 5a5efa26ed0e..756368422b7c 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -863,10 +863,13 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
+>  
+>  	/* the key is probably readable - now try to read it */
+>  can_read_key:
+> -	if (!key->type->read) {
+> -		ret = -EOPNOTSUPP;
+> +	down_read(&key->sem);
+> +	ret = -EOPNOTSUPP;
+> +	if (key->type->read)
+> +		ret = 0;
+> +	up_read(&key->sem);
+> +	if (ret)
+>  		goto key_put_out;
+> -	}
+>  
+>  	if (!buffer || !buflen) {
+>  		/* Get the key length from the read method */
 
-Why does this one end with `_TEST` and the others do not? I see
-`LINEAR_RANGES_TEST` in the context above, but it also lacks `_KUINT`.
-There is `HASHTABLE_KUNIT_TEST` nearby too, so perhaps consistency has
-just never been popular around these parts.
+Why did you chose this over embedding the check inside __keyctl_read_key()?
 
-Thanks,
+I'm assuming you have considered both options.
 
---Ben
+Br, Jarkko
