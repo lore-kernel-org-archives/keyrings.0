@@ -1,78 +1,79 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=100.103.45.18
 ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=pass;
-	t=1792446046;
-	b=OR1/HVIbbrcuXIUA/ZFBibW36u92qKjFeN8jBTaOyT2GHKuQw7HSjLr62Iu3R7HkVha6
-	 AGnlCyOd9B+yXx6XlJSBOE6GJd5HYImIm25vcahHWSC6OH5DlxtSAJHzfxYcH5axVE7yZ
-	 o1GTa0hiZK0X0Eo1LdIizSlh7236P8lOAmrQcOt9izs7JhCXq5kTgHezOWIz/OEWH2YUh
-	 GZGgIpexPhdYgaTFysOq71H3eIOeBimFEO6YUH8Nsy90Ka0vCijusmq3iAd8VyHKan3rS
-	 drSLHyscTzWSn8Yx3oWyU7nL4OhNVD3hrKnXLryNgiR7CXkDoknCSLUjwQrQRHxU8uA==
+	t=1792446045;
+	b=Mq0yBs5YII/RtjPhnPmTdKRo11oc5NvurJcSEUpxMobmFVA1TAc/So8MbE5xog7uRW99
+	 PqOyH5z7TvaQJN1NWXGi8kKDnwmkfxHHXUgttWOy1txUe/BDqG8qAXRgqak7hm4ouYU8v
+	 hG6usVvrMdpxK1N/66+XHl4BsfkO3fd9iW/bRRAVA/23cT3J9kErRY+mAm6wKVGRMEd2E
+	 9q4F5MGU4QH5lis00ck5O/WlLU0fC3+gCmrWCxW6VrpLqi00NGWQqOPGbKBpJq8bUZHOj
+	 jUFCHc8GuL9Z5gTpIWk+8FhQcifvzKrePBkV7KmKGz/B6CecyaPwyIFMpuBNUL7Z4DA==
 ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792446046;
-	h=Received:DKIM-Signature:Received:From:Date:Subject:MIME-Version:
-	 Content-Type:Message-Id:References:In-Reply-To:To:Cc:X-Mailer:
-	 X-Developer-Signature:X-Developer-Key:X-Endpoint-Received:
-	 X-Original-From:Reply-To:Content-Transfer-Encoding;
-	bh=BrhT/ET/xL89gXukw5NRWefQCeXnlE5AK2DO8rMwmIg=;
-	b=rhi/8d7UsIBjbqu6QADpZzXpgDH5LHmCEommJFHCFBrfr4JrWezC/uKh3mi8pph7RGho
-	 4f0TTlIERiO8tp2Z7iwzMiMF5TAREgA/690o03NAlMIpVeN0FBDTNzn54wRBi3OtrqKKR
-	 6IUVUDJBDGtgbDEaAZ5pDIjT+OctISZuKSYAXRbheasUwKsUQa/7NWKndGAKRq7kv/wMB
-	 zt5hYIKRr3EFlB6rmvZZXSGvsW5BF2j14gKC/1p6y8210JLx8frvOaXJBJqQlGkH3iU/4
-	 VzkFXCaR5JTQhR9hyFwkni/2Z17wSsu8IaN23gBfc6UmoeF1uAcfNoiTjI1ROYCFBtQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792446045;
+	h=Received:DKIM-Signature:Received:From:Subject:Date:Message-Id:
+	 MIME-Version:Content-Type:Content-Transfer-Encoding:X-B4-Tracking:
+	 X-Change-ID:To:Cc:X-Mailer:X-Developer-Signature:X-Developer-Key:
+	 X-Endpoint-Received:X-Original-From:Reply-To;
+	bh=6GJN1th4CMtwapjnje2N+N42yjiIBXhALvroNWjHZT0=;
+	b=Uw+NcVwyrP2Lv4ld7tEqSxbyOhRwEPxGNOIsSuWCIH1CfdKOWMpvnJjWg2XJzrr6l7zp
+	 5SoW8emYd0KbMSCyR6SttaO5FXt9RiqgCGxfXhMS4d6yykb7K0XPu2CjlLKtI3+5hTlEL
+	 vb+yqAq29Kv7h4U1bz0q4sSwYHdp1XlBm4VQl9TqjU8jRI+NUCWslupKL/Xqv63Znl6d4
+	 J7PwDmJSD8o/D7jDdHOPChR1M8raGbOZlIKvv3vQiHYz0eDWSxbQI1n8akrky4JsKeRKx
+	 NPg2bNxMQPd7OcXVOuZerHJhsEdFcysEr6e0ZKJECjerzS7nMJCRfwH1LVNK4U15m7w==
 ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=mb6mrj2K;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="CkG/Jsyc";
 	arc=pass header.oldest-pass=0 smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BFE91606A338;
-	Mon, 19 Oct 2026 21:40:45 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BD5B7606A31F;
+	Mon, 19 Oct 2026 21:40:44 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=mb6mrj2K
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=CkG/Jsyc
 Authentication-Results: smtp.kernel.org; arc=none smtp.remote-ip=100.80.115.77
 ARC-Seal: i=1; d=kernel.org; s=arc20260519; a=rsa-sha256; cv=none;
-	t=1792446045;
-	b=lwELxWQHkx5VDEDbjJqQtIL6SxUdPAu8YlDIXXv7UjFdKAGKwnixPipO4VO1f3QJUvph
-	 hLkS9fFhuKqNZjw0fNHZN0fjg127mnJS0sf1qwwTQMbgAFv/NVqlythKg05okP7mGMCuj
-	 /Ak2s7V526hn+TSHWoKd1SxPFJq9iHn1xXj93EjDQ5SMrsHQOYRtLWLnEa5ZnSFWOVSP7
-	 sUST3qAoBzkMrOIqxBGIU5sref9S6dIEIgSS+hUwMZADHTkSKINAVw3uvtB8mLYaBJZV6
-	 NmzGND23fgg/74clLiAn6dGJTlGuPZxb8k7OfIgym1QFcRvsIEPcyBqU8HO8nsBgN2g==
+	t=1792446044;
+	b=AqvwL991H/sezuVC2WR18ixI4JiaTS9+swE1nc+zEyIGdcEnG2u+inh6nPFYD5utf7dm
+	 3U/NGTD/0+iavVbkSrqG3H6tzJWxlj2DSH0DiG+95wiiGRSb72djiKp8+cNMAWSTuLRoJ
+	 XupJMhR5uz+UOJjTbdokVT44hQEZiglKGllcw2+lK9wV5xce3uk8PPh8P/944szbzWCLs
+	 P/ZrvANWiIobHyhwFk4KTn7qga2qwfHcW89QCjmUD3eW3ao1ouSCetI731M0oemkMoiPE
+	 8U1EuTAKLHsRPkL1XAD2s7eWi599DdFX8maGXUja3pygGRJZ35PTGU1p6mTIGxr+tcw==
 ARC-Message-Signature: i=1; d=kernel.org; s=arc20260519; a=rsa-sha256;
-	c=relaxed/relaxed; t=1792446045;
-	h=DKIM-Signature:Received:From:Date:Subject:MIME-Version:Content-Type:
-	 Message-Id:References:In-Reply-To:To:Cc:X-Mailer:
-	 X-Developer-Signature:X-Developer-Key:X-Endpoint-Received:
-	 X-Original-From:Reply-To:Content-Transfer-Encoding;
-	bh=BrhT/ET/xL89gXukw5NRWefQCeXnlE5AK2DO8rMwmIg=;
-	b=UPFQTMp++jYsnMrFNGuD5Lc6aWz8EkzRkVI36+pygL5MlvmYxvQ0zwG1deT9flckFuEb
-	 lNvWRb/nlerDlQ/r3or1OCLzOC9tNPH2TSEzgbTjv4iYGTSKKp1RlBFYlpQUZschI3lh4
-	 1Bcl/zmAA3VbuGwL5xIQIzW3B6XjEzy3qotBcmSI6oGtXPylpiznRtEA+TvyUaYpCANZU
-	 Llykvor8vdNjxBehhKhLMKd5dK6un+mC0bxivnqARxdujepHEIucXCMktPrxryjSs2LmB
-	 qtXdycR1NrJXIxfv+Fm0U2p/6OWSGJk8MvYtAHlMDSY6mHJtY8JVCiR4mYHjZQ9hJ3A==
+	c=relaxed/relaxed; t=1792446044;
+	h=DKIM-Signature:Received:From:Subject:Date:Message-Id:MIME-Version:
+	 Content-Type:Content-Transfer-Encoding:X-B4-Tracking:X-Change-ID:To:
+	 Cc:X-Mailer:X-Developer-Signature:X-Developer-Key:X-Endpoint-Received:
+	 X-Original-From:Reply-To;
+	bh=6GJN1th4CMtwapjnje2N+N42yjiIBXhALvroNWjHZT0=;
+	b=zXLn8/9EgjCF9gUK+JryvFf8gwe+qsHwP7Ou5c3oPncifzmkOz1P7ULhWCNcntBTqz1S
+	 FSns/qBr+iDA/vBzvjhHGznNLVbxySeM9MRkESI/LOjfitS3Z/Z6Km7KU+f6QgpD+LE4X
+	 qZ5LWbEikJVZ8sOvJMErfR4ORps+l4PlmkNJxZaJjV5sM0LWQF74+/SA6VlF2KNxoHiLT
+	 Mzhn07+TMOCOL4qfK6EgayRP70VWVZ3pyLg5DUguYEqNZmBJsuF8EzvBMUuF7pDrEAtbZ
+	 3zTFRVbYowf4g0UdzaXX7N8eocbBomVJmZGqO+WGTmxZnJxup5qJRaXxqfOYNDQjoVg==
 ARC-Authentication-Results: i=1; smtp.kernel.org; 
 	arc=none smtp.remote-ip=100.80.115.77
 Received: from lkml.kernel.org (nexus.subspace.kernel.org [100.80.115.77])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.kernel.org (Postfix) with ESMTPS id B279C1F000C5;
+	by smtp.kernel.org (Postfix) with ESMTPS id B2C9E1F000C7;
 	Mon, 19 Oct 2026 21:40:43 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792446045;
-	bh=BrhT/ET/xL89gXukw5NRWefQCeXnlE5AK2DO8rMwmIg=;
-	h=From:Date:Subject:References:In-Reply-To:To:Cc:Reply-To;
-	b=mb6mrj2KtB3oGNNb54xH6NFKgU1WAU73YHDEfTXUNSbiVVUd7W2w/+L5X65Al42Ev
-	 UAKwQcazIO08+N/2ONDnlbyQk/eBJOQelbxygUIfUHD0Q5Lh4KDR8lJb+YNP6UdkJ2
-	 Qws1Yxyy5Gk8ybD7e4CcF4p6y2y8TdhguWV9gEQIHG/bFaFHMQghO9AlqRDSQ/EWEc
-	 YpUKGHc3AgrbzMu/vCAzbR7hRaYHk59T71+ANuWDkkBM1rrjFgEJo6T5VyJsQoFBUJ
-	 0cfkVyvhMJBJVa18rBSjBMZ4HZp/qtP7yWYsi2/vLUjszXhEuAwRc4A2ujbRDPOa9N
-	 iiqkysjMQHd9A==
+	s=k20260515; t=1792446044;
+	bh=6GJN1th4CMtwapjnje2N+N42yjiIBXhALvroNWjHZT0=;
+	h=From:Subject:Date:To:Cc:Reply-To;
+	b=CkG/Jsycf5k3To5VbUAfB/ZCX+5KQwW2iLCjb3t9lDdDx44vdIg8FBqSMEntBh6aF
+	 PrjXGMn090QQSB921317efnSPu6leetmSyqToobF1cEp/m3+QLnF/DqlFS1ZntPMyn
+	 zoNavV+rL65EhPOp+EqifVTzdGLwDm6550yvDhUf3XW3V+MZ5tPFWBTz61KIeiC0oL
+	 T4shbIbIAMRte/afoIGQE4jrqJ2Kh1VYi0MihSlpyk/O0lbmkfGIuCFmL80oBNEFE0
+	 GqMhzW1/N+ftUyEyne8Rf/J6lm40lu6Ez8LszFQZf1vTeLk8ZydIsApGIwvlo6OpmS
+	 Bd3TNoX+NXlAw==
 Received: from nexus.subspace.kernel.org (localhost [IPv6:::1])
-	by lkml.kernel.org (Postfix) with ESMTP id 1C1F940644;
-	Mon, 19 Oct 2026 21:40:43 +0000 (UTC)
+	by lkml.kernel.org (Postfix) with ESMTP id F30CE40633;
+	Mon, 19 Oct 2026 21:40:42 +0000 (UTC)
 From: Manuel Huber via B4 Relay <devnull+manuelh.nvidia.com@kernel.org>
-Date: Mon, 19 Oct 2026 21:40:28 +0000
-Subject: [PATCH RFC 4/4] selftests/ipe: test the IPE policy keyring
+Subject: [PATCH RFC 0/4] IPE: add a dedicated policy keyring
+Date: Mon, 19 Oct 2026 21:40:24 +0000
+Message-Id: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -83,9 +84,11 @@ List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Message-Id: <20261019-b4-ipe-keyring-rfc-v1-4-156f0b93e843@nvidia.com>
-References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
-In-Reply-To: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
+Content-Transfer-Encoding: 7bit
+X-B4-Tracking: v=1; b=H4sIAAAAAAAC/x3MMQqAMAxA0atIZgO2ilBXwQO4ikOrUYNQJQVRp
+ He3OL7h/xcCCVOAJntB6OLAh09QeQbTZv1KyHMy6ELXqlAGXYV8Eu70CPsVZZnQmdIZS0obqyG
+ Fp9DC9z8doO9aGGP8AH+7iDNpAAAA
+X-Change-ID: 20261019-b4-ipe-keyring-rfc-b93b9ae129a2
 To: Fan Wu <wufan@kernel.org>, David Howells <dhowells@redhat.com>, 
  Jarkko Sakkinen <jarkko@kernel.org>
 Cc: Christian Brauner <brauner@kernel.org>, 
@@ -99,459 +102,75 @@ Cc: Christian Brauner <brauner@kernel.org>,
  bpf@vger.kernel.org, linux-kernel@vger.kernel.org, 
  Manuel Huber <manuelh@nvidia.com>
 X-Mailer: b4 0.14.3
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1792446042; l=14731;
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1792446042; l=2751;
  i=manuelh@nvidia.com; s=20261019; h=from:subject:message-id;
- bh=euxFDjmdpErQTrvz4GFkvmeoAJdo58XBC2o7BXea+go=;
- b=oU6JZekoZVofgKaEYBokR0VU8DubhQaUrCgNE48/C9gNVUT+2VgMwqLcNxOiFmPcoCT1sBb9I
- sD54tMyJzWqAg3jtC0TNsFINBfmFhrhwUmdaNoIInoHrospjnmyKfOK
+ bh=6WPcEAqFx8dpbBNrw8M+IL0uMQ7Yp3AICptgIgyBFtA=;
+ b=gkxyREkuboghZ5svc2zXzJmD9W9S2bUyNSjdWo563ECwGLU3xuBDMg9oYuexLJePZ5edkrcMn
+ iUDB19Lgr1ICwRUnqLsI5JMzrO0MYWKnXfSeG9B8v1dUd48rmk8lKcC
 X-Developer-Key: i=manuelh@nvidia.com; a=ed25519;
  pk=uKggxpZ/mM0qtFnudxvh5Dfz8I6VoehwoM3eYCe3tyU=
 X-Endpoint-Received: by B4 Relay for manuelh@nvidia.com/20261019 with
  auth_id=1244
 X-Original-From: Manuel Huber <manuelh@nvidia.com>
 Reply-To: manuelh@nvidia.com
-Content-Transfer-Encoding: 7bit
 
-From: Manuel Huber <manuelh@nvidia.com>
+Add a dedicated ".ipe" keyring for IPE policy-signature verification,
+modeled after the dm-verity keyring, allowing userspace to provision
+IPE-specific policy-signing certificates. Systems that do not provision
+the keyring retain their existing behavior.
 
-Add an IPE kselftest that validates policy keyring operations for
-both ipe.keyring_unsealed values 0 and 1.
+This RFC is based on commit 48f936e302a9 ("ipe: update the project and
+test suite links") from ipe/next so review can begin before the
+prerequisite keyring work reaches that branch. The series will be rebased
+onto a refreshed ipe/next once that work is available there [1].
 
-For the default ipe.keyring_unsealed=0, verify that a) the special key
-ID resolves, b) certificate enrollment is rejected, and c) the keyring
-is not used for policy verification.
-For ipe.keyring_unsealed=1, verify that we can a) provision multiple
-certificates, b) restrict the keyring, then reject unenrolled and
-corrupted signatures, c) authenticate policy loads and updates with
-different enrolled certificates.
+The keyring readiness check currently follows the dm-verity and BPF
+implementations. A parallel keys RFC introduces keyring_is_empty() for
+this purpose [2]. A later revision will use the helper if it is available
+in the submission base.
 
-Since IPE is built in, keyring restriction is irreversible, which is
-why we can only exercise the initially sealed and unsealed scenarios
-via separate boots. To get full coverage, CI thus needs to spin up
-separate environments with respective parameter values.
+Testing:
+- Built an x86_64 kernel with GCC 15.2.0 and Clang/LLD 21.1.8.
+- Passed all 33 IPE parser KUnit assertions.
+- Passed all 4 sealed-default keyring selftests under QEMU TCG.
+- Passed all 16 provisioning-mode keyring selftests under QEMU TCG with
+  ipe.keyring_unsealed=1.
+
+[1] https://lore.kernel.org/r/20261008-ajhalaney-dmverity-key-identifier-v2-0-008456d189cb@amutable.com
+[2] https://lore.kernel.org/r/20261016215326.4110064-5-jarkko@kernel.org
 
 Signed-off-by: Manuel Huber <manuelh@nvidia.com>
 ---
+Manuel Huber (4):
+      ipe: add the .ipe policy keyring
+      keys: add KEY_SPEC_IPE_KEYRING
+      Documentation: ipe: document the IPE keyring
+      selftests/ipe: test the IPE policy keyring
+
+ Documentation/admin-guide/LSM/ipe.rst           |  41 ++-
+ Documentation/admin-guide/kernel-parameters.txt |   9 +
+ Documentation/security/ipe.rst                  |  16 +-
+ Documentation/security/keys/core.rst            |   9 +
  MAINTAINERS                                     |   1 +
+ include/linux/key.h                             |   2 +
+ include/uapi/linux/keyctl.h                     |   1 +
+ security/ipe/Makefile                           |   1 +
+ security/ipe/ipe.c                              |   2 +
+ security/ipe/keyring.c                          |  80 ++++++
+ security/ipe/keyring.h                          |  16 ++
+ security/ipe/policy.c                           |  10 +
+ security/keys/process_keys.c                    |  23 ++
  tools/testing/selftests/Makefile                |   1 +
  tools/testing/selftests/ipe/Makefile            |   5 +
  tools/testing/selftests/ipe/config              |   7 +
  tools/testing/selftests/ipe/test-ipe-keyring.sh | 357 ++++++++++++++++++++++++
- 5 files changed, 371 insertions(+)
+ 17 files changed, 575 insertions(+), 6 deletions(-)
+---
+base-commit: 48f936e302a9c48cfc032eb5944c3a6246bc9043
+change-id: 20261019-b4-ipe-keyring-rfc-b93b9ae129a2
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 65e8a4b5c90b..818f9968b315 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -12967,6 +12967,7 @@ F:	Documentation/admin-guide/LSM/ipe.rst
- F:	Documentation/security/ipe.rst
- F:	scripts/ipe/
- F:	security/ipe/
-+F:	tools/testing/selftests/ipe/
- 
- INTEL 810/815 FRAMEBUFFER DRIVER
- M:	Antonino Daplas <adaplas@gmail.com>
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 273853937c25..16ba45a12c5b 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -59,6 +59,7 @@ TARGETS += hid
- TARGETS += intel_pstate
- TARGETS += iommu
- TARGETS += ipc
-+TARGETS += ipe
- TARGETS += ir
- TARGETS += kcmp
- TARGETS += kexec
-diff --git a/tools/testing/selftests/ipe/Makefile b/tools/testing/selftests/ipe/Makefile
-new file mode 100644
-index 000000000000..f281e68329c1
---- /dev/null
-+++ b/tools/testing/selftests/ipe/Makefile
-@@ -0,0 +1,5 @@
-+# SPDX-License-Identifier: GPL-2.0
-+
-+TEST_PROGS := test-ipe-keyring.sh
-+
-+include ../lib.mk
-diff --git a/tools/testing/selftests/ipe/config b/tools/testing/selftests/ipe/config
-new file mode 100644
-index 000000000000..498c224d2c18
---- /dev/null
-+++ b/tools/testing/selftests/ipe/config
-@@ -0,0 +1,7 @@
-+CONFIG_AUDIT=y
-+CONFIG_AUDITSYSCALL=y
-+CONFIG_KEYS=y
-+CONFIG_PROC_FS=y
-+CONFIG_SECURITY=y
-+CONFIG_SECURITYFS=y
-+CONFIG_SECURITY_IPE=y
-diff --git a/tools/testing/selftests/ipe/test-ipe-keyring.sh b/tools/testing/selftests/ipe/test-ipe-keyring.sh
-new file mode 100755
-index 000000000000..557ccc825fe2
---- /dev/null
-+++ b/tools/testing/selftests/ipe/test-ipe-keyring.sh
-@@ -0,0 +1,357 @@
-+#!/bin/bash
-+# SPDX-License-Identifier: GPL-2.0
-+#
-+# Run from the kernel source tree with:
-+#   make -C tools/testing/selftests TARGETS=ipe run_tests
-+#
-+# Full coverage requires one boot with the default command line and another
-+# with ipe.keyring_unsealed=1. The test selects the matching mode automatically.
-+# The provisioning mode irreversibly restricts and locks the .ipe keyring, so
-+# run it once per boot on a disposable test system.
-+#
-+# Requirements: root with CAP_MAC_ADMIN, keyctl, and openssl.
-+
-+DIR="$(dirname "$(readlink -f "$0")")"
-+# shellcheck source=../kselftest/ktap_helpers.sh
-+source "${DIR}/../kselftest/ktap_helpers.sh"
-+
-+KEY_SPEC_IPE_KEYRING=-12
-+IPE_KEYRING_PERM_LOCKED=0x08030000
-+IPE_KEYRING_PERM_INITIAL=0x082f0000
-+SECURITYFS=/sys/kernel/security
-+IPEFS="$SECURITYFS/ipe"
-+WORK_DIR=
-+MOUNTED_SECURITYFS=0
-+POLICY_NAME="ipe_keyring_selftest_$$"
-+WRONG_POLICY_NAME="${POLICY_NAME}_wrong"
-+POLICY_LOADED=0
-+WRONG_POLICY_LOADED=0
-+
-+skip()
-+{
-+	ktap_skip_all "$*"
-+	exit "$KSFT_SKIP"
-+}
-+
-+fail()
-+{
-+	ktap_test_fail "$*"
-+	ktap_finished
-+}
-+
-+# shellcheck disable=SC2329 # invoked indirectly via trap
-+cleanup()
-+{
-+	if [ "$WRONG_POLICY_LOADED" -eq 1 ] &&
-+	   [ -w "$IPEFS/policies/$WRONG_POLICY_NAME/delete" ]; then
-+		echo 1 > "$IPEFS/policies/$WRONG_POLICY_NAME/delete" 2>/dev/null || true
-+	fi
-+
-+	if [ "$POLICY_LOADED" -eq 1 ] &&
-+	   [ -w "$IPEFS/policies/$POLICY_NAME/delete" ]; then
-+		echo 1 > "$IPEFS/policies/$POLICY_NAME/delete" 2>/dev/null || true
-+	fi
-+
-+	if [ "$MOUNTED_SECURITYFS" -eq 1 ]; then
-+		umount "$SECURITYFS" 2>/dev/null || true
-+	fi
-+
-+	if [ -n "$WORK_DIR" ] && [ -d "$WORK_DIR" ]; then
-+		rm -rf -- "$WORK_DIR"
-+	fi
-+}
-+
-+trap cleanup EXIT
-+
-+require_command()
-+{
-+	command -v "$1" >/dev/null 2>&1 || skip "missing command: $1"
-+}
-+
-+generate_keypair()
-+{
-+	local name=$1
-+
-+	if ! openssl req -new -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
-+		-subj "/CN=IPE keyring selftest $name/" \
-+		-addext "basicConstraints=critical,CA:FALSE" \
-+		-addext "keyUsage=critical,digitalSignature" \
-+		-keyout "$WORK_DIR/$name-key.pem" \
-+		-out "$WORK_DIR/$name-cert.pem" >/dev/null \
-+		2> "$WORK_DIR/$name-openssl.log"; then
-+		cat "$WORK_DIR/$name-openssl.log" >&2
-+		fail "generate the $name signing key"
-+	fi
-+
-+	if ! openssl x509 -in "$WORK_DIR/$name-cert.pem" -outform DER \
-+		-out "$WORK_DIR/$name-cert.der" >/dev/null \
-+		2> "$WORK_DIR/$name-openssl.log"; then
-+		cat "$WORK_DIR/$name-openssl.log" >&2
-+		fail "convert the $name certificate to DER"
-+	fi
-+}
-+
-+make_policy()
-+{
-+	local name=$1
-+	local version=$2
-+	local output=$3
-+
-+	printf 'policy_name=%s policy_version=%s\nDEFAULT action=ALLOW\n' \
-+		"$name" "$version" > "$output"
-+}
-+
-+sign_policy()
-+{
-+	local policy=$1
-+	local signer=$2
-+	local output=$3
-+
-+	if ! openssl smime -sign -in "$policy" \
-+		-signer "$WORK_DIR/$signer-cert.pem" \
-+		-inkey "$WORK_DIR/$signer-key.pem" \
-+		-noattr -nodetach -nosmimecap -outform DER \
-+		-out "$output" >/dev/null \
-+		2> "$WORK_DIR/$signer-openssl.log"; then
-+		cat "$WORK_DIR/$signer-openssl.log" >&2
-+		fail "sign policy with the $signer key"
-+	fi
-+}
-+
-+corrupt_signed_policy()
-+{
-+	local input=$1
-+	local output=$2
-+	local signed_size
-+	local corrupt_offset
-+
-+	cp -- "$input" "$output" || fail "copy the signed policy"
-+	signed_size=$(wc -c < "$output") || fail "measure the signed policy"
-+	[ "$signed_size" -gt 16 ] || fail "signed policy is unexpectedly short"
-+	corrupt_offset=$((signed_size - 16))
-+	printf '\377\377\377\377' | dd of="$output" bs=1 \
-+		seek="$corrupt_offset" conv=notrunc >/dev/null 2>&1 ||
-+		fail "corrupt the signed policy"
-+}
-+
-+keyring_key_count()
-+{
-+	local output
-+
-+	output=$(keyctl list "$KEY_SPEC_IPE_KEYRING" 2>/dev/null) || return 1
-+	awk 'NR == 1 {
-+		if ($0 ~ /empty/)
-+			print 0
-+		else if ($1 ~ /^[0-9]+$/)
-+			print $1
-+		else
-+			exit 1
-+	}' <<< "$output"
-+}
-+
-+check_locked_mutations()
-+{
-+	local key_serial=$1
-+	local keyring_serial=$2
-+
-+	if keyctl unlink "$key_serial" "$keyring_serial" >/dev/null 2>&1; then
-+		fail "locked keyring allowed its certificate to be unlinked"
-+	fi
-+	if keyctl clear "$keyring_serial" >/dev/null 2>&1; then
-+		fail "locked keyring allowed its contents to be cleared"
-+	fi
-+	if keyctl revoke "$keyring_serial" >/dev/null 2>&1; then
-+		fail "locked keyring allowed itself to be revoked"
-+	fi
-+	if keyctl invalidate "$keyring_serial" >/dev/null 2>&1; then
-+		fail "locked keyring allowed itself to be invalidated"
-+	fi
-+	if keyctl timeout "$keyring_serial" 1 >/dev/null 2>&1; then
-+		fail "locked keyring allowed a timeout to be set"
-+	fi
-+	if keyctl setperm "$keyring_serial" \
-+		"$IPE_KEYRING_PERM_INITIAL" >/dev/null 2>&1; then
-+		fail "locked keyring allowed its permissions to be restored"
-+	fi
-+}
-+
-+test_sealed_keyring()
-+{
-+	local key_count
-+
-+	ktap_set_plan 4
-+	ktap_test_pass "KEY_SPEC_IPE_KEYRING resolves to the .ipe keyring"
-+
-+	key_count=$(keyring_key_count) || fail "read the sealed keyring"
-+	[ "$key_count" = 0 ] || fail "sealed-default keyring is not empty"
-+	ktap_test_pass "the default keyring is empty"
-+
-+	generate_keypair trusted
-+	if keyctl padd asymmetric "ipe-selftest-$$" \
-+		"$KEY_SPEC_IPE_KEYRING" < "$WORK_DIR/trusted-cert.der" \
-+		>/dev/null 2>&1; then
-+		fail "sealed-default keyring accepted a certificate"
-+	fi
-+	ktap_test_pass "the default keyring rejects new certificates"
-+
-+	make_policy "$POLICY_NAME" 0.0.1 "$WORK_DIR/policy-v1"
-+	sign_policy "$WORK_DIR/policy-v1" trusted "$WORK_DIR/policy-v1.p7b"
-+	if cat "$WORK_DIR/policy-v1.p7b" > "$IPEFS/new_policy" 2>/dev/null; then
-+		POLICY_LOADED=1
-+		fail "empty .ipe keyring authenticated a policy"
-+	fi
-+	ktap_test_pass "the empty keyring is not used for policy verification"
-+}
-+
-+test_unsealed_keyring()
-+{
-+	local key_count
-+	local key_serial
-+
-+	ktap_set_plan 16
-+	ktap_test_pass "KEY_SPEC_IPE_KEYRING resolves to the .ipe keyring"
-+
-+	key_count=$(keyring_key_count) || fail "read the unsealed keyring"
-+	[ "$key_count" = 0 ] || fail "unsealed keyring is not empty"
-+	ktap_test_pass "the unsealed keyring starts empty"
-+
-+	generate_keypair trusted
-+	generate_keypair trusted-alt
-+	generate_keypair untrusted
-+	key_serial=$(keyctl padd asymmetric "ipe-selftest-$$" \
-+		"$KEY_SPEC_IPE_KEYRING" < "$WORK_DIR/trusted-cert.der" \
-+		2>/dev/null) || fail "add a certificate to the unsealed keyring"
-+	keyctl padd asymmetric "ipe-selftest-alt-$$" \
-+		"$KEY_SPEC_IPE_KEYRING" < "$WORK_DIR/trusted-alt-cert.der" \
-+		>/dev/null 2>&1 || fail "add a second certificate to the keyring"
-+	key_count=$(keyring_key_count) || fail "count the provisioned certificates"
-+	[ "$key_count" = 2 ] || fail "keyring does not contain two certificates"
-+	ktap_test_pass "multiple certificates can be provisioned"
-+
-+	make_policy "$POLICY_NAME" 0.0.1 "$WORK_DIR/policy-v1"
-+	sign_policy "$WORK_DIR/policy-v1" trusted "$WORK_DIR/policy-v1.p7b"
-+	if cat "$WORK_DIR/policy-v1.p7b" > "$IPEFS/new_policy" 2>/dev/null; then
-+		POLICY_LOADED=1
-+		fail "unrestricted .ipe keyring authenticated a policy"
-+	fi
-+	ktap_test_pass "an unrestricted keyring is not used for verification"
-+
-+	keyctl restrict_keyring "$KEY_SPEC_IPE_KEYRING" >/dev/null 2>&1 ||
-+		fail "restrict the provisioned keyring"
-+	ktap_test_pass "the provisioned keyring can be restricted"
-+
-+	if printf x | keyctl padd user "ipe-selftest-probe-$$" \
-+		"$KEY_SPEC_IPE_KEYRING" >/dev/null 2>&1; then
-+		fail "restricted keyring accepted another key"
-+	fi
-+	ktap_test_pass "the restricted keyring rejects additional keys"
-+
-+	make_policy "$WRONG_POLICY_NAME" 0.0.1 "$WORK_DIR/policy-wrong"
-+	sign_policy "$WORK_DIR/policy-wrong" untrusted \
-+		"$WORK_DIR/policy-wrong.p7b"
-+	if cat "$WORK_DIR/policy-wrong.p7b" > "$IPEFS/new_policy" 2>/dev/null; then
-+		WRONG_POLICY_LOADED=1
-+		fail "an unenrolled certificate authenticated a policy"
-+	fi
-+	ktap_test_pass "an unenrolled certificate is rejected"
-+
-+	corrupt_signed_policy "$WORK_DIR/policy-v1.p7b" \
-+		"$WORK_DIR/policy-v1-corrupt.p7b"
-+	if cat "$WORK_DIR/policy-v1-corrupt.p7b" \
-+		> "$IPEFS/new_policy" 2>/dev/null; then
-+		POLICY_LOADED=1
-+		fail "a corrupted signed policy was authenticated"
-+	fi
-+	ktap_test_pass "a corrupted signed policy is rejected"
-+
-+	cat "$WORK_DIR/policy-v1.p7b" > "$IPEFS/new_policy" 2>/dev/null ||
-+		fail "load a policy signed by the enrolled certificate"
-+	POLICY_LOADED=1
-+	ktap_test_pass "the restricted keyring authenticates a policy"
-+
-+	[ "$(cat "$IPEFS/policies/$POLICY_NAME/name")" = "$POLICY_NAME" ] &&
-+		[ "$(cat "$IPEFS/policies/$POLICY_NAME/version")" = 0.0.1 ] ||
-+		fail "loaded policy metadata does not match"
-+	ktap_test_pass "the authenticated policy metadata matches"
-+
-+	keyctl setperm "$KEY_SPEC_IPE_KEYRING" \
-+		"$IPE_KEYRING_PERM_LOCKED" >/dev/null 2>&1 ||
-+		fail "drop mutation permissions from the keyring"
-+	ktap_test_pass "mutation permissions can be dropped"
-+
-+	if keyctl id "$KEY_SPEC_IPE_KEYRING" >/dev/null 2>&1; then
-+		fail "the special key ID granted possession rights"
-+	fi
-+	ktap_test_pass "the special key ID grants no possession rights"
-+
-+	check_locked_mutations "$key_serial" "$keyring_serial"
-+	ktap_test_pass "locked-keyring mutation attempts are rejected"
-+
-+	make_policy "$POLICY_NAME" 0.0.2 "$WORK_DIR/policy-v2"
-+	sign_policy "$WORK_DIR/policy-v2" trusted-alt "$WORK_DIR/policy-v2.p7b"
-+	cat "$WORK_DIR/policy-v2.p7b" \
-+		> "$IPEFS/policies/$POLICY_NAME/update" 2>/dev/null ||
-+		fail "update a policy signed by the second enrolled certificate"
-+	ktap_test_pass "the second enrolled certificate authenticates policy updates"
-+
-+	[ "$(cat "$IPEFS/policies/$POLICY_NAME/version")" = 0.0.2 ] ||
-+		fail "policy version was not updated"
-+	ktap_test_pass "the authenticated policy update was installed"
-+
-+	echo 1 > "$IPEFS/policies/$POLICY_NAME/delete" 2>/dev/null ||
-+		fail "delete the inactive test policy"
-+	POLICY_LOADED=0
-+	ktap_test_pass "the inactive test policy can be removed"
-+}
-+
-+ktap_print_header
-+
-+for command in awk cat cp dd grep id keyctl mktemp mount openssl rm umount wc; do
-+	require_command "$command"
-+done
-+
-+[ "$(id -u)" -eq 0 ] || skip "must be run as root"
-+
-+cap_eff=$(awk '/^CapEff:/ { print $2 }' /proc/self/status)
-+[ -n "$cap_eff" ] || skip "cannot read effective capabilities"
-+(( (16#$cap_eff & (1 << 33)) != 0 )) || skip "CAP_MAC_ADMIN is required"
-+
-+WORK_DIR=$(mktemp -d -t ipe-keyring-test.XXXXXX) ||
-+	skip "cannot create a temporary directory"
-+
-+if ! grep -qs " $SECURITYFS securityfs " /proc/mounts; then
-+	mount -t securityfs none "$SECURITYFS" >/dev/null 2>&1 ||
-+		skip "cannot mount securityfs"
-+	MOUNTED_SECURITYFS=1
-+fi
-+
-+[ -w "$IPEFS/new_policy" ] || skip "IPE is not enabled"
-+[ -r /sys/module/ipe/parameters/keyring_unsealed ] ||
-+	skip "IPE policy keyring is not available"
-+
-+keyring_serial=$(keyctl id "$KEY_SPEC_IPE_KEYRING" 2>/dev/null) ||
-+	skip "KEY_SPEC_IPE_KEYRING does not resolve"
-+keyring_description=$(keyctl describe "$keyring_serial" 2>/dev/null) ||
-+	skip "cannot describe the IPE keyring"
-+case "$keyring_description" in
-+	*"keyring: .ipe") ;;
-+	*) skip "KEY_SPEC_IPE_KEYRING resolved to an unexpected key" ;;
-+esac
-+
-+keyring_unsealed=$(cat /sys/module/ipe/parameters/keyring_unsealed)
-+case "$keyring_unsealed" in
-+	Y)
-+		[ "$(keyring_key_count)" = 0 ] ||
-+			skip "the IPE keyring has already been provisioned"
-+		test_unsealed_keyring
-+		;;
-+	N)
-+		test_sealed_keyring
-+		;;
-+	*)
-+		ktap_exit_fail_msg \
-+			"unexpected ipe.keyring_unsealed value: $keyring_unsealed"
-+		;;
-+esac
-+
-+ktap_finished
-
+Best regards,
 -- 
-2.53.0
+Manuel Huber <manuelh@nvidia.com>
 
 
