@@ -1,78 +1,59 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=170.10.129.124
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792425746;
-	b=akp/zGzAOf0aW0ZZnWXlkVW9neZVL6vW5FdaCRf8HL2Ha2tNOCP0Ozk5qzBbRCXK8OPu
-	 v3+TQAhz8pd05pss/tio4OybtAfKPT7eA0W29Ug8MRMTEDVh8uwCICWTHrk8lfUGK9wVn
-	 JJiPWMROvl9VVjiswxCG+QqV3iMKAp2AeombpcuR8cxYebsdl/A6/x79xJSI9ROcyCAVC
-	 W1fl0sxROzrapxJGbPSyvTCzk8pCAUu4CatzOXWjCZHZ942un9qN7fNgNIjDp7OAHHjum
-	 yCj9tmvP5n8u5E+Ax07Ngd5QdNPjnLtatqKen8fK4vVnSuwASHchvOoSRQfhUoVesbQ==
+	t=1792427501;
+	b=z9G/3jh6Q3YdrzYstrUn5ehfvz3AQKNrftOD5/e9gkaCJGt37ME678fMygzXJZCJCC3u
+	 qvly840Zu2aFO3T4fgjuaJj5wRbC3ypFL7zV31H4SgTQzpmIaRU80K0Y06uH/55Kk0e1Z
+	 xu5TH/WtBGM5j/5LJBUBjiqgC0TxTUk0cack7a6pW4Gyha3iDoRtrkUvHfwBLWxwPUq1J
+	 IrN0TihucwBdKO55WgEGBwADOD60akibfTvuJ5ogEP7ZfRGxUztcILC+3ELA+oOMk1FZ5
+	 GCQYhwlPoHqOtpmUV1mQSXTj50hUaSKo326ALKn0O0UD0kE80ouAKgHEj6uMKbXVvUg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792425746;
-	h=DMARC-Filter:DKIM-Signature:Received:X-MC-Unique:
-	 X-Mimecast-MFC-AGG-ID:Received:Received:Organization:From:In-Reply-To:
-	 References:To:Cc:Subject:MIME-Version:Content-Type:Content-ID:Date:
-	 Message-ID:X-Scanned-By;
-	bh=e21nPxrTd0xUy0wA3EV2y1n1We/XsbVbbkzGvEvuXk8=;
-	b=l9/jj9uJH3vtykw0tlqQIm/+T+Qhy+iV1OJ2FaDSBp5Zs29FvAtIwtj/5pCrWlIVW5+n
-	 TUmqFA/hRRNP6izZMGmtVrSKa9EGyJCJGCTY+aSfGWwfEr3o7YN56BYiMWlti9UbCWfAS
-	 RtMSk+uEWeWt6A6YmDU/mQSxuvCAaf73hPtoNcKCeoT1fhmYvJ8xzv9ouzg+CuatUdEqK
-	 Xdg4Zqniot9f0xqa/d8UjGaE9kEakLR+AnhJOGlgI50F89zQxt0lDYy2Le4Ccvl1q+pz2
-	 cMkzshFlUr7WwRRl3171I0B1QjrouPBsnmWIuBxQ++BdkHY8+AGgvSRxWZuPQWPNsIg==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792427501;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=9PTCGIfHqtYqMTLPhP30HbjjDJXCnmWLO/evJguW83U=;
+	b=A2qnZKRqklot8EAuQoOy8+uFGN1kgwWhBSLtOb8NgdCNcI02oKrpE5hD0ULhH5p6ZVYb
+	 q5gMCx6Iu3XVms0Rm+KLKGfPJdHrttMT+aipw0XLnlgWocKsZaLTUdVSuqI9BYGxLnIET
+	 +EEAvSpoQNkl8DMVWuthTfrQC1WhYavFtAMBkLAdTPOjf/SZFigo9RBClaK5m0muHjqj6
+	 xChsQl/zq3iEoGYxDKAACgpLeT7pngbjUPdU3i4sCvz3eWvQB8CrTKFbOhu5JzuHl/OC3
+	 reqqW+1BIBcQW0hq+AKScG//Ynm/iwDbuw/9GS+MGxzleb0ELz5UnY72U1ijUJMIUnw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=redhat.com;
-	spf=pass smtp.mailfrom=redhat.com;
-	dkim=pass header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=ivXoLEi4;
-	arc=none smtp.remote-ip=170.10.129.124
-Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=iFNVXkt3;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 28FF2606C922
-	for <keyrings@vger.kernel.org>; Mon, 19 Oct 2026 16:02:25 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 28FF2606C922
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 7C67D606A323;
+	Mon, 19 Oct 2026 16:31:41 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=ivXoLEi4
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1792425744;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=e21nPxrTd0xUy0wA3EV2y1n1We/XsbVbbkzGvEvuXk8=;
-	b=ivXoLEi4jLGUNWQx0cIDi+SPjmFGJ5Qyt2frme9iV7GFo0yfzctwmVrc6538N3bzfOU8aB
-	hlayoVLhBbxld78KybrYDBD1E/XPFUaHVWG590zv9fC1mmVInqCSNyTYeAJ1kgk/Uu+WBQ
-	WbXQo52rGsKCNEsjqluiyt0qMblXOM8=
-Received: from mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com
- (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
- relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-711-f4hjYIXgNj-G-E-h_YeMAw-1; Mon,
- 19 Oct 2026 16:02:21 +0000
-X-MC-Unique: f4hjYIXgNj-G-E-h_YeMAw-1
-X-Mimecast-MFC-AGG-ID: f4hjYIXgNj-G-E-h_YeMAw_1792425739
-Received: from mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.95])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by mx-prod-mc-05.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 639231954AFB;
-	Mon, 19 Oct 2026 16:02:19 +0000 (UTC)
-Received: from warthog.procyon.org.uk (unknown [10.44.48.11])
-	by mx-prod-int-10.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 10360362;
-	Mon, 19 Oct 2026 16:02:15 +0000 (UTC)
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <atY0fRZ_s5UQk8Fk@kernel.org>
-References: <atY0fRZ_s5UQk8Fk@kernel.org> <pm-key-management-objects-candidate-0010-v7-fc85721ff5cfb9e33ac6@gmail.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: dhowells@redhat.com, Cen Zhang <zzzccc427@gmail.com>,
-    paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
-    keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-    linux-kernel@vger.kernel.org, baijiaju1990@gmail.com,
-    jjzuming@gmail.com
-Subject: Re: [PATCH v2] keys: Protect the read method check against type removal
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=iFNVXkt3
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id CE7C11F000C4;
+	Mon, 19 Oct 2026 16:31:40 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1792427501;
+	bh=9PTCGIfHqtYqMTLPhP30HbjjDJXCnmWLO/evJguW83U=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=iFNVXkt3NzfxWDtSAaM/InhkOo/nCE1+EmpW6OvvN9GzTl8FdQWxhE502rkn/5XBn
+	 2u8/ECJGBOb0mh+/HLr2EhKrcM8rIK75WK3kPucBYYngclDbGVgF2hZOifafcvOS7I
+	 A1i/IUzgzl9GtuUSkpEVnsjtAyq/TyRcqC/mYvNRYU9Wrzj4TMBsSHDER9ReYuaaIO
+	 11/Pbg1GhwGZzXniJndLUoOkPeH+XLbmXSIOvXonJrq59kar+hO1RFlqv0emStvhmD
+	 3Df3+zo6gjMrX7/Ln+yhj6TAkUPTsAq8h8wtjDiyE9FItwTDftm8tmswA6SnGGFtLQ
+	 fn1HDovdd7zlg==
+Date: Mon, 19 Oct 2026 19:31:37 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
+	stable@vger.kernel.org, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/8] KEYS: Change the type of key->datalen to
+ unsigned int
+Message-ID: <atZF6T5roFnM4nTy@kernel.org>
+References: <20261019142516.300040-3-jarkko@kernel.org>
+ <20261019142516.300040-1-jarkko@kernel.org>
+ <2609766.1792424012@warthog.procyon.org.uk>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -82,60 +63,23 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2610921.1792425734.1@warthog.procyon.org.uk>
-Date: Mon, 19 Oct 2026 17:02:14 +0100
-Message-ID: <2610922.1792425734@warthog.procyon.org.uk>
-X-Scanned-By: MIMEDefang 3.6 on 10.30.177.95
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2609766.1792424012@warthog.procyon.org.uk>
 
-Jarkko Sakkinen <jarkko@kernel.org> wrote:
-
-> On Mon, Oct 19, 2026 at 10:57:21PM +0800, Cen Zhang wrote:
-> > keyctl_read_key() checks key->type->read without holding key->sem.
-> > A reference keeps the key alive, but does not pin the module containing
-> > its type. A surviving RxRPC key can therefore be read while AF_RXRPC
-> > is being unloaded:
-> > 
-> >   KEYCTL_READ task                    Module unload and key GC
-> >   ----------------                   ------------------------
-> >   lookup_user_key()
-> >   permission / possession checks
-> >   load key->type
-> >                                      af_rxrpc_exit()
-> >                                        unregister_key_type()
-> >                                          GC: down_write(key->sem)
-> >                                          GC: retype to key_type_dead
-> >                                          GC: up_write(key->sem)
-> >                                        unregister_key_type() returns
-> >                                      free_module()
-> >   read saved type's read member
-> > 
-> > The final access can read freed module storage. The read invocation in
-> > __keyctl_read_key() is already protected by key->sem, but the earlier
-> > method check is outside that critical section.
-> > 
-> > Move the method check into __keyctl_read_key(), after key_validate() and
-> > under its existing read hold on key->sem. The check and invocation then
-> > use the same protected type for length queries and every read retry.
-> > The GC cannot retype the key until the semaphore is released, and type
-> > unregistration waits for that GC pass before the module can be freed.
-> > 
-> > Return -EOPNOTSUPP when validation succeeds and the type has no read
-> > method. A temporary buffer may now be allocated before this result;
-> > allocation and copying to userspace remain outside the semaphore.
-> > 
-> > Suggested-by: Jarkko Sakkinen <jarkko@kernel.org>
-> > Assisted-by: LLM
-> > Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
+On Mon, Oct 19, 2026 at 04:33:32PM +0100, David Howells wrote:
+> I would merge this with patch 1.
 > 
-> I literally described the fix to the reported bug instead of reviewing a
-> bug fix. That means by practical means that you only reported a bug.
-> This cannot happen again and if it does, next time I'll just do the
-> right fix myself and commit to the Git because that matches the reality
-> the best.
+> Apart from that:
 > 
+> 	Reviewed-by: David Howells <dhowells@redhat.com>
 > 
-> Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+> on both 1 & 2.
+> 
+> David
+> 
 
-Reviewed-by: David Howells <dhowells@redhat.com>
+I can do that. I went a little over the top with sanity checking
+the slop :-)
 
+Br, Jarkko
