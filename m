@@ -1,44 +1,48 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 29BD34DCB09;
-	Mon, 19 Oct 2026 14:25:27 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 76C8B534E31;
+	Mon, 19 Oct 2026 14:25:33 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1792419929; cv=none; b=MdaN6gmSWhaQZi818RQcp1oXnIqDrJtkSmQVAfRDL3xYYGCQb8zh0l710NuvzXCw1KoeSw222pzbGmiyvHa6SUEXJx+lHZJ1hF2QcXBNzhDfI4Jgg83CekKXf0+sGxfXcpUrIzn/eIvwph5cctOhuzLj8+XlCp5zEdeZc1D1K2M=
+	t=1792419934; cv=none; b=gpMhCtpF5swNb6kDn87jVxFqSmZ7+UuOPuuZsj7eI0NEqeIbDY7ENI3kJ8SN3lb1cukpLCSXZZA+oe5qGmdiJfENko4Kg+jP8QSKdA8QfaP/YvbKHQx2PHeZBVZzB4Qb0nXrxMwc1rCmKW9aRV1pmNC7ogegNhTIu14fnqoWpQc=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1792419929; c=relaxed/simple;
-	bh=AkKljxyoIqR2RIyvk0/2XUONiXvWnnxFdHZ9MMJO+tM=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=JB7Hhvz2YX2En+DMgXUpfmKNl6VghT5r/PvEXbuQiUG8TUvAQZWRK+j8Ts+6bCMCXXnMHYwqu7K9SsO9jaYLWuVO3dPG4m7i+zgrOCbS9U+b1rfHCdPqXqU3iqkzLJt1tW0uE40m6QXPRyYwXeNLZ+EBwO+nmpQgRR9WimynGMw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=ckkJpmjf; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1792419934; c=relaxed/simple;
+	bh=Kx64SFh3Jb0BTzqp3WxsP+coqHjLqwybXpzqsfFUwrE=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version; b=LqQ2VNhCtX++fZn5cW/WIGt4VeLCs3e7h8TYBtNWFBUo79/4v7qxNKU0/HaJfcOKtzjCmWVHGiDG2JL+OP4N/vHvadNXgDSjVLbdg6LchgZjTax4A2FFsjcR4vo7yE7icdmFJtqbFlWhfOLLQiUwZaep9gLVkdcqqUzv9gUwihc=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Z0qyMbvK; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="ckkJpmjf"
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 4CEB61F000C4;
-	Mon, 19 Oct 2026 14:25:27 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Z0qyMbvK"
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D31B61F000C4;
+	Mon, 19 Oct 2026 14:25:32 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792419927;
-	bh=DtqFb8ZOAZlbqLQ5DEJdHYSH01b+QPRSmC+3hrE7Q2E=;
-	h=From:To:Cc:Subject:Date;
-	b=ckkJpmjfAhfn5/vocRPNzjnEnpg6chpjqBwsAm5VgpwYpzAMHULxhgVKbC+MH1mlK
-	 AD6lxcOG+MA4mcVmspMEQf8JiW/Rdw82+VlbsZCHCY+vpv8H6h4QYBrqIy+ElcZBqQ
-	 IE0zC2DujX1Gt8p0plAn0fqimSv7oKUzV98JBxrTyIZQUwsDmWEXYjA3T1UfZziYMq
-	 Y9iCSOFadLyFrsKGkU1mJXO8dHTiZcKxZxnd3hSudJybkIdb7xvh/u4fVHg2eWRXoG
-	 VPvoVdLP5FcpxDFs2mbkz1We82FEP2x5J9rLAq60dhyj5bRYeNZKUaMmFCy4KV3VY6
-	 fDOpswSgT8TJA==
+	s=k20260515; t=1792419933;
+	bh=cUJOWQSnf1kc/h+TErRm+U68+rhKVlYLjqwQX8FWadA=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References;
+	b=Z0qyMbvK9jJtcRcYktMTVmBi8VEaJVYT+Scczm2BBM+sz/Tc18rBnJYazuywXt6MQ
+	 pejdL/lzTNTXjQ9fXZBOSc1U1YO7uhQCOvi2S8M+jDkXxSc73OVPdOm8Yt0ob3WAG5
+	 /u4KIA5lqcqpq13b1q0dD7ZM5yFN9X0c/Eim8VRC9RiwLV52OCHen9o/vXla7x3TXz
+	 enEBm8wel7/K0VFPeoj1shMyf3+Qsv99VMtkn94AcNzYaGXhcz273kU+c5SbErdADx
+	 AsDum2iHwT6qKG3X7RSnGJcx7VdWsORBkDIJr/pK3cIbjgijQfgCtFgiUDoUpSFwfV
+	 9IRntE4xxIELA==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org,
 	Eric Biggers <ebiggers@kernel.org>,
 	Jarkko Sakkinen <jarkko@kernel.org>,
+	stable@vger.kernel.org,
 	Paul Moore <paul@paul-moore.com>,
 	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
-	linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH 0/8] KEYS: rhashtable bug fixes
-Date: Mon, 19 Oct 2026 17:25:00 +0300
-Message-ID: <20261019142516.300040-1-jarkko@kernel.org>
+	linux-kernel@vger.kernel.org (open list),
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
+Subject: [RFC PATCH 1/8] KEYS: Change the type of key->quotalen to unsigned int
+Date: Mon, 19 Oct 2026 17:25:01 +0300
+Message-ID: <20261019142516.300040-2-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
+In-Reply-To: <20261019142516.300040-1-jarkko@kernel.org>
+References: <20261019142516.300040-1-jarkko@kernel.org>
 Precedence: bulk
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -47,27 +51,32 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-My patch set that migrates assoc_array to rhashtable had some LLM
-scavegend bug fixes. Unfortunately most them where either plain wrong or
-not in the right scope. The bug fixes in this patch set are by human
-labour constructed fully but they are derived from what I got out of the
-original LLM source. Thus, they are tagged as LLM assisted.
+key_alloc() and key_payload_reserve() set key->quotalen with values,
+which can be larger than USHRT_MAX.
 
-Jarkko Sakkinen (8):
-  KEYS: Change the type of key->quotalen to unsigned int
-  KEYS: Change the type of key->datalen to unsigned int
-  KEYS: Reject @desclen values over U16_MAX in key_alloc()
-  KEYS: Prevent overflow of user->qnkeys in key_alloc()
-  KEYS: Prevent overflow of quota in key_alloc()
-  KEYS: Prevent overflow of user->qnbytes in key_alloc()
-  KEYS: Reject @datalen values over INT_MAX
-  KEYS: Verify the key identity in __keyctl_unlink
+Change the type from unsigned short to unsigned int.
 
- include/linux/key.h     |  4 ++--
- security/keys/key.c     | 13 ++++++++++++-
- security/keys/keyring.c |  6 ++++++
- 3 files changed, 20 insertions(+), 3 deletions(-)
+Cc: stable@vger.kernel.org
+Assisted-by: LLM
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+---
+ include/linux/key.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---
+diff --git a/include/linux/key.h b/include/linux/key.h
+index e40b5267658f..6729536a76b2 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -216,7 +216,7 @@ struct key {
+ 	kuid_t			uid;
+ 	kgid_t			gid;
+ 	key_perm_t		perm;		/* access permissions */
+-	unsigned short		quotalen;	/* length added to quota */
++	unsigned int		quotalen;	/* length added to quota */
+ 	unsigned short		datalen;	/* payload data length
+ 						 * - may not match RCU dereferenced payload
+ 						 * - payload should contain own length
+-- 
 2.47.3
 
