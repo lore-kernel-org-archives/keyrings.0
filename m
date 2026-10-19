@@ -1,54 +1,63 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=198.137.202.133
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792446779;
-	b=RXH3X2E0S70lvBAgkHSnqv9dHZ/kyRKKMyHGxmJ3hnKVOecxYMRc3oHPif/4lBiN9TUC
-	 uINpx+KBVR5OPrpFqDVq8vccqg5hhMec5rS37vy9NjWmcZBKpUa9QktsSp+4Wpe5b4h2G
-	 o7DFi3xkAs+OrsZP0m5co5BLdovRT2W0h0NbKxuRkjVKsO+nu+YKe8+9yDBMDhOavU7UV
-	 XM6F8KT5m8qNswd079V7K2GwuCJ1Jpf2ekct46N4SqEmpWAcdWcNuQIt1VN/IVW0BDuSD
-	 tXthAyjqunA5bgCwCms01FaDokC+ylCCfz6wpQDcj5Ez53bIVxhQMUbqEiiApZjnfIA==
+	t=1792446859;
+	b=Xp2VQZyvMhXY5QaNLEjeQLcxA+mbTDTgQrnghyoJwLZghjUwrv1FwSNrNo8uxN0qx3uR
+	 4yRHu9yS9bjPIX7hYS8Md8CtdTy7QjPFiTQQRVf+Pa+Y5ZstJSH7jOMC58jUXFuwp1/X3
+	 p11p65OMjWJrzedRs8DvWXsNAbaeD5iJY1wj9w3ZuV5Gc4Qk8VKkcwWS0kcmETwSVieIb
+	 IeQcTi63E4KoCvxBzEOt7QBi5kddn2/Yapgnq6IOLGFWtJASej9s0D0UD/qH8S0Oa5HWS
+	 Gt7KHx2jmiRDaJdiK/Z5kbcuQfS+HLQUD7Zr0tG9+H5q8uQIMxx/Dg5bOJ9p+v7qo2A==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792446779;
-	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:Date:MIME-Version:
-	 User-Agent:Subject:To:Cc:References:Content-Language:From:In-Reply-To:
-	 Content-Type:Content-Transfer-Encoding;
-	bh=XkNTB9RlJjKmfq1LDFqnedvYhQMkhuIDdxti3vAmpE8=;
-	b=hX70tEgpQhXrH9k/0j8dbReRYVYcjWNEKWwDnJ9FYlQ5J4mAX2y7izMD/s1ioS7haciY
-	 I/NkgphT0L7knE/31Q2pfsTrDR0k4o2N7xyKuutdnTB+JU6qfgfXrsAG4AdmPPwbuhFlV
-	 jlelptmakgjm+acvv8vCEjSGxjSBGtXchyz2n7HhbpdS+KURV4ESZf77nDGskCryoVMvU
-	 v0SPWbVoVdADw4OXYLVX98W+BDYyb3op3EIe7NCq4AofvEtStTNGWkyMcuChWo1r54a90
-	 eSqa74U+RWnmW0m3x+oHIg6DwZqqe9yLeaIbmk/KA5uh9MMJjBMcLvI4ZlnYGeE4Pkw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792446859;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=9VOqMYgyNn/QmRwvpRSK7qR74louWoMyKZEaojotFbw=;
+	b=jL7OuW+tkYopJGzRsTZ8y9B61026eaMpxAq92ZieffChQFHbZTfJ03UnECmRUAj8Ht+Q
+	 mMiUCagLemuneU84RcqpqK4QUJljTpmmLHROy26+WK3lfEhmtz7RCG4zOvY/SpeUp2uxX
+	 ECPmJ6nkuRUcTGzbaKonBG32HQigbwRqmwFdBrc5u8NHVbrkxMPFgzCcLa+B1g+RmT6NR
+	 /brfO89DmA3B8WUmnIQ5vbq8WMXj12Ww4Y5RkSM+xiJ+qJ26Ka8NonUiuC2EXay+ni9aE
+	 lPZqBeYKBCljvOohZaiIz8Ysn8oqTa3nVjcN58iTGW3FCsAV/VmOEfnNXbhsJxJtPsQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=infradead.org;
-	spf=pass smtp.mailfrom=infradead.org;
-	dkim=pass header.d=infradead.org header.i=@infradead.org header.a=rsa-sha256 header.s=bombadil.20210309 header.b=Jh+c3uWk;
-	arc=none smtp.remote-ip=198.137.202.133
-Received: from bombadil.infradead.org (bombadil.infradead.org [198.137.202.133])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QK7+r4OA;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 01C3C606A319;
-	Mon, 19 Oct 2026 21:52:57 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 01C3C606A319
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=infradead.org
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=infradead.org
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id B1F5A606A31A;
+	Mon, 19 Oct 2026 21:54:18 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=infradead.org header.i=@infradead.org header.a=rsa-sha256 header.s=bombadil.20210309 header.b=Jh+c3uWk
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
-	Content-Type:In-Reply-To:From:References:Cc:To:Subject:MIME-Version:Date:
-	Message-ID:Sender:Reply-To:Content-ID:Content-Description;
-	bh=XkNTB9RlJjKmfq1LDFqnedvYhQMkhuIDdxti3vAmpE8=; b=Jh+c3uWk+UlrqGbfwYcC/1raav
-	sz/oGgLiFCUE3x2hjr4aPv8iTL9EJ2a58vEgdXhtOtDUAuDcpXNnYgK0M9fU8ijISSqH+yZX+l1Px
-	h+5KhtI632/LbLWByyR1KmTmc2KEg0Lys97BtF7rmDEwr6rHz4D1GPj/BK7y2Ixplf0gCs8nN0YRo
-	Qz0pdacCHDt1ly3+m91dtaHeAKFRhYaZKQtJJFSETdjyjC08wTj3XanRLl0N97IpwQJVRf9KQg9Wc
-	akt+LwU4IVAwo5qznzjQX+lC8JlCske5LKgBpw2lRdjIIXxXCVwXZ2E0I0OyJ+Kpfq8QbgTZy7SW3
-	vIP4N/Mw==;
-Received: from [50.53.43.113] (helo=[192.168.254.34])
-	by bombadil.infradead.org with esmtpsa (Exim 4.99.1 #2 (Red Hat Linux))
-	id 1xIvHj-00000008QwF-2h4B;
-	Mon, 19 Oct 2026 21:52:47 +0000
-Message-ID: <1a0c87ba-be48-4425-b7d1-48f7496c67d3@infradead.org>
-Date: Mon, 19 Oct 2026 14:52:46 -0700
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QK7+r4OA
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B651D1F000C5;
+	Mon, 19 Oct 2026 21:54:17 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1792446858;
+	bh=9VOqMYgyNn/QmRwvpRSK7qR74louWoMyKZEaojotFbw=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=QK7+r4OA84djCe8sbywz/SfHhL34jL0OcRwYgTQ9E6z/LUAWCITJbcpn7I+qYoF93
+	 ehZleY2Lao9msS4gqzDv6GX+OypO2owkTeLCbzTZV6FEk3hKAzpY8wIDCrvyP0ubEO
+	 a41SJvZKoaOA/4ZICR3sHCNqYKZuFj5cNedlzgmQFyqTix+VGObZsUdrpnoPqRBXvv
+	 WTvh8L/NNWUt9SJgfsvaQQO6d/EEhlW/xYNIC/Se7Qj80qg86hPgZ+BBUCsKF7czRJ
+	 yMiqR5LLyNiHlY2Qm+e6eVsqrxrxEO2u9A0Y8GcogfK3wPbygmGukp9U7RxWpqbVLF
+	 /WNWFs+CkTmUA==
+Date: Tue, 20 Oct 2026 00:54:14 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: manuelh@nvidia.com
+Cc: Fan Wu <wufan@kernel.org>, David Howells <dhowells@redhat.com>,
+	Christian Brauner <brauner@kernel.org>,
+	Andrew Halaney <andrew@amutable.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Shuah Khan <shuah@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+	Alexei Starovoitov <ast@kernel.org>,
+	Daniel Borkmann <daniel@iogearbox.net>,
+	linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-kselftest@vger.kernel.org, linux-doc@vger.kernel.org,
+	bpf@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 0/4] IPE: add a dedicated policy keyring
+Message-ID: <ataRhrucvhM8qZAs@kernel.org>
+References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -58,93 +67,74 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH RFC 1/4] ipe: add the .ipe policy keyring
-To: manuelh@nvidia.com, Fan Wu <wufan@kernel.org>,
- David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Christian Brauner <brauner@kernel.org>,
- Andrew Halaney <andrew@amutable.com>, Paul Moore <paul@paul-moore.com>,
- James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
- Jonathan Corbet <corbet@lwn.net>, Shuah Khan <skhan@linuxfoundation.org>,
- Shuah Khan <shuah@kernel.org>, Alexei Starovoitov <ast@kernel.org>,
- Daniel Borkmann <daniel@iogearbox.net>,
- linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
- linux-kselftest@vger.kernel.org, linux-doc@vger.kernel.org,
- bpf@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
- <20261019-b4-ipe-keyring-rfc-v1-1-156f0b93e843@nvidia.com>
-Content-Language: en-US
-From: Randy Dunlap <rdunlap@infradead.org>
-In-Reply-To: <20261019-b4-ipe-keyring-rfc-v1-1-156f0b93e843@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
 
-
-
-On 10/19/26 2:40 PM, Manuel Huber via B4 Relay wrote:
-> From: Manuel Huber <manuelh@nvidia.com>
+On Mon, Oct 19, 2026 at 09:40:24PM +0000, Manuel Huber via B4 Relay wrote:
+> Add a dedicated ".ipe" keyring for IPE policy-signature verification,
+> modeled after the dm-verity keyring, allowing userspace to provision
+> IPE-specific policy-signing certificates. Systems that do not provision
+> the keyring retain their existing behavior.
 > 
-> Add a dedicated .ipe keyring for IPE policy signature verification,
-> modeled after the .dm-verity and .bpf keyring implementations.
+> This RFC is based on commit 48f936e302a9 ("ipe: update the project and
+> test suite links") from ipe/next so review can begin before the
+> prerequisite keyring work reaches that branch. The series will be rebased
+> onto a refreshed ipe/next once that work is available there [1].
 > 
-> With this, userspace can provision its own keys into the keyring,
-> then restrict it and activate it for IPE policy signature verification.
+> The keyring readiness check currently follows the dm-verity and BPF
+> implementations. A parallel keys RFC introduces keyring_is_empty() for
+> this purpose [2]. A later revision will use the helper if it is available
+> in the submission base.
 > 
-> This enables scenarios in which a trusted userspace component generates
-> an IPE policy, and creates an ephemeral policy-signing key pair,
-> provisions its public certificate, and restricts the IPE keyring during
-> the early lifetime of a system. The trusted component can then sign the
-> IPE policy, destroy the private key, and load and activate the policy.
-> During that phase, the system is considered in a trusted state whereas
-> the system transitions into a possibly untrusted state afterwards,
-> running arbitrary user-provided applications. In such a scenario, the
-> trusted userspace component could reside on a dm-verity protected
-> rootfs disk, and applications would reside on additional dm-verity
-> protected disks. The latter disks would be dynamically attached and
-> their dm-verity root hashes and/or signatures not known a priori to
-> launching the system.
+> Testing:
+> - Built an x86_64 kernel with GCC 15.2.0 and Clang/LLD 21.1.8.
+> - Passed all 33 IPE parser KUnit assertions.
+> - Passed all 4 sealed-default keyring selftests under QEMU TCG.
+> - Passed all 16 provisioning-mode keyring selftests under QEMU TCG with
+>   ipe.keyring_unsealed=1.
 > 
-> A concrete usage scenario could be Kata Containers, which enables
-> running Kubernetes pods in ephemeral, headless utility VMs, possibly
-> without systemd. The rootfs disk is static and known beforehand, but
-> containerd's image layers might be acquired and transported into the
-> VM using the erofs snapshotter and dynamic block device attachment
-> using dm-verity.
+> [1] https://lore.kernel.org/r/20261008-ajhalaney-dmverity-key-identifier-v2-0-008456d189cb@amutable.com
+> [2] https://lore.kernel.org/r/20261016215326.4110064-5-jarkko@kernel.org
 > 
 > Signed-off-by: Manuel Huber <manuelh@nvidia.com>
 > ---
->  Documentation/admin-guide/kernel-parameters.txt |  9 +++
->  security/ipe/Makefile                           |  1 +
->  security/ipe/ipe.c                              |  2 +
->  security/ipe/keyring.c                          | 79 +++++++++++++++++++++++++
->  security/ipe/keyring.h                          | 16 +++++
->  security/ipe/policy.c                           | 10 ++++
->  6 files changed, 117 insertions(+)
+> Manuel Huber (4):
+>       ipe: add the .ipe policy keyring
+>       keys: add KEY_SPEC_IPE_KEYRING
+>       Documentation: ipe: document the IPE keyring
+>       selftests/ipe: test the IPE policy keyring
 > 
-> diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
-> index e75344f4e0cd..fd508dd779ed 100644
-> --- a/Documentation/admin-guide/kernel-parameters.txt
-> +++ b/Documentation/admin-guide/kernel-parameters.txt
-> @@ -2733,6 +2733,15 @@ Kernel parameters
->  			Determine whether IPE starts in permissive (0) or
->  			enforce (1) mode. The default is enforce.
->  
-> +	ipe.keyring_unsealed=
-> +			[IPE]
-> +			Format: <bool>
-> +			When set to 1, leave the IPE policy keyring
-> +			unsealed after initialization so userspace can provision
-> +			keys. Once the keyring is nonempty and restricted, it is
-> +			searched during policy-signature verification. The default
-> +			is 0, which creates the keyring restricted and empty.
-> +
->  	ipe.success_audit=
->  			[IPE]
->  			Format: <bool>
+>  Documentation/admin-guide/LSM/ipe.rst           |  41 ++-
+>  Documentation/admin-guide/kernel-parameters.txt |   9 +
+>  Documentation/security/ipe.rst                  |  16 +-
+>  Documentation/security/keys/core.rst            |   9 +
+>  MAINTAINERS                                     |   1 +
+>  include/linux/key.h                             |   2 +
+>  include/uapi/linux/keyctl.h                     |   1 +
+>  security/ipe/Makefile                           |   1 +
+>  security/ipe/ipe.c                              |   2 +
+>  security/ipe/keyring.c                          |  80 ++++++
+>  security/ipe/keyring.h                          |  16 ++
+>  security/ipe/policy.c                           |  10 +
+>  security/keys/process_keys.c                    |  23 ++
+>  tools/testing/selftests/Makefile                |   1 +
+>  tools/testing/selftests/ipe/Makefile            |   5 +
+>  tools/testing/selftests/ipe/config              |   7 +
+>  tools/testing/selftests/ipe/test-ipe-keyring.sh | 357 ++++++++++++++++++++++++
+>  17 files changed, 575 insertions(+), 6 deletions(-)
+> ---
+> base-commit: 48f936e302a9c48cfc032eb5944c3a6246bc9043
+> change-id: 20261019-b4-ipe-keyring-rfc-b93b9ae129a2
+> 
+> Best regards,
+> -- 
+> Manuel Huber <manuelh@nvidia.com>
+> 
+> 
 
-Please also add an entry in kernel-parameters.txt (near the beginning,
-in alphabetical order) for what "IPE" means.
+We are in the phase of release cycle that it would be hard to find any
+time to review this properly so might take a while, or I'll review a
+follow-up iteration if other feedback arrives.
 
--- 
-~Randy
-
+Br, Jarkko
