@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792427725;
-	b=pG4wX1EoBj0DbrLt/bGKkNLG7mlyfnIOMGgQPU7nJiCvBC0WIAdAMXGQ2uLW4ISlIaGm
-	 HqEaSWto3PXAePUb40vmMsRIlpOyR9ueaV3S0g1JQmHCAx0C9cEi+UcW1E/kJCD01Umrx
-	 QECz9Uo7KYzB88px0YYcjcZmZ/FeA7WWqKk357oUDP4qXnrSi/whpld+U6PHzrncnuFBV
-	 IZwObAz2WBYiShlhdWlIQuYSXhJyn/7JyrRrcJ/1yoRxJBoNvTqUvYXaDaMaoEytmi9l3
-	 E25cIJU8iUaTVThe3g8TjSsYoZVH02pG2dqp5zWd6lmLP6m5HKoFcfwpOGb+7MaVFvw==
+	t=1792427878;
+	b=vqywS7r2Jhm6fljRRDZH5g32XUwEkl1jIk3iPK/dBPhMLhPNNaAqXzsk1MBeqTcTn9N6
+	 7OiXMymTgP1pIVampHEtRIWSLUG9zip+n7z3GUSeV68VkXP6sdAmoluxI/YbczYYCnkFt
+	 2VrPLNHwZHFpc3IH8NB4zducLQYVeo3oGT3MSpdqGmiFDZhR2QIiIxw/UXhgq9i2+w2d8
+	 azEM4zNXP3i+Pqz7DuCwB7MUNxz3euLmzK2oLqH6/03Oe/hRZuZ0hjscUuNkNfpKqfq5E
+	 TvDy6XBJ5QJ7IFxFN0/aiEq96hwKVdSclUJm4fPaAEUEEcHoRe2W9SWfJ7ZblS13s1w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792427725;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792427878;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=BfkVfvIEOpMxl3s2QBkVFer5ppGfQ4NGC9N6gNuAQn8=;
-	b=XUuLBAQSmjOzYhQk0oDIWZ/CQVbX7mz+fcEEcQIYJl+FO8K8L1eRDYNng5yNRe4nRzEH
-	 nhYhXpKxJ7NTmZYVhb3D882cYJc4WXAzAdyRcEbOz9fAXa7DlxJNDr++B0QxIN0I41wR7
-	 2wPAjj0Z5s3QpiefHB1+e+Cc1jIEcVucNGnpLGQkB+VtNCgUCrlcrxj/b+/ahoD8BCL45
-	 tZ3uDOvfxMPgV1S5A/KNExN67BJDhQcmcwEXYLShB57KM2GEcxN52/xO0NBYlFLfhIGxp
-	 U6Qzp69APbjhKavkWg/Q/8TwL4GPazaYUBqAIaDd8rUe2rf3fvrJoc6mc2E/Yg0E4uQ==
+	bh=H+3Jzbs0/J+IBCVHh3CjTGM4uhBYtoVtzxePGU+3JPg=;
+	b=d9MaPtlgMZeTZYzAxUDOEjcz/FHRy0oEp9CRj8pIkaEkNTBOH/y5UnQzTgUoY1bKHLPU
+	 U1XncaiwoetDzqjOKpL+KIt21/zIpRcQXVZO54Z4d+6IHQe/XPWnaLx3mMJ9kmDaikYIu
+	 jYo1Y4ga0vUS4+RHMxDqvlArM36rVxtpHZMaw/UfWhqdxEySv625FAGgwl7Y+sr10/6IC
+	 /EwuSeXyv83+1KnK0jVOgT7g2UGe+0kzI7bzTQ4HCpDYaHaHNNVUNgAfUT1IYDEkeEI5I
+	 vqsAfELHAkWvgcu+t8emjV/RvR/VO/4S4p5mplEZ2kbclxjfRCjAMV2MpqKq790H23w==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AOKeG53f;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="j/rtf65e";
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id AC380606A31E;
-	Mon, 19 Oct 2026 16:35:24 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 6FCBF606A321;
+	Mon, 19 Oct 2026 16:37:58 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AOKeG53f
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id C06A11F000C4;
-	Mon, 19 Oct 2026 16:35:23 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=j/rtf65e
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 72DF51F000C6;
+	Mon, 19 Oct 2026 16:37:57 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792427724;
-	bh=BfkVfvIEOpMxl3s2QBkVFer5ppGfQ4NGC9N6gNuAQn8=;
+	s=k20260515; t=1792427878;
+	bh=H+3Jzbs0/J+IBCVHh3CjTGM4uhBYtoVtzxePGU+3JPg=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=AOKeG53fI1OTjp6Wd1o2ENG6OQ7+rMesX5tkLGw8rBVqB/MoW/xRqJ/lZuar0H07w
-	 eMXs5aU+dxfG310yNMdBeiY7ROAJHk8GY3vo/kcHo69b6oOLCBhIq6xWbgUM3Lv9pk
-	 N35q8AWfkoLH8t6NUhXkQb91P6VAGPj/JkQB0CNpZWjVwQ/uVIhI2a6uEaIcGEzHsl
-	 Ei1Jdbd3wZYX5Fye8pT97pfFSKPOk4pNP8h9QDzp5GAjP5YEP4JTKaedaO2uKSD1uS
-	 21+2LQb44xjNcE29L8ceMi3aHPQ0amU9WUMo/M0HfEM8Zc/DVD0Tcl0G8wAqY7clEn
-	 Ig3DdAtwaY3NA==
-Date: Mon, 19 Oct 2026 19:35:20 +0300
+	b=j/rtf65ezRr+4pYztgbYk+EtmKOKHf5CwJN8oJwIXD0EDlBNXM9QlNr+rteeSWmKc
+	 xEZ8/o+vGEihtnaa8aeBIvsT3+uBKrEqWHQhUoXC6faQUZo9Cl8CJkEVl9oGWsOVaI
+	 e7CHuut92MjopEQP39eOzB2wquVcuGl0RIQo7lwhArJnfXJfa9OUBISwaEluf5szfI
+	 +SpnlUsU+02lzcHU9sfQMm89+rC78YaQ6viEMGTc/6Z7oBnpjmi5J8RZhLRpzO9geO
+	 KC6vsJpM5+OqUusPHXTMo/ZhzQqvfOnBrNPfTWgiCocsGh54y8DYRUGzy2KyeQY3h+
+	 LXXeGuPVaO4wg==
+Date: Mon, 19 Oct 2026 19:37:54 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
@@ -48,11 +48,11 @@ Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
 	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
 	open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 7/8] KEYS: Reject @datalen values over INT_MAX
-Message-ID: <atZGyF6zoA1z9UIK@kernel.org>
-References: <20261019142516.300040-8-jarkko@kernel.org>
+Subject: Re: [RFC PATCH 8/8] KEYS: Verify the key identity in __keyctl_unlink
+Message-ID: <atZHYltB-Fndn17J@kernel.org>
+References: <20261019142516.300040-9-jarkko@kernel.org>
  <20261019142516.300040-1-jarkko@kernel.org>
- <2610186.1792424607@warthog.procyon.org.uk>
+ <2610587.1792425313@warthog.procyon.org.uk>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,30 +64,31 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2610186.1792424607@warthog.procyon.org.uk>
+In-Reply-To: <2610587.1792425313@warthog.procyon.org.uk>
 
-On Mon, Oct 19, 2026 at 04:43:27PM +0100, David Howells wrote:
-> Jarkko Sakkinen <jarkko@kernel.org> wrote:
+On Mon, Oct 19, 2026 at 04:55:13PM +0100, David Howells wrote:
+> This will show it:
 > 
-> > -	int delta = (int)datalen - key->datalen;
-> > +	int delta;
-> >  	int ret = 0;
-> >  
-> >  	key_check(key);
-> >  
-> > +	if (datalen > INT_MAX)
-> > +		return -EINVAL;
-> > +
-> > +	delta = (int)datalen - key->datalen;
-> > +
+> 	keyctl newring ring_a @s
+> 	keyctl newring ring_b @s
+> 	A=`keyctl add user A ss %:ring_a`
+> 	B=`keyctl add user A qq %:ring_b`
+> 	keyctl newring R @s
+> 	keyctl show
+> 	keyctl link $A %:R
+> 	keyctl show
+> 	keyctl link $B %:R
+> 	keyctl show
+> 	keyctl unlink $A %:R
+> 	keyctl show  # R is now incorrectly empty
 > 
-> You don't actually need to move the subtraction.
+> Reviewed-by: David Howells <dhowells@redhat.com>
 
-Ouch, you're right, I'll fixup that.
+I'll actually add this to my own test harness, thanks.
 
-> 
-> But apart from that:
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
+I'm a slightly worried of this patch given that you can
+technically interpret it as a uapi change. I guess here it
+is acceptable, and if a tree falls down, we'll respond
+to that.
 
 Br, Jarkko
