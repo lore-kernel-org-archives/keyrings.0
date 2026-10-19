@@ -1,55 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792434548;
-	b=fLU5UNWsok4+len1q+VNsXvO4py4ikt7BAY4gQaJaPO51fAGinfhCxk9Jb6ONQkbQ3yL
-	 MU1jQ//2nUzIrmms9cFH5g3DubI8bWSBauzMOoKlHMMnheTjv1Uze/kxwJ66a93Bo2go+
-	 Eo7AYeyiUKoaUNYG0oOnmr3gwCMuM0g0b6KCyP6xWMZE0/lPbOcXkJbqA6kc+c/eWz9Td
-	 ytNg5Z9Srub5FNXIVxjUT+rST2LoLen/CZhsHTMu9hhNiuYAngjVo5gPVkTXsI2rhdHZT
-	 Ovp09atCuE0IkN5/infN+KAfuwnMmz/nUGuUDfhPgoIqavf3f4PyLvZSBxWhLRaU64w==
+	t=1792437171;
+	b=knBMo35OGHWGLtj4uqo9bvT4/6W5ZA78LqJGmSxLTdN1xHAVYzWvKJoJLq9lAnpLqPHD
+	 o4TZaefWwcAw/KzKCBcngEL9eYU/gJjLqe2tCgFPV9cYsbTNbT3U3E1tIC5CRHs/71i88
+	 w9sV1q8x34b1gDVIOcfzxUZb0Y9E6fQoRP7aI/hdgk6ZqgPW9+4rWir8y5m7mR6ofcYuK
+	 bQ0VYaeWLb1hBeJ3VLugABkPWQHRmMhrk2MVK4AeP51zolqOs5cLUD7w2r3BMqVTjczRF
+	 tQysgHRURl4KyPXBOZY6fvVZobvexmp3kiUalatHiGSB4/rVPs1nEyK2Tu5esGghjvw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792434548;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792437171;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=27il3oOcwKVvNVhkDfMHuekSAptIeJEU0HuNxjreV+k=;
-	b=ZHhzchv8O5lIBOrXO5m9mNPgFDt3NZO6mFeF8w/7dG3CJdqFJ1C1/2SdlGhcBLh6dig6
-	 fGOzNCHLUL7dTqWDKmctFFROJ8ZzZ8l5+mCJ6khADI630srIEr+THvZW8ltRma7xuLJ2D
-	 ALJzy4wddasktTDLzRlivSMoOBIwNEHwRcQMmYZM94lQbMCYnOBUNcpDVSCFRMo6HDDkn
-	 NLccZ9n0T3aGmOiBweIRFvx+fw65Wm66rP+R5RHSI/BYjDQJ+6i3q8e2yW3L4XC84ZRfU
-	 fmwMP/IKvD2+n1has7InQVFnByurrCBoY3Y6yfQRZAOk3E9CeGdK1vuAlNt9yhkDMBw==
+	bh=KgyAc8q3o/G/gyeGdvTtRRzKYp9WY3cB4AhYfV3oG2Y=;
+	b=eGf9XlaxidT2fk3KIXoQ2rrDhjDYPRmZk5qalqrwLQmk0nWTUQF0NEp+FsZ1x6770OXJ
+	 8C0mDEGLoIw5VbAoHnrrCMhpXGZBngE9i8WhFj33W0Dl1qAJm84GIK94KalDOS+b65A6d
+	 RN0FL7OsAdset2xXpFdpUiR1Yo4LIp7l6mqWQfoe1035sd3J8UoHRqJQ1wOEqKjQ6l+oD
+	 84eyUdX6+O80Y8l8r8NYcsk1FsFii5r/g3060QUBkrB9Qa9d6OYYpvHEgJiWawXuHP1Cy
+	 sRDjwOTQozc3UehQdvos3oM+gOEHBusFJ4OhnT1QeT9UP5z50RZUUF0+I10z1E0jZnw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PIbNthbe;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QZtuucHz;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 22827606A31A;
-	Mon, 19 Oct 2026 18:29:07 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EEC5C606A319;
+	Mon, 19 Oct 2026 19:12:50 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PIbNthbe
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 124C21F000C4;
-	Mon, 19 Oct 2026 18:29:06 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QZtuucHz
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 4EE251F000C4;
+	Mon, 19 Oct 2026 19:12:50 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792434547;
-	bh=27il3oOcwKVvNVhkDfMHuekSAptIeJEU0HuNxjreV+k=;
+	s=k20260515; t=1792437170;
+	bh=KgyAc8q3o/G/gyeGdvTtRRzKYp9WY3cB4AhYfV3oG2Y=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=PIbNthbeDBD6GZGFfuuN690hURo1zqrCinFmn1QmwDajpKCvt7JBg94SDrGejZmLx
-	 VIVkHFGIky5xdmJuDJ33OiKfwqDcFYktRDn+yNbI3unnr3rQMTHdDX1prrS1yl5aSl
-	 o4wnUVULaynoQz3vjhVVcsL7L3ToTxeH+i+gSdYmG1iwInu2Hhfq5SwL1Q5mSKbS3t
-	 Z+69cT1vnekHTg+ub5P8OUXhJ4rJzB3hjRDyKJbYGTlf4K/V95CYo77iUkDMTq07w5
-	 /2QPY/AY89uWkWSjHIQvK038ZfSsgTEFS0uSVXROEQ32XTSz8vjG9JmzvRLFXuMlA9
-	 nMR60ICmpYqeg==
-Date: Mon, 19 Oct 2026 21:29:03 +0300
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	b=QZtuucHzvOXdQWQfRhYR97V9CyZRmOPF3DBOXIKTFKaVuV/ZFPjMeT9qy+QQd9GhK
+	 CwWce4b6uSzOK6TwInOXGQcIKFYb4Ds4n99uJ4oN7uX3ohvGfNOp9HFkX1KhPblLU2
+	 h8ha4ZnJXFeVqI2XRGwB8x31SdG8JkilO1N72e0QHqvnkMjoAlxCh4XbxA8zZcbtPL
+	 nyKYMexbv16CuXgi6/LbYiT92aCmu7gy6aZvJDFc1wUKwGhpG69RQWD5wuyijJmUNa
+	 HjjiHztOkBt+zZ2t/NNP3CnK/gd/678pcG2fvzhb7bjPmuY0KwRDXvsIKowQXdUBY/
+	 JurO6LHUooK/w==
+Date: Mon, 19 Oct 2026 12:12:48 -0700
+From: Eric Biggers <ebiggers@kernel.org>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	stable@vger.kernel.org, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/6] KEYS: rhashtable bug fixes
-Message-ID: <atZhb2Gv9Xbvcjkw@kernel.org>
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v2 1/6] KEYS: Expand key->{datalen,quotalen} to unsigned
+ int
+Message-ID: <20261019191248.GA65095@quark>
 References: <20261019181732.449591-1-jarkko@kernel.org>
+ <20261019181732.449591-2-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -61,43 +64,13 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261019181732.449591-1-jarkko@kernel.org>
+In-Reply-To: <20261019181732.449591-2-jarkko@kernel.org>
 
-On Mon, Oct 19, 2026 at 09:17:20PM +0300, Jarkko Sakkinen wrote:
-> My patch set that migrates assoc_array to rhashtable had some LLM
-> scavegend bug fixes. Unfortunately most them where either plain wrong or
-> not in the right scope. The bug fixes in this patch set are by human
-> labour constructed fully but they are derived from what I got out of the
-> original LLM source. Thus, they are tagged as LLM assisted.
-> 
-> Changelog
-> =========
-> 
-> - v2: There was enough tweaks that a sanity check round makes sense just
->   in case.
-> - v2: Addressed issues pointed out by David.
-> - v1: https://lore.kernel.org/keyrings/20261019142516.300040-1-jarkko@kernel.org/
-> 
-> Jarkko Sakkinen (6):
->   KEYS: Expand key->{datalen,quotalen} to unsigned int
->   KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE in key_alloc()
->   KEYS: Prevent overflow of user->{qnkeys,qnbytes} in key_alloc()
->   KEYS: Prevent overflow of quota in key_alloc()
->   KEYS: Reject @datalen values over INT_MAX
->   KEYS: Verify the key identity in __keyctl_unlink
-> 
->  include/linux/key.h     | 6 ++++--
->  security/keys/key.c     | 9 +++++++++
->  security/keys/keyctl.c  | 2 --
->  security/keys/keyring.c | 6 ++++++
->  4 files changed, 19 insertions(+), 4 deletions(-)
-> 
-> --
-> 2.47.3
-> 
+On Mon, Oct 19, 2026 at 09:17:21PM +0300, Jarkko Sakkinen wrote:
+> In key_alloc() and key_payload_reserve(), key->quotalen and key->datalen
+> can receive values larger than USHRT_MAX.
 
-The benefit with this slicing is at least that backport conflicts should
-be easy to resolve, and if I recall correctly all go to v5.10+ stable
-kernels.
+Could use an explanation about how this can happen.  A keyring with more
+than 16383 links, I guess?
 
-Br, Jarkko
+- Eric
