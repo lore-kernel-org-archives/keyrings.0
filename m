@@ -1,58 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792437482;
-	b=pXuWN4aVgZhmFDTJ+trRdqxvvlO3dKTKSjfltiJIgGDOyJG4N5Nw4t8DgndM9vPZNOSZ
-	 EP5B9zKep4lC0UzCd+n9vn5NrSj4QCbi9kJnqzFO7XQqj1L0/lnCrRRTAILelbGokAKmL
-	 ns/rzYqzGRvO/J30jtHtYqnkDLwNmMGLCQGs4UPQqnUKf0ypNwMTHoIwI4fBoyZzaMHKv
-	 MVDQ7mJLR0GVyUZzKVKT8iJe1cQWKZLtH9aN9/erh1a+4h3xT6De+hrRn/lCeVOvMWo84
-	 qc4hB4NQRsOyqC+oMdWgrsL6+QfUK1Bqcwhhgw1On/kehs+n/phslOi0d5BkDbn4x1A==
+	t=1792437814;
+	b=KLnS7nZBEmSJrY0rQ/17MCIhUPmlUfTYnVwlV8B9NUL9rnfbiFM+mot9FAnDX0SytwcB
+	 xXxLUaDI4srz334/5vXpSF+zvn9GVOoschTbRm/A61zmej8SA4BSZiSqHyyQ3yb3OAGZh
+	 +4NWiWX6KBkGdYazFL4dASyIo6F6f8KxEX4Hd3zoaScybpeMo9J28TWrFf1bsEhPXbYuV
+	 JYwbdEKluFy/PRIZHZ7i3BE/77Ff0Wm1Q1GNq1rgZsct9jJtNlK9cekGHJ9N83U3E8zhL
+	 6q0GKn5vt5LgMNOhPj0u3DvFJ6T6GIZwiLOxvgsaWztTpKiZq9gB6KYM/JZlMeutHdg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792437482;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792437814;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=HOOxhWe0N25Vvh+QP+0h17bAVDCPz4LE/9nK0BEyyGI=;
-	b=wUCEoPEHUJXBorB0dFWkIsPzjUDsIaZ6E/CK7p81nGY8uQlYODj0qgD1apvMlUeznS2j
-	 QLqEa0pDz6dGPBfjJWy+XRS3fd4flLy+U018u0nA5OGlAqNLWxmD064qY0IcZT1f8Vkcq
-	 MQ5hxa58VfL+MWtd+UojpqthPaz0iKwu8BIyTN37oZBGhWmgcqIo+1d6CFwqa9ZseLqbq
-	 TH3N0MjWAJkbVim/JfZqE26G/hIolgSPyeAdZh4jQTtx/ON+poV+PRiE5HUtDgFKRuZSP
-	 +DMZwMERtNEThSr6bdMBcXPW90pzLU8JxjIqv+cOxFpnC/V7g55XBj+RjyNwsNb75BA==
+	bh=Syyh9as21Eq1SGsHwieN5MqC5jTlcLjU/4/08M/9bU4=;
+	b=PbSSdU5+9xfb/nvq+3RGI7qrsIb2A1n+S1nci9EpPcGsPTkhxa9Dxw6y+/AGO4EEs7Xi
+	 /923e0YtLE0cwfOdg7R/ehTqCLHcwHkwoeNvJXdwtnVLpsiP331mW5s5dH4p8xHMRL6Bw
+	 vsVPFAhRFbTbmvZ0OW2Xn2X36lCsJ9sw07DhAUsuBvJ4QYwGJslmsXxzua+S4iXq8KXEt
+	 /hagQsmdCVgCNl47wZrfychroBS6UJj3AP5C9DBQujeFbdepVOKwNFNHW99+vAvIOM2XW
+	 0gEuQ94ppkwLuiVspIZV8OPIgH3F3ETZGWMPCkdpfTId1U4Oh0nznh5/uVkVwoo1gtQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LCqqTU6G;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QgRRD7Rg;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C56FB606A31C;
-	Mon, 19 Oct 2026 19:18:01 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 28735606A326;
+	Mon, 19 Oct 2026 19:23:33 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LCqqTU6G
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 017551F000C4;
-	Mon, 19 Oct 2026 19:18:00 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QgRRD7Rg
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 66D3D1F000C4;
+	Mon, 19 Oct 2026 19:23:33 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792437481;
-	bh=HOOxhWe0N25Vvh+QP+0h17bAVDCPz4LE/9nK0BEyyGI=;
+	s=k20260515; t=1792437813;
+	bh=Syyh9as21Eq1SGsHwieN5MqC5jTlcLjU/4/08M/9bU4=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=LCqqTU6G2extdImFhREVnfwGUIRAcaS40Wu2sPK7PcgEG5e/17rHq/cNlzXr4QMQx
-	 FrMxowqdRm8+rMs7BKMxRMrwTe2kBS1tcSQ4//GSa9/Ev99lJSPaxa2H82umuXHU+V
-	 0LNWGZ3eyWrvIfl8/ouRHQvXwFusr+HR3i9kfqdaQ1UIxbQKMtfjKXf+RCVMIP+Zdy
-	 xXmRIKfh/SZOoW80+xblSo3OYO/ltnfjJ3s4fLLcJMrRCj29U3UbxQsh9rZZO+4rr3
-	 3SAs8cz8k9PnP3tKfmRZdNp8ehtyRrkYRT+7xvQ6JRA+CxuqvIV0j3a7e1Jd/GdUaS
-	 c9q4L6xwBRPYA==
-Date: Mon, 19 Oct 2026 12:17:59 -0700
+	b=QgRRD7Rg+wnRcwhnQlvBnqZDd/ZJNA3MnrFxqnD2Doh7dkfunNI4w7uUaW5ZjZt18
+	 B2w3Ovhq76e1oiSDVdKBmkdbM4omsU0RYY+SU1ccSwIbFoqTzgb3IkNyXJIK+Vjs2E
+	 CFxCOlLQ/TBnlbKgVyDPz9yI82pOod5JZtn0CkK1H6f6Nu1n1uHj9bFMhekC+uCoH9
+	 v6g0k/MCdB3ScZz/YgqLxxiOwiqTKs5IPit2MES7rFfsxoDysJHu7sYBatNdC9qSwk
+	 wTmo+dR/fK9098pxjEUlHzIjaruEbVdZK9qS2mzqjtd1kjJKcd8Dmlo36cwpWPj11r
+	 K/6AYmMf74g/g==
+Date: Mon, 19 Oct 2026 12:23:32 -0700
 From: Eric Biggers <ebiggers@kernel.org>
 To: Jarkko Sakkinen <jarkko@kernel.org>
 Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
 	stable@vger.kernel.org, Paul Moore <paul@paul-moore.com>,
 	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v2 2/6] KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE
+	"Serge E. Hallyn" <serge@hallyn.com>, Andrew Morton <akpm@osdl.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/6] KEYS: Prevent overflow of user->{qnkeys,qnbytes}
  in key_alloc()
-Message-ID: <20261019191759.GB65095@quark>
+Message-ID: <20261019192332.GC65095@quark>
 References: <20261019181732.449591-1-jarkko@kernel.org>
- <20261019181732.449591-3-jarkko@kernel.org>
+ <20261019181732.449591-4-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,23 +64,19 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261019181732.449591-3-jarkko@kernel.org>
+In-Reply-To: <20261019181732.449591-4-jarkko@kernel.org>
 
-On Mon, Oct 19, 2026 at 09:17:22PM +0300, Jarkko Sakkinen wrote:
-> @desclen in key_alloc() is saved to the 16-bit wide desc_len field in
-> struct keyring_index_key.
+On Mon, Oct 19, 2026 at 09:17:23PM +0300, Jarkko Sakkinen wrote:
+> Add the missing overflow checks for user->qnkeys and user->qnbytes
+> in order keep calculations within INT_MAX range, which is the
+> absolute maximum quota.
 > 
-> Reject @desclen values at or above KEY_MAX_DESC_SIZE with -EINVAL in
-> order to account for the NUL terminator and prevent integer overflow.
+> Cc: stable@vger.kernel.org
+> Assisted-by: LLM
+> Fixes: 7e047ef5fe2d ("[PATCH] keys: sort out key quota system")
+> Reviewed-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-This should say something like: "in order to match the userspace limit
-and avoid u16 truncation".
-
-There are also similar truncations of desc_len to u16 in
-key_create_or_update() and keyring_search().
-
-> +#define KEY_MAX_DESC_SIZE 4096
-
-Could use a comment mentioning that it includes the trailing NUL.
+Don't keyctl_chown_key() and key_payload_reserve() need similar fixes?
 
 - Eric
