@@ -1,63 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792429712;
-	b=NqjPdr/Vj2myEHwltCogY+nHjVXgkdYz+ATSE061JoupizOoLbaN745SX/wDYwb/rOfq
-	 ICJ5np+JJXSFz8XGvPojUXXcS5vqI7y6ciBy/fDIenSKSfLM9MYHwKa+RJwDS+BDzF2wg
-	 HVLw96M9UZa0KDlpSmE8ytx3OpvQZlKrHypdV28GZcKXxWQTTNjw/Ahkx/Nig2YzqRkCZ
-	 tJCD4BjRtxnP8gsWN7zqTuWwJbxi1+wrxhK/xUE/RUI/BWUowyiQcVaNN63cF6da3t6/O
-	 P9HAiZgTvoVWof7buhwK2bWb4vuoAhPxlFAP3eAFcLSMycjXGA3RsBRKe8I7XZ6pgUw==
+	t=1792433858;
+	b=riZD/W9FGWh2CXUBU2CRhQHCCexTSy9bl6T+cZjuABZq4uLi2bRtee00mBwGg8N734Zt
+	 fNL0ROb7IegwHeIXGO26ZgGDJp+nimTMqOXRrNUWLGG5WEqwguOY+Rf25SoMhPjIH9JOP
+	 W3B/xIybrSJRwTZlT6psPIoG8+YyyaBsIU50Ape0hDhl89dd51CUeaOFPY3190YxlM0rx
+	 yUuVa6p/gBwdVlXtajf7D4k+IUE2TsXuf22qu4BIrOOaB44GOwg0rHCOOt44QHQRS2IGN
+	 7800Ol3QmuFzTrx3xpDbxWjCXmkPypQQzbyv/O5PmwF7Qv2EjGnU4IxvSrbz/SIoF7A==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792429712;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=k4wnkBFrl6pjyADZhT342W27ueLhNCpKpq6XivIO9Xc=;
-	b=HTtGODIYBNIn520rsQEdTES6s8Q9TDQ4q9l9q5D0qzI5c+dbgvkFZvQznhtKDCmJ9oGv
-	 oSvbvvSQT6lBDVu44clFNHJwnqZ9BI7qA26JnBc807BoR8h5lTgfVKUbBAdwm1QTzISFo
-	 El1RhLduSSA8AcRhFZ1tfGtJYyd+OIY+vSlBWCr30a1X53Ra/EgREnam4ig6+L8g5juCl
-	 /8KlMmOkdINLwSSpzqYq1xgO1reCUIYFc8BUZYTUv3z6jzXWE3t2+hyU5LSC9P3tFGjTh
-	 +fT7N7fV10C5VTrLQUoRrsqk5xhuV6M1DbfeqRyIM4THcGTLLSWFf4wCgtA5U5lMNSQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792433858;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=aIXqP5xcCwN986YiwPF3T/ChOzOXIuGm6THVEZcd/4E=;
+	b=iAS68yQ1F24QIQsZk73zDICd6TbpdQoPu041OJ5/FNhSl0O4kvrq2FQX5lJaOe/EUQxC
+	 kmmJ5/I38Z7R6L3DITj4aPrxpIfU94jLvmHZGYp3KO2nIizTHJAS/ibEs2FLDaVcmwMz7
+	 nYgCgGHpGX6nB69A1vCoZYDPcG/4M7MtzNFKcL7T+Tcwru+uIG/L7wMyxkWwn1gjpSiox
+	 8dqiwmcfwQclMO+z5E7h+vMsXU2ovq0B1k7M3uBsT3v2LMEpY9IUFC7iemLpp7fVV071D
+	 ULX4IZ4jJyac3E9uRuznpw2LOt05PKtqgprOLEe9udKz3wVZkQYqYqRhgfwM5e4YYpQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=h4QUfi0T;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=UxO1vz7H;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id C2012606A31A;
-	Mon, 19 Oct 2026 17:08:31 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id CD4F1606A31F;
+	Mon, 19 Oct 2026 18:17:37 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=h4QUfi0T
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DEB5B1F000C4;
-	Mon, 19 Oct 2026 17:08:30 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=UxO1vz7H
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DDE111F000C4;
+	Mon, 19 Oct 2026 18:17:36 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792429711;
-	bh=k4wnkBFrl6pjyADZhT342W27ueLhNCpKpq6XivIO9Xc=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=h4QUfi0TENTekE8f27i8Ol0m2z7/x8KmnB02SRAxzO3mbnn664oHUkPC4Igtjt+Bg
-	 MMoB8mHKJNvi2YFAoQN2J1EJWjCcP3HAl8y3qhgnmcNxwuz4O3zTppmq3rJe9ktY6H
-	 0BHQvZFQJRjnO5vHbCFELBesPN/VgzXYcEFwj7gNzvyyhvWByuEQvNq+oL3F2xGGJ8
-	 JQxZ+xOtoepV7j8WZGJ93o6kJGsxOW32FSe2EzFztWlKjROHF2uINtLgd+1AZyJ5dO
-	 T6CYksGcmcVw6Oy8ALmB1Jb0wUbw2ObiYuSgi+rixS/5Za/mDm5p8vBmDC8kCHofFV
-	 i0LRSgaayTCTg==
-Date: Mon, 19 Oct 2026 20:08:27 +0300
+	s=k20260515; t=1792433857;
+	bh=aIXqP5xcCwN986YiwPF3T/ChOzOXIuGm6THVEZcd/4E=;
+	h=From:To:Cc:Subject:Date;
+	b=UxO1vz7HGnQtLAcQjnMScWfVmCdrxwREufqiVqufjrVV0fTiCfZJYUzDmne0894Fl
+	 3Lexw/BjZ83jtspbrr5f9Aktiav0+lhRuoshoLHq1BkONmvKglMlvriMgQzkWO1oBg
+	 DN2tOwQH/PPSRJOuMzrIY/ifzMcC4LJ56KEB78z3And9ZAzr+CLR60bclLV6GNnbof
+	 3ookaIUFPvYYSohLTl1XI0T+ljuDwMCT1Mr1I1bfaqKsr6eeYcF8mCjA9Kkw65Wcoc
+	 BdvFGU1WjBZyC0L/VOjTce/Hftpo3GzMWd7NgSmN9H05/wcV7pCU8DF4ydFyIYAZNv
+	 FqQssgU1+57zQ==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
-	stable@vger.kernel.org, Jann Horn <jannh@google.com>,
-	Jonathan Corbet <corbet@lwn.net>,
-	Shuah Khan <skhan@linuxfoundation.org>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+Cc: keyrings@vger.kernel.org,
+	Eric Biggers <ebiggers@kernel.org>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] KEYS: Reject keyring creation with overridden
- credentials
-Message-ID: <atZOi-r1ayaLhgY_@kernel.org>
-References: <20261019145624.309790-2-jarkko@kernel.org>
- <20261019145624.309790-1-jarkko@kernel.org>
- <2610820.1792425550@warthog.procyon.org.uk>
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
+	linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2 0/6] KEYS: rhashtable bug fixes
+Date: Mon, 19 Oct 2026 21:17:20 +0300
+Message-ID: <20261019181732.449591-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,20 +62,36 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2610820.1792425550@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8bit
 
-On Mon, Oct 19, 2026 at 04:59:10PM +0100, David Howells wrote:
-> Would it make sense to just reject KEY_LOOKUP_CREATE at the top of the
-> function if the creds are overridden?
+My patch set that migrates assoc_array to rhashtable had some LLM
+scavegend bug fixes. Unfortunately most them where either plain wrong or
+not in the right scope. The bug fixes in this patch set are by human
+labour constructed fully but they are derived from what I got out of the
+original LLM source. Thus, they are tagged as LLM assisted.
 
-Let me check..
+Changelog
+=========
 
-Yep, I suppose you're right. I'll update the patch.
+- v2: There was enough tweaks that a sanity check round makes sense just
+  in case.
+- v2: Addressed issues pointed out by David.
+- v1: https://lore.kernel.org/keyrings/20261019142516.300040-1-jarkko@kernel.org/
 
-> 
-> David
-> 
+Jarkko Sakkinen (6):
+  KEYS: Expand key->{datalen,quotalen} to unsigned int
+  KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE in key_alloc()
+  KEYS: Prevent overflow of user->{qnkeys,qnbytes} in key_alloc()
+  KEYS: Prevent overflow of quota in key_alloc()
+  KEYS: Reject @datalen values over INT_MAX
+  KEYS: Verify the key identity in __keyctl_unlink
 
-Br, Jarkko
+ include/linux/key.h     | 6 ++++--
+ security/keys/key.c     | 9 +++++++++
+ security/keys/keyctl.c  | 2 --
+ security/keys/keyring.c | 6 ++++++
+ 4 files changed, 19 insertions(+), 4 deletions(-)
+
+--
+2.47.3
+
