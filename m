@@ -1,58 +1,63 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792427878;
-	b=vqywS7r2Jhm6fljRRDZH5g32XUwEkl1jIk3iPK/dBPhMLhPNNaAqXzsk1MBeqTcTn9N6
-	 7OiXMymTgP1pIVampHEtRIWSLUG9zip+n7z3GUSeV68VkXP6sdAmoluxI/YbczYYCnkFt
-	 2VrPLNHwZHFpc3IH8NB4zducLQYVeo3oGT3MSpdqGmiFDZhR2QIiIxw/UXhgq9i2+w2d8
-	 azEM4zNXP3i+Pqz7DuCwB7MUNxz3euLmzK2oLqH6/03Oe/hRZuZ0hjscUuNkNfpKqfq5E
-	 TvDy6XBJ5QJ7IFxFN0/aiEq96hwKVdSclUJm4fPaAEUEEcHoRe2W9SWfJ7ZblS13s1w==
+	t=1792429712;
+	b=NqjPdr/Vj2myEHwltCogY+nHjVXgkdYz+ATSE061JoupizOoLbaN745SX/wDYwb/rOfq
+	 ICJ5np+JJXSFz8XGvPojUXXcS5vqI7y6ciBy/fDIenSKSfLM9MYHwKa+RJwDS+BDzF2wg
+	 HVLw96M9UZa0KDlpSmE8ytx3OpvQZlKrHypdV28GZcKXxWQTTNjw/Ahkx/Nig2YzqRkCZ
+	 tJCD4BjRtxnP8gsWN7zqTuWwJbxi1+wrxhK/xUE/RUI/BWUowyiQcVaNN63cF6da3t6/O
+	 P9HAiZgTvoVWof7buhwK2bWb4vuoAhPxlFAP3eAFcLSMycjXGA3RsBRKe8I7XZ6pgUw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792427878;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792429712;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=H+3Jzbs0/J+IBCVHh3CjTGM4uhBYtoVtzxePGU+3JPg=;
-	b=d9MaPtlgMZeTZYzAxUDOEjcz/FHRy0oEp9CRj8pIkaEkNTBOH/y5UnQzTgUoY1bKHLPU
-	 U1XncaiwoetDzqjOKpL+KIt21/zIpRcQXVZO54Z4d+6IHQe/XPWnaLx3mMJ9kmDaikYIu
-	 jYo1Y4ga0vUS4+RHMxDqvlArM36rVxtpHZMaw/UfWhqdxEySv625FAGgwl7Y+sr10/6IC
-	 /EwuSeXyv83+1KnK0jVOgT7g2UGe+0kzI7bzTQ4HCpDYaHaHNNVUNgAfUT1IYDEkeEI5I
-	 vqsAfELHAkWvgcu+t8emjV/RvR/VO/4S4p5mplEZ2kbclxjfRCjAMV2MpqKq790H23w==
+	bh=k4wnkBFrl6pjyADZhT342W27ueLhNCpKpq6XivIO9Xc=;
+	b=HTtGODIYBNIn520rsQEdTES6s8Q9TDQ4q9l9q5D0qzI5c+dbgvkFZvQznhtKDCmJ9oGv
+	 oSvbvvSQT6lBDVu44clFNHJwnqZ9BI7qA26JnBc807BoR8h5lTgfVKUbBAdwm1QTzISFo
+	 El1RhLduSSA8AcRhFZ1tfGtJYyd+OIY+vSlBWCr30a1X53Ra/EgREnam4ig6+L8g5juCl
+	 /8KlMmOkdINLwSSpzqYq1xgO1reCUIYFc8BUZYTUv3z6jzXWE3t2+hyU5LSC9P3tFGjTh
+	 +fT7N7fV10C5VTrLQUoRrsqk5xhuV6M1DbfeqRyIM4THcGTLLSWFf4wCgtA5U5lMNSQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="j/rtf65e";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=h4QUfi0T;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 6FCBF606A321;
-	Mon, 19 Oct 2026 16:37:58 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id C2012606A31A;
+	Mon, 19 Oct 2026 17:08:31 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=j/rtf65e
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 72DF51F000C6;
-	Mon, 19 Oct 2026 16:37:57 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=h4QUfi0T
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DEB5B1F000C4;
+	Mon, 19 Oct 2026 17:08:30 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792427878;
-	bh=H+3Jzbs0/J+IBCVHh3CjTGM4uhBYtoVtzxePGU+3JPg=;
+	s=k20260515; t=1792429711;
+	bh=k4wnkBFrl6pjyADZhT342W27ueLhNCpKpq6XivIO9Xc=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=j/rtf65ezRr+4pYztgbYk+EtmKOKHf5CwJN8oJwIXD0EDlBNXM9QlNr+rteeSWmKc
-	 xEZ8/o+vGEihtnaa8aeBIvsT3+uBKrEqWHQhUoXC6faQUZo9Cl8CJkEVl9oGWsOVaI
-	 e7CHuut92MjopEQP39eOzB2wquVcuGl0RIQo7lwhArJnfXJfa9OUBISwaEluf5szfI
-	 +SpnlUsU+02lzcHU9sfQMm89+rC78YaQ6viEMGTc/6Z7oBnpjmi5J8RZhLRpzO9geO
-	 KC6vsJpM5+OqUusPHXTMo/ZhzQqvfOnBrNPfTWgiCocsGh54y8DYRUGzy2KyeQY3h+
-	 LXXeGuPVaO4wg==
-Date: Mon, 19 Oct 2026 19:37:54 +0300
+	b=h4QUfi0TENTekE8f27i8Ol0m2z7/x8KmnB02SRAxzO3mbnn664oHUkPC4Igtjt+Bg
+	 MMoB8mHKJNvi2YFAoQN2J1EJWjCcP3HAl8y3qhgnmcNxwuz4O3zTppmq3rJe9ktY6H
+	 0BHQvZFQJRjnO5vHbCFELBesPN/VgzXYcEFwj7gNzvyyhvWByuEQvNq+oL3F2xGGJ8
+	 JQxZ+xOtoepV7j8WZGJ93o6kJGsxOW32FSe2EzFztWlKjROHF2uINtLgd+1AZyJ5dO
+	 T6CYksGcmcVw6Oy8ALmB1Jb0wUbw2ObiYuSgi+rixS/5Za/mDm5p8vBmDC8kCHofFV
+	 i0LRSgaayTCTg==
+Date: Mon, 19 Oct 2026 20:08:27 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
-	stable@vger.kernel.org, Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
+	stable@vger.kernel.org, Jann Horn <jannh@google.com>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 8/8] KEYS: Verify the key identity in __keyctl_unlink
-Message-ID: <atZHYltB-Fndn17J@kernel.org>
-References: <20261019142516.300040-9-jarkko@kernel.org>
- <20261019142516.300040-1-jarkko@kernel.org>
- <2610587.1792425313@warthog.procyon.org.uk>
+	"open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] KEYS: Reject keyring creation with overridden
+ credentials
+Message-ID: <atZOi-r1ayaLhgY_@kernel.org>
+References: <20261019145624.309790-2-jarkko@kernel.org>
+ <20261019145624.309790-1-jarkko@kernel.org>
+ <2610820.1792425550@warthog.procyon.org.uk>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,31 +69,18 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2610587.1792425313@warthog.procyon.org.uk>
+In-Reply-To: <2610820.1792425550@warthog.procyon.org.uk>
 
-On Mon, Oct 19, 2026 at 04:55:13PM +0100, David Howells wrote:
-> This will show it:
+On Mon, Oct 19, 2026 at 04:59:10PM +0100, David Howells wrote:
+> Would it make sense to just reject KEY_LOOKUP_CREATE at the top of the
+> function if the creds are overridden?
+
+Let me check..
+
+Yep, I suppose you're right. I'll update the patch.
+
 > 
-> 	keyctl newring ring_a @s
-> 	keyctl newring ring_b @s
-> 	A=`keyctl add user A ss %:ring_a`
-> 	B=`keyctl add user A qq %:ring_b`
-> 	keyctl newring R @s
-> 	keyctl show
-> 	keyctl link $A %:R
-> 	keyctl show
-> 	keyctl link $B %:R
-> 	keyctl show
-> 	keyctl unlink $A %:R
-> 	keyctl show  # R is now incorrectly empty
+> David
 > 
-> Reviewed-by: David Howells <dhowells@redhat.com>
-
-I'll actually add this to my own test harness, thanks.
-
-I'm a slightly worried of this patch given that you can
-technically interpret it as a uapi change. I guess here it
-is acceptable, and if a tree falls down, we'll respond
-to that.
 
 Br, Jarkko
