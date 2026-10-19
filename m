@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792444056;
-	b=mvAGljrthZp31UjqEp9oUN7YLG+AeTNOqJkGTsch6kee1wxu+nsZfEtnEFQ6qSrWm3QG
-	 yk46YBeF0aschT95eJmFn8L8WjEsYquSMRRxEwuRCNnS2PVaZ9hV1DjNaoopG+PbPkb1M
-	 hiyprtc6YHDBuNz96OaK5gawzlZdhaj3iDBqSCSJxkfOfQQ083nxUjYSjX8odOjFjPTB2
-	 RHAEA22ewvNAVblbhlsCgcCbPFPzioSXGEcz0TAFJEA6wetYbMJXRnxIE6LexsptboPkI
-	 6yq8NdHk4a4jgozlA/1Wc1wc3Y4oSjzzIgYu2IrLRDjmFawElFpEbs7+GWo/PC2azrg==
+	t=1792444615;
+	b=5bex/JwYmb45VCnewVwbWIoIRLI3cWR6aBppivfaWdCxW4umRYwrrfBQBT/sgBombeMU
+	 zznioMfwWAM+2Kul5b9Dj+OtIXfKoDrDxtI8OiDOVwzqwAv2+/6sMtdxWK8WdG8ts5drM
+	 VhM1skeZFZSGxBjhpFyHW53Yy5tGARTkoV2Q5XY/wHZCgb+6KIwYU0F3SGeDaa16K+yn+
+	 fXFtjU/vGa55w7vfbYHJwgpF10FPi8wuXu1P91CyW35Vsps55sYxmR+FD2mIB6fCIa60Q
+	 prKC9maNUvHdeJzkia2Qeu4C70vgRv0DGim3mbPlo0lMMVxKMSe+mwqGlzUtlS9aozw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792444056;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792444615;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=3QZ9iUX9FEvs9UzUvz0pc3gaCcyQW6FB1eNnhaIOnkw=;
-	b=jZ84j9U3xHmzknHpMi+uSmVQKbjMEsSvrq4kE59QbfAkhrXlP5ZHFAB6sDK3gn23JyDD
-	 3OqZVBu4OwZXny/CGRgwJG2eAo8Jp/GLo5BUfQ306nslqMg25Py/omfL2Hx7ZwPGOKsXm
-	 /l98+gvm7BmCKj2rhkVk472+QtQ7Gf7nYD4gLPx24FWsTXITA2Uhg62o184SUwwMQWjMr
-	 2qNDyQ6WXfllTSxlSnHGpuogMPRpXR7bGE75s1PaidAa1+E5f+yueRoDy7mBnifoa2ASY
-	 2B9zrivcYcYIeE1HaDtIv8W6M+rPS1n4jVMCRpuPw4BzvwGdJ2iaXExg6souwAUWCQQ==
+	bh=KSvVZT5VL1jajWhdlJW0RYEn8BnmHvXSXJY9pj46ymU=;
+	b=U4wnw4nnKl4tkmerNmOKqL2Gzo+gWL0ftuo9WkDQJ5F+OHKPfM2YsOGUZM7Mo6bovChT
+	 lENRWZwmbJsRpxsW/fZHQcktAVM7HgJOlM8D6ov5Nvv5mtIQHXp4JXclj5sU0UALcywQq
+	 74UCkbeq68VnbqGmHH69sEsH44pG5jeA4r/its5IodggsDw439qP6425KmedCCnha7QhO
+	 iSz1n7p4qcODae2pTg/aTuhViTe9rP0ZlJ5tHPjt80Yw/e0v6vZH8oMY9m9s51G+ZRMKv
+	 I4bxfZdmC6aMiY4ECWRrt4N6+ynt47xLdvnCQ3imZ/npnORT7Aa8Xs4bSzrSJGXkQIw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eHQnRUUd;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=kKyapir4;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A02DD606A319;
-	Mon, 19 Oct 2026 21:07:36 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 76773606A331;
+	Mon, 19 Oct 2026 21:16:55 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eHQnRUUd
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B344F1F000C4;
-	Mon, 19 Oct 2026 21:07:35 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=kKyapir4
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id BFBF01F000C4;
+	Mon, 19 Oct 2026 21:16:54 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792444056;
-	bh=3QZ9iUX9FEvs9UzUvz0pc3gaCcyQW6FB1eNnhaIOnkw=;
+	s=k20260515; t=1792444615;
+	bh=KSvVZT5VL1jajWhdlJW0RYEn8BnmHvXSXJY9pj46ymU=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=eHQnRUUduaYG2sO66ojBQpwD9Ynyfi2F2xq1bWeltzJ2r4P1gfWY6HiUWQKzz8TAP
-	 hQBZyEwUkhJ69k9XiNW0sntIhtjUdhCM1yDnlAaDgT23pCUHK0vUV+EnCNM+8Pl5ZH
-	 aODU1OosOpTEGt5IjoppCc4/kgxjsVCCvNK6a8cTq6IImpAljJcG2Hq6bWx0nuPVAh
-	 ymRGX6WH2KU4EHeUPizKK/TgeLUJIfIxlomoA4+WJFFt4WjR11wbSzawSY0YOnMX82
-	 v736VqlkOHBUS9WVU5lVW3e13kseo9WEKXv/T85BsyFZ8RO2vQGgTmlf9BJT0OgYCr
-	 Yw0c8MyuA8aeg==
-Date: Tue, 20 Oct 2026 00:07:32 +0300
+	b=kKyapir4miVPKj4TmF0vBKOiEB39TZPZlYSw4O+Tg7HtDbojJ6MFoXdgm2dntQyTU
+	 5NPGPhH4wNV5iXWSJDhvkHQEws8LKWcrZM6YxpVi/74OlHWZBPjIygl0m359PQ0H2C
+	 5ghou0OozVI7vaO30WKd8N74TOSUQaOhzRqjQSYRkorSjY+hvTCVjUwAhPvBiJ5BT/
+	 PSINHqPnSA/rxQT59RxXnEX7P2Txxl2KQ1SHQyKjJHVDNNO37DNN/x0m6R7LFafGiy
+	 e3lhDpigUkipfCZQjp9wvHL0kZaWPmvguHr7TejRghJd1aRRssH/vN4xtxN47a1pnG
+	 7c6EEBWVB230g==
+Date: Tue, 20 Oct 2026 00:16:51 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Eric Biggers <ebiggers@kernel.org>
 Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
@@ -48,11 +48,12 @@ Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
 	"Serge E. Hallyn" <serge@hallyn.com>,
 	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
 	open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/6] KEYS: Reject @datalen values over INT_MAX
-Message-ID: <ataGlDBhDaHsLT_q@kernel.org>
+Subject: Re: [PATCH v2 6/6] KEYS: Verify the key identity in __keyctl_unlink
+Message-ID: <ataIwzGfUyiY1rSB@kernel.org>
 References: <20261019181732.449591-1-jarkko@kernel.org>
- <20261019181732.449591-6-jarkko@kernel.org>
- <20261019193148.GE65095@quark>
+ <20261019181732.449591-7-jarkko@kernel.org>
+ <20261019193502.GF65095@quark>
+ <ataGVmTZooWzJYMP@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,21 +65,76 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261019193148.GE65095@quark>
+In-Reply-To: <ataGVmTZooWzJYMP@kernel.org>
 
-On Mon, Oct 19, 2026 at 12:31:48PM -0700, Eric Biggers wrote:
-> On Mon, Oct 19, 2026 at 09:17:25PM +0300, Jarkko Sakkinen wrote:
-> > Protect quota from overflowing by rejecting @datalen values that
-> > surpass over INT_MAX.
+On Tue, Oct 20, 2026 at 12:06:30AM +0300, Jarkko Sakkinen wrote:
+> On Mon, Oct 19, 2026 at 12:35:02PM -0700, Eric Biggers wrote:
+> > On Mon, Oct 19, 2026 at 09:17:26PM +0300, Jarkko Sakkinen wrote:
+> > > [PATCH v2 6/6] KEYS: Verify the key identity in __keyctl_unlink
+> > 
+> > There is no __keyctl_unlink.  Seems you mean __key_unlink_begin.
 > 
-> Is there an example of how this can happen, and why the limit needs to
-> still be so large?  add_key() for example limits the payload length to
-> 1 MiB.
-
-I did a bit scavenging, and to my knowleddge, no. So I would retain
-this as safety measure but would not consider it as a bug fix.
-
+> This is definitely my typo :-) I was looking at the implementation
+> in other terminal while writing this and apparently lost focus.
 > 
-> - Eric
+> > 
+> > > Let's define the following preconditions:
+> > > 
+> > > - Two keys: A and B.
+> > > - R is a keyring.
+> > > - Both have the same type/description/domain.
+> > > 
+> > > Then:
+> > > 
+> > > 1. KEYCTL_LINK(A, R) => {A}
+> > > 1. KEYCTL_LINK(B, R) => {B}
+> > > 2. KEYCTL_UNLINK(A, R) => {}
+> > 
+> > Should be 1, 2, and 3?
+> 
+> I tried to describe the scenarion but apparently was not so successful.
+> 
+> I.e. unlinking A removes B given the match in attributes while you would
+> expect getting -ENOENT and B retained. Or this is the idea.
+
+Here's a little bit tweaked version of David's example:
+
+#!/bin/sh
+
+set -e
+
+keyctl new_session >/dev/null
+keyctl newring ring_a @s
+keyctl newring ring_b @s
+A=`keyctl add user A ss %:ring_a`
+B=`keyctl add user A qq %:ring_b`
+keyctl newring R @s
+keyctl show
+keyctl link $A %:R
+keyctl link $B %:R
+keyctl unlink $A %:R
+keyctl show
+
+What I get is:
+
+77968717
+178740336
+781765689
+Session Keyring
+ 952124334 --alswrv      0     0  keyring: _ses
+  77968717 --alswrv      0     0   \_ keyring: ring_a
+  32558793 --alswrv      0     0   |   \_ user: A
+ 781765689 --alswrv      0     0   \_ keyring: R
+ 178740336 --alswrv      0     0   \_ keyring: ring_b
+ 907061159 --alswrv      0     0       \_ user: A
+Session Keyring
+ 952124334 --alswrv      0     0  keyring: _ses
+  77968717 --alswrv      0     0   \_ keyring: ring_a
+  32558793 --alswrv      0     0   |   \_ user: A
+ 781765689 --alswrv      0     0   \_ keyring: R
+ 178740336 --alswrv      0     0   \_ keyring: ring_b
+ 907061159 --alswrv      0     0       \_ user: A
+
+What I would expect is -ENOENT.
 
 Br, Jarkko
