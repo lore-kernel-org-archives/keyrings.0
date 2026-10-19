@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792441936;
-	b=HaJJucZBY+aI+idMLV0UILDzduTjkzYxb3UQO1piNF2RGGGOyuRwr7JvWyjHqjRx+Uro
-	 giJxNIW06qWnsE2Woe8vA8zCpFdxRxUgvPeZlC76D1ZmPHKCtx+icoSFLudSk6DsDVxSi
-	 KwYMVp1a88BTS78da2r8lpwcI6u+IVn7+dMw6xFifG9jQKzoJy0wxCdwXATbKFOGXHkMy
-	 Mgoa+9VnlTYPPc4F9xJvWZUM+DyYjXsI1biJTSYDDA2PhMuJcVHJGmE1NkwQYQ8NZNrQi
-	 Qyy1Q6yHtG+uY00lMO7hEiGaH7ZSOFYR0Cd5WzJRIsfmJ516q9QWigjDZNDbR7Pzvog==
+	t=1792442823;
+	b=zqA7bWne9axyx1SXtpQHp5G34eVp3L8eg5df0lG1I7bwrXoJxnNPgY4veCyolS8xT5uH
+	 gOdn/Sv4nI6d0KwW41ovLxasZhqN3G0xB6QP4x4ikCZ1hzE5hkSmmWY3T+3fGkZegXys7
+	 QQSPv5gIOJgStaoj1qL563wtXVpW/xD8wPu3DPGoHBIyXjW1RUo24ffk5LtnTSvmA3ERe
+	 opk0/Wsx3C/UNUfk7e5E9keAB38Ygdq6mE+uLxPHzABNyPwYMVbCtubQM6DlYhIscHYbB
+	 SE8eAps0axYGSrA+Ho5NIl0bpfuKr+Npuol3UT0tMqFeUw41GOWhv3AaW+npK8re1Cw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792441936;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792442823;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=6JZ6owAUfodkQDSu5cz9f3U1hSFgVs7lIZQwMs65d7c=;
-	b=lcGlvVnO+NwL7Jvin6kciMHRdSBfw0AObrGIVaR8EN1rTGGxhhj/nhZY4mCRmeFqHMBV
-	 jjDR2cq8aD/k9xrAWYf+Oh0N1ZXatn7HgFVAotD6t2gUiFcfmRnm2hTBamo32eAbnaPiu
-	 wfMFADDZTxxi9krTpcZ7J59llDVLWaz7IRpbfbaLxccHRo4tGh+ybOCdQnpTSbRdOmkrK
-	 dJ2hYcFRuG8zpfodUvmLvzvt9Mmh+rVSrNVwZUD5TTb3mTT5OIMSRZl/4+B7KSdhzxE2X
-	 kauo/kIxAcbh/92SJEsGhtcKSHi3Scf4oHoaQ1d4o3jJ965rFJDFFiFOUvtGVUHX4Jw==
+	bh=V1WbwvhVT+CaOduktfFrsnpnmJC/bkfFVrmRm8iPY4A=;
+	b=3HI94pChNavWyuYjZB821HmUiCDafMGMfP6uSYQpOk3uJGyWrggjJ4fobt4Bgqa9L9EN
+	 +cD8gKgzLWvc6Euz/acVbkNoax0v0Scf+KIYQYTxaeyluQOcnNZfWFx2KMeC28wBWUNns
+	 TMiITa25/x0f46l/qCV2Eb1JPuDRgW6TvvBmr9TKmY7sz7cqc8+aSoHR/P8shiP1I8cfZ
+	 8XxBKUiRtjoxCcnfT10SBMk+RKNzloIQUFrRx5RES503QlfPtQiAVYsEAD039aDtFUbg6
+	 lWlicgY2mWFtkroyX43JJ0L/8q9mK8bz3QpcROd48GgKUlLqDdOmk8eM5zxKmMzU0rg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=CUUnoV2S;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=lPX21dfN;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E7564606A319;
-	Mon, 19 Oct 2026 20:32:15 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 05CF7606A31B;
+	Mon, 19 Oct 2026 20:47:02 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=CUUnoV2S
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 07C371F000C4;
-	Mon, 19 Oct 2026 20:32:14 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=lPX21dfN
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 2AA791F000C4;
+	Mon, 19 Oct 2026 20:47:01 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792441935;
-	bh=6JZ6owAUfodkQDSu5cz9f3U1hSFgVs7lIZQwMs65d7c=;
+	s=k20260515; t=1792442822;
+	bh=V1WbwvhVT+CaOduktfFrsnpnmJC/bkfFVrmRm8iPY4A=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=CUUnoV2SJv2FTIJiSh91486w2lDw+7kQ7aGLKU8YR2fwDr3V5BWxwtHu8T3Vc+8DZ
-	 Wr2QoUEbo/ckUxXITUoZGIZDGKAYheFOvIAME5vx4+JUljuTxD8oX1t8kfzbqkjvrL
-	 JlnA2g3obr/iDb0LIT1qZ1fXpFKOQqHLTSKnIJ6uhiO+Fxf0nZTfAr7DAV9AXrz5FW
-	 uXnBzpgBwgJJWBqm7wrevI5mpoVQ0P26CtspvqdZk1/3/Zz3P/C5Bck3K3sk62Q+ya
-	 bw+0pp+k4II3XQ2cqT4IsfSXmB6WIQNEU2Cs9mFXa7XMV5EwHhCRExRAZsoqnqysM4
-	 ze0QhufHlaXxA==
-Date: Mon, 19 Oct 2026 23:32:11 +0300
+	b=lPX21dfNa/srFS30DqBEg08zS+0XWWTbE8Gd9yfXMbpXTtzN7wg3al9B01EpvJ2Z9
+	 Gt9G2kr7S9un7IaTaGjBKIUw0nlSvgXFxKSE9Zq4ckFRrAR1xt9aNgnpKatoiQ2dKf
+	 wIubCd76No+obcmZdBMgo68aoeIrGvC1Ep4Y3wzhoOuyF9a5Ctn2W3g9Y1rROtzTMr
+	 ZoArsTHr3+C+g+FZpTvuEtQFs915UjYKKfHTIHRn6kBeyUyTMBdY27qGuMJGijUzaI
+	 K+BNPePs4TcQqQRSpDUTTiQGQPyvKzloZvGgDGZSwFj+iU0v/dIVy2EdANa4hJWz/H
+	 Fo4T2wVd2z/Qw==
+Date: Mon, 19 Oct 2026 23:46:58 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Eric Biggers <ebiggers@kernel.org>
 Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
@@ -48,12 +48,12 @@ Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
 	"Serge E. Hallyn" <serge@hallyn.com>,
 	open list <linux-kernel@vger.kernel.org>,
 	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v2 1/6] KEYS: Expand key->{datalen,quotalen} to unsigned
- int
-Message-ID: <atZ-SyaBG0leY8P9@kernel.org>
+Subject: Re: [PATCH v2 2/6] KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE
+ in key_alloc()
+Message-ID: <ataBwhb8d2M1q2ux@kernel.org>
 References: <20261019181732.449591-1-jarkko@kernel.org>
- <20261019181732.449591-2-jarkko@kernel.org>
- <20261019191248.GA65095@quark>
+ <20261019181732.449591-3-jarkko@kernel.org>
+ <20261019191759.GB65095@quark>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,55 +65,39 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261019191248.GA65095@quark>
+In-Reply-To: <20261019191759.GB65095@quark>
 
-On Mon, Oct 19, 2026 at 12:12:48PM -0700, Eric Biggers wrote:
-> On Mon, Oct 19, 2026 at 09:17:21PM +0300, Jarkko Sakkinen wrote:
-> > In key_alloc() and key_payload_reserve(), key->quotalen and key->datalen
-> > can receive values larger than USHRT_MAX.
+On Mon, Oct 19, 2026 at 12:17:59PM -0700, Eric Biggers wrote:
+> On Mon, Oct 19, 2026 at 09:17:22PM +0300, Jarkko Sakkinen wrote:
+> > @desclen in key_alloc() is saved to the 16-bit wide desc_len field in
+> > struct keyring_index_key.
+> > 
+> > Reject @desclen values at or above KEY_MAX_DESC_SIZE with -EINVAL in
+> > order to account for the NUL terminator and prevent integer overflow.
 > 
-> Could use an explanation about how this can happen.  A keyring with more
-> than 16383 links, I guess?
+> This should say something like: "in order to match the userspace limit
+> and avoid u16 truncation".
+> 
+> There are also similar truncations of desc_len to u16 in
+> key_create_or_update() and keyring_search().
 
-It is good to sanity check these given the source of origin.
+Ack.
 
-I tried to implement your example and I think I was successful.
+> 
+> > +#define KEY_MAX_DESC_SIZE 4096
+> 
+> Could use a comment mentioning that it includes the trailing NUL.
 
-Here's what I did:
+OK, that improved the commit mesage somewhat:
 
-	keyctl new_session >/dev/null
+    KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE in key_alloc()
 
-	owner=$(keyctl newring owner @s)
-	keeper=$(keyctl newring keeper @s)
+    @desclen in key_alloc() is saved to the 16-bit wide desc_len field in
+    struct keyring_index_key.
 
-	for ((i=0; i<16384; i++)); do
-	  key=$(keyctl add user "k$i" x "$keeper")
-	  keyctl link "$key" "$owner"
-	done
-
-	awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
-	keyctl clear "$owner"
-	awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
-
-It is mostly safe from unprivileged user as /proc/sys/kernel/keys/maxkeys
-and /proc/sys/kernel/keys/maxbytes are by default set to 200 and 20000.
-
-When I run it as root, this what I get on first run:
-
-252793/25000000
-252793/25000000
-
-Second run:
-
-383862/25000000
-383862/25000000
-
-And third run for good measure:
-
-514934/25000000
-514934/25000000
-
-So yeah, it is right on the uapi surface easily accessible :-)
+    Reject @desclen values at or above KEY_MAX_DESC_SIZE with -EINVAL in order
+    to match the userspace limit. The constraints inherits from the one byte
+    required for the NULL character.
 
 > 
 > - Eric
