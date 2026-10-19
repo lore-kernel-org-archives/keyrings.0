@@ -1,47 +1,59 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792452509;
-	b=QBGsQJjE8qYJVMoqi+sWOI2W5CueVvxmph3TRYPkveeDAESZBOTvcD8uYUyKW6VAEkbi
-	 7HhX7qQV55cYrp6HEZXxxJTs1S1iRplPCY2HvD/VuJwOh+atUY0Hrx5Z1YAtUIfq7ETYd
-	 uDjM3lSw/aUqJmuGc/5pDCepspBES2H5w3FxumIWdvZfuaOr1Vw9YBK7GQWBQbdIDeyqq
-	 zcIg8V+0SVf/xPFfg1lb5rX7sYp+pGx0U9MKJZKLY8zGbDnlXzAbN0qPfSRuhgNAQnaHr
-	 wyTpPt4C46sN1DpYorC7TGFsq3n0N8c21ffnS8kFmzBL1YoWDliN/KadwM3Bq+mfTTQ==
+	t=1792454142;
+	b=3oYl6C5s3lUdTIqJPmqoXtgRQ+5mpb+XcV61aGCGu7XdZGmcHuvzTTUv8mZhuA1InUez
+	 StBa3zUJ8kFXbRbdcHyj435JDk3vMZL0MH5jz/QcNNT1ZhcaRMvEIsjDwfLSsCnSaicSH
+	 AH+rOsmSphsN0ND61MlJoETnWhVZWR7go0lPTROhOGY8pJca+MBClJYJ/nwfNrolK4j+N
+	 HWgicurHEPcvocPddF802aC2gof9DoiYlniN0zil4jfdK+/jthE/kj7IiQprlHt3Iqo9Z
+	 lBOCytNVi0NLmuIU0xPTR5zQuunvxImicllR2wUDIQbu3SEdtbAotixUrz26e2WlULg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792452509;
-	h=Received:DKIM-Signature:Message-ID:Date:MIME-Version:User-Agent:
-	 Subject:To:Cc:References:Content-Language:From:In-Reply-To:
-	 Content-Type:Content-Transfer-Encoding;
-	bh=ML8QuNr/SitRoSc3ITEYHmuyYUgVewzWtNVAZkiyDrE=;
-	b=QO85JXRPoKytZ8BS2rAdcDs1znthD6o9aP+sgVSp1JHbUtcIhTV2CFdIHxVXL9xXSjnj
-	 hRB2ftEhKs4cyehBc6pk4mPfnI36uAML+5VyTR15W7/o0glvYaGVUc6SdA/d47pLMbyc9
-	 J03FbYjl+vcUL2pPPcyba2MGjCmaSAE0fK/kjPz0OL6VcCN3QrAAKCO/HVYenRHi37fYH
-	 +DLejaMr9f25Dn3/Cd3OVDKVikU3O3u/s/sS2/YvQO6PRA7HtlhMg5PggfBtM6SqXAtOK
-	 dv9pXTk3IWgfJqQNqfCt0UdG13u2mTr1Zi4UibFnGHOiB/eL3GXzQtw6IS2bL6aEQeA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792454142;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=Bsi8OJ4atLQ9WSwYb71EUGVfr2GPb/FAlpYjhx+M8Aw=;
+	b=OJhbu5ENS0l+vQ11+kwbTfeGYHQPKq0+VRzcNsct5C2UL7Ic+i+mmYHPpwo8rtC2tKSo
+	 D+5kj6Hv0YnjhYq0gJd5IUt6aJlrPQFCEvWLxrZoKe3eubaVD5HU05qfnXoESW1pFfY5n
+	 aSX5jAnimO61Gl66bVcRZgBPS96LlWDaVcM8P0QDuBSPvS8DIjt674nn1DR1MR7OsWj51
+	 ldTGVqrLX++75c2a/4W6wrPMhHHDEqcZbH6m6nbnDDLVO2Iek7GRopXrV4sywQSEJYvJr
+	 lxtfjw1vg5Z2wXiFZB4fCUiTR8tKnwVzcLdr6AqcynIP6eLAsHvC99iwzt2aG4LZE8A==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Tqn4kl1P;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="Rwi7t1/H";
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5CB50606A31E;
-	Mon, 19 Oct 2026 23:28:29 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 15911606A319;
+	Mon, 19 Oct 2026 23:55:41 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Tqn4kl1P
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id AA3F71F000C5;
-	Mon, 19 Oct 2026 23:28:28 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Rwi7t1/H
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 09E951F000C4;
+	Mon, 19 Oct 2026 23:55:40 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792452508;
-	bh=ML8QuNr/SitRoSc3ITEYHmuyYUgVewzWtNVAZkiyDrE=;
-	h=Date:Subject:To:Cc:References:From:In-Reply-To;
-	b=Tqn4kl1PBPlF2kJixJd/7mcxxNuVLf+rAAEUu4w/kptLkmEe42mooG5/d2QlJiedF
-	 AraewhApdjMu8UNc+h2EcoVwZrBaPMASILorZSqAGTMMzlvw/JxFkwF98K8ICs36A6
-	 HD+/6JXVP6rp3sPLcTU+hTTg+0dIFjf0czrL097yKqHljEnxEErWHRyEImtiz/s1a2
-	 M71ODIREV7LtTdztLHznrO0xvkVBPxz5u0fAX/7kqRUUf0zUvsu43y8w6vz57gQN4f
-	 jKT+jrq9unme/Y815KwMAgGcVGx4br4fDV3TnOpDTGpI+npQAoqybcpfUmH9SvMUFO
-	 6T+1Z2ybUEa1w==
-Message-ID: <1c39ea06-4b5c-49c0-a508-06955c549556@kernel.org>
-Date: Mon, 19 Oct 2026 16:28:28 -0700
+	s=k20260515; t=1792454141;
+	bh=Bsi8OJ4atLQ9WSwYb71EUGVfr2GPb/FAlpYjhx+M8Aw=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=Rwi7t1/HqEa6snCtQBF5OBhiz4yWj0EU4RNmpXcUNMEm0D8/zW5oTSNC31JeocD5d
+	 p0mbkyYfl6TmC4g4kYmTvVoeis2x+tnTl+xaWtk7AP1DEj8z7mm5yeeJl74iRRQS+Z
+	 OozqVPDCApcf1sdWim+EpTWx8RDAFOit1+Ibb2DY+Xa/8SOqivu+uH/kbDjsWs4Bjy
+	 aYHARgWbqwbThkZ4m9z3fCCjhBrnl8wBAOrLrc+HVtMIv9Po/AksptZeSBXYk4QFif
+	 V0fVdxwSDqgRgldFY/7GuGN8bg8fi63jwRfOHigVjpPPBvcR5cYsbKxjK9I1b/RfDY
+	 t03wdPLlimMlQ==
+Date: Tue, 20 Oct 2026 02:55:37 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	stable@vger.kernel.org, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/6] KEYS: Reject @datalen values over INT_MAX
+Message-ID: <atat-Td-fEPQq3c0@kernel.org>
+References: <20261019181732.449591-1-jarkko@kernel.org>
+ <20261019181732.449591-6-jarkko@kernel.org>
+ <20261019193148.GE65095@quark>
+ <ataGlDBhDaHsLT_q@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -51,55 +63,36 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH RFC 4/4] selftests/ipe: test the IPE policy keyring
-To: manuelh@nvidia.com, David Howells <dhowells@redhat.com>,
- Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Christian Brauner <brauner@kernel.org>,
- Andrew Halaney <andrew@amutable.com>, Paul Moore <paul@paul-moore.com>,
- James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
- Jonathan Corbet <corbet@lwn.net>, Shuah Khan <skhan@linuxfoundation.org>,
- Shuah Khan <shuah@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
- Alexei Starovoitov <ast@kernel.org>, Daniel Borkmann <daniel@iogearbox.net>,
- linux-security-module@vger.kernel.org, keyrings@vger.kernel.org,
- linux-kselftest@vger.kernel.org, linux-doc@vger.kernel.org,
- bpf@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
- <20261019-b4-ipe-keyring-rfc-v1-4-156f0b93e843@nvidia.com>
-Content-Language: en-US
-From: Fan Wu <wufan@kernel.org>
-In-Reply-To: <20261019-b4-ipe-keyring-rfc-v1-4-156f0b93e843@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ataGlDBhDaHsLT_q@kernel.org>
 
-
-
-On 10/19/2026 2:40 PM, Manuel Huber via B4 Relay wrote:
-> From: Manuel Huber <manuelh@nvidia.com>
+On Tue, Oct 20, 2026 at 12:07:32AM +0300, Jarkko Sakkinen wrote:
+> On Mon, Oct 19, 2026 at 12:31:48PM -0700, Eric Biggers wrote:
+> > On Mon, Oct 19, 2026 at 09:17:25PM +0300, Jarkko Sakkinen wrote:
+> > > Protect quota from overflowing by rejecting @datalen values that
+> > > surpass over INT_MAX.
+> > 
+> > Is there an example of how this can happen, and why the limit needs to
+> > still be so large?  add_key() for example limits the payload length to
+> > 1 MiB.
 > 
-> Add an IPE kselftest that validates policy keyring operations for
-> both ipe.keyring_unsealed values 0 and 1.
-> 
-> For the default ipe.keyring_unsealed=0, verify that a) the special key
-> ID resolves, b) certificate enrollment is rejected, and c) the keyring
-> is not used for policy verification.
-> For ipe.keyring_unsealed=1, verify that we can a) provision multiple
-> certificates, b) restrict the keyring, then reject unenrolled and
-> corrupted signatures, c) authenticate policy loads and updates with
-> different enrolled certificates.
-> 
-> Since IPE is built in, keyring restriction is irreversible, which is
-> why we can only exercise the initially sealed and unsealed scenarios
-> via separate boots. To get full coverage, CI thus needs to spin up
-> separate environments with respective parameter values.
-> 
-> Signed-off-by: Manuel Huber <manuelh@nvidia.com>
-> ---
+> I did a bit scavenging, and to my knowleddge, no. So I would retain
+> this as safety measure but would not consider it as a bug fix.
 
-IPE doesn't use kselftest. Our tests live in the IPE CI [1], which already has keyring tests for policy signatures [2] and an initrd unit that provisions and seals the .fs-verity keyring [3]. Please add the .ipe cases there instead.
-[1] https://github.com/Integrity-Policy-Enforcement/ci
-[2] https://github.com/Integrity-Policy-Enforcement/ci/blob/main/suite/cases/policy_signature.py
-[3] https://github.com/Integrity-Policy-Enforcement/ci/blob/main/image/initrd/anchor-fsverity.service
+While it is true that add_key() has 1 MiB limit there's also
+root quota. That was what I was originally thinking about
+now that I scratched my head a bit.
 
-Fan
+But...
 
+However, it is capped by /proc/sys/kernel/keys/root_maxbytes, 
+SYSCTL_INT_MAX already.
+
+So that makes the check this patch adds irrelevant, and thus
+it should be dropped.
+
+Phew... At least it is now investigated in-depth enough, I
+think.
+
+Br, Jarkko
