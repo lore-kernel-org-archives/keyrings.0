@@ -1,60 +1,54 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792433886;
-	b=VrXJa5ak9K6RAFZ2uC4/lNR0ABeFSWtxu4hT01V9lez+4qCWLTgCpIMymv/JiAtcvSRJ
-	 Xzwf4VyjNpCkPEtb7drZxalmLwS3O8fGXPsNVwUkCxlTxN++3KWhzjDpZx1ahB+7nDO8I
-	 Vror9hYpKzbfMl7Jqb0PXXIlf28qndYhXWdgZa4GLDX3TI8yg+wMBSZa1FObIZCpdIvFF
-	 hJr1honMvJsZKcrS6goFD/KZk5/3Mq2G5CttQHzgg+XAeokm740G4QVedX+ss+Uf2rrtR
-	 ztdxREl8D/7GHvWq+DMySI9/JAGdA3M7YwV0hekPG8KFB9hNtKG0vfByfIGSGj1oViQ==
+	t=1792434548;
+	b=fLU5UNWsok4+len1q+VNsXvO4py4ikt7BAY4gQaJaPO51fAGinfhCxk9Jb6ONQkbQ3yL
+	 MU1jQ//2nUzIrmms9cFH5g3DubI8bWSBauzMOoKlHMMnheTjv1Uze/kxwJ66a93Bo2go+
+	 Eo7AYeyiUKoaUNYG0oOnmr3gwCMuM0g0b6KCyP6xWMZE0/lPbOcXkJbqA6kc+c/eWz9Td
+	 ytNg5Z9Srub5FNXIVxjUT+rST2LoLen/CZhsHTMu9hhNiuYAngjVo5gPVkTXsI2rhdHZT
+	 Ovp09atCuE0IkN5/infN+KAfuwnMmz/nUGuUDfhPgoIqavf3f4PyLvZSBxWhLRaU64w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792433886;
-	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
-	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
-	bh=GtBw/Wu0WnwjYL9xqON2SXYjgCC1DmhQpuIb3/Nqu5Y=;
-	b=X0EJUUaYqZUDM39euIOdMyV0TawNm8bXXywZIukTWA4ZJYwbYWdeBFSEe0BkAv9NNcju
-	 XnNIxvlHltxb6cR13oWEE8hbUpThDYgPMMY6bQmpzKXmXS8FM1Q89KNki/bMcRUNiBwcC
-	 W7s/SX+wwA9LDDZM11iY5DCdkC+HrbtTQ+yAPWI+f7e6Op4PRPkM9x70OA9hcEbLBfG+Z
-	 +5COh5qfxhwdLxuKZDGrts7k6Gfn3ugjpI5A/rMoTtSQBvfdJydo8QAWjDyxa0UpXO/p5
-	 TMtdpBuyFLd5Mjz6oJYYrP0BQl3ewIFL9HxKoq1Pnh1Orace0OC41R+qy2riciSoP5w==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792434548;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=27il3oOcwKVvNVhkDfMHuekSAptIeJEU0HuNxjreV+k=;
+	b=ZHhzchv8O5lIBOrXO5m9mNPgFDt3NZO6mFeF8w/7dG3CJdqFJ1C1/2SdlGhcBLh6dig6
+	 fGOzNCHLUL7dTqWDKmctFFROJ8ZzZ8l5+mCJ6khADI630srIEr+THvZW8ltRma7xuLJ2D
+	 ALJzy4wddasktTDLzRlivSMoOBIwNEHwRcQMmYZM94lQbMCYnOBUNcpDVSCFRMo6HDDkn
+	 NLccZ9n0T3aGmOiBweIRFvx+fw65Wm66rP+R5RHSI/BYjDQJ+6i3q8e2yW3L4XC84ZRfU
+	 fmwMP/IKvD2+n1has7InQVFnByurrCBoY3Y6yfQRZAOk3E9CeGdK1vuAlNt9yhkDMBw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=DIw2YP+T;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PIbNthbe;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E901D606A320;
-	Mon, 19 Oct 2026 18:18:05 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 22827606A31A;
+	Mon, 19 Oct 2026 18:29:07 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=DIw2YP+T
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 040E21F000C4;
-	Mon, 19 Oct 2026 18:18:04 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PIbNthbe
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 124C21F000C4;
+	Mon, 19 Oct 2026 18:29:06 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792433885;
-	bh=GtBw/Wu0WnwjYL9xqON2SXYjgCC1DmhQpuIb3/Nqu5Y=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=DIw2YP+T5Vlm+B1GP02dUbDQdFUjxfrL7V2usrFpBJmbaRybtcaVCPdt80fZfCKEp
-	 uAE1A7l/CVD5ILHUOvTjnI0nuUENjrIrCaCE2F2fO12HlEauZVzrV3Y0Ddp80KyqGX
-	 egH2UfixPMkmhyVP5KePT1EMZt6lU3KpbRZN6MBvehWm8hDrod+WWoXfIRkl4+71va
-	 Dpk9eA9T52WAX3j2luQ8YDFUxOqTwyQv/mzN+1bC117tPkKDpgTj9zXrkSNmp8DmmX
-	 vGEDHVdMqTZR7JF7UGIgEH2uY7/Z5S6bzWZadC06iE4sVvTdyfDyq3S+E6XTDbM4ff
-	 msl+cgI4C/txw==
+	s=k20260515; t=1792434547;
+	bh=27il3oOcwKVvNVhkDfMHuekSAptIeJEU0HuNxjreV+k=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=PIbNthbeDBD6GZGFfuuN690hURo1zqrCinFmn1QmwDajpKCvt7JBg94SDrGejZmLx
+	 VIVkHFGIky5xdmJuDJ33OiKfwqDcFYktRDn+yNbI3unnr3rQMTHdDX1prrS1yl5aSl
+	 o4wnUVULaynoQz3vjhVVcsL7L3ToTxeH+i+gSdYmG1iwInu2Hhfq5SwL1Q5mSKbS3t
+	 Z+69cT1vnekHTg+ub5P8OUXhJ4rJzB3hjRDyKJbYGTlf4K/V95CYo77iUkDMTq07w5
+	 /2QPY/AY89uWkWSjHIQvK038ZfSsgTEFS0uSVXROEQ32XTSz8vjG9JmzvRLFXuMlA9
+	 nMR60ICmpYqeg==
+Date: Mon, 19 Oct 2026 21:29:03 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org,
-	Eric Biggers <ebiggers@kernel.org>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	stable@vger.kernel.org,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
+Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
-	linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 6/6] KEYS: Verify the key identity in __keyctl_unlink
-Date: Mon, 19 Oct 2026 21:17:26 +0300
-Message-ID: <20261019181732.449591-7-jarkko@kernel.org>
-X-Mailer: git-send-email 2.47.3
-In-Reply-To: <20261019181732.449591-1-jarkko@kernel.org>
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/6] KEYS: rhashtable bug fixes
+Message-ID: <atZhb2Gv9Xbvcjkw@kernel.org>
 References: <20261019181732.449591-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -65,52 +59,45 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261019181732.449591-1-jarkko@kernel.org>
 
-Let's define the following preconditions:
+On Mon, Oct 19, 2026 at 09:17:20PM +0300, Jarkko Sakkinen wrote:
+> My patch set that migrates assoc_array to rhashtable had some LLM
+> scavegend bug fixes. Unfortunately most them where either plain wrong or
+> not in the right scope. The bug fixes in this patch set are by human
+> labour constructed fully but they are derived from what I got out of the
+> original LLM source. Thus, they are tagged as LLM assisted.
+> 
+> Changelog
+> =========
+> 
+> - v2: There was enough tweaks that a sanity check round makes sense just
+>   in case.
+> - v2: Addressed issues pointed out by David.
+> - v1: https://lore.kernel.org/keyrings/20261019142516.300040-1-jarkko@kernel.org/
+> 
+> Jarkko Sakkinen (6):
+>   KEYS: Expand key->{datalen,quotalen} to unsigned int
+>   KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE in key_alloc()
+>   KEYS: Prevent overflow of user->{qnkeys,qnbytes} in key_alloc()
+>   KEYS: Prevent overflow of quota in key_alloc()
+>   KEYS: Reject @datalen values over INT_MAX
+>   KEYS: Verify the key identity in __keyctl_unlink
+> 
+>  include/linux/key.h     | 6 ++++--
+>  security/keys/key.c     | 9 +++++++++
+>  security/keys/keyctl.c  | 2 --
+>  security/keys/keyring.c | 6 ++++++
+>  4 files changed, 19 insertions(+), 4 deletions(-)
+> 
+> --
+> 2.47.3
+> 
 
-- Two keys: A and B.
-- R is a keyring.
-- Both have the same type/description/domain.
+The benefit with this slicing is at least that backport conflicts should
+be easy to resolve, and if I recall correctly all go to v5.10+ stable
+kernels.
 
-Then:
-
-1. KEYCTL_LINK(A, R) => {A}
-1. KEYCTL_LINK(B, R) => {B}
-2. KEYCTL_UNLINK(A, R) => {}
-
-Instead, verify key tidentity before unlinking, and return -ENOENT on
-mismatch.
-
-Assisted-by: LLM
-Cc: stable@vger.kernel.org
-Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-Reviewed-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
----
- security/keys/keyring.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 7143f3079d20..b025331488c5 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -1501,9 +1501,15 @@ static int __key_unlink_begin(struct key *keyring, struct key *key,
- 			      struct assoc_array_edit **_edit)
- {
- 	struct assoc_array_edit *edit;
-+	const void *object;
- 
- 	BUG_ON(*_edit != NULL);
- 
-+	object = assoc_array_find(&keyring->keys, &keyring_assoc_array_ops,
-+				  &key->index_key);
-+	if (!object || keyring_ptr_to_key(object) != key)
-+		return -ENOENT;
-+
- 	edit = assoc_array_delete(&keyring->keys, &keyring_assoc_array_ops,
- 				  &key->index_key);
- 	if (IS_ERR(edit))
--- 
-2.47.3
-
+Br, Jarkko
