@@ -1,61 +1,64 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792518249;
-	b=WUsk0v/ekhliNSE+XkPed7VT7OtLo+QrblIyPU/gacWtUIDzqjUKL0oJ3TXLGi2Vs960
-	 4/OX29yBInMkzFWJgGhoBRqvEIh4Kemn0saSXrJnOEIhks+1OtVEIm+sOihzf04KQj+5q
-	 8MIFceGBbo6p4eNyiANVZHpL7GRLOTgehiM+wNcbLLqKOnvtmDzDDw9SRmzY+v7pOHkFZ
-	 hZsz7v+mVYP2KPdJEUR7z8xC8+XX3FGdseq8dmj1hFsdCbCUIUvW1qNHp002jOoDxlMy7
-	 P470Fq+Khnq9BIaARwDIhilVXgihtFCqjwtu1IhMngiopLmh4AI5kKFj9H6s1dtOtNg==
+	t=1792529386;
+	b=U7Qc/Kt+CCm6MQp5PfbHSZhiYmeiA+VF7IcZj3sASKvhlauFiknG0wZNamVVUOxuWfkk
+	 wG5amB6yJa+6E3W4wAPW+vc7d+v1gEEkgKQY1uNasltJuyNNTV+RoCXitv3Jz/ljFWrh8
+	 jL5MsKW84gLxJVKlioDcrqvcOAoJ2Fs4DNBJl520GleEezEzEQg2I/0wPXvTIeoltvjdf
+	 lAHuKLKmVcQRsjNg4hzO/Ht9Q+hRyRA0xp6oElEN5SR4zBvKWbPa5xTLkicyLBOvtzG6Y
+	 7IQXEvMIqn4qA18F28L74U514lmQt1bV4uanLb/92aoM+RfkhpAR6nB/XSAvKicRAQA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792518249;
-	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
-	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
-	bh=5dAqZyIdnLqZkDPsYtrDxXC8F11XV4d+UfmkgL0qrH0=;
-	b=SQ6yXjf/HXomYfzCS+zSCgUcIUC9XrgS11Pq8/4fagdvCLjEXPrq5vDbD/NBBeSGvP8a
-	 sb1wnPLHnBVsDQDnkdFg0mzZnsJO8II0uA55fqDhqy0PLeRI0LCxLVARg37IX2rfF7qUe
-	 +MAJBBj9hg2Tmk05vBKqcrUdfgZ8DFsEidWZoyaYgp3sBJJCoCOH8ToHYrZmw6SqUMXDk
-	 cp3ugHxIXaS/QyXcPgWaREqFaGGxWmo8fHOHTuuJ2ysxEPBDOXuKEd7fhDjI02O/PB1Oy
-	 HtGhtisn3ZdAk5XcZWqjNSOnLL7H2XtgayebT84JgyZrt7CfmW4gJyw0ZYoTUmEL1uw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792529386;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=dh8wV/jJ5UfA4S3B5D1pgryN5AOY10+5zoMt8CWEc78=;
+	b=PJPEhZZvQz7q+4mfPUWaxnY2e2LE03Qozrz4GHCAUqZ1pZlzMSA606U5BmjqHqzDyNXG
+	 +4fJVajTs2ohyYlvEl+zgVQd3DfHlicgbG2b1/3eaXwJqekszQ+7LRAcKg8ouGmkkQ1uD
+	 SkESDGh8dCodYEoJNfkUhri1FNOdGuCc8g0dp/WmcLK4iU8MXNa5VKbXjtWvMWAwHo8nJ
+	 ADnNHCIlbCm2SiZp/mh8b0nefu6sSMv4y0kwGO+By8DXKIaQgUsNzwklMyB2ReNdUuzl9
+	 xh3RAxZWlQXwnGSMp0DoBTLgSx9osSLsoonWmVFKbpzGjmXgBdp1rsD30c6miwZ6w+Q==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H3ox2Okf;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LtbSDrfK;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 935FC606A32D;
-	Tue, 20 Oct 2026 17:44:09 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 43709606A319;
+	Tue, 20 Oct 2026 20:49:45 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H3ox2Okf
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A321F1F000C9;
-	Tue, 20 Oct 2026 17:44:08 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LtbSDrfK
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 47F001F000C9;
+	Tue, 20 Oct 2026 20:49:45 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792518249;
-	bh=5dAqZyIdnLqZkDPsYtrDxXC8F11XV4d+UfmkgL0qrH0=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=H3ox2OkfS/0A8Wu+iLxT5Hloq26brloB7KfmJ2124DkToVAurh2mPE2mUmlOsnbBj
-	 JhciHIYKcZOplUmzJrz1AJkzd+pxmpcEfqkd0g3M82soVL/OrC3A1gpKdsDVwJhNXY
-	 BwFmh0m9hBMQiPWTiTGI3ZwXgEpk4cJYms2lTh1ygjy7v7JgFINwdlLiksp51pYJHY
-	 BeCPeoUaLany4ZZa9g57z6zAuG0IuAbqjeomyjv3Rl7/kw1L8XKiQ5vu2mToagMq9v
-	 XD3e/p3nIOLxF/D3Ff6vORdue0pSrj6sjOR5zvRrBUwe5y1T2RHSkNlq+fCic59o1c
-	 aPyfN1k1PIa1w==
+	s=k20260515; t=1792529385;
+	bh=dh8wV/jJ5UfA4S3B5D1pgryN5AOY10+5zoMt8CWEc78=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=LtbSDrfK/jnkOMIk1Vq/D6h1ukD57ByPKlcwGDFV0slDf9Q6JfzcgyssFWm0qkzsP
+	 hVg/PQaVAsiqrdJFUWWX5WGGfj9FTPDcwP6XFpo4yDxFtRKNQocCUTN9ncdtBMfBe6
+	 8gRawyU7SaQZQ9MRf4l5B7QnZR8wPpZvA5fizxvMhCWXjdJpeHshcBby5dssWv0evN
+	 JlVnSmUhqoZY73KXweMXwkVAH1gToajWnUZWeqB2zu6GUujDKXzVRBlg5WDozD6V4z
+	 UXyY43FQosz/5izpy6BPjW3au8xOpNHgFoZ87dWtF7i6FVQN2QN33+mwUfzXCRUDkX
+	 DVCZ7MvNrA6Cg==
+Date: Tue, 20 Oct 2026 23:49:41 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org,
-	Eric Biggers <ebiggers@kernel.org>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	stable@vger.kernel.org,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
+Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
+	stable@vger.kernel.org, Paulo Alcantara <pc@manguebit.org>,
+	Namjae Jeon <linkinjeon@kernel.org>,
+	Ronnie Sahlberg <ronniesahlberg@gmail.com>,
+	Shyam Prasad N <sprasad@microsoft.com>, Tom Talpey <tom@talpey.com>,
+	Bharath SM <bharathsm@microsoft.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
-	linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v4 3/3] KEYS: Verify the key identity in __key_unlink_begin
-Date: Tue, 20 Oct 2026 20:43:21 +0300
-Message-ID: <20261020174325.2229448-4-jarkko@kernel.org>
-X-Mailer: git-send-email 2.47.3
-In-Reply-To: <20261020174325.2229448-1-jarkko@kernel.org>
+	"open list:COMMON INTERNET FILE SYSTEM CLIENT (CIFS and SMB3)" <linux-cifs@vger.kernel.org>,
+	"moderated list:COMMON INTERNET FILE SYSTEM CLIENT (CIFS and SMB3)" <samba-technical@lists.samba.org>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v4 1/3] KEYS: Expand key->{datalen,quotalen} to unsigned
+ int
+Message-ID: <atfT5WJU_ldjpQOM@kernel.org>
 References: <20261020174325.2229448-1-jarkko@kernel.org>
+ <20261020174325.2229448-2-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,61 +68,65 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261020174325.2229448-2-jarkko@kernel.org>
 
-When two keys have identical type and description, linking the second key
-replaces the first in a keyring. However, attempting to unlink the first
-key (no longer in the keyring) unlinks the second key.
+On Tue, Oct 20, 2026 at 08:43:19PM +0300, Jarkko Sakkinen wrote:
+> In key_alloc() and key_payload_reserve(), key->quotalen and key->datalen
+> can receive values larger than USHRT_MAX.
+> 
+> Example:
+> 
+>   keyctl new_session >/dev/null
+>   owner=$(keyctl newring owner @s)
+>   keeper=$(keyctl newring keeper @s)
+> 
+>   for ((i=0; i<16384; i++)); do
+>       key=$(keyctl add user "k$i" x "$keeper")
+>       keyctl link "$key" "$owner"
+>   done
+> 
+>   awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
+>   keyctl clear "$owner"
+>   awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
+> 
+> Because key->datalen wraps around 65535, the quota refunded upon clearing
+> is truncated, causing quota bytes to leak in /proc/key-users.
+> 
+> Change the types of key->datalen and key->quotalen from unsigned short to
+> unsigned int so that they can carry the full payload length without
+> truncation.
+> 
+> Cc: stable@vger.kernel.org
+> Assisted-by: LLM
+> Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+> Reviewed-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-This happens because __key_unlink_begin() calls assoc_array_delete() with
-&key->index_key, matching only on type and description rather than the
-key's identity.
+For any kernel patches I've missed all Sashiko reviews so far and have
+not taken the feedback into account in anything.
 
-Example:
+There is two issues:
 
-  keyctl new_session >/dev/null
-  keyctl newring ring_a @s
-  keyctl newring ring_b @s
-  A=$(keyctl add user A ss %:ring_a)
-  B=$(keyctl add user A qq %:ring_b)
-  keyctl newring R @s
-  keyctl link $A %:R
-  keyctl link $B %:R
-  keyctl unlink $A %:R
-  keyctl show
+1. I was not subscribed to linux-security-module. I could be and have
+   been but probably when I've changed my list subscriptions at some
+   point otherwise, I happened not to be.
+2. Even if I was subscribed to linux-security-module, at least I'd
+   like to get reviews Cc'd that concern my patches or patches
+   sent to me.
 
-Verify the key identity before unlinking, and return -ENOENT on mismatch,
-instead of unlinking the key with the wrong identity.
+Now that Eric pointed out Sashiko review I was able to look up this
+via web browser:
 
-Cc: stable@vger.kernel.org
-Assisted-by: LLM
-Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-Reviewed-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
----
- security/keys/keyring.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+https://lore.kernel.org/linux-security-module/20261020174325.2229448-1-jarkko@kernel.org/T/#mccc5900222fdad9d790be343fcec2a32540ed2fb
 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 2c54f7f84c55..5281da9d5bf7 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -1506,9 +1506,15 @@ static int __key_unlink_begin(struct key *keyring, struct key *key,
- 			      struct assoc_array_edit **_edit)
- {
- 	struct assoc_array_edit *edit;
-+	const void *object;
- 
- 	BUG_ON(*_edit != NULL);
- 
-+	object = assoc_array_find(&keyring->keys, &keyring_assoc_array_ops,
-+				  &key->index_key);
-+	if (!object || keyring_ptr_to_key(object) != key)
-+		return -ENOENT;
-+
- 	edit = assoc_array_delete(&keyring->keys, &keyring_assoc_array_ops,
- 				  &key->index_key);
- 	if (IS_ERR(edit))
--- 
-2.47.3
+This is somewhat inconvenient though that it responds like that, and
+not to the review thread.
 
+Not actually sure how do you write a Sieve filter that automates
+relevant-to-me Sashiko emails going into some specific folder but
+I'm sure that is somehow possible. I guess I'll start by subscribing
+to linux-security-module.
+
+Br, Jarkko
