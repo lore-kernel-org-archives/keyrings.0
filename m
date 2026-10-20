@@ -1,58 +1,61 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792460350;
-	b=NViioAxT3uLpNLIQPR4K6EdZKAy315QUsTAJOcfgIElcsXRj/ed/VPaK7vUlf2LrfABZ
-	 Z+Q3ccUoJR2khuogEIK/aBRuF+wX4nXK0RqYcqNz7BZj8V+Rd52AFEe8ib/jOT3FswXpO
-	 SI1wsDnAKc3HgLId+30b9ttfGk/+ArUZUs9OP44OKeFkzNQ1g9SsQrmFNGz3rF9ntIvzu
-	 Bx9Z7peiCoppOcTFK55koZXpzg0MiDB9B9Z7YYGeFlt2knJTo6/iQ/GYOj0Dh/dr1+bJ8
-	 IYwtZh9q5ZPONHpyshZFCOqgS9gKmVHGY9Z5AvqdmEBvS4iuF7ufkkEWjh/fI+fButg==
+	t=1792460356;
+	b=wZVNDTNmIJfXdC3xcZ+uk5xcy3hYYicGC9rWzOtXVDm4w82n8nm8vQfgqtWQXHJ7NMla
+	 +ar+To+UBkb3v+0F4uG1lgIasOsX4w1wl9Alpu/LnPgSTi8PNv9YJziljzqhzYqvszCxc
+	 HyImfTOwuQRG16k4OPWQ3ynx7bNLKmzPiVzEhsGIlG3Dc7vAo5zsjX+q5sD2RB5M2PiSz
+	 YNIYiuyVIAnGsoKsHQCioGu8h0SFGTdBlHBX06AcmX4YI7AI/UVFclKKDcFACG3nJNZUn
+	 cTraQHARkxS3rETbXNmNE2Ou6MY3bFmxmcm9HtUwqG0DbVVnMCTchnlkBImSyxTs1QQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792460350;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792460356;
 	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
-	 MIME-Version:Content-Transfer-Encoding;
-	bh=dLS0cufrwFtFMb1oxfB7ExjLjEc9EXnk2SSrSKfhDjQ=;
-	b=DMXBtVUhg9G3GkQ+fwEbyXIV0/0waLCiUuW1MEyx7/nFTsINnlVuAXudD+6A2hvpxvWm
-	 F9LKwRULmT40KQbMM+oe5aSBQkiOvotSpRMDsSiDyrzXNyt7Z6/olxrMDb19Yl+EEeSGK
-	 OOxo459ntYpxTu6q7wlodx3ZCTrbw+OdfZ+GXOF3SQ3Gos/CG7Dl8RsGeLuh/hJzAQXjT
-	 F66Wvc78Q8RYxkzKndvJ89OebfDGxvUdtDfShSap/Mj676I4cdTzIqBUbZewGP07pax5+
-	 P11RQvGx/aalPJZvVJHo242wWlYm89PGixDqCSFsvZeoATDxU4CHBVGYPtoQkP0pSGg==
+	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
+	bh=TpOcDanqp3rIn9abLro9OQpPg1gNWZfVCMhkHN8HKsM=;
+	b=Rf54OucFNxF+evHuxK4RHikVpmDb3ftk/o3QZ+aBOrRS6G+PQ8vt5SMr4HzT5ZTYnOym
+	 +hapEa2wiiGXjVQ9spbWR1/o31WRNxvFeReqgpANHx0lApRPHFDil+Woci6kcY0wueaKt
+	 CYDpu4HeNC5SLwFsZ6Vdva8mp/Im0/rhmGfiHt6rNPsJ6nlxRcd+NW71MUtv5Zb9r4IwQ
+	 XGTUa5jNCCmwBF+ADP7mNRNdr1TyScBg7cIJknypkfE8awt4pnjVowesIoMjvuJ2J5Nv8
+	 g7Ya76m1PLy0YdCAOZT9BiZI+uYLRduhtDzN7P9cVHbRzQ647jt2bfSkNzMuXpU9TNw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Dd9tk4Dq;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=WeahyHQ9;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 0432D606A31C;
-	Tue, 20 Oct 2026 01:39:08 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id DD3FB606A31E;
+	Tue, 20 Oct 2026 01:39:15 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Dd9tk4Dq
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 1C0D31F000C6;
-	Tue, 20 Oct 2026 01:39:07 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=WeahyHQ9
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 09ABE1F000C4;
+	Tue, 20 Oct 2026 01:39:14 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792460348;
-	bh=dLS0cufrwFtFMb1oxfB7ExjLjEc9EXnk2SSrSKfhDjQ=;
-	h=From:To:Cc:Subject:Date;
-	b=Dd9tk4Dq7yT/b6TqAf+n04ND+Y5fYI6LcjvHjmWyfZhCVY8rAILmf5f0mhcTHNz1m
-	 cdCwd+DO1BbCVNujYCqm0uKBS2euIuao9ZAUiCMu06Y1U983m+ORgenIhjbH7NFo9A
-	 7JzIN+m4PYAoaHuLvXIkIxK5i7NbkLwohjHjv1TVtoT/lOyd92LjMVf1yMkyYbksO+
-	 2gxOPu64CN/VYSyor40DLuXOO5LzAWKPW5Q4NtiF3BU3daCaXcC0ohG4FdvK8+XntQ
-	 cU+QzuBuFAZ5ZokCXqpO/rHOGrcvMQ5NZSE/JKkOsZs+tFcvBvL23CtoW/UwNtoL+P
-	 buavFj67UeCwg==
+	s=k20260515; t=1792460355;
+	bh=TpOcDanqp3rIn9abLro9OQpPg1gNWZfVCMhkHN8HKsM=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References;
+	b=WeahyHQ9D2VUPXyIBe8tQx02cHkH7XcOueNccZW8Yx4WMZ5zoxpZj7l/q/u3UVVyq
+	 i1HPE9jGGQT0D6UKTPLpU0qGKwDiEofo3tW0uqHsl2HXAVFBgC7U/9lDiaTmW+7uUJ
+	 I6WugYHcO84booCy+G1mkeGmDmF5dA4S4v8BaC4oI8dyXvIMS104URqxIcAQMUhHl4
+	 H1z4xlqkGsXbpzzlr5+3PizcS+PUaEZU7mFCFNIOgFRasN0e4rqRkKsTS/j3qfhgoS
+	 2BEpumoiwJ10oYYLm9uhWYJoHRPFvyehamMQ/Oi3ZOEswUOZMPkq6qFzcfvQMlVXEN
+	 /7mHzSQQgS1XQ==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org,
 	Eric Biggers <ebiggers@kernel.org>,
 	Jarkko Sakkinen <jarkko@kernel.org>,
+	stable@vger.kernel.org,
 	Paul Moore <paul@paul-moore.com>,
 	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
-	linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 0/3] KEYS: rhashtable bug fixes
-Date: Tue, 20 Oct 2026 04:38:54 +0300
-Message-ID: <20261020013903.1244157-1-jarkko@kernel.org>
+	linux-kernel@vger.kernel.org (open list),
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
+Subject: [PATCH v3 1/3] KEYS: Expand key->{datalen,quotalen} to unsigned int
+Date: Tue, 20 Oct 2026 04:38:55 +0300
+Message-ID: <20261020013903.1244157-2-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
+In-Reply-To: <20261020013903.1244157-1-jarkko@kernel.org>
+References: <20261020013903.1244157-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,33 +67,55 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-My patch set that migrates assoc_array to rhashtable had some LLM
-scavegend bug fixes. Unfortunately most them where either plain wrong or
-not in the right scope. The bug fixes in this patch set are by human
-labour constructed fully but they are derived from what I got out of the
-original LLM source. Thus, they are tagged as LLM assisted.
+In key_alloc() and key_payload_reserve(), key->quotalen and key->datalen
+can receive values larger than USHRT_MAX.
 
-Changelog
-=========
+Example:
 
-- v3: Added couple of example, one of my own and other derived from
-  David's snippet.
-- v3: Removed bunch of unnecessary INT_MAX checks (Eric).
-- v2: https://lore.kernel.org/keyrings/20261019181732.449591-1-jarkko@kernel.org/
-- v2: Addressed issues pointed out by David.
-- v1: https://lore.kernel.org/keyrings/20261019142516.300040-1-jarkko@kernel.org/
+  keyctl new_session >/dev/null
+  owner=$(keyctl newring owner @s)
+  keeper=$(keyctl newring keeper @s)
 
-Jarkko Sakkinen (3):
-  KEYS: Expand key->{datalen,quotalen} to unsigned int
-  KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE in key_alloc()
-  KEYS: Verify the key identity in __key_unlink_begin
+  for ((i=0; i<16384; i++)); do
+      key=$(keyctl add user "k$i" x "$keeper")
+      keyctl link "$key" "$owner"
+  done
 
- include/linux/key.h     | 6 ++++--
- security/keys/key.c     | 2 ++
- security/keys/keyctl.c  | 2 --
- security/keys/keyring.c | 6 ++++++
- 4 files changed, 12 insertions(+), 4 deletions(-)
+  awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
+  keyctl clear "$owner"
+  awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
 
---
+Because key->datalen wraps around 65535, the quota refunded upon clearing
+is truncated, causing quota bytes to leak in /proc/key-users.
+
+Change the types of key->datalen and key->quotalen from unsigned short to
+unsigned int so that they can carry the full payload length without
+truncation.
+
+Cc: stable@vger.kernel.org
+Assisted-by: LLM
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Reviewed-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+---
+ include/linux/key.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/key.h b/include/linux/key.h
+index e40b5267658f..26139c3adf62 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -216,8 +216,8 @@ struct key {
+ 	kuid_t			uid;
+ 	kgid_t			gid;
+ 	key_perm_t		perm;		/* access permissions */
+-	unsigned short		quotalen;	/* length added to quota */
+-	unsigned short		datalen;	/* payload data length
++	unsigned int		quotalen;	/* length added to quota */
++	unsigned int		datalen;	/* payload data length
+ 						 * - may not match RCU dereferenced payload
+ 						 * - payload should contain own length
+ 						 */
+-- 
 2.47.3
 
