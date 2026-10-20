@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792529386;
-	b=U7Qc/Kt+CCm6MQp5PfbHSZhiYmeiA+VF7IcZj3sASKvhlauFiknG0wZNamVVUOxuWfkk
-	 wG5amB6yJa+6E3W4wAPW+vc7d+v1gEEkgKQY1uNasltJuyNNTV+RoCXitv3Jz/ljFWrh8
-	 jL5MsKW84gLxJVKlioDcrqvcOAoJ2Fs4DNBJl520GleEezEzEQg2I/0wPXvTIeoltvjdf
-	 lAHuKLKmVcQRsjNg4hzO/Ht9Q+hRyRA0xp6oElEN5SR4zBvKWbPa5xTLkicyLBOvtzG6Y
-	 7IQXEvMIqn4qA18F28L74U514lmQt1bV4uanLb/92aoM+RfkhpAR6nB/XSAvKicRAQA==
+	t=1792529982;
+	b=BFtLy+QSLP49IUqlXCRtk3vDrZkG9EcyUjOIJftJLE3lcFSqRZ/yFej7tBcUvQhQpCsj
+	 XsOaozbVYC+IuJ8WT6ae8ceKGxQTtm4b8VuXSZ0T1xZfIy4SP1HvKp1TeQCFok5DMmb8x
+	 LA57tcQchq5QvnILgsGEL1ZnFoLSIaiidACUgI1Q0mFa0PwvDv2VR7HE6+ZSmenmDBkQg
+	 psjo8FIr9nX6B7fRARm5OAQ3Bsg1WA7DRXfe9pdgPTI6MJlmBYkDGCDCOYtvnW6IN6XZR
+	 Uf5NliJTxn/6PXfFHgDzlG8OOd2xcV4K5Y3XZ+tF0zs7Y3IGG4/zoMolPnL8w/xo32w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792529386;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792529982;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=dh8wV/jJ5UfA4S3B5D1pgryN5AOY10+5zoMt8CWEc78=;
-	b=PJPEhZZvQz7q+4mfPUWaxnY2e2LE03Qozrz4GHCAUqZ1pZlzMSA606U5BmjqHqzDyNXG
-	 +4fJVajTs2ohyYlvEl+zgVQd3DfHlicgbG2b1/3eaXwJqekszQ+7LRAcKg8ouGmkkQ1uD
-	 SkESDGh8dCodYEoJNfkUhri1FNOdGuCc8g0dp/WmcLK4iU8MXNa5VKbXjtWvMWAwHo8nJ
-	 ADnNHCIlbCm2SiZp/mh8b0nefu6sSMv4y0kwGO+By8DXKIaQgUsNzwklMyB2ReNdUuzl9
-	 xh3RAxZWlQXwnGSMp0DoBTLgSx9osSLsoonWmVFKbpzGjmXgBdp1rsD30c6miwZ6w+Q==
+	bh=VE7p/L/3yxTJYwyBjIwtl8Ff79GppXv+KyTupwFY5NQ=;
+	b=FGELg1uicMiiTTLi98QE/d47ONABumvsihLzHBQBV3RMvS3LHmAAzt9XvVqz8YicELTX
+	 7lzoSiU7wZJ2kuaR7cMLxtX9TgiRQJa2pDmv9obTSGmDcQ1PVepH9g9kVDj8vD+CmjDcg
+	 iq/ZQxePx8AG6h4vb1LAJLgQBvFp3D7hRBXEKL4hrd5kdqnHRZfxXe4Ak4myIZvk1SAVg
+	 GbzKq7yqBLnj3zagOH5t6HE/fLX7YaMcirUTsOywNrB2C/PDuw4PPMvqdpx1MspIQsFWy
+	 ga++pEoJ3q25Xi/H24qLW2e1QpGGcYrSpaGNsU8EBVV1f2NK05KIp48AeTA5fFzBreA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LtbSDrfK;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="eC+w/Fy/";
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 43709606A319;
-	Tue, 20 Oct 2026 20:49:45 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 8F6D8606A31B;
+	Tue, 20 Oct 2026 20:59:42 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LtbSDrfK
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 47F001F000C9;
-	Tue, 20 Oct 2026 20:49:45 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eC+w/Fy/
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D81731F000CB;
+	Tue, 20 Oct 2026 20:59:41 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792529385;
-	bh=dh8wV/jJ5UfA4S3B5D1pgryN5AOY10+5zoMt8CWEc78=;
+	s=k20260515; t=1792529982;
+	bh=VE7p/L/3yxTJYwyBjIwtl8Ff79GppXv+KyTupwFY5NQ=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=LtbSDrfK/jnkOMIk1Vq/D6h1ukD57ByPKlcwGDFV0slDf9Q6JfzcgyssFWm0qkzsP
-	 hVg/PQaVAsiqrdJFUWWX5WGGfj9FTPDcwP6XFpo4yDxFtRKNQocCUTN9ncdtBMfBe6
-	 8gRawyU7SaQZQ9MRf4l5B7QnZR8wPpZvA5fizxvMhCWXjdJpeHshcBby5dssWv0evN
-	 JlVnSmUhqoZY73KXweMXwkVAH1gToajWnUZWeqB2zu6GUujDKXzVRBlg5WDozD6V4z
-	 UXyY43FQosz/5izpy6BPjW3au8xOpNHgFoZ87dWtF7i6FVQN2QN33+mwUfzXCRUDkX
-	 DVCZ7MvNrA6Cg==
-Date: Tue, 20 Oct 2026 23:49:41 +0300
+	b=eC+w/Fy/mrlW9xD8B+x5pPjKfTyPP3E4gkMLFXSLVfsqQLqoy3TsXeyotw2GkijzY
+	 f8lHAYvJJdOY06x6jRyUUoCzapBT0qRrVyji8pr6SVYHcRCzdqwGfeVClU8fXk1gt6
+	 K4Q3tZedy5wQUw0UXy4JH9oK0WtG1/cNOpEWy72b0mgYRYnrnkGAYXMRZh58PCc1YH
+	 HcTkyz1sz+8Ig3nOVsWyIYZckm9eejMTiRSko/7nqoghkWHHVCVfV6Rm2VP1w6qRvG
+	 gPLJtBiC8qPhcZwFRYJonU2Ma7ndQcnK1GgWQlfTjWoAkK9U6S1KmLTXVR44xezEW3
+	 Y/RT+J7gGAksg==
+Date: Tue, 20 Oct 2026 23:59:38 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
@@ -56,9 +56,10 @@ Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
 	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
 Subject: Re: [PATCH v4 1/3] KEYS: Expand key->{datalen,quotalen} to unsigned
  int
-Message-ID: <atfT5WJU_ldjpQOM@kernel.org>
+Message-ID: <atfWOitzEIWKJvog@kernel.org>
 References: <20261020174325.2229448-1-jarkko@kernel.org>
  <20261020174325.2229448-2-jarkko@kernel.org>
+ <atfT5WJU_ldjpQOM@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -70,63 +71,25 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261020174325.2229448-2-jarkko@kernel.org>
+In-Reply-To: <atfT5WJU_ldjpQOM@kernel.org>
 
-On Tue, Oct 20, 2026 at 08:43:19PM +0300, Jarkko Sakkinen wrote:
-> In key_alloc() and key_payload_reserve(), key->quotalen and key->datalen
-> can receive values larger than USHRT_MAX.
+On Tue, Oct 20, 2026 at 11:49:46PM +0300, Jarkko Sakkinen wrote:
+> Now that Eric pointed out Sashiko review I was able to look up this
+> via web browser:
 > 
-> Example:
+> https://lore.kernel.org/linux-security-module/20261020174325.2229448-1-jarkko@kernel.org/T/#mccc5900222fdad9d790be343fcec2a32540ed2fb
 > 
->   keyctl new_session >/dev/null
->   owner=$(keyctl newring owner @s)
->   keeper=$(keyctl newring keeper @s)
+> This is somewhat inconvenient though that it responds like that, and
+> not to the review thread.
 > 
->   for ((i=0; i<16384; i++)); do
->       key=$(keyctl add user "k$i" x "$keeper")
->       keyctl link "$key" "$owner"
->   done
-> 
->   awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
->   keyctl clear "$owner"
->   awk -v uid="$(id -u):" '$1 == uid {print $NF}' /proc/key-users
-> 
-> Because key->datalen wraps around 65535, the quota refunded upon clearing
-> is truncated, causing quota bytes to leak in /proc/key-users.
-> 
-> Change the types of key->datalen and key->quotalen from unsigned short to
-> unsigned int so that they can carry the full payload length without
-> truncation.
-> 
-> Cc: stable@vger.kernel.org
-> Assisted-by: LLM
-> Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-> Reviewed-by: David Howells <dhowells@redhat.com>
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+> Not actually sure how do you write a Sieve filter that automates
+> relevant-to-me Sashiko emails going into some specific folder but
+> I'm sure that is somehow possible. I guess I'll start by subscribing
+> to linux-security-module.
 
-For any kernel patches I've missed all Sashiko reviews so far and have
-not taken the feedback into account in anything.
-
-There is two issues:
-
-1. I was not subscribed to linux-security-module. I could be and have
-   been but probably when I've changed my list subscriptions at some
-   point otherwise, I happened not to be.
-2. Even if I was subscribed to linux-security-module, at least I'd
-   like to get reviews Cc'd that concern my patches or patches
-   sent to me.
-
-Now that Eric pointed out Sashiko review I was able to look up this
-via web browser:
-
-https://lore.kernel.org/linux-security-module/20261020174325.2229448-1-jarkko@kernel.org/T/#mccc5900222fdad9d790be343fcec2a32540ed2fb
-
-This is somewhat inconvenient though that it responds like that, and
-not to the review thread.
-
-Not actually sure how do you write a Sieve filter that automates
-relevant-to-me Sashiko emails going into some specific folder but
-I'm sure that is somehow possible. I guess I'll start by subscribing
-to linux-security-module.
+I.e. nothing against Sashiko per se. It is probably useful but it has
+configuration that is worse than eg syzkaller has. I will adapt to that
+but this still the case. It is easier to adapt now that it finally
+unmasked itself :-)
 
 Br, Jarkko
