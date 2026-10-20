@@ -1,61 +1,41 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792501236;
-	b=ypwyDYRpcpxWL8qblWbhOQwhQeRmG82EealZ4JnEht9Ss+uXHA18UjvC98bYffQFGPUx
-	 rpMtjoVmMNifcWPgu235e7nZJ3yj9J3S9msLHScf92+R2jp4iizQTBStDQZucLMVEV/Rv
-	 4tuEq3KYZLcs7Wc/J5deAbomcwY6/mErC472DVHOKSTWdN2qFOY5a/HhWEb3h9xpoBuWA
-	 wXREmDzy0rxb20Op/G1to/yOkUEErDyhnJI5JD5pH1qDyjJrWmOy2S9MHTfqu3axotW2c
-	 /usHMpOcbBrNT04VqlSkDqnFqcVxkH/ibIcY/I76/3riLMNtwQ2qyM0DcXMWb9sW36w==
+	t=1792509008;
+	b=iF+bN95JK5InAD4QzyWczCk5nDQobuCfdgI2oxYzttEi77Zqv/bYsbZi6NwTvqpf5xwM
+	 mS3jL2bRy41cqfC9bCMWXoFmrZIUdlwp8z3As9uucO1HLfzzEyc+9Dk1EHDhAp3dPqOJs
+	 tHXB8PxnwOAlLPzvovii369UY5SQXZBbJKp4V6mlFe84W9WXsswJbrA2vLrP9qn6ToBG/
+	 ZCbcRe6EnzicuhRtQBzWscGOItlzvDjs+WZhQwdO+/Q00888QY0enEsqNY0HCNX+5dHCr
+	 Pu69e2M5JkXYdSB7K6gNFy5xonFuonv/MtJ96askh/yXnQtNne6hoQx63yajGw9+crg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792501236;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=mPjL4JH1CnVB6JWn6E4dZNxmDBtmsH8KM7v4zcnTmKc=;
-	b=jDpM7zEcNWFePly1W9saSjjLDmtKwnStaBA/nofgNBVQ40hJLxMWuW6+yhWzxPMW89Oj
-	 lXVcyWRPUPW5nt/AX712tkMNJy1tguWQXu3UK+18qtS33hcoIxACShVSde5TX0+oimaJS
-	 snFz6TUao0CRCrVxU8OlKUQRrLQu1q/FILJkyS3RTE9tt/jXMiPjZzkyEm0KziD8RQ0yl
-	 GsA7goslgJ2DgLaWlwvZSBcTGBtkorN/mg6FIXh5YQz013Uevv5bx6gB8HSumY+JSrBYP
-	 oOaCVcRr59W7EB9lMemp9ssnbyKOI6Y+jqWt5sq9v8h4/1+5cxuQqATWO4Ln9EVL0Ag==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792509008;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To;
+	bh=Laxh79qXwAwsmuV6O1MzM4XcWCJ9HNwhZ1DgdfgCfZw=;
+	b=bq+jY4h0zkd9OvIoq8eTjA2bcMNMRAI/qf95OO2/Vj6o2O0oyAhtHp7YrpmZ/t/gg1Lr
+	 Ncy82fPQGB9q/mVtdrMnBV4s3GEiFfE6/TBOJwu1BbDMFYt4TLg9o+4rx9YE5+KslzSvn
+	 EQivQgFAIFd8gPLobjZO2DEMykWwdKxdULb7AncvJfsPxFCG7GAUex1hSBUk/KJpexrfx
+	 phrJEesIhPdPFvF9sNBgMu/vbhK/NpZYmmBmHlHS5A/50jBfV7Q5FmfeGX3/ZxE0tFUwW
+	 nGpstLQhyD0P+9mrysTczncXH9/RxjnortyAu3M7BRsRepU7BNyWVnq50B4WCZF1V6g==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="L/Q8mV6b";
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id C6CDC606A32D;
-	Tue, 20 Oct 2026 13:00:35 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=L/Q8mV6b
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id EC6861F000C4;
-	Tue, 20 Oct 2026 13:00:34 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792501235;
-	bh=mPjL4JH1CnVB6JWn6E4dZNxmDBtmsH8KM7v4zcnTmKc=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=L/Q8mV6b6SQwE9qDqIk9v3YIFQoNIzVsOxkV5jsOmNXtBkipGkTN7fgctd9fl18bv
-	 1YGS48pE4UHUCa3lx3cI0A9sJtoBHy7mEG1BZY3A7WcxkaaaHFiILJcgaxdm747W2H
-	 U+89ui2OZs/EAeSZUTgXw4AkTCn/51YXtORxFY8fvpojEpAOLmtdChHrLuz65nr5af
-	 CrpNn7FkqRx2b18DH+uisiaeQaFNyzX6any9OPbiv+KLZbTF5vTkyiGmrEYSEiEDa2
-	 f9CVxTg2KJ1sg21+mbHouct+k+eDkaA400cs7Mqc8rzBrvxRToSmRnl8S8w2DTF/Eq
-	 smak2L43RY7sg==
-Date: Tue, 20 Oct 2026 16:00:31 +0300
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 582CC606A31E;
+	Tue, 20 Oct 2026 15:10:08 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 66F1B1F000C4;
+	Tue, 20 Oct 2026 15:10:07 +0000 (UTC)
+Date: Tue, 20 Oct 2026 18:09:33 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	stable@vger.kernel.org, Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v3 2/3] KEYS: Reject @desclen values >= KEY_MAX_DESC_SIZE
- in key_alloc()
-Message-ID: <atdl74PtEpLxVPdd@kernel.org>
-References: <20261020013903.1244157-1-jarkko@kernel.org>
- <20261020013903.1244157-3-jarkko@kernel.org>
- <atbIP003h_YHofQb@kernel.org>
- <20261020022832.GA3727@sol>
- <atdJC3-PsaNh9PCA@kernel.org>
+To: Daehyeon Ko <4ncienth@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+	Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org,
+	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KEYS: trusted: Reject short TPM2 public areas
+Message-ID: <ateELTsfmHsdCEGL@kernel.org>
+References: <20260925095308.3248297-1-4ncienth@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,178 +47,90 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <atdJC3-PsaNh9PCA@kernel.org>
+In-Reply-To: <20260925095308.3248297-1-4ncienth@gmail.com>
 
-On Tue, Oct 20, 2026 at 01:57:19PM +0300, Jarkko Sakkinen wrote:
-> > Sure, this fix is still incomplete though, as I mentioned.
-> > 
-> > Turns out Sashiko found this too; see the comment on
-> > https://sashiko.dev/#/patchset/20261020013903.1244157-1-jarkko%40kernel.org
+On Fri, Sep 25, 2026 at 06:53:08PM +0900, Daehyeon Ko wrote:
+> tpm2_load_cmd() reads TPMA_OBJECT with get_unaligned_be32(pub + 4), but
+> does not require public_len to cover that field.
 > 
-> I did not ignore what you said honestly but I overlooked generated
-> descriptions.
+> A new-format blob with public_len zero makes the read begin at the end of
+
+New-format is not anything. TPM2 protocol format might be better here (nit).
+
+> the B + 4-byte decoded allocation, causing a four-byte heap out-of-bounds
+> read before the TPM command is transmitted. This is reachable from an
+> unprivileged add_key() call when TPM trusted keys and a TPM2 device are
+> available.
 > 
-> By comparing your v2 response and Sashiko's response and going through the
-> code this is the list that I have where similar check should be placed:
+> This affects v5.13-rc1 and later kernels built with CONFIG_TRUSTED_KEYS=y
+> and CONFIG_TRUSTED_KEYS_TPM=y when a TPM2 device is present. A KASAN run
+> as UID 1000 with no effective capabilities reported:
 > 
-> - key_alloc(): before quota calculation (in place)
-> - __key_create_or_update():  before assigning index_key.desc_len
-> - keyring_search(): before match_preparse
-> - request_key_and_link(): before match_preparse 
-> - request_key_rcu(): before check_cached_key()
+> BUG: KASAN: slab-out-of-bounds in tpm2_unseal_trusted
+> Read of size 4 at addr ffff888106273b48 by task exploit/160
+> CPU: 1 UID: 1000 PID: 160 Comm: exploit
+> The buggy address belongs to the object at ffff888106273b40
+>  which belongs to the cache kmalloc-8 of size 8
+> The buggy address is located 0 bytes to the right of
+>  allocated 8-byte region [ffff888106273b40, ffff888106273b48)
 > 
-> Some sites might require some minor changes I just wrote the around the
-> ballpark locations.
+> TPMT_PUBLIC starts with the two-byte type, two-byte nameAlg and four-byte
+> objectAttributes fields. Require public_len to cover all eight bytes before
+> reading the attributes.
 > 
-> Did I miss any site that you are aware of?
+> The exact input produced the KASAN read in 3/3 fresh boots. The fixed build
+> rejected it with -E2BIG and no KASAN report in 3/3 boots; valid new- and
+> old-format trusted-key loads continued to succeed.
 > 
-> Because there are so many, despite simple check I also wonder, should
-> we have a macro for this check?
+> Fixes: e5fb5d2c5a03 ("security: keys: trusted: Make sealed key properly interoperable")
+> Cc: stable@vger.kernel.org
+> Assisted-by: LLM
+> Signed-off-by: Daehyeon Ko <4ncienth@gmail.com>
+> ---
+> Tested with QEMU tpm-tis and swtpm: vulnerable 3/3 KASAN reports,
+> fixed 3/3 clean -E2BIG rejections, with public_len 7/8 and new/old-format
+> controls passing. Stable 5.15+ requires 114f00d738f1 first; both patches
+> apply cleanly in that order.
+> 
+> The source reproducer and full logs are available privately on request.
+> 
+>  security/keys/trusted-keys/trusted_tpm2.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+> index c2a69bcf381d7..b3109e0a924f5 100644
+> --- a/security/keys/trusted-keys/trusted_tpm2.c
+> +++ b/security/keys/trusted-keys/trusted_tpm2.c
+> @@ -418,6 +418,8 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+>  	public_len = get_unaligned_be16(blob + 2 + private_len);
+>  	if (private_len + 2 + public_len + 2 > blob_len)
+>  		return -E2BIG;
 
-It's better that I show the diff I'm talking about. With the diff below
-I try to address all the sites I mentioned.
+I was writing summary of the changes for my v7.4-rc1 PR but this
+does not look right.
 
-Couple of open questions:
 
-- Would it make sense to wrap strlen + check into key_is_valid_desc()?
-- Would it make sense as a safe-guard to use strnlen(), which is capped
-  to KEY_MAX_DESC_SIZE?
+This would really need an explanation like:
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 26139c3adf62..3b8af14fb323 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -37,6 +37,9 @@ struct net;
+/* 
+ * Check that TPMT_PUBLIC fields type, nameAlg and objectAttributes are covered
+ * in order to avoid out-of-bounds read.
+ */
 
- #undef KEY_DEBUGGING
+> +	if (public_len < 8)
+> +		return -E2BIG;
 
-+/* Maximum length of a key description, including the trailing NUL */
-+#define KEY_MAX_DESC_SIZE 4096
-+
- #define KEY_POS_VIEW	0x01000000	/* possessor can view a key's attributes */
- #define KEY_POS_READ	0x02000000	/* possessor can read key payload / view keyring */
- #define KEY_POS_WRITE	0x04000000	/* possessor can update key payload / add link to keyring */
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 6ebb8691551f..e88548f1a704 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -245,6 +245,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 	}
+Why would you pick -E2BIG as I guess here that is not the problem?
 
- 	desclen = strlen(desc);
-+	if (desclen >= KEY_MAX_DESC_SIZE)
-+		goto error;
- 	quotalen = desclen + 1 + type->def_datalen;
+Just checking before proposing anything.
 
- 	/* get hold of the key tracking for this user */
-@@ -829,6 +831,7 @@ static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
- 	key_ref_t key_ref;
- 	int ret;
- 	struct key_restriction *restrict_link = NULL;
-+	size_t desclen;
+>  
+>  	pub = blob + 2 + private_len + 2;
+>  	/* key attributes are always at offset 4 */
+> 
+> base-commit: 27d14d3b15d5691bcbf0683883a2ea12469edbea
 
- 	/* look up the key type to see if it's one of the registered kernel
- 	 * types */
-@@ -869,7 +872,12 @@ static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
- 		if (!index_key.description)
- 			goto error_free_prep;
- 	}
--	index_key.desc_len = strlen(index_key.description);
-+	desclen = strlen(index_key.description);
-+	if (desclen >= KEY_MAX_DESC_SIZE) {
-+		key_ref = ERR_PTR(-EINVAL);
-+		goto error_free_prep;
-+	}
-+	index_key.desc_len = desclen;
- 	key_set_index_key(&index_key);
-
- 	ret = __key_link_lock(keyring, &index_key);
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 36ffba0ebba6..d6b10fd67627 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -24,8 +24,6 @@
- #include <keys/request_key_auth-type.h>
- #include "internal.h"
-
--#define KEY_MAX_DESC_SIZE 4096
--
- static const unsigned char keyrings_capabilities[2] = {
- 	[0] = (KEYCTL_CAPS0_CAPABILITIES |
- 	       (IS_ENABLED(CONFIG_PERSISTENT_KEYRINGS)	? KEYCTL_CAPS0_PERSISTENT_KEYRINGS : 0) |
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 7143f3079d20..2c54f7f84c55 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -957,7 +957,6 @@ key_ref_t keyring_search(key_ref_t keyring,
- 	struct keyring_search_context ctx = {
- 		.index_key.type		= type,
- 		.index_key.description	= description,
--		.index_key.desc_len	= strlen(description),
- 		.cred			= current_cred(),
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
-@@ -965,8 +964,14 @@ key_ref_t keyring_search(key_ref_t keyring,
- 		.flags			= KEYRING_SEARCH_DO_STATE_CHECK,
- 	};
- 	key_ref_t key;
-+	size_t desclen;
- 	int ret;
-
-+	desclen = strlen(description);
-+	if (desclen >= KEY_MAX_DESC_SIZE)
-+		return ERR_PTR(-EINVAL);
-+	ctx.index_key.desc_len = desclen;
-+
- 	if (recurse)
- 		ctx.flags |= KEYRING_SEARCH_RECURSE;
- 	if (type->match_preparse) {
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index fa2bb9f2f538..ef00c2b08fe0 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -584,7 +584,6 @@ struct key *request_key_and_link(struct key_type *type,
- 		.index_key.type		= type,
- 		.index_key.domain_tag	= domain_tag,
- 		.index_key.description	= description,
--		.index_key.desc_len	= strlen(description),
- 		.cred			= current_cred(),
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
-@@ -595,8 +594,14 @@ struct key *request_key_and_link(struct key_type *type,
- 	};
- 	struct key *key;
- 	key_ref_t key_ref;
-+	size_t desclen;
- 	int ret;
-
-+	desclen = strlen(description);
-+	if (desclen >= KEY_MAX_DESC_SIZE)
-+		return ERR_PTR(-EINVAL);
-+	ctx.index_key.desc_len = desclen;
-+
- 	kenter("%s,%s,%p,%zu,%p,%p,%lx",
- 	       ctx.index_key.type->name, ctx.index_key.description,
- 	       callout_info, callout_len, aux, dest_keyring, flags);
-@@ -787,7 +792,6 @@ struct key *request_key_rcu(struct key_type *type,
- 		.index_key.type		= type,
- 		.index_key.domain_tag	= domain_tag,
- 		.index_key.description	= description,
--		.index_key.desc_len	= strlen(description),
- 		.cred			= current_cred(),
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
-@@ -797,6 +801,12 @@ struct key *request_key_rcu(struct key_type *type,
- 	};
- 	struct key *key;
- 	key_ref_t key_ref;
-+	size_t desclen;
-+
-+	desclen = strlen(description);
-+	if (desclen >= KEY_MAX_DESC_SIZE)
-+		return ERR_PTR(-EINVAL);
-+	ctx.index_key.desc_len = desclen;
-
- 	kenter("%s,%s", type->name, description);
+I'll drop this patch and postpone v7.4-rc1 at least one day so there
+is still time.
 
 Br, Jarkko
