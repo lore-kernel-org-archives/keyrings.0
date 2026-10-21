@@ -1,57 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792579304;
-	b=yd3Ricz7D4CTCHK6cFZB1BDINYKQwgpCQa8iv6rmsxglszAJXU1xXnwqy+J6sCe4t6kw
-	 SDZjn6Vm8KpK1W+OTsIb/YOBEetLeVbxbVl7mgCIu8r8utIlSfLnmLPp+C9ziaNnI7RGW
-	 WMImH+VlieoA+Q6BGW8QN1CXQV219T8YXZ/ZPj4DNlXUqpVQi/7UoHqzHOzmyW5/u126Y
-	 R0+YBpiamZopTSzps7nvx0eQeYaoBAk79mH4KXuV9uJFYeCqt+RqJ2QrG3gJSyU2EV2vY
-	 24wz/O2EzbqwpvYGWUGG3Vp+hEhIK8Ixo0lXrSbYQloWYNybOE4s+ARDwYsCpv21Yyg==
+	t=1792583520;
+	b=W6a9805kR63JFuSBGiaFY8YB9bc7t8n1OP4myWey1i9GJD8BQ2/WZxQ/xmI9eouKj28U
+	 deN2NyJiifcnw3ojjqWJRFCPs+JXr2poPDmFwGVyfrhphDcy2mJrwiUpO+zEwgPfyvJ2C
+	 /KK1/lM4m5+eWOTxwNFEuog7EGhy4e2Vs5LxFEHnAAI3jTsprgSSOSfMNJ4DmIIquL6K3
+	 lK1ee3cPkI334JgEvPZXfpX9WCwGfi7oSEqt5s714y+W4fKAcpcEbaL4u1d88whhtnDZK
+	 o6hb+BevSoJno9ZxRx7c17SdsSvWcuNPZnT9i2YEwaw47TJi7HPe0MbytZyqIShhmig==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792579304;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792583520;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=0BRupwIuqL6NOK9wHXgZQUdm9H5tKSR/x3n6IQwiFTk=;
-	b=SpqlrGmpiHw0Dl7SqZYtZOWCcQvHoUdhpej6kWdp/CG87zAlqBt7VTRonwRVaf6u35Mp
-	 90Nc6SFAU2rSWzZk2kVcYt0ZeXmqo6AJmZMZFSvk2hbN+1KvZlRcDta3xuxxDKyyCHG2i
-	 CKQPgnZ5U7NAa4d3EIC97SxZ3pz+YuP8Zwoz32HpJXOOpdWakNjQ+PJ7mhc/Lkfvtwy6D
-	 Kd0KX+XkR0x3aRWB6W9owbPP0VxZQG8R3dZo/nxEVBeriLTqDsQAUJPaSaSuR316WoIri
-	 ZZjLGaUL4GGVHgIDX9PXzRyfmbIiVw5bjARzUou65b1C7w8Ka08zjppY9wL26LllcNA==
+	bh=8+uhPZSAcrIBVQRFHA3AjpuARr+Y5uh4d7ju5klGlzE=;
+	b=DsB/j+VVvqk6rZOm9MFzTWXwL0wYHFx2MUWhCVIV/wSH486bIgr7k3Kv51PktyDi8Zfq
+	 AQyTm1yYePHyN1B99nXfbcNRJq1QYE77jIGqX5TPIp5CQ7W5XAJ+P9gvjpzqezqGqNj9U
+	 cxafzylZraTchkl2ZfFRPnXvHcdrR/yP8RuYCb93bhSvS9qTG0/jNDEDEF/qCCLtEGG/s
+	 8/mrcLgk5dtAXUB9BGqkbdoIB+z6CRZq6Y2HajDSbZuCoGbJnCllO+4vBT50oP5DdY+O7
+	 psdViXyv5XuEEG2mD0R+KRS54SZc6GraO1Cn8/6MS5T5yJk9VesHEg1aIkm08brE9XA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=cKEGBbQ7;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PaFMpquh;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0358B606A319;
-	Wed, 21 Oct 2026 10:41:43 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id C547D606A330;
+	Wed, 21 Oct 2026 11:51:59 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=cKEGBbQ7
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C3B5E1F000C9;
-	Wed, 21 Oct 2026 10:41:40 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PaFMpquh
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 225C41F000C4;
+	Wed, 21 Oct 2026 11:51:58 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792579303;
-	bh=0BRupwIuqL6NOK9wHXgZQUdm9H5tKSR/x3n6IQwiFTk=;
+	s=k20260515; t=1792583519;
+	bh=8+uhPZSAcrIBVQRFHA3AjpuARr+Y5uh4d7ju5klGlzE=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=cKEGBbQ77fa0tl/Tnjh2Mn5V32Be9U9fblyTD4ZKNIXcWBHpU5XKLQoGaEj6p2JfD
-	 CdnvHktuSMwwVFz6XxSoxRrEZ/APLzHHyo9MDNlilWiMR83Ojbjp15bLc+MhtBj+GY
-	 pUC+AtTx5ShOYkW/xLJvjC1Db8meifECrppYT4MTCv2ENlTUzt12bskQZ1X1zm0V7X
-	 yuNmYC/As2662G4lTQ4SZ48TVcMADn6owQLT42q3N045pXUtlmlbpEHg1y9vQEsD7F
-	 uPWsdoLDnnQ9Zrbmq0RBEFam2AnIbhzww4ssahPNF79ssZgHBUr5BaoM0QNaEkebIf
-	 7l9ETbyV6dYhg==
-Date: Wed, 21 Oct 2026 12:41:38 +0200
-From: Christian Brauner <brauner@kernel.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Josef Bacik <josef@toxicpanda.com>, Paul Moore <paul@paul-moore.com>, 
-	James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>, 
-	Jarkko Sakkinen <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, 
-	Serge Hallyn <sergeh@kernel.org>, linux-security-module@vger.kernel.org, 
-	linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] userns: don't let setns() lend CAP_SETFCAP
-Message-ID: <20261021-bioenergie-allheilmittel-undurchdringlichen-35666eb62cff@brauner>
-References: <20261014-b4-setfcap-userns-v2-0-fac4d19281d7@toxicpanda.com>
- <20261014-b4-setfcap-userns-v2-2-fac4d19281d7@toxicpanda.com>
- <atL0BtBrgCtb3QtY@hallyn.com>
+	b=PaFMpquhWfs9AjCJcWqAxr2pJDk2EP+jvDiazGWfurMpt29HXvJzjzX7nLUWKWUa5
+	 IJnwObm7CvlCikN3jQ1dfZk+K6LR8clGd4eVwfgFy29C8sNApPK4SLbopmXVzGXoBP
+	 8TyqCZcJyY31lbOVdN+/XDKoGXtO86Wm8n186DB6gwRzSHD0WeRBRvrFvsHB6kendB
+	 4fOTgyRFULJbSLyuE6i71lafZ1ICwBJC/GhXCWE5thyWUEjiKdFMrs4YyMTZS9SrQH
+	 TAwW4dpwDPI7VArxk4+0szI+YM3JaBAh4imjcil/wk5gtOEW8vHWzAx/EYHXVD0Feq
+	 M6BuzMdv5aaMQ==
+Date: Wed, 21 Oct 2026 14:51:55 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: syzbot ci <syzbot+ci05eb01a9f28bbd7c@syzkaller.appspotmail.com>
+Cc: corbet@lwn.net, dhowells@redhat.com, ebiggers@kernel.org,
+	jannh@google.com, jmorris@namei.org, keyrings@vger.kernel.org,
+	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-security-module@vger.kernel.org, paul@paul-moore.com,
+	rdunlap@infradead.org, serge@hallyn.com, skhan@linuxfoundation.org,
+	stable@vger.kernel.org, syzbot@lists.linux.dev,
+	syzkaller-bugs@googlegroups.com
+Subject: Re: [syzbot ci] Re: KEYS: Return user session keyring on lookup
+Message-ID: <atinW_xXMbDrG_0Y@kernel.org>
+References: <20261019145624.309790-1-jarkko@kernel.org>
+ <6ad875b6.e74039fe.1cb511.0000.GAE@google.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -61,49 +62,100 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <atL0BtBrgCtb3QtY@hallyn.com>
+In-Reply-To: <6ad875b6.e74039fe.1cb511.0000.GAE@google.com>
 
-On Fri, Oct 16, 2026 at 11:05:26PM -0500, Serge Hallyn wrote:
-> On Wed, Oct 14, 2026 at 08:47:47PM +0000, Josef Bacik wrote:
-> > Mapping uid 0 of the parent into a user namespace requires CAP_SETFCAP,
-> > because a task in such a namespace can write file capabilities that are
-> > honoured in the parent.  A task that is already in the namespace has a
-> > full capability set there and can't be asked any more, so
-> > verify_root_map() goes by what the creator had, now ns->setfcap_level.
-> > 
-> > But setns() lets other tasks in, and they get the full set as well:
-> > 
-> >   task A: uid 0, full caps          task B: uid 0, no CAP_SETFCAP
-> >   unshare(CLONE_NEWUSER)
-> >                                     setns(A's user ns)
-> >                                       allowed, euid == ns->owner
-> >                                     write "0 0 1" to /proc/self/uid_map
-> >                                       ns->setfcap_level is A's -> allowed
-> > 
-> > or, if A's namespace maps uid 0 already, B sets security.capability on a
-> > file.  Either way B ends up with file capabilities that are honoured in
-> > the initial namespace, which it could not have written there, nor in a
-> > namespace it created itself.
-> > 
-> > Refuse setns() into a user namespace unless the joiner's CAP_SETFCAP
-> > reaches at least as far up as the namespace's setfcap_level.  Then every
-> > task in a namespace is entitled to what its setfcap_level says, and the
-> > checks on the way to file capabilities can go by the namespace.  This
-> > has to apply to every user namespace, also to those that don't map the
-> > parent's uid 0: through an idmapped mount, a root user that only exists
-> > in the namespace can be stored as the parent's.
+On Wed, Oct 21, 2026 at 01:20:06AM -0700, syzbot ci wrote:
+> syzbot ci has tested the following series
 > 
-> Can you please explain what you mean by this about idmapped mounts?
+> [v2] KEYS: Return user session keyring on lookup
+> https://lore.kernel.org/all/20261019145624.309790-1-jarkko@kernel.org
+> * [PATCH v2 1/2] KEYS: Return user session keyring on lookup
+> * [PATCH v2 2/2] KEYS: Reject keyring creation with overridden credentials
 > 
-> It feels like something we should not be trying to protect against.  The
-> mere fact that an admin can create an id wormhole with an id mapped
-> mount where uid 100000 is mapped to 0 on the host, does not mean that
-> everyone who wants to setns to a namespace which maps uid 100000 should
-> require CAP_SETFCAP, imo.  It just means the admin should be careful.
+> and found the following issue:
+> general protection fault in keyctl_session_to_parent
+> 
+> Full report is available here:
+> https://ci.syzbot.org/series/7566814a-52ba-4f0b-b506-d7adf67fda29
+> 
+> ***
+> 
+> general protection fault in keyctl_session_to_parent
+> 
+> tree:      linux-next
+> URL:       https://kernel.googlesource.com/pub/scm/linux/kernel/git/next/linux-next
+> base:      17a7501b9612a52b38bc57e33c7b64636d438bc0
+> arch:      amd64
+> compiler:  Debian clang version 22.1.8 (1~deb13u4), Debian LLD 22.1.8
+> config:    https://ci.syzbot.org/builds/eee373c7-f447-49cf-a350-83830580c7b2/config
+> 
+> Oops: general protection fault, probably for non-canonical address 0xdffffc000000001b: 0000 [#1] SMP KASAN PTI
+> KASAN: null-ptr-deref in range [0x00000000000000d8-0x00000000000000df]
+> CPU: 0 UID: 0 PID: 5730 Comm: syz.0.6 Not tainted syzkaller #0 PREEMPT(full) 
+> Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS 1.16.2-debian-1.16.2-1 04/01/2014
+> RIP: 0010:keyctl_session_to_parent+0x825/0xa30
+> Code: 35 3b fd e9 fe fa ff ff e8 38 35 3b fd e9 f4 fa ff ff e8 2e 35 3b fd 48 8b 54 24 20 48 81 c2 d8 00 00 00 48 89 d0 48 c1 e8 03 <0f> b6 04 18 84 c0 0f 85 b2 01 00 00 8b 2a 89 ef 8b 5c 24 1c 89 de
+> RSP: 0018:ffffc9000621fc70 EFLAGS: 00010006
+> RAX: 000000000000001b RBX: dffffc0000000000 RCX: ffff88810b603c00
+> RDX: 00000000000000d8 RSI: 0000000000000000 RDI: 0000000000000000
+> RBP: 0000000000000000 R08: 0000000000000003 R09: 0000000000000004
+> R10: dffffc0000000000 R11: fffff52000c43f7c R12: ffff88811a010000
+> R13: 0000000000000000 R14: ffff88810c2631a8 R15: 0000000000000000
+> FS:  00007f7f2068b6c0(0000) GS:ffff88818c4bf000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007f7f2068aff8 CR3: 000000010cae8000 CR4: 00000000000006f0
+> Call Trace:
+>  <TASK>
+>  __se_sys_keyctl+0x780/0x9d0
+>  do_syscall_64+0x166/0x520
+>  entry_SYSCALL_64_after_hwframe+0x77/0x7f
+> RIP: 0033:0x7f7f1f79f559
+> Code: ff c3 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 c7 c1 e8 ff ff ff f7 d8 64 89 01 48
+> RSP: 002b:00007f7f2068b028 EFLAGS: 00000246 ORIG_RAX: 00000000000000fa
+> RAX: ffffffffffffffda RBX: 00007f7f1fa26270 RCX: 00007f7f1f79f559
+> RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000012
+> RBP: 00007f7f1f836b20 R08: 0000000000000000 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000246 R12: 0000000000000000
+> R13: 00007f7f1fa26308 R14: 00007f7f1fa26270 R15: 00007ffe789f59b8
+>  </TASK>
+> Modules linked in:
+> ---[ end trace 0000000000000000 ]---
+> RIP: 0010:keyctl_session_to_parent+0x825/0xa30
+> Code: 35 3b fd e9 fe fa ff ff e8 38 35 3b fd e9 f4 fa ff ff e8 2e 35 3b fd 48 8b 54 24 20 48 81 c2 d8 00 00 00 48 89 d0 48 c1 e8 03 <0f> b6 04 18 84 c0 0f 85 b2 01 00 00 8b 2a 89 ef 8b 5c 24 1c 89 de
+> RSP: 0018:ffffc9000621fc70 EFLAGS: 00010006
+> RAX: 000000000000001b RBX: dffffc0000000000 RCX: ffff88810b603c00
+> RDX: 00000000000000d8 RSI: 0000000000000000 RDI: 0000000000000000
+> RBP: 0000000000000000 R08: 0000000000000003 R09: 0000000000000004
+> R10: dffffc0000000000 R11: fffff52000c43f7c R12: ffff88811a010000
+> R13: 0000000000000000 R14: ffff88810c2631a8 R15: 0000000000000000
+> FS:  00007f7f2068b6c0(0000) GS:ffff88818c4bf000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007f7f2068aff8 CR3: 000000010cae8000 CR4: 00000000000006f0
+> 
+> 
+> ***
+> 
+> If these findings have caused you to resend the series or submit a
+> separate fix, please add the following tag to your commit message:
+>   Tested-by: syzbot@syzkaller.appspotmail.com
+> 
+> ---
+> This report is generated by a bot. It may contain errors.
+> syzbot ci engineers can be reached at syzkaller@googlegroups.com.
+> 
+> To test a fix for this bug, please reply with `#syz test`
+> (on a separate line) and attach the patch to the email.
+> 
+> Notes:
+> - The patch will be applied on top of the tested series (as an
+>   incremental fix).
+> - To test a new version of the whole series, please send it directly
+>   to syzbot@lists.linux.dev.
+> - Arguments like custom git repos and branches are not supported.
 
-Yep. And it is in active use and was an explicit design requirement.
-Again, Incus and LXD both do this on purpose to avoid shifting an
-uid/gid and ensure that access to /var/lib/containers or whatever is
-restricted.
+This helps, I save this to my TODO-folder (no time to address this
+week).
+
+Br, Jarkko
