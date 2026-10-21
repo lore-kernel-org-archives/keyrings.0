@@ -1,73 +1,55 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792604143;
-	b=PLhzBhrqawwcU34AXZjIbvL7L07/s/ldxWIfMUr0tj+2otHAzYVk6p2tHyDIEuDeoQxP
-	 vqEPdcJ+NhFAT+rcdNTReLBO/FDOMp69thjx26LtcPNelN08UKgpL8Gz6FuU/5LMBd6d/
-	 xG4rbTmm9fYycm8jeW8cdDohkrAsVQ31YhxfMj5B2st0qeJsBh/2ZcgD+XK64MFczYekz
-	 HxAWhPd2/qc9nPy0HhnelnG+oFyfnbYO7PzYGUsIzyZfYX84RMC+hqxJA8tuWAQKMPlOL
-	 LCib9jp3JZxIrtmfK1WVAU96kCnFHTWzm00Ao6/fCgo+/nsqNfxZhvymVyq1ff5l5yA==
+	t=1792611205;
+	b=fclzxoqPDy/ezCeAdT8hUwKfk6385bWw5nE0aEFDdmIk9GNSzPgtIGnt0WquXpzmRsTp
+	 EutrItWCyXWY6P8MOC0LR47ZbzbBy8ygnJeX/xoucytiJOzkL2i4hIlWfPOAtXgaO0urh
+	 c6NsRLci+RHqaKSeACRZSDoKa9uwKmDn2zvNOJcwLURsZBSOz1sj+KzAKe8Py1OgNvm2z
+	 ut0hbEDasIo1HYAcw3wTApukxEss5OzSIf5ePK3tq9jYIngCTFYV1VpZX/ysnskMTguHG
+	 G10fbRT81pn4yLkesSdI77EmZiCx4NY6tyRpiFQXlptxEmzlPmmuMsbYm/YPZwCeexw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792604143;
-	h=Received:DKIM-Signature:Received:Received:X-ME-Sender:
-	 X-ME-Proxy-Cause:X-ME-Proxy:Feedback-ID:Received:X-Mailer:
-	 MIME-Version:X-ThreadId:Date:From:To:Cc:Message-Id:In-Reply-To:
-	 References:Subject:Content-Type:Content-Transfer-Encoding;
-	bh=nZQZSw18SACZ1al6YiSFkYg9oVM20D+TpFhKEJVNqeo=;
-	b=F5oiohnxOdXpOrZz9cqsdexPg/Jp9zimbyj1JlG2V5newQ7WSRVpaGo5+X6xWxokQRT6
-	 H2p5xvP3mYBrxgcDGSb4op4GKGZXzv4dEz2/qF1HYD3ARIzni6Hj0gmMZTomuuzRxIe4E
-	 UmEXOJ2eplRjUFB+Y7V0nQYUOkByik+VFr/SoqSN4xk+lDdWtmiwFJ1siNx9FUAEWWX67
-	 s1t5sxtjkSBhN+9PLE7MJXqYEEgoGZcWxQFBZzQ657wpDYeLRw92xG+myVCOsDJ7lclsG
-	 Kl9FOumk7YL/S4/GWwFXnZFfdzkuMjG7P+nCQ46tW2gxYe77o+UYHsP5xiqyYcuw5qg==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792611205;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=b8yWziCxPxZ/ZbetLpUsalbteGE5UbPHNN+gc/KJSls=;
+	b=I7iUfZAn1nuaoFfXNIoKpep82xMDLUlhPTDiGUckYbJkHAAjJA8NdG9YcngQHMIYY/9C
+	 uAJZzfl4+r0Xuebv1wC1cuS8fucT81vbXQkGQmJE2jeHhgL3ikTKhftjhxnDrSj1/2t8N
+	 SmV0wYpVBe5wLQuX2jVdxxnNXAfJpkwDmZCTB+57i43qSKiwGySb3lcN7Lf8pO+G7Xxwz
+	 gBB622vQciFBz+IIpAtqKzxaUL99uNL5dChFYv4/4eqqLJ2xhGOe5MtuK+LSkWoIH4A1T
+	 4HW1EuDPAuewvgB4m0Md+eUZCrQlbCvTS6GIY2L2KYyq0EV/XEBMCoVTxA702Ee7s2A==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gtHPyv2D;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YWRYHms6;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CBEE6606A31F;
-	Wed, 21 Oct 2026 17:35:42 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id B68B2606A319;
+	Wed, 21 Oct 2026 19:33:24 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gtHPyv2D
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C89561F000C7;
-	Wed, 21 Oct 2026 17:35:41 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YWRYHms6
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id C9AF11F000C1;
+	Wed, 21 Oct 2026 19:33:23 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792604142;
-	bh=nZQZSw18SACZ1al6YiSFkYg9oVM20D+TpFhKEJVNqeo=;
-	h=Date:From:To:Cc:In-Reply-To:References:Subject;
-	b=gtHPyv2DytAGwXwqP6AuPtrURaFm2Es6e2+bG+60zzEQjzkkjCH2xhWwDE3vMuH+W
-	 /njNlq5bKa1C0QFRO5yVl3CYVzjJuumbgjChgiKa5cNuoBqQPx3tzAXdWq2jpC+7y4
-	 xfZDP8ctYNyBUsoHqGnqbHyKWFyiydtg2UVaHKz1bxT0eH2yeW7iceeNsx9xDvff0D
-	 d4QWmsRgnZJm8URGCYwD8psqQME5NT4H5VD3SIk89SsgIA6HMZZEAsCYnJEPLVse/v
-	 1178n3snkCX5UTsdJTmWorxjZ/Nm5yhJmvMW7+8VBnvSRDFL7n1GBpZxztin4LJw2Z
-	 dpIDU4fmdMHjg==
-Received: from phl-compute-10.internal (phl-compute-10.internal [10.202.2.50])
-	by mailfauth.phl.internal (Postfix) with ESMTP id 05E1FF40069;
-	Wed, 21 Oct 2026 13:35:41 -0400 (EDT)
-Received: from phl-imap-15 ([10.202.2.104])
-  by phl-compute-10.internal (MEProxy); Wed, 21 Oct 2026 13:35:41 -0400
-X-ME-Sender: <xms:7PfYatFbK3SGvkv1PZ5WJiKqbnltKgPHrFocaFLc9JUp-IAv1dxn3A>
-    <xme:7PfYatKxLinDI60CCDCNz6n-Sj1DQX516hiu7qtOg8hUKZlVb4_0cJO4J4axVu7QJ
-    n1c5qECWdS6ItzXnr6A1UuwHQpES3rw0oSxFPHU6JXFRfYZownwzmuv>
-X-ME-Proxy-Cause: dmFkZTGCRjlnSR8Neg2mpGTDvJvFQ+WyF5lNldIB0q4zon/r5UxQ070SLuVQHGmuL/1IQs
-    hwZ/xhsfszkwm1t5IL5077RE9E1CmNJeGs5M0heUIqhUPsiPorYZOAoMMquElo45vQkPAL
-    5o6E0JGmgCcNf4/b7AK7NvmWD3X8w88YX8WwNKFCy2mAPFdtZUSubNdlIZYjAp45PwEKqJ
-    i3UG1z5Zs2Q6j+WxyzADnx++ZMd9/Av6U2d1l0Maysg4LiGWlPSZs2/UbKUPa/Sl9zQZru
-    JKCpo88uCIHH/dHiqwxA1Rv195n9u+MHvTsKxE7AJcpg1u+K44QfQeHXoE0mwvDOxUQdsz
-    OHmTRf4blfvfR3Bk+u0TWU/xBbokz/9rHk5FCnl/2PEY0GqpE8jafPjgMx2t9fOQOJifyb
-    OvUSDTZHBf0u1XXyfa1kBlP2Boe47OSRAIwc9jb99f+EMW67C7764RfA5PznCwLRSZ9f/o
-    OqZSXZnbCIdxRw/7VnpgCAqdpuDhD+HX6ju96Wrn7XD7EubQVkBsAIh+oYZKgKtNtPPOCs
-    t0TXsHLIYfOm/HdEysB64ZHxkNQcWRBrSFhbbsvaJxnVRZ1lGQHczXsHXxYjzTZbwDN6kx
-    XWhWdnja+2FHBWi51pwBJFQahQp7RP95auTW9R065CD/aDZKZ4I1gRWDnU2w
-X-ME-Proxy: <xmx:7PfYatVD__8wXb41zYEe29XHtozznhOzv0MZZN1eY7p2KicO12w-DA>
-    <xmx:7ffYaqyWNau02205DPQuCdlHluDhf9_AFQPdUjs5A-o56NnLQ2GlIQ>
-    <xmx:7ffYat4ndxHHVQANfVp63WjkU7APGZB5e8ZcmmUrAQOmxScV7dZNNg>
-    <xmx:7ffYash0_tdrm5M8iKwj5F7TeVZI76mm4tQp4HL6Y-vsbGuMimeBwA>
-    <xmx:7ffYaohOZRNYEwZe0HcPVW550R2avMTr5rBAQvWHh4KFch9VYCrntV3W>
-Feedback-ID: ifa6e4810:Fastmail
-Received: by mailuser.phl.internal (Postfix, from userid 501)
-	id D6715782738; Wed, 21 Oct 2026 13:35:40 -0400 (EDT)
-X-Mailer: MessagingEngine.com Webmail Interface
+	s=k20260515; t=1792611204;
+	bh=b8yWziCxPxZ/ZbetLpUsalbteGE5UbPHNN+gc/KJSls=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=YWRYHms6wArweWHxh5+JTkyuGTS7V3wEgJmE7ExjfYPcoyxQ6LnQGcSCKd+JLAoZS
+	 eOs2ZvaxhWjDzY2a168koQlUWGqh3IzENFcu3WkDpYLMLl8EugZPHvEpna1vqBUUYX
+	 mWjoa6660JcIO82BEdOJD+Y4TVVZPEID4S4EXRbewedBugGioBgf4jHuDDLdYB9w0Z
+	 W3Szc5A6+6cfeP4IjPEsE+t0oWgSTeQYlyRkdibyBB+MQTSPUl0gtS9yjCZ3zBABuI
+	 cuFHEwPzTA0Q8kjCcTU4XGGH/RaOEYE4IjNqN8yDPoSFBy2xsYaBMWPlZfB2rl1idp
+	 tmVJznRPCwqDA==
+Date: Wed, 21 Oct 2026 22:33:20 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/3] KEYS: rhashtable bug fixes
+Message-ID: <atkTgEwRQfh94zeV@kernel.org>
+References: <20261020174325.2229448-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -77,66 +59,20 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-X-ThreadId: AwLsEl3CooH3
-Date: Wed, 21 Oct 2026 13:35:20 -0400
-From: "Chuck Lever" <cel@kernel.org>
-To: "Jan Koester" <jan.koester@tuxist.de>
-Cc: "Christian Brauner" <brauner@kernel.org>,
- "Alexander Viro" <viro@zeniv.linux.org.uk>,
- "Serge E. Hallyn" <serge@hallyn.com>, "Jan Kara" <jack@suse.cz>,
- "Theodore Y. Ts'o" <tytso@mit.edu>, "Paul Moore" <paul@paul-moore.com>,
- "Arnd Bergmann" <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
- linux-api@vger.kernel.org, linux-security-module@vger.kernel.org,
- linux-arch@vger.kernel.org, linux-ext4@vger.kernel.org,
- linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
- netdev@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org,
- linux-kernel@vger.kernel.org
-Message-Id: <fd20b840-350e-469c-9fd2-008fa0ded62a@slotpi15m67>
-In-Reply-To: 
- <f444dffc8e6bf98bf44c02456adc2de40e4ecd95.1792552161.git.jan.koester@tuxist.de>
-References: <cover.1792552161.git.jan.koester@tuxist.de>
- <f444dffc8e6bf98bf44c02456adc2de40e4ecd95.1792552161.git.jan.koester@tuxist.de>
-Subject: Re: [RFC PATCH v2 40/41] nfsd, nfs: carry UUID and GUID owners as their text
- form
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261020174325.2229448-1-jarkko@kernel.org>
 
-On 10/20/26 11:16 PM, Jan Koester wrote:
-> Encode such an id as its text form -- "xxxxxxxx-xxxx-xxxx-xxxx-
-> xxxxxxxxxxxx" for a UUID, the same in braces for a GUID -- in both
-> directions on the server and the client, and take such a string (it
-> has no '@', so it can't be a user@domain name) as that id again.
+On Tue, Oct 20, 2026 at 08:43:18PM +0300, Jarkko Sakkinen wrote:
+> My patch set that migrates assoc_array to rhashtable had some LLM
+> scavegend bug fixes. Unfortunately most them where either plain wrong or
+> not in the right scope. The bug fixes in this patch set are by human
+> labour constructed fully but they are derived from what I got out of the
+> original LLM source. Thus, they are tagged as LLM assisted.
 
-A bare UUID in an owner, owner_group, or ACE 'who' string is a new
-owner-string syntax for NFSv4, one that only Linux would recognize.
-Thus it isn't interoperable with other NFSv4 stacks as proposed
-here.
+I guess these are ready to be merged? Eric do you have something for
+this revision? I already sent -rc1 pull request i.e., I don't mind
+to update it if necessary but otherwise I rather would just apply
+these.
 
-RFC 8881 Section 5.9 says a string without an '@' that is not a
-decimal number means no translation was available and the receiver
-"should not use that string as a basis for translation into its
-own internal format." RFC 8000 Section 6.1 forbids bare numeric
-ids in multi-domain deployments because they collide; the same
-applies to bare UUIDs, and more so to GUIDs.
-
-If you are serious about pursuing this, you'll have to start by
-raising the proposed wire format on nfsv4@ietf.org before the
-Linux kernel's NFS stack commits to it.
-
-With nfs4_disable_idmapping and AUTH_SYS, numeric_name_to_id() and
-encode_ascii_id() handle decimal ids in the kernel because there is
-nothing to look up. Recognizing the text form in that branch only
-would be the natural analogue once the format is agreed. Everything
-else should go through the idmapper: extend the nametoid/idtoname
-channels and the client keyring upcall to carry a 128-bit id, and
-let rpc.idmapd and nfsidmap decide which strings map to which ids.
-As written, the UUID check runs before idmapd for every name and
-auth flavor, bypassing the cache and any site policy.
-
-So my general preference for NFSv4 would be to pass the new format
-up to the user space idmapper instead of handling these in-kernel
-with no opportunity to apply local policy.
-
-
--- 
-Chuck Lever (Come to NFS bake-a-thon! https://nfsv4bat.org)
+Br, Jarkko
