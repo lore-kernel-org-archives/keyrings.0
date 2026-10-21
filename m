@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792578534;
-	b=Z7MNBSpeLAUVqwI1nRJM2/0WG6/lLwEm51HCQrhAJGyYfZ8JKNEf2slU9H5bJ9oIDHqr
-	 yRzw2wu2tcQ3v6Fd5s1J/3jfiSI/GkunhLwodxuy7CuptmAeGHXVevSlfeajtsSFUxslM
-	 1w8XnXbO55ZX5/9gVwg7tLZLN+gPIq0XQ5OX1ykfkP84rHEkL5qA6+XRIuLnrMIhrm13b
-	 MY3ZfyvBCv62YJnHz1tZynE/blWKqnN3kptTKKAMod5L6HpFaB2xPKCwpHv8lhAYH8BPA
-	 Rr5R9JX81MqjRkpWeXaxLE7c85cHUwIhfOFS34EZJAwjC5ZpuvXytUEzkHJ+9lr3kGQ==
+	t=1792579304;
+	b=yd3Ricz7D4CTCHK6cFZB1BDINYKQwgpCQa8iv6rmsxglszAJXU1xXnwqy+J6sCe4t6kw
+	 SDZjn6Vm8KpK1W+OTsIb/YOBEetLeVbxbVl7mgCIu8r8utIlSfLnmLPp+C9ziaNnI7RGW
+	 WMImH+VlieoA+Q6BGW8QN1CXQV219T8YXZ/ZPj4DNlXUqpVQi/7UoHqzHOzmyW5/u126Y
+	 R0+YBpiamZopTSzps7nvx0eQeYaoBAk79mH4KXuV9uJFYeCqt+RqJ2QrG3gJSyU2EV2vY
+	 24wz/O2EzbqwpvYGWUGG3Vp+hEhIK8Ixo0lXrSbYQloWYNybOE4s+ARDwYsCpv21Yyg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792578534;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792579304;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=RyNlnTCg8f5jnRjirKufUnFU6MO9l6lq6sjeVEWl6yg=;
-	b=2ppiq38xkUomtfQVJrEckNOmntHG+mNUzD2ntGMgvzoBjSQAfsxCG8NtIpnYOcPGM2Ke
-	 CtokzYvPqFwq+8KbuL7tFSjJFeEKVJVCsrM1CiQ24WT3KHjFQnKMR5/UQpN0K4Ecc8ozh
-	 tf0vI8JwBDjJ5HRQsFvTmfyXztyYfju5C+ydIVgBZ6sOdHvrTCohtIE/XjscRfDCRPQAP
-	 6andBVkicVh2drh5tXBdRU1/SxKV4YtKXhLQIFnjGZkXxTpMHLGszRb8M/fWPxFggV2qd
-	 xY1XRW5OMazU0ma/J5TYEkn1NH1w8dK/QQzyYbC7qZ1BKdwgnj56iXa2Jiqz9kD9Bbw==
+	bh=0BRupwIuqL6NOK9wHXgZQUdm9H5tKSR/x3n6IQwiFTk=;
+	b=SpqlrGmpiHw0Dl7SqZYtZOWCcQvHoUdhpej6kWdp/CG87zAlqBt7VTRonwRVaf6u35Mp
+	 90Nc6SFAU2rSWzZk2kVcYt0ZeXmqo6AJmZMZFSvk2hbN+1KvZlRcDta3xuxxDKyyCHG2i
+	 CKQPgnZ5U7NAa4d3EIC97SxZ3pz+YuP8Zwoz32HpJXOOpdWakNjQ+PJ7mhc/Lkfvtwy6D
+	 Kd0KX+XkR0x3aRWB6W9owbPP0VxZQG8R3dZo/nxEVBeriLTqDsQAUJPaSaSuR316WoIri
+	 ZZjLGaUL4GGVHgIDX9PXzRyfmbIiVw5bjARzUou65b1C7w8Ka08zjppY9wL26LllcNA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=khVTwex6;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=cKEGBbQ7;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7608260A2604;
-	Wed, 21 Oct 2026 10:28:49 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0358B606A319;
+	Wed, 21 Oct 2026 10:41:43 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=khVTwex6
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 0013E1F000CF;
-	Wed, 21 Oct 2026 10:28:45 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=cKEGBbQ7
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id C3B5E1F000C9;
+	Wed, 21 Oct 2026 10:41:40 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792578529;
-	bh=RyNlnTCg8f5jnRjirKufUnFU6MO9l6lq6sjeVEWl6yg=;
+	s=k20260515; t=1792579303;
+	bh=0BRupwIuqL6NOK9wHXgZQUdm9H5tKSR/x3n6IQwiFTk=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=khVTwex6HuJEnfARXW1KWD+f7Ysf5SKiY9H9XV2U3S7JxHQmuSvwT/4ZS2f/4VdO+
-	 h7pOJT8bseaZKjMDxBQSn7DpA2lqtFPTi0ch7FnYNswC7YZlibEmBfC78gqGQbRP+v
-	 aOCzkJ1A+kkTuExGRevT+oYALDUEeY5GCEwE8w+g5WG7FK0sS+X1QuH6gsAcc7JE9x
-	 3wc2ArVPZ2j5ac0yLnHg4edaId3P8+TabR6hxTwHYX4xNP8dfbDd7WR9EH7O/4hgVo
-	 uYu0IK9t0JP5i41IdDOs1AIcd9ty6FyaOhZaEmr0Kq/AQv/954NfvBHguOld2t+Nsy
-	 fmR9FNGfELRNw==
-Date: Wed, 21 Oct 2026 12:28:43 +0200
+	b=cKEGBbQ77fa0tl/Tnjh2Mn5V32Be9U9fblyTD4ZKNIXcWBHpU5XKLQoGaEj6p2JfD
+	 CdnvHktuSMwwVFz6XxSoxRrEZ/APLzHHyo9MDNlilWiMR83Ojbjp15bLc+MhtBj+GY
+	 pUC+AtTx5ShOYkW/xLJvjC1Db8meifECrppYT4MTCv2ENlTUzt12bskQZ1X1zm0V7X
+	 yuNmYC/As2662G4lTQ4SZ48TVcMADn6owQLT42q3N045pXUtlmlbpEHg1y9vQEsD7F
+	 uPWsdoLDnnQ9Zrbmq0RBEFam2AnIbhzww4ssahPNF79ssZgHBUr5BaoM0QNaEkebIf
+	 7l9ETbyV6dYhg==
+Date: Wed, 21 Oct 2026 12:41:38 +0200
 From: Christian Brauner <brauner@kernel.org>
 To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: Josef Bacik <josef@toxicpanda.com>, Paul Moore <paul@paul-moore.com>, 
@@ -47,16 +47,11 @@ Cc: Josef Bacik <josef@toxicpanda.com>, Paul Moore <paul@paul-moore.com>,
 	Jarkko Sakkinen <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, 
 	Serge Hallyn <sergeh@kernel.org>, linux-security-module@vger.kernel.org, 
 	linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] capabilities: close the ways around the CAP_SETFCAP
- rule for uid 0
-Message-ID: <20261021-beisammen-pokal-unbefangen-436577686165@brauner>
-References: <20261006-b4-setfcap-userns-v1-0-f47e7ed66072@toxicpanda.com>
- <asehZEWAwsJcbqvM@hallyn.com>
- <179147397027.4.15064782992163283819@toxicpanda.com>
- <asfBRYy597qvzdCW@hallyn.com>
- <20261009-aussicht-wortbruch-bohnenkraut-9e7a1cfd7580@brauner>
- <179191993398.6.7035194670175996999@toxicpanda.com>
- <atYGiiGPs39lTFQ7@hallyn.com>
+Subject: Re: [PATCH v2 2/5] userns: don't let setns() lend CAP_SETFCAP
+Message-ID: <20261021-bioenergie-allheilmittel-undurchdringlichen-35666eb62cff@brauner>
+References: <20261014-b4-setfcap-userns-v2-0-fac4d19281d7@toxicpanda.com>
+ <20261014-b4-setfcap-userns-v2-2-fac4d19281d7@toxicpanda.com>
+ <atL0BtBrgCtb3QtY@hallyn.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -68,61 +63,47 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <atYGiiGPs39lTFQ7@hallyn.com>
+In-Reply-To: <atL0BtBrgCtb3QtY@hallyn.com>
 
-On Mon, Oct 19, 2026 at 07:01:14AM -0500, Serge Hallyn wrote:
-> On Tue, Oct 13, 2026 at 07:32:13PM +0000, Josef Bacik wrote:
-> > On Fri, Oct 09, 2026 at 09:41:59AM +0200, Christian Brauner wrote:
-> > > On Thu, Oct 08, 2026 at 11:13:57AM -0500, Serge Hallyn wrote:
-> > > > Yeah, that's what I was thinking.  Or even stricter: ensure that to join
-> > > > any user namespace, a process must have a superset of the namespace
-> > > > creator's capabilities.
-> > >
-> > > I think both are fine and I like this proposal.
+On Fri, Oct 16, 2026 at 11:05:26PM -0500, Serge Hallyn wrote:
+> On Wed, Oct 14, 2026 at 08:47:47PM +0000, Josef Bacik wrote:
+> > Mapping uid 0 of the parent into a user namespace requires CAP_SETFCAP,
+> > because a task in such a namespace can write file capabilities that are
+> > honoured in the parent.  A task that is already in the namespace has a
+> > full capability set there and can't be asked any more, so
+> > verify_root_map() goes by what the creator had, now ns->setfcap_level.
 > > 
-> > One correction to what I wrote: the weaker version isn't enough.  A
-> > namespace that maps "0 100000 1000" doesn't map the parent's uid 0, so
-> > it passes that check.  But with an idmapped mount that maps fs 0 to
-> > 100000, a task that joined it can write fscaps that are stored with
+> > But setns() lets other tasks in, and they get the full set as well:
+> > 
+> >   task A: uid 0, full caps          task B: uid 0, no CAP_SETFCAP
+> >   unshare(CLONE_NEWUSER)
+> >                                     setns(A's user ns)
+> >                                       allowed, euid == ns->owner
+> >                                     write "0 0 1" to /proc/self/uid_map
+> >                                       ns->setfcap_level is A's -> allowed
+> > 
+> > or, if A's namespace maps uid 0 already, B sets security.capability on a
+> > file.  Either way B ends up with file capabilities that are honoured in
+> > the initial namespace, which it could not have written there, nor in a
+> > namespace it created itself.
+> > 
+> > Refuse setns() into a user namespace unless the joiner's CAP_SETFCAP
+> > reaches at least as far up as the namespace's setfcap_level.  Then every
+> > task in a namespace is entitled to what its setfcap_level says, and the
+> > checks on the way to file capabilities can go by the namespace.  This
+> > has to apply to every user namespace, also to those that don't map the
+> > parent's uid 0: through an idmapped mount, a root user that only exists
+> > in the namespace can be stored as the parent's.
 > 
-> I actually don't think that's something we should work around here.
+> Can you please explain what you mean by this about idmapped mounts?
 > 
-> Christian, what is your opinion on this?
+> It feels like something we should not be trying to protect against.  The
+> mere fact that an admin can create an id wormhole with an id mapped
+> mount where uid 100000 is mapped to 0 on the host, does not mean that
+> everyone who wants to setns to a namespace which maps uid 100000 should
+> require CAP_SETFCAP, imo.  It just means the admin should be careful.
 
-I want as little moving parts as possible. :)
-
-> IMO most people should not do id-mapped mounts from host range anyway
-> (they should shift a base rootfs to a high range, then do idmapped
-> mounts from there),
-
-So that's pretty common though. Doesn't Incus do exactly that? And it
-does write fscaps through onto the host on purpose and restricts access
-to /var/lib/containers via strict DAC.
-
-> > rootid 0 and honoured by the host.  We test that flow.  So it has to be
-> > Serge's stricter version.
-> > 
-> > > I think that this is an acceptable restriction. Mapping uid 0 to 0 and
-> > > dropping caps is borderline useless.
-> > 
-> > That makes the restriction wider than the 0 to 0 case.  A root task
-> > without CAP_SETFCAP couldn't join an ordinary "0 100000" container
-> > either.
-> > 
-> > setns() also only covers the routes that go through it.  These don't,
-> > and need their own checks either way:
-> > 
-> > - writing through a uid_map fd opened by a task with CAP_SETFCAP
-> > - ptrace and pidfd_getfd of an entitled task from outside
-> > - a task without CAP_SETFCAP creating its own namespace, which a
-> >   privileged task then maps "0 0 1" for
-> > 
-> > So v2 would be a level on the namespace computed at create time, the
-> > strict setns() check, and the checks at the map write, setxattr and
-> > ptrace reading the namespace's level instead of the cred's.  If that
-> > sounds right I'll put it together.
-> 
-> I still think it would be easier to reason about, long term, if we
-> could get away with storing the cap_eff of the process which creates
-> the user namespace, and check (ns-targeted) the capabilities of any task
-> trying to setns to it against that.
+Yep. And it is in active use and was an explicit design requirement.
+Again, Incus and LXD both do this on purpose to avoid shifting an
+uid/gid and ensure that access to /var/lib/containers or whatever is
+restricted.
