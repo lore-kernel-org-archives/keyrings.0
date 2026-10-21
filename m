@@ -1,57 +1,56 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=173.212.254.19
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792552568;
-	b=0yxpM2eCZnzi1xKyNrFueADAldz8mzUfqjBOVOG7TwW558EnUrh81fPVgOM2v4sbJe7E
-	 nL+HJSDOsK946XS4bsB+58pZlH7AlVrRSj3Z4JuubQbERIoNUBhpGbIsqS/2HNycbAK5U
-	 Wzx/s0V3ZF3GEYh8Jth/ocEySL1UK+Onc2qOqUHBfCSbFzlJpVULN0VhRP09wJQMeeXqs
-	 I8R/v+GE/gp0dCh6nVxhkcwPHTcwbup6lKt55zNa7r1K/Z30/H+dFfoc94+bmw77WBNAl
-	 V3bLwV1KPSjne1T0FS3aENqzUIvycx79bVqtCAJt0Uiz9SUT7GV2whrMVcDIEZ+CCnA==
+	t=1792552578;
+	b=B0la0eDSlEDsRd6PENdzSYjdGSOdnZdoQZmjaLFz/j7HQiZZZiVnZvmjyuOJesQylbYc
+	 OFbPrcTgc6njHasCwRgTpc9/jQESSVa5yo6OEJXpJFGrI6Wo5RAyzZj7IHJI8IqpRW2JN
+	 +aj77Z9RPRefP0MKxrABWxnrbmQFCoJC69xYTmwH8/06SIjIyeYlOYp6UeGIFJzbjGf37
+	 qvMCyUp9HNJZH9GzCkWs/v0WQz/iZgDeJZmfEZgaX2ei3Bc7bv/6eM++7Lw9BNdfg/joZ
+	 RH3FWGDQJa5nnxzNn+nNCRO3ow2bMzZVZ6f1Ki+dxe+Nbcnr6JPurd1bF1e1SxyGfcQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792552568;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792552578;
 	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:In-Reply-To:
 	 References:From:Subject:To:Cc:Date;
-	bh=ib0nlJadXDep+U14bwYxShdaxBEBbQPpAy7Z/Ymc78U=;
-	b=TvBzOF6RMiYOzZNQS/KJ6MlDurEB7vKTgcQD4PvUrQah4YtHRv3xdvPDhsj0CNc4v6k7
-	 SvlHRbI7+Cp+04AaXq4+MwRJsQUGMsuWm/TpX5KeR8f+nJXeQ7PQUstS73yOthQgdZcyp
-	 wQ/72NXtflqVWmmHTFvRGGvhFks9GVwLXPDq1TVixPJvQndnRC+qFbSjXvriDvsHx2f/9
-	 A+jypv6JN9F29lHiCJ5bCzwRLlLl8eGqczhf4mmxcdxP53eR+p+1YI64WIkkpJKhUEQjq
-	 gHe0Vm9ugj4Fan6B4r+E+du5fKHtJ2HsR5QWBfQ8lKIa5AyTkTNEZ1xFOHlV3vkw1kg==
+	bh=zex3zkPBhFWKfPKx8to+rRp0ONmQ0UbhV0TLwAUCCQA=;
+	b=zhmxpROUDFizLoNtXFkB2kRep8HJe2xveFyj8MBIH51TSkguKSu9LXZhbd5UUd9/g+/g
+	 4Vr8RuzGZhBMCWBzA81xIKBELaKVbYv0CH07ekiW0EVs33Pjr6QQVWGfvkDWYxBemHug1
+	 6KxySeqByzF5HHGsXFRLTSAVfX8k1SMflNcU1NsZR5ZROLjJLgSqO9USj94cDgyCVOgfO
+	 prN9sNP8WCM61LphFYe+j4qfsg3isJAAvWjZ0iH30R1QyNp9q2rWpZMzFS5sbHS82Hmgu
+	 SMg6awyPXcMoQrscEctDrmeoqHznN6Wwc3M+x93i+MbiQusjj3w6f/yd4A199y11R/g==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=tuxist.de;
 	spf=fail smtp.mailfrom=tuxist.de;
-	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=kBnyzixn;
+	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=FGzibVGE;
 	arc=none smtp.remote-ip=173.212.254.19
 Received: from groupware.tuxist.de (groupware.tuxist.de [173.212.254.19])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B2F4460A3803;
-	Wed, 21 Oct 2026 03:16:07 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org B2F4460A3803
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 48EAB606A912;
+	Wed, 21 Oct 2026 03:16:18 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 48EAB606A912
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=kBnyzixn
+	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=FGzibVGE
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=tuxist.de; s=201705;
-	t=1792552565; bh=/svxbILxTL0TSYd/4NFPp7T2dgkN7SzVLTbqNFSVtUs=;
+	t=1792552576; bh=IORN8HpiFolYxgOFw1dmhLuz4Wix28EOhU1Si/uNADU=;
 	h=In-Reply-To:References:From:Subject:To:Cc:Date:From;
-	b=kBnyzixnDL7eQ84r0eIxGen66YxJNnYDaNye9yyMZ2/NHe99jzC5joblq2ox6cUYY
-	 Si5eD99tl/eewnwZPi/VH7418FgjuuaYPiEN8fv5qj38ptaJfnbrom9DgibLExDqna
-	 gTrhYCn2TG82pwJ5BKVUBDBxZeBwiR5wb5eJBcyagVkQof2amMQphExTn4jBVwdky/
-	 DF5c1ND/8XfmPMjUAcWLjMS3IOdG2eYlg2ew1jG11VC02BKAIO42IsFZ93s4SPuzmA
-	 0B/rrdhed14oWzsEPOtyBpG9Ko+WugpTBq/hXY7Z1+j6K7vn6fSDjbSpKvb8DGcJ1C
-	 r2BmpYdWGk7qw==
+	b=FGzibVGEM6vyViUIFazPySG2uG8tsGK/AjhYNaRdZIMeE0UoLWBLHPBrYjE/m+AsS
+	 fIqlFoy1cyvxvUPqjBlKGxJ0bArq93kq+/ydOLzasGfHT8XdawR7br3nGdhE5Q8bud
+	 mN/SGgjIywc2/P1AJpAs4gnVJm9uAkt77egEdLAZA5kPW6rkAmSdlmPzRlUAx30Ycy
+	 +LV/g2TewIqtqenS7Z7DLWu3p+Qjw/rT3Yo6/4z7uEiAVzRCsbgZZdHq2llO7uLIT8
+	 RV86bA6fRuEVrgBqpAZewvfa2fIXylkY+PbFD0pufO1e028btbYqkF1zHK4vTtGyBV
+	 3jnT7USvzsPvA==
 Received: from [10.1.1.106] (unknown [10.1.2.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by groupware.tuxist.de (Postfix) with ESMTPSA id 2F5978A08DF;
-	Wed, 21 Oct 2026 05:16:05 +0200 (CEST)
-Message-ID: <f9cecad11d5acce30303f25861d7e9f25daecc88.1792552161.git.jan.koester@tuxist.de>
+	by groupware.tuxist.de (Postfix) with ESMTPSA id 7895E8A0938;
+	Wed, 21 Oct 2026 05:16:15 +0200 (CEST)
+Message-ID: <b6c3e5df169940a45831966c180f27889958e1a7.1792552161.git.jan.koester@tuxist.de>
 In-Reply-To: <cover.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
 From: Jan Koester <jan.koester@tuxist.de>
-Subject: [RFC PATCH v2 13/41] ublk: refuse unprivileged devices to UUID and
- GUID users
+Subject: [RFC PATCH v2 16/41] ecryptfs: hash daemons by kuid_hash()
 To: Christian Brauner <brauner@kernel.org>,
     Alexander Viro <viro@zeniv.linux.org.uk>,
     "Serge E. Hallyn" <serge@hallyn.com>
@@ -70,7 +69,7 @@ Cc: Jan Kara <jack@suse.cz>,
     audit@vger.kernel.org,
     keyrings@vger.kernel.org,
     linux-kernel@vger.kernel.org
-Date: Wed, 21 Oct 2026 05:15:33 +0200
+Date: Wed, 21 Oct 2026 05:15:36 +0200
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -80,70 +79,30 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-The owner of an unprivileged ublk device is recorded in 32 bit fields of
-struct ublksrv_ctrl_dev_info, and only the owner may open the disk. A
-UUID or GUID user comes out as -1 there, like every other one, so they
-could open each other's devices.
-
-Fail the creation of unprivileged devices by such users with
--EOVERFLOW, and never let such a user pass the owner check.
+The daemon hash uses from_kuid(&init_user_ns, euid), which puts all UUID
+and GUID users into one bucket. Lookups compare the kuid, so this only
+costs time; use kuid_hash().
 
 Assisted-by: Claude:claude-opus-5-5
 
 Signed-off-by: Jan Koester <jan.koester@tuxist.de>
 ---
- drivers/block/ublk_drv.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ fs/ecryptfs/messaging.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/ublk_drv.c b/drivers/block/ublk_drv.c
-index 66eb55e716..8125b79c87 100644
---- a/drivers/block/ublk_drv.c
-+++ b/drivers/block/ublk_drv.c
-@@ -1324,7 +1324,12 @@ static void ublk_free_disk(struct gendisk *disk)
- 	ublk_put_device(ub);
- }
+diff --git a/fs/ecryptfs/messaging.c b/fs/ecryptfs/messaging.c
+index 73c7b8215e..4e2524f786 100644
+--- a/fs/ecryptfs/messaging.c
++++ b/fs/ecryptfs/messaging.c
+@@ -21,7 +21,7 @@ static struct hlist_head *ecryptfs_daemon_hash;
+ DEFINE_MUTEX(ecryptfs_daemon_hash_mux);
+ static int ecryptfs_hash_bits;
+ #define ecryptfs_current_euid_hash(uid) \
+-	hash_long((unsigned long)from_kuid(&init_user_ns, current_euid()), ecryptfs_hash_bits)
++	hash_long((unsigned long)kuid_hash(current_euid()), ecryptfs_hash_bits)
  
--static void ublk_store_owner_uid_gid(unsigned int *owner_uid,
-+/*
-+ * The owner of an unprivileged device is kept in 32 bits: -EOVERFLOW for
-+ * a UUID or GUID user or group, which all would come out as -1 and so
-+ * pass for each other.
-+ */
-+static int ublk_store_owner_uid_gid(unsigned int *owner_uid,
- 		unsigned int *owner_gid)
- {
- 	kuid_t uid;
-@@ -1334,6 +1339,7 @@ static void ublk_store_owner_uid_gid(unsigned int *owner_uid,
- 
- 	*owner_uid = from_kuid(&init_user_ns, uid);
- 	*owner_gid = from_kgid(&init_user_ns, gid);
-+	return uid_is_legacy(uid) && gid_is_legacy(gid) ? 0 : -EOVERFLOW;
- }
- 
- static int ublk_open(struct gendisk *disk, blk_mode_t mode)
-@@ -1355,9 +1361,8 @@ static int ublk_open(struct gendisk *disk, blk_mode_t mode)
- 	if (ub->dev_info.flags & UBLK_F_UNPRIVILEGED_DEV) {
- 		unsigned int curr_uid, curr_gid;
- 
--		ublk_store_owner_uid_gid(&curr_uid, &curr_gid);
--
--		if (curr_uid != ub->dev_info.owner_uid || curr_gid !=
-+		if (ublk_store_owner_uid_gid(&curr_uid, &curr_gid) ||
-+		    curr_uid != ub->dev_info.owner_uid || curr_gid !=
- 				ub->dev_info.owner_gid)
- 			return -EPERM;
- 	}
-@@ -4744,7 +4749,9 @@ static int ublk_ctrl_add_dev(const struct ublksrv_ctrl_cmd *header)
- 	}
- 
- 	/* the created device is always owned by current user */
--	ublk_store_owner_uid_gid(&info.owner_uid, &info.owner_gid);
-+	if (ublk_store_owner_uid_gid(&info.owner_uid, &info.owner_gid) &&
-+	    (info.flags & UBLK_F_UNPRIVILEGED_DEV))
-+		return -EOVERFLOW;
- 
- 	if (header->dev_id != info.dev_id) {
- 		pr_warn("%s: dev id not match %u %u\n",
+ static u32 ecryptfs_msg_counter;
+ static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
 -- 
 2.56.0
 
