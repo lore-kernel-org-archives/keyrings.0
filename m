@@ -1,56 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=173.212.254.19
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792552653;
-	b=PjmE3nMKeeC0Hhpz4ZUmhmg6ZYl46fHXhyitaEPmAmQAVkf1KuMPctHKUkjQlCz9encZ
-	 ckNuWwX24238M8jKc8v1RLCGiZvZvSnXt3n/XnJ6Q7tNcflrAlvV5E5aF/7brHDKD5S1x
-	 dky/BaFG49HJttIaLJ/B968aeLJEsc6rfoFyFQtlT9tujdv/KLYR82z7jQdR1icBRTCPg
-	 8tUB/kn8PhLD3oaCK8id9uXXbLCqqp72pvfkhmUvfsPnzdL693KeTiuC/6PGjZKdQ7RAv
-	 4DnpxSJSOaG/vGLza29flxLERnc8ECtzhYnJ6O+6qm/qCrOrBp30tUiT2Ft7YBavtig==
+	t=1792552649;
+	b=14o+IYlccJBrW5vRrBPokgbQmEqr0GEz7olOIxRqzbNbJuZNKjfxiooBQiFzvGjAHnZn
+	 OEykgpk9HU35Hpwnh4l/U4SlEYoGUi8vbBtYopNvYLlLMKPR9QZ2DeMq3/zfpvKyVVwSC
+	 U11qgAaT8gJXoe7AyaeniCtLJcmWd46zLrzFz4pzAG5qzL8MnGZZfMaWNUM/LZ8sVWyFv
+	 PBFO7TiSpBNy9+zuUtpWQS1iOZZxz5BGHgX0xxFeXwHn5fOIORIwACGQIrWfs/8xGhT87
+	 MYQLSZXg5wU8R4LVxSILs8uM6kVM6582SBR5onkvYPikT7ESZiYT0d5aNUWPOnXM0wQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792552653;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792552649;
 	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:In-Reply-To:
 	 References:From:Subject:To:Cc:Date;
-	bh=3m01pLNDTW9aw9k0lEKmb3B4hZCMEg4WI0a06fRx8PE=;
-	b=iPNoFpscZwT4+Z4IjG7s+Lhm5WpEe0oujhHdIsBkoV4o2K00Xo5eA3+n9PhOzR6JBIA9
-	 OB1xtnq3Z7Y0HwxSo57sfOMbFDmWGLwlaH/CBl3tpKt5WcfKBCA9TaWyBRufg8IUDhKgM
-	 476nkt79cZ0Y+XZoikO4XsZauhANXU5VfcmYuTgo94j2V9dam8VanANU/q9YsZQHbxXai
-	 0N1MlXqpZVsrGb0QrYvuAWXSZ1fXcJW9Ic5OnyPIeZ/by+Hasg3XrjfbbG/7plCbKRvdU
-	 nbaFOxvQy0sej5sobXvd4BmunvtfSWqiuJc/mISPrN74vkc5YqXvQwLeykqFQPgbNIQ==
+	bh=oRt9qfEi+p8qUULjCKJqlBA1X8SXZXrIxCFrVnW5VVU=;
+	b=yHrSOHZtMFQeIuLIH3enQSykIGyNP8SjhaQcE24Z/9s2ki3RFG32ZM8z6q5jLTiYhO2u
+	 j/HDwkvPi/GRZktZo9zn5dv3cngNWPNHXIoI7z4i84z040RXqWTljG3JyQDSNQ/aif/wx
+	 anpwqALbSjjSt1qkrrJcfbeQiFValvIJ61rV/e7PMGoug8fYPYBXAxfAW3LTKb/U2u9ic
+	 XWvwiQYmMtSqDvk8/rRm19lFc04qsHsrTdXiiUnn41po3v640sTU+tD3hq+jK9KoNO6c3
+	 2qM3OSA7NfpPIHrHKpIVXhLR0gG9YNAXIpE5AjBEY99flyeC0BQOXwMpsBqi8gPDdxQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=tuxist.de;
 	spf=fail smtp.mailfrom=tuxist.de;
-	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=k2jP8E1J;
+	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=R785T3m5;
 	arc=none smtp.remote-ip=173.212.254.19
 Received: from groupware.tuxist.de (groupware.tuxist.de [173.212.254.19])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C75D8607A41C;
-	Wed, 21 Oct 2026 03:17:32 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org C75D8607A41C
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4FC01607989B;
+	Wed, 21 Oct 2026 03:17:29 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 4FC01607989B
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=k2jP8E1J
+	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=R785T3m5
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=tuxist.de; s=201705;
-	t=1792552650; bh=BGBE1F78F9m6wB+fKLmjZdC/MpiTTSaq0q8LTJ1vf6k=;
+	t=1792552647; bh=By5SErF411UlG+UD7wAO5DvMmpoYoPV1ixNvax7vY5k=;
 	h=In-Reply-To:References:From:Subject:To:Cc:Date:From;
-	b=k2jP8E1J0U1dFSue1OTXG+4lHVU/E9/zexo0IbPd048+BJwSLrlmsvOdsS/wmksHH
-	 5qyVEvTa/J52NDiGIeDzBmhSBdsTfdVm6Tn+oygZ5EngesJuDF4D12REJyzuqx1lSv
-	 MBLC3GP+KV2YmYuYTZolCeV468jBsEgPVfkbp+O0Ug9X+rYBnUrar32JVCqsRA5Tv0
-	 IZsKHGN6ab1X3g0qQzjSdIk1WO9gB8Lf/mAmX3KcGvI9YmOSqMwUqz2pEkOYOUtGP/
-	 EJ8enWVLKA/4PmEX8EqepxxVG6yN3HfAsxu3O2xduxOblYrjtl+xaHV9b5SXELEcDF
-	 nWEOHo1UYaBHQ==
+	b=R785T3m5bgtSyo9fxe7Yl7YsVN5IjxC8VRMfBOP34MmJEb54/VI8Wrg5YhXPcEnvy
+	 UXZeBelZjOmKSqHbJn6lIGTEv0sRKYs+lIok5vbyAiRucG0H/cR8mOC4GCNRWMwJGL
+	 CGiHcQcxk7RnMrUloMLC7tUfwx4d8VO6WmKYxKBI9sf4ZLvlpLHgKU3xVlM1FNbrWz
+	 K549N0QRaJLSlafOVuDqi7z7jIWbNpkUfreoPdEX2OfiagwTq8uVxC3i+oGyeTPhJ/
+	 b3/B63cjG/oxqWVAeDs4Gggk17kQgThfuOF+28PlHClj/csNRzhBwi8cr/uMcpxh5e
+	 qVGkAhAGHTBkA==
 Received: from [10.1.1.106] (unknown [10.1.2.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by groupware.tuxist.de (Postfix) with ESMTPSA id 19A918A090C;
-	Wed, 21 Oct 2026 05:17:30 +0200 (CEST)
-Message-ID: <0c3bae750fb443d5207a30a2e32a47a724bca5cb.1792552161.git.jan.koester@tuxist.de>
+	by groupware.tuxist.de (Postfix) with ESMTPSA id 024278A0904;
+	Wed, 21 Oct 2026 05:17:26 +0200 (CEST)
+Message-ID: <8bb654a6a07fa2c000a965f72629138eec3f87b1.1792552161.git.jan.koester@tuxist.de>
 In-Reply-To: <cover.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
 From: Jan Koester <jan.koester@tuxist.de>
-Subject: [RFC PATCH v2 38/41] devpts: allow UUID and GUID owners
+Subject: [RFC PATCH v2 37/41] ovl: allow UUID and GUID owners when the upper
+ layer does
 To: Christian Brauner <brauner@kernel.org>,
     Alexander Viro <viro@zeniv.linux.org.uk>,
     "Serge E. Hallyn" <serge@hallyn.com>
@@ -69,7 +70,7 @@ Cc: Jan Kara <jack@suse.cz>,
     audit@vger.kernel.org,
     keyrings@vger.kernel.org,
     linux-kernel@vger.kernel.org
-Date: Wed, 21 Oct 2026 05:15:58 +0200
+Date: Wed, 21 Oct 2026 05:15:57 +0200
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -79,34 +80,35 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Terminals are given to the user of a login session: sshd and login
-chown the slave to the user, and a pty opened by a UUID or GUID user
-gets that user as its owner. devpts keeps owners in its inodes only,
-so like tmpfs and ramfs it can hold any kind of owner: set SB_I_UID_R.
+Changes to an overlay land in its upper layer, so whether the overlay
+can store UUID and GUID owners is the upper layer's business: take
+SB_I_UID_R over from it. Copy-up of such an owner from a lower layer
+into an upper layer without the flag keeps failing with -EOVERFLOW.
 
-Without it, sshd's chown() of the pty of a UUID user fails with
--EOVERFLOW and the session is closed.
+This is what a live system with a tmpfs over a read-only image needs
+to give files to UUID and GUID users.
 
 Assisted-by: Claude:claude-opus-5-5
 
 Signed-off-by: Jan Koester <jan.koester@tuxist.de>
 ---
- fs/devpts/inode.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/overlayfs/super.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 9844dcf354..1bdda468d7 100644
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -363,6 +363,8 @@ static int devpts_fill_super(struct super_block *s, struct fs_context *fc)
- 	struct inode *inode;
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index bd0a3f9039..df1e451019 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -1455,6 +1455,9 @@ static int ovl_fill_super_creds(struct fs_context *fc, struct super_block *sb)
  
- 	s->s_iflags &= ~SB_I_NODEV;
-+	/* owners live in memory only, a UUID or GUID one as well */
-+	s->s_iflags |= SB_I_UID_R;
- 	s->s_blocksize = 1024;
- 	s->s_blocksize_bits = 10;
- 	s->s_magic = DEVPTS_SUPER_MAGIC;
+ 		sb->s_stack_depth = upper_sb->s_stack_depth;
+ 		sb->s_time_gran = upper_sb->s_time_gran;
++		/* changes land in the upper layer: its kinds of owner */
++		if (upper_sb->s_iflags & SB_I_UID_R)
++			sb->s_iflags |= SB_I_UID_R;
+ 	}
+ 	oe = ovl_get_lowerstack(sb, ctx, ofs, layers);
+ 	err = PTR_ERR(oe);
 -- 
 2.56.0
 
