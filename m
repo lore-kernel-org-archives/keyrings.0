@@ -1,56 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=173.212.254.19
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792552636;
-	b=5AL1FcCdcXVete/8UGTaCwzuVnKZEl499mX5eU3vU2kkalyi/fVYo2y1XcpgmKPsKJ1U
-	 dHLP7oL/lbd1jtyDFHZY5KlfnmjdDrJ9RDV/hVLjDKseM8cHuLXdCi7xLDrajdO6Q+UQo
-	 Cyi0sddZoSFbirGLuAadFxPrLenbuW2cSaLbk0WzvGYZwNlz/edjzHczwgOndbXxvu9w1
-	 LJj5LGveq5AhfmW57ykMdfVHu/35m/DVX2J3FL/RXJ8KLxqjIOSHZzVWk91U0UlRKCQCD
-	 p2NFMoZeD+mSfPBmplFmetHsT2Jc6+Cf50rQzi8Cc1Ds7KzRye8gMpKKz6STU7YOldg==
+	t=1792552639;
+	b=OUpWa4EcfJOGLnu/sqnvDgAD9HKZkvlUQ0ppK0NFUENIN4WAoQXExTEauEC8qpg4e3mf
+	 0QEIqYKuu1PXXoj6j0yLqSvdLxOIaRuJu21ngPkSr8L/7VJX/CMZLn0bqtZnFMdZ91G8J
+	 B4da2XrLnjMJV/TZnFQ+1goA2s0msYDxOZdSSnggzdCk/h0vzc3vW8XZYZOlv8Aq+RRzn
+	 KvWmO4n0MddtiwAFp3WbgDc/x/ZKBJ6FkVRnIUVYGTVn4n6JVsrcxD6HABlIBDYw+rONt
+	 Y1gQOTIr68zUpfNizuW98n9DX3YlqNmYja+wRKYC19Xvrww7YXt3wQ6rgUSrIfOutbA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792552636;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792552639;
 	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:In-Reply-To:
 	 References:From:Subject:To:Cc:Date;
-	bh=PYtCM8AZCT6uaJfSrx0BOZ+0uHQZVP/Z/KdzZbvlZJ0=;
-	b=aTEW6LXwuVuxk/5ELvlqs5IHdKpwphNQ+T85mDtZYMmizvTAme5x9LTMtlyvzL2LLVJX
-	 /MGJx1M4ani0U3nQvpZ1ORdCV+bQuAHDsY6Zkh4W0mhxMTcbS/pgZOO2zhzLpBmgvTle9
-	 7NConjwvBL58xClLUdSEEWyOavvBaBc/VjCzkMbiLybt4xgELOzakH1Zxu7Vp6xDpZgUk
-	 u2nThS1gT9RuVMktE5TLaAq7nDJwcIsRSZNQQZuJAUtD63zqhdLS9+Cqdhv+cl7MV0iXM
-	 EUkQbC1IcSpgRh3LMR4e9Hzypqa2tf5ufNNrFkN8VTLWuyYIpid+atwa+fOMoQtuEwA==
+	bh=gfFBA8LH4gfsSKNHEPmNQ/vWCOtrs7FdgWk9k3JrBHg=;
+	b=Yba0laho60HZzfL9vOFJfOjRp4UV7VKZnh75x3NSp6aAmFo7gz+GvzV0ez2c19Uwoa9a
+	 9DSyMZG3LxQGxjEDiYtYcd9KPTRI0Snzu1Rq7YlWXTgjIVA8suxKxN4A8cnq4ECKwmQI5
+	 BlsoG+YmZ98PxevXR1ypiq6bEnYSbuZnmk2Xf5FIIZIK7afGvo/y66/5L06o/QVBrcPW1
+	 L2NYzboz2Zdkhb6JK06S7g/LEJ+ugahH1ImVS/mHe6co51Y7rRI2eiPw4OBqeSRqYF6S/
+	 3j/vC3y4J4Y/1EtzLq4eRryrn4K00QrC6noZiV9X+YOekPPWunjtjeBZjdbjW6F4Y/Q==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=tuxist.de;
 	spf=fail smtp.mailfrom=tuxist.de;
-	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=aFbSe6vz;
+	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=W4BT9TNR;
 	arc=none smtp.remote-ip=173.212.254.19
 Received: from groupware.tuxist.de (groupware.tuxist.de [173.212.254.19])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8B58160779CD;
-	Wed, 21 Oct 2026 03:17:15 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 8B58160779CD
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0926460A382C;
+	Wed, 21 Oct 2026 03:17:18 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 0926460A382C
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=aFbSe6vz
+	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=W4BT9TNR
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=tuxist.de; s=201705;
-	t=1792552633; bh=YMnWTj9au5/Tn2L6+FyQDCou1t3SlsDfGkZwpfIj2wQ=;
+	t=1792552637; bh=c/MatJ7zCmct39K83og7TVItx3cItrvprM66Ihgbc+M=;
 	h=In-Reply-To:References:From:Subject:To:Cc:Date:From;
-	b=aFbSe6vzYnxQOasfNGnMc2AmHeAZd3awQACfsGIMhiWm7a1jy9iung+k6mmkjFihq
-	 ezNd4/Ui7rvTHMmta86DrGE8P6szY3N5L4fkDoDUhsZ/eYBqCVqUYIGHkpzB+9ZocS
-	 c4Ymndv2T7OnAih6Ot/XyhNVCkNdjEllYepyKl4lbnCl0U6/F9euiOVI3icLH4oP1v
-	 anVB/8Gq388jBYOiTKjaRD2IapP6bra4n8DZYK/IvvSKZAT33N4ZfNObDWx6bZfVNC
-	 +KRpXtyIeADEHZ3b9OlmFjwXnDY8PY3ON1IUx9QsoX8hRd+INdCEEJMPUYUFZvZx1R
-	 wxOW0gXCilXsg==
+	b=W4BT9TNRFBeCPYk+tKtWArqh4Ur5DtLo0vljyceBtP8rbavEfHigwo1frJ3i62gYx
+	 z3krisNdVJ37oqMsaK2uyqmWlj6j5QRmocqzrfCSlVaqAvdn3FKeDZ06WL8JdAekBj
+	 E7aIKHC3FMOIOS6+6iOaSGE3W0UvLoa7fVNArUs6w3C4w28+pp0TpyIfGYnkbePujE
+	 16fIfgDl5Cn9Nm9qlMDXuTLW1NKDlP+Y5bs4b4R+tLarpLnDRLArLHntkMoIxtIP6z
+	 1Inqg2AngQKfLy0kxk0oelvGjx6iRqmwZ+SAdL2RVR8iQHys3D5Y0RxckrhsVDOmsM
+	 eQW3xgoajXseg==
 Received: from [10.1.1.106] (unknown [10.1.2.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by groupware.tuxist.de (Postfix) with ESMTPSA id 391D48A08F4;
-	Wed, 21 Oct 2026 05:17:13 +0200 (CEST)
-Message-ID: <d8a3b0587e8123c56058d097fbd2d5fa00cf7bd6.1792552161.git.jan.koester@tuxist.de>
+	by groupware.tuxist.de (Postfix) with ESMTPSA id 71B0F8A091B;
+	Wed, 21 Oct 2026 05:17:16 +0200 (CEST)
+Message-ID: <98758113db07083faeb158948b6b3362c2795231.1792552161.git.jan.koester@tuxist.de>
 In-Reply-To: <cover.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
 From: Jan Koester <jan.koester@tuxist.de>
-Subject: [RFC PATCH v2 33/41] posix_acl: support UUID and GUID entries
+Subject: [RFC PATCH v2 34/41] ext4: store ACLs with UUID and GUID entries on
+ uid_r filesystems
 To: Christian Brauner <brauner@kernel.org>,
     Alexander Viro <viro@zeniv.linux.org.uk>,
     "Serge E. Hallyn" <serge@hallyn.com>
@@ -69,7 +70,7 @@ Cc: Jan Kara <jack@suse.cz>,
     audit@vger.kernel.org,
     keyrings@vger.kernel.org,
     linux-kernel@vger.kernel.org
-Date: Wed, 21 Oct 2026 05:15:53 +0200
+Date: Wed, 21 Oct 2026 05:15:54 +0200
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -79,273 +80,275 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-The ACL xattrs carry 32 bit ids, so ACL_USER and ACL_GROUP entries for
-UUID and GUID users and groups could neither be set nor shown.
-
-Add version 3 of the xattr format, whose entries hold an id kind and
-16 bytes of id. setxattr() takes version 2 and 3; getxattr() returns
-version 3 only if the ACL has such an entry the caller can see, so
-existing tools keep getting version 2 for everything else.
-
-set_posix_acl() refuses UUID and GUID entries with -EOVERFLOW on
-filesystems without SB_I_UID_R, whose ACL formats can't store them.
+ACLs whose ACL_USER or ACL_GROUP entries are UUIDs or GUIDs are written
+in a new on-disk format, EXT4_ACL_VERSION_R: the short entries stay as
+they are, the user and group entries carry an EXT4_ID_R_* kind and 16
+bytes of id. Only such ACLs use it, and only uid_r filesystems can have
+them (set_posix_acl() refuses them elsewhere); all other ACLs keep
+EXT4_ACL_VERSION.
 
 Assisted-by: Claude:claude-opus-5-5
 
 Signed-off-by: Jan Koester <jan.koester@tuxist.de>
 ---
- fs/posix_acl.c                       | 123 ++++++++++++++++++++++++++-
- include/linux/posix_acl_xattr.h      |  31 +++++++
- include/uapi/linux/posix_acl_xattr.h |  19 +++++
- 3 files changed, 171 insertions(+), 2 deletions(-)
+ fs/ext4/acl.c | 109 +++++++++++++++++++++++++++++++++++++++-----------
+ fs/ext4/acl.h |  34 +++++++++++++---
+ 2 files changed, 115 insertions(+), 28 deletions(-)
 
-diff --git a/fs/posix_acl.c b/fs/posix_acl.c
-index 18b302f941..bcb0663fe2 100644
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -19,6 +19,8 @@
- #include <linux/cred.h>
- #include <linux/posix_acl.h>
- #include <linux/posix_acl_xattr.h>
-+#include <linux/uidgid_r.h>
+diff --git a/fs/ext4/acl.c b/fs/ext4/acl.c
+index 3bffe862f9..27f8a1b503 100644
+--- a/fs/ext4/acl.c
++++ b/fs/ext4/acl.c
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include <linux/quotaops.h>
 +#include <linux/unaligned.h>
- #include <linux/xattr.h>
- #include <linux/export.h>
- #include <linux/user_namespace.h>
-@@ -741,16 +743,62 @@ static int posix_acl_fix_xattr_common(const void *value, size_t size)
- 		return -EINVAL;
- 	if (size < sizeof(struct posix_acl_xattr_header))
- 		return -EINVAL;
--	if (header->a_version != cpu_to_le32(POSIX_ACL_XATTR_VERSION))
-+	if (header->a_version == cpu_to_le32(POSIX_ACL_XATTR_VERSION_R))
-+		count = posix_acl_xattr_count_r(size);
-+	else if (header->a_version == cpu_to_le32(POSIX_ACL_XATTR_VERSION))
-+		count = posix_acl_xattr_count(size);
-+	else
- 		return -EOPNOTSUPP;
- 
--	count = posix_acl_xattr_count(size);
- 	if (count < 0)
- 		return -EINVAL;
- 
- 	return count;
- }
- 
-+/* The entries of a version 3 ACL xattr into @acl; -EINVAL if malformed */
-+static int posix_acl_from_xattr_r(struct user_namespace *userns,
-+				  const struct posix_acl_xattr_entry_r *entry,
-+				  struct posix_acl *acl)
+ #include "ext4_jbd2.h"
+ #include "ext4.h"
+ #include "xattr.h"
+@@ -14,22 +15,41 @@
+ /*
+  * Convert from filesystem to in-memory representation.
+  */
++/* The id of an ACL_USER or ACL_GROUP entry of EXT4_ACL_VERSION_R */
++static int ext4_acl_id_from_disk(const ext4_acl_entry_r *entry, u32 *type,
++				 u32 *legacy, uuid_t *id)
 +{
-+	struct __kernel_uid_r id;
-+
-+	for (int n = 0; n < acl->a_count; n++, entry++) {
-+		struct posix_acl_entry *acl_e = &acl->a_entries[n];
-+
-+		acl_e->e_tag  = le16_to_cpu(entry->e_tag);
-+		acl_e->e_perm = le16_to_cpu(entry->e_perm);
-+
-+		memset(&id, 0, sizeof(id));
-+		id.type = le32_to_cpu(entry->e_type);
-+		if (id.type == UID_R_LEGACY)
-+			id.legacy = get_unaligned_le32(entry->e_id);
-+		else
-+			memcpy(id.uuid, entry->e_id, sizeof(id.uuid));
-+
-+		switch (acl_e->e_tag) {
-+		case ACL_USER_OBJ:
-+		case ACL_GROUP_OBJ:
-+		case ACL_MASK:
-+		case ACL_OTHER:
-+			break;
-+		case ACL_USER:
-+			acl_e->e_uid = make_kuid_r(userns, &id);
-+			if (!uid_valid(acl_e->e_uid))
-+				return -EINVAL;
-+			break;
-+		case ACL_GROUP:
-+			acl_e->e_gid = make_kgid_r(userns, &id);
-+			if (!gid_valid(acl_e->e_gid))
-+				return -EINVAL;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+	}
++	*type = le32_to_cpu(entry->e_type);
++	if (*type > EXT4_ID_R_GUID)
++		return -EINVAL;
++	*legacy = get_unaligned_le32(entry->e_id);
++	memcpy(id->b, entry->e_id, sizeof(id->b));
 +	return 0;
 +}
 +
- /**
-  * posix_acl_from_xattr - convert POSIX ACLs from backing store to VFS format
-  * @userns: the filesystem's idmapping
-@@ -795,6 +843,13 @@ struct posix_acl *posix_acl_from_xattr(struct user_namespace *userns,
+ static struct posix_acl *
+ ext4_acl_from_disk(const void *value, size_t size)
+ {
+ 	const char *end = (char *)value + size;
+ 	int n, count;
+ 	struct posix_acl *acl;
++	size_t entry_size = sizeof(ext4_acl_entry);
++	bool r = false;
+ 
+ 	if (!value)
+ 		return NULL;
+ 	if (size < sizeof(ext4_acl_header))
+ 		 return ERR_PTR(-EINVAL);
+-	if (((ext4_acl_header *)value)->a_version !=
+-	    cpu_to_le32(EXT4_ACL_VERSION))
++	if (((ext4_acl_header *)value)->a_version ==
++	    cpu_to_le32(EXT4_ACL_VERSION_R)) {
++		r = true;
++		entry_size = sizeof(ext4_acl_entry_r);
++	} else if (((ext4_acl_header *)value)->a_version !=
++		   cpu_to_le32(EXT4_ACL_VERSION)) {
+ 		return ERR_PTR(-EINVAL);
++	}
+ 	value = (char *)value + sizeof(ext4_acl_header);
+-	count = ext4_acl_count(size);
++	count = ext4_acl_count_e(size, entry_size);
+ 	if (count < 0)
+ 		return ERR_PTR(-EINVAL);
+ 	if (count == 0)
+@@ -55,21 +75,33 @@ ext4_acl_from_disk(const void *value, size_t size)
+ 			break;
+ 
+ 		case ACL_USER:
+-			value = (char *)value + sizeof(ext4_acl_entry);
++		case ACL_GROUP: {
++			u32 type = EXT4_ID_R_LEGACY, legacy;
++			uuid_t id;
++
++			value = (char *)value + entry_size;
+ 			if ((char *)value > end)
+ 				goto fail;
+-			acl->a_entries[n].e_uid =
+-				make_kuid(&init_user_ns,
+-					  le32_to_cpu(entry->e_id));
+-			break;
+-		case ACL_GROUP:
+-			value = (char *)value + sizeof(ext4_acl_entry);
+-			if ((char *)value > end)
++			legacy = le32_to_cpu(entry->e_id);
++			if (r && ext4_acl_id_from_disk((void *)entry, &type,
++						       &legacy, &id))
+ 				goto fail;
+-			acl->a_entries[n].e_gid =
+-				make_kgid(&init_user_ns,
+-					  le32_to_cpu(entry->e_id));
++			if (acl->a_entries[n].e_tag == ACL_USER)
++				acl->a_entries[n].e_uid =
++					type == EXT4_ID_R_LEGACY ?
++					make_kuid(&init_user_ns, legacy) :
++					type == EXT4_ID_R_UUID ?
++					KUIDT_INIT_UUID(id) :
++					KUIDT_INIT_GUID(*(guid_t *)&id);
++			else
++				acl->a_entries[n].e_gid =
++					type == EXT4_ID_R_LEGACY ?
++					make_kgid(&init_user_ns, legacy) :
++					type == EXT4_ID_R_UUID ?
++					KGIDT_INIT_UUID(id) :
++					KGIDT_INIT_GUID(*(guid_t *)&id);
+ 			break;
++		}
+ 
+ 		default:
+ 			goto fail;
+@@ -87,19 +119,38 @@ ext4_acl_from_disk(const void *value, size_t size)
+ /*
+  * Convert from in-memory to filesystem representation.
+  */
++/* An ACL_USER or ACL_GROUP id into an entry of EXT4_ACL_VERSION_R */
++static void ext4_acl_id_to_disk(ext4_acl_entry_r *entry, u32 type, u32 legacy,
++				const uuid_t *id)
++{
++	entry->e_type = cpu_to_le32(type);
++	memset(entry->e_id, 0, sizeof(entry->e_id));
++	if (type == EXT4_ID_R_LEGACY)
++		put_unaligned_le32(legacy, entry->e_id);
++	else
++		memcpy(entry->e_id, id->b, sizeof(entry->e_id));
++}
++
++/*
++ * ACLs with UUID or GUID entries (only on uid_r filesystems, see
++ * set_posix_acl()) are written as EXT4_ACL_VERSION_R, others as before.
++ */
+ static void *
+ ext4_acl_to_disk(const struct posix_acl *acl, size_t *size)
+ {
+ 	ext4_acl_header *ext_acl;
+ 	char *e;
+ 	size_t n;
++	bool r = posix_acl_has_id_r(acl);
++	size_t entry_size = r ? sizeof(ext4_acl_entry_r) : sizeof(ext4_acl_entry);
+ 
+-	*size = ext4_acl_size(acl->a_count);
++	*size = ext4_acl_size_e(acl->a_count, entry_size);
+ 	ext_acl = kmalloc(sizeof(ext4_acl_header) + acl->a_count *
+-			sizeof(ext4_acl_entry), GFP_NOFS);
++			entry_size, GFP_NOFS);
+ 	if (!ext_acl)
  		return ERR_PTR(-ENOMEM);
- 	acl_e = acl->a_entries;
+-	ext_acl->a_version = cpu_to_le32(EXT4_ACL_VERSION);
++	ext_acl->a_version = cpu_to_le32(r ? EXT4_ACL_VERSION_R :
++					     EXT4_ACL_VERSION);
+ 	e = (char *)ext_acl + sizeof(ext4_acl_header);
+ 	for (n = 0; n < acl->a_count; n++) {
+ 		const struct posix_acl_entry *acl_e = &acl->a_entries[n];
+@@ -108,14 +159,26 @@ ext4_acl_to_disk(const struct posix_acl *acl, size_t *size)
+ 		entry->e_perm = cpu_to_le16(acl_e->e_perm);
+ 		switch (acl_e->e_tag) {
+ 		case ACL_USER:
+-			entry->e_id = cpu_to_le32(
+-				from_kuid(&init_user_ns, acl_e->e_uid));
+-			e += sizeof(ext4_acl_entry);
++			if (r)
++				ext4_acl_id_to_disk((void *)entry,
++						    acl_e->e_uid.type,
++						    from_kuid(&init_user_ns, acl_e->e_uid),
++						    &acl_e->e_uid.uuid);
++			else
++				entry->e_id = cpu_to_le32(
++					from_kuid(&init_user_ns, acl_e->e_uid));
++			e += entry_size;
+ 			break;
+ 		case ACL_GROUP:
+-			entry->e_id = cpu_to_le32(
+-				from_kgid(&init_user_ns, acl_e->e_gid));
+-			e += sizeof(ext4_acl_entry);
++			if (r)
++				ext4_acl_id_to_disk((void *)entry,
++						    acl_e->e_gid.type,
++						    from_kgid(&init_user_ns, acl_e->e_gid),
++						    &acl_e->e_gid.uuid);
++			else
++				entry->e_id = cpu_to_le32(
++					from_kgid(&init_user_ns, acl_e->e_gid));
++			e += entry_size;
+ 			break;
  
-+	if (header->a_version == cpu_to_le32(POSIX_ACL_XATTR_VERSION_R)) {
-+		if (posix_acl_from_xattr_r(userns, (const void *)(header + 1),
-+					   acl))
-+			goto fail;
-+		return acl;
-+	}
-+
- 	for (end = entry + count; entry != end; acl_e++, entry++) {
- 		acl_e->e_tag  = le16_to_cpu(entry->e_tag);
- 		acl_e->e_perm = le16_to_cpu(entry->e_perm);
-@@ -874,6 +929,61 @@ posix_acl_to_xattr(struct user_namespace *user_ns, const struct posix_acl *acl,
- }
- EXPORT_SYMBOL (posix_acl_to_xattr);
+ 		case ACL_USER_OBJ:
+diff --git a/fs/ext4/acl.h b/fs/ext4/acl.h
+index 0c5a79c3b5..48bc352ec7 100644
+--- a/fs/ext4/acl.h
++++ b/fs/ext4/acl.h
+@@ -8,6 +8,8 @@
+ #include <linux/posix_acl_xattr.h>
  
-+/* Like vfs_posix_acl_to_xattr(), in version 3 */
-+static ssize_t vfs_posix_acl_to_xattr_r(struct mnt_idmap *idmap,
-+					struct inode *inode,
-+					const struct posix_acl *acl,
-+					void *buffer, size_t size)
-+{
-+	struct posix_acl_xattr_header *ext_acl = buffer;
-+	struct posix_acl_xattr_entry_r *ext_entry;
-+	struct user_namespace *fs_userns = i_user_ns(inode);
-+	struct user_namespace *caller_userns = current_user_ns();
-+	struct __kernel_uid_r id;
-+	ssize_t real_size;
-+	bool mapped;
-+
-+	real_size = posix_acl_xattr_size_r(acl->a_count);
-+	if (!buffer)
-+		return real_size;
-+	if (real_size > size)
-+		return -ERANGE;
-+
-+	ext_entry = (void *)(ext_acl + 1);
-+	ext_acl->a_version = cpu_to_le32(POSIX_ACL_XATTR_VERSION_R);
-+
-+	for (int n = 0; n < acl->a_count; n++, ext_entry++) {
-+		const struct posix_acl_entry *acl_e = &acl->a_entries[n];
-+
-+		ext_entry->e_tag  = cpu_to_le16(acl_e->e_tag);
-+		ext_entry->e_perm = cpu_to_le16(acl_e->e_perm);
-+		memset(&id, 0, sizeof(id));
-+		mapped = true;
-+		switch (acl_e->e_tag) {
-+		case ACL_USER:
-+			mapped = from_kuid_r(caller_userns, vfsuid_into_kuid(
-+				make_vfsuid(idmap, fs_userns, acl_e->e_uid)), &id);
-+			break;
-+		case ACL_GROUP:
-+			mapped = from_kgid_r(caller_userns, vfsgid_into_kgid(
-+				make_vfsgid(idmap, fs_userns, acl_e->e_gid)), &id);
-+			break;
-+		}
-+		/* no mapping: the classic -1, as in version 2 */
-+		if (!mapped) {
-+			id.type = UID_R_LEGACY;
-+			id.legacy = ACL_UNDEFINED_ID;
-+		}
-+		ext_entry->e_type = cpu_to_le32(id.type);
-+		memset(ext_entry->e_id, 0, sizeof(ext_entry->e_id));
-+		if (id.type == UID_R_LEGACY)
-+			put_unaligned_le32(id.legacy, ext_entry->e_id);
-+		else if (id.type != UID_R_NONE)
-+			memcpy(ext_entry->e_id, id.uuid, sizeof(ext_entry->e_id));
-+	}
-+	return real_size;
-+}
-+
- /**
-  * vfs_posix_acl_to_xattr - convert from kernel to userspace representation
-  * @idmap: idmap of the mount
-@@ -902,6 +1012,11 @@ static ssize_t vfs_posix_acl_to_xattr(struct mnt_idmap *idmap,
- 	vfsuid_t vfsuid;
- 	vfsgid_t vfsgid;
+ #define EXT4_ACL_VERSION	0x0001
++/* uid_r: ACL_USER and ACL_GROUP entries are ext4_acl_entry_r */
++#define EXT4_ACL_VERSION_R	0x0002
  
-+	/* UUIDs and GUIDs the caller can see need version 3 */
-+	if (posix_acl_has_id_r(acl) && current_user_ns() == &init_user_ns)
-+		return vfs_posix_acl_to_xattr_r(idmap, inode, acl, buffer,
-+						size);
-+
- 	real_size = posix_acl_xattr_size(acl->a_count);
- 	if (!buffer)
- 		return real_size;
-@@ -956,6 +1071,10 @@ set_posix_acl(struct mnt_idmap *idmap, struct dentry *dentry,
- 		int ret = posix_acl_valid(inode->i_sb->s_user_ns, acl);
- 		if (ret)
- 			return ret;
-+		/* UUID and GUID entries only where the filesystem stores them */
-+		if (posix_acl_has_id_r(acl) &&
-+		    !(inode->i_sb->s_iflags & SB_I_UID_R))
-+			return -EOVERFLOW;
- 	}
- 	return inode->i_op->set_acl(idmap, dentry, acl, type);
- }
-diff --git a/include/linux/posix_acl_xattr.h b/include/linux/posix_acl_xattr.h
-index 9e1892525e..307d543bce 100644
---- a/include/linux/posix_acl_xattr.h
-+++ b/include/linux/posix_acl_xattr.h
-@@ -32,6 +32,37 @@ posix_acl_xattr_count(size_t size)
- 	return size / sizeof(struct posix_acl_xattr_entry);
- }
- 
-+static inline size_t
-+posix_acl_xattr_size_r(int count)
-+{
-+	return (sizeof(struct posix_acl_xattr_header) +
-+		(count * sizeof(struct posix_acl_xattr_entry_r)));
-+}
-+
-+static inline int
-+posix_acl_xattr_count_r(size_t size)
-+{
-+	if (size < sizeof(struct posix_acl_xattr_header))
-+		return -1;
-+	size -= sizeof(struct posix_acl_xattr_header);
-+	if (size % sizeof(struct posix_acl_xattr_entry_r))
-+		return -1;
-+	return size / sizeof(struct posix_acl_xattr_entry_r);
-+}
-+
-+/* Whether an ACL_USER or ACL_GROUP entry of @acl is a UUID or GUID */
-+static inline bool posix_acl_has_id_r(const struct posix_acl *acl)
-+{
-+	for (int n = 0; n < acl->a_count; n++) {
-+		const struct posix_acl_entry *e = &acl->a_entries[n];
-+
-+		if ((e->e_tag == ACL_USER && !uid_is_legacy(e->e_uid)) ||
-+		    (e->e_tag == ACL_GROUP && !gid_is_legacy(e->e_gid)))
-+			return true;
-+	}
-+	return false;
-+}
-+
- #ifdef CONFIG_FS_POSIX_ACL
- struct posix_acl *posix_acl_from_xattr(struct user_namespace *user_ns,
- 				       const void *value, size_t size);
-diff --git a/include/uapi/linux/posix_acl_xattr.h b/include/uapi/linux/posix_acl_xattr.h
-index 506380f0b9..a44a515079 100644
---- a/include/uapi/linux/posix_acl_xattr.h
-+++ b/include/uapi/linux/posix_acl_xattr.h
-@@ -36,4 +36,23 @@ struct posix_acl_xattr_header {
- 	__le32			a_version;
- };
+ typedef struct {
+ 	__le16		e_tag;
+@@ -20,11 +22,23 @@ typedef struct {
+ 	__le16		e_perm;
+ } ext4_acl_entry_short;
  
 +/*
-+ * Version 3: the ids of ACL_USER and ACL_GROUP entries can also be UUIDs
-+ * and GUIDs. e_type is a UID_R_* kind (<linux/uidgid_r.h>); a classic id
-+ * is in the first four bytes of e_id, little endian, a UUID or GUID takes
-+ * all of it in the byte order of __kernel_uid_r_t. Other entries have
-+ * e_type UID_R_NONE.
-+ *
-+ * getxattr() returns version 2 unless an entry has a UUID or GUID;
-+ * setxattr() takes both.
++ * EXT4_ACL_VERSION_R: e_type an EXT4_ID_R_* kind, a classic id in the
++ * first four bytes of e_id (little endian), a UUID or GUID all of it
 + */
-+#define POSIX_ACL_XATTR_VERSION_R	0x0003
++typedef struct {
++	__le16		e_tag;
++	__le16		e_perm;
++	__le32		e_type;
++	__u8		e_id[16];
++} ext4_acl_entry_r;
 +
-+struct posix_acl_xattr_entry_r {
-+	__le16			e_tag;
-+	__le16			e_perm;
-+	__le32			e_type;
-+	__u8			e_id[16];
-+};
+ typedef struct {
+ 	__le32		a_version;
+ } ext4_acl_header;
+ 
+-static inline size_t ext4_acl_size(int count)
++/* @entry: sizeof(ext4_acl_entry) or, for EXT4_ACL_VERSION_R, of _r */
++static inline size_t ext4_acl_size_e(int count, size_t entry)
+ {
+ 	if (count <= 4) {
+ 		return sizeof(ext4_acl_header) +
+@@ -32,11 +46,11 @@ static inline size_t ext4_acl_size(int count)
+ 	} else {
+ 		return sizeof(ext4_acl_header) +
+ 		       4 * sizeof(ext4_acl_entry_short) +
+-		       (count - 4) * sizeof(ext4_acl_entry);
++		       (count - 4) * entry;
+ 	}
+ }
+ 
+-static inline int ext4_acl_count(size_t size)
++static inline int ext4_acl_count_e(size_t size, size_t entry)
+ {
+ 	ssize_t s;
+ 	size -= sizeof(ext4_acl_header);
+@@ -46,12 +60,22 @@ static inline int ext4_acl_count(size_t size)
+ 			return -1;
+ 		return size / sizeof(ext4_acl_entry_short);
+ 	} else {
+-		if (s % sizeof(ext4_acl_entry))
++		if (s % entry)
+ 			return -1;
+-		return s / sizeof(ext4_acl_entry) + 4;
++		return s / entry + 4;
+ 	}
+ }
+ 
++static inline size_t ext4_acl_size(int count)
++{
++	return ext4_acl_size_e(count, sizeof(ext4_acl_entry));
++}
 +
- #endif	/* __UAPI_POSIX_ACL_XATTR_H */
++static inline int ext4_acl_count(size_t size)
++{
++	return ext4_acl_count_e(size, sizeof(ext4_acl_entry));
++}
++
+ #ifdef CONFIG_EXT4_FS_POSIX_ACL
+ 
+ /* acl.c */
 -- 
 2.56.0
 
