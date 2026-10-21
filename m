@@ -1,56 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=173.212.254.19
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792552581;
-	b=GeIROkDcIgHyBemf4Doo4dSr+Uz+jEVy6Qqf+y1r6ve6tAM73K54FFK57qO/owwBlGPK
-	 vEO1xGP8QiTXpZv/VhUUKOgtD0iR3vYC2qiWnVb1pqYzaQMiL3CGGaUgoCerRw57Sme0J
-	 RfPIDnjFczW8toK4plawpEFJtM6sB0C4q/0l8rbLt1Qp9pr9kZesbjMptox9leEVmITBR
-	 OSux6cKFL+Mtr7WGaAnFy4tA2kYZTP97FpKAAosn1UNRNj6G+Jdj0uAOJ+lDjlq4TIeib
-	 mDn1aH7+x/fduV1iov2mrF0UAH02Aj/Ito5BVkX08plmYDlfk2gfGU22C0XVB8PHqCw==
+	t=1792552575;
+	b=1p36JJWZaeTjT01OnQniD26jUzO+LZh8bXjTsUVnkxZnf/tsdPI6TUR4kTFM7yXfu5/B
+	 rman9fvjBBVDmAEzzdTi9Rz8yeUCWo/17jGLwdSBdFFTe0MQFsnF8vfuOpDK9qROjD7kI
+	 YGR1yoFXXsY1IW7n41MQHF9XYBZQLYf3kcxhrCMIfI856ztGgfQY0N9Mo6s4ZsSAPIJTL
+	 nE8fT+lesRNxWtV8UUv/LSFS7SF3kwYhIdolDL57gQ+nLmLmSI87xpYjg1NFp9uIgotsW
+	 pi+3pakcXVEH5HvOn03qpgW6CPhA3ziQEatB2Qg8TUEfUK2VKTIxnA85y/yJ2ceY0cA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792552581;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792552575;
 	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:In-Reply-To:
 	 References:From:Subject:To:Cc:Date;
-	bh=LSH0H2p+4hPwyxhykRR+OoOPuBJNPy27VM/n5UgWimw=;
-	b=jblpVsFt+nyx437ORBUptQjSTqWKHsrNK9vgiwmskBx1iAa1IYmXKuG0dFgMpCFNd5iq
-	 pRPWlsWgZUSI7toEfL6nBaciLEYhu2BeIlcs7A7wBtgVruV9l4WhUkeZWyZlq0z7iIllP
-	 EGz4qjij/TVyJb8FvgvNEVOeCiemeLJf8D4fgrgaGgASqkiI4DYeLFO+Jz7p8/Z//3Cjb
-	 kDP1u/zhDClZ7X9r2VlsIXlMPNjMozYlzgDYDhpXudV9dEUsFzIF4KMzFPnmUFo2/j7nE
-	 QgOue2b+tGNm9z+h16c/e+1F6mAmlCWfOVtk1Ja/DoYB1CG6Oy6h3WX4AXISG0RLNQg==
+	bh=uKOjlqXGHLJlkCL9f8d9rTFDqw8tpf+tLxaHjmSpkKA=;
+	b=0Un7N6cx1zehA3UFalbOhCndMLr7ta6yfoo4eao19b00PIXwxYJTrDupgB42THNs471n
+	 swrUSwaXOCEF3PPkT8DVCxKJzJXPWDzfPRIyAnnwnqU+5fQfQGlQgsAkeVvqpsbhqf4YD
+	 hyB8lcZ+zMei9O5beNeYHKSR+ChT3OBFxk4ftDIBI3L91NCz8mDZHKicA2T9wiY4fesv6
+	 +7vvvB72EC2sM0zfmT1oa10tUqA7Y9yYL8EuO+Uv9CmeKyZWxOTtDJsF4SjVN3gBQAIt6
+	 D88WLLto+iz819lAdKFgY30arcH8I7coXQnrD6NKB01dg4sEre4DPR1Pm3/44TNnQoA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=tuxist.de;
 	spf=fail smtp.mailfrom=tuxist.de;
-	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=aCM+Okv6;
+	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=Gv9RjMyE;
 	arc=none smtp.remote-ip=173.212.254.19
 Received: from groupware.tuxist.de (groupware.tuxist.de [173.212.254.19])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3175F606BED5;
-	Wed, 21 Oct 2026 03:16:21 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 3175F606BED5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C9BC760A3828;
+	Wed, 21 Oct 2026 03:16:14 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org C9BC760A3828
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=aCM+Okv6
+	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=Gv9RjMyE
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=tuxist.de; s=201705;
-	t=1792552579; bh=cPizOxWZGJDi5/QHy2w18Y9MZUJPB6xdHmqFawOY40c=;
+	t=1792552572; bh=U300U6JBBikbKqzajlQay6DlU/YNXPzZuXT3M0eIs4w=;
 	h=In-Reply-To:References:From:Subject:To:Cc:Date:From;
-	b=aCM+Okv6LaS3A+GYWsvFYkea4+QW5+9Lm7IoFhmLKwgqXgBcpJT2i5MhMbA01UGlz
-	 e3E3B3DjhhzaGtThZwtdw+UI6PKl/AeZbqZJQqcSRFwBGUkmg3Vr/p4FpSShhiH2PE
-	 dWekEqjds1nA7tW/E1RopBjeAfnYzy/NVm5Kpcc53Pv97mkANHRkS8HNHa+KecbPLk
-	 qqf7qWJ077gy+CQO1tKgE8xFzxJ3QLRCD6Ay23lfjO8ZtIlfpQUgxL321oH4xo3T4r
-	 cbmwYaCPP0+MUUoFMeYpfUOa3kXrTbJDaKaXA3Ud2vcdmLJ7BhEKmfh2O44xmKgZjH
-	 mxytheHKsaJfg==
+	b=Gv9RjMyEN8DbUWWtlROM7CV/VPVlno1DteTYy1x7+1M9V/i8RwaxOw6oJzeNuTbLz
+	 ixX2I/stDeS4UAUFFgMCT5fjyvgHP4ZOoLMqw1PfgCw1TPOTmxFWk1dFlVcNHa5fHN
+	 N9BBl/EmRaapJtzyksGHAGehIgqlLcySEG21zDVoIAKQZYkCVQ6lzSyqpTvfVMbZZz
+	 VOAKO5Q8PjSlEH03zYu5l0CF6lVzcrfsbuyqGxOKuBFhNZy9huAnhMvTiNX0YC1Xvi
+	 LxOhMkutE2vjhlCwKBcfVIGkBjX1y4FJTvacXdcTmG5TIYbduv4qONCSz1P9ZMZCeF
+	 5rzVX5lxx9IXQ==
 Received: from [10.1.1.106] (unknown [10.1.2.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by groupware.tuxist.de (Postfix) with ESMTPSA id D745F8A0651;
-	Wed, 21 Oct 2026 05:16:18 +0200 (CEST)
-Message-ID: <3c65c1107a1f9e634b35f59566f6ed70f217c85e.1792552161.git.jan.koester@tuxist.de>
+	by groupware.tuxist.de (Postfix) with ESMTPSA id 277538A092D;
+	Wed, 21 Oct 2026 05:16:12 +0200 (CEST)
+Message-ID: <91ba959f368000c0946cb846af3cbb8c97f7e005.1792552161.git.jan.koester@tuxist.de>
 In-Reply-To: <cover.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
 From: Jan Koester <jan.koester@tuxist.de>
-Subject: [RFC PATCH v2 17/41] quota: don't account UUID and GUID owners
+Subject: [RFC PATCH v2 15/41] SUNRPC: name UUID and GUID users to gssd as
+ uid_r=
 To: Christian Brauner <brauner@kernel.org>,
     Alexander Viro <viro@zeniv.linux.org.uk>,
     "Serge E. Hallyn" <serge@hallyn.com>
@@ -69,7 +70,7 @@ Cc: Jan Kara <jack@suse.cz>,
     audit@vger.kernel.org,
     keyrings@vger.kernel.org,
     linux-kernel@vger.kernel.org
-Date: Wed, 21 Oct 2026 05:15:37 +0200
+Date: Wed, 21 Oct 2026 05:15:35 +0200
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -79,65 +80,107 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Quota files and the quotactl interface use 32 bit ids. dqget() would
-hash and store a UUID or GUID owner as -1, so all of them would share
-one dquot, written out as id 4294967295.
+gssd learns the user of an upcall as a 32 bit uid. UUID and GUID users
+would all reach it as the overflow uid and share its credentials.
 
-Treat such ids like quota being off for them: dqget() returns -ESRCH,
-which its callers already handle by not charging the inode. An inode
-given to such an owner stays charged to the previous one.
+In the text (v1) upcall, name such a user as uid_r= with the text form
+of the id instead of uid=. gssd versions that don't know uid_r= find no
+uid= and refuse the upcall, so nobody ends up with the overflow uid's
+credentials; where gssd's user namespace can't see the user, the upcall
+names no user at all and fails the same way.
+
+A downcall for such a user starts with uid -1, which is never valid,
+followed by the user as __kernel_uid_r_t; downcalls for classic uids are
+unchanged.
+
+The binary (v0) upcall has room for a 32 bit uid only: fail it with
+-EACCES for UUID and GUID users.
 
 Assisted-by: Claude:claude-opus-5-5
 
 Signed-off-by: Jan Koester <jan.koester@tuxist.de>
 ---
- fs/quota/dquot.c      |  3 +++
- include/linux/quota.h | 18 ++++++++++++++++++
- 2 files changed, 21 insertions(+)
+ net/sunrpc/auth_gss/auth_gss.c | 44 +++++++++++++++++++++++++++++++---
+ 1 file changed, 41 insertions(+), 3 deletions(-)
 
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index 1c78c695d0..62f333f824 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -954,6 +954,9 @@ struct dquot *dqget(struct super_block *sb, struct kqid qid)
+diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
+index 8ddc65e894..5e9e2cf4e9 100644
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -18,6 +18,7 @@
+ #include <linux/sched.h>
+ #include <linux/pagemap.h>
+ #include <linux/sunrpc/clnt.h>
++#include <linux/uidgid_r.h>
+ #include <linux/sunrpc/auth.h>
+ #include <linux/sunrpc/auth_gss.h>
+ #include <linux/sunrpc/gss_krb5.h>
+@@ -438,10 +439,23 @@ static int gss_encode_v1_msg(struct gss_upcall_msg *gss_msg,
+ 	struct gss_api_mech *mech = gss_msg->auth->mech;
+ 	char *p = gss_msg->databuf;
+ 	size_t buflen = sizeof(gss_msg->databuf);
++	char idbuf[KID_STR_LEN];
+ 	int len;
  
- 	if (!qid_has_mapping(sb->s_user_ns, qid))
- 		return ERR_PTR(-EINVAL);
-+	/* Quota files hold 32 bit ids: like quota off for UUIDs and GUIDs */
-+	if (!qid_is_legacy(qid))
-+		return ERR_PTR(-ESRCH);
- 
-         if (!sb_has_quota_active(sb, qid.type))
- 		return ERR_PTR(-ESRCH);
-diff --git a/include/linux/quota.h b/include/linux/quota.h
-index 89a0d83dda..00685209fd 100644
---- a/include/linux/quota.h
-+++ b/include/linux/quota.h
-@@ -80,6 +80,24 @@ extern qid_t from_kqid(struct user_namespace *to, struct kqid qid);
- extern qid_t from_kqid_munged(struct user_namespace *to, struct kqid qid);
- extern bool qid_valid(struct kqid qid);
- 
-+/**
-+ *	qid_is_legacy - Report if a kqid fits the 32 bit ids of quota files
-+ *	@qid: The kernel internal quota identifier to test.
-+ *
-+ *	UUID and GUID owners don't, and are not subject to quotas.
-+ */
-+static inline bool qid_is_legacy(struct kqid qid)
-+{
-+	switch (qid.type) {
-+	case USRQUOTA:
-+		return uid_is_legacy(qid.uid);
-+	case GRPQUOTA:
-+		return gid_is_legacy(qid.gid);
-+	default:
-+		return true;
+-	len = scnprintf(p, buflen, "mech=%s uid=%d", mech->gm_name,
+-			from_kuid_munged(userns, gss_msg->uid));
++	/*
++	 * A UUID or GUID user is uid_r= in its text form instead of uid=,
++	 * which gssd versions that don't know it reject rather than taking
++	 * an overflow uid. Where gssd can't see the user at all, there is
++	 * neither, and the upcall fails.
++	 */
++	if (uid_is_legacy(gss_msg->uid))
++		len = scnprintf(p, buflen, "mech=%s uid=%d", mech->gm_name,
++				from_kuid_munged(userns, gss_msg->uid));
++	else if (kuid_has_mapping(userns, gss_msg->uid))
++		len = scnprintf(p, buflen, "mech=%s uid_r=%s", mech->gm_name,
++				kuid_str(gss_msg->uid, idbuf));
++	else
++		len = scnprintf(p, buflen, "mech=%s", mech->gm_name);
+ 	buflen -= len;
+ 	p += len;
+ 	gss_msg->msg.len = len;
+@@ -536,6 +550,15 @@ gss_alloc_msg(struct gss_auth *gss_auth,
+ 	err = vers;
+ 	if (err < 0)
+ 		goto err_free_msg;
++	/*
++	 * The binary v0 upcall is a 32 bit uid: UUID and GUID users would
++	 * all be the overflow uid there and share its credentials.
++	 */
++	if (vers == 0 && !uid_is_legacy(uid)) {
++		put_pipe_version(gss_auth->net);
++		err = -EACCES;
++		goto err_free_msg;
 +	}
-+}
+ 	gss_msg->pipe = gss_auth->gss_pipe[vers]->pipe;
+ 	INIT_LIST_HEAD(&gss_msg->list);
+ 	rpc_init_wait_queue(&gss_msg->rpc_waitqueue, "RPCSEC_GSS upcall waitq");
+@@ -752,7 +775,22 @@ gss_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
+ 		goto err;
+ 	}
+ 
+-	uid = make_kuid(current_user_ns(), id);
++	/*
++	 * A uid of -1, never valid, is followed by a __kernel_uid_r_t: the
++	 * reply to a uid_r= upcall of a UUID or GUID user.
++	 */
++	if (id == (uid_t)-1) {
++		struct __kernel_uid_r id_r;
 +
- /**
-  *	make_kqid - Map a user-namespace, type, qid tuple into a kqid.
-  *	@from: User namespace that the qid is in
++		p = simple_get_bytes(p, end, &id_r, sizeof(id_r));
++		if (IS_ERR(p)) {
++			err = PTR_ERR(p);
++			goto err;
++		}
++		uid = make_kuid_r(current_user_ns(), &id_r);
++	} else {
++		uid = make_kuid(current_user_ns(), id);
++	}
+ 	if (!uid_valid(uid)) {
+ 		err = -EINVAL;
+ 		goto err;
 -- 
 2.56.0
 
