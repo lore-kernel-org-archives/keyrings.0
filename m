@@ -1,57 +1,56 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=173.212.254.19
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792552532;
-	b=mVdkdy5yEJMiqQex+oUab0nurPZzLG0x8TIz6+JdILr2k7P0oinX5Aj/NyB1t/gk8CwO
-	 COcL+4TzSozMLWstYr0H5dU8fGMVT3fbS65JOOoJK+fK4JyRos0L/40M65+975/bORB4y
-	 YSb8LmL4Jk8s9G58VD7h042AVcMegMz6jojhyAU9toEeZmBOF0X+TqE4DkFZR3wnEBAZv
-	 el7AGt2RE0Mc61IXINB/Rxrmnxom75ZCZbbslELfKh3XSBL/0h6GGvYf6768r4Z29jOuE
-	 7NoKmGPFXXAvBAb/TK7n14g0ERk5U6NG3JNqV57Pd0I4J+anQWCLH5hCzhhBbhHv8UA==
+	t=1792552537;
+	b=4sYwXOpn/qfImY3Mo+4bD5Z2jD4xlhHV3RmLPPRLcFhR79Qk+Ujga2Ee2HF55dPFSPDj
+	 Yf1Xr/XZGfp4ys++h1vkd4u6QAgbcGbvpcMVHeQVL3yqF+P+8FfYsdhIyN7fMcuEPZLAS
+	 tzsyRpKaAw/ENZRZebfymKo+oizXWv2eYvA//Xm7rU8QufEf3HBo8mZF+uIFT2NDI9IZ7
+	 pud6FbHz/aKJjzaKVWhRviIO3Yhr4G4bfD+t1qZM9FoK8+lvUc03GkBwav2Kek0tzyLxW
+	 IMrnnVeaWkLo3azQyFfzktyb+WftjaxZ5XckqryA5Zo2PgaewbOjlJNavC0RHOOhXMA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792552532;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792552537;
 	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:In-Reply-To:
 	 References:From:Subject:To:Cc:Date;
-	bh=2Rr2bO9okDTnKQK7n2lk4waHPtLw2M+XqSbjGvsVjiU=;
-	b=kxJ1KQE/8J0FNYE0omUAQpsrrErDAHQUXyNjbgCjDuGhgYwlxxZeDvJZM5ndKSOJddXA
-	 PSHnh6+DW3Nx9oQIWE4HdCopMxnDgKLwUcymFKjwUIEfNEPJI+tRUSxRKdfDP8xFdZp+b
-	 JSrdYdptZGplT+wMqmLKg7cjUBpPCmeZ5z+4njpO1kB0VbIWw43wtyDFni0qrpY0nFx+7
-	 4YxiFRfRFYNeGOmA15VVESqrLUP6GvxpyQRjdBCEz1DvjlelOhI2iTwNh/FfO64PyZj2A
-	 mxxG+wDbwEGWY3UhTo0KgzXxIzckZKPgBWm7aqbIxzc0dtichn5nZ52ev3j3bApmu/A==
+	bh=HMd/LhFiSsFuUYgF3DoYFaxx108CwQyplewkGi6fm7o=;
+	b=TM3Nw7VhxK3uRdQTCMX/mdNdO0omuTSTYgwhQ4VlBI4wbq/P5kk8I/oXbPdeYNEPffnU
+	 GpYB9BJsqHLMmhcWpNc4zN9caWWU/0tklVgAnKQQzvZNDQ2nVlvF+K7JxihYjyrSzlkKG
+	 FLj/esZ5c1/zxYF9hQNj9YrKaYr1QHoZrYA0i2ybPAKUg23at5t9bhYGA3kZpO2xPlChE
+	 HcoH9v1zph/Z/DLJnp4HOsRJhtYExof5dkopxg+osu4ikBdIXHkRiuJQ49uhhlRynZ9Rg
+	 Vjru8MmxVW7oSC9fJeDd3mveEWHif8bd9U+lbyFHvcYUOV3Y5HeVvrbSUnuJ4HIzagA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=tuxist.de;
 	spf=fail smtp.mailfrom=tuxist.de;
-	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=G6WTKipf;
+	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=IgCgCTfj;
 	arc=none smtp.remote-ip=173.212.254.19
 Received: from groupware.tuxist.de (groupware.tuxist.de [173.212.254.19])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 14D25606A31B;
-	Wed, 21 Oct 2026 03:15:29 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 14D25606A31B
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0932D60A2604;
+	Wed, 21 Oct 2026 03:15:36 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 0932D60A2604
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=G6WTKipf
+	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=IgCgCTfj
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=tuxist.de; s=201705;
-	t=1792552527; bh=ZfG1SosqlxBe8ziMkADyGjmN09svT+4JHhKhTcpS7n0=;
+	t=1792552534; bh=V6GrFNZTl5tPKiExMQYs87W29bXvBqYm+WvAZXrbo2s=;
 	h=In-Reply-To:References:From:Subject:To:Cc:Date:From;
-	b=G6WTKipfrRpsgqmp7VeEQmAz1k+70ZU6flTO7Z4P5DVP0Ogu11+Hvw/c3+wVLm5Mg
-	 Epk9RoKjnjmkOX3ZYMsICS8LmzzMc488Ty4pxYQIzZx24rafgNgb56wp0ehNDWyU8i
-	 x1juHOsrDZThhoYETUw7hdXH14EUWOnEaq3qfoGueNajXZFnneUDlnGNBkpalIXTPe
-	 fYKKbmo1n7O0T1syFNB6V5cD3DVH7hk0ZZELsEeLICiP3OHi3rPPHnXuQM1vEmr8Ok
-	 XUqJltcsbj0ISJGCGgmQgWy0fvQkzPt9KloCgjiA+n63+5ETdXc+77Cn8nTNq8aJdD
-	 vUqP3agDGkZ0Q==
+	b=IgCgCTfjR9wrFqrKGOHcuNWIt+r5r0JahUnZSTNWRFLw9lXjiAnyvdkrAIxnacRuI
+	 qObQYVxkMsz19mnkP6AA/ixYKKrDQqvZqmcEQX7vkh1tJwgf59Xrjr9t8ngXbiOT9u
+	 TSiMVQOlsahlUUctR/+clTIdi/39x8OxpVuxn0dQsjCPjDEuuRTjwjc0U9RqByl9Xh
+	 MGyMLHr43T1Fxd+r5135/5ewqb8yeZ1v585ozgi5X8bQ3sGbCmbXZVS6Q3EPL581Ps
+	 PzCqn0r0/EEbGJAuthrWf6pa2PMi7lm0k6O/K7qtPK3GxXcXkbzsWx4Rp0L31+BH3p
+	 W7CzUU9NI3qLg==
 Received: from [10.1.1.106] (unknown [10.1.2.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by groupware.tuxist.de (Postfix) with ESMTPSA id F17EB8A08DF;
-	Wed, 21 Oct 2026 05:15:26 +0200 (CEST)
-Message-ID: <423713b22f1cfa384f3df8cddc91e81d35c52d8a.1792552161.git.jan.koester@tuxist.de>
+	by groupware.tuxist.de (Postfix) with ESMTPSA id 064C28A0651;
+	Wed, 21 Oct 2026 05:15:33 +0200 (CEST)
+Message-ID: <3ace21531501a80a31350f9a178828212fc7a224.1792552161.git.jan.koester@tuxist.de>
 In-Reply-To: <cover.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
 From: Jan Koester <jan.koester@tuxist.de>
-Subject: [RFC PATCH v2 02/41] uapi: add <linux/uidgid_r.h> for 128 bit capable
- user and group ids
+Subject: [RFC PATCH v2 04/41] net: sock: read sk_uid through a seqcount
 To: Christian Brauner <brauner@kernel.org>,
     Alexander Viro <viro@zeniv.linux.org.uk>,
     "Serge E. Hallyn" <serge@hallyn.com>
@@ -70,7 +69,7 @@ Cc: Jan Kara <jack@suse.cz>,
     audit@vger.kernel.org,
     keyrings@vger.kernel.org,
     linux-kernel@vger.kernel.org
-Date: Wed, 21 Oct 2026 05:15:22 +0200
+Date: Wed, 21 Oct 2026 05:15:24 +0200
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -80,80 +79,144 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-User and group ids are 32 bit numbers. Identities that come from
-elsewhere -- UUIDs handed out by a directory service, or the GUIDs of a
-Windows domain -- have to be squeezed into that range through mapping
-tables kept in userspace, and the kernel never sees who a process really
-is.
+sk_uid is read without a lock, with READ_ONCE(), by the routing lookups
+and the reuseport checks, while sockfs_setattr() may change it. That
+only works for as long as a kuid_t is a single word, which it won't be
+once ids can be UUIDs and GUIDs.
 
-Add a tagged id for a new family of system calls (named after the
-classic ones with an _r suffix): a classic 32 bit id, an RFC 9562
-version 4 UUID, or a Microsoft GUID in the byte order Windows stores it
-in. Type 0 is "no id", so a zero-initialized id is never root, and lets
-the set*id_r() calls express "unchanged" without a magic number.
-
-The struct has no 64 bit members and the same layout on all ABIs, so
-none of the new calls needs a compat entry point.
+Add sk_uid_seq next to it: writers bump it around the store and hold
+sk_callback_lock (sock_graft(), sockfs_setattr()) or own the socket
+alone (sock_init_data_uid()); sk_uid() retries until it sees a whole
+id. sk_clone() reads the parent's id the same way rather than relying
+on the copy made by sock_copy().
 
 Assisted-by: Claude:claude-opus-5-5
 
 Signed-off-by: Jan Koester <jan.koester@tuxist.de>
 ---
- include/uapi/linux/uidgid_r.h | 45 +++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 include/uapi/linux/uidgid_r.h
+ include/net/sock.h | 28 +++++++++++++++++++++++++---
+ net/core/sock.c    |  6 +++++-
+ net/socket.c       |  5 +++--
+ 3 files changed, 33 insertions(+), 6 deletions(-)
 
-diff --git a/include/uapi/linux/uidgid_r.h b/include/uapi/linux/uidgid_r.h
-new file mode 100644
-index 0000000000..c3b1cb2ae2
---- /dev/null
-+++ b/include/uapi/linux/uidgid_r.h
-@@ -0,0 +1,45 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 60ea55dc18..0986d94665 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -294,6 +294,8 @@ struct sk_filter;
+   *	@sk_ack_backlog: current listen backlog
+   *	@sk_max_ack_backlog: listen backlog set in listen()
+   *	@sk_uid: user id of owner
++  *	@sk_uid_seq: makes lockless reads of @sk_uid see a whole id; writers
++  *		     hold @sk_callback_lock
+   *	@sk_ino: inode number (zero if orphaned)
+   *	@sk_prefer_busy_poll: prefer busypolling over softirq processing
+   *	@sk_busy_poll_budget: napi processing budget when busypolling
+@@ -509,6 +511,7 @@ struct sock {
+ 	u32			sk_priority;
+ 	u32			sk_mark;
+ 	kuid_t			sk_uid;
++	seqcount_t		sk_uid_seq;
+ 	u16			sk_protocol;
+ 	u16			sk_type;
+ 	struct dst_entry __rcu	*sk_dst_cache;
+@@ -2109,11 +2112,23 @@ static inline int sk_rx_queue_get(const struct sock *sk)
+ 	return -1;
+ }
+ 
 +/*
-+ * User and group ids for the *_r system calls: a classic 32 bit id, a
-+ * UUID or a Microsoft GUID.
-+ *
-+ * The classic system calls (getuid(), chown(), ...) keep their 32 bit
-+ * ids; for an id that has no 32 bit form they see the overflow id
-+ * (/proc/sys/kernel/overflowuid and overflowgid), like the 16 bit system
-+ * calls do for ids above 65535.
++ * sk_uid is too big for WRITE_ONCE(): writers hold sk_callback_lock (or own
++ * the socket alone, before it is published) and bump sk_uid_seq around the
++ * store, so sk_uid() can read it without a lock.
 + */
-+#ifndef _UAPI_LINUX_UIDGID_R_H
-+#define _UAPI_LINUX_UIDGID_R_H
++static inline void __sk_set_uid(struct sock *sk, kuid_t uid)
++{
++	write_seqcount_begin(&sk->sk_uid_seq);
++	sk->sk_uid = uid;
++	write_seqcount_end(&sk->sk_uid_seq);
++}
 +
-+#include <linux/types.h>
+ static inline void sk_set_socket(struct sock *sk, struct socket *sock)
+ {
+ 	WRITE_ONCE(sk->sk_socket, sock);
+ 	if (sock) {
+-		WRITE_ONCE(sk->sk_uid, SOCK_INODE(sock)->i_uid);
++		__sk_set_uid(sk, SOCK_INODE(sock)->i_uid);
+ 		WRITE_ONCE(sk->sk_ino, SOCK_INODE(sock)->i_ino);
+ 	} else {
+ 		/* Note: sk_uid is unchanged. */
+@@ -2161,8 +2176,15 @@ static inline u64 sock_i_ino(const struct sock *sk)
+ 
+ static inline kuid_t sk_uid(const struct sock *sk)
+ {
+-	/* Paired with WRITE_ONCE() in sockfs_setattr() */
+-	return READ_ONCE(sk->sk_uid);
++	unsigned int seq;
++	kuid_t uid;
 +
-+/*
-+ * Kinds of id (__kernel_uid_r_t.type). An all-zero id is UID_R_NONE, so a
-+ * zero-initialized id never stands for root.
-+ */
-+#define UID_R_NONE	0	/* no id: "unchanged" or "not set" */
-+#define UID_R_LEGACY	1	/* classic 32 bit id in .legacy */
-+#define UID_R_UUID	2	/* RFC 9562 UUID, version 4, in .uuid */
-+#define UID_R_GUID	3	/* Microsoft GUID in .guid */
-+
-+#define UID_R_SIZE	16	/* bytes of .uuid and .guid */
-+
-+/*
-+ * .uuid holds the UUID in network byte order, as RFC 9562 lays it out.
-+ * .guid holds the GUID as Windows stores it: Data1, Data2 and Data3 little
-+ * endian, Data4 as is.
-+ *
-+ * Bytes past the member .type selects are reserved and must be zero.
-+ */
-+typedef struct __kernel_uid_r {
-+	__u32 type;
-+	union {
-+		__u32 legacy;
-+		__u8 uuid[UID_R_SIZE];
-+		__u8 guid[UID_R_SIZE];
-+	};
-+} __kernel_uid_r_t;
-+
-+typedef __kernel_uid_r_t __kernel_gid_r_t;
-+
-+#endif /* _UAPI_LINUX_UIDGID_R_H */
++	/* Paired with __sk_set_uid() */
++	do {
++		seq = read_seqcount_begin(&sk->sk_uid_seq);
++		uid = sk->sk_uid;
++	} while (read_seqcount_retry(&sk->sk_uid_seq, seq));
++	return uid;
+ }
+ 
+ static inline kuid_t sock_net_uid(const struct net *net, const struct sock *sk)
+diff --git a/net/core/sock.c b/net/core/sock.c
+index e8551df833..300bc75ce1 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -2449,6 +2449,7 @@ static void sk_init_common(struct sock *sk)
+ 	skb_queue_head_init(&sk->sk_error_queue);
+ 
+ 	rwlock_init(&sk->sk_callback_lock);
++	seqcount_init(&sk->sk_uid_seq);
+ 	lockdep_set_class_and_name(&sk->sk_receive_queue.lock,
+ 			af_rlock_keys + sk->sk_family,
+ 			af_family_rlock_key_strings[sk->sk_family]);
+@@ -2529,6 +2530,8 @@ struct sock *sk_clone(const struct sock *sk, const gfp_t priority,
+ 
+ 	atomic_set(&newsk->sk_omem_alloc, 0);
+ 	sk_init_common(newsk);
++	/* sock_copy() may have caught a half written sk_uid */
++	newsk->sk_uid = sk_uid(sk);
+ 
+ 	newsk->sk_dst_cache	= NULL;
+ 	newsk->sk_dst_pending_confirm = 0;
+@@ -3773,7 +3776,7 @@ void sock_init_data_uid(struct socket *sock, struct sock *sk, kuid_t uid)
+ 	} else {
+ 		RCU_INIT_POINTER(sk->sk_wq, NULL);
+ 	}
+-	sk->sk_uid	=	uid;
++	__sk_set_uid(sk, uid);
+ 
+ 	sk->sk_state_change	=	sock_def_wakeup;
+ 	sk->sk_data_ready	=	sock_def_readable;
+@@ -4614,6 +4617,7 @@ static int __init sock_struct_check(void)
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_priority);
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_mark);
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_uid);
++	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_uid_seq);
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_protocol);
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_dst_cache);
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_route_caps);
+diff --git a/net/socket.c b/net/socket.c
+index c05d86e63a..09658f3958 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -679,8 +679,9 @@ static int sockfs_setattr(struct mnt_idmap *idmap,
+ 		struct socket *sock = SOCKET_I(d_inode(dentry));
+ 
+ 		if (sock->sk) {
+-			/* Paired with READ_ONCE() in sk_uid() */
+-			WRITE_ONCE(sock->sk->sk_uid, iattr->ia_uid);
++			write_lock_bh(&sock->sk->sk_callback_lock);
++			__sk_set_uid(sock->sk, iattr->ia_uid);
++			write_unlock_bh(&sock->sk->sk_callback_lock);
+ 		} else {
+ 			err = -ENOENT;
+ 		}
 -- 
 2.56.0
 
