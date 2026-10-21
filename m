@@ -1,56 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=173.212.254.19
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792552537;
-	b=4sYwXOpn/qfImY3Mo+4bD5Z2jD4xlhHV3RmLPPRLcFhR79Qk+Ujga2Ee2HF55dPFSPDj
-	 Yf1Xr/XZGfp4ys++h1vkd4u6QAgbcGbvpcMVHeQVL3yqF+P+8FfYsdhIyN7fMcuEPZLAS
-	 tzsyRpKaAw/ENZRZebfymKo+oizXWv2eYvA//Xm7rU8QufEf3HBo8mZF+uIFT2NDI9IZ7
-	 pud6FbHz/aKJjzaKVWhRviIO3Yhr4G4bfD+t1qZM9FoK8+lvUc03GkBwav2Kek0tzyLxW
-	 IMrnnVeaWkLo3azQyFfzktyb+WftjaxZ5XckqryA5Zo2PgaewbOjlJNavC0RHOOhXMA==
+	t=1792552541;
+	b=dtamUW8HC8ctCWlbT+TcAa+dlo4AJvSDM/3FYgl/ZBfodR0YgmEVTdvSqxb5x9WAMW8W
+	 nI/WAu62fh3eYg4lKbr+fJAVdOls/wr8QB3eqWtKCdj1y3XGGGWg/JvKtDO6FLIjFo/v/
+	 72QLGRRbYdNZXrm0qqvNwP5vvc1Mcsoy51J9qhJYbyv6gDqd3g827HmcywosaKbh8/hMv
+	 ACaekgzRgKbQ0KKspqT2OJatZLKEn/d9HUPw4GIJcCgAg9FRjcsTpKJmu7+1KZnhZccD5
+	 F0Ob3m4lpLBEHmQ5gcbs0jD8PVJY16Ix4KoXRwQmcx5LWY6ALU2zvwaVDMpUn8YdLEw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792552537;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792552541;
 	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:In-Reply-To:
 	 References:From:Subject:To:Cc:Date;
-	bh=HMd/LhFiSsFuUYgF3DoYFaxx108CwQyplewkGi6fm7o=;
-	b=TM3Nw7VhxK3uRdQTCMX/mdNdO0omuTSTYgwhQ4VlBI4wbq/P5kk8I/oXbPdeYNEPffnU
-	 GpYB9BJsqHLMmhcWpNc4zN9caWWU/0tklVgAnKQQzvZNDQ2nVlvF+K7JxihYjyrSzlkKG
-	 FLj/esZ5c1/zxYF9hQNj9YrKaYr1QHoZrYA0i2ybPAKUg23at5t9bhYGA3kZpO2xPlChE
-	 HcoH9v1zph/Z/DLJnp4HOsRJhtYExof5dkopxg+osu4ikBdIXHkRiuJQ49uhhlRynZ9Rg
-	 Vjru8MmxVW7oSC9fJeDd3mveEWHif8bd9U+lbyFHvcYUOV3Y5HeVvrbSUnuJ4HIzagA==
+	bh=ilgWZq8lBu3cTHC4tjsY3+OD0RL/20qOT/gfO/+8/Ns=;
+	b=uLc/2UuvDCXDdpUTh5mFJ6Zt05TYI70cLuGwznTval6jBvtC+IIkZWIO8wmlK9vdJUHg
+	 w5N1IyeQFeFZqML980Vsbg7bV6xdsTissaKRAdIiHhL6YYY5KaxglJ3rbhQ1z5LV5k7e8
+	 QmVwy1u3LmHLcmq4hwALBa+orqtSdM3BfSqCk71TEH5goeVIh1hB2R9yXVb8rOfv6+MSS
+	 Nxcotqlg3gOKNplUj0l6LqiQxV5JxjSDeAF+YL3HkOfxjSfJKco9yBQ/Hx1o/1dfOWRWl
+	 QR4Imwbjd25I3ZxngpIE/55Q4ErOURboreVrgdlpK44nZUdGBJsw8pRRmMGwosADpDQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=tuxist.de;
 	spf=fail smtp.mailfrom=tuxist.de;
-	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=IgCgCTfj;
+	dkim=pass header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=fmvA1BUI;
 	arc=none smtp.remote-ip=173.212.254.19
 Received: from groupware.tuxist.de (groupware.tuxist.de [173.212.254.19])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0932D60A2604;
-	Wed, 21 Oct 2026 03:15:36 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 0932D60A2604
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 717D3606A33C;
+	Wed, 21 Oct 2026 03:15:40 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 717D3606A33C
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=tuxist.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=IgCgCTfj
+	dkim=pass (2048-bit key, unprotected) header.d=tuxist.de header.i=@tuxist.de header.a=rsa-sha256 header.s=201705 header.b=fmvA1BUI
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=tuxist.de; s=201705;
-	t=1792552534; bh=V6GrFNZTl5tPKiExMQYs87W29bXvBqYm+WvAZXrbo2s=;
+	t=1792552538; bh=qWM7jvTDWgnk6/SLc5fl/wvoe0XSEzsjigl1XiisGY4=;
 	h=In-Reply-To:References:From:Subject:To:Cc:Date:From;
-	b=IgCgCTfjR9wrFqrKGOHcuNWIt+r5r0JahUnZSTNWRFLw9lXjiAnyvdkrAIxnacRuI
-	 qObQYVxkMsz19mnkP6AA/ixYKKrDQqvZqmcEQX7vkh1tJwgf59Xrjr9t8ngXbiOT9u
-	 TSiMVQOlsahlUUctR/+clTIdi/39x8OxpVuxn0dQsjCPjDEuuRTjwjc0U9RqByl9Xh
-	 MGyMLHr43T1Fxd+r5135/5ewqb8yeZ1v585ozgi5X8bQ3sGbCmbXZVS6Q3EPL581Ps
-	 PzCqn0r0/EEbGJAuthrWf6pa2PMi7lm0k6O/K7qtPK3GxXcXkbzsWx4Rp0L31+BH3p
-	 W7CzUU9NI3qLg==
+	b=fmvA1BUI9rAIY0k7Lbp7tPKh+8RUjmcHfFo82dzNAmLF4PCA6sf/9cetHzoNvM8m+
+	 2bTH6w1iJKcwrlHlo8epNQOBYq1PkVRYLXnXQQwfcQyOlgoaYVgz5unl37kW7RUgdo
+	 6zHZafd49DOH5I5qEPddUuCDJk9E62uoKYgw28sOjOzK6Ydl27ObEf9x2Pq5SudfN1
+	 +uJDvYoRnrkk1xadlP9i4Qlx6v+GGzurcGwezUevYgBFtJZfpqmVonqQ9glhLrmsyK
+	 tSQ+/qleC7T8wlJ+TUsM2NbVAKlA2/7OAe1XFnO/SOgzKrHEpW0xuRqk1Jm9budQAB
+	 4AMfhG0kzUuFw==
 Received: from [10.1.1.106] (unknown [10.1.2.1])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by groupware.tuxist.de (Postfix) with ESMTPSA id 064C28A0651;
-	Wed, 21 Oct 2026 05:15:33 +0200 (CEST)
-Message-ID: <3ace21531501a80a31350f9a178828212fc7a224.1792552161.git.jan.koester@tuxist.de>
+	by groupware.tuxist.de (Postfix) with ESMTPSA id E5EF78A08F6;
+	Wed, 21 Oct 2026 05:15:37 +0200 (CEST)
+Message-ID: <ec61dbb90e69bf33d17565d628ff59eaad8837f3.1792552161.git.jan.koester@tuxist.de>
 In-Reply-To: <cover.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
 From: Jan Koester <jan.koester@tuxist.de>
-Subject: [RFC PATCH v2 04/41] net: sock: read sk_uid through a seqcount
+Subject: [RFC PATCH v2 05/41] af_unix: keep sender ids in skb->cb only when
+ they are classic ids
 To: Christian Brauner <brauner@kernel.org>,
     Alexander Viro <viro@zeniv.linux.org.uk>,
     "Serge E. Hallyn" <serge@hallyn.com>
@@ -69,7 +70,7 @@ Cc: Jan Kara <jack@suse.cz>,
     audit@vger.kernel.org,
     keyrings@vger.kernel.org,
     linux-kernel@vger.kernel.org
-Date: Wed, 21 Oct 2026 05:15:24 +0200
+Date: Wed, 21 Oct 2026 05:15:25 +0200
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -79,144 +80,145 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-sk_uid is read without a lock, with READ_ONCE(), by the routing lookups
-and the reuseport checks, while sockfs_setattr() may change it. That
-only works for as long as a kuid_t is a single word, which it won't be
-once ids can be UUIDs and GUIDs.
+unix_skb_parms has to fit into the 48 bytes of skb->cb. With kuid_t and
+kgid_t growing to hold UUIDs and GUIDs the two of them alone would take
+40 bytes.
 
-Add sk_uid_seq next to it: writers bump it around the store and hold
-sk_callback_lock (sock_graft(), sockfs_setattr()) or own the socket
-alone (sock_init_data_uid()); sk_uid() retries until it sees a whole
-id. sk_clone() reads the parent's id the same way rather than relying
-on the copy made by sock_copy().
+Store classic ids as 32 bit values as before, and only for a UUID or
+GUID allocate a small struct unix_skb_ids for both, freed together with
+the pid reference in unix_destruct_scm(). AF_UNIX skbs carrying a pid
+reference are never cloned, so the pointer has a single owner.
+Senders with classic ids see no change and no allocation.
 
 Assisted-by: Claude:claude-opus-5-5
 
 Signed-off-by: Jan Koester <jan.koester@tuxist.de>
 ---
- include/net/sock.h | 28 +++++++++++++++++++++++++---
- net/core/sock.c    |  6 +++++-
- net/socket.c       |  5 +++--
- 3 files changed, 33 insertions(+), 6 deletions(-)
+ net/unix/af_unix.c | 50 +++++++++++++++++++++++++++++++++++++++-------
+ net/unix/af_unix.h | 11 ++++++++--
+ 2 files changed, 52 insertions(+), 9 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 60ea55dc18..0986d94665 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -294,6 +294,8 @@ struct sk_filter;
-   *	@sk_ack_backlog: current listen backlog
-   *	@sk_max_ack_backlog: listen backlog set in listen()
-   *	@sk_uid: user id of owner
-+  *	@sk_uid_seq: makes lockless reads of @sk_uid see a whole id; writers
-+  *		     hold @sk_callback_lock
-   *	@sk_ino: inode number (zero if orphaned)
-   *	@sk_prefer_busy_poll: prefer busypolling over softirq processing
-   *	@sk_busy_poll_budget: napi processing budget when busypolling
-@@ -509,6 +511,7 @@ struct sock {
- 	u32			sk_priority;
- 	u32			sk_mark;
- 	kuid_t			sk_uid;
-+	seqcount_t		sk_uid_seq;
- 	u16			sk_protocol;
- 	u16			sk_type;
- 	struct dst_entry __rcu	*sk_dst_cache;
-@@ -2109,11 +2112,23 @@ static inline int sk_rx_queue_get(const struct sock *sk)
- 	return -1;
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 42cffeafc8..2b17310534 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1969,11 +1969,46 @@ static void unix_peek_fds(struct scm_cookie *scm, struct sk_buff *skb)
+ 	unix_peek_fpl(scm->fp);
  }
  
 +/*
-+ * sk_uid is too big for WRITE_ONCE(): writers hold sk_callback_lock (or own
-+ * the socket alone, before it is published) and bump sk_uid_seq around the
-+ * store, so sk_uid() can read it without a lock.
++ * The sender's ids, in the skb itself for legacy ids; UUIDs and GUIDs don't
++ * fit in skb->cb and come from an allocation, freed with the pid reference
++ * in unix_destruct_scm().
 + */
-+static inline void __sk_set_uid(struct sock *sk, kuid_t uid)
++static int unix_skb_set_ids(struct sk_buff *skb, kuid_t uid, kgid_t gid)
 +{
-+	write_seqcount_begin(&sk->sk_uid_seq);
-+	sk->sk_uid = uid;
-+	write_seqcount_end(&sk->sk_uid_seq);
++	struct unix_skb_ids *ids = NULL;
++
++	if (!uid_is_legacy(uid) || !gid_is_legacy(gid)) {
++		ids = kmalloc_obj(*ids, GFP_KERNEL_ACCOUNT);
++		if (!ids)
++			return -ENOMEM;
++		ids->uid = uid;
++		ids->gid = gid;
++	}
++	kfree(UNIXCB(skb).ids);
++	UNIXCB(skb).ids = ids;
++	UNIXCB(skb).uid = __kuid_val(uid);
++	UNIXCB(skb).gid = __kgid_val(gid);
++	return 0;
 +}
 +
- static inline void sk_set_socket(struct sock *sk, struct socket *sock)
- {
- 	WRITE_ONCE(sk->sk_socket, sock);
- 	if (sock) {
--		WRITE_ONCE(sk->sk_uid, SOCK_INODE(sock)->i_uid);
-+		__sk_set_uid(sk, SOCK_INODE(sock)->i_uid);
- 		WRITE_ONCE(sk->sk_ino, SOCK_INODE(sock)->i_ino);
- 	} else {
- 		/* Note: sk_uid is unchanged. */
-@@ -2161,8 +2176,15 @@ static inline u64 sock_i_ino(const struct sock *sk)
- 
- static inline kuid_t sk_uid(const struct sock *sk)
- {
--	/* Paired with WRITE_ONCE() in sockfs_setattr() */
--	return READ_ONCE(sk->sk_uid);
-+	unsigned int seq;
-+	kuid_t uid;
++static kuid_t unix_skb_uid(const struct sk_buff *skb)
++{
++	return UNIXCB(skb).ids ? UNIXCB(skb).ids->uid : KUIDT_INIT(UNIXCB(skb).uid);
++}
 +
-+	/* Paired with __sk_set_uid() */
-+	do {
-+		seq = read_seqcount_begin(&sk->sk_uid_seq);
-+		uid = sk->sk_uid;
-+	} while (read_seqcount_retry(&sk->sk_uid_seq, seq));
-+	return uid;
++static kgid_t unix_skb_gid(const struct sk_buff *skb)
++{
++	return UNIXCB(skb).ids ? UNIXCB(skb).ids->gid : KGIDT_INIT(UNIXCB(skb).gid);
++}
++
+ static void unix_destruct_scm(struct sk_buff *skb)
+ {
+ 	struct scm_cookie scm = {};
+ 
+ 	swap(scm.pid, UNIXCB(skb).pid);
++	kfree(UNIXCB(skb).ids);
++	UNIXCB(skb).ids = NULL;
+ 
+ 	if (UNIXCB(skb).fp)
+ 		unix_detach_fds(&scm, skb);
+@@ -1992,20 +2027,21 @@ static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool sen
+ 	int err = 0;
+ 
+ 	UNIXCB(skb).pid = get_pid(scm->pid);
+-	UNIXCB(skb).uid = scm->creds.uid;
+-	UNIXCB(skb).gid = scm->creds.gid;
+ 	UNIXCB(skb).fp = NULL;
++	skb->destructor = unix_wfree;
++	err = unix_skb_set_ids(skb, scm->creds.uid, scm->creds.gid);
++	if (err)
++		return err;
+ 	unix_get_secdata(scm, skb);
+ 	if (scm->fp && send_fds)
+ 		err = unix_attach_fds(scm, skb);
+ 
+-	skb->destructor = unix_wfree;
+ 	return err;
  }
  
- static inline kuid_t sock_net_uid(const struct net *net, const struct sock *sk)
-diff --git a/net/core/sock.c b/net/core/sock.c
-index e8551df833..300bc75ce1 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -2449,6 +2449,7 @@ static void sk_init_common(struct sock *sk)
- 	skb_queue_head_init(&sk->sk_error_queue);
+ static void unix_skb_to_scm(struct sk_buff *skb, struct scm_cookie *scm)
+ {
+-	scm_set_cred(scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
++	scm_set_cred(scm, UNIXCB(skb).pid, unix_skb_uid(skb), unix_skb_gid(skb));
+ 	unix_set_secdata(scm, skb);
+ }
  
- 	rwlock_init(&sk->sk_callback_lock);
-+	seqcount_init(&sk->sk_uid_seq);
- 	lockdep_set_class_and_name(&sk->sk_receive_queue.lock,
- 			af_rlock_keys + sk->sk_family,
- 			af_family_rlock_key_strings[sk->sk_family]);
-@@ -2529,6 +2530,8 @@ struct sock *sk_clone(const struct sock *sk, const gfp_t priority,
+@@ -2039,7 +2075,7 @@ static int unix_maybe_add_creds(struct sk_buff *skb, const struct sock *sk,
+ 			return err;
  
- 	atomic_set(&newsk->sk_omem_alloc, 0);
- 	sk_init_common(newsk);
-+	/* sock_copy() may have caught a half written sk_uid */
-+	newsk->sk_uid = sk_uid(sk);
- 
- 	newsk->sk_dst_cache	= NULL;
- 	newsk->sk_dst_pending_confirm = 0;
-@@ -3773,7 +3776,7 @@ void sock_init_data_uid(struct socket *sock, struct sock *sk, kuid_t uid)
- 	} else {
- 		RCU_INIT_POINTER(sk->sk_wq, NULL);
+ 		UNIXCB(skb).pid = get_pid(pid);
+-		current_uid_gid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
++		return unix_skb_set_ids(skb, current_uid(), current_gid());
  	}
--	sk->sk_uid	=	uid;
-+	__sk_set_uid(sk, uid);
  
- 	sk->sk_state_change	=	sock_def_wakeup;
- 	sk->sk_data_ready	=	sock_def_readable;
-@@ -4614,6 +4617,7 @@ static int __init sock_struct_check(void)
- 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_priority);
- 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_mark);
- 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_uid);
-+	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_uid_seq);
- 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_protocol);
- 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_dst_cache);
- 	CACHELINE_ASSERT_GROUP_MEMBER(struct sock, sock_read_tx, sk_route_caps);
-diff --git a/net/socket.c b/net/socket.c
-index c05d86e63a..09658f3958 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -679,8 +679,9 @@ static int sockfs_setattr(struct mnt_idmap *idmap,
- 		struct socket *sock = SOCKET_I(d_inode(dentry));
+ 	return 0;
+@@ -2049,8 +2085,8 @@ static bool unix_skb_scm_eq(struct sk_buff *skb,
+ 			    struct scm_cookie *scm)
+ {
+ 	return UNIXCB(skb).pid == scm->pid &&
+-	       uid_eq(UNIXCB(skb).uid, scm->creds.uid) &&
+-	       gid_eq(UNIXCB(skb).gid, scm->creds.gid) &&
++	       uid_eq(unix_skb_uid(skb), scm->creds.uid) &&
++	       gid_eq(unix_skb_gid(skb), scm->creds.gid) &&
+ 	       unix_secdata_eq(scm, skb);
+ }
  
- 		if (sock->sk) {
--			/* Paired with READ_ONCE() in sk_uid() */
--			WRITE_ONCE(sock->sk->sk_uid, iattr->ia_uid);
-+			write_lock_bh(&sock->sk->sk_callback_lock);
-+			__sk_set_uid(sock->sk, iattr->ia_uid);
-+			write_unlock_bh(&sock->sk->sk_callback_lock);
- 		} else {
- 			err = -ENOENT;
- 		}
+diff --git a/net/unix/af_unix.h b/net/unix/af_unix.h
+index 8119dbeef3..e861a430cf 100644
+--- a/net/unix/af_unix.h
++++ b/net/unix/af_unix.h
+@@ -10,10 +10,17 @@
+ 
+ struct sock *unix_peer_get(struct sock *sk);
+ 
+-struct unix_skb_parms {
+-	struct pid		*pid;		/* skb credentials	*/
++/* The sender's ids, when either is a UUID or GUID */
++struct unix_skb_ids {
+ 	kuid_t			uid;
+ 	kgid_t			gid;
++};
++
++struct unix_skb_parms {
++	struct pid		*pid;		/* skb credentials	*/
++	struct unix_skb_ids	*ids;		/* uid and gid, or NULL	*/
++	uid_t			uid;		/* for ids NULL: legacy	*/
++	gid_t			gid;		/* uid and gid		*/
+ 	struct scm_fp_list	*fp;		/* Passed files		*/
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	u32			secid;		/* Security ID		*/
 -- 
 2.56.0
 
