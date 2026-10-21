@@ -1,57 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792616849;
-	b=KLthIDMunN8wBEhsNWx3W+qP80McxjOYRCGMnhiW1UzE4BahYeqA0getZZ6bR5hQk0rH
-	 LLZF/T25COCiNjJN0dsip4wxyKjpb8/f75HhBxuIpBwRo1JNmtXlAes8THPmkzMmIn0tT
-	 lfenbYDSFEIU1+MAwrnZMnp+HffJ/OusmE2nSHOhfAexTAFK4pA3eDz9y7fi2r6gqt39t
-	 iVa7BNgQ6MowissQmEDtbrZH2DzbICkh12Khx8XBgnjfb8Ueg4sX/HswYQhUY9HGW/qBk
-	 kmJU4Vy4XfCkjEwn7GfHoUVjzggD9WCqVVk/OrUZ9+nOj8Vq4OmGhdadV5iLk93EpUA==
+	t=1792624963;
+	b=yZfVB1RRPea2Id7kPyi4Jv8OFfR0E5SZCQ7yBTCYzefnABLcKcHsBtfn3Rk7XxJrZjk6
+	 eitL++ACQQPkwlBoLzQpU5t487rqO321X6adSwQyr9Hau0Tbaivx3tmslg4HcwuZvwnop
+	 PqwpTC73jkSCyX1JCdLL4/AJQ4Bdy2DAbFTkl6Nc16cyhC4dQOkcgd2B22FiZ+SLwl4Kj
+	 lf9QQwxyUjDNXcy5SvfbZE8A8ZTt7IDUO0MdJQzDrEeQMs5CpmV4yM1LAD0JZCUNMa4D/
+	 +WADN/thtdg7tNdghpn1oRIcfOTKr3xVNPEOuW4Tq76G5f3EGQMv1GoiKfEioW1zKpw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792616849;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792624963;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=FYbc5NkIKuLceADs32XiRA2GOTbv4etYMcJmUxCu2eA=;
-	b=HbZFgcKQYevAkooLsjmO9EWzjwVzaps66S+yTVTMCQQj3S7AgL4rivGWn1c72edgpBBe
-	 3jaZouVGnvJw/o56rmUoM9rqMtrgEZvuwAfS88mcfqcfpFb02ug9GC+dpiU3Nk8ts61mF
-	 vb0yhvUqhVgFEYV5i7+PqZsnyspiGkWioBGFFsNHsFhXrFmcxc+iFmcqWd7pTYyluId+M
-	 vOMr5bhFJSldGuZNmR8otXs0kiTW6flpPUCQbE4RWHfs9JegynV0S4nJufXF3vKRJNplv
-	 Wb66S4Z6IsZmcmBTfCcBgoEwemzGkjRvTktnyPni5exAptu80VP1PdSs5NOqGEaKMgA==
+	bh=W6XIwPfFpbeL4de4MB4+vslMMPf8d2gDcxbsmH203TM=;
+	b=nurNwn8yipBacz0PhTg7Rh0GWvGgWbLr8oxypnXGHZjvbgWSViKX4RXsgeAYPG+URaGz
+	 SADzFiVHnsx2rd2LUOAuL5rmGhXs4Yw1xhu5B00P0/QTj82kcc3svim/n8JyegNhPp68W
+	 EyX3J9GktqC7bqWHBBaChWID7SMIwJfuWQXb1r7lmXL7aLJB7EJJ/mzSK63eH3BZhjFUP
+	 T4kMxJgJH4ZS7So9jbl9bqik2vBJdb+mvMJ4xezjddp/bFEIBOV6+0J47PakgrVEZ6Wfi
+	 Hna25LQ7lbKd3WMb4vcfYz9rxgSrQbuDmOPgBV3zLHf5q/2htW1YK7HJW0hayA1R8ig==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=kbhFAPP1;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ILWMgllE;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 351B7606A31A;
-	Wed, 21 Oct 2026 21:07:29 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 34DE9606A319;
+	Wed, 21 Oct 2026 23:22:43 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=kbhFAPP1
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 547871F000C1;
-	Wed, 21 Oct 2026 21:07:28 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ILWMgllE
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 4FA131F000C1;
+	Wed, 21 Oct 2026 23:22:42 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792616848;
-	bh=FYbc5NkIKuLceADs32XiRA2GOTbv4etYMcJmUxCu2eA=;
+	s=k20260515; t=1792624962;
+	bh=W6XIwPfFpbeL4de4MB4+vslMMPf8d2gDcxbsmH203TM=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=kbhFAPP1CmNwkpH3mFWZfHbgd+UtfahV7Csjbjz4djbz89vvLbPVEIIwpK02EpT2M
-	 P0gt1VggM/lu6jv+Z2wQYX09MSNqHpQra3pEgJUaKW4Kx67kUX0PpXbtalsLDjKsXq
-	 2Lk/pAPkn0cbuSXcjZeb14x+AypymJ0aetLYd1oEnOHWcQqu5vMIgdqxLp5NKqQ9ee
-	 urOTCZM2niGErqtsNTyEQB+hQRARYNJ6ipEeyRtx4dk5ZLHAx3GcGCVh1Fv0GtOoVO
-	 vlkLYFYOz79thSUlpLb4jBlClEI67fYRjccVzbfpwu1oSjNWbQrHNK5QCNpcaIVB9g
-	 JqnyK6h71z5Cg==
-Date: Thu, 22 Oct 2026 00:07:24 +0300
+	b=ILWMgllEK8Gvsg4DEMa7laV/hkuoyKY43q7Ve3QIsUzKumWSvyUOGZy8aHZgZ7P1r
+	 PPh+oGm1l/5u4M+sZ0dyYwjv0aLSYhaQslIhA3haYdw5kdLXMh98QP2AdkTDfpU8BN
+	 q3DUsuFyLQky6Ad9PKluFO4ZxbvN4Ammm1IVGY/+RRRL61VqxwFrWaNM5JbFjGK8yt
+	 KM45UisgAX0T6YVopVM1Hxjupl4B2nWxXE1x3NRNKFwRqTWgLOh35Pm+nCzbdLYc4u
+	 Kv/t7gozZACsF5mpCFaiUk5nC8psMoSUDJF3d33bN5afEcrRWxogVC/84EqrYu7BHE
+	 rt3Z/BUdQuifQ==
+Date: Thu, 22 Oct 2026 02:22:38 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
 	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/3] KEYS: rhashtable bug fixes
-Message-ID: <atkpjEWI6Ot7FVs3@kernel.org>
-References: <20261020174325.2229448-1-jarkko@kernel.org>
- <atkTgEwRQfh94zeV@kernel.org>
- <20261021200327.GA2210933@google.com>
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [RFC PATCH 5/6] KEYS: Replace assoc_array with struct
+ keyring_index
+Message-ID: <atlJPhTqLaa0EEDa@kernel.org>
+References: <20261016215326.4110064-1-jarkko@kernel.org>
+ <20261016215326.4110064-6-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -63,28 +64,41 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261021200327.GA2210933@google.com>
+In-Reply-To: <20261016215326.4110064-6-jarkko@kernel.org>
 
-On Wed, Oct 21, 2026 at 08:03:27PM +0000, Eric Biggers wrote:
-> On Wed, Oct 21, 2026 at 10:33:20PM +0300, Jarkko Sakkinen wrote:
-> > On Tue, Oct 20, 2026 at 08:43:18PM +0300, Jarkko Sakkinen wrote:
-> > > My patch set that migrates assoc_array to rhashtable had some LLM
-> > > scavegend bug fixes. Unfortunately most them where either plain wrong or
-> > > not in the right scope. The bug fixes in this patch set are by human
-> > > labour constructed fully but they are derived from what I got out of the
-> > > original LLM source. Thus, they are tagged as LLM assisted.
-> > 
-> > I guess these are ready to be merged? Eric do you have something for
-> > this revision? I already sent -rc1 pull request i.e., I don't mind
-> > to update it if necessary but otherwise I rather would just apply
-> > these.
+On Sat, Oct 17, 2026 at 12:53:03AM +0300, Jarkko Sakkinen wrote:
+> Linux keyring would be better off without struct assoc_array given the
+> overhead caused by sole ownership of it. Linux has multiple popular choices
+> for key-value store and there is nothing special in lib/assoc_array.c that
+> would make it stand out enough to be ratiaonalize the time spent on
+> maintaining it.
 > 
-> Looks okay now.
+> A keyring has a sparse data population, making rhashtable a plausible
+> choice. Multiple subsystems rely on it, and best of all, rhashtable has
+> dedicated maintainers.
 > 
-> Reviewed-by: Eric Biggers <ebiggers@kernel.org>
+> Replace assoc_array with struct keyring_index, allocated for a keyring on
+> its first link attempt. Initialize its ht member with rhashtable_init()
+> to store links indexed by key type, domain tag and description.
 > 
-> - Eric
+> Maintain two linked lists in the index:
+> 
+> - all: enumerate committed links without retrying hash table walks when
+>   the table resizes.
+> - keyrings: visit nested keyrings during recursive search without scanning
+>   links to other key types.
+> 
+> A key can belong to several keyrings. Represent each link with struct
+> keyring_link so it has separate hash table and list nodes and holds its
+> own key reference. Traverse the lists under RCU and defer freeing removed
+> links and dropping their key references until after a grace period.
+> 
+> Assisted-by: LLM
+> Co-developed-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Awesome, thank you.
+In addition to addressing Eric's and David's comments, I'll align the
+change with Kyle's fix (and rewrite the commit message).
 
 Br, Jarkko
