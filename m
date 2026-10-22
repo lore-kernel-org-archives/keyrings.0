@@ -1,47 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792639062;
-	b=E7Enr7D/gBXCvXFiCKIV9wJZarU4eDSuCh3HNqVjkmobRWppmspsEmLoLoWm8JRMWg//
-	 1mdUnfbhPPD2SwPUZPO4YF2Vziio+S1gE3GT9A+oYbSHH4m/h3SZw4rinZeyLQ3vjfEHo
-	 evu9Z5fljrx5RfmWE/nBhask5fwfNwdYSAEmD2M9Kmp0X5Ew9a9WxxLzm+MPnpbGEsRJZ
-	 2jPQtV0IxuBn2Ovn42MVfsQx6ST8PCfn8S2ud7igIoW494gnvvqer8EZV6Hbwg5J1OueY
-	 Q/Nc9yrijoFjiGl9muAoKQPkCWdEMhIppZ6DFoNPPV/fGoG9jsmCSjZqDNCRWP4cZeg==
+	t=1792639063;
+	b=RzrmZ93Q4E0TwUVhPbAMY4xZ1NjJPRR4mdlWqlAB4+ynQbHOEpCuZuAgZ9d2fgR0oans
+	 AItKrdb/9SL8hblIvqksyvXPjjqBOFbQk+HICTyt/CNGG9VpkShZvq13DnUDbhJ852YQu
+	 1bCwO0wZP12OeWCRCvCMO+x6c1Nd162g/hyXyNxCvBmypBrXWX6WZsjcp5PTCFMuycQix
+	 4fkoTYaPE6x0rH8pPVwRm58+1bwM77tkFmOXCbIzoTIGeZ9azZ0NnAgIy63rB0mp9H36P
+	 sKvJTTHx9/NVdfRd2Fz01PIciLsjNdvTNfJCKpRb+7fazNB0zz2hab06cUcLHiH4TKw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792639062;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792639063;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=QOawM3rFdBAgigV4OLRqKiF84W5lxuZvAK3BO0YfWBA=;
-	b=3VRU5bm5a6+kJbFhkFla3mugexgbH+awSTEBDZ+XW7SjX8G9rB82jeRK7okKkrfo4L9o
-	 ZPJ5FOIwVmL+WoXxEH1916gjO0QHsb6JnKh45whekKXgvk23xJFX61vfsvHboB/O3vTkE
-	 O42sSGF16EHLIEb8SbmXDsvLsGmLr9hDiGg+AtGbdkIk/Tc+6G+ZaZOyYbvc7m415BHn9
-	 OgWncPEIEeqcvQJxttYguyVytYaPYSpg70GlJJMB02FdqXjcTgn1bYDdeyQLwxtddZ9gf
-	 1vp2b4kRdQftl4MU/LPiBUbzcNjsVzGwhHWk2+7t20uQp6/RIN1MJQPa8qqY0IOGICw==
+	bh=zo2Tb32+IKEt2npZMaOafG7jIQLj+yFukRmwwfNigLU=;
+	b=0zG8sdD4oAzLJ5c9Y6HSA90f+MTaelV++LJo2MWCtA2LQoHyPwUv9Vblx9P+vu9HnxjW
+	 aJnfAJoybuD7cgjcww+nLsXcXCslF3fFhSLolFhEScIOibjTxhz97kSIHjW6mSa4snsyo
+	 p8KyREqVk+qlwpxIoDyp0OH7WGuRzwfJlviUokmQo6+B+wSSeNMd99Ryd3UrxSecrrtFt
+	 b+JIXqIwdnujQDFKV/U6CjNpnq4dxwYqMkZ+84a4rV9L3IPLGD+qz0OLydjwk8hEes7Em
+	 p2dtXlHDYE32eGWrCngh6/m+p9mfJXa3VfLPHrXr/9xTyiD43zJQE4Mke3QPwvjOjqQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=bZMEAXgC;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=B5QhHoW4;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2507860A4AF0;
-	Thu, 22 Oct 2026 03:17:42 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 76FFE60A263F;
+	Thu, 22 Oct 2026 03:17:43 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=bZMEAXgC
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 5A8121F000C2;
-	Thu, 22 Oct 2026 03:17:41 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=B5QhHoW4
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 7500E1F000CB;
+	Thu, 22 Oct 2026 03:17:42 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792639061;
-	bh=QOawM3rFdBAgigV4OLRqKiF84W5lxuZvAK3BO0YfWBA=;
+	s=k20260515; t=1792639063;
+	bh=zo2Tb32+IKEt2npZMaOafG7jIQLj+yFukRmwwfNigLU=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=bZMEAXgCqqu0Xu1XFZ2QGNvTeLx69FimISppnt26YgXiZdk7ciZmichF9b8F+MAzL
-	 o3jIzF4eWOqknL0xx5vVrboESkLwsmYNLoAO8eH9/5GXy7lOxx24Aczs7O+uEgCIq9
-	 tikN4RmnMytdSZW0oxrq2lPDKj73dWmc/owcB/Bzd9XP8AKIgEBiDkcnhhEeCLw9TO
-	 1cmOvaoTmPID8ciKkItglZuQa3nORQoqaxY+qgD0QA7WyROY0Zk1x6w3nn6iwQwpjM
-	 wEBsRt2CzQIT05stUr5AL5hgIzgV4RP3MXXZuxT4gpcGMoOoaDn/gPWLTJ23UYms1j
-	 qdzLfcWtoaGxw==
-Message-ID: <sashiko-outbox-180918@kernel.org>
+	b=B5QhHoW4TwfPlYBEMytyaqJSPQjSAu104/Y/NUneBhh8kgVRGdHidlTVD/U+cyr57
+	 OXM69YZitMDCqVGPldyz0cemHcHzgjK/b3AEfQX3c/3Zb4uFgbEFQ8VP6imTF9SeLj
+	 qO+0rrPM5nAhRK8xwYpe0OpsHPhBiqDUNwB+DalZg/beRdEQux60aQHsh3fsN2IL4n
+	 0YHeowEH+0GqfwyJrsWJPpAHYpchIyEaH/XatoNHE6Pb1TxVEwDdl1rIsVwI+h3BRu
+	 KP9ruUeM/uspBy44RGp5GD9aEfkwjV/jLWpQ7aypCPAL/P4kXyBAeMDhFgN0DDFCzH
+	 M7VvgHf4CR72A==
+Message-ID: <sashiko-outbox-180919@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 17/41] quota: don't account UUID and GUID owners
+Subject: Re: [RFC PATCH v2 18/41] fs: keep UUID and GUID owners off
+ filesystems that can't store them
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jan Koester" <jan.koester@tuxist.de>, "Christian Brauner" <brauner@kernel.org>, "Alexander
  Viro" <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>
@@ -49,12 +50,12 @@ Cc: "Jan Kara" <jack@suse.cz>, =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.e
  Moore" <paul@paul-moore.com>, "Arnd Bergmann" <arnd@arndb.de>, linux-security-module@vger.kernel.org, linux-ext4@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>, "Anna
  Schumaker" <anna@kernel.org>
-In-Reply-To: <3c65c1107a1f9e634b35f59566f6ed70f217c85e.1792552161.git.jan.koester@tuxist.de>
+In-Reply-To: <d67ff709d9b2a9a8eb0948cebbba445ed48276d1.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
- <3c65c1107a1f9e634b35f59566f6ed70f217c85e.1792552161.git.jan.koester@tuxist.de>
+ <d67ff709d9b2a9a8eb0948cebbba445ed48276d1.1792552161.git.jan.koester@tuxist.de>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 22 Oct 2026 03:17:41 +0000
+Date: Thu, 22 Oct 2026 03:17:42 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,139 +65,228 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 3 potential issue(=
+Thank you for your contribution! Sashiko AI review found 2 potential issue(=
 s) to consider:
-- [High] quota: dqget() checks qid_has_mapping() before qid_is_legacy()
-- [High] quota: stale dquot retention in dquot_transfer() for UUID and GUID=
- owners
-- [Medium] quota: dquot_initialize_needed() stays true for UUID and GUID ow=
-ners
+- [High] fs: vfs_rename() with RENAME_WHITEOUT skips fsuidgid_has_mapping()=
+ when target exists
+- [Medium] fs: UUID/GUID owner check bypassed in ocfs2_may_create() and f2f=
+s atomic write
 --
 
-commit 56b2ebaac3515c69a008f64fd7b2eb53fda044a8
+commit 3d0ae6a640c537e68d1d11095789815bcc76e4cd
 Author: Jan Koester <jan.koester@tuxist.de>
 
-quota: don't account UUID and GUID owners
+fs: keep UUID and GUID owners off filesystems that can't store them
 
-This commit adds a qid_is_legacy() helper and updates dqget() to return
--ESRCH for UUID and GUID owners so that non-legacy 128-bit identifiers are
-not accounted in 32-bit quota files.
+This commit adds the SB_I_UID_R superblock flag for filesystems that can
+store UUID and GUID inode owners, and updates notify_change() and
+fsuidgid_has_mapping() to reject UUID and GUID owners on filesystems
+without that flag.
 
-> diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-> index 1c78c695d0ddf..62f333f8243f1 100644
-> --- a/fs/quota/dquot.c
-> +++ b/fs/quota/dquot.c
-> @@ -954,6 +954,9 @@ struct dquot *dqget(struct super_block *sb, struct kq=
-id qid)
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index deb411e866617..05c4611c87744 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1563,14 +1563,35 @@ static inline void inode_fsgid_set(struct inode *=
+inode,
+>  	inode->i_gid =3D mapped_fsgid(idmap, i_user_ns(inode));
+>  }
 > =20
->  	if (!qid_has_mapping(sb->s_user_ns, qid))
->  		return ERR_PTR(-EINVAL);
-> +	/* Quota files hold 32 bit ids: like quota off for UUIDs and GUIDs */
-> +	if (!qid_is_legacy(qid))
-> +		return ERR_PTR(-ESRCH);
+> +/**
+> + * sb_can_own_kuid() - check whether a filesystem can store an owner
+> + * @sb: the superblock
+> + * @kuid: the owner
+> + *
+> + * Classic ids fit any filesystem; UUIDs and GUIDs only those that set
+> + * SB_I_UID_R. Elsewhere i_uid_read() would turn them into -1.
+> + *
+> + * Return: true if @sb can store @kuid.
+> + */
+> +static inline bool sb_can_own_kuid(const struct super_block *sb, kuid_t =
+kuid)
+> +{
+> +	return uid_is_legacy(kuid) || (sb->s_iflags & SB_I_UID_R);
+> +}
+> +
+> +static inline bool sb_can_own_kgid(const struct super_block *sb, kgid_t =
+kgid)
+> +{
+> +	return gid_is_legacy(kgid) || (sb->s_iflags & SB_I_UID_R);
+> +}
+> +
+>  /**
+>   * fsuidgid_has_mapping() - check whether caller's fsuid/fsgid is mapped
+>   * @sb: the superblock we want a mapping in
+>   * @idmap: idmap of the relevant mount
+>   *
+>   * Check whether the caller's fsuid and fsgid have a valid mapping in the
+> - * s_user_ns of the superblock @sb. If the caller is on an idmapped moun=
+t map
+> - * the caller's fsuid and fsgid according to the @idmap first.
+> + * s_user_ns of the superblock @sb, and whether @sb can store them as ow=
+ner
+> + * of a new inode. If the caller is on an idmapped mount map the caller's
+> + * fsuid and fsgid according to the @idmap first.
+>   *
+>   * Return: true if fsuid and fsgid is mapped, false if not.
+>   */
+> @@ -1582,10 +1603,10 @@ static inline bool fsuidgid_has_mapping(struct su=
+per_block *sb,
+>  	kgid_t kgid;
 > =20
->          if (!sb_has_quota_active(sb, qid.type))
->  		return ERR_PTR(-ESRCH);
+>  	kuid =3D mapped_fsuid(idmap, fs_userns);
+> -	if (!uid_valid(kuid))
+> +	if (!uid_valid(kuid) || !sb_can_own_kuid(sb, kuid))
+>  		return false;
 
 [Severity: High]
-Can the !qid_is_legacy(qid) check here ever be reached for a UUID or GUID
-owner?
+Can a caller with a UUID or GUID fsuid or fsgid bypass fsuidgid_has_mapping=
+()
+during a whiteout rename when the target dentry already exists?
 
-Prior to this check, dqget() calls qid_has_mapping(sb->s_user_ns, qid):
+In fs/namei.c, sys_renameat2() -> filename_renameat2() -> vfs_rename() only
+calls may_create_dentry() (which checks fsuidgid_has_mapping()) when target
+is NULL:
 
-include/linux/quota.h:qid_has_mapping()
-	return from_kqid(ns, qid) !=3D (qid_t) -1;
+fs/namei.c:vfs_rename() {
+    ...
+	if (!target) {
+		error =3D may_create_dentry(rd->mnt_idmap, new_dir, new_dentry);
+	} else {
+		new_is_dir =3D d_is_dir(new_dentry);
 
-from_kqid() delegates to from_kuid() and from_kgid(), which unconditionally
-return (uid_t)-1 and (gid_t)-1 for non-legacy identifiers even in
-init_user_ns:
+		if (!(flags & RENAME_EXCHANGE))
+			error =3D may_delete_dentry(rd->mnt_idmap, new_dir,
+						  new_dentry, is_dir);
+		else
+			error =3D may_delete_dentry(rd->mnt_idmap, new_dir,
+						  new_dentry, new_is_dir);
+	}
+    ...
+}
 
-kernel/user_namespace.c:from_kuid()
-	if (!uid_is_legacy(kuid))
-		return (uid_t) -1;
+When target is non-NULL and flags includes RENAME_WHITEOUT, vfs_rename()
+only calls may_delete_dentry() on old_dentry and new_dentry, which validates
+the existing victim inodes and directory permissions without checking
+fsuidgid_has_mapping(old_dir->i_sb, rd->mnt_idmap).
 
-Because qid_has_mapping() always returns false for UUID and GUID owners,
-dqget() returns ERR_PTR(-EINVAL) before reaching !qid_is_legacy(qid).
-Callers such as __dquot_initialize() and dquot_transfer() only treat -ESRCH
-as non-fatal and propagate -EINVAL, causing file creation, open for write,
-and ownership changes involving UUID or GUID owners to fail on
-quota-enabled filesystems.
+vfs_rename() then invokes old_dir->i_op->rename(..., RENAME_WHITEOUT), which
+allocates a new whiteout inode in old_dir and initializes its i_uid and i_g=
+id
+from current_fsuid() and current_fsgid() via inode_init_owner(), such as in
+fs/ext4/namei.c:
 
-Should the !qid_is_legacy(qid) check be placed before qid_has_mapping()?
+fs/ext4/namei.c:ext4_rename() {
+    ...
+	if (!(flags & RENAME_WHITEOUT)) {
+		handle =3D ext4_journal_start(old.dir, EXT4_HT_DIR, credits);
+		if (IS_ERR(handle)) {
+			retval =3D PTR_ERR(handle);
+			goto release_bh;
+		}
+	} else {
+		whiteout =3D ext4_whiteout_for_rename(idmap, &old, credits, &handle);
+		if (IS_ERR(whiteout)) {
+			retval =3D PTR_ERR(whiteout);
+			goto release_bh;
+		}
+	}
+    ...
+}
 
-[Severity: High]
-When an inode is chowned from a legacy 32-bit owner to a UUID or GUID owner,
-will leaving the inode charged to the previous owner in dquot_transfer()
-leak quota accounting once the inode is evicted from the icache?
+The same whiteout creation occurs in ext4_rename() ->
+ext4_whiteout_for_rename() -> __ext4_new_inode(), btrfs_rename() ->
+new_whiteout_inode(), f2fs_rename() -> f2fs_create_whiteout(), and
+xfs_rename() -> xfs_rename_alloc_whiteout().
 
-In dquot_transfer() -> __dquot_transfer(), returning -ESRCH from dqget()
-sets transfer_to[cnt] =3D NULL:
+On filesystems without SB_I_UID_R (such as btrfs, f2fs, xfs, ubifs, and ext4
+prior to the later commit "ext4: add the uid_r feature for UUID and GUID
+owners"), the whiteout inode's owner is written to disk via i_uid_read() and
+i_gid_read() as (uid_t)-1 / (gid_t)-1 (0xffffffff). When read back from dis=
+k,
+that becomes INVALID_UID / INVALID_GID and leaves the whiteout entry
+undeletable because may_delete_dentry() rejects inodes with invalid vfsuid =
+or
+vfsgid with -EOVERFLOW.
 
-fs/quota/dquot.c:__dquot_transfer()
-	for (cnt =3D 0; cnt < MAXQUOTAS; cnt++) {
-		/*
-		 * Skip changes for same uid or gid or for turned off quota-type.
-		 */
-		if (!transfer_to[cnt])
-			continue;
+Additionally, once the later commit "ext4: add the uid_r feature for UUID a=
+nd
+GUID owners" is applied, __ext4_new_inode() -> ext4_mark_inode_dirty() ->
+ext4_do_update_inode() -> ext4_fill_raw_inode() -> ext4_inode_set_id_r()
+fails with -EOVERFLOW on an ext4 filesystem without the uid_r feature and
+calls EXT4_ERROR_INODE() and ext4_std_error(), aborting the journal and
+remounting the filesystem read-only (or panicking when mounted with
+errors=3Dpanic).
 
-This skips uncharging transfer_from[cnt] and leaves i_dquot(inode)[cnt]
-pointing to the previous owner's dquot while inode->i_uid or inode->i_gid is
-updated to the UUID or GUID.
+Should vfs_rename() also check fsuidgid_has_mapping(old_dir->i_sb,
+rd->mnt_idmap) when flags & RENAME_WHITEOUT is set?
 
-While the inode remains cached, subsequent block allocations by the new
-owner are still charged to the previous owner's dquot via
-__dquot_alloc_space() and can fail with -EDQUOT against the previous
-owner's limits.
-
-Once the inode is evicted from memory, dquot_drop() -> __dquot_drop() drops
-the in-memory i_dquot(inode)[cnt] reference without uncharging the quota.
-When the inode is later re-read from disk, __dquot_initialize() sees the
-UUID or GUID owner and leaves i_dquot(inode)[cnt] as NULL. Subsequent
-truncation or unlink (__dquot_free_space(), dquot_free_inode()) will then
-never decrement the previous owner's dquot, permanently leaking those blocks
-and inodes in the on-disk quota file (or double-charging if chowned back to
-a legacy owner).
-
-Should __dquot_transfer() uncharge transfer_from[cnt] and clear dquots[cnt]
-when transferring ownership to an unquoted UUID or GUID owner?
+>  	kgid =3D mapped_fsgid(idmap, fs_userns);
+> -	if (!gid_valid(kgid))
+> +	if (!gid_valid(kgid) || !sb_can_own_kgid(sb, kgid))
+>  		return false;
 
 [Severity: Medium]
-How does returning -ESRCH for UUID and GUID owners interact with
-dquot_initialize_needed()?
+Are there also filesystem-internal inode creation paths that initialize new
+inodes with inode_init_owner() without going through fsuidgid_has_mapping()?
 
-When dqget() returns -ESRCH while sb_has_quota_active(sb, qid.type) is true,
-__dquot_initialize() leaves i_dquot(inode)[cnt] as NULL. However,
-dquot_initialize_needed() (as well as dqinit_needed()) assumes that any NULL
-slot for an active quota type means the inode still needs quota
-initialization:
+Because sb_can_own_kuid() and sb_can_own_kgid() are only checked in
+fsuidgid_has_mapping() (called by may_create_dentry(), may_o_create(), and
+vfs_tmpfile()), callers that allocate new inodes through private helpers sk=
+ip
+this check:
 
-fs/quota/dquot.c:dquot_initialize_needed()
-	dquots =3D i_dquot(inode);
-	for (i =3D 0; i < MAXQUOTAS; i++)
-		if (!dquots[i] && sb_has_quota_active(inode->i_sb, i))
-			return true;
+1. In fs/ocfs2/refcounttree.c, ioctl(OCFS2_IOC_REFLINK) ->
+ocfs2_reflink_ioctl() -> ocfs2_vfs_reflink() checks permissions with
+ocfs2_may_create() rather than may_create_dentry():
 
-For an inode with a UUID or GUID owner or group, dquot_initialize_needed()
-remains permanently true even after dquot_initialize() has been called.
+fs/ocfs2/refcounttree.c:ocfs2_may_create() {
+	if (d_really_is_positive(child))
+		return -EEXIST;
+	if (IS_DEADDIR(dir))
+		return -ENOENT;
+	return inode_permission(&nop_mnt_idmap, dir, MAY_WRITE | MAY_EXEC);
+}
 
-In ext4, this causes __ext4_expand_extra_isize() to always bail out with
--EAGAIN:
+When preserve is false, a caller with a UUID or GUID fsuid or fsgid creates=
+ a
+new inode via ocfs2_reflink() -> ocfs2_create_inode_in_orphan() ->
+ocfs2_get_init_inode() -> inode_init_owner() in fs/ocfs2/namei.c.
+__ocfs2_mknod_locked() then writes i_uid_read(inode) and i_gid_read(inode) =
+as
+-1 to fe->i_uid and fe->i_gid on disk and calls ocfs2_populate_inode(), whi=
+ch
+sets the in-memory inode's i_uid and i_gid to INVALID_UID and INVALID_GID
+before ocfs2_mv_orphaned_inode_to_new() links it into the target directory.
 
-fs/ext4/inode.c:__ext4_expand_extra_isize()
-	if (dquot_initialize_needed(inode))
-		return -EAGAIN;
+2. In fs/f2fs/file.c, f2fs_ioc_start_atomic_write() checks
+inode_owner_or_capable() (which does not check fsgid, and permits a UUID or
+GUID fsuid if the caller has CAP_FOWNER) and then allocates a COW inode via
+f2fs_get_tmpfile() -> __f2fs_tmpfile() -> f2fs_new_inode() ->
+inode_init_owner() without calling vfs_tmpfile() or fsuidgid_has_mapping():
 
-It also triggers WARN_ON_ONCE(dquot_initialize_needed(inode)) in
-ext4_xattr_block_set() when EXT4_XATTR_DEBUG is enabled, and causes every
-call to __dquot_initialize() on the inode to bypass the fast path and
-acquire dq_data_lock.
+fs/f2fs/file.c:f2fs_ioc_start_atomic_write() {
+    ...
+	if (fi->cow_inode =3D=3D NULL) {
+		struct dentry *dentry =3D file_dentry(filp);
+		struct inode *dir =3D d_inode(dentry->d_parent);
 
-Should dquot_initialize_needed(), dqinit_needed(), and the loop in
-__dquot_initialize() also account for non-legacy identifiers?
+		ret =3D f2fs_get_tmpfile(idmap, dir, &fi->cow_inode);
+    ...
+}
+
+This causes f2fs_update_inode() to write (uid_t)-1 / (gid_t)-1 to the on-di=
+sk
+COW inode.
+
+Should ocfs2_may_create() and f2fs_ioc_start_atomic_write() (or the common
+inode allocation path) also verify fsuidgid_has_mapping()?
+
+>  	return kuid_has_mapping(fs_userns, kuid) &&
+>  	       kgid_has_mapping(fs_userns, kgid);
 
 [ ... ]
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/cover.1792552161.gi=
-t.jan.koester@tuxist.de?part=3D17
+t.jan.koester@tuxist.de?part=3D18
