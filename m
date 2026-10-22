@@ -1,48 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792639089;
-	b=0dd2VPjmYAJumPmOmIREgcmnWBcL4Zmm79R94HebLEFaxCP40IBAKK6Po64hyPJ3Ypse
-	 YnlrnWcr4JAL5fwg/ePRQpxdFsHziJQHKr278Asp4wT98A7bQTnGZC70/OkTTXzWXl+rG
-	 jwV45Ej+Xc7TJRdKIVKtDVRoHvk+v3benLEy1CExJaYnooXQV7UtxTX88bihcWBbLVSLP
-	 TsbsTCcoSN1zJhfQCNVLka2TatHdXuvymdJAf81oA0Mtrrhurd2P8TLyUsmK2zEKMOVfJ
-	 0AgE7aZDCiYO2tsPkE7Jah24tu8wTDaQuTC55hPUizZGovlJ/P9Y8uvNXzBb4I76SqA==
+	t=1792639090;
+	b=zzOm31yvw18cUQu/ZD/I7RmXunz41fuNJA9fu2pZeEV2+Vc3Cw5YhHd1/Pd56orm8RW5
+	 pKB/6j8jz6xMFnG8izTF9F/aAfXgS898QFxxOIYVoV4fX5DHnUqG9mhJowgBigsFfT6j8
+	 TGsa9yRQar+zeC+hnk2f7DXdSjzyIx63b1+3vjXGPqEFSKoJHgs94KytFzpHUEfOqmKaS
+	 EjpoYqLOFOQqf5N5XURxGNi23w6tbHe8+NuslA4l8IFX03trC1ObsgkqW2zfUeG3Er2l2
+	 bcYgNPVbWo/brll4l0El1s2MVItUKbWXSPoCWrWuvkqicdDyUz6tjD9oQiB0udGXyhQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792639089;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792639090;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=ZFjaIA/J7e0MzwlmyRRLQRTf1sk/48ff7qMOqEh+5II=;
-	b=kHk+AtDDbAakyHg+wF+2EyyIJ25fMROUjWuktNivWENEh75wso7tsR4eDNWrZJBS0c9B
-	 EYF6m3PykFovtqjO/wMzw0hPO8OiZLUBoCN11gR2E3dfm6XbjJfUFyHj67J5d4B9geRzx
-	 4Kj4IF8x1iWJ/yywayM6PYHH6K6iIo9tIXpHXa442SVbasPZ8IB4R6lx21TaJnZzC6iup
-	 BtilVDD57Y6hyxIxkpzTMsoxb3lotlMJNbfDrPVnypXWnePCKR++mKW+mg4tPjXp7eDg6
-	 kgEMXOnLjM11z5hTTsQWvUNlkDtwrgnaleOCYHEP59qhIV2WDfNbLeAuk/uecaegkHQ==
+	bh=pzfC2TRKX43ni705/BEtqpWMIkNynbXTbNKUDVSHj4g=;
+	b=cHLPvFCAP14TdpEDbod6PC/mpgD47xIwP2vXUGsao1vlA63EGebU3MpeA/YsgdYz235R
+	 IhopBOHqF7idDql/zHClGGDaQI1CA6eFgrfcIejBqJw+qkJ7T8r/GkqlI010fsROUyRIN
+	 sByaj2n9Gx5VCe94/9835zZU/vfJEg0gPsbm1mTm2Y3dbpRFt4gGPUqlBbTPLGNBbILxc
+	 Bss0IEIoFZPeKtgt/T+ZwKQ5lRe2nLQJUY+l1C2I/C7Wg8CCG1cNJ9dHzLNmW89CoJtB/
+	 HCcDy+WAWyI7O0zCJZd2hwWJTwJenaGHYihzyeqswnBnhO7iWBu3gbtUKAnn+D62OsA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=j9yJoLZu;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EBTbdg+A;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3376D606A33E;
-	Thu, 22 Oct 2026 03:18:09 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9155F606A339;
+	Thu, 22 Oct 2026 03:18:10 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=j9yJoLZu
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 2FA701F000C3;
-	Thu, 22 Oct 2026 03:18:08 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EBTbdg+A
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 99C391F000C1;
+	Thu, 22 Oct 2026 03:18:09 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792639089;
-	bh=ZFjaIA/J7e0MzwlmyRRLQRTf1sk/48ff7qMOqEh+5II=;
+	s=k20260515; t=1792639090;
+	bh=pzfC2TRKX43ni705/BEtqpWMIkNynbXTbNKUDVSHj4g=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=j9yJoLZukdK5o1/nV1d+i12HXDEGDNY0GF7DW+VWSkqEMJYlW3oTlALOprksrAga+
-	 KBYrUI9/Z6bndnvoeWaBHKyDhzW0hxUHeJq43O37HYEIqHzHXfUYLgd5sMKtzOi0uf
-	 5KLRSX3gJPxqjjnE6VPEBAZT/XqijX3WPTuRqWGvr9hJPHn2Z9Qu4Aimmbtyv+o3hT
-	 M+KZBsW9v0YHVcuJxFvaxcJg+Pbxuac032Nf4tFFPze7DxbJii7A20afM1kCc0uTo2
-	 XENP2wBvx8ysIulbtpeupy79DqL4EHBh9bUA0QQd4tMK88JbM2rh7KEqnkS/B6LHT7
-	 RQJDNldhL0JCQ==
-Message-ID: <sashiko-outbox-180940@kernel.org>
+	b=EBTbdg+ASZGDBFp7uKscAcUGNmTJ9u+g0xNIuHTl+3ZgDhNZxKg9qmpZVaM742fRL
+	 zo1ah+13vQIX8x/FB8AmWFgqxPHhm1B6umoCWh88QQzCgS62Xg6OfAMshgkwCJRoCF
+	 LI2NX/BZdVTJVKWTVHJEF3+qWsHOfW7OPAg06bj21WJk86vk7mJ5TKA5JCPa0oKkns
+	 drC2jBkhuoZLsNTbiEQvP/mzjjO5BEHSdKb5yBSHgiDU/IrggCEzmfrIzMPa//pveZ
+	 P8skIS1f8RuJSrCHkhff6WXQwar0bhzpi8epXWmhg1Y8jszjfbHCJ14Ocl6RkmtIZW
+	 iXuSFi8m4xJnw==
+Message-ID: <sashiko-outbox-180941@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 39/41] ksmbd: log in UUID and GUID users and map
- them to SIDs
+Subject: Re: [RFC PATCH v2 40/41] nfsd, nfs: carry UUID and GUID owners as
+ their text form
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jan Koester" <jan.koester@tuxist.de>, "Christian Brauner" <brauner@kernel.org>, "Alexander
  Viro" <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>
@@ -50,12 +50,12 @@ Cc: "Jan Kara" <jack@suse.cz>, =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.e
  Moore" <paul@paul-moore.com>, "Arnd Bergmann" <arnd@arndb.de>, linux-security-module@vger.kernel.org, linux-ext4@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>, "Anna
  Schumaker" <anna@kernel.org>
-In-Reply-To: <73dfe9aab6c5dd8152fa494d53f470f3bea53127.1792552161.git.jan.koester@tuxist.de>
+In-Reply-To: <f444dffc8e6bf98bf44c02456adc2de40e4ecd95.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
- <73dfe9aab6c5dd8152fa494d53f470f3bea53127.1792552161.git.jan.koester@tuxist.de>
+ <f444dffc8e6bf98bf44c02456adc2de40e4ecd95.1792552161.git.jan.koester@tuxist.de>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 22 Oct 2026 03:18:07 +0000
+Date: Thu, 22 Oct 2026 03:18:09 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,228 +67,243 @@ Precedence: list
 
 Thank you for your contribution! Sashiko AI review found 3 potential issue(=
 s) to consider:
-- [High] ksmbd: sid_to_id() bypasses make_kuid_r() validation for UUID/GUID=
- SIDs
-- [High] ksmbd: ksmbd_alloc_user() falls back to resp uid/gid when resp_ext=
- is NULL
-- [Low] ksmbd: unused uid and gid fields and helpers in struct ksmbd_user
+- [High] nfsd: unmapped -EOVERFLOW in nfserrno() on UUID/GUID setattr and A=
+CLs
+- [High] nfs: silent overflowuid munging on UUID chown when idmap user_ns i=
+s non-init
+- [Medium] nfs: rejected UUID/GUID chown clears NFS_CAP_UIDGID_NOMAP for en=
+tire mount
 --
 
-commit a1ea85f35f595431966b4e9bd815708cd849c5bc
+commit 651e121e99cc1fc974fd455542b8ff4a2ecaa7ac
 Author: Jan Koester <jan.koester@tuxist.de>
 
-ksmbd: log in UUID and GUID users and map them to SIDs
+nfsd, nfs: carry UUID and GUID owners as their text form
 
-This commit adds support for logging in UUID and GUID users and groups via
-ksmbd_login_response_ext and mapping their kuid_t and kgid_t values to and
-from S-1-22-<kind>-w0-w1-w2-w3 SIDs in security descriptors, POSIX ACLs,
-and durable handle owners.
+This commit encodes and decodes non-legacy UUID and GUID user and group
+IDs in their text form for NFSv4 owners and ACL principals on both the
+client and server. It also sets SB_I_UID_R on NFSv4 client superblocks
+so userspace can set UUID and GUID owners via chown_r().
+
+> diff --git a/fs/nfs/nfs4idmap.c b/fs/nfs/nfs4idmap.c
+> index bc397110d977f..0ca50bf8f3fc6 100644
+> --- a/fs/nfs/nfs4idmap.c
+> +++ b/fs/nfs/nfs4idmap.c
 
 [ ... ]
 
-> diff --git a/fs/smb/server/mgmt/user_config.c b/fs/smb/server/mgmt/user_c=
-onfig.c
-> index 5efc3d7455b99..cb175a4c78d83 100644
-> --- a/fs/smb/server/mgmt/user_config.c
-> +++ b/fs/smb/server/mgmt/user_config.c
-> @@ -56,6 +56,8 @@ struct ksmbd_user *ksmbd_alloc_user(struct ksmbd_login_=
-response *resp,
->  	user->flags =3D resp->status;
->  	user->gid =3D resp->gid;
->  	user->uid =3D resp->uid;
-> +	user->kuid =3D make_kuid(&init_user_ns, resp->uid);
-> +	user->kgid =3D make_kgid(&init_user_ns, resp->gid);
->  	user->passkey_sz =3D resp->hash_sz;
->  	user->passkey =3D kmalloc(resp->hash_sz, KSMBD_DEFAULT_GFP);
->  	if (user->passkey)
-> @@ -68,12 +70,38 @@ struct ksmbd_user *ksmbd_alloc_user(struct ksmbd_logi=
-n_response *resp,
->  		goto err_free;
+> @@ -769,6 +812,11 @@ int nfs_map_uid_to_name(const struct nfs_server *ser=
+ver, kuid_t uid, char *buf,
+>  	int ret =3D -EINVAL;
+>  	__u32 id;
 > =20
->  	if (resp_ext) {
-> -		user->sgid =3D kmemdup(resp_ext->____payload,
-> -				     resp_ext->ngroups * sizeof(gid_t),
-> +		int i;
+> +	if (!uid_is_legacy(uid) && kuid_has_mapping(idmap_userns(idmap), uid)) {
+> +		char str[KID_STR_LEN];
 > +
-> +		if (resp_ext->flags & KSMBD_LOGIN_EXT_ID_R) {
-> +			/* the user's ids may be UUIDs or GUIDs */
-> +			user->kuid =3D make_kuid_r(&init_user_ns, &resp_ext->uid_r);
-> +			user->kgid =3D make_kgid_r(&init_user_ns, &resp_ext->gid_r);
-> +			if (!uid_valid(user->kuid) || !gid_valid(user->kgid))
-> +				goto err_free;
-> +			user->uid =3D from_kuid_munged(&init_user_ns, user->kuid);
-> +			user->gid =3D from_kgid_munged(&init_user_ns, user->kgid);
-> +		}
+> +		return nfs_id_r_to_string(kuid_str(uid, str), buf, buflen);
+> +	}
+>  	id =3D from_kuid_munged(idmap_userns(idmap), uid);
+>  	if (!(server->caps & NFS_CAP_UIDGID_NOMAP))
+>  		ret =3D nfs_idmap_lookup_name(id, "user", buf, buflen, idmap);
+> @@ -783,6 +831,11 @@ int nfs_map_gid_to_group(const struct nfs_server *se=
+rver, kgid_t gid, char *buf,
+>  	int ret =3D -EINVAL;
+>  	__u32 id;
+> =20
+> +	if (!gid_is_legacy(gid) && kgid_has_mapping(idmap_userns(idmap), gid)) {
+> +		char str[KID_STR_LEN];
+> +
+> +		return nfs_id_r_to_string(kgid_str(gid, str), buf, buflen);
+> +	}
+>  	id =3D from_kgid_munged(idmap_userns(idmap), gid);
+>  	if (!(server->caps & NFS_CAP_UIDGID_NOMAP))
+>  		ret =3D nfs_idmap_lookup_name(id, "group", buf, buflen, idmap);
 
 [Severity: High]
-What happens in ksmbd_alloc_user() in fs/smb/server/mgmt/user_config.c if
-resp->status has KSMBD_USER_FLAG_EXTENSION set, but fetching the login
-extension via ksmbd_ipc_login_request_ext() fails and returns NULL?
+What happens here when an NFSv4 superblock has SB_I_UID_R set by
+nfs_fill_super(), but idmap_userns(idmap) is not init_user_ns?
 
-Both callers pass resp_ext directly to ksmbd_alloc_user() without checking
-whether the second IPC request succeeded:
+Because nfs4_fs_type sets FS_USERNS_DELEGATABLE in fs/nfs/fs_context.c,
+an nfs4 context created via fsopen() in a non-initial user namespace
+sets idmap->user_ns to that namespace in nfs_idmap_new() (and
+nfs_match_client() in fs/nfs/client.c can also share that cl_idmap with
+a subsequent mount in init_user_ns).
 
-fs/smb/server/mgmt/user_config.c:ksmbd_login_user() {
-	if (resp->status & KSMBD_USER_FLAG_EXTENSION)
-		resp_ext =3D ksmbd_ipc_login_request_ext(account);
+When a process in init_user_ns calls chown_r() with a UUID or GUID on
+that mount, notify_change() in fs/attr.c checks vfsuid_has_fsmapping()
+(where from_vfsuid() in fs/mnt_idmapping.c returns AS_KUIDT(vfsuid)
+immediately for nop_mnt_idmap without checking fs_userns) and
+sb_can_own_kuid(), then calls nfs_setattr() -> nfs4_proc_setattr() ->
+encode_attrs().
 
-	user =3D ksmbd_alloc_user(resp, resp_ext);
+In nfs_map_uid_to_name() and nfs_map_gid_to_group(), kuid_has_mapping()
+and kgid_has_mapping() return false for non-initial user namespaces, so
+execution falls through to from_kuid_munged() and from_kgid_munged(),
+silently sending overflowuid or overflowgid in the SETATTR RPC instead
+of the requested UUID/GUID.
+
+If overflowuid or overflowgid is not mapped in idmap->user_ns,
+decode_attr_owner() and decode_attr_group() in fs/nfs/nfs4xdr.c also
+fail to map the post-op GETATTR owner, so nfs_setattr_update_inode() in
+fs/nfs/inode.c caches the requested UUID/GUID in inode->i_uid or
+inode->i_gid while the file on the server is owned by overflowuid or
+overflowgid:
+
+fs/nfs/inode.c:nfs_setattr_update_inode() {
+    ...
+		if ((attr->ia_valid & ATTR_UID) !=3D 0)
+			inode->i_uid =3D attr->ia_uid;
+		if ((attr->ia_valid & ATTR_GID) !=3D 0)
+			inode->i_gid =3D attr->ia_gid;
+    ...
 }
 
-fs/smb/server/auth.c:ksmbd_krb5_authenticate() {
-	if (resp->login_response.status & KSMBD_USER_FLAG_EXTENSION)
-		resp_ext =3D ksmbd_ipc_login_request_ext(resp->login_response.account);
+Should nfs_fill_super() only set SB_I_UID_R when idmap_userns(idmap) is
+init_user_ns, or should nfs_setattr() and nfs_map_uid_to_name() reject
+unmapped non-legacy IDs rather than munging them to overflowuid?
 
-	user =3D ksmbd_alloc_user(&resp->login_response, resp_ext);
-}
+> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+> index cb19f1540d984..2d292e44186e7 100644
+> --- a/fs/nfs/super.c
+> +++ b/fs/nfs/super.c
+> @@ -1100,6 +1100,8 @@ static void nfs_fill_super(struct super_block *sb, =
+struct nfs_fs_context *ctx)
+>  		break;
+>  	case 4:
+>  		sb->s_iflags |=3D SB_I_NOUMASK;
+> +		/* owners are strings: UUIDs and GUIDs in their text form */
+> +		sb->s_iflags |=3D SB_I_UID_R;
+>  		sb->s_time_gran =3D 1;
+>  		sb->s_time_min =3D S64_MIN;
+>  		sb->s_time_max =3D S64_MAX;
 
-Per the comment on struct ksmbd_login_response_ext in
-fs/smb/server/ksmbd_netlink.h, resp->uid and resp->gid in the base login
-response are ignored when KSMBD_LOGIN_EXT_ID_R is used. However, if
-ksmbd_ipc_login_request_ext() returns NULL (for example on an IPC error,
-allocation failure, or validation failure in ipc_validate_msg()), the
-if (resp_ext) block is skipped and ksmbd_alloc_user() still succeeds using
-user->kuid and user->kgid initialized from resp->uid and resp->gid.
+[Severity: Medium]
+Can setting SB_I_UID_R unconditionally on all NFSv4 mounts cause a
+rejected UUID or GUID chown_r() to disable numeric UID/GID support for
+the entire mount?
 
-If userspace left resp->uid and resp->gid zeroed in the base response, the
-session will log in as GLOBAL_ROOT_UID and GLOBAL_ROOT_GID (keeping
-filesystem capabilities in __ksmbd_override_fsids()). If resp->uid or
-resp->gid is -1 (or when KSMBD_LOGIN_EXT_ID_R is not set), user->kuid or
-user->kgid becomes INVALID_UID or INVALID_GID because uid_valid() and
-gid_valid() are only checked inside the KSMBD_LOGIN_EXT_ID_R branch.
+When a user calls chown_r() with a UUID or GUID on a sec=3Dsys mount where
+NFS_CAP_UIDGID_NOMAP is set, notify_change() delegates permission checks
+to the server and calls nfs_setattr() -> nfs4_proc_setattr() ->
+nfs4_do_setattr().
 
-Should ksmbd_alloc_user() reject the login when
-resp->status & KSMBD_USER_FLAG_EXTENSION is set but resp_ext is NULL, and
-also check uid_valid(user->kuid) and gid_valid(user->kgid) when
-KSMBD_LOGIN_EXT_ID_R is not set?
+During XDR encoding, nfs_map_uid_to_name() and nfs_map_gid_to_group()
+encode the UUID or GUID as its text string even when
+NFS_CAP_UIDGID_NOMAP is set. If the server does not support UUID/GUID
+owners and returns NFS4ERR_BADOWNER (which nfsd4_decode_fattr4() in
+fs/nfsd/nfs4xdr.c returns during XDR decode before nfsd4_setattr()
+checks file ownership or CAP_CHOWN), nfs4_do_setattr() passes
+-NFS4ERR_BADOWNER to nfs4_do_handle_exception() in fs/nfs/nfs4proc.c:
 
-[ ... ]
+		case -NFS4ERR_BADOWNER:
+			/* The following works around a Linux server bug! */
+		case -NFS4ERR_BADNAME:
+			if (server->caps & NFS_CAP_UIDGID_NOMAP) {
+				server->caps &=3D ~NFS_CAP_UIDGID_NOMAP;
+				exception->retry =3D 1;
 
-> diff --git a/fs/smb/server/mgmt/user_config.h b/fs/smb/server/mgmt/user_c=
-onfig.h
-> index cc460b4ff7d39..e55470e008f50 100644
-> --- a/fs/smb/server/mgmt/user_config.h
-> +++ b/fs/smb/server/mgmt/user_config.h
-> @@ -13,13 +13,15 @@ struct ksmbd_user {
-> =20
->  	unsigned int		uid;
->  	unsigned int		gid;
-> +	kuid_t			kuid;	/* the user: uid, or a UUID or GUID */
-> +	kgid_t			kgid;
-> =20
->  	char			*name;
-> =20
->  	size_t			passkey_sz;
->  	char			*passkey;
->  	int			ngroups;
-> -	gid_t			*sgid;
-> +	kgid_t			*sgid;
->  };
-> =20
->  static inline bool user_guest(struct ksmbd_user *user)
+This clears NFS_CAP_UIDGID_NOMAP permanently on server->caps for the
+mount and retries with the identical UUID/GUID string, forcing all
+subsequent classic UID/GID setattr calls through idmapd (similar to the
+regression fixed for ACLs in commit f8849e206ef52b).
 
-[Severity: Low]
-This isn't a bug, but now that smb2_open(), process_query_dir_entries(),
-__ksmbd_override_fsids(), ksmbd_vfs_set_durable_owner(), and
-ksmbd_vfs_compare_durable_owner() all use user->kuid and user->kgid, are
-the 32-bit uid and gid fields in struct ksmbd_user (and the user_uid() and
-user_gid() helpers in fs/smb/server/mgmt/user_config.h) still needed, or
-could they be dropped now that they have no remaining readers?
+Should nfs4_do_setattr() avoid clearing NFS_CAP_UIDGID_NOMAP when the
+setattr request carried a non-legacy kuid_t or kgid_t?
+
+> diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+> index e9faf8b78f74a..8c3e908b323ed 100644
+> --- a/fs/nfsd/nfs4idmap.c
+> +++ b/fs/nfsd/nfs4idmap.c
 
 [ ... ]
 
-> diff --git a/fs/smb/server/smbacl.c b/fs/smb/server/smbacl.c
-> index 1fad6ccf3a72a..126264cc0734e 100644
-> --- a/fs/smb/server/smbacl.c
-> +++ b/fs/smb/server/smbacl.c
-
-[ ... ]
-
-> @@ -279,6 +341,42 @@ static int sid_to_id(struct mnt_idmap *idmap,
->  		return -EIO;
->  	}
+> @@ -672,6 +699,16 @@ __be32 nfsd_map_name_to_uid(struct svc_rqst *rqstp, =
+const char *name,
+>  	if (name =3D=3D NULL || namelen =3D=3D 0)
+>  		return nfserr_inval;
 > =20
 > +	{
-> +		u8 id[16];
-> +		u32 kind =3D sid_to_id_r(psid, id);
+> +		char buf[KID_STR_LEN];
 > +
-> +		if (kind && sidtype =3D=3D SIDOWNER &&
-> +		    (kind =3D=3D SID_UNIX_UUID_USER || kind =3D=3D SID_UNIX_GUID_USER)=
-) {
-> +			kuid_t uid;
-> +
-> +			if (kind =3D=3D SID_UNIX_UUID_USER)
-> +				uid =3D KUIDT_INIT_UUID(*(uuid_t *)id);
-> +			else
-> +				uid =3D KUIDT_INIT_GUID(*(guid_t *)id);
-> +			uid =3D from_vfsuid(idmap, &init_user_ns, VFSUIDT_INIT(uid));
-> +			if (!uid_valid(uid))
-> +				return -EINVAL;
-> +			fattr->cf_uid =3D uid;
-> +			return 0;
+> +		if (id_r_name(name, namelen, buf)) {
+> +			*uid =3D make_kuid_str(nfsd_user_namespace(rqstp), buf);
+> +			if (uid_valid(*uid) && !uid_is_legacy(*uid))
+> +				return nfs_ok;
 > +		}
-> +		if (kind && sidtype !=3D SIDOWNER &&
-> +		    (kind =3D=3D SID_UNIX_UUID_GROUP || kind =3D=3D SID_UNIX_GUID_GROU=
-P)) {
-> +			kgid_t gid;
-> +
-> +			if (kind =3D=3D SID_UNIX_UUID_GROUP)
-> +				gid =3D KGIDT_INIT_UUID(*(uuid_t *)id);
-> +			else
-> +				gid =3D KGIDT_INIT_GUID(*(guid_t *)id);
-> +			gid =3D from_vfsgid(idmap, &init_user_ns, VFSGIDT_INIT(gid));
-> +			if (!gid_valid(gid))
-> +				return -EINVAL;
-> +			fattr->cf_gid =3D gid;
-> +			return 0;
-> +		}
-> +		if (kind)
-> +			return -EINVAL;
 > +	}
+> +
+>  	status =3D do_name_to_id(rqstp, IDMAP_TYPE_USER, name, namelen, &id);
+>  	if (status)
+>  		return status;
+> @@ -709,6 +746,16 @@ __be32 nfsd_map_name_to_gid(struct svc_rqst *rqstp, =
+const char *name,
+>  	if (name =3D=3D NULL || namelen =3D=3D 0)
+>  		return nfserr_inval;
+> =20
+> +	{
+> +		char buf[KID_STR_LEN];
+> +
+> +		if (id_r_name(name, namelen, buf)) {
+> +			*gid =3D make_kgid_str(nfsd_user_namespace(rqstp), buf);
+> +			if (gid_valid(*gid) && !gid_is_legacy(*gid))
+> +				return nfs_ok;
+> +		}
+> +	}
+> +
+>  	status =3D do_name_to_id(rqstp, IDMAP_TYPE_GROUP, name, namelen, &id);
+>  	if (status)
+>  		return status;
 
 [Severity: High]
-Can sid_to_id() in fs/smb/server/smbacl.c allow an SMB client to persist
-malformed UUIDs or nil GUIDs into inode ownership and POSIX ACLs?
+Could accepting UUID and GUID strings here trigger a kernel warning in
+nfserrno() when the exported filesystem does not support SB_I_UID_R?
 
-When a client sends an SMB2_SET_INFO or SMB2_CREATE security descriptor
-containing an S-1-22-<kind>-w0-w1-w2-w3 SID (via set_info_sec() ->
-parse_sec_desc() / parse_dacl() -> sid_to_id()), sid_to_id() builds the
-kuid_t or kgid_t directly with KUIDT_INIT_UUID(), KUIDT_INIT_GUID(),
-KGIDT_INIT_UUID(), and KGIDT_INIT_GUID() instead of calling make_kuid_r()
-and make_kgid_r().
+nfsd_map_name_to_uid() and nfsd_map_name_to_gid() decode 36-byte UUID
+and 38-byte GUID strings into non-legacy kuid_t and kgid_t values in
+nfsd4_decode_fattr4(), nfsd4_decode_nfsace4(), and
+nfsd4_decode_posixace4() before the target export's superblock is
+checked.
 
-Unlike make_kuid_r() and make_kgid_r(), which validate the 16-byte payload
-via kid_r_valid() in kernel/uidgid_r.c:
+When nfsd4_setattr(), nfsd4_create(), or do_open_lookup() (via
+nfsd_create_setattr()) then calls nfsd_setattr() in fs/nfsd/vfs.c on an
+exported filesystem without SB_I_UID_R (or on ext4 when
+ext4_make_room_for_id_r() cannot expand an existing inode),
+notify_change() in fs/attr.c:
 
-kernel/uidgid_r.c:kid_r_valid() {
-	switch (id->type) {
-	...
-	case UID_R_UUID:
-		return (id->uuid[6] >> 4) =3D=3D 4 && (id->uuid[8] & 0xc0) =3D=3D 0x80;
-	case UID_R_GUID:
-		return memchr_inv(id->guid, 0, UID_R_SIZE);
+	if (ia_valid & ATTR_UID &&
+	    !sb_can_own_kuid(inode->i_sb, vfsuid_into_kuid(attr->ia_vfsuid)))
+		return -EOVERFLOW;
+	if (ia_valid & ATTR_GID &&
+	    !sb_can_own_kgid(inode->i_sb, vfsgid_into_kgid(attr->ia_vfsgid)))
+		return -EOVERFLOW;
+
+and set_posix_acl() in fs/posix_acl.c:
+
+		if (posix_acl_has_id_r(acl) &&
+		    !(inode->i_sb->s_iflags & SB_I_UID_R))
+			return -EOVERFLOW;
+
+return -EOVERFLOW.
+
+nfsd_setattr() and nfsd4_setattr() pass that error to nfserrno() in
+fs/nfsd/vfs.c:
+
+	for (i =3D 0; i < ARRAY_SIZE(nfs_errtbl); i++) {
+		if (nfs_errtbl[i].syserr =3D=3D errno)
+			return nfs_errtbl[i].nfserr;
 	}
-	return false;
-}
+	WARN_ONCE(1, "nfsd: non-standard errno: %d\n", errno);
+	return nfserr_io;
 
-the uid_valid() and gid_valid() checks in include/linux/uidgid.h
-unconditionally return true for any KID_UUID or KID_GUID:
+Because nfs_errtbl[] has no entry for EOVERFLOW, this triggers
+WARN_ONCE() and returns nfserr_io instead of nfserr_badowner (and for
+OPEN(CREATE) or CREATE with initial UUID/GUID attributes, leaves the
+newly created file or directory on disk after nfsd_create_setattr()
+fails).
 
-include/linux/uidgid.h:uid_valid() {
-	return !uid_is_legacy(uid) || __kuid_val(uid) !=3D (uid_t) -1;
-}
-
-As a result, a client can pass a non-v4/non-RFC-9562 UUID (such as
-S-1-22-3-0-0-0-0) or a nil GUID (S-1-22-5-0-0-0-0) and have it stored on
- the inode or in POSIX ACL xattrs, causing subsequent userspace operations
-that validate via kid_r_valid() (such as chown_r() or setxattr() on POSIX
-ACLs) to fail with -EINVAL.
-
-Should sid_to_id() construct these IDs via make_kuid_r() and make_kgid_r()
-so that invalid UUID and GUID payloads are rejected?
-
-[ ... ]
+Should nfsd check whether the export's superblock supports SB_I_UID_R
+(and map EOVERFLOW to nfserr_badowner in nfsd_setattr() / nfserrno())?
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/cover.1792552161.gi=
-t.jan.koester@tuxist.de?part=3D39
+t.jan.koester@tuxist.de?part=3D40
