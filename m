@@ -1,89 +1,55 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.128.53
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792699638;
-	b=enJ4r1YHOUIhfnQFX2qy2AD2ei3LV8rmFBTYddkkGLtuaBOB3or0lcmbCbshk+ewJStp
-	 W0P5u5O9pZMvtja2t+0ZGb6+y40wgufwuMBSy1EV/k9CsMPYK23gHs9ksJEQW1uGtjmkW
-	 hBwtc3EGOF5BrwyNAXYIAEKJgPGFzuGH5BBgyP+z3Z0ace+vG7jp/Jpg8borW0EYDAg/U
-	 80QeuGffEPk5PzmM/uHEtATst4UBgfvHfcVeMG4pF63rz3MLdwv+LuHJCVLW1jJ3+e0HH
-	 HArE9V37tGu3/Kb3mEW9sFkmWRjbJn8DKSmyBQytI3RhnhYfv0o3L9Nkvsbz/81/djw==
+	t=1792700750;
+	b=5aO4L/f4cg/zHzS9bOL1RrrXYL3ldN+fBiBGLRpOHUpeN8gFRKcGbfSXCsb0kykr4D6t
+	 aAR/+BK4gAm4c7exc3TGXVKjiqRWbbY+qko/WdWtCXtzo6jHopqmLRGzATjJOGKjVlW3B
+	 HqNqS4SlDPxf2fEe/f8u/aaEhzGyLbIQ0SJUAcigHLn9BdXoQHgq8B5duFqRlL+hPSrl8
+	 scDDd2M9mpFquf1+8FPRR+OroPAxe/lo5o9zGkFEn5CAzmiSxh8ApgbihmINZ+mf7TviX
+	 xlK8nf1JOVN/6Xc4aGvh/5Gp7X02jp3PIuCOSZWVzWAJ64/Ci92/Nf8Ig9B2Hz5ww4w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792699638;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
-	 Received:X-Forwarded-Encrypted:X-Received:MIME-Version:References:
-	 In-Reply-To:From:Date:X-Gmail-Original-Message-ID:X-Gm-Features:
-	 Message-ID:Subject:To:Cc:Content-Type;
-	bh=5y0FbaF2YCk/BaY6II8Xmg/yMqVJ9gKVeaXT/rHnTY4=;
-	b=1UJZBHtl73LhB0C2/AMbcw1CnsD3LAKUUF7MtfHWEGH0FJKoZ0aFvpdstbpJ9jqkHRCr
-	 9jqLEIwCQ4xKexy0UVn8thgc1yIEi/q/TPu/aNV9rcGr4XdVnpOVb6RPJR9KrpQRN0g1f
-	 xxwe9eXrEAMlH6mTr79lTB6tgZJ+ea7Vqg73a8+dJr8JeHPmNfeVX+oyyrDIrMhWaH/gA
-	 ICaxCvqdsyqdH0ohNxspeqV7OkicAo+0r+e5arT7jtgt+wAgl0V+cUvB3w2gknF5tkZfJ
-	 9xdcyAirLYX/nvQckQeNckmyPo762Pq+9UyiRXa/NXh/Mmk7G2Tl1k3ssTPLSrifE2g==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792700750;
+	h=Received:DKIM-Signature:Received:X-Forwarded-Encrypted:
+	 X-Gm-Message-State:X-Received:MIME-Version:References:In-Reply-To:
+	 From:Date:X-Gmail-Original-Message-ID:X-Gm-Features:Message-ID:
+	 Subject:To:Cc:Content-Type:Content-Transfer-Encoding;
+	bh=ux1UTnRjOyGqJzOYM5Hv6XVTNeyYxnuotg3pXhf5HHs=;
+	b=waRzbVwjosYBWAXuarYS9W5BBZG/4wCrCKRqRLIPM/HJnYNMnz0HWqaBX/zw9G/pTULt
+	 bajrovIiZGOPQgXjEjYVtR4DDk+QzED5EtKnpuXMKmLab+ZrWesdkAN+dj1aKDyuomthr
+	 juSCikXk+6LPMyqsjJuplVkLHny52QnGD6tfuvTWsJ1tb4pCqn2wLPUDh5AAhBp6Nk/Mj
+	 htI4pngNpcv+V2kdr5N/gVCI3e4wjuwvexLaBn7iizjXjfHJaCFgkPME0PYDduHBmMb6y
+	 IiMBBQfYmLtu8YPcc7XHx93fS7qhWu+lYaWExfibbXTYmq32Uw2o2GCD22Aq6PjECBA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=none header.from=linux-foundation.org;
-	spf=pass smtp.mailfrom=linuxfoundation.org;
-	dkim=pass header.d=linux-foundation.org header.i=@linux-foundation.org header.a=rsa-sha256 header.s=google header.b=Osb13x+5;
-	arc=none smtp.remote-ip=209.85.128.53
-Received: from mail-wm1-f53.google.com (mail-wm1-f53.google.com [209.85.128.53])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=RLMS0l8S;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E41F8606A31F
-	for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 20:07:16 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org E41F8606A31F
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux-foundation.org
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linuxfoundation.org
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D6249606A325
+	for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 20:25:49 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=linux-foundation.org header.i=@linux-foundation.org header.a=rsa-sha256 header.s=google header.b=Osb13x+5
-Received: by mail-wm1-f53.google.com with SMTP id 5b1f17b1804b1-4a20b122af8so1744445e9.0
-        for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 13:07:16 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=linux-foundation.org; s=google; t=1792699635; x=1793304435; darn=vger.kernel.org;
-        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
-         :references:mime-version:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=5y0FbaF2YCk/BaY6II8Xmg/yMqVJ9gKVeaXT/rHnTY4=;
-        b=Osb13x+59CHE2TJjxc8hBoRM5VGQRODqLH8vySd15DcuQBJ5W71roeDUMhbnZdwiwp
-         PNGsGUtaWmDw6R0Srx0NVFHSNWLzlWNCEkcEnOqE+n7wThzS9dVNDvtyReUM1VZz0Moc
-         vdJSA+2D/y4+9om/8ycxv/4BZ9r/R6ef+zn/Q=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792699635; x=1793304435;
-        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
-         :references:mime-version:x-gm-gg:x-gm-message-state:from:to:cc
-         :subject:date:message-id:reply-to:content-type;
-        bh=5y0FbaF2YCk/BaY6II8Xmg/yMqVJ9gKVeaXT/rHnTY4=;
-        b=FADwmWD4gqSO6stnbMvM5VhaFzleN0NirwQtQ7ye0wIqqIUo0RZ5c2C/NVm9bZbK7q
-         VtW6PqnyoSRnYOXcWajwOWGxRBnxeDCsoiXIO3XdSTDTCvGS6l9uMKr33iEP6ZWRJ4YR
-         WkyPY8Vza6FyW43lORyZ2RCItL1wcqv6WVfo6MtjwnlKLhd3cMTOdvErXKRyhRHQ7Rui
-         umKoohGn3Vz67cEPe4CnmakbFw0+XEqWtz4zTtf0d6F+dP67VgnjkthS7hXqM0K1jrk4
-         v/FjVj3VirDbJpl3BzSKTnEvJh9+5errATLTWs1gIIgEvZ2nBBcblijF599+L5SE1uh/
-         HFGg==
-X-Forwarded-Encrypted: i=1; AKwUvBzq4G0q3rvE54589axIYmz5zWhOO+6SFct6L8N5724yLdJ/dp6QOE4kHNquzex4BSMxzZpmuIZVRw==@vger.kernel.org
-X-Gm-Message-State: AFq9FYKxE+hUI1CbvTLSuXcwJfsE9szDTMv+1Se7/nDHneDQTfWouLlE
-	Jv59VHv5I572sunCD+itTyVayjDaRkkSMucOK/OQtQPEcXoxFJMsSI6IDqBPQvywuliBjGKP9ys
-	nby6FR3E=
-X-Gm-Gg: AYBFou0uaxVGQyd5Tzp9lXuI1WE2N3AxPcZ++fe8Q2sJAcngAuwGlFYjFEtzGMdTYXn
-	DDisd5mS6KrQfSmwSH4bkA/ACa8+fmVeZwYP9pSYQ6/PO1/W4tfqOijYO7YHQoNZ5StgY29WTdS
-	aaGhkOm9B4BU+djzVDC1VguedK+mqChoy49P8GRcHCZM4BpGstTNP1+IfeKBscrtbMTgINxXLnR
-	e2OUcOqyOPBqFNjUFif9pIGqYDC+AkJeVOP0wODzXfayGVGRGKS+oK2TKQ6BLhfYm0StykZX6m4
-	HoQ7VZWek7CKp10flQhA0Fp7pKppc3YElSHIaZOGVByA0YyobAIJUHyGy3fxLwNEuUWIviSvnPK
-	GmAXZgVo2d147aemE0Yh1IbA8vgDgrOAW4/WxIRVMnpuAUIsZCcH8+z+h+fjP/9xmhUq9XlQJos
-	nWzvyxyjImM0d7BIT8cRSWVnHc39peoII8V6512ZvoMMLEuFsC7xQ4tE6t6W4PgZOvMAWBUrEO4
-	6savHyrTEPVx25m7A/ySVBvFab+py5qqdD5DTbKkBGMUgYDUQK0m3MxadkEet7G8tOIHeAaS6TJ
-	CXFtiUuRrspTRh7Wb7vz81wE5jkNRtA=
-X-Received: by 2002:a05:600c:3507:b0:4a0:1b14:e283 with SMTP id 5b1f17b1804b1-4a211c787eemr2703645e9.1.1792699635299;
-        Thu, 22 Oct 2026 13:07:15 -0700 (PDT)
-Received: from mail-ed1-f52.google.com (mail-ed1-f52.google.com. [209.85.208.52])
-        by smtp.gmail.com with ESMTPSA id 4fb4d7f45d1cf-6b432c96badsm167861a12.14.2026.10.22.13.07.12
-        for <keyrings@vger.kernel.org>
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Thu, 22 Oct 2026 13:07:13 -0700 (PDT)
-Received: by mail-ed1-f52.google.com with SMTP id 4fb4d7f45d1cf-6afafc89b48so168967a12.2
-        for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 13:07:12 -0700 (PDT)
-X-Forwarded-Encrypted: i=1; AKwUvBzvt2jH5u9WBrvh4ha0XFq+LGUtABKb79Y9Pb6+q3icZOdGAAhXHVveXRedDSm2Sr2B6j5UJ7qv+w==@vger.kernel.org
-X-Received: by 2002:a17:906:dc93:b0:c42:a326:78a9 with SMTP id
- a640c23a62f3a-c46a940fb59mr32870866b.42.1792699632620; Thu, 22 Oct 2026
- 13:07:12 -0700 (PDT)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=RLMS0l8S
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id A68F11F031E6
+	for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 20:25:49 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1792700749;
+	bh=ux1UTnRjOyGqJzOYM5Hv6XVTNeyYxnuotg3pXhf5HHs=;
+	h=References:In-Reply-To:From:Date:Subject:To:Cc;
+	b=RLMS0l8SrlVSlB+xSKm6w6FYJ1BVIP2OUvpbyz9MikbM20bH8i83IdqYLHnzS4qj9
+	 vo6B8FxfAsRueY9WSJTqmuWYCQSQkIN60PxS1EOjtlPkF8g30tel+vLlAPnohHXmRv
+	 /Vbi1+UaOcDgUZ0i0fi6x/na8nusRwiADaFX9FXU32HXstuRnUFimv6wlTGqn34WfD
+	 QMfTzkYILeeei8YsWI50/UKTnIXVBnU/aSI39gffsIi6/ScqbVu8/ubBXYIWQU9gCd
+	 GSwDnvTkIbRy4NYjw2TbXlJoApzGgMFRPZgGDgCAPArwrn6dScfyWS8TCD77ysDeE5
+	 19uIGvmDPyrRA==
+Received: by mail-dl1-f53.google.com with SMTP id a92af1059eb24-156cbe59622so166625c88.0
+        for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 13:25:49 -0700 (PDT)
+X-Forwarded-Encrypted: i=1; AKwUvBzefk26VQnuUv16lQOcDYA4uNmveHCTURF1RIrpkwd9sq6h/tPNs0c1+YTQSHFKWBsDEEg9tLGgvw==@vger.kernel.org
+X-Gm-Message-State: AFq9FYJlYlhMr28CROf8ArV0kPaSZkn0nk2qUwcPgBghorWf2+oyM2pY
+	yPi//iRRKaVrX7qB/5vIErrsnO5Fx5pF3kSrO0hvE/gMKZzJt4Hlx8XGhclZghQ8lVvZvk0kwSq
+	e/kw0U7x4nKIqQYHwTY7sWqf6VPkTYWQ=
+X-Received: by 2002:a05:7022:1707:b0:166:9e0d:3b56 with SMTP id
+ a92af1059eb24-1959a382fb4mr475195c88.38.1792700748990; Thu, 22 Oct 2026
+ 13:25:48 -0700 (PDT)
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -93,32 +59,93 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-References: <atjKs7PTN8CgndJg@kernel.org>
-In-Reply-To: <atjKs7PTN8CgndJg@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 22 Oct 2026 10:06:56 -1000
-X-Gmail-Original-Message-ID: <CAHk-=wjouh66VCZjhUedb+wkRTWB0vsoDjU3N0huGsiYXQ5S0A@mail.gmail.com>
-X-Gm-Features: AclHuK8nlFozT4sO2BQre7T2aT1PPMpnD_lYchNmr_bb0lScPlgwfBadd1Pr8mY
-Message-ID: <CAHk-=wjouh66VCZjhUedb+wkRTWB0vsoDjU3N0huGsiYXQ5S0A@mail.gmail.com>
-Subject: Re: [GIT PULL] KEYS: changes for v7.4-rc1
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, 
-	"David S. Miller" <davem@davemloft.net>, 
-	James Bottomley <James.Bottomley@hansenpartnership.com>, Mimi Zohar <zohar@linux.ibm.com>, 
-	Eric Biggers <ebiggers@kernel.org>, Kyle Zeng <kylebot@openai.com>, keyrings@vger.kernel.org, 
-	linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
+References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
+ <20261019-b4-ipe-keyring-rfc-v1-1-156f0b93e843@nvidia.com>
+ <702ade20-a2f3-4919-97e6-c72faa89399a@kernel.org> <DM4PR12MB61369D00ED2FCFEDAE0E4597DE652@DM4PR12MB6136.namprd12.prod.outlook.com>
+In-Reply-To: <DM4PR12MB61369D00ED2FCFEDAE0E4597DE652@DM4PR12MB6136.namprd12.prod.outlook.com>
+From: Fan Wu <wufan@kernel.org>
+Date: Thu, 22 Oct 2026 13:25:36 -0700
+X-Gmail-Original-Message-ID: <CAKtyLkF3mVu8AXWybMGr3+=0F4OMndcV=M-2m-PGz5afE4H1cw@mail.gmail.com>
+X-Gm-Features: AclHuK-w0c1onI8im_hxrE8Vj8Tb7-7Hy-SNC8hLk4Qv6iomWwee3Oh6ZTdAJrg
+Message-ID: <CAKtyLkF3mVu8AXWybMGr3+=0F4OMndcV=M-2m-PGz5afE4H1cw@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/4] ipe: add the .ipe policy keyring
+To: Manuel Huber <manuelh@nvidia.com>
+Cc: Fan Wu <wufan@kernel.org>, David Howells <dhowells@redhat.com>, 
+	Jarkko Sakkinen <jarkko@kernel.org>, Christian Brauner <brauner@kernel.org>, 
+	Andrew Halaney <andrew@amutable.com>, Paul Moore <paul@paul-moore.com>, 
+	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Jonathan Corbet <corbet@lwn.net>, 
+	Shuah Khan <skhan@linuxfoundation.org>, Shuah Khan <shuah@kernel.org>, 
+	Randy Dunlap <rdunlap@infradead.org>, Alexei Starovoitov <ast@kernel.org>, 
+	Daniel Borkmann <daniel@iogearbox.net>, 
+	"linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, 
+	"keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, 
+	"linux-kselftest@vger.kernel.org" <linux-kselftest@vger.kernel.org>, 
+	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "bpf@vger.kernel.org" <bpf@vger.kernel.org>, 
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 21 Oct 2026 at 04:22, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+On Thu, Oct 22, 2026 at 11:02=E2=80=AFAM Manuel Huber <manuelh@nvidia.com> =
+wrote:
 >
-> A patch that Kyle Zeng submitted addresses a critical bug [..]
+> On Mon, Oct 19, 2026 at 04:15:57PM -0700, Fan Wu wrote:
+> > You might need to explain why the existing keyrings, i.e.
+> > builtin/secondary/platform cannot be used in your scenario. Like the
+> > firmware is not trusted?
+>
+> As touched upon in [1], the scenario uses an ephemeral VM whose
+> IEP policy would be assembled after boot. There is a mix of explicitly
+> trusted dm-verity root hashes and possibly signed dm-verity layers
+> which can vary per VM, so the final IPE policy would not necessarily
+> be known ahead of time.
+>
+> This specific scenario is Kata Containers on Kubernetes. Each
+> Kubernetes pod runs in a headless Kata VM with a static dm-verity
+> protected rootfs, while its container image layers are delivered
+> dynamically as dm-verity protected block devices. The kata-agent acts
+> as trusted bootstrap userspace and would author the IPE policy for that
+> particular guest before starting its workload containers.
+>
+> The firmware is trusted in this scenario. A public policy-signing
+> certificate could be compiled into the builtin keyring or provisioned
+> through the platform or secondary keyrings. Because the policy would be
+> authored inside the guest, however, the corresponding private key would
+> also have to be shipped as a static artifact in the guest rootfs and
+> shared by every guest using that build.
+>
+> Instead, the kata-agent would generate an ephemeral, per-guest
+> policy-signing key pair, provision its public certificate, sign the
+> policy, destroy the private key, and restrict the keyring before
+> allowing untrusted code to execute.
+>
+> A dedicated .ipe keyring thus provides a purpose-specific runtime
+> provisioning path for this scenario. Once the certificate has been
+> added, the keyring can be restricted against further enrollment.
+>
+> I envision other scenarios with similar characteristics may benefit from
+> a dedicated .ipe keyring as well.
+>
+> I could elaborate more on this, e.g., on the how users' deployed
+> container images translate to dm-verity protected image layers etc.
+> (the erofs snapshotter is used and there is no filesystem sharing
+> between host and guest, image layer transport is realized via block
+> device attachment), but I am trying to keep this response brief. Some
+> more breadcrumbs on the combination of containerd, IPE, Kata can be
+> found in [2] and [3].
+>
+> [1] https://lore.kernel.org/r/SJ1PR12MB61246B0BF58BC2B6F0A79D30DE9F2@SJ1P=
+R12MB6124.namprd12.prod.outlook.com
+> [2] https://github.com/containerd/containerd/issues/12081
+> [3] https://github.com/kata-containers/kata-containers/issues/10943
 
-Note that breaking local KASLR is not a "critical bug". We just call
-it "Thursday".
+Thanks for the explanation. This clarifies a lot. Please include this
+context in the commit message and doc for v2.
 
-Breaking KASRL locally is trivial using just all the normal local CPU
-timing attacks.
+Also, one thing I missed earlier: before the policy verification call,
+please also check:
 
-KASLR is there to make remote attacks harder.
+ipe_keyring->restrict_link->check =3D=3D restrict_link_reject
 
-               Linus
+so we make sure the restriction function is the right one.
+
+Fan
