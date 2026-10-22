@@ -1,61 +1,72 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792639090;
-	b=zzOm31yvw18cUQu/ZD/I7RmXunz41fuNJA9fu2pZeEV2+Vc3Cw5YhHd1/Pd56orm8RW5
-	 pKB/6j8jz6xMFnG8izTF9F/aAfXgS898QFxxOIYVoV4fX5DHnUqG9mhJowgBigsFfT6j8
-	 TGsa9yRQar+zeC+hnk2f7DXdSjzyIx63b1+3vjXGPqEFSKoJHgs94KytFzpHUEfOqmKaS
-	 EjpoYqLOFOQqf5N5XURxGNi23w6tbHe8+NuslA4l8IFX03trC1ObsgkqW2zfUeG3Er2l2
-	 bcYgNPVbWo/brll4l0El1s2MVItUKbWXSPoCWrWuvkqicdDyUz6tjD9oQiB0udGXyhQ==
+	t=1792664343;
+	b=jxaY4NZt4a7lD1LJixt3SipbaIWuomiItm9XUzIvMyt1FxqII1Dbv8ga8YD7r8K7+IlP
+	 33nWJqRSIfPLL05FhU0eLkweLdsCE3pK/14euWGXdTOlI9afAbKEeTAyGK9/dswItBW+u
+	 negxNIdav4PNXq2vMXQZDeyx26aqtN+Srl/+pwcPr41MCbKlwlAmnMYAlP7Z42DBkWGE4
+	 Ky+HOn3onD9EFoDZxiziHtuwvFULdP1ZzJ6EGjgxqUqvkJCt7doIC7aTJCqZZTDTLbZZ6
+	 GUzcwD8sBX/v58QuKt8Q23jIi/7A8+b9Uv+k3qUF4BZrx6PCyLbf3f5pueRrIxSpfeQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792639090;
-	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
-	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=pzfC2TRKX43ni705/BEtqpWMIkNynbXTbNKUDVSHj4g=;
-	b=cHLPvFCAP14TdpEDbod6PC/mpgD47xIwP2vXUGsao1vlA63EGebU3MpeA/YsgdYz235R
-	 IhopBOHqF7idDql/zHClGGDaQI1CA6eFgrfcIejBqJw+qkJ7T8r/GkqlI010fsROUyRIN
-	 sByaj2n9Gx5VCe94/9835zZU/vfJEg0gPsbm1mTm2Y3dbpRFt4gGPUqlBbTPLGNBbILxc
-	 Bss0IEIoFZPeKtgt/T+ZwKQ5lRe2nLQJUY+l1C2I/C7Wg8CCG1cNJ9dHzLNmW89CoJtB/
-	 HCcDy+WAWyI7O0zCJZd2hwWJTwJenaGHYihzyeqswnBnhO7iWBu3gbtUKAnn+D62OsA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792664343;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 X-Developer-Signature:X-Developer-Key:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To;
+	bh=Z7CjTsmoRi+0w+ZhFFRXXTz8JLrTIF6dRBCGuBaLV2M=;
+	b=bmZ+YAlzORec4yf5UFA16az2GRrc8yhnlc1OiFdQjD0uiA+8TTcej10zYjNS2rpNO/SM
+	 AtfGAq/fsa3t34GBNf5w1CRzYs/TMtlQt+npsSeD2mXlG/0I9gHvQ9MkLi8IvS0K0u6UV
+	 csnh+34Zg9djjfGsRS2IJfEFLqU5dIGzT6QK9/2k53N3icbu8YG1S+13I5ebP6UUqg//D
+	 7kkzmWoPiM04uGIlZTcqNwKoMfNG/dbiAVMgSbVzol0v59OY3/lUiuyRYDxzb2YKDBENO
+	 Z5/3QBpViK+n0buqX5mPR3faaQ/YfyZCHFp5e9WW/devSyJuZ4cPeWSOAYNAiq+3WPw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EBTbdg+A;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PJ8QgVKJ;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9155F606A339;
-	Thu, 22 Oct 2026 03:18:10 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A0463606A319;
+	Thu, 22 Oct 2026 10:19:03 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EBTbdg+A
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 99C391F000C1;
-	Thu, 22 Oct 2026 03:18:09 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PJ8QgVKJ
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id DAD461F000C6;
+	Thu, 22 Oct 2026 10:18:58 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792639090;
-	bh=pzfC2TRKX43ni705/BEtqpWMIkNynbXTbNKUDVSHj4g=;
-	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=EBTbdg+ASZGDBFp7uKscAcUGNmTJ9u+g0xNIuHTl+3ZgDhNZxKg9qmpZVaM742fRL
-	 zo1ah+13vQIX8x/FB8AmWFgqxPHhm1B6umoCWh88QQzCgS62Xg6OfAMshgkwCJRoCF
-	 LI2NX/BZdVTJVKWTVHJEF3+qWsHOfW7OPAg06bj21WJk86vk7mJ5TKA5JCPa0oKkns
-	 drC2jBkhuoZLsNTbiEQvP/mzjjO5BEHSdKb5yBSHgiDU/IrggCEzmfrIzMPa//pveZ
-	 P8skIS1f8RuJSrCHkhff6WXQwar0bhzpi8epXWmhg1Y8jszjfbHCJ14Ocl6RkmtIZW
-	 iXuSFi8m4xJnw==
-Message-ID: <sashiko-outbox-180941@kernel.org>
-From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 40/41] nfsd, nfs: carry UUID and GUID owners as
- their text form
-Reply-To: sashiko-reviews@lists.linux.dev
-To: "Jan Koester" <jan.koester@tuxist.de>, "Christian Brauner" <brauner@kernel.org>, "Alexander
- Viro" <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Jan Kara" <jack@suse.cz>, =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.edu>, "Paul
- Moore" <paul@paul-moore.com>, "Arnd Bergmann" <arnd@arndb.de>, linux-security-module@vger.kernel.org, linux-ext4@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org, "Chuck
- Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>, "Anna
- Schumaker" <anna@kernel.org>
-In-Reply-To: <f444dffc8e6bf98bf44c02456adc2de40e4ecd95.1792552161.git.jan.koester@tuxist.de>
-References: <cover.1792552161.git.jan.koester@tuxist.de>
- <f444dffc8e6bf98bf44c02456adc2de40e4ecd95.1792552161.git.jan.koester@tuxist.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date: Thu, 22 Oct 2026 03:18:09 +0000
+	s=k20260515; t=1792664343;
+	bh=Z7CjTsmoRi+0w+ZhFFRXXTz8JLrTIF6dRBCGuBaLV2M=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=PJ8QgVKJZLMn1J0ApZiCJ5Tz/bA/4eJpuTqvjc+kfrI3kSPJCRNLwNBWFUD61FXT4
+	 rKvp/VXRfO6gQk5hL+Efc5LHGOFWXM7RSd/nq7CWkynoSKrcIUbY15rNQX/C/dSNTG
+	 LTNlXlnL9E505zYjLJKrr2MU3iVebUKmoNdH+zxcojkrmBWjNCpAx9FK2wUGinCowb
+	 qZzMpJgec4hhSHXurkaKqhQFauAvHacXh+4HkdQ921rnQUsck2wCOQ60yN7y/bOkyu
+	 Zct/BNdh5sNExojRmzQO8PYFpCAwQUElk6cla29I5RzU11SzU8pdo6ExOgTRDkABj2
+	 N+zk51yg79kPQ==
+Date: Thu, 22 Oct 2026 12:18:56 +0200
+From: Christian Brauner <brauner@kernel.org>
+To: Paul Moore <paul@paul-moore.com>
+Cc: Fan Wu <wufan@kernel.org>, Manuel Huber <manuelh@nvidia.com>, 
+	David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, 
+	Andrew Halaney <andrew@amutable.com>, James Morris <jmorris@namei.org>, 
+	"Serge E. Hallyn" <serge@hallyn.com>, Jonathan Corbet <corbet@lwn.net>, 
+	Shuah Khan <skhan@linuxfoundation.org>, Shuah Khan <shuah@kernel.org>, 
+	Randy Dunlap <rdunlap@infradead.org>, Alexei Starovoitov <ast@kernel.org>, 
+	Daniel Borkmann <daniel@iogearbox.net>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, 
+	linux-kselftest@vger.kernel.org, linux-doc@vger.kernel.org, bpf@vger.kernel.org, 
+	linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 1/4] ipe: add the .ipe policy keyring
+Message-ID: <20261022-hausbank-dozent-hurtig-9443f3777475@brauner>
+X-Developer-Signature: v=1; a=openpgp-sha256; l=6420; i=brauner@kernel.org;
+ h=from:subject:message-id; bh=Gz2q9noNMRTVpIenqHmgVL/IPY7t7BAHJ6uIbpyczwI=;
+ b=owGbwMvMwCU28Zj0gdSKO4sYT6slMWTdfKDtd2F1yYYNN6SUVj4LiYsPtuiujX+RO2cLQ/mZA
+ wZcWUvKOkpZGMS4GGTFFFkc2k3C5ZbzVGw2ytSAmcPKBDKEgYtTACZicIvhfyxLpY/ue92q7Zvk
+ LlXfSci/eEvy5FS/htmTfqyQTrv29Qsjw+ac534R/dOCGdzCbqUW57/kDlVpdOyY9e3chPjjajr
+ tnAA=
+X-Developer-Key: i=brauner@kernel.org; a=openpgp;
+ fpr=4880B8C9BD0E5106FC070F4F7B3C391EFEA93624
+References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
+ <20261019-b4-ipe-keyring-rfc-v1-1-156f0b93e843@nvidia.com>
+ <702ade20-a2f3-4919-97e6-c72faa89399a@kernel.org>
+ <20261021-groll-donnerstag-erfuhren-ce34a0ed4e97@brauner>
+ <CAHC9VhTHUU0h9k74CMT6wYhMwyY3YhbSSFwJoDTvoFRyTFVZwg@mail.gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,246 +75,115 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAHC9VhTHUU0h9k74CMT6wYhMwyY3YhbSSFwJoDTvoFRyTFVZwg@mail.gmail.com>
 
-Thank you for your contribution! Sashiko AI review found 3 potential issue(=
-s) to consider:
-- [High] nfsd: unmapped -EOVERFLOW in nfserrno() on UUID/GUID setattr and A=
-CLs
-- [High] nfs: silent overflowuid munging on UUID chown when idmap user_ns i=
-s non-init
-- [Medium] nfs: rejected UUID/GUID chown clears NFS_CAP_UIDGID_NOMAP for en=
-tire mount
---
+On Wed, Oct 21, 2026 at 12:51:35PM -0400, Paul Moore wrote:
+> Just a quick point of clarification, you're using the pattern you
+> described for other keyrings, not necessarily a dedicated IPE keyring
+> described in this patchset, correct?
 
-commit 651e121e99cc1fc974fd455542b8ff4a2ecaa7ac
-Author: Jan Koester <jan.koester@tuxist.de>
+Correct. The .dm-verity keyring and the .bpf keyring both work like
+this: sealed empty by default, opened for a single boot via a kernel
+parameter, and only ever consulted once the keyring is non-empty and
+restricted. Manuel modeled the .ipe keyring on them after talking to
+Fan.
 
-nfsd, nfs: carry UUID and GUID owners as their text form
+> I know you/Lennart/systemd made the decision to implement your own
+> version of IPE instead of working with Fan to augment the existing
+> implementation to meet your needs, so I'm not sure if you've also done
+> something with an out-of-tree patch, BPF, etc. to implement your own
+> keyring.
 
-This commit encodes and decodes non-legacy UUID and GUID user and group
-IDs in their text form for NFSv4 owners and ACL principals on both the
-client and server. It also sets SB_I_UID_R on NFSv4 client superblocks
-so userspace can set UUID and GUID owners via chown_r().
+There is no out-of-tree anything and there is no keyring of our own.
 
-> diff --git a/fs/nfs/nfs4idmap.c b/fs/nfs/nfs4idmap.c
-> index bc397110d977f..0ca50bf8f3fc6 100644
-> --- a/fs/nfs/nfs4idmap.c
-> +++ b/fs/nfs/nfs4idmap.c
+RestrictFileSystemAccess= is a BPF LSM program that PID 1 loads. It
+denies exec, executable mappings and W^X transitions for anything that
+isn't on a signed dm-verity device or the initramfs. That's it. It
+uses the hooks BPF LSM exposes.
 
-[ ... ]
+> As far as I'm concerned the decision of how IPE uses an IPE keyring is
+> up to Fan.
 
-> @@ -769,6 +812,11 @@ int nfs_map_uid_to_name(const struct nfs_server *ser=
-ver, kuid_t uid, char *buf,
->  	int ret =3D -EINVAL;
->  	__u32 id;
-> =20
-> +	if (!uid_is_legacy(uid) && kuid_has_mapping(idmap_userns(idmap), uid)) {
-> +		char str[KID_STR_LEN];
-> +
-> +		return nfs_id_r_to_string(kuid_str(uid, str), buf, buflen);
-> +	}
->  	id =3D from_kuid_munged(idmap_userns(idmap), uid);
->  	if (!(server->caps & NFS_CAP_UIDGID_NOMAP))
->  		ret =3D nfs_idmap_lookup_name(id, "user", buf, buflen, idmap);
-> @@ -783,6 +831,11 @@ int nfs_map_gid_to_group(const struct nfs_server *se=
-rver, kgid_t gid, char *buf,
->  	int ret =3D -EINVAL;
->  	__u32 id;
-> =20
-> +	if (!gid_is_legacy(gid) && kgid_has_mapping(idmap_userns(idmap), gid)) {
-> +		char str[KID_STR_LEN];
-> +
-> +		return nfs_id_r_to_string(kgid_str(gid, str), buf, buflen);
-> +	}
->  	id =3D from_kgid_munged(idmap_userns(idmap), gid);
->  	if (!(server->caps & NFS_CAP_UIDGID_NOMAP))
->  		ret =3D nfs_idmap_lookup_name(id, "group", buf, buflen, idmap);
+This is really not an argument. Manuel posted an RFC that follows two
+existing in-tree keyrings to the letter. Fan asked to deviate from them.
+I explained what that costs.
 
-[Severity: High]
-What happens here when an NFSv4 superblock has SB_I_UID_R set by
-nfs_fill_super(), but idmap_userns(idmap) is not init_user_ns?
+> Of course, fitting in with existing norms is important,
+> but if it causes IPE or existing IPE uses a lot of pain, that can a
+> good reason to diverge from those solutions.
 
-Because nfs4_fs_type sets FS_USERNS_DELEGATABLE in fs/nfs/fs_context.c,
-an nfs4 context created via fsopen() in a non-initial user namespace
-sets idmap->user_ns to that namespace in nfs_idmap_new() (and
-nfs_match_client() in fs/nfs/client.c can also share that cl_idmap with
-a subsequent mount in init_user_ns).
+Which pain? The keyring is dead unless the kernel command line opens
+it, and it is only consulted after the system keyrings have already
+rejected the signature. Existing IPE users see no change whatsoever.
 
-When a process in init_user_ns calls chown_r() with a UUID or GUID on
-that mount, notify_change() in fs/attr.c checks vfsuid_has_fsmapping()
-(where from_vfsuid() in fs/mnt_idmapping.c returns AS_KUIDT(vfsuid)
-immediately for nop_mnt_idmap without checking fs_userns) and
-sb_can_own_kuid(), then calls nfs_setattr() -> nfs4_proc_setattr() ->
-encode_attrs().
+Fan's reasons were that it "looks kind of awkward" and that fs-verity
+does it differently. I haven't yet heard a single technical reason to
+deviate. The properties we get and the other model loses are:
 
-In nfs_map_uid_to_name() and nfs_map_gid_to_group(), kuid_has_mapping()
-and kgid_has_mapping() return false for non-initial user namespaces, so
-execution falls through to from_kuid_munged() and from_kgid_munged(),
-silently sending overflowuid or overflowgid in the SETATTR RPC instead
-of the requested UUID/GUID.
+(1) Fail closed by default. Without the boot parameter the keyring is
+    sealed empty for the whole boot and can never be provisioned. With
+    the fs-verity model the keyring is open on every kernel that has
+    it and stays open until someone remembers to restrict it. If
+    nobody does, root in the "untrusted" phase enrolls its own cert
+    and loads its own policy.
 
-If overflowuid or overflowgid is not mapped in idmap->user_ns,
-decode_attr_owner() and decode_attr_group() in fs/nfs/nfs4xdr.c also
-fail to map the post-op GETATTR owner, so nfs_setattr_update_inode() in
-fs/nfs/inode.c caches the requested UUID/GUID in inode->i_uid or
-inode->i_gid while the file on the server is owned by overflowuid or
-overflowgid:
+(2) The opt-in is per boot and lives on the kernel command line, i.e.
+    in the measured/signed boot chain. A Kconfig knob can't express
+    "this boot", only "this kernel", and a distro kernel with the
+    option on is simply open everywhere.
 
-fs/nfs/inode.c:nfs_setattr_update_inode() {
-    ...
-		if ((attr->ia_valid & ATTR_UID) !=3D 0)
-			inode->i_uid =3D attr->ia_uid;
-		if ((attr->ia_valid & ATTR_GID) !=3D 0)
-			inode->i_gid =3D attr->ia_gid;
-    ...
-}
+(3) Activation is tied to restriction. The keyring is only consulted
+    once it can't be extended anymore, so there is never a window
+    where a half-provisioned keyring is a trust anchor. With the
+    fs-verity model it is a trust anchor from the first key on and
+    extensible until sealed.
 
-Should nfs_fill_super() only set SB_I_UID_R when idmap_userns(idmap) is
-init_user_ns, or should nfs_setattr() and nfs_map_uid_to_name() reject
-unmapped non-legacy IDs rather than munging them to overflowuid?
+(4) That's what gives Manuel's Kata case the throwaway key: generate
+    an ephemeral key pair, enroll the cert, restrict, sign the policy,
+    load it, destroy the private key. After that nothing can be added
+    to the keyring and nothing new can be signed. With the fs-verity
+    model the same sequence leaves the keyring extensible unless the
+    agent also seals, and the kernel doesn't care whether it did.
 
-> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-> index cb19f1540d984..2d292e44186e7 100644
-> --- a/fs/nfs/super.c
-> +++ b/fs/nfs/super.c
-> @@ -1100,6 +1100,8 @@ static void nfs_fill_super(struct super_block *sb, =
-struct nfs_fs_context *ctx)
->  		break;
->  	case 4:
->  		sb->s_iflags |=3D SB_I_NOUMASK;
-> +		/* owners are strings: UUIDs and GUIDs in their text form */
-> +		sb->s_iflags |=3D SB_I_UID_R;
->  		sb->s_time_gran =3D 1;
->  		sb->s_time_min =3D S64_MIN;
->  		sb->s_time_max =3D S64_MAX;
+Note that IPE's own CI already does padd followed by restrict_keyring
+on .fs-verity in the initrd (anchor-fsverity.service). So IPE relies
+on exactly this sequence today. The pattern just has the kernel
+enforce it instead of hoping that userspace gets it right.
 
-[Severity: Medium]
-Can setting SB_I_UID_R unconditionally on all NFSv4 mounts cause a
-rejected UUID or GUID chown_r() to disable numeric UID/GID support for
-the entire mount?
+So what does IPE gain from a keyring that is open by default and
+consulted before it's sealed?
 
-When a user calls chown_r() with a UUID or GUID on a sec=3Dsys mount where
-NFS_CAP_UIDGID_NOMAP is set, notify_change() delegates permission checks
-to the server and calls nfs_setattr() -> nfs4_proc_setattr() ->
-nfs4_do_setattr().
+> These days everyone is
+> going to implement whatever they please, but if you have
+> needs/requirements about how you want things to behave in LSM land, I
+> think it would be helpful to engage with us before you make a decision
+> and then start pleading with the LSM folks to adopt your approach.
 
-During XDR encoding, nfs_map_uid_to_name() and nfs_map_gid_to_group()
-encode the UUID or GUID as its text string even when
-NFS_CAP_UIDGID_NOMAP is set. If the server does not support UUID/GUID
-owners and returns NFS4ERR_BADOWNER (which nfsd4_decode_fattr4() in
-fs/nfsd/nfs4xdr.c returns during XDR decode before nfsd4_setattr()
-checks file ownership or CAP_CHOWN), nfs4_do_setattr() passes
--NFS4ERR_BADOWNER to nfs4_do_handle_exception() in fs/nfs/nfs4proc.c:
+I'm not pleading with anyone. And the engagement you're asking for
+happened. You just didn't engage:
 
-		case -NFS4ERR_BADOWNER:
-			/* The following works around a Linux server bug! */
-		case -NFS4ERR_BADNAME:
-			if (server->caps & NFS_CAP_UIDGID_NOMAP) {
-				server->caps &=3D ~NFS_CAP_UIDGID_NOMAP;
-				exception->retry =3D 1;
+- You read Daniel's bpf keyring series yourself in August, Cc'd the
+  keyring folks "for obvious reasons", and had nothing to say about
+  the model. The cover letter spelled out in detail that systemd would
+  provision that keyring the same way as .dm-verity.
 
-This clears NFS_CAP_UIDGID_NOMAP permanently on server->caps for the
-mount and retries with the identical UUID/GUID string, forcing all
-subsequent classic UID/GID setattr calls through idmapd (similar to the
-regression fixed for ACLs in commit f8849e206ef52b).
+- On 2026-10-11 Manuel announced in the KEY_SPEC thread that he'd
+  propose a .ipe keyring "modeled after the .dm-verity keyring" after
+  "initial discussions with Fan Wu". You and linux-security-module
+  were on Cc.
 
-Should nfs4_do_setattr() avoid clearing NFS_CAP_UIDGID_NOMAP when the
-setattr request carried a non-legacy kuid_t or kgid_t?
+As for "everyone is going to implement whatever they please"... In May
+you told the bpf folks that "we just need to be willing to accept that
+we have different needs and show a willingness to accept different
+solutions as a result" [1]. I don't see why that shouldn't apply to
+systemd using BPF LSM.
 
-> diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-> index e9faf8b78f74a..8c3e908b323ed 100644
-> --- a/fs/nfsd/nfs4idmap.c
-> +++ b/fs/nfsd/nfs4idmap.c
+Frankly, I couldn't care less whether IPE chooses to model the keyring
+the same way. It just means it can't give equivalent security
+guarantees. I'm confused why you have to speak for Fu and why you're so
+defensive about this.
 
-[ ... ]
-
-> @@ -672,6 +699,16 @@ __be32 nfsd_map_name_to_uid(struct svc_rqst *rqstp, =
-const char *name,
->  	if (name =3D=3D NULL || namelen =3D=3D 0)
->  		return nfserr_inval;
-> =20
-> +	{
-> +		char buf[KID_STR_LEN];
-> +
-> +		if (id_r_name(name, namelen, buf)) {
-> +			*uid =3D make_kuid_str(nfsd_user_namespace(rqstp), buf);
-> +			if (uid_valid(*uid) && !uid_is_legacy(*uid))
-> +				return nfs_ok;
-> +		}
-> +	}
-> +
->  	status =3D do_name_to_id(rqstp, IDMAP_TYPE_USER, name, namelen, &id);
->  	if (status)
->  		return status;
-> @@ -709,6 +746,16 @@ __be32 nfsd_map_name_to_gid(struct svc_rqst *rqstp, =
-const char *name,
->  	if (name =3D=3D NULL || namelen =3D=3D 0)
->  		return nfserr_inval;
-> =20
-> +	{
-> +		char buf[KID_STR_LEN];
-> +
-> +		if (id_r_name(name, namelen, buf)) {
-> +			*gid =3D make_kgid_str(nfsd_user_namespace(rqstp), buf);
-> +			if (gid_valid(*gid) && !gid_is_legacy(*gid))
-> +				return nfs_ok;
-> +		}
-> +	}
-> +
->  	status =3D do_name_to_id(rqstp, IDMAP_TYPE_GROUP, name, namelen, &id);
->  	if (status)
->  		return status;
-
-[Severity: High]
-Could accepting UUID and GUID strings here trigger a kernel warning in
-nfserrno() when the exported filesystem does not support SB_I_UID_R?
-
-nfsd_map_name_to_uid() and nfsd_map_name_to_gid() decode 36-byte UUID
-and 38-byte GUID strings into non-legacy kuid_t and kgid_t values in
-nfsd4_decode_fattr4(), nfsd4_decode_nfsace4(), and
-nfsd4_decode_posixace4() before the target export's superblock is
-checked.
-
-When nfsd4_setattr(), nfsd4_create(), or do_open_lookup() (via
-nfsd_create_setattr()) then calls nfsd_setattr() in fs/nfsd/vfs.c on an
-exported filesystem without SB_I_UID_R (or on ext4 when
-ext4_make_room_for_id_r() cannot expand an existing inode),
-notify_change() in fs/attr.c:
-
-	if (ia_valid & ATTR_UID &&
-	    !sb_can_own_kuid(inode->i_sb, vfsuid_into_kuid(attr->ia_vfsuid)))
-		return -EOVERFLOW;
-	if (ia_valid & ATTR_GID &&
-	    !sb_can_own_kgid(inode->i_sb, vfsgid_into_kgid(attr->ia_vfsgid)))
-		return -EOVERFLOW;
-
-and set_posix_acl() in fs/posix_acl.c:
-
-		if (posix_acl_has_id_r(acl) &&
-		    !(inode->i_sb->s_iflags & SB_I_UID_R))
-			return -EOVERFLOW;
-
-return -EOVERFLOW.
-
-nfsd_setattr() and nfsd4_setattr() pass that error to nfserrno() in
-fs/nfsd/vfs.c:
-
-	for (i =3D 0; i < ARRAY_SIZE(nfs_errtbl); i++) {
-		if (nfs_errtbl[i].syserr =3D=3D errno)
-			return nfs_errtbl[i].nfserr;
-	}
-	WARN_ONCE(1, "nfsd: non-standard errno: %d\n", errno);
-	return nfserr_io;
-
-Because nfs_errtbl[] has no entry for EOVERFLOW, this triggers
-WARN_ONCE() and returns nfserr_io instead of nfserr_badowner (and for
-OPEN(CREATE) or CREATE with initial UUID/GUID attributes, leaves the
-newly created file or directory on disk after nfsd_create_setattr()
-fails).
-
-Should nfsd check whether the export's superblock supports SB_I_UID_R
-(and map EOVERFLOW to nfserr_badowner in nfsd_setattr() / nfserrno())?
-
---=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/cover.1792552161.gi=
-t.jan.koester@tuxist.de?part=3D40
+[1]: https://lore.kernel.org/all/CAHC9VhQ-cq-nD7uq3kv=SFSJyzO_CEgwzFeMcdbznTmPWJoy6g@mail.gmail.com
