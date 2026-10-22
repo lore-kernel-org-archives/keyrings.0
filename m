@@ -1,48 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792639060;
-	b=IBI8JYeF+j90Emyt/aG5W5a5Ll553oxS7wa2xRAQuhx4deKhYIIlmukMqMPgRV3NWbM6
-	 SN8/9JMRkuVuCYesX3FakWl3+k3hb9Nblc8Gbu0Gdh4QUxBDqPMe0PnnZJnsiD6rzBqcb
-	 dgS6NZRde9hZolsfrlS1N59Cwq7D1lftKxaQQPujVr2IUPrvhuWgER+Z131AreZL9AHpG
-	 TTjJrauRJshMxVv8tmLBtOEDUvQ2F5Ujo8+FSQ5AEG7h7VouNobzRkOThGV9KA2RMPNz+
-	 4i6MG52JnKSqYNvi1DyLtRuotjUYi1RyaeYGTNBo4+k0q5rTliaahyUCcO/zmLZ1sTw==
+	t=1792639067;
+	b=KKHZPuY4XWfgGp0Ee7MMbxyqR67X0mV0H49p/Jg0hc0Dau5sfjcMKe0RoSGr0UjAjADX
+	 Nhz45Dn0Dal3cKaqYnsYuJ1IuR6jjqeGd6YqTy2fSZX2vCBTz7uWIncQXGKI+dJ68JFRs
+	 T0j0+BFK7L6Ugw+o7JUVP8OFywnTnIO4P5MGM71H9VDkWsMWa8GJUOsGM59p5K08p44Dj
+	 XM1Mi46ln0qg1of/LLRePgsu6B6q/GF6vMmUhpjlvnr19upXG2rAjzsA58h0BWs40e0uT
+	 gNJiueRFfje5R9fy5Qu0SmgUwFPOqumDAUWx4/Z/ZyibHzdWxd5oZQh0sLLh1OinvKg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792639060;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792639067;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=XHilr4ZYzm71A6ybW4DdPhmTDkaYPHxPvtQXkP5Bie0=;
-	b=H/rriMtLZ3OGNXrgsiqxxSj7xJo6ag0cp7PNkQps+XZOydTcxSuCRS/ZTLipkmtsFJ61
-	 rj7kDM6wgS0ITFygjDlE5ib6jhPZozAtb0Dr1/t9izFjqOmhIaH9ZaRlyY2KkVNzUabqM
-	 khoXanSO9wLO4hvAup7a3MTZ0QebRZuzZy1RxvUtIG+9fjB0Qtw+GEVtTe8BYV/Wbuxc0
-	 QTVjJzK5rhQ4nq3YM3WBJszc3yhmuXO9ZWzL+3PSBIMgD3OQnOAz7bBvGgGYvogCYamEF
-	 uRP8UiopS8eqK8JJXE+2nE5mK+VaEd0aSL1mUIMPm2Enbxw81ol3RXTgdlTVX2Ht4OQ==
+	bh=9WgeSOC/ETIz6TLo6mYJZMYoYM0OrBvgYoBWcu61W20=;
+	b=LfKQiCFY/8XzrXbeYlr+nYxlNpXscmvTtlU2BbUzNOUZS5TVZVCnJMQFoXVm7TFNiCg0
+	 2YZL0BjUuyy3a9tM+0aNe6+hxpBE/Sk6aYKUPmCsBbdrD4O/qVtUHl2N3yalLk9v53qAh
+	 JalWHf154YSp5+tMvZeX/Hi3uw2zyi3T5b5cL/QDIIFznfPRvXrKtx2sclCX7fyJ52Hku
+	 z+8CQAE6VBkZ/Cf1XdkGGs4HfA1UwJLsXW5l3pFd6styBsbEgcO9m/dgaKemoCaruYSM8
+	 YQN9QBlf3buPHvwY5p1kJbEzId2s94URO/0yLB5L+5Kki315FRuuM2B4I6GcXECs/Dw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gqtoZhEX;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H32lF2OF;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2F68D60A3822;
-	Thu, 22 Oct 2026 03:17:34 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DFB6260A380A;
+	Thu, 22 Oct 2026 03:17:46 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gqtoZhEX
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C9EA31F000C4;
-	Thu, 22 Oct 2026 03:17:33 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H32lF2OF
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id E6C661F000C5;
+	Thu, 22 Oct 2026 03:17:45 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792639054;
-	bh=XHilr4ZYzm71A6ybW4DdPhmTDkaYPHxPvtQXkP5Bie0=;
+	s=k20260515; t=1792639066;
+	bh=9WgeSOC/ETIz6TLo6mYJZMYoYM0OrBvgYoBWcu61W20=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=gqtoZhEX1q7QVBjbcH4o+vlQYaIJ4Bow71CiX2IW9UO29PBKNz+EFcDPCcaH02Sqo
-	 Sdr2XPPrCwwMJYw9wbFpwYEtLwvBE8plemhO9DPV1vOt0Ou8b33DaBCHE+MLdbJ9Rf
-	 rOBc+6s8rbQcXQzJXqv1DoceJKHbqgc8E77ZPz8LWRSL0BtN50JfGolvYXCPrQq7hp
-	 9LbKlnhe9qxUmI6kRuMIUvdRbcgmYEYqfg4XfLRl0Rvz8t8edbFO5G63vzTnFJe6fM
-	 +gkUMMVxPWh4ctEZn4emq1wNE3Z1lUI0kQ5vNz1bDgjj8ARNEhDfAVjpZwyPxeJXME
-	 DVy2ofDy8gSGQ==
-Message-ID: <sashiko-outbox-180911@kernel.org>
+	b=H32lF2OFIzjL5WlFpYm9SAZdeTgDsJIGwKcnHd+zmQJ9dmgr0Na9s7DEK7+0euGme
+	 AaqlinY6cGKCot5KzDETQI844PRtZupLlpQJs/nF8XByJ2t0DzZIfUghTQ+wBjzEPi
+	 ifPJPWpXrJTF3GNlfylqOnIErEtMPURBo9xgEWMZHGbfOHvX2SYlyXrTdElxTBJyDU
+	 aE8dgDXP4GwRPdaXoJRRIt1QOZkb1DyNgoavjYcher4OZys2OyCWTgF2Lz4ruABprZ
+	 SFb2XygsE6pIJYQ46HgBTEHd470t7Rq/hyuedl5RK9PJnLWD6P9U8Avv9uD44o2ICi
+	 6zDLhnxf+QMBA==
+Message-ID: <sashiko-outbox-180922@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 10/41] uidgid: convert between kernel ids and the
- ids of the *_r system calls
+Subject: Re: [RFC PATCH v2 21/41] fs: add chown_r(), lchown_r(), fchown_r()
+ and fchownat_r()
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jan Koester" <jan.koester@tuxist.de>, "Christian Brauner" <brauner@kernel.org>, "Alexander
  Viro" <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>
@@ -50,12 +50,12 @@ Cc: "Jan Kara" <jack@suse.cz>, =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.e
  Moore" <paul@paul-moore.com>, "Arnd Bergmann" <arnd@arndb.de>, linux-security-module@vger.kernel.org, linux-ext4@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>, "Anna
  Schumaker" <anna@kernel.org>
-In-Reply-To: <42176587b0491de4d74cc6c8dde7e035ffd44661.1792552161.git.jan.koester@tuxist.de>
+In-Reply-To: <54f57a7ac52b6b2b130b5a6e911e0998c9630da8.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
- <42176587b0491de4d74cc6c8dde7e035ffd44661.1792552161.git.jan.koester@tuxist.de>
+ <54f57a7ac52b6b2b130b5a6e911e0998c9630da8.1792552161.git.jan.koester@tuxist.de>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 22 Oct 2026 03:17:33 +0000
+Date: Thu, 22 Oct 2026 03:17:45 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,167 +65,251 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 2 potential issue(=
+Thank you for your contribution! Sashiko AI review found 3 potential issue(=
 s) to consider:
-- [Medium] uidgid: get_kuid_r() and get_kgid_r() accept nonzero reserved by=
-tes
-- [Medium] uidgid: get_kuid_r() and get_kgid_r() accept invalid IDs on !CON=
-FIG_MULTIUSER
+- [High] fs: broken unchanged and malformed ID handling in chown_path() for=
+ !MULTIUSER
+- [High] fs: missing s_user_ns mapping check for UUID/GUID in chown_path()
+- [Medium] fs: chown_ids_r() accepts nonzero reserved bytes for UID_R_NONE =
+and -1
 --
 
-commit 991387abfa396e9352b6de3b866ad79653e997ad
+commit c1c7ee0a217eb922615794b81d3b58341468ee6f
 Author: Jan Koester <jan.koester@tuxist.de>
 
-uidgid: convert between kernel ids and the ids of the *_r system calls
+fs: add chown_r(), lchown_r(), fchown_r() and fchownat_r()
 
-This commit adds helper functions to convert between kernel kuid_t/kgid_t
-values and the struct __kernel_uid_r representation used by the *_r system
-calls, along with helpers to copy them to and from userspace and format
-them as strings.
+This commit adds the chown_r(), lchown_r(), fchown_r(), and fchownat_r()
+system calls accepting struct __kernel_uid_r owners and groups, and refacto=
+rs
+the classic chown paths to share lookup and setattr logic via struct
+chown_ids and chown_path().
 
-> diff --git a/kernel/uidgid_r.c b/kernel/uidgid_r.c
-> new file mode 100644
-> index 0000000000000..d71aecddb27e4
-> --- /dev/null
-> +++ b/kernel/uidgid_r.c
-> @@ -0,0 +1,323 @@
-[ ... ]
+> diff --git a/fs/open.c b/fs/open.c
+> index 6b1c14e684a93..26175b5aa8aa6 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -785,7 +785,46 @@ static inline bool setattr_vfsgid(struct iattr *attr=
+, kgid_t kgid)
+>  	return true;
+>  }
+> =20
+> -int chown_common(const struct path *path, uid_t user, gid_t group)
 > +/*
-> + * Whether @id is well formed: a known type, reserved bytes zero, a UUID=
- of
-> + * version 4 with the RFC 9562 variant, a GUID other than the nil GUID.
+> + * The new owner and group of a chown. Invalid ids stand for "unchanged";
+> + * @err is an error of their conversion, reported once the path is found,
+> + * which keeps the classic calls' order of errors.
 > + */
-> +static bool kid_r_valid(const struct __kernel_uid_r *id)
+> +struct chown_ids {
+> +	kuid_t uid;
+> +	kgid_t gid;
+> +	int err;
+> +};
+> +
+> +static struct chown_ids chown_ids_classic(uid_t user, gid_t group)
 > +{
-> +	switch (id->type) {
-> +	case UID_R_LEGACY:
-> +		return !memchr_inv(id->uuid + sizeof(id->legacy), 0,
-> +				   UID_R_SIZE - sizeof(id->legacy));
-> +	case UID_R_UUID:
-> +		return (id->uuid[6] >> 4) =3D=3D 4 && (id->uuid[8] & 0xc0) =3D=3D 0x80;
-> +	case UID_R_GUID:
-> +		return memchr_inv(id->guid, 0, UID_R_SIZE);
-> +	}
-> +	return false;
+> +	struct user_namespace *ns =3D current_user_ns();
+> +	struct chown_ids ids =3D {
+> +		.uid =3D make_kuid(ns, user),
+> +		.gid =3D make_kgid(ns, group),
+> +	};
+> +
+> +	if ((user !=3D (uid_t)-1 && !uid_valid(ids.uid)) ||
+> +	    (group !=3D (gid_t)-1 && !gid_valid(ids.gid)))
+> +		ids.err =3D -EINVAL;
+> +	return ids;
 > +}
-[ ... ]
-> +/*
-> + * "No id" from userspace: no pointer, UID_R_NONE, or the classic -1. The
-> + * set*id_r() and chown_r() calls take it as "leave unchanged".
-> + */
-> +static bool kid_r_is_none(const struct __kernel_uid_r *id)
+> +
+> +static int chown_ids_r(const struct __kernel_uid_r __user *user,
+> +		       const struct __kernel_uid_r __user *group,
+> +		       struct chown_ids *ids)
 > +{
-> +	return id->type =3D=3D UID_R_NONE ||
-> +	       (id->type =3D=3D UID_R_LEGACY && id->legacy =3D=3D (u32)-1);
+> +	struct user_namespace *ns =3D current_user_ns();
+> +	int err;
+> +
+> +	ids->err =3D 0;
+> +	err =3D get_kuid_r(ns, user, &ids->uid);
+> +	if (!err)
+> +		err =3D get_kgid_r(ns, group, &ids->gid);
+> +	return err;
 > +}
 
 [Severity: Medium]
-Does kid_r_is_none() in kernel/uidgid_r.c allow nonzero reserved bytes in
-struct __kernel_uid_r to bypass validation in get_kuid_r() and get_kgid_r()?
+When userspace calls sys_chown_r(), sys_lchown_r(), sys_fchown_r(), or
+sys_fchownat_r() with a struct __kernel_uid_r whose type is UID_R_NONE or
+UID_R_LEGACY with legacy =3D=3D (u32)-1, can non-zero bytes in the reserved=
+ union
+area bypass validation?
 
-When userspace passes a struct __kernel_uid_r to get_kuid_r() or
-get_kgid_r(), kid_r_is_none(&id) is checked before make_kuid_r() or
-make_kgid_r() (which call kid_r_valid(&id)):
+In include/uapi/linux/uidgid_r.h, struct __kernel_uid_r documents:
 
-	if (kid_r_is_none(&id))
-		return 0;
-	*kuid =3D make_kuid_r(from, &id);
+    /*
+     * Bytes past the member .type selects are reserved and must be zero.
+     */
 
-If userspace passes id->type =3D=3D UID_R_NONE with nonzero bytes in id->uu=
-id,
-or id->type =3D=3D UID_R_LEGACY with id->legacy =3D=3D (u32)-1 and nonzero =
-trailing
-bytes in id->uuid + sizeof(id->legacy), kid_r_is_none() returns true and
-get_kuid_r() / get_kgid_r() return 0 instead of -EINVAL.
+However, chown_ids_r() delegates to get_kuid_r() and get_kgid_r() in
+kernel/uidgid_r.c, which return 0 as soon as kid_r_is_none(&id) matches,
+before make_kuid_r() or make_kgid_r() calls kid_r_valid(&id):
 
-Should kid_r_is_none() also verify that all bytes of id->uuid are zero for
-UID_R_NONE and that the trailing reserved bytes are zero for UID_R_LEGACY?
+    static bool kid_r_is_none(const struct __kernel_uid_r *id)
+    {
+            return id->type =3D=3D UID_R_NONE ||
+                   (id->type =3D=3D UID_R_LEGACY && id->legacy =3D=3D (u32)=
+-1);
+    }
+
+    int get_kuid_r(struct user_namespace *from,
+                   const struct __kernel_uid_r __user *uid, kuid_t *kuid)
+    {
+            ...
+            if (kid_r_is_none(&id))
+                    return 0;
+            *kuid =3D make_kuid_r(from, &id);
+            return uid_valid(*kuid) ? 0 : -EINVAL;
+    }
+
+Because kid_r_is_none() does not check the 16 union bytes for UID_R_NONE or
+the 12 trailing bytes (id->uuid + sizeof(id->legacy)) for UID_R_LEGACY with
+legacy =3D=3D (u32)-1, shouldn't those reserved bytes be verified to be zer=
+o so
+that non-zero trailing bytes are rejected with -EINVAL?
 
 > +
-> +/**
-> + * get_kuid_r - read a uid of a *_r system call from userspace
-> + * @from: user namespace the uid is in
-> + * @uid: the uid, or NULL
-> + * @kuid: the kuid, INVALID_UID for "no id" (NULL, UID_R_NONE or -1)
-> + *
-> + * Return: 0, -EFAULT, or -EINVAL if the uid is malformed or has no mapp=
-ing
-> + * in @from.
-> + */
-> +int get_kuid_r(struct user_namespace *from,
-> +	       const struct __kernel_uid_r __user *uid, kuid_t *kuid)
-> +{
-> +	struct __kernel_uid_r id;
-> +
-> +	*kuid =3D INVALID_UID;
-> +	if (!uid)
-> +		return 0;
-> +	if (copy_from_user(&id, uid, sizeof(id)))
-> +		return -EFAULT;
-> +	if (kid_r_is_none(&id))
-> +		return 0;
-> +	*kuid =3D make_kuid_r(from, &id);
-> +	return uid_valid(*kuid) ? 0 : -EINVAL;
-> +}
-> +EXPORT_SYMBOL(get_kuid_r);
-> +
-> +/**
-> + * get_kgid_r - read a gid of a *_r system call from userspace
-> + * @from: user namespace the gid is in
-> + * @gid: the gid, or NULL
-> + * @kgid: the kgid, INVALID_GID for "no id" (NULL, UID_R_NONE or -1)
-> + *
-> + * Return: 0, -EFAULT, or -EINVAL if the gid is malformed or has no mapp=
-ing
-> + * in @from.
-> + */
-> +int get_kgid_r(struct user_namespace *from,
-> +	       const struct __kernel_uid_r __user *gid, kgid_t *kgid)
-> +{
-> +	struct __kernel_uid_r id;
-> +
-> +	*kgid =3D INVALID_GID;
-> +	if (!gid)
-> +		return 0;
-> +	if (copy_from_user(&id, gid, sizeof(id)))
-> +		return -EFAULT;
-> +	if (kid_r_is_none(&id))
-> +		return 0;
-> +	*kgid =3D make_kgid_r(from, &id);
-> +	return gid_valid(*kgid) ? 0 : -EINVAL;
-> +}
-> +EXPORT_SYMBOL(get_kgid_r);
+> +static int chown_path(const struct path *path, const struct chown_ids *i=
+ds)
+>  {
+>  	struct mnt_idmap *idmap;
+>  	struct user_namespace *fs_userns;
+> @@ -793,11 +832,9 @@ int chown_common(const struct path *path, uid_t user=
+, gid_t group)
+>  	struct delegated_inode delegated_inode =3D { };
+>  	int error;
+>  	struct iattr newattrs;
+> -	kuid_t uid;
+> -	kgid_t gid;
+> =20
+> -	uid =3D make_kuid(current_user_ns(), user);
+> -	gid =3D make_kgid(current_user_ns(), group);
+> +	if (ids->err)
+> +		return ids->err;
+> =20
+>  	idmap =3D mnt_idmap(path->mnt);
+>  	fs_userns =3D i_user_ns(inode);
+> @@ -806,9 +843,9 @@ int chown_common(const struct path *path, uid_t user,=
+ gid_t group)
+>  	newattrs.ia_vfsuid =3D INVALID_VFSUID;
+>  	newattrs.ia_vfsgid =3D INVALID_VFSGID;
+>  	newattrs.ia_valid =3D  ATTR_CTIME;
+> -	if ((user !=3D (uid_t)-1) && !setattr_vfsuid(&newattrs, uid))
+> +	if (uid_valid(ids->uid) && !setattr_vfsuid(&newattrs, ids->uid))
+>  		return -EINVAL;
+> -	if ((group !=3D (gid_t)-1) && !setattr_vfsgid(&newattrs, gid))
+> +	if (gid_valid(ids->gid) && !setattr_vfsgid(&newattrs, ids->gid))
+>  		return -EINVAL;
 
-[Severity: Medium]
-What happens in get_kuid_r() and get_kgid_r() in kernel/uidgid_r.c when
-CONFIG_MULTIUSER is disabled?
+[Severity: High]
+How does chown_path() handle unchanged IDs (-1, NULL, or UID_R_NONE) and
+malformed IDs when CONFIG_MULTIUSER is disabled?
 
-kernel/Makefile builds uidgid_r.o unconditionally via obj-y. When userspace
-passes a malformed struct __kernel_uid_r (such as an unknown type, nonzero
-reserved bytes, a non-v4 UUID, or a nil GUID), make_kuid_r() and
-make_kgid_r() return INVALID_UID and INVALID_GID, and get_kuid_r() and
-get_kgid_r() then check uid_valid(*kuid) and gid_valid(*kgid).
+Previously, chown_common() checked (user !=3D (uid_t)-1) and
+(group !=3D (gid_t)-1) before calling setattr_vfsuid() and setattr_vfsgid().
+With this change, chown_ids_classic() and chown_ids_r() encode an unchanged
+owner or group as INVALID_UID / INVALID_GID, and chown_path() uses
+uid_valid(ids->uid) and gid_valid(ids->gid) to decide whether to set ATTR_U=
+ID
+and ATTR_GID.
 
 In include/linux/uidgid.h, when !CONFIG_MULTIUSER, __kuid_val() and
-__kgid_val() unconditionally return 0:
+__kgid_val() always return 0:
 
-static inline uid_t __kuid_val(kuid_t uid)
-{
-	return 0;
-}
+    static inline uid_t __kuid_val(kuid_t uid)
+    {
+            return 0;
+    }
 
-static inline bool uid_valid(kuid_t uid)
-{
-	return !uid_is_legacy(uid) || __kuid_val(uid) !=3D (uid_t) -1;
-}
+    static inline bool uid_valid(kuid_t uid)
+    {
+            return !uid_is_legacy(uid) || __kuid_val(uid) !=3D (uid_t) -1;
+    }
 
-Because __kuid_val(INVALID_UID) and __kgid_val(INVALID_GID) return 0 under
-!CONFIG_MULTIUSER, uid_valid(INVALID_UID) and gid_valid(INVALID_GID) always
-evaluate to true. Will this cause get_kuid_r() and get_kgid_r() to return 0
-instead of -EINVAL for malformed IDs on !CONFIG_MULTIUSER builds?
+As a result, uid_valid(INVALID_UID) and gid_valid(INVALID_GID) always return
+true on !CONFIG_MULTIUSER builds:
+
+1. Calling chown(), lchown(), fchown(), or fchownat() with -1, or calling
+   chown_r(), lchown_r(), fchown_r(), or fchownat_r() with NULL, UID_R_NONE,
+   or legacy -1 causes chown_path() to call setattr_vfsuid() and
+   setattr_vfsgid() with INVALID_UID and INVALID_GID. That sets ATTR_UID and
+   ATTR_GID in newattrs.ia_valid and copies VFSUIDT_INIT(INVALID_UID) and
+   VFSGIDT_INIT(INVALID_GID) (with .legacy =3D -1) into newattrs.ia_vfsuid =
+and
+   newattrs.ia_vfsgid, causing notify_change() -> may_setattr() to reject
+   no-op chown calls on immutable/append-only files with -EPERM and causing
+   setattr_copy() to write INVALID_UID / INVALID_GID into inode->i_uid and
+   inode->i_gid.
+
+2. In chown_ids_r() -> get_kuid_r() / get_kgid_r(), malformed
+   struct __kernel_uid_r inputs for which make_kuid_r() or make_kgid_r()
+   returns INVALID_UID / INVALID_GID pass uid_valid(*kuid) / gid_valid(*kgi=
+d)
+   and return 0 instead of -EINVAL.
+
+3. In chown_path(), because setattr_vfsuid() and setattr_vfsgid() only retu=
+rn
+   false when !uid_valid() or !gid_valid(), gating them with
+   uid_valid(ids->uid) and gid_valid(ids->gid) also makes the two
+   return -EINVAL branches unreachable.
+
+>  	error =3D inode_lock_killable(inode);
+>  	if (error)
+
+[Severity: High]
+What prevents chown_path() from setting a UUID or GUID owner or group on a
+non-idmapped mount of a filesystem mounted in a non-initial user namespace
+(inode->i_sb->s_user_ns !=3D &init_user_ns)?
+
+When a process in init_user_ns calls chown_r(), lchown_r(), fchown_r(), or
+fchownat_r() with a UUID or GUID on a regular mount (idmap =3D=3D &nop_mnt_=
+idmap)
+of a filesystem with SB_I_UID_R mounted in a child user namespace (such as
+tmpfs, ramfs, devpts, or overlayfs), chown_path() calls security_path_chown=
+()
+with from_vfsuid() / from_vfsgid() and then calls notify_change().
+
+In fs/attr.c:notify_change(), the superblock namespace check uses
+vfsuid_has_fsmapping() and vfsgid_has_fsmapping():
+
+    if (ia_valid & ATTR_UID &&
+        !vfsuid_has_fsmapping(idmap, inode->i_sb->s_user_ns,
+                              attr->ia_vfsuid))
+            return -EOVERFLOW;
+
+However, vfsuid_has_fsmapping() in include/linux/mnt_idmapping.h simply
+checks uid_valid(from_vfsuid(idmap, fs_userns, vfsuid)), and from_vfsuid() =
+in
+fs/mnt_idmapping.c returns early for nop_mnt_idmap before checking
+kuid_has_mapping(fs_userns, ...):
+
+    kuid_t from_vfsuid(struct mnt_idmap *idmap,
+                       struct user_namespace *fs_userns, vfsuid_t vfsuid)
+    {
+            uid_t uid;
+
+            if (idmap =3D=3D &nop_mnt_idmap)
+                    return AS_KUIDT(vfsuid);
+            if (idmap =3D=3D &invalid_mnt_idmap)
+                    return INVALID_UID;
+            if (!vfsuid_is_legacy(vfsuid))
+                    return kuid_has_mapping(fs_userns, AS_KUIDT(vfsuid)) ?
+                           AS_KUIDT(vfsuid) : INVALID_UID;
+
+Because UUID and GUID identities only have mappings in init_user_ns,
+shouldn't non-legacy IDs also be checked against fs_userns when
+idmap =3D=3D &nop_mnt_idmap so that notify_change() rejects them with -EOVE=
+RFLOW
+instead of writing an unmapped UUID or GUID to the inode?
 
 [ ... ]
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/cover.1792552161.gi=
-t.jan.koester@tuxist.de?part=3D10
+t.jan.koester@tuxist.de?part=3D21
