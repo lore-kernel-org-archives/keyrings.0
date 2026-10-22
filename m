@@ -1,48 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792639077;
-	b=jHGePk2uLi0sU1/DaYSc86/scEqNK0x5PsBDB1M/Yw49l/7YzIDYmBChB5UqRmC2axrV
-	 iKPznbsurA2ehodJJVbYW975Jd+iJ/BTdBAV9it+Di8JZxdys0SY8HqFnBTcjBbLK3IWL
-	 2t/a7IlNR0urOT3nSjq+mMuwobda8fRwKxntk9Z8I/gZCh9IF4aozfwKugkYE7AM6Bk0J
-	 nUoR/qeE8fI7ZTaGSYJ6ip+DsVEuIJZTNOC+/7xUblbh55Za2S375ooB8Qb94y24faaGw
-	 ww101T3mVkMxjK93Xk3of+y1ydeOYlnlYFRLY6MXcnAJ44iW42dN2vi7q6MoWhPVf1g==
+	t=1792639079;
+	b=b+82N8dudOAfi32YbsiJnoAjSz27vergbAG+9TzKW9oOKtI7iCv7DH9pBNoQDNXh7G9a
+	 lWNj392U8dM3/0JTorMUk4EvOKweigkzB3gpbxk8jPbaUL+JvdgrR4K3AjKPeCiC/6zg9
+	 eg/wGkF2nZ6rQJGm2mNahT9AJOezhzu6NCGl4VumMqSPfzDbI+wJiF9aioDcq+i6gITGF
+	 Uv4NIlNTe5eprEy07hz4WeVkNV28Xb+g5+Nz9upuIgu23iwiTFuoqIRWoU3CeLKzqRBgj
+	 autNZjFAWhXdJDQGjGYH6PmQwCBXrdPSyYTAUxR7QCuEk26JT0FsD99ux0SWyfaK+DQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792639077;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792639079;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=ZiYFRn2rHT1XmpTx5g5IheWbVndYdrDEgc1wqd5CAl0=;
-	b=bN1fEflTSse7I8o4aEQfn090wTdZ1lJ8kHGdqBtFgMnaMz3EvAie3H677n/QxELGs8QL
-	 ME28hBKBuzjGS4I1IRIHvciZarW6LR3KRpMFA4Ijq9TR+Gn3ItbMe7zPevuYLIyrcWe4Y
-	 ruu9PrBWZNvA6PDD3x3syzie7rGjxYeRctXAeIssmg5D+PEVcvxHLiWfCkWSHolvaNSOj
-	 UNyo8iOm+MDGKp/U3ohAayjVvEgqGWOQwsJbRPWdkfGBtDU9hTNxpD24bSDzSvq0NUdh0
-	 nBvTzc2a/8eWS2BwuhUBGJI6D/gy03UuYS+Kr29Y+p9ob9gExJulenQ1gwjDjlPHbxg==
+	bh=i+N4LbUUyWfClUPWjWS9ez93aTXKpD52iDDk7qfIBV8=;
+	b=FTyinPRTFLfnJr+V/ISgX+UZb2LkcIp9KKLRgOyvYE3Lj3QY5a3sbKeBUjZhG6a0btJ1
+	 dZup32938hTTx1pP0hK3n00eLlwEZv4WkA4de0TXYiu+W6w1l29gKKlMAdNla3G9Tq9jZ
+	 y1oZPZ2BVhP/FpbFQCfDbzVgj1YRJ9eHAjAA4hgIqIJdViTf0ghfT32QzmhI5f50NMhj4
+	 Wv8PWyLt2iuFKUE60YrIt9HsRcg7GEu5RnuANfZEc9xtyhcG9vtoUg2wbH6Y4/Skxp3vK
+	 OLlZMFSpqKT74XkW8MWg8CGtNhKGpW/1hXJIaQnm8Um9TFDd9Dcglcj1Ym9K7UL81sw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TyGGW9lw;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LDrkHslD;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 28A3D60A2622;
-	Thu, 22 Oct 2026 03:17:56 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 262C8606A338;
+	Thu, 22 Oct 2026 03:17:59 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TyGGW9lw
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id B9C8F1F000C4;
-	Thu, 22 Oct 2026 03:17:55 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LDrkHslD
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 2A7081F000CC;
+	Thu, 22 Oct 2026 03:17:58 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792639076;
-	bh=ZiYFRn2rHT1XmpTx5g5IheWbVndYdrDEgc1wqd5CAl0=;
+	s=k20260515; t=1792639079;
+	bh=i+N4LbUUyWfClUPWjWS9ez93aTXKpD52iDDk7qfIBV8=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=TyGGW9lwHa8f2esgWKZO764k6O/Ug7IgnkLLifxRohZz25CbPl7MEo6dE+hXZ0UA0
-	 BKwtqb5oQ4jBFl7whAZiAbNLnYkIWmHISd6RpB6iSi9A6f4ClgWQ+4F910GfkE2ky5
-	 RxP+XyuL+WosEV+g1asZ6H5X2VDGhkbT0IFNXXz8ndU1t/7MeHuWXXb/LFS/7EJFuf
-	 fZl0s/CzEaq85a23jx/VqYPuRCkoRi/j/Y64+pmQCZVw/Y2OkOTM3zEuLP7tuKeY3C
-	 p6ZS2WDtFaoruT8jD3JEX77k0rHNUXbMPjTM95r5Iv/uZ8RZCjgrsr1VEEa1ZnuMKJ
-	 pU9SkMHcz9CJA==
-Message-ID: <sashiko-outbox-180930@kernel.org>
+	b=LDrkHslDMJ0m/gTcR6J8Q/2/EbSQHbSRJ88UnkPb41U2xT3Z5UOyMBY+jqqVf2uat
+	 Q3MlU3S/iRgNfSm8vd2K0zXVClUMkMSpxOY0p4mxeqv5NecyzP3p3KnDwCsiFtnc/k
+	 k2ExUBNSqsngf9eKhXgxcn8jpFTNr1S/TmFqcwghkfOuCodIruf8yQLWwg2mBA/XrA
+	 OyRJcpHepDw406sBqXztMQRS+YisPVJeeKwwm+9SMIj+e1C2P2eW/7qyZQnLjgG4eA
+	 wNQhRUWHamuqO42zkkNLppomrWzl3q3MW7ErYLvwkZnq31Ugjv8x4ml9gBk7DeRwVg
+	 oeJd6wF/GzcbQ==
+Message-ID: <sashiko-outbox-180932@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 29/41] signal: report the sender's UUID or GUID
- uid in si_uid_r
+Subject: Re: [RFC PATCH v2 31/41] ext4: add the uid_r feature for UUID and
+ GUID owners
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jan Koester" <jan.koester@tuxist.de>, "Christian Brauner" <brauner@kernel.org>, "Alexander
  Viro" <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>
@@ -50,12 +50,12 @@ Cc: "Jan Kara" <jack@suse.cz>, =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.e
  Moore" <paul@paul-moore.com>, "Arnd Bergmann" <arnd@arndb.de>, linux-security-module@vger.kernel.org, linux-ext4@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>, "Anna
  Schumaker" <anna@kernel.org>
-In-Reply-To: <59988b6ac15fa727c7f5d14d5342ceba4d6e595f.1792552161.git.jan.koester@tuxist.de>
+In-Reply-To: <1ced8bf416de4e9600904aafeefd29ed20fd2064.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
- <59988b6ac15fa727c7f5d14d5342ceba4d6e595f.1792552161.git.jan.koester@tuxist.de>
+ <1ced8bf416de4e9600904aafeefd29ed20fd2064.1792552161.git.jan.koester@tuxist.de>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 22 Oct 2026 03:17:55 +0000
+Date: Thu, 22 Oct 2026 03:17:57 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,207 +65,403 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 2 potential issue(=
+Thank you for your contribution! Sashiko AI review found 6 potential issue(=
 s) to consider:
-- [High] signal: broken userns UID mapping in send_signal_locked() and call=
-ers
-- [Medium] bpf: missing siginfo_set_kernel_uid() call in bpf_send_signal_co=
-mmon()
+- [High] ext4: unverified extra_isize expansion in ext4_make_room_for_id_r()
+- [Medium] ext4: UUID/GUID owners lost in ext4_xattr_inode_create() and ext=
+4_ext_migrate()
+- [Medium] ext4: debug_want_extra_isize can set s_want_extra_isize too smal=
+l for uid_r
+- [Medium] ext4: NO_UID32 clobbers 0xffffffff sentinel in ext4_fill_raw_ino=
+de()
+- [Medium] ext4: race in ext4_make_room_for_id_r() with concurrent inode ex=
+pansion
+- [Medium] ext4: unsynchronized 20-byte i_uid and i_gid accesses in ext4_fi=
+ll_raw_inode()
 --
 
-commit 3fc8400fa91445ed3a591553195996d33af32cb3
+commit f1bc4b92fd7bffda167e28ce9ca4459d00337211
 Author: Jan Koester <jan.koester@tuxist.de>
 
-signal: report the sender's UUID or GUID uid in si_uid_r
+ext4: add the uid_r feature for UUID and GUID owners
 
-This commit adds si_uid_r (__kernel_uid_r_t) at offset 96 in siginfo_t and
-compat_siginfo_t, along with ssi_uid_r in signalfd_siginfo, to report the
-sender's UUID or GUID UID for signals and waitid(). It introduces
-siginfo_set_uid() and siginfo_set_kernel_uid() to populate and translate
-si_uid and si_uid_r across signal generation, delivery, and wait paths.
+This commit adds the read-only compatible uid_r feature to ext4, extending
+struct ext4_inode with i_uid_r_type, i_gid_r_type, i_uid_r, and i_gid_r to
+store 16-byte UUID and GUID owners and groups while storing 0xffffffff in
+the classic i_uid and i_gid fields. It also sets SB_I_UID_R on the
+superblock and expands existing inodes in ext4_setattr() when assigning a
+UUID or GUID owner or group.
 
-> diff --git a/include/linux/signal.h b/include/linux/signal.h
-> index f19816832f055..928e67e283b60 100644
-> --- a/include/linux/signal.h
-> +++ b/include/linux/signal.h
-> @@ -6,6 +6,7 @@
->  #include <linux/list.h>
->  #include <linux/signal_types.h>
->  #include <linux/string.h>
-> +#include <linux/uidgid.h>
-> =20
->  struct task_struct;
-> =20
-> @@ -23,6 +24,27 @@ static inline void clear_siginfo(kernel_siginfo_t *inf=
-o)
->  	memset(info, 0, sizeof(*info));
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 26f0f9714f03c..bed8d535a6e4e 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -4780,6 +4780,75 @@ static int ext4_inode_blocks_set(struct ext4_inode=
+ *raw_inode,
+>  	return 0;
 >  }
 > =20
-> +struct user_namespace;
-> +
 > +/*
-> + * Sets si_uid and si_uid_r to @uid as seen from @ns (the receiver's user
-> + * namespace), the overflow id if it has no mapping there.
+> + * uid_r: a UUID or GUID owner and group live in i_uid_r and i_gid_r of
+> + * inodes with room for them; i_uid and i_gid then hold 0xffffffff.
 > + */
-> +static inline void siginfo_set_uid(kernel_siginfo_t *info,
-> +				   struct user_namespace *ns, kuid_t uid)
+> +static int ext4_inode_set_id_r(struct inode *inode, struct ext4_inode *r=
+aw_inode)
 > +{
-> +	info->si_uid =3D from_kuid_munged(ns, uid);
-> +	from_kuid_r_munged(ns, uid, &info->si_uid_r);
-> +}
+> +	struct ext4_inode_info *ei =3D EXT4_I(inode);
+> +	bool fits =3D EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> +		    EXT4_FITS_IN_INODE(raw_inode, ei, i_gid_r);
+> +	bool legacy =3D uid_is_legacy(inode->i_uid) && gid_is_legacy(inode->i_g=
+id);
 > +
-> +/* si_uid and si_uid_r of a signal from the kernel: 0 */
-> +static inline void siginfo_set_kernel_uid(kernel_siginfo_t *info)
-> +{
-> +	info->si_uid =3D 0;
-> +	memset(&info->si_uid_r, 0, sizeof(info->si_uid_r));
-> +	info->si_uid_r.type =3D UID_R_LEGACY;
+> +	if (!legacy && (!ext4_has_feature_uid_r(inode->i_sb) || !fits))
+> +		return -EOVERFLOW;
+> +	if (!fits || !ext4_has_feature_uid_r(inode->i_sb))
+> +		return 0;
+> +
+> +	raw_inode->i_id_r_reserved =3D 0;
+> +	if (uid_is_legacy(inode->i_uid)) {
+> +		raw_inode->i_uid_r_type =3D EXT4_ID_R_LEGACY;
+> +		memset(raw_inode->i_uid_r, 0, sizeof(raw_inode->i_uid_r));
+> +	} else {
+> +		BUILD_BUG_ON(KID_UUID !=3D EXT4_ID_R_UUID ||
+> +			     KID_GUID !=3D EXT4_ID_R_GUID);
+> +		raw_inode->i_uid_r_type =3D inode->i_uid.type;
+> +		memcpy(raw_inode->i_uid_r, inode->i_uid.uuid.b,
+> +		       sizeof(raw_inode->i_uid_r));
+> +	}
+> +	if (gid_is_legacy(inode->i_gid)) {
+> +		raw_inode->i_gid_r_type =3D EXT4_ID_R_LEGACY;
+> +		memset(raw_inode->i_gid_r, 0, sizeof(raw_inode->i_gid_r));
+> +	} else {
+> +		raw_inode->i_gid_r_type =3D inode->i_gid.type;
+> +		memcpy(raw_inode->i_gid_r, inode->i_gid.uuid.b,
+> +		       sizeof(raw_inode->i_gid_r));
+> +	}
+> +	return 0;
 > +}
 
 [Severity: Medium]
-Should bpf_send_signal_common() in kernel/trace/bpf_trace.c also call
-siginfo_set_kernel_uid(&info) when sending a signal to a specific task?
+With UUID and GUID support, kuid_t and kgid_t are 20-byte structures, so
+reads and writes of inode->i_uid and inode->i_gid are multi-word and not
+atomic.
 
-When a BPF program invokes bpf_send_signal_task() with a non-NULL task,
-bpf_send_signal_common() takes the else branch and initializes info manuall=
-y:
+In fs/ext4/inode.c, ext4_setattr() updates inode->i_uid and inode->i_gid
+under inode->i_rwsem without holding EXT4_I(inode)->i_raw_lock:
 
-kernel/trace/bpf_trace.c:bpf_send_signal_common() {
-	if (!task) {
-		task =3D current;
-		siginfo =3D SEND_SIG_PRIV;
-	} else {
-		clear_siginfo(&info);
-		info.si_signo =3D sig;
-		info.si_errno =3D 0;
-		info.si_code =3D SI_KERNEL;
-		info.si_pid =3D 0;
-		info.si_uid =3D 0;
-		info.si_value.sival_ptr =3D (void __user __force *)(unsigned long)value;
-		siginfo =3D &info;
-	}
+fs/ext4/inode.c:ext4_setattr() {
+    ...
+    i_uid_update(idmap, attr, inode);
+    i_gid_update(idmap, attr, inode);
+    error =3D ext4_mark_inode_dirty(handle, inode);
 }
 
-Because info.si_uid =3D 0 is set directly after clear_siginfo(&info),
-info.si_uid_r remains UID_R_NONE instead of UID_R_LEGACY with uid 0, whereas
-calling bpf_send_signal() or bpf_send_signal_thread() (where task is NULL)
-uses SEND_SIG_PRIV and sets info.si_uid_r via siginfo_set_kernel_uid().
+Concurrently, paths that dirty the inode without holding inode->i_rwsem
+(such as touch_atime() -> ext4_dirty_inode(), or unwritten extent
+conversion in ext4_end_io_rsv_work() -> ext4_mark_inode_dirty()) call
+ext4_do_update_inode() -> ext4_fill_raw_inode() -> ext4_inode_set_id_r()
+under ei->i_raw_lock, and __ext4_get_inode_loc() also calls
+ext4_fill_raw_inode() under lock_buffer(bh).
+
+Because ext4_fill_raw_inode() first reads inode->i_uid and inode->i_gid via
+i_uid_read() and i_gid_read(), and ext4_inode_set_id_r() then re-reads
+inode->i_uid and inode->i_gid multiple times, can a concurrent chown race
+with ext4_fill_raw_inode() and write a torn 16-byte UUID/GUID or mismatched
+classic i_uid/i_gid and i_uid_r/i_gid_r fields (with a valid metadata
+checksum computed over that inconsistent state) into raw_inode?
 
 [ ... ]
 
-> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-> index d1dd36a651b0d..f0a319ed97515 100644
-> --- a/ipc/mqueue.c
-> +++ b/ipc/mqueue.c
-> @@ -802,8 +802,8 @@ static void __do_notify(struct mqueue_inode_info *inf=
-o)
->  			/* map current pid/uid into info->owner's namespaces */
->  			sig_i.si_pid =3D task_tgid_nr_ns(current,
->  						ns_of_pid(info->notify_owner));
-> -			sig_i.si_uid =3D from_kuid_munged(info->notify_user_ns,
-> -						current_uid());
-> +			siginfo_set_uid(&sig_i, info->notify_user_ns,
-> +					current_uid());
->  			/*
->  			 * We can't use kill_pid_info(), this signal should
->  			 * bypass check_kill_permission(). It is from kernel
+> @@ -4792,8 +4861,10 @@ static int ext4_fill_raw_inode(struct inode *inode=
+, struct ext4_inode *raw_inode
+>  	err =3D ext4_inode_blocks_set(raw_inode, ei);
+> =20
+>  	raw_inode->i_mode =3D cpu_to_le16(inode->i_mode);
+> +	/* a UUID or GUID owner: 0xffffffff here, the id in i_uid_r */
+>  	i_uid =3D i_uid_read(inode);
+>  	i_gid =3D i_gid_read(inode);
+> +	err =3D err ?: ext4_inode_set_id_r(inode, raw_inode);
+
+[Severity: Medium]
+When an inode has a UUID or GUID owner or group, i_uid_read(inode) and
+i_gid_read(inode) return (uid_t)-1 (0xffffffff).
+
+Both ext4_xattr_inode_create() in fs/ext4/xattr.c and ext4_ext_migrate() in
+fs/ext4/migrate.c copy the parent inode's owner into a uid_t owner[2] array
+using i_uid_read() and i_gid_read() and pass that array to ext4_new_inode():
+
+fs/ext4/xattr.c:ext4_xattr_inode_create() {
+    struct inode *ea_inode =3D NULL;
+    uid_t owner[2] =3D { i_uid_read(inode), i_gid_read(inode) };
+    ...
+    ea_inode =3D ext4_new_inode(handle, inode->i_sb->s_root->d_inode,
+                              S_IFREG | 0600, NULL, inode->i_ino + 1, owner,
+                              EXT4_EA_INODE_FL);
+}
+
+fs/ext4/migrate.c:ext4_ext_migrate() {
+    ...
+    owner[0] =3D i_uid_read(inode);
+    owner[1] =3D i_gid_read(inode);
+    tmp_inode =3D ext4_new_inode(handle, d_inode(inode->i_sb->s_root),
+                               S_IFREG, NULL, goal, owner, 0);
+}
+
+In fs/ext4/ialloc.c, __ext4_new_inode() then passes those 32-bit values to
+i_uid_write() and i_gid_write() before calling dquot_initialize():
+
+fs/ext4/ialloc.c:__ext4_new_inode() {
+    if (owner) {
+        inode->i_mode =3D mode;
+        i_uid_write(inode, owner[0]);
+        i_gid_write(inode, owner[1]);
+    }
+    ...
+    err =3D dquot_initialize(inode);
+}
+
+Because make_kuid(&init_user_ns, (uid_t)-1) produces INVALID_UID (with
+KID_LEGACY and value -1) rather than preserving the UUID or GUID,
+qid_has_mapping() in dqget() returns false and causes dquot_initialize() to
+fail with -EINVAL when quotas are enabled, or writes out the helper inode
+with EXT4_ID_R_LEGACY and i_uid 0xffffffff when quotas are disabled.
+
+Should ext4_xattr_inode_create() and ext4_ext_migrate() preserve the full
+kuid_t and kgid_t owner and group when creating helper inodes for a UUID or
+GUID owned file?
 
 [ ... ]
 
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index d31ebcb6ed4db..af0793d04b640 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-
-[ ... ]
-
-> @@ -1229,6 +1228,13 @@ int send_signal_locked(int sig, struct kernel_sigi=
-nfo *info,
->  			info =3D &rewritten;
->  			uid =3D make_kuid(current_user_ns(), info->si_uid);
->  			rewritten.si_uid =3D from_kuid_munged(t_user_ns, uid);
-> +			if (rewritten.si_uid_r.type !=3D UID_R_NONE) {
-> +				kuid_t uid_r =3D make_kuid_r(current_user_ns(),
-> +							   &rewritten.si_uid_r);
+> @@ -6006,6 +6079,40 @@ static void ext4_wait_for_tail_page_commit(struct =
+inode *inode)
+>   *
+>   * Called with inode->i_rwsem down.
+>   */
+> +/*
+> + * An inode from before uid_r, or with in-inode xattrs in the way, may
+> + * lack room for i_uid_r and i_gid_r: make it, before it gets a UUID or
+> + * GUID owner or group.
+> + */
+> +static int ext4_make_room_for_id_r(struct mnt_idmap *idmap,
+> +				   struct inode *inode, struct iattr *attr)
+> +{
+> +	struct ext4_iloc iloc;
+> +	bool legacy =3D true;
+> +	int err;
 > +
-> +				from_kuid_r_munged(t_user_ns, uid_r,
-> +						   &rewritten.si_uid_r);
-> +			}
->  		}
->  		rcu_read_unlock();
->  #endif
+> +	if (attr->ia_valid & ATTR_UID)
+> +		legacy =3D uid_is_legacy(from_vfsuid(idmap, i_user_ns(inode),
+> +						   attr->ia_vfsuid));
+> +	if (attr->ia_valid & ATTR_GID)
+> +		legacy &=3D gid_is_legacy(from_vfsgid(idmap, i_user_ns(inode),
+> +						    attr->ia_vfsgid));
+> +	if (legacy)
+> +		return 0;
+> +	if (!ext4_has_feature_uid_r(inode->i_sb))
+> +		return -EOVERFLOW;
+> +
+> +	err =3D ext4_get_inode_loc(inode, &iloc);
+> +	if (err)
+> +		return err;
+> +	if (EXT4_FITS_IN_INODE(ext4_raw_inode(&iloc), EXT4_I(inode), i_gid_r)) {
+> +		brelse(iloc.bh);
+> +		return 0;
+> +	}
+
+[Severity: Medium]
+In ext4_make_room_for_id_r(), EXT4_FITS_IN_INODE() is checked without
+holding EXT4_I(inode)->xattr_sem before calling ext4_expand_extra_isize()
+with EXT4_EXTRA_ISIZE_UID_R.
+
+Concurrently, paths that dirty the inode without holding inode->i_rwsem
+(such as ext4_dirty_inode(), ext4_page_mkwrite(), or
+ext4_end_io_rsv_work()) can call __ext4_mark_inode_dirty() ->
+ext4_try_to_expand_extra_isize(), which acquires xattr_sem via
+ext4_write_trylock_xattr() and sets EXT4_STATE_NO_EXPAND while xattr_sem is
+held.
+
+If ext4_expand_extra_isize() runs during that window, it checks
+EXT4_STATE_NO_EXPAND before taking xattr_sem:
+
+fs/ext4/inode.c:ext4_expand_extra_isize() {
+    if (ext4_test_inode_state(inode, EXT4_STATE_NO_EXPAND)) {
+        brelse(iloc->bh);
+        return -EOVERFLOW;
+    }
+    ...
+}
+
+Furthermore, if ext4_expand_extra_isize() passes that check and blocks on
+ext4_write_lock_xattr() while ext4_try_to_expand_extra_isize() expands
+ei->i_extra_isize to sbi->s_want_extra_isize (when sbi->s_want_extra_isize
+exceeds EXT4_EXTRA_ISIZE_UID_R), __ext4_expand_extra_isize() will then see
+new_extra_isize < ei->i_extra_isize and return -EINVAL:
+
+fs/ext4/inode.c:__ext4_expand_extra_isize() {
+    if ((new_extra_isize < ei->i_extra_isize) ||
+        (new_extra_isize < 4) ||
+        (new_extra_isize > inode_size - EXT4_GOOD_OLD_INODE_SIZE))
+        return -EINVAL;	/* Should never happen */
+}
+
+Could this race cause ext4_make_room_for_id_r() to spuriously fail a chown
+operation with -EOVERFLOW even when sufficient extra inode space is
+available?
+
+> +	err =3D ext4_expand_extra_isize(inode, EXT4_EXTRA_ISIZE_UID_R, &iloc);
+> +	return err ? -EOVERFLOW : 0;
+> +}
 
 [Severity: High]
-Can this cross-user-namespace translation in send_signal_locked() corrupt
-both si_uid and si_uid_r in several signal delivery paths?
+What happens here if ext4_expand_extra_isize() returns 0 without expanding
+i_extra_isize all the way to EXT4_EXTRA_ISIZE_UID_R?
 
-First, in send_signal_locked(), rewritten.si_uid is still derived from the
-32-bit info->si_uid via make_kuid(current_user_ns(), info->si_uid) rather
-than from uid_r. When a process with a UUID or GUID UID in init_user_ns
-signals a task in a child user namespace t_user_ns (via
-prepare_kill_siginfo() in tkill(), tgkill(), or pidfd_send_signal() with
-info =3D=3D NULL, or via rt_sigqueueinfo()), info->si_uid has already been =
-munged
-to overflowuid (65534). make_kuid(&init_user_ns, 65534) then fabricates the
-legacy host UID KUIDT_INIT(65534). If t_user_ns maps legacy host UID 65534 =
-to
-a valid container UID, rewritten.si_uid is set to that container UID instead
-of overflowuid, while rewritten.si_uid_r is munged to overflowuid.
+When an inode has in-inode extended attributes (EXT4_STATE_XATTR) that
+cannot be moved out to free 36 bytes (for example, inline data or an
+external xattr block without enough free space), ext4_expand_extra_isize()
+-> __ext4_expand_extra_isize() -> ext4_expand_extra_isize_ea() falls back
+to s_min_extra_isize (typically 32 bytes) on -ENOSPC and jumps to retry:
 
-Second, prepare_kill_siginfo() in kernel/signal.c pre-maps current_uid() in=
-to
-current_user_ns() before send_signal_locked() knows the target's user
-namespace:
-
-kernel/signal.c:prepare_kill_siginfo() {
-	clear_siginfo(info);
-	info->si_signo =3D sig;
-	info->si_errno =3D 0;
-	info->si_code =3D (type =3D=3D PIDTYPE_PID) ? SI_TKILL : SI_USER;
-	info->si_pid =3D task_tgid_vnr(current);
-	siginfo_set_uid(info, current_user_ns(), current_uid());
+fs/ext4/xattr.c:ext4_expand_extra_isize_ea() {
+retry:
+    isize_diff =3D new_extra_isize - EXT4_I(inode)->i_extra_isize;
+    if (EXT4_I(inode)->i_extra_isize >=3D new_extra_isize)
+        return 0;
+    ...
+    if (error) {
+        if (error =3D=3D -ENOSPC && !tried_min_extra_isize &&
+            s_min_extra_isize) {
+            tried_min_extra_isize++;
+            new_extra_isize =3D s_min_extra_isize;
+            error =3D 0;
+            goto retry;
+        }
+        goto cleanup;
+    }
 }
 
-If a task with a UUID or GUID UID enters a child user namespace via
-unshare(CLONE_NEWUSER) or setns() and calls tkill(), tgkill(), or
-pidfd_send_signal() (with info =3D=3D NULL) targeting a task in init_user_n=
-s,
-siginfo_set_uid() in prepare_kill_siginfo() immediately munges info->si_uid=
-_r
-to UID_R_LEGACY / overflowuid because current_user_ns() !=3D &init_user_ns.
-When send_signal_locked() subsequently translates from current_user_ns() to
-t_user_ns (&init_user_ns), the original UUID or GUID has already been lost.
+When i_extra_isize is already at least s_min_extra_isize (such as 32 bytes
+on an inode created before uid_r), ext4_expand_extra_isize_ea() returns 0
+at the retry label while i_extra_isize is still smaller than
+EXT4_EXTRA_ISIZE_UID_R.
 
-Third, both do_notify_parent_cldstop() in kernel/signal.c and __do_notify()
-in ipc/mqueue.c already translate the sender's kuid_t into the receiver's
-user namespace via siginfo_set_uid(), but then pass the resulting siginfo to
-send_signal_locked():
+ext4_make_room_for_id_r() then returns 0, so ext4_setattr() updates
+inode->i_uid and inode->i_gid in memory to the UUID/GUID and calls
+ext4_mark_inode_dirty() -> ext4_do_update_inode() -> ext4_fill_raw_inode()
+-> ext4_inode_set_id_r(), which sees !legacy && !fits, returns -EOVERFLOW,
+and triggers a false-positive filesystem corruption error:
 
-kernel/signal.c:do_notify_parent_cldstop()
-  -> siginfo_set_uid(&info, task_cred_xxx(parent, user_ns), task_uid(tsk))
-  -> send_signal_locked(SIGCHLD, &info, parent, PIDTYPE_TGID)
+fs/ext4/inode.c:ext4_do_update_inode() {
+    err =3D ext4_fill_raw_inode(inode, raw_inode);
+    spin_unlock(&ei->i_raw_lock);
+    if (err) {
+        EXT4_ERROR_INODE(inode, "corrupted inode contents");
+        goto out_brelse;
+    }
+}
 
-ipc/mqueue.c:__do_notify()
-  -> siginfo_set_uid(&sig_i, info->notify_user_ns, current_uid())
-  -> do_send_sig_info(info->notify.sigev_signo, &sig_i, task, PIDTYPE_TGID)
-    -> send_signal_locked(sig, info, p, type)
-
-When current_user_ns() !=3D t_user_ns, send_signal_locked() translates si_u=
-id
-and si_uid_r a second time assuming they were formatted in current_user_ns(=
-).
-For example, if a child or mqueue sender with a UUID or GUID UID is in a
-child user namespace and the parent or notify_owner is in init_user_ns,
-siginfo_set_uid() writes the UUID or GUID into si_uid_r, and
-send_signal_locked() then calls make_kuid_r(current_user_ns(), ...), which
-fails in kid_r_to_128() and returns INVALID_UID, overwriting the valid UUID
-or GUID with overflowuid.
+Should ext4_make_room_for_id_r() verify that i_gid_r actually fits in the
+inode after ext4_expand_extra_isize() returns?
 
 [ ... ]
 
-=E5=AE=8C=E7=BE=8E=EF=BC=81 Let's double check everything before finalizing=
-. Everything adheres strictly to the guidelines.
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index d636b89090a24..34ac087c32dcb 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -4613,9 +4613,17 @@ static int ext4_inode_info_init(struct super_block=
+ *sb,
+>  		sb->s_time_min =3D EXT4_TIMESTAMP_MIN;
+>  	}
+> =20
+> +	if (ext4_has_feature_uid_r(sb) &&
+> +	    sbi->s_inode_size < EXT4_GOOD_OLD_INODE_SIZE + EXT4_EXTRA_ISIZE_UID=
+_R) {
+> +		ext4_msg(sb, KERN_ERR, "uid_r needs inodes of at least %zu bytes",
+> +			 EXT4_GOOD_OLD_INODE_SIZE + EXT4_EXTRA_ISIZE_UID_R);
+> +		return -EINVAL;
+> +	}
+> +
+>  	if (sbi->s_inode_size > EXT4_GOOD_OLD_INODE_SIZE) {
+> -		sbi->s_want_extra_isize =3D sizeof(struct ext4_inode) -
+> -			EXT4_GOOD_OLD_INODE_SIZE;
+> +		/* room for the uid_r fields in new inodes only if needed */
+> +		sbi->s_want_extra_isize =3D ext4_has_feature_uid_r(sb) ?
+> +			EXT4_EXTRA_ISIZE_UID_R : EXT4_EXTRA_ISIZE_BASE;
+
+[Severity: Medium]
+In __ext4_fill_super(), ext4_inode_info_init() initializes
+sbi->s_want_extra_isize to EXT4_EXTRA_ISIZE_UID_R, but
+parse_apply_sb_mount_options(), ext4_check_opt_consistency(), and
+ext4_apply_options() run right afterwards (and on remount in
+__ext4_remount()) and overwrite sbi->s_want_extra_isize when the
+debug_want_extra_isize mount option is specified.
+
+Because ext4_check_opt_consistency() only checks the upper bound of
+ctx->s_want_extra_isize:
+
+fs/ext4/super.c:ext4_check_opt_consistency() {
+    if (ctx->s_want_extra_isize >
+        (sbi->s_inode_size - EXT4_GOOD_OLD_INODE_SIZE)) {
+        ext4_msg(NULL, KERN_ERR,
+             "Invalid want_extra_isize %d",
+             ctx->s_want_extra_isize);
+        return -EINVAL;
+    }
+}
+
+mounting or remounting a uid_r filesystem with debug_want_extra_isize
+smaller than EXT4_EXTRA_ISIZE_UID_R causes __ext4_new_inode() to initialize
+ei->i_extra_isize to that smaller value.
+
+If a new inode is then created with a UUID or GUID owner or group, won't
+ext4_mark_inode_dirty() -> ext4_do_update_inode() -> ext4_fill_raw_inode()
+-> ext4_inode_set_id_r() return -EOVERFLOW and trigger
+EXT4_ERROR_INODE(inode, "corrupted inode contents")?
+
+>  		if (ext4_has_feature_extra_isize(sb)) {
+>  			unsigned v, max =3D (sbi->s_inode_size -
+>  					   EXT4_GOOD_OLD_INODE_SIZE);
+> @@ -5437,6 +5445,10 @@ static int __ext4_fill_super(struct fs_context *fc=
+, struct super_block *sb)
+>  	/* HSM events are allowed by default. */
+>  	sb->s_iflags |=3D SB_I_ALLOW_HSM;
+> =20
+> +	/* uid_r: inodes can have UUID and GUID owners */
+> +	if (ext4_has_feature_uid_r(sb) && !test_opt(sb, NO_UID32))
+> +		sb->s_iflags |=3D SB_I_UID_R;
+
+[Severity: Medium]
+While __ext4_fill_super() avoids setting SB_I_UID_R when NO_UID32 is
+enabled at mount time, __ext4_remount() allows enabling NO_UID32 on remount
+without clearing SB_I_UID_R, and ext4_inode_get_id_r() loads UUID and GUID
+owners into inode->i_uid and inode->i_gid regardless of NO_UID32.
+
+When an inode with a UUID or GUID owner or group is dirtied and written out
+in ext4_fill_raw_inode() while NO_UID32 is set, i_uid_read(inode) and
+i_gid_read(inode) return 0xffffffff, and the NO_UID32 branch converts them
+with fs_high2lowuid() and fs_high2lowgid():
+
+fs/ext4/inode.c:ext4_fill_raw_inode() {
+    if (!(test_opt(inode->i_sb, NO_UID32))) {
+        ...
+    } else {
+        raw_inode->i_uid_low =3D cpu_to_le16(fs_high2lowuid(i_uid));
+        raw_inode->i_gid_low =3D cpu_to_le16(fs_high2lowgid(i_gid));
+        raw_inode->i_uid_high =3D 0;
+        raw_inode->i_gid_high =3D 0;
+    }
+}
+
+Doesn't this overwrite the on-disk 0xffffffff sentinel in i_uid and i_gid
+with 0x0000fffe (65534) while leaving i_uid_r_type and i_gid_r_type set to
+EXT4_ID_R_UUID or EXT4_ID_R_GUID?
+
+> +
+>  	err =3D ext4_check_feature_compatibility(sb, es, silent);
+>  	if (err)
+>  		goto failed_mount;
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/cover.1792552161.gi=
-t.jan.koester@tuxist.de?part=3D29
+t.jan.koester@tuxist.de?part=3D31
