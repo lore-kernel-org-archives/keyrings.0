@@ -1,48 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792707024;
-	b=2ePcJWEPP/DuUHvzO8qW0Fe8JqwuDf0kfFroab+Gq3l+lfQ0OqZakozxm4Nw+/KtzpcA
-	 A/6WzVsEhYS3c0PDLUROadaymAver+Y9iCFvZqEjmemfRKxOreDxPKfr/sjzviRzr8oS+
-	 wvoAbpxcCaEgcFZm7fTIDi5CvpjXpAyqDv28r19GNuNqAuA09A4a17hCVQXZ8u8P3rnhB
-	 xWaK7iAP3TODFamoBKCqpeuywwys4aUHibjop+WVOv4WnIO5J8ETR0trkZTu84UAkKQ7Y
-	 DwQrLBJ+yYrexzH9yesHZw/vH9eNPN8dCL5Cfwp/PDoQp1ntQfXZqoaHeu5Bk0gZqxg==
+	t=1792711413;
+	b=sm+thPRenEvE35ptUjSqnHT5FUTlTgC+0jj53pRBBJ1CWTj9Rc5jckH2iEXRZ6iLrDqk
+	 xmKH/jJQN+B94cjZt9i+cOMLMFypFrBnVTfO9ZaTlWdw+zpg5Xv85Vj3nXcpF/gdipFIz
+	 kuk25IfZAo3dtgvj/yZKBO8pPLzgGzwzO6VeulJcteEMsqYUU7tmJfJeqXFz9HKGKlyJx
+	 xpNIRWGH+GmL0JJvPCZztNDf1VKaCdXG0j6RamHUfuM8ouzexKu76FW82OnMErJNCRvmf
+	 oXuo9gjlovOS+kJ1tUbNwqAKAGwskV1ZDRL2g1q7uSKJ8cVwCRpJohvgLZs0f5QgbWQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792707024;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792711413;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=BPD8JkJHXHODhQVF9+MgJdtTWQmQDK/Um3JEAhipQJs=;
-	b=c4LAfCc26hzZW9KxmVjza0+iAq5IoIsj2/zp0Q525NBUtm5tADwr1kkuxphEY1lW6onC
-	 /9d1YX51OrnVf6tBTDEaNrdLyschU6T97mfihfpaBPpbCwR7VB0XB9qEPh3kZi02+SD7U
-	 gnydYrBV36ukEUr/0wHPROHZz4SRalcb+e3KXI/vBeuVqOhqHGUlEqG5Y2CF3ORW6TG0j
-	 iDFi6CqnyT5zFEsxu39pD99ziYpcZ8IH+Yw0rNIoBQ0ETpbNcQpcpz8BDMzSO/zCmqAWy
-	 bqoxXoV5OYyBUn7ZgTTf1+HFwiTJfVG9DpksiOwNqXAd2h9qK2lAmaRap6goztAqslw==
+	bh=iB1qRE5TjHcp1JAI8RwwmxnKVJod/0Zmh1zD5MFJOZs=;
+	b=mEt9iz2KomsqaUBqVQDnyb7oh1gKhHTUCHFQ2j8Xo5vfCqv0RXAH1YSMyRhJOdYIMVNc
+	 iE5mY+Ct9mn8TlFVJJkEjCNL1wWNaOgVEKG68MIlHDrNDsDKuX3NdDHsAN5G32HXOQKts
+	 JzxgEjgCrwH1+vVx1qjAfMmNsekZ5FrwIsrgJn9/XBWmZEY89tY3y+Dsg43DkhuHqu9u9
+	 rJg+DoIYndk52LmFLUsamHDb157g2h+LEm2hVuqYAb4kNJLaTjr50J+1IitmN+JxoQsFD
+	 jZk1/8g/0bBNyaagXH7QUBUR5CfYMetQuJ9TRkRwbzvhAakwVqD99530NRJ7uzdsQdA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QlNUlvej;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=IEPfsY1+;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 2D6D7606A31A;
-	Thu, 22 Oct 2026 22:10:24 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 5FA65606A319;
+	Thu, 22 Oct 2026 23:23:33 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QlNUlvej
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 7C1CB1F01825;
-	Thu, 22 Oct 2026 22:10:23 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=IEPfsY1+
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 659721F01825;
+	Thu, 22 Oct 2026 23:23:32 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792707024;
-	bh=BPD8JkJHXHODhQVF9+MgJdtTWQmQDK/Um3JEAhipQJs=;
+	s=k20260515; t=1792711412;
+	bh=iB1qRE5TjHcp1JAI8RwwmxnKVJod/0Zmh1zD5MFJOZs=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=QlNUlvejXTz9i/tJq5LSyOKBcSqVisbfZC07oj6HSLlYFdHGmt3yXFIeVw8/HWzno
-	 KwlTmvi9vGsB825Uw2O1xybNMPHa3XbdrJokL+chWsCFxT7Og3IqAuO+aoCrxTMwPw
-	 k8g5ALRXNp+qL56olf4lf+rZreH0s7fX7O69+H27TgSP1JWQfGQ41GqZQgndF0Ovkq
-	 fTJhW6S0hVCR4kkeJ8vFHMbDS5ccKCPbxTSabrzC65PmZi8V3OdU5pxkFELMDgpbbV
-	 EQV4zAxT81fp8gelv8YxgzqNXO/6m7ktGz5x70lmSFSbyROCCFg1FpNaF49fO4Jgcp
-	 Phdnxhyva1hvg==
-Date: Fri, 23 Oct 2026 01:10:20 +0300
+	b=IEPfsY1+/HOMvZrxgq1jThp2aLJs3QoYJusuyLv+s6xrU63qIE40rJj45+nUq7yQ3
+	 +2rQaIfUjUaiz3uKc1PQVZEnLuML7Q5pamzanFikNVeq3vhK3eAKcMHpSy4BXJlvH9
+	 sTTf47U16f/+6NuOBgdyzBg3bFlMISjXvqIK15LR0aiaMVzMgGcBbN1HrknId2exaf
+	 IHbjTg2mzgBY+W4ADqHbdk6EY3MtmKL3WGOnt0M25ZROgHNjsXDBsjUoa+noc+zDNX
+	 nRJ5GKVjaxOY+h2kEG3zffPJz4Qn03ZI+Peu5didwWl3GTNUgTLWZoKtYuV4zzJJbO
+	 ZHXqsBcERNS2A==
+Date: Fri, 23 Oct 2026 02:23:29 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org,
 	Linus Torvalds <torvalds@linux-foundation.org>,
 	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
@@ -50,10 +50,9 @@ Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
 	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
 Subject: Re: [RFC PATCH 5/6] KEYS: Replace assoc_array with struct
  keyring_index
-Message-ID: <atqJzKw12w0MFOwQ@kernel.org>
+Message-ID: <atqa8Y0cROHISnbD@kernel.org>
 References: <20261016215326.4110064-1-jarkko@kernel.org>
  <20261016215326.4110064-6-jarkko@kernel.org>
- <20261018070822.GA1904@sol>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,17 +64,43 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261018070822.GA1904@sol>
+In-Reply-To: <20261016215326.4110064-6-jarkko@kernel.org>
 
-On Sun, Oct 18, 2026 at 12:08:22AM -0700, Eric Biggers wrote:
-> Make 'hash' u32 and make it adjacent to 'is_keyring' to get rid of the
-> hole?
+On Sat, Oct 17, 2026 at 12:53:03AM +0300, Jarkko Sakkinen wrote:
+> Linux keyring would be better off without struct assoc_array given the
+> overhead caused by sole ownership of it. Linux has multiple popular choices
+> for key-value store and there is nothing special in lib/assoc_array.c that
+> would make it stand out enough to be ratiaonalize the time spent on
+> maintaining it.
+> 
+> A keyring has a sparse data population, making rhashtable a plausible
+> choice. Multiple subsystems rely on it, and best of all, rhashtable has
+> dedicated maintainers.
+> 
+> Replace assoc_array with struct keyring_index, allocated for a keyring on
+> its first link attempt. Initialize its ht member with rhashtable_init()
+> to store links indexed by key type, domain tag and description.
+> 
+> Maintain two linked lists in the index:
+> 
+> - all: enumerate committed links without retrying hash table walks when
+>   the table resizes.
+> - keyrings: visit nested keyrings during recursive search without scanning
+>   links to other key types.
+> 
+> A key can belong to several keyrings. Represent each link with struct
+> keyring_link so it has separate hash table and list nodes and holds its
+> own key reference. Traverse the lists under RCU and defer freeing removed
+> links and dropping their key references until after a grace period.
+> 
+> Assisted-by: LLM
+> Co-developed-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-The whole 'is_keyring' is completely redundant and more like a glitch
-in this RFC patch (equal to key->type == &key_type_keyring).
-
-Nothing wrong in the review comment. I just wanted to remark this
-dead obvious fact that I should noticed immediately (doing updates
-ATM) :-)
+For the functions introduced, I'll also use cleanup.h primitives to
+cover all fallible initializations. This is something that I don't
+recall seeing in the review comments, and it is a nice extra safety
+measure when landing a refactor like this.
 
 Br, Jarkko
