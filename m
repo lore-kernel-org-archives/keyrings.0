@@ -1,48 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792639065;
-	b=c/p6afNNatO9f92xdfLbrEzKgE6vpaGpm2nf/2p0CcRRNwwiUy7vbAJEno2kjNw5h3jt
-	 9A6yibIaDQeMy66gOPVqJCxU98JzOdMz3irA74uUEffcVo7Ujsd641MiXtGHhXtLVujEs
-	 1bJ/7XLaYUjX0gRqDaHyGKBN5ubdlaUTklFhDnNrvOMnjdx6Yl7vrIfE2qr+7lsiksjSK
-	 geVRGEWyh7ygkASOjUhFKYAdOgjNLtjp34AjKdIlHWBQV792wsbfIcdhSYUUgBqpvaRr8
-	 zyZDxkVgZvJyuwTCEdYG2fhFBYeCo9bNBKQeIrzrJ8RE5LJVAOdaikOtBPpoaKLOGhw==
+	t=1792639060;
+	b=IBI8JYeF+j90Emyt/aG5W5a5Ll553oxS7wa2xRAQuhx4deKhYIIlmukMqMPgRV3NWbM6
+	 SN8/9JMRkuVuCYesX3FakWl3+k3hb9Nblc8Gbu0Gdh4QUxBDqPMe0PnnZJnsiD6rzBqcb
+	 dgS6NZRde9hZolsfrlS1N59Cwq7D1lftKxaQQPujVr2IUPrvhuWgER+Z131AreZL9AHpG
+	 TTjJrauRJshMxVv8tmLBtOEDUvQ2F5Ujo8+FSQ5AEG7h7VouNobzRkOThGV9KA2RMPNz+
+	 4i6MG52JnKSqYNvi1DyLtRuotjUYi1RyaeYGTNBo4+k0q5rTliaahyUCcO/zmLZ1sTw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792639065;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792639060;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=n5sfMBMc46bCwlPnwgR2r8aOeUknbjiXXn3azg3y9M8=;
-	b=BirDOYbVZxQ6+QIBVp0fYHXIChVJjZ96/EohjNlG2Zbyz8zy5WjdRTgqCYzUoU6602dI
-	 Baey9DvzMyWCL6VqaCzOYH/A28Aj/4ppWfsHjNlAcwMDSGzxvGZKsTkDcAjShfRh424O4
-	 3VP1Y9e2UNlOPEu/0wfLH/b0Af+AZxWZxrZSLZXGFEPbx3WiRd0fefmF2bB7nX7AlE446
-	 j4JcZPIkI/UBLxQgU0TUW1yrwkdzDf5/zEZynjxbmL9oZkSZBnpau/YN7AyANmcbaSNpS
-	 gmLYdg/3Yj5H+uWlnJV+FNiNjlZMwwAn04yXhSKqCsHeoM8FWlwliBzLONuhlgqoJLw==
+	bh=XHilr4ZYzm71A6ybW4DdPhmTDkaYPHxPvtQXkP5Bie0=;
+	b=H/rriMtLZ3OGNXrgsiqxxSj7xJo6ag0cp7PNkQps+XZOydTcxSuCRS/ZTLipkmtsFJ61
+	 rj7kDM6wgS0ITFygjDlE5ib6jhPZozAtb0Dr1/t9izFjqOmhIaH9ZaRlyY2KkVNzUabqM
+	 khoXanSO9wLO4hvAup7a3MTZ0QebRZuzZy1RxvUtIG+9fjB0Qtw+GEVtTe8BYV/Wbuxc0
+	 QTVjJzK5rhQ4nq3YM3WBJszc3yhmuXO9ZWzL+3PSBIMgD3OQnOAz7bBvGgGYvogCYamEF
+	 uRP8UiopS8eqK8JJXE+2nE5mK+VaEd0aSL1mUIMPm2Enbxw81ol3RXTgdlTVX2Ht4OQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=keEGoewQ;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gqtoZhEX;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C29CC606A321;
-	Thu, 22 Oct 2026 03:17:44 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2F68D60A3822;
+	Thu, 22 Oct 2026 03:17:34 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=keEGoewQ
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id BDE651F000C8;
-	Thu, 22 Oct 2026 03:17:43 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gqtoZhEX
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id C9EA31F000C4;
+	Thu, 22 Oct 2026 03:17:33 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792639064;
-	bh=n5sfMBMc46bCwlPnwgR2r8aOeUknbjiXXn3azg3y9M8=;
+	s=k20260515; t=1792639054;
+	bh=XHilr4ZYzm71A6ybW4DdPhmTDkaYPHxPvtQXkP5Bie0=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=keEGoewQt26g54zcGstdJwL50bljDf0Ro5j1SuppsT2SDXO5ZhHct5fs1SM8KiGTL
-	 Y5b3w2HTPk9nEffqfOVx+fnrtjH4uNVhhYEwPdAsUZWdWpBD9RJe8g1npd6kr0a1ji
-	 n9dROyTWA4spnQ9O9nmyNydCwxk2RWhYFkzoar7abK+kZ1PPcIg/unSW4ZWr/zWc6/
-	 2KIp2caPbGj5jbDE5XdtxVmwnkLqX5ihUiCgBNuhpgXBJarv/WeOlHeKTrUXiDjf9B
-	 Vo+sbbhY5x/IKNFUqTRLbYbZnxo1Q62V+eAx9BXeK8xa8s3XkzgI+Z4eidiiY6ftZN
-	 GrKabTOPumbyA==
-Message-ID: <sashiko-outbox-180920@kernel.org>
+	b=gqtoZhEX1q7QVBjbcH4o+vlQYaIJ4Bow71CiX2IW9UO29PBKNz+EFcDPCcaH02Sqo
+	 Sdr2XPPrCwwMJYw9wbFpwYEtLwvBE8plemhO9DPV1vOt0Ou8b33DaBCHE+MLdbJ9Rf
+	 rOBc+6s8rbQcXQzJXqv1DoceJKHbqgc8E77ZPz8LWRSL0BtN50JfGolvYXCPrQq7hp
+	 9LbKlnhe9qxUmI6kRuMIUvdRbcgmYEYqfg4XfLRl0Rvz8t8edbFO5G63vzTnFJe6fM
+	 +gkUMMVxPWh4ctEZn4emq1wNE3Z1lUI0kQ5vNz1bDgjj8ARNEhDfAVjpZwyPxeJXME
+	 DVy2ofDy8gSGQ==
+Message-ID: <sashiko-outbox-180911@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 19/41] cred: add the *_r variants of the
- get/set*id() system calls
+Subject: Re: [RFC PATCH v2 10/41] uidgid: convert between kernel ids and the
+ ids of the *_r system calls
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jan Koester" <jan.koester@tuxist.de>, "Christian Brauner" <brauner@kernel.org>, "Alexander
  Viro" <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>
@@ -50,12 +50,12 @@ Cc: "Jan Kara" <jack@suse.cz>, =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.e
  Moore" <paul@paul-moore.com>, "Arnd Bergmann" <arnd@arndb.de>, linux-security-module@vger.kernel.org, linux-ext4@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>, "Anna
  Schumaker" <anna@kernel.org>
-In-Reply-To: <86c66380f2654c560e747b9075edbddd610975ca.1792552161.git.jan.koester@tuxist.de>
+In-Reply-To: <42176587b0491de4d74cc6c8dde7e035ffd44661.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
- <86c66380f2654c560e747b9075edbddd610975ca.1792552161.git.jan.koester@tuxist.de>
+ <42176587b0491de4d74cc6c8dde7e035ffd44661.1792552161.git.jan.koester@tuxist.de>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 22 Oct 2026 03:17:43 +0000
+Date: Thu, 22 Oct 2026 03:17:33 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,194 +65,167 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 1 potential issue(=
+Thank you for your contribution! Sashiko AI review found 2 potential issue(=
 s) to consider:
-- [Medium] cred: setfsuid_r() and setfsgid_r() commit creds before copying =
-old id
+- [Medium] uidgid: get_kuid_r() and get_kgid_r() accept nonzero reserved by=
+tes
+- [Medium] uidgid: get_kuid_r() and get_kgid_r() accept invalid IDs on !CON=
+FIG_MULTIUSER
 --
 
-commit ce14b103e65ee744fe87b48cff6d5ebb9dda8c50
+commit 991387abfa396e9352b6de3b866ad79653e997ad
 Author: Jan Koester <jan.koester@tuxist.de>
 
-cred: add the *_r variants of the get/set*id() system calls
+uidgid: convert between kernel ids and the ids of the *_r system calls
 
-This patch adds *_r variants of the get/set*id() system calls that accept
-and return pointers to __kernel_uid_r so processes can use UUID or GUID
-user and group identifiers. It also splits the classic syscall
-implementations into argument conversion helpers and shared do_*()
-functions operating on kuid_t and kgid_t.
+This commit adds helper functions to convert between kernel kuid_t/kgid_t
+values and the struct __kernel_uid_r representation used by the *_r system
+calls, along with helpers to copy them to and from userspace and format
+them as strings.
 
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 35b538ba843c7..fad55732345de 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-
+> diff --git a/kernel/uidgid_r.c b/kernel/uidgid_r.c
+> new file mode 100644
+> index 0000000000000..d71aecddb27e4
+> --- /dev/null
+> +++ b/kernel/uidgid_r.c
+> @@ -0,0 +1,323 @@
 [ ... ]
-
-> @@ -901,40 +933,44 @@ SYSCALL_DEFINE3(getresgid, gid_t __user *, rgidp, g=
-id_t __user *, egidp, gid_t _
->   * whatever uid it wants to). It normally shadows "euid", except when
->   * explicitly set by setfsuid() or for access..
->   */
-> -long __sys_setfsuid(uid_t uid)
 > +/*
-> + * Sets the fsuid to @kuid, unless it is invalid; 0 or -EPERM. The fsuid
-> + * before the call goes to @old.
+> + * Whether @id is well formed: a known type, reserved bytes zero, a UUID=
+ of
+> + * version 4 with the RFC 9562 variant, a GUID other than the nil GUID.
 > + */
-> +static long do_setfsuid(kuid_t kuid, kuid_t *old_fsuid)
->  {
->  	const struct cred *old;
->  	struct cred *new;
-> -	uid_t old_fsuid;
-> -	kuid_t kuid;
-> =20
->  	old =3D current_cred();
-> -	old_fsuid =3D from_kuid_munged(old->user_ns, old->fsuid);
-> +	*old_fsuid =3D old->fsuid;
-> =20
-> -	kuid =3D make_kuid(old->user_ns, uid);
-> -	if (!uid_valid(kuid))
-> -		return old_fsuid;
-> +	if (!uid_valid(kuid) || uid_eq(kuid, old->fsuid))
-> +		return 0;
-> =20
->  	new =3D prepare_creds();
->  	if (!new)
-> -		return old_fsuid;
-> +		return -ENOMEM;
-> =20
->  	if (uid_eq(kuid, old->uid)  || uid_eq(kuid, old->euid)  ||
-> -	    uid_eq(kuid, old->suid) || uid_eq(kuid, old->fsuid) ||
-> +	    uid_eq(kuid, old->suid) ||
->  	    ns_capable_setid(old->user_ns, CAP_SETUID)) {
-> -		if (!uid_eq(kuid, old->fsuid)) {
-> -			new->fsuid =3D kuid;
-> -			if (security_task_fix_setuid(new, old, LSM_SETID_FS) =3D=3D 0)
-> -				goto change_okay;
-> -		}
-> +		new->fsuid =3D kuid;
-> +		if (security_task_fix_setuid(new, old, LSM_SETID_FS) =3D=3D 0)
-> +			return commit_creds(new);
->  	}
-> =20
->  	abort_creds(new);
-> -	return old_fsuid;
-> +	return -EPERM;
-> +}
-
-[ ... ]
-
-> @@ -945,46 +981,214 @@ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
->  /*
->   * Samma p=C3=A5 svenska..
->   */
-> -long __sys_setfsgid(gid_t gid)
-> +/*
-> + * Sets the fsgid to @kgid, unless it is invalid; 0 or -EPERM. The fsgid
-> + * before the call goes to @old.
-> + */
-> +static long do_setfsgid(kgid_t kgid, kgid_t *old_fsgid)
->  {
->  	const struct cred *old;
->  	struct cred *new;
-> -	gid_t old_fsgid;
-> -	kgid_t kgid;
-> =20
->  	old =3D current_cred();
-> -	old_fsgid =3D from_kgid_munged(old->user_ns, old->fsgid);
-> +	*old_fsgid =3D old->fsgid;
-> =20
-> -	kgid =3D make_kgid(old->user_ns, gid);
-> -	if (!gid_valid(kgid))
-> -		return old_fsgid;
-> +	if (!gid_valid(kgid) || gid_eq(kgid, old->fsgid))
-> +		return 0;
-> =20
->  	new =3D prepare_creds();
->  	if (!new)
-> -		return old_fsgid;
-> +		return -ENOMEM;
-> =20
->  	if (gid_eq(kgid, old->gid)  || gid_eq(kgid, old->egid)  ||
-> -	    gid_eq(kgid, old->sgid) || gid_eq(kgid, old->fsgid) ||
-> +	    gid_eq(kgid, old->sgid) ||
->  	    ns_capable_setid(old->user_ns, CAP_SETGID)) {
-> -		if (!gid_eq(kgid, old->fsgid)) {
-> -			new->fsgid =3D kgid;
-> -			if (security_task_fix_setgid(new,old,LSM_SETID_FS) =3D=3D 0)
-> -				goto change_okay;
-> -		}
-> +		new->fsgid =3D kgid;
-> +		if (security_task_fix_setgid(new, old, LSM_SETID_FS) =3D=3D 0)
-> +			return commit_creds(new);
->  	}
-> =20
->  	abort_creds(new);
-> -	return old_fsgid;
-> +	return -EPERM;
-> +}
-
-[ ... ]
-
-> +/*
-> + * Unlike setfsuid(), which returns the old fsuid whatever happens,
-> + * setfsuid_r() reports failure: 0, or -EPERM if the caller may not use
-> + * @uid. The fsuid before the call goes to @old_uid unless it is NULL; a
-> + * NULL @uid only queries it.
-> + */
-> +SYSCALL_DEFINE2(setfsuid_r, const struct __kernel_uid_r __user *, uid,
-> +		struct __kernel_uid_r __user *, old_uid)
+> +static bool kid_r_valid(const struct __kernel_uid_r *id)
 > +{
-> +	struct user_namespace *ns =3D current_user_ns();
-> +	kuid_t kuid, old_fsuid;
-> +	int err;
-> +
-> +	err =3D get_kuid_r(ns, uid, &kuid);
-> +	if (err)
-> +		return err;
-> +	err =3D do_setfsuid(kuid, &old_fsuid);
-> +	if (!err && old_uid)
-> +		err =3D put_kuid_r(ns, old_fsuid, old_uid);
-> +	return err;
+> +	switch (id->type) {
+> +	case UID_R_LEGACY:
+> +		return !memchr_inv(id->uuid + sizeof(id->legacy), 0,
+> +				   UID_R_SIZE - sizeof(id->legacy));
+> +	case UID_R_UUID:
+> +		return (id->uuid[6] >> 4) =3D=3D 4 && (id->uuid[8] & 0xc0) =3D=3D 0x80;
+> +	case UID_R_GUID:
+> +		return memchr_inv(id->guid, 0, UID_R_SIZE);
+> +	}
+> +	return false;
 > +}
-> +
-> +SYSCALL_DEFINE2(setfsgid_r, const struct __kernel_uid_r __user *, gid,
-> +		struct __kernel_uid_r __user *, old_gid)
+[ ... ]
+> +/*
+> + * "No id" from userspace: no pointer, UID_R_NONE, or the classic -1. The
+> + * set*id_r() and chown_r() calls take it as "leave unchanged".
+> + */
+> +static bool kid_r_is_none(const struct __kernel_uid_r *id)
 > +{
-> +	struct user_namespace *ns =3D current_user_ns();
-> +	kgid_t kgid, old_fsgid;
-> +	int err;
-> +
-> +	err =3D get_kgid_r(ns, gid, &kgid);
-> +	if (err)
-> +		return err;
-> +	err =3D do_setfsgid(kgid, &old_fsgid);
-> +	if (!err && old_gid)
-> +		err =3D put_kgid_r(ns, old_fsgid, old_gid);
-> +	return err;
+> +	return id->type =3D=3D UID_R_NONE ||
+> +	       (id->type =3D=3D UID_R_LEGACY && id->legacy =3D=3D (u32)-1);
 > +}
 
 [Severity: Medium]
-In kernel/sys.c, if a caller invokes setfsuid_r() or setfsgid_r() with a
-valid, permitted uid or gid that differs from the current fsuid or fsgid and
-passes a non-NULL old_uid or old_gid pointer that faults during
-copy_to_user(), will the syscall return -EFAULT after the new credentials
-have already been irreversibly installed?
+Does kid_r_is_none() in kernel/uidgid_r.c allow nonzero reserved bytes in
+struct __kernel_uid_r to bypass validation in get_kuid_r() and get_kgid_r()?
 
-Specifically, setfsuid_r() calls do_setfsuid(), which updates new->fsuid,
-runs security_task_fix_setuid(new, old, LSM_SETID_FS), and calls
-commit_creds(new) before put_kuid_r() copies old_fsuid to old_uid (and
-similarly for setfsgid_r(), do_setfsgid(), and put_kgid_r()).
+When userspace passes a struct __kernel_uid_r to get_kuid_r() or
+get_kgid_r(), kid_r_is_none(&id) is checked before make_kuid_r() or
+make_kgid_r() (which call kid_r_valid(&id)):
 
-If copy_to_user() inside put_kuid_r() or put_kgid_r() fails, the task is le=
-ft
-with its mutated fsuid or fsgid, altered filesystem capabilities, updated
-dumpability, and updated thread keyrings even though the syscall reports
-failure and the previous ID is lost. Could old_fsuid and old_fsgid be copied
-to userspace before committing the new credentials?
+	if (kid_r_is_none(&id))
+		return 0;
+	*kuid =3D make_kuid_r(from, &id);
+
+If userspace passes id->type =3D=3D UID_R_NONE with nonzero bytes in id->uu=
+id,
+or id->type =3D=3D UID_R_LEGACY with id->legacy =3D=3D (u32)-1 and nonzero =
+trailing
+bytes in id->uuid + sizeof(id->legacy), kid_r_is_none() returns true and
+get_kuid_r() / get_kgid_r() return 0 instead of -EINVAL.
+
+Should kid_r_is_none() also verify that all bytes of id->uuid are zero for
+UID_R_NONE and that the trailing reserved bytes are zero for UID_R_LEGACY?
+
+> +
+> +/**
+> + * get_kuid_r - read a uid of a *_r system call from userspace
+> + * @from: user namespace the uid is in
+> + * @uid: the uid, or NULL
+> + * @kuid: the kuid, INVALID_UID for "no id" (NULL, UID_R_NONE or -1)
+> + *
+> + * Return: 0, -EFAULT, or -EINVAL if the uid is malformed or has no mapp=
+ing
+> + * in @from.
+> + */
+> +int get_kuid_r(struct user_namespace *from,
+> +	       const struct __kernel_uid_r __user *uid, kuid_t *kuid)
+> +{
+> +	struct __kernel_uid_r id;
+> +
+> +	*kuid =3D INVALID_UID;
+> +	if (!uid)
+> +		return 0;
+> +	if (copy_from_user(&id, uid, sizeof(id)))
+> +		return -EFAULT;
+> +	if (kid_r_is_none(&id))
+> +		return 0;
+> +	*kuid =3D make_kuid_r(from, &id);
+> +	return uid_valid(*kuid) ? 0 : -EINVAL;
+> +}
+> +EXPORT_SYMBOL(get_kuid_r);
+> +
+> +/**
+> + * get_kgid_r - read a gid of a *_r system call from userspace
+> + * @from: user namespace the gid is in
+> + * @gid: the gid, or NULL
+> + * @kgid: the kgid, INVALID_GID for "no id" (NULL, UID_R_NONE or -1)
+> + *
+> + * Return: 0, -EFAULT, or -EINVAL if the gid is malformed or has no mapp=
+ing
+> + * in @from.
+> + */
+> +int get_kgid_r(struct user_namespace *from,
+> +	       const struct __kernel_uid_r __user *gid, kgid_t *kgid)
+> +{
+> +	struct __kernel_uid_r id;
+> +
+> +	*kgid =3D INVALID_GID;
+> +	if (!gid)
+> +		return 0;
+> +	if (copy_from_user(&id, gid, sizeof(id)))
+> +		return -EFAULT;
+> +	if (kid_r_is_none(&id))
+> +		return 0;
+> +	*kgid =3D make_kgid_r(from, &id);
+> +	return gid_valid(*kgid) ? 0 : -EINVAL;
+> +}
+> +EXPORT_SYMBOL(get_kgid_r);
+
+[Severity: Medium]
+What happens in get_kuid_r() and get_kgid_r() in kernel/uidgid_r.c when
+CONFIG_MULTIUSER is disabled?
+
+kernel/Makefile builds uidgid_r.o unconditionally via obj-y. When userspace
+passes a malformed struct __kernel_uid_r (such as an unknown type, nonzero
+reserved bytes, a non-v4 UUID, or a nil GUID), make_kuid_r() and
+make_kgid_r() return INVALID_UID and INVALID_GID, and get_kuid_r() and
+get_kgid_r() then check uid_valid(*kuid) and gid_valid(*kgid).
+
+In include/linux/uidgid.h, when !CONFIG_MULTIUSER, __kuid_val() and
+__kgid_val() unconditionally return 0:
+
+static inline uid_t __kuid_val(kuid_t uid)
+{
+	return 0;
+}
+
+static inline bool uid_valid(kuid_t uid)
+{
+	return !uid_is_legacy(uid) || __kuid_val(uid) !=3D (uid_t) -1;
+}
+
+Because __kuid_val(INVALID_UID) and __kgid_val(INVALID_GID) return 0 under
+!CONFIG_MULTIUSER, uid_valid(INVALID_UID) and gid_valid(INVALID_GID) always
+evaluate to true. Will this cause get_kuid_r() and get_kgid_r() to return 0
+instead of -EINVAL for malformed IDs on !CONFIG_MULTIUSER builds?
 
 [ ... ]
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/cover.1792552161.gi=
-t.jan.koester@tuxist.de?part=3D19
+t.jan.koester@tuxist.de?part=3D10
