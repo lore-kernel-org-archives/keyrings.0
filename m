@@ -1,48 +1,47 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792639084;
-	b=yemVjP+OWqL+MAwWBuclYmckEllNmJIPSZNC1ZVzMH3/xA1JKCvOkoKSUL7K6bDQ/1Qz
-	 uSLA5CtUzcPX2fGMi7KNyBSZsRWpv4jnzGKPwKPTkG0CLXP6aBklYpzIq4iaIaOFPiN9+
-	 3wGN9zQ6l1g11r4C7E9ZU6MII+bvPApMeJKX9Q8mOWVdPXYTNq/XOeAmid5rr0nDiuecW
-	 RVY32Rq5YfNsRyXyFC24KNFYkoWMm+UvHP5J9y5rbp0Q77tHe3Z+bDLh0UrM81BsyzY0v
-	 HcQIl4P62qiubLEVg6+574Cr3lE9X+MWrDqUesAcrSGd8nB2uSccxp5t/wjU7jGiEYw==
+	t=1792639086;
+	b=wC6ax0L/k4ZpLrzfH9/qZuGPZ5inR1Zo8rau1SqeiWCUp7eVzMpf5eIVEQP3yOUxm2WK
+	 wZfmdKYAjfjkO5/8NqmWtY4yXtF4iW4NVxHjO0KuwctcmgS3fUIJ2HVgtvSSNzeO3Wub0
+	 1qE73zKzHzQlEji0KX1yFc4BUxXxuDZr0OGAM0A+x995fmbOz9tebQitvKZhyXS+nloeI
+	 MSdX7cgOUWvHIJs/m+4/rR75do2yUe4vqYJkAGd8VTMIybsNSA0nUd25t8gbLldMxbJjC
+	 PslCtNkNqk7vDc02fLhSGUJXjaH0yzbj/tSU/5jxFeU0NIUzbXGaLppDY3sJjnIsVsw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792639084;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792639086;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=wOs5T5f9BBIK/MSbZ7K1C+nJ51SR6kYlBUF85e01IQY=;
-	b=3FAkj5IE0wgNWRlSXyiG4eikjFMV0pCSSI4hopmulmsmD+ZDzrafqjrUUwmLXV3FUD/z
-	 /lJxrsuK1/AoEjeomXBIc6KV6qeW10DnLdtAxgutMTrrmXP55/ClWdHbA/y65e8DrwbDe
-	 TyRzv1JfJnnZ98mgqxFYCd7i6Oa524w5fKqJqFISJD5aLXADN81R/gl+lle7wpH35qzdc
-	 W/L9bmNMghyG3lqUizCWCfUKCRWOn3ytx/NbbwTVY6IXXW+xkTnm1O1TPhqspk4iOmj9y
-	 SC/oAAz4V/Dz5uL+58veKUPczd5xgMWdSYOlUtSwzwaNhnASpzj6Q9yhNynv3wx9e/w==
+	bh=HVCrkqMFSge/nW0W1PaTatXl4WyYpNcZRZzC0fyinhc=;
+	b=G7RvO13sICgzAdq5AIJS4Hxe5Mr3jdm5r/ZEomxj2Iet7hQtlvr2q4rmKkaQSlwM4Ib6
+	 x0h+kV31bVR001ttswVo3yEhXNHIH4vO+6DFNxYJSJPXVrf9LcS0O5e6PCkGyb5VuGxeN
+	 IMTT5DlTrbakyqz98AJTE8CfUDj3aaJ7TPGC8ZERxLZuwO8AjsxUT+6EQg7UzrbXNJHCy
+	 APXXU29WJDklllYXa4prkge4czB18ohCL+qAdS3IZKS+7p01bF6PUfGPk7jr+ejQAKzRw
+	 s0NuKqwg0xMFabtQRYqCz0RkaRq5eeKbM1F59EkLo/vvkJv9PBoFHOTyZKdoNnBkx/Q==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="AQ9c/ZaM";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EHRGH+RE;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 04E3A60A261B;
-	Thu, 22 Oct 2026 03:18:03 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 06E98606A337;
+	Thu, 22 Oct 2026 03:18:06 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AQ9c/ZaM
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 92E051F000C6;
-	Thu, 22 Oct 2026 03:18:02 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EHRGH+RE
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 133441F000C2;
+	Thu, 22 Oct 2026 03:18:05 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792639083;
-	bh=wOs5T5f9BBIK/MSbZ7K1C+nJ51SR6kYlBUF85e01IQY=;
+	s=k20260515; t=1792639085;
+	bh=HVCrkqMFSge/nW0W1PaTatXl4WyYpNcZRZzC0fyinhc=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=AQ9c/ZaMOWfbcIRbAzCjZLfmG9ops9ZzIPurww2mGSTBDbUM3bwUKDCczMsPZzsvB
-	 874YpWa+XZRb0+aiVuhWNRZ0MCs5+CvmExQWC2BHH/bzS/DfZBQRNZNiAwVabLykni
-	 UwrN/zpgWGPSiem9HlE432m1HTTAVjMWKX5+mflXhP6ZBL+4MgPGxzSpFG0m0V28K8
-	 6sW2UQdDElSrVkz2McYn5cn7lFLq2p1HQrlwwAYT2iiPppAtte7Et76XomXAZsdesn
-	 zNnp2tVFnG0FqkHrUST9nqJH2TbXQI6nnMSz9vx3D3J/n30eAlYQRRkw8bEZmM2tre
-	 4xvHR6rUcYUJA==
-Message-ID: <sashiko-outbox-180935@kernel.org>
+	b=EHRGH+REMKJQacf1fdufFWhLvg1uXoAvoPh7M0eChOktk107WkmoBmaM6Pc2BWFWY
+	 DTarmsnnPxX//xUKskd9+4LaDBdihHJh41Q9vare8vrsakAvZEuKrP8hhICOXIFY40
+	 p0J2XwBoLLG6e4GJmsA0Lr0COwemGHoRGL25J/NdJw6mBPESviDpbXTd68VVkuhBqM
+	 pk1ZKUa8AdZrj5cuokMWBGGKzpTKv0ViqCzcF9ILzkzcXJoncMVuGLVlDihF01rjNX
+	 Ul3sl0SEs6G3OQJA93YonBazRJcB4HDrvyxOy33zAzQWL28upZdd+LDhECzLI3+DNG
+	 qzoTslGLCmyow==
+Message-ID: <sashiko-outbox-180937@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 34/41] ext4: store ACLs with UUID and GUID
- entries on uid_r filesystems
+Subject: Re: [RFC PATCH v2 36/41] selftests: add tests for UUID and GUID ids
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jan Koester" <jan.koester@tuxist.de>, "Christian Brauner" <brauner@kernel.org>, "Alexander
  Viro" <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>
@@ -50,12 +49,12 @@ Cc: "Jan Kara" <jack@suse.cz>, =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.e
  Moore" <paul@paul-moore.com>, "Arnd Bergmann" <arnd@arndb.de>, linux-security-module@vger.kernel.org, linux-ext4@vger.kernel.org, audit@vger.kernel.org, keyrings@vger.kernel.org, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>, "Anna
  Schumaker" <anna@kernel.org>
-In-Reply-To: <98758113db07083faeb158948b6b3362c2795231.1792552161.git.jan.koester@tuxist.de>
+In-Reply-To: <fe7cdf53b4cc8e404778fb91dc5e44e48197b48a.1792552161.git.jan.koester@tuxist.de>
 References: <cover.1792552161.git.jan.koester@tuxist.de>
- <98758113db07083faeb158948b6b3362c2795231.1792552161.git.jan.koester@tuxist.de>
+ <fe7cdf53b4cc8e404778fb91dc5e44e48197b48a.1792552161.git.jan.koester@tuxist.de>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 22 Oct 2026 03:18:02 +0000
+Date: Thu, 22 Oct 2026 03:18:04 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,255 +64,201 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 2 potential issue(=
+Thank you for your contribution! Sashiko AI review found 3 potential issue(=
 s) to consider:
-- [High] ext4: under-reserved journal credits in ext4_set_acl() and new ino=
-de ACLs
-- [Medium] ext4: missing uid_r check in ext4_get_acl() and ext4_acl_to_disk=
-()
+- [Medium] selftests: uid_r: acl_v3() writes POSIX ACL xattr fields in host=
+ byte order
+- [Medium] selftests/uid_r: fail instead of skip on ENOSYS in signalfd and =
+ipc tests
+- [Low] selftests: uid_r: FIXTURE_TEARDOWN() leaves mkdtemp() directories i=
+n /tmp
 --
 
-commit 9cf145428ff7d92b62a997fd08d61060d4a516a9
+commit b236f646b555e600321fde8fdcedd3ac92eccb4e
 Author: Jan Koester <jan.koester@tuxist.de>
 
-ext4: store ACLs with UUID and GUID entries on uid_r filesystems
+selftests: add tests for UUID and GUID ids
 
-This commit adds the EXT4_ACL_VERSION_R on-disk format so ext4 can store
-POSIX ACLs containing 16-byte UUID or GUID user and group entries on uid_r
-filesystems. ACLs without UUID or GUID entries continue to use the legacy
-EXT4_ACL_VERSION format.
+This commit adds a kselftest suite for the *_r system calls and extended
+kernel interfaces supporting UUID and GUID user and group identifiers. It
+covers ID validation, credential switching, supplementary groups, filesystem
+ownership on tmpfs, socket credentials, signalfd, SysV IPC, POSIX ACL v3
+xattrs, /proc/self/status, and user namespace restrictions.
 
-> diff --git a/fs/ext4/acl.c b/fs/ext4/acl.c
-> index 3bffe862f9549..27f8a1b503704 100644
-> --- a/fs/ext4/acl.c
-> +++ b/fs/ext4/acl.c
-
+> diff --git a/tools/testing/selftests/uid_r/uid_r_test.c b/tools/testing/s=
+elftests/uid_r/uid_r_test.c
+> new file mode 100644
+> index 0000000000000..88397bf3dae7e
+> --- /dev/null
+> +++ b/tools/testing/selftests/uid_r/uid_r_test.c
+> @@ -0,0 +1,535 @@
 [ ... ]
-
-> @@ -14,22 +15,41 @@
->  /*
->   * Convert from filesystem to in-memory representation.
->   */
-> +/* The id of an ACL_USER or ACL_GROUP entry of EXT4_ACL_VERSION_R */
-> +static int ext4_acl_id_from_disk(const ext4_acl_entry_r *entry, u32 *typ=
-e,
-> +				 u32 *legacy, uuid_t *id)
+> +/* a private tmpfs at a fresh directory, for file tests */
+> +static void private_tmpfs(struct __test_metadata *_metadata, char *dir)
 > +{
-> +	*type =3D le32_to_cpu(entry->e_type);
-> +	if (*type > EXT4_ID_R_GUID)
-> +		return -EINVAL;
-> +	*legacy =3D get_unaligned_le32(entry->e_id);
-> +	memcpy(id->b, entry->e_id, sizeof(id->b));
-> +	return 0;
+> +	strcpy(dir, "/tmp/uid_r.XXXXXX");
+> +	ASSERT_EQ(0, unshare(CLONE_NEWNS));
+> +	ASSERT_EQ(0, mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL));
+> +	ASSERT_NE(NULL, mkdtemp(dir));
+> +	ASSERT_EQ(0, mount("tmpfs", dir, "tmpfs", 0, "mode=3D1777"));
+> +}
+[ ... ]
+> +FIXTURE(uid_r) {
+> +	char dir[64];
+> +};
+> +
+> +FIXTURE_SETUP(uid_r)
+> +{
+> +	id_r id;
+> +
+> +	if (geteuid() !=3D 0)
+> +		SKIP(return, "needs root");
+> +	if (sys(__NR_getuid_r, (long)&id, 0, 0, 0, 0) =3D=3D -ENOSYS)
+> +		SKIP(return, "no *_r system calls");
+> +	self->dir[0] =3D 0;
 > +}
 > +
->  static struct posix_acl *
->  ext4_acl_from_disk(const void *value, size_t size)
->  {
->  	const char *end =3D (char *)value + size;
->  	int n, count;
->  	struct posix_acl *acl;
-> +	size_t entry_size =3D sizeof(ext4_acl_entry);
-> +	bool r =3D false;
-> =20
->  	if (!value)
->  		return NULL;
->  	if (size < sizeof(ext4_acl_header))
->  		 return ERR_PTR(-EINVAL);
-> -	if (((ext4_acl_header *)value)->a_version !=3D
-> -	    cpu_to_le32(EXT4_ACL_VERSION))
-> +	if (((ext4_acl_header *)value)->a_version =3D=3D
-> +	    cpu_to_le32(EXT4_ACL_VERSION_R)) {
-> +		r =3D true;
-> +		entry_size =3D sizeof(ext4_acl_entry_r);
-> +	} else if (((ext4_acl_header *)value)->a_version !=3D
-> +		   cpu_to_le32(EXT4_ACL_VERSION)) {
->  		return ERR_PTR(-EINVAL);
-> +	}
+> +FIXTURE_TEARDOWN(uid_r)
+> +{
+> +}
+
+[Severity: Low]
+Does FIXTURE_TEARDOWN(uid_r) leak the temporary /tmp/uid_r.XXXXXX mountpoint
+directories created by private_tmpfs()?
+
+In tools/testing/selftests/uid_r/uid_r_test.c, private_tmpfs() calls
+unshare(CLONE_NEWNS) and makes mount propagation private, then calls
+mkdtemp(dir) on the underlying /tmp filesystem before mounting tmpfs onto
+dir.
+
+When chown_r_statx, create_as_uuid_fsuid, posix_acl_v3, and user_namespace
+call private_tmpfs(_metadata, self->dir), the private tmpfs mount is cleaned
+up when the test child process exits, but because FIXTURE_TEARDOWN(uid_r) is
+empty, the underlying self->dir directory in /tmp is never unmounted and
+removed with rmdir(self->dir) when self->dir[0] is non-empty.
+
+[ ... ]
+> +TEST_F(uid_r, signalfd_uid_r)
+> +{
+> +	id_r u =3D uuid(11), s0 =3D legacy(0), got;
+> +	struct signalfd_siginfo ssi;
+> +	sigset_t mask;
+> +	int sfd;
+> +
+> +	sigemptyset(&mask);
+> +	sigaddset(&mask, SIGUSR1);
+> +	ASSERT_EQ(0, sigprocmask(SIG_BLOCK, &mask, NULL));
+> +	sfd =3D signalfd(-1, &mask, 0);
+> +	ASSERT_LE(0, sfd);
+[ ... ]
+> +TEST_F(uid_r, ipc_stat_r)
+> +{
+> +	id_r u =3D uuid(12), g =3D guid(13);
+> +	struct ipc_perm_r_t pr;
+> +	struct shmid_ds ds;
+> +	int id;
+> +
+> +	memset(&pr, 0, sizeof(pr));
+> +	pr.mode =3D 0640;
+> +	pr.uid =3D u;
+> +	pr.gid =3D g;
+> +
+> +	id =3D shmget(IPC_PRIVATE, 4096, IPC_CREAT | 0600);
+> +	ASSERT_LE(0, id);
 
 [Severity: Medium]
-Should ext4_get_acl() -> ext4_acl_from_disk() and ext4_acl_to_disk() verify
-that uid_r is enabled on the filesystem before accepting or writing
-EXT4_ACL_VERSION_R entries?
+Should signalfd_uid_r and ipc_stat_r skip instead of failing when the kernel
+is built without CONFIG_SIGNALFD or CONFIG_SYSVIPC?
 
-In fs/ext4/inode.c, both ext4_inode_get_id_r() and ext4_inode_set_id_r()
-check ext4_has_feature_uid_r(inode->i_sb), whereas ext4_get_acl() in
-fs/ext4/acl.c calls ext4_acl_from_disk() without checking
-ext4_has_feature_uid_r(inode->i_sb) or SB_I_UID_R:
+In tools/testing/selftests/uid_r/uid_r_test.c, if CONFIG_SIGNALFD=3Dn or
+CONFIG_SYSVIPC=3Dn, signalfd() in signalfd_uid_r and shmget() in ipc_stat_r
+return -1 with errno set to ENOSYS, and ASSERT_LE() fails the tests outright
+rather than calling SKIP().
 
-fs/ext4/acl.c:ext4_get_acl() {
-	...
-	if (retval > 0)
-		acl =3D ext4_acl_from_disk(value, retval);
-	...
-}
+Also, tools/testing/selftests/uid_r/config lists:
 
-In addition, the comment above ext4_acl_to_disk() notes that set_posix_acl()
-rejects non-legacy IDs when SB_I_UID_R is not set, but two write paths in
-fs/ext4/acl.c bypass set_posix_acl():
+  CONFIG_TMPFS=3Dy
+  CONFIG_TMPFS_POSIX_ACL=3Dy
+  CONFIG_SYSVIPC=3Dy
+  CONFIG_SIGNALFD=3Dy
 
-1. chmod() calls posix_acl_chmod() -> ext4_set_acl() -> __ext4_set_acl() ->
-   ext4_acl_to_disk().
-2. New inode creation calls __ext4_new_inode() -> ext4_init_acl() ->
-   posix_acl_create() -> __ext4_set_acl() -> ext4_acl_to_disk():
-
-fs/ext4/acl.c:ext4_init_acl() {
-	...
-	if (default_acl) {
-		error =3D __ext4_set_acl(handle, inode, ACL_TYPE_DEFAULT,
-				       default_acl, XATTR_CREATE);
-		posix_acl_release(default_acl);
-	}
-	...
-}
-
-If a filesystem without EXT4_FEATURE_RO_COMPAT_UID_R (or a uid_r filesystem
-mounted with -o nouid32, where __ext4_fill_super() leaves SB_I_UID_R unset)
-has an existing EXT4_ACL_VERSION_R xattr on disk, wouldn't ext4_get_acl()
-load those non-legacy entries and allow chmod() or file creation to write
-new EXT4_ACL_VERSION_R xattrs onto the filesystem?
+Should tools/testing/selftests/uid_r/config also include CONFIG_USER_NS=3Dy=
+ so
+that the user_namespace test is not skipped on kernels built using the
+selftest config fragment?
 
 [ ... ]
-
-> @@ -87,19 +119,38 @@ ext4_acl_from_disk(const void *value, size_t size)
->  /*
->   * Convert from in-memory to filesystem representation.
->   */
-> +/* An ACL_USER or ACL_GROUP id into an entry of EXT4_ACL_VERSION_R */
-> +static void ext4_acl_id_to_disk(ext4_acl_entry_r *entry, u32 type, u32 l=
-egacy,
-> +				const uuid_t *id)
+> +/* user::rw- user:<u>:r-- group::--- mask::r-- other::--- in version 3 */
+> +static size_t acl_v3(unsigned char *buf, const id_r *u)
 > +{
-> +	entry->e_type =3D cpu_to_le32(type);
-> +	memset(entry->e_id, 0, sizeof(entry->e_id));
-> +	if (type =3D=3D EXT4_ID_R_LEGACY)
-> +		put_unaligned_le32(legacy, entry->e_id);
-> +	else
-> +		memcpy(entry->e_id, id->b, sizeof(entry->e_id));
+> +	static const unsigned short ent[5][2] =3D {
+> +		{ 0x01, 6 }, { 0x02, 4 }, { 0x04, 0 }, { 0x10, 4 }, { 0x20, 0 } };
+> +	unsigned char *e =3D buf + 4;
+> +	unsigned int ver =3D 3;
+> +
+> +	memcpy(buf, &ver, 4);
+> +	for (int i =3D 0; i < 5; i++, e +=3D 24) {
+> +		unsigned int type =3D 0;
+> +
+> +		memset(e, 0, 24);
+> +		memcpy(e, &ent[i][0], 2);
+> +		memcpy(e + 2, &ent[i][1], 2);
+> +		if (ent[i][0] =3D=3D 0x02) {
+> +			type =3D u->type;
+> +			memcpy(e + 8, u->uuid, 16);
+> +		}
+> +		memcpy(e + 4, &type, 4);
+> +	}
+> +	return 4 + 5 * 24;
 > +}
 > +
-> +/*
-> + * ACLs with UUID or GUID entries (only on uid_r filesystems, see
-> + * set_posix_acl()) are written as EXT4_ACL_VERSION_R, others as before.
-> + */
->  static void *
->  ext4_acl_to_disk(const struct posix_acl *acl, size_t *size)
->  {
->  	ext4_acl_header *ext_acl;
->  	char *e;
->  	size_t n;
-> +	bool r =3D posix_acl_has_id_r(acl);
-> +	size_t entry_size =3D r ? sizeof(ext4_acl_entry_r) : sizeof(ext4_acl_en=
-try);
-> =20
-> -	*size =3D ext4_acl_size(acl->a_count);
-> +	*size =3D ext4_acl_size_e(acl->a_count, entry_size);
-
-[ ... ]
-
-> diff --git a/fs/ext4/acl.h b/fs/ext4/acl.h
-> index 0c5a79c3b5d48..48bc352ec77fe 100644
-> --- a/fs/ext4/acl.h
-> +++ b/fs/ext4/acl.h
-
-[ ... ]
-
-> @@ -46,12 +60,22 @@ static inline int ext4_acl_count(size_t size)
->  			return -1;
->  		return size / sizeof(ext4_acl_entry_short);
->  	} else {
-> -		if (s % sizeof(ext4_acl_entry))
-> +		if (s % entry)
->  			return -1;
-> -		return s / sizeof(ext4_acl_entry) + 4;
-> +		return s / entry + 4;
->  	}
->  }
-> =20
-> +static inline size_t ext4_acl_size(int count)
+> +TEST_F(uid_r, posix_acl_v3)
 > +{
-> +	return ext4_acl_size_e(count, sizeof(ext4_acl_entry));
-> +}
+> +	unsigned char buf[256], got[256];
+> +	id_r u =3D uuid(20), s0 =3D legacy(0);
+> +	char path[96];
+> +	size_t len;
+> +	int fd;
+> +
+> +	private_tmpfs(_metadata, self->dir);
+> +	snprintf(path, sizeof(path), "%s/acl", self->dir);
+> +	fd =3D open(path, O_CREAT | O_WRONLY, 0600);
+> +	ASSERT_LE(0, fd);
+> +	close(fd);
+> +	len =3D acl_v3(buf, &u);
+> +	if (setxattr(path, "system.posix_acl_access", buf, len, 0) &&
+> +	    errno =3D=3D EOPNOTSUPP)
+> +		SKIP(return, "tmpfs without POSIX ACLs");
+> +	ASSERT_EQ(len, getxattr(path, "system.posix_acl_access", got, sizeof(go=
+t)));
+> +	EXPECT_EQ(3, got[0]);
 
-[Severity: High]
-Can leaving ext4_acl_size() hardcoded to sizeof(ext4_acl_entry) cause
-journal credit under-reservation in ext4_set_acl() and
-ext4_xattr_credits_for_new_inode()?
+[Severity: Medium]
+Won't acl_v3() and posix_acl_v3 fail or falsely skip on big-endian
+architectures because the POSIX ACL xattr fields are serialized in host byte
+order instead of little-endian?
 
-When posix_acl_has_id_r(acl) is true, ext4_acl_to_disk() in fs/ext4/acl.c
-serializes ACL_USER and ACL_GROUP entries using sizeof(ext4_acl_entry_r)
-(24 bytes) and sets *size to ext4_acl_size_e(acl->a_count,
-sizeof(ext4_acl_entry_r)).
+In include/uapi/linux/posix_acl_xattr.h, struct posix_acl_xattr_header
+defines a_version as __le32, and struct posix_acl_xattr_entry_r defines
+e_tag and e_perm as __le16 and e_type as __le32. In fs/posix_acl.c,
+posix_acl_fix_xattr_common() checks header->a_version against
+cpu_to_le32(POSIX_ACL_XATTR_VERSION_R) and returns -EOPNOTSUPP on a
+mismatch, while posix_acl_from_xattr_r() converts e_tag, e_perm, and e_type
+using le16_to_cpu() and le32_to_cpu().
 
-However, ext4_set_acl() in fs/ext4/acl.c still computes acl_size using
-ext4_acl_size(acl->a_count), which assumes 8-byte ext4_acl_entry elements:
+In tools/testing/selftests/uid_r/uid_r_test.c, acl_v3() copies host-endian
+unsigned int ver, unsigned short ent[i][0] and ent[i][1], and unsigned int
+type directly into buf with memcpy(). On big-endian systems, setxattr() in
+posix_acl_v3 sees a byte-swapped a_version and fails with EOPNOTSUPP, which
+posix_acl_v3 then treats as "tmpfs without POSIX ACLs" and skips even when
+CONFIG_TMPFS_POSIX_ACL=3Dy is enabled.
 
-fs/ext4/acl.c:ext4_set_acl() {
-	...
-	size_t acl_size =3D acl ? ext4_acl_size(acl->a_count) : 0;
-	...
-retry:
-	error =3D ext4_xattr_set_credits(inode, acl_size, false /* is_create */,
-				       &credits);
-}
-
-Similarly, when a new inode inherits a default ACL in __ext4_new_inode() ->
-ext4_init_acl(), ext4_xattr_credits_for_new_inode() in fs/ext4/ialloc.c
-computes acl_size using sizeof(ext4_acl_entry):
-
-fs/ext4/ialloc.c:ext4_xattr_credits_for_new_inode() {
-	...
-	if (p) {
-		int acl_size =3D p->a_count * sizeof(ext4_acl_entry);
-
-		nblocks +=3D (S_ISDIR(mode) ? 2 : 1) *
-			__ext4_xattr_set_credits(sb, NULL /* inode */,
-						 NULL /* block_bh */, acl_size,
-						 true /* is_create */);
-		posix_acl_release(p);
-	}
-}
-
-When the ea_inode feature is enabled on the filesystem,
-__ext4_xattr_set_credits() in fs/ext4/xattr.c scales the credit count with
-the number of blocks spanned by value_len:
-
-fs/ext4/xattr.c:__ext4_xattr_set_credits() {
-	...
-	blocks =3D (value_len + sb->s_blocksize - 1) >> sb->s_blocksize_bits;
-	blocks +=3D 1;
-	credits +=3D blocks * 2;
-	credits +=3D blocks;
-	...
-}
-
-Later, __ext4_set_acl() -> ext4_xattr_set_handle() recomputes the required
-credits from the actual serialized value_len and checks that the running
-handle has enough buffer credits:
-
-fs/ext4/xattr.c:ext4_xattr_set_handle() {
-	...
-	credits =3D __ext4_xattr_set_credits(inode->i_sb, inode, bh,
-					   value_len,
-					   flags & XATTR_CREATE);
-	brelse(bh);
-
-	if (jbd2_handle_buffer_credits(handle) < credits) {
-		error =3D -ENOSPC;
-		goto cleanup;
-	}
-}
-
-If an EXT4_ACL_VERSION_R ACL is large enough that its 24-byte entries cross
-a block boundary not crossed by the 8-byte estimate, won't
-ext4_xattr_set_handle() fail this check and return a spurious -ENOSPC (or
-leave __ext4_new_inode() short of journal credits for subsequent operations
-on the same handle)?
+In addition, if setxattr() fails with an errno other than EOPNOTSUPP,
+posix_acl_v3 does not assert that setxattr() succeeded before calling
+getxattr().
 
 [ ... ]
-
->
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/cover.1792552161.gi=
-t.jan.koester@tuxist.de?part=3D34
+t.jan.koester@tuxist.de?part=3D36
