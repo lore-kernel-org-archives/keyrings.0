@@ -1,64 +1,59 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792702204;
-	b=5aFY3MJ13YetPXbAlkGwaUtb7DeL7jfpYZa9cO2hSsP8p0ptofdwnDqDKFPOPMyJWqCw
-	 +3SqjNWEBPgHkEpweYEbR0aJK6yJ6k8sxOKJ+MJ2/4HT/OVE4JjXiqydWX0eSma0hYCxf
-	 Ko1Hn0n1OSuS/pnwX0BfeE4IuGmDCpTEnYEGh1aSIOcGViaIDhkCBkvBMYPkfJcVDIgst
-	 ILNuz0sHMtRd9m/BPMdYMqLCMW06IGyLts08YS754okKtvW21gWgtJdsXXmXYrGfmWLNU
-	 Wr1E3fVUQNwp4Uyo9AiRuqJ3nIynVBOEHAqXmzryN7XGFg+TbC3DMBsXR5lwK6WIsng==
+	t=1792702390;
+	b=q7a74pnuvVW88ZXD+ZBjMc5a/nsSXeiLtBOezgTvWD0hA3ADmLATVUHLCLq8MVkEQWMR
+	 TFb2gJLg1gHFgp7uvkYkPeylnhBZGC5D76hVJQpm/RyYINhozHRp+Th1MJNPmAl+zyA8X
+	 7mtCapB4bBEnb0Qhq2DXx70y+6zbSsh6A2tylk4wOkm25tUTZ2/a4Gci1Li6tXaZiGYGr
+	 IRx8UCZY42HM/f4aZiKlggVBVsWAB3yVff/XZ9NQQ3EWfxbMmliGMTLfZ9E2Ln2dIdteY
+	 Tvl7h9HY8AA1ZV3Dja1hdoNAvI06Ni5bFuq0LFboi5e12ChnF+7b4SPQ4tcsr139Dcw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792702204;
-	h=Received:DKIM-Signature:Received:Subject:From:In-Reply-To:References:
-	 X-PR-Tracked-List-Id:X-PR-Tracked-Message-Id:X-PR-Tracked-Remote:
-	 X-PR-Tracked-Commit-Id:X-PR-Merge-Tree:X-PR-Merge-Refname:
-	 X-PR-Merge-Commit-Id:Message-Id:Date:To:Cc;
-	bh=qyT3Ilp2lXMewD0w69TIfHBI6769IWTq9P1Nj/4sMPI=;
-	b=s+3EZ1O1jVjkKTxlv+GVJvXTG8wqbmQjFkUNWJvhP4U9EEo0/GiUraLu14iUNKcosMK/
-	 l/LXOeRoWuFwKAqn9JEsywHVdZasuPblaXsPeCOrCsQ0M/AXZA5n9NXPyPeWnx7HagJhF
-	 qae6ik131DaSekc/iaGRUVejz4QDaTuSy3J/yRUfkwECSvNYdTw0v0abcXsXRaiLvlosi
-	 cIIvlPguVIrW2/02C4iuifpwVzH0npV4CoH7q2jR1SReuPxkpxTtM3tb1vGDJD9FGiM0M
-	 3Lg7Kusje2cmUx+3kuquCjDNqxesQT1iAtw1VyPUQi+Puli/TK19q/zPpUQQa5+SuFg==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792702390;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=pyXXHEMbLUAsTR9Tom3Mr/KVXRKAq/9KTTxqx3eAuPc=;
+	b=mm6+mQ1wurvdlDgkp7FOL2mpQOqCsU54IpJpvlboKvdaGZzx1U/KUmmklHg8+jvt80ac
+	 qUzpb1yrIT67AOVqwOw4K6f3JdaNKbp9o1nJtR0KPKaA11nMKQ+JXFdpBGeTRwrti8FVV
+	 kEEHsyjMoBuYkfAQvwjBiWtyDWJmtI2LNMA6eHn44hmB9yOyPPTUcBoR4mRTRHI7Ydy/i
+	 qx9ti/p0NFgAfWuf0C18cGstPzZggBIHCdtEOu49D9MmNDnXCxE2QiHOlOlVDyw8OCSMb
+	 rAjhxCt3cBuOM4BAp0JRyLp4RnW5bpQXL4xUV40Bta21eXvJQxEvU6aejtAFVl4Ywyg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Zp1qxDL6;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nZUMCxs5;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2F6EA606A32C;
-	Thu, 22 Oct 2026 20:50:04 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 562B0606A31A;
+	Thu, 22 Oct 2026 20:53:10 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Zp1qxDL6
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 155BE1F031E0;
-	Thu, 22 Oct 2026 20:50:04 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nZUMCxs5
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 50D951F01825;
+	Thu, 22 Oct 2026 20:53:09 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792702204;
-	bh=qyT3Ilp2lXMewD0w69TIfHBI6769IWTq9P1Nj/4sMPI=;
-	h=Subject:From:In-Reply-To:References:Date:To:Cc;
-	b=Zp1qxDL6wPHU82SHZWS8d1bS478nztXeNIRwbUtCAhjVUYwgHxGq9qhiXvqsXyP9F
-	 D6ju//nI384Q4yo2kh/7TAE8zSrz9Hhy6SruMeqnzxOVWyt0xnY+UxOovxxFfhIE0s
-	 wVpNSFkfrxDbPHHo2w1iH0JO518OBj8qQ3SfUpob3bWd32rsi4eVb7kJQ/mcyA4V39
-	 D/7verzwlRknj2O8VTRaCPanSrYRDUwU2HBqotHGjf4/2rDEqj2mwcR6gZCuB+goXo
-	 j6D95jJ/ZRfTYDGSeYhj4BC5ZhKFO6SPST+EwEyHSEYhuepOIqzoUaaCD7qvCBExWk
-	 OE6R9R85rKL6A==
-Received: from [10.30.226.235] (localhost [IPv6:::1])
-	by aws-us-west-2-korg-oddjob-rhel9-1.codeaurora.org (Postfix) with ESMTP id 077BE380822E;
-	Thu, 22 Oct 2026 20:50:04 +0000 (UTC)
+	s=k20260515; t=1792702389;
+	bh=pyXXHEMbLUAsTR9Tom3Mr/KVXRKAq/9KTTxqx3eAuPc=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=nZUMCxs5s5EnJZN/SnY9lhAXDJoWwu079HUbQMrdZxMJx91ac2DIMaRur9jg3XkPP
+	 RiJgcuQcm9c85LclMgfSPfSKSKdcVYOu8aCcjO8hzVTxwKYL6cgjq84XcV5xnyfCTj
+	 EzvENFJr/sI7iSZffQDRLA1dwGGwxfzpkeBMCZQDl4CVw1V6Tz/sjSOyahsnsP4c5F
+	 KkeJV0hbVsV9w2ztFdrk+w+sYeo7oMcGJuuqFlWamjXiqZi2tgFxwsIbOGjIabZWWm
+	 w1wsL/jECIn5fgV0p2OT9BkNKqREQ5BQRYUcY+Ax/4xZ5ZWc7W1RbugIdOfVEkPnzD
+	 aeaR/Fm+IsJCQ==
+Date: Thu, 22 Oct 2026 23:53:06 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>,
+	James Bottomley <James.Bottomley@hansenpartnership.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Eric Biggers <ebiggers@kernel.org>, Kyle Zeng <kylebot@openai.com>,
+	keyrings@vger.kernel.org, linux-integrity@vger.kernel.org,
+	linux-security-module@vger.kernel.org
 Subject: Re: [GIT PULL] KEYS: changes for v7.4-rc1
-From: pr-tracker-bot@kernel.org
-In-Reply-To: <atjKs7PTN8CgndJg@kernel.org>
+Message-ID: <atp3sgtYEQ1z0Dd4@kernel.org>
 References: <atjKs7PTN8CgndJg@kernel.org>
-X-PR-Tracked-List-Id: <keyrings.vger.kernel.org>
-X-PR-Tracked-Message-Id: <atjKs7PTN8CgndJg@kernel.org>
-X-PR-Tracked-Remote: git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/keys-v7.4-rc1
-X-PR-Tracked-Commit-Id: 722658cac48a6ba49f5506fd74d010ad9dbb2f05
-X-PR-Merge-Tree: torvalds/linux.git
-X-PR-Merge-Refname: refs/heads/master
-X-PR-Merge-Commit-Id: 14785eff402944f56466ef0058408334cfc2f91d
-Message-Id: <179270220279.170280.5677887239451087231.pr-tracker-bot@kernel.org>
-Date: Thu, 22 Oct 2026 20:50:02 +0000
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, James Bottomley <James.Bottomley@hansenpartnership.com>, Mimi Zohar <zohar@linux.ibm.com>, Eric Biggers <ebiggers@kernel.org>, Kyle Zeng <kylebot@openai.com>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
+ <CAHk-=wjouh66VCZjhUedb+wkRTWB0vsoDjU3N0huGsiYXQ5S0A@mail.gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,16 +62,26 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHk-=wjouh66VCZjhUedb+wkRTWB0vsoDjU3N0huGsiYXQ5S0A@mail.gmail.com>
 
-The pull request you sent on Wed, 21 Oct 2026 17:22:43 +0300:
+On Thu, Oct 22, 2026 at 10:06:56AM -1000, Linus Torvalds wrote:
+> On Wed, 21 Oct 2026 at 04:22, Jarkko Sakkinen <jarkko@kernel.org> wrote:
+> >
+> > A patch that Kyle Zeng submitted addresses a critical bug [..]
+> 
+> Note that breaking local KASLR is not a "critical bug". We just call
+> it "Thursday".
+> 
+> Breaking KASRL locally is trivial using just all the normal local CPU
+> timing attacks.
+> 
+> KASLR is there to make remote attacks harder.
+> 
+>                Linus
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/keys-v7.4-rc1
+Ok, that's fair and makes sense.
 
-has been merged into torvalds/linux.git:
-https://git.kernel.org/torvalds/c/14785eff402944f56466ef0058408334cfc2f91d
-
-Thank you!
-
--- 
-Deet-doot-dot, I am a bot.
-https://korg.docs.kernel.org/prtracker.html
+Br, Jarkko
