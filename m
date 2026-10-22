@@ -1,100 +1,161 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.215.179
+Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=52.101.201.64
 ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=pass;
-	t=1792689559;
-	b=4KdVPVP8L626PpVDRu8pQrjNHR6bEUc21oKlOg4bUvxNEuApjf9vNNdVaLaedwSpZV/q
-	 ERAKGiamcxDtTbilkV0T1knwpm4QRpp5pMQ1AccoaQZIXOtsUa2kX+RhoWj6PgqNk4Dro
-	 juKfwANhy74Dft95IY8+ZeCU0jx8ufoVFYbutnHjwGng/inoDRlPVqjCnSBApkc9LH14g
-	 Fvn1aL0xVR8YcZYL7iKHUfLtdHv3C+h+66fZ1hDN6wBY+PAAXszJpWis3/foU4WI/im+o
-	 vbiDePNpLZfEnwOHGuHAqSH+ImfdiAhC4zGxRwop/CpDeuQ7LKNjbpjPph/9wuNbW7A==
+	t=1792689767;
+	b=WY0VEfUlYMb1ZTH31XziqIOLTDTH3uSIqAbbimQ+KjbvRE5fxGwPC9AV6p7nspMdgcOq
+	 kJQwApCcXZQzpZJAGx2/Kr31nAy/rjQL/z8KwKor2o1Jb9TcLvqBLrE9zkoANlOI1NBJw
+	 9V3o55V2xoGbjMYCMHzta6GsfokouFy8SqL716SvzlVvuUQjGiNH4s0Zw8npiZ67yM2K/
+	 dbiWM07AFMt5nHUxVTG28Cjt1SLlfZEw5XnYrZs6RUrd3CCmeDfdETaky/AJZ6YtP1O3k
+	 s1oKhV7h8dfCQeQ1AUDPyYo3A7EJLVzWkntKTusCpj2aZ6dRPO7LYBlTlynOMCkkNsA==
 ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792689559;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:
-	 MIME-Version:References:In-Reply-To:From:Date:X-Gm-Features:
-	 Message-ID:Subject:To:Cc:Content-Type:Content-Transfer-Encoding;
-	bh=BB37ifua8Sxb2GAG5iG+mcuA1PmZC21b7zD8v0nAGJ4=;
-	b=LuZ0Wa4qmrL52Qgvf1pwCFWNONOy3OupIpLZiA/jyE/RJUWao7TwDhWRVRm5WWEAfZ3L
-	 MLddxob3iyRkZbDODKKzb37dm1GawwC6DsW/ZTSrCH6nANUDjh9jI3SmXj0W3Os4/E1V6
-	 3ofyBlTvvHh89wB9jDJeLsXIBaYcySD1i2WUTxWIwkX17+glYFUb5yG/kCIyOra4TzsTO
-	 nl/d8UPHbI9QESUUrHy19Ujv7vPjyXrs4RVSdKw7yIT/V6qV0MkJO64C36444ebdPcJKd
-	 8aW60oh8YcBuF0jrBxPCgM6e/Ea3fFMHXMNLnqoQkfq4/6OuwLgtlWWKeQShi28Sn+g==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792689767;
+	h=DMARC-Filter:DKIM-Signature:Received:Received:From:To:CC:Subject:
+	 Thread-Topic:Thread-Index:Date:Message-ID:References:In-Reply-To:
+	 Accept-Language:Content-Language:X-MS-Has-Attach:X-MS-TNEF-Correlator:
+	 x-ms-publictraffictype:x-ms-traffictypediagnostic:
+	 x-ms-office365-filtering-correlation-id:x-ms-exchange-senderadcheck:
+	 x-ms-exchange-antispam-relay:x-microsoft-antispam:
+	 x-microsoft-antispam-message-info:x-forefront-antispam-report:
+	 x-ms-exchange-antispam-messagedata-chunkcount:
+	 x-ms-exchange-antispam-messagedata-0:Content-Type:
+	 Content-Transfer-Encoding:MIME-Version:X-OriginatorOrg:
+	 X-MS-Exchange-CrossTenant-AuthAs:X-MS-Exchange-CrossTenant-AuthSource:
+	 X-MS-Exchange-CrossTenant-Network-Message-Id:
+	 X-MS-Exchange-CrossTenant-originalarrivaltime:
+	 X-MS-Exchange-CrossTenant-fromentityheader:
+	 X-MS-Exchange-CrossTenant-id:X-MS-Exchange-CrossTenant-mailboxtype:
+	 X-MS-Exchange-CrossTenant-userprincipalname:
+	 X-MS-Exchange-Transport-CrossTenantHeadersStamped;
+	bh=Fx5Bxgmy6musxjlPcZzRxS7FCbnNUJaOawhMxNunoyY=;
+	b=V7BoWOSeiLPceNsafgynuKWjF/Rp58Mbaoav2rdq69PqEWnEwqdTW1IVLVvRyb1IhXml
+	 SRO9p5G3z7tdbqfOifL1LfJG3D5J9IabualIphw92Hf5kF4dG8U8Zwu2otFNydOTFi3BA
+	 8KKOvCJ7B2P4n2CLB76r9fdAY7PoSZx2+848K/N/hPNGWXKMI2npWUk5uaGG+hUcWeMNU
+	 n7NsMrVoEnYwcONYlkQEfimn0z0pLknn7a9swKinlxvYdid5FE265TWHBGPoQNrKv9VdF
+	 4aqFihIZoRitsSeQpHrEDFxbtgLXtOYoL1qb74rndJf7i9w/u//vuNDA/lBJP/Tb6+Q==
 ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=paul-moore.com;
-	spf=pass smtp.mailfrom=paul-moore.com;
-	dkim=pass header.d=paul-moore.com header.i=@paul-moore.com header.a=rsa-sha256 header.s=google header.b="K1eIq/GM";
-	arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.215.179
-Received: from mail-pg1-f179.google.com (mail-pg1-f179.google.com [209.85.215.179])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	dmarc=pass header.from=nvidia.com;
+	spf=fail smtp.mailfrom=nvidia.com;
+	dkim=pass header.d=Nvidia.com header.i=@Nvidia.com header.a=rsa-sha256 header.s=selector2 header.b=Gls1vxRN;
+	arc=pass header.oldest-pass=0 smtp.remote-ip=52.101.201.64
+Received: from PH7PR06CU001.outbound.protection.outlook.com (mail-westus3azon11010064.outbound.protection.outlook.com [52.101.201.64])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange ECDHE (secp384r1) server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 16454606A31B
-	for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 17:19:13 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 16454606A31B
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=paul-moore.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=paul-moore.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B5B0D606A319;
+	Thu, 22 Oct 2026 17:22:46 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org B5B0D606A319
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=nvidia.com
+Authentication-Results: smtp.subspace.kernel.org; spf=fail smtp.mailfrom=nvidia.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=paul-moore.com header.i=@paul-moore.com header.a=rsa-sha256 header.s=google header.b=K1eIq/GM
-Received: by mail-pg1-f179.google.com with SMTP id 41be03b00d2f7-cbedd5aece4so543455a12.0
-        for <keyrings@vger.kernel.org>; Thu, 22 Oct 2026 10:19:13 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1792689553; cv=none;
-        d=google.com; s=arc-20260327;
-        b=mK623yAOBCFJ+qf1Wx1/P84Db5WsVpO/cyQkItewZUZmvJ5RMPWzo+enV/GOtC72Yb
-         /P4Wv54kuqdeA7Z0v8SL2g7K9VTNpIXpwWLNmb1TkFBxZSsbTQOreGfEXv1ndh7zJhni
-         SSAGfGOhKC5JE3HECaRYIW0/TiKBeP0O6yldmQXEmDvUecnoGQPe4eT2nqC2ZdYfMdTx
-         Ep4BFtbvHmvnGfZalxH+xTHRnnODSRbyox1KS+KSAlW/rRuvRxoPhrLa61SQN2Xwxfxv
-         Y4LcNEfMWMPqTDDBkcBTYhD9rgzY5a3PFO0622tjEQDeoPHYW6NeSmtp7TdL9xyGDdUi
-         6HqQ==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=content-transfer-encoding:cc:to:subject:message-id:date:from
-         :in-reply-to:references:mime-version:dkim-signature;
-        bh=BB37ifua8Sxb2GAG5iG+mcuA1PmZC21b7zD8v0nAGJ4=;
-        fh=a44+Xr2tDRriyfro7P5lQoHk7CFSBedVDRIyXPr5xz8=;
-        b=UrjiSG1/NymAgqYVUhDr6KcLQrOPHlymgwrkRSKGeiNqUxgEGYK8kPuS6hbMJmsc69
-         KQslFnKejdxHx6/0/gGmPVzGnvLfyWRKmZZDYe7drWv+9oiuOBxU8fPRI9hVERaMgJxp
-         TARaLjONMIa1dGcpi1lSKT6LTMmtswuFqONEFLzIekex92JEPpsAEtMLGKNcn277Rotl
-         BvcsrPe30bSBBNvp9SH504KnrRENVEmoNxRtjTdExX8f0MwRFva7dR5l7iw31FDypKY1
-         YOLkT44GE0wnemPjSzmXODdx1ndG4Ts3WTzBCDqAVZUyOnPktMOPkuowFAgUsIHlc6Ra
-         v7sA==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=paul-moore.com; s=google; t=1792689553; x=1793294353; darn=vger.kernel.org;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:from:to:cc:subject
-         :date:message-id:reply-to:content-type;
-        bh=BB37ifua8Sxb2GAG5iG+mcuA1PmZC21b7zD8v0nAGJ4=;
-        b=K1eIq/GMjRwymTiDRmvQUK4W8vEF3J66M/qREU4Pf5Dgs5jQY47GYeuFACctzhxRMp
-         JVIwSc1p02bUGb7HGwOYlEo5uZFib/eQJhSVsSgYR7CG9iocSGXDcq05KcghSCfYpgwy
-         tSFcUsS2z/n7aHILMoQ1mkvzB+iyUr4GqW8+qaZVoW1HBBwoVccXepzOQGzfx8z+oMaH
-         MbnLhZnhS7e1RtF7WDLLDAdCPSOMm7nw6oq6jiVMYt2JckrcBnH+P1DSoy230ddk83Y9
-         MOjI5cf98eAf0w7/SJq4HQ1j/7yH97UuyWDx6nIWaLQ0m7oBxCg7jZCwsTT1NW/Pj+VT
-         1VMg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792689553; x=1793294353;
-        h=content-transfer-encoding:content-type:cc:to:subject:message-id
-         :date:from:in-reply-to:references:mime-version:x-gm-gg
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=BB37ifua8Sxb2GAG5iG+mcuA1PmZC21b7zD8v0nAGJ4=;
-        b=ZlgHkPF7ICOrdT8Hk1Ddck+omNTbtHXNIH4OKMYLJkXJTKM8OGtwq0/PNvy9IaG2E2
-         pJaoj3+d4NmbDIZZ9HtC19puWc0PHA0uOepLhtHbAOqat6B19JBflT5JqzN2lmMqnLcd
-         8+BvJxRTzDAXT38M2dV8SezMSFmaLBpEtCjV/G73NVBDrVc9a0PWMnsHeyw+OIO8ljXc
-         Dh3YqlflTnUXZxMO5zp7amoFc52sarDCkszSzlf+LMFCpfasRz35UDUerEfGv5R09eOK
-         S5Jc463PTY4tuEfkAw6STJwT/uXPF7TVjQ4PReWTK70+TYx8ZTbEyjG34KdUUpSZDAWu
-         wyfw==
-X-Forwarded-Encrypted: i=1; AKwUvBxYdLd2wffB+euDd8D1q/gpc8bBTE+q3TZf+XrpcJ0VbQ9xnH/l+B6OPL4dyeZLThVk98pCiVMADw==@vger.kernel.org
-X-Gm-Message-State: AFq9FYL19E9arAl9lHakU2KrHi8GVMeY90N9bBzIPO1PgUOepuQaVJex
-	z5kRVkeVOmXUu79iPpR3dW99DQxTxgiraJHhWjIsJYUQsj1Dhdv3DVlgS+KyMNUYgJfXu5bbEg6
-	mQ324VjDoVNa+a6xulqbWiFhL5I5bVAxAZ51e43F3
-X-Gm-Gg: AYBFou37vxi3p4Qu4+L2HSnWECBxIYMEPVV4fNab7cWvQ58PWUuKkB5upWHd7J1jK3y
-	gccLTOmLB3L1qJOfkMEmZ7n6xv3dQrfP7/yXbKL/+xWCcjwyiFcNEeJJJ6wTca9Z71SCW0sUc4V
-	FGuRdoUUQNGeLs10mBp04mO2JCSHVaCKjkV+8txmnUvrg93W+eZydirqPdQdjMbpXCgudtPVkoI
-	iHnTSDCjnVM9ONBe/k2ciBNuMP1lp5keUYNJFgymw+f3oEcy+1gFt/kEZvcZs9xXEKpvbKkkLhF
-	PmZWEF+OdPD9GerrCNdAfMjqp+MgdXV0P3ecJpZ02jkyD9+ZsFPlkVnbzekjeSXE6q4PmPGNOw0
-	+/xPf+FgIweJ9H4XPSi97+SqjwwrFCNkRctAOd6Gn3p1GtERuPXxxtNW9vPHZVDdrr9Z5
-X-Received: by 2002:a17:90b:514c:b0:3ac:95d7:2f95 with SMTP id
- 98e67ed59e1d1-3ada6d24c14mr2208639a91.20.1792689553067; Thu, 22 Oct 2026
- 10:19:13 -0700 (PDT)
+	dkim=pass (2048-bit key, unprotected) header.d=Nvidia.com header.i=@Nvidia.com header.a=rsa-sha256 header.s=selector2 header.b=Gls1vxRN
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=a0BQf+M3xv6Dk/0f/pWU2Wezp8D7Ldcbp9Zq1RhgMc6+Y9hbebIjNUOa1SsEXLu4edcyLAMT9CO9hOOD0lGdokaaBQZMPt+zKrylgh/IfCyCAetXQaoJ3Pbukv9aDAcAvC3gNwGqIWxsUIZ6USkvw4AkwvrdsbDq4mqJDTBBmocP0uRlFG33Fqr/laqRxhHdyZhtLo8CNvOsesqI9BooKE0EsrFvMOQJRc/N8mYT9blskrImkQ+T4M7qH7/ngKBLf3qjpmg4gbYiLmQgHdXkr8ax9kOc/j4Z5cuMOECpSM93DxmDDnxOloIFpzmxyCjsegcW2QjA9bSZuHSeYvDvoA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=Fx5Bxgmy6musxjlPcZzRxS7FCbnNUJaOawhMxNunoyY=;
+ b=QFtULarUc26lRLSfqF0yLmY1hbxZb0FZ71RqY4t6/zhEmSbhS/F4YWE9rNvQNsKQq9ATUvzIK2QwmygXCz9Ftkuuwf9yw5k+ZLA+3rPSLzTW3P8H0vChVbVeRwDUG4HISuIc8banrG5OSWJxpCoB+j/0U9aNk3n0uNRObduPGwJ4QE7EvvOYVZ2HAOzcxMK7g+W8904ZsA8YQEuR104h6mwUs5hvWG1hTRuQVUKvu9Ia0Av4k4aZhg/gkKD4z2ycyW5ufytZB5DhShuxT4L7R9VgS+6ZPhi/t1HSiwLCBQ9bpwISr/+Yu9sAMlstCwZe4Q1/KHo/4a67uDwPCEIzFA==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=nvidia.com; dmarc=pass action=none header.from=nvidia.com;
+ dkim=pass header.d=nvidia.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=Nvidia.com;
+ s=selector2;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=Fx5Bxgmy6musxjlPcZzRxS7FCbnNUJaOawhMxNunoyY=;
+ b=Gls1vxRNGCYaTlYoNZseQrbkc457yJ9l2yoDvBmovoBA0ntf1J8jpV+EdoCfyO2YCvgjU4w9tHPaOOd/N7todMoaLNvlN4gzUqon7euRvO+gJnsHN8R9yEjLuGhNVNF8Wn8v4DdOmjOCX/2AIX5UHe5VgX111X2UuB1dN4qpgaRxPOmQadnGatSdiDKuyBNKr0d+awGKwC5X/32mdo9zY+skx1zSuBHSoiN5K1cLAKvGBoCMYgzlCgWk9/yR/zwunC3e3I7I1nDYpdAQboF3+2pm1BDFD7ARLw7JlacJm/47oVSvMdNFBBWoMunhCw0d9g8fHmzBTb7DI/J9jOmcjQ==
+Received: from DM4PR12MB6136.namprd12.prod.outlook.com (2603:10b6:8:a9::14) by
+ SJ2PR12MB8979.namprd12.prod.outlook.com (2603:10b6:a03:548::18) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.21.546.16; Thu, 22 Oct
+ 2026 17:22:42 +0000
+Received: from DM4PR12MB6136.namprd12.prod.outlook.com
+ ([fe80::75c4:de57:e254:243a]) by DM4PR12MB6136.namprd12.prod.outlook.com
+ ([fe80::75c4:de57:e254:243a%4]) with mapi id 15.21.0546.012; Thu, 22 Oct 2026
+ 17:22:41 +0000
+From: Manuel Huber <manuelh@nvidia.com>
+To: Fan Wu <wufan@kernel.org>, David Howells <dhowells@redhat.com>, Jarkko
+ Sakkinen <jarkko@kernel.org>
+CC: Christian Brauner <brauner@kernel.org>, Andrew Halaney
+	<andrew@amutable.com>, Paul Moore <paul@paul-moore.com>, James Morris
+	<jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Jonathan Corbet
+	<corbet@lwn.net>, Shuah Khan <skhan@linuxfoundation.org>, Shuah Khan
+	<shuah@kernel.org>, Randy Dunlap <rdunlap@infradead.org>, Alexei Starovoitov
+	<ast@kernel.org>, Daniel Borkmann <daniel@iogearbox.net>,
+	"linux-security-module@vger.kernel.org"
+	<linux-security-module@vger.kernel.org>, "keyrings@vger.kernel.org"
+	<keyrings@vger.kernel.org>, "linux-kselftest@vger.kernel.org"
+	<linux-kselftest@vger.kernel.org>, "linux-doc@vger.kernel.org"
+	<linux-doc@vger.kernel.org>, "bpf@vger.kernel.org" <bpf@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 4/4] selftests/ipe: test the IPE policy keyring
+Thread-Topic: [PATCH RFC 4/4] selftests/ipe: test the IPE policy keyring
+Thread-Index: AQHdYBKD3df1QxRQHEyGcDuwVcFtSrcFgvEAgARNbSA=
+Date: Thu, 22 Oct 2026 17:22:41 +0000
+Message-ID:
+ <DM4PR12MB613649AD2E3435FC01EF4062DE652@DM4PR12MB6136.namprd12.prod.outlook.com>
+References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
+ <20261019-b4-ipe-keyring-rfc-v1-4-156f0b93e843@nvidia.com>
+ <1c39ea06-4b5c-49c0-a508-06955c549556@kernel.org>
+In-Reply-To: <1c39ea06-4b5c-49c0-a508-06955c549556@kernel.org>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach:
+X-MS-TNEF-Correlator:
+authentication-results: mx.microsoft.com 1; dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=nvidia.com;
+x-ms-publictraffictype: Email
+x-ms-traffictypediagnostic: DM4PR12MB6136:EE_|SJ2PR12MB8979:EE_
+x-ms-office365-filtering-correlation-id: 26793fcd-72fa-4f8e-53bb-08df30611424
+x-ms-exchange-senderadcheck: 1
+x-ms-exchange-antispam-relay: 0
+x-microsoft-antispam:
+ BCL:0;ARA:13230040|366016|1800799024|23010399003|7416014|376014|38070700021|261022105027099002|56012099006|4143699003|11063799006|10067099003|18002099003|22082099003;
+x-microsoft-antispam-message-info:
+ 9HDsFYheecwz9bl+9NpSCwtaXrcEcdZA+abWBd6UMvrgNyopbK5J5VE8D/4Mond8jyIXYYrWnHUCBRuDkrFI3z5klJAxT7r9P2DE9fsqZpWTeobfIefTPt94hNAuZ5J9fZXoSV3uxrOK4JjHobPGGk3p7nuE9NXdrmcU8rwT2qwoCNGfJAsXF/eHkPT7RisM5F6cJJET2XnPBK3al4yO4xnRiyxrhgPJlmxqXUdCd4gsrxd1WKs/RLiLLkFFrZPbYg1dWnsiuoL/2InEh6cfeWQThku3+VSJkg4XFlypI3spdLhxL8j1fuaCsEnGmp0OkCjKSq/UVvbL9RtgJ2JF5zwB8VG02l5EyfknTytlloS2/t1L/tIxyyo/lAQxTexTw+Jf3xnp+1w8ad/QDDxrxa4dIH2etmBzM3tzOjEZ1q619hx6gRLyWdQdZ9XujHF2kpR+WvW7QsuxkQHlBalpbRYbZL+XX+GNklfB5SqwuXHAfwCbAckStNaat+pmSCRAvQvbtqkYTMBodUmli6z1Be/8Y69FHEN/RRKKQHrWr79DP+SrUSLYEaGQQP/Q+4E6Roc3ceEhzs8wht1McEIRtgMgRfjIARPnd+FceiaTjTbURRU1hUYk4xcIlZlmHJ9XuzoKvtvH9p9hVD1LrBc7jrLp4vWDcQIAt22Vq1XIyOAcx+ja99+nIqn5Bh7Q9dpNZtwY6H0My0TIw24ugBKpEEyVV9+0YfJ4QPu2RyZpDY0=
+x-forefront-antispam-report:
+ CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:DM4PR12MB6136.namprd12.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230040)(366016)(1800799024)(23010399003)(7416014)(376014)(38070700021)(261022105027099002)(56012099006)(4143699003)(11063799006)(10067099003)(18002099003)(22082099003);DIR:OUT;SFP:1101;
+x-ms-exchange-antispam-messagedata-chunkcount: 1
+x-ms-exchange-antispam-messagedata-0:
+ =?utf-8?B?aFpqejlWcy84K3BCbHFuYU50NVVpS1g3ZDdFc0ZXa0lsZ1ExSkcraXFabnNH?=
+ =?utf-8?B?MVpxZDhXd1RKcHZXeEY1aXYwOWx1WU9KNGZvRnhUUHJTaUp3QWcxZHZGOXNm?=
+ =?utf-8?B?VHNKeVdUTXAyNlZZWHJnbFl4bkw3ekNDUjh1dXlSU0xCTW8vTklvSXZvTENF?=
+ =?utf-8?B?U3pOVkwybktKV0pCeUg3MDZIZnRaSlJSaVpQSWpyVTQ3bTY3UUw0SW8zRUQ0?=
+ =?utf-8?B?S2lzMGNjNFhLWDA4RW4yWHd0Q1pKSnZ3THlLS2xTNVRwM0dURFVNR01XZUVo?=
+ =?utf-8?B?dFF0aUxIMENqV3h0SFZWaURDU0hTMDNQUkE4UlZNdWExRFJ4aXUyRVdmNHFh?=
+ =?utf-8?B?TEtBTlBiNXAxakVDdFZzSnl2dDRwS3diS1BkeGtxQzZRdFk4NXdkKzRtZGYz?=
+ =?utf-8?B?NmFSRXBxbG5jdXhkbEJVaDR1QzZ3ZTQ3dExZNDU3djAxRHVvUmM4OFpkYXVw?=
+ =?utf-8?B?Z0pVZVNxWi9nb00zWUEyTkxUSmtsenpCTncwMmlOb1M1V1lRWUY2VHQxdDVm?=
+ =?utf-8?B?VktIRkoreVZEWWZyWE1iOHJqbzM0dGVtclNYajdsYnd6NWJMZXM1aWQrVFZm?=
+ =?utf-8?B?aUkxU3hoeENsMFVJN1NISnZHRU4zU3N4M21nN3IvZGx4Z0lMQ3I4aG02S3Zp?=
+ =?utf-8?B?S1g2ZllnRzFwelNjZHFQbjhiTWJrY0wyRkt1NklIQVpmanVjZkpTeWtmVklm?=
+ =?utf-8?B?T0tLMHoyZmRiS1Q5TVVJaHdXZWRQSlV0VnZ1NVIzaTZxckMxQkJibFMvRDRN?=
+ =?utf-8?B?alNoRXM2TUZBaWN0ZHhiVVJSK0RGTmhtL3FMb212L0hHaG5uRHlpOWg5Uk9z?=
+ =?utf-8?B?dk0wWCtBSHpOR25SdFp5WldTTVYrbkVXZkVRdy9HYTh0UzRSYkRXOEc1N241?=
+ =?utf-8?B?bnREZ0lhdWJ4bE9Gd2tLZ0ZuL2ZhTjRKZDR6S1NQbVZTazdHYUJKVHdiMFh4?=
+ =?utf-8?B?SlcrZ2xRZDhXZERDV2d4SjVOWDhYd3hMMnZDd3NNTFlPdjlRd1F6WWc2SWt2?=
+ =?utf-8?B?UEM5d0dVWGR3RTBGdE9vbjVIa0xyUTZNY2hEMXBFcmpRM1ZEa1VEQTlaQ2Qx?=
+ =?utf-8?B?cm1YYlRCNGF4TjBRb01kL2xiZDJLYmVkZkd1WGhTT1JoMGo5NERHdkdZNWFG?=
+ =?utf-8?B?NXlhTTRqRWJ6VTlnWlRWYVh1Vlh2SEZBczlQb0RqWjZtNFh6TzMrclVFUjZO?=
+ =?utf-8?B?cXlHbG04SG9jQ0dGRjlxL2g5eUllWkFiUmI2eTFFYlhxcm9iMm8xUjhWU1hO?=
+ =?utf-8?B?VEgzZzlJcE9oSHV0QVFRWFNnaEtKa1NFVFpOT0dDeXJlS2xvZm93RTBtQU5U?=
+ =?utf-8?B?dGJ1bVh6amhUNW80TDdlalZYemRPQTArSTZXaFU4MVhOOUZjUmxFRDdqOXNU?=
+ =?utf-8?B?ZDlZRHphRWREdmZXOXZ5Ym5ocG56QXpkODR0ZUZneGszOEtFUmFUV2lNemR0?=
+ =?utf-8?B?THNjQ0Zsbkl2VTNwWXRpVWZZbEd1cUZ5dnVCYTJmTVdidEVia0VvVmpleXI0?=
+ =?utf-8?B?Q1BOQWxSRk15K2NNSTVWTEVXZFZhOWtZcTIyYXNUVXRIdkxjMFdzYndrSUZ4?=
+ =?utf-8?B?QWo2T1JHOGlVblAzV3ZrQzVDVG1hZVJMVmZFYXJjR0lrcnpQdVp1SWxNWFFw?=
+ =?utf-8?B?Y09lSmM0a1Z0cWR5bVgrcnkvZGhGODRDeFNuVWpacHZOZkM4RE10ZUVEU25Y?=
+ =?utf-8?B?N3c5UHlHYW45Y3ZNZHEzQVJhRVJ4dEU3cHloQ1dnVHVQNFN2ZXF5WVA4eU85?=
+ =?utf-8?B?OWlyUFNrVHpaWUNpZTAxbTFoN1hTM0lZaTJIUWJ6c0FhK3VML2YvTUZBNXJp?=
+ =?utf-8?B?UlZhTTVlQ0ZKZ2dvY3BXVHBtM25nUS9nNVBTTlpVcWlDRjZjdlFSZkF1L2wx?=
+ =?utf-8?B?WkdXLytlWXNKSTJqcDNtazNhTlV4VUp1bDIrSWxYMkY3WjFuTU96WWdFUCtJ?=
+ =?utf-8?B?b1d4M1JKR01QUXkvZkE5c0taWExGMFgxeDlGMXgzZHRtc094MzhmbVZDQVRw?=
+ =?utf-8?B?ZHlSWFhKUGxNS2krdXVOV28yTlZxelp4UjVOb0ptSHZMV2Y5TGZ5WnlYeXlM?=
+ =?utf-8?B?M1RKeUVDTnFqVys5TUpjKzNvYVlCVkxYM0t5ZFBuNEIrSk9IS2dIQ1ppWjZF?=
+ =?utf-8?B?K0xtbGxzdzFySkh0SXpSUkVLTXRrMXRYdHg2RkhleEx5VnFsT0oxWDA1NzJ2?=
+ =?utf-8?B?Wlp5a0RJcUp6RDR3cUZyakJVM3ZWdDVXZUZJb052MXd5UUxSeVdrbWNNbUFS?=
+ =?utf-8?B?RDRFL0NZREJoQkhSMnZ5S0dMMDdzRFhaN2Uzc3NBNGl0VHRSNXFBVFc2cGYw?=
+ =?utf-8?Q?s1yN+VgcTQM6BtcjF8?=
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -104,121 +165,27 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
- <20261019-b4-ipe-keyring-rfc-v1-1-156f0b93e843@nvidia.com>
- <702ade20-a2f3-4919-97e6-c72faa89399a@kernel.org> <20261021-groll-donnerstag-erfuhren-ce34a0ed4e97@brauner>
- <CAHC9VhTHUU0h9k74CMT6wYhMwyY3YhbSSFwJoDTvoFRyTFVZwg@mail.gmail.com> <20261022-hausbank-dozent-hurtig-9443f3777475@brauner>
-In-Reply-To: <20261022-hausbank-dozent-hurtig-9443f3777475@brauner>
-From: Paul Moore <paul@paul-moore.com>
-Date: Thu, 22 Oct 2026 13:18:59 -0400
-X-Gm-Features: AclHuK_mpvVbVbsjXsFY4C_2Z-Hg3ACXgqMxfwiNaJKHEvEnCJIfbBS66y6uEck
-Message-ID: <CAHC9VhQ4sdCRvJ+YPZoiQzR_hgQN6-=84qvnTDDGPf=7=L9-jA@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/4] ipe: add the .ipe policy keyring
-To: Christian Brauner <brauner@kernel.org>
-Cc: Fan Wu <wufan@kernel.org>, Manuel Huber <manuelh@nvidia.com>, 
-	David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, 
-	Andrew Halaney <andrew@amutable.com>, James Morris <jmorris@namei.org>, 
-	"Serge E. Hallyn" <serge@hallyn.com>, Jonathan Corbet <corbet@lwn.net>, 
-	Shuah Khan <skhan@linuxfoundation.org>, Shuah Khan <shuah@kernel.org>, 
-	Randy Dunlap <rdunlap@infradead.org>, Alexei Starovoitov <ast@kernel.org>, 
-	Daniel Borkmann <daniel@iogearbox.net>, linux-security-module@vger.kernel.org, 
-	keyrings@vger.kernel.org, linux-kselftest@vger.kernel.org, 
-	linux-doc@vger.kernel.org, bpf@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+X-OriginatorOrg: Nvidia.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-AuthSource: DM4PR12MB6136.namprd12.prod.outlook.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 26793fcd-72fa-4f8e-53bb-08df30611424
+X-MS-Exchange-CrossTenant-originalarrivaltime: 22 Oct 2026 17:22:41.6771
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 43083d15-7273-40c1-b7db-39efd9ccc17a
+X-MS-Exchange-CrossTenant-mailboxtype: HOSTED
+X-MS-Exchange-CrossTenant-userprincipalname: 5RQlpKJhqjL3ekhMf4JfP1t8mBdVx5RRikQdHeN+If1AIPhEAu2j9L+GmOnJ0Rt01TdjEaHVkuvsVDKXtNNzJA==
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: SJ2PR12MB8979
 
-On Thu, Oct 22, 2026 at 6:19=E2=80=AFAM Christian Brauner <brauner@kernel.o=
-rg> wrote:
-> On Wed, Oct 21, 2026 at 12:51:35PM -0400, Paul Moore wrote:
->
-
-...
-
-> > As far as I'm concerned the decision of how IPE uses an IPE keyring is
-> > up to Fan.
->
-> This is really not an argument. Manuel posted an RFC that follows two
-> existing in-tree keyrings to the letter. Fan asked to deviate from them.
-> I explained what that costs.
-
-I felt it was important to show some support for Fan, especially as
-your comments came across (at least to me) as particularly harsh.  The
-strong reactions in your latest comment only served to underscore my
-concern.
-
-> > Of course, fitting in with existing norms is important,
-> > but if it causes IPE or existing IPE uses a lot of pain, that can a
-> > good reason to diverge from those solutions.
->
-> Which pain?
-
-As I said before, (emphasis now added for claification) "... *if* it
-causes IPE or existing IPE uses a lot of pain ...".  I intentionally
-did not make a claim either way.  Once again, I wanted to provide Fan
-some support in case there was an issue and he found himself in a
-position where he had to push back to preserve IPE's model.
-
-I think we can all agree that upstream kernel development can be
-difficult at times, and not just because of the technical challenges.
-Working in the security/ space also carries its own struggles beyond
-that.  It has been my experience that having someone stand up and show
-support can sometimes help make that a little bit easier.
-
-> > These days everyone is
-> > going to implement whatever they please, but if you have
-> > needs/requirements about how you want things to behave in LSM land, I
-> > think it would be helpful to engage with us before you make a decision
-> > and then start pleading with the LSM folks to adopt your approach.
->
-> I'm not pleading with anyone.
-
-Perhaps that was not your intent, but that is how I read your "Please
-don't start breaking an established pattern that works well." comment.
-I believe that is a reasonable interpretation.
-
-> And the engagement you're asking for happened. You just didn't engage:
->
-> - You read Daniel's bpf keyring series yourself in August, Cc'd the
->   keyring folks "for obvious reasons", and had nothing to say about
->   the model. The cover letter spelled out in detail that systemd would
->   provision that keyring the same way as .dm-verity.
->
-> - On 2026-10-11 Manuel announced in the KEY_SPEC thread that he'd
->   propose a .ipe keyring "modeled after the .dm-verity keyring" after
->   "initial discussions with Fan Wu". You and linux-security-module
->   were on Cc.
-
-... and you are seeing the engagement now.
-
-> As for "everyone is going to implement whatever they please"... In May
-> you told the bpf folks that "we just need to be willing to accept that
-> we have different needs and show a willingness to accept different
-> solutions as a result" [1]. I don't see why that shouldn't apply to
-> systemd using BPF LSM.
-
-I'm unclear on your comments above.  Obviously out-of-kernel-tree BPF
-LSM code is free to implement whatever it wants within the bounds of
-the BPF constraints/APIs, that was the intent behind my "implement
-whatever they please" comment.  I guess I could have made it more
-clear, but it didn't occur to me that this would be a controversial
-statement since it is already happening today ... ?
-
-> Frankly, I couldn't care less whether IPE chooses to model the keyring
-> the same way.
-
-That wasn't clear from your earlier comments, especially considering
-your tone, but it's good to have that understanding now.
-
-> I'm confused why you have to speak for Fu and why you're so
-> defensive about this.
-
-As mentioned above, I wasn't speaking for Fan, I was speaking in
-support of Fan ("... the decision of how IPE uses an IPE keyring is up
-to Fan.").  Perhaps you didn't intend your comments to be received as
-overly harsh, but in my opinion they had the hallmarks of anti-LSM
-bullying that I've seen far too much of over the years and I wanted
-Fan to know that at least he had my support to make whatever decision
-he felt was necessary.
-
---=20
-paul-moore.com
+T24gTW9uLCBPY3QgMTksIDIwMjYgYXQgMDQ6Mjg6MjhQTSAtMDcwMCwgRmFuIFd1IHdyb3RlOg0K
+PiBJUEUgZG9lc24ndCB1c2Uga3NlbGZ0ZXN0LiBPdXIgdGVzdHMgbGl2ZSBpbiB0aGUgSVBFIENJ
+IFsxXSwgd2hpY2gNCj4gYWxyZWFkeSBoYXMga2V5cmluZyB0ZXN0cyBmb3IgcG9saWN5IHNpZ25h
+dHVyZXMgWzJdIGFuZCBhbiBpbml0cmQgdW5pdA0KPiB0aGF0IHByb3Zpc2lvbnMgYW5kIHNlYWxz
+IHRoZSAuZnMtdmVyaXR5IGtleXJpbmcgWzNdLiBQbGVhc2UgYWRkIHRoZQ0KPiAuaXBlIGNhc2Vz
+IHRoZXJlIGluc3RlYWQuDQoNCkJhZCBtaXNzIG9uIG15IGVuZDsgdGhpcyBpcyBjbGVhcmx5IGRv
+Y3VtZW50ZWQuIEkgaGF2ZSBmb3JrZWQgdGhlIElQRSBDSQ0KcHJvamVjdCBpbiB0aGUgbWVhbnRp
+bWUgYW5kIHJ1biBpdCBhZ2FpbnN0IHRoZSBrZXJuZWwgYnJhbmNoLiBBbG9uZyB3aXRoDQpteSBu
+ZXh0IHJldmlzaW9uLCBJIHdpbGwgc2hhcmUgYSBicmFuY2ggZm9yIHRoZSBJUEUgQ0kgd2l0aCB0
+ZXN0cyBhZGRlZA0KdGhlcmUgYW5kIGNvcnJlc3BvbmRpbmcgdGVzdCByZXN1bHRzLiBJIHdpbGwg
+d2FpdCBmb3Igb25nb2luZyByZXZpZXcNCmRpc2N1c3Npb25zIHRvIGNvbnZlcmdlIGJlZm9yZSBw
+b3N0aW5nIGFub3RoZXIgcmV2aXNpb24uDQo=
