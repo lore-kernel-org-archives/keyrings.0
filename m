@@ -1,60 +1,52 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792775039;
-	b=ErcVmZUP8c65EWQSS7oseDIaTbOpy5zCft4SLJrfOHZsKD1Beem+Iu8EZVSu8zUOLThc
-	 Xujq7Tb/YM8S34yYrNFDmnFnmVxEzfp/4lEZjAA31miZAJomq/kx0hTBtJ8E0yYygOcar
-	 RjrWd5HiceLT0xXQMh1ZzscwfLW+GDIl0tRBcRIzQcTvd+KQZojhP7C5v/1jDSlh3WJb0
-	 9+Q+pVwupIWNblUfr6vU6LaWzeBzmhnnLgR2iUaZ3MGCymUwGwYpiNbN6ClM9T/GxaAMS
-	 cnSJXCD+Nuz3a1SpJX6dJOwnbTgoS2m89yS1kkXc7E07jOLjL82lTVOvI3qCjWJEUgQ==
+	t=1792777776;
+	b=cocSV9vBc+pGanioWfEMuv/FRcZPDR4kLRqFbMUDAgg0VKDTDWqoqPqR/5ohIDpQAPfR
+	 a1x4l1c36PfoJB7ELO0MIlI+xQXr7u4//wi38OUiOnO/8FrM9O6ftsaLGaM9u7xg7uKhn
+	 qu5AkTWdMRUiEVNBhvejXhdkdLJq6wL54Gej37TIQbzdWnea1jGJwUjpGpLFSy/l5qZdQ
+	 sPff+IVMgNN5QhfgKxvmqBBBP6iXxHKHUIIz4yL/69NACaSXYHS8PrlVLD5B51ozILQBX
+	 IUWOmAeyBzbDgBasFcqLVFKsSmqMRhwqlmzHoONmn7+0pRLzqBHqnaVbOojIMfhl4uw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792775039;
-	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
-	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=ZCC5JOrUNQMIw+oFYvhFNHsJxczmFNPdzGDQMP8ys10=;
-	b=yGEGLdloVRe8nelKX8cT26QnZGS+xDFtQeXRk9+H22aDqnahS34O+bT1dEbIGPSMl2wz
-	 zI/756iQ8FkHtAQ9T3KM91ujzcgvdm4pUovEurrzyUCBoPGuxkdQpj/tkcqr8F9OR53Wi
-	 615Qg3r8Oanu50ygdTuFj48XXxRVDENKkWjoX/l4pgrU5obDC8zk0NFkAWa/CBfRf2dkI
-	 HhoaHVtdJ6o+sapSR1NBQTFBxndYVPzRTw+zkBl3WoQfqOlf++eMKsFXPEYQPYGUrdtGd
-	 Kauf2UrfaS6j/KtFSL94iM2+wOxNH4VXgoveUmoh1X85YyhY54ezZa+i31dDHie/vCA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792777776;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 MIME-Version:Content-Type:Content-Disposition;
+	bh=33tWk6OCF2KeTpoJqlGGB7ThoHd5/cgrTclvZjwIIdU=;
+	b=ZgYjrpixQ3JGAe6ccVHwUV1w8ZfnPUaiy/Y2CmTREdhxxmOLnrNa0gLUu4l98zkTPsv6
+	 vsBfBBqTdM70+Jg74DisVKjPV+FL9AL1UzXkdocznwhhI4ZZ/JZ7Oq2jEvWTOXv5Yx/ta
+	 0U6gDIIDaHYqekEyAXjB31Q4LZXSuIk0Rg8J/Xh4Wgye5fMHt/2OX2yYmoTIDAfXANH8e
+	 OPHlKvOvZrw0FTBCp/GIvFCzKC0yGmfuPGtwdyTv74zbry5AMAdMkTDO6lymFdCGQPCtB
+	 Q0jq5ncwwTDeCRpGd2IVcewFtcJbws47dyq1l1Bg5oDPYnIq5JgZpjuBJWQqQ7kEffA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eB1cnVco;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YIQuMMxK;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 07CB3606A323;
-	Fri, 23 Oct 2026 17:03:58 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 68461606A31B;
+	Fri, 23 Oct 2026 17:49:36 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eB1cnVco
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 169491F01828;
-	Fri, 23 Oct 2026 17:03:58 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YIQuMMxK
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 6D9541F01825;
+	Fri, 23 Oct 2026 17:49:35 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792775038;
-	bh=ZCC5JOrUNQMIw+oFYvhFNHsJxczmFNPdzGDQMP8ys10=;
-	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=eB1cnVcoJHwz3c3qlpp0xuDwmwy98GL2MrdJOudff26jviK7zMI3W5FT11p58oH/b
-	 U6V6O5R4TRMH11ym6Fnrj8jkDQAyQpO0FbogsoYkG3nsiutQ2/e/4VtIR0LcPAeXHw
-	 lfOyeG/Dh5LAbYRzCgocIlGIej0n0JVtRhsO8s/BQh5LZfWBBE9+PeYmhkS1LTGFZ2
-	 uh+ON9bOiZzw+4XVZDwCER7jNKnXN0svhJl2XikDiWUMM0xWRDCai8Q+tN3BygJzVK
-	 oesh/gTJZlk+RfpLwMnuZ5YDaE7yYB1zelnQFLJMSd92yt42I+AN0pnwg1wsy1KmgR
-	 mreXqIZcm95DA==
-Message-ID: <sashiko-outbox-182977@kernel.org>
-From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v5 3/5] userns: check the opener and the writer before
- mapping uid 0
-Reply-To: sashiko-reviews@lists.linux.dev
-To: "Josef Bacik" <josef@toxicpanda.com>, "Serge Hallyn" <serge@hallyn.com>, "Paul
- Moore" <paul@paul-moore.com>, "Christian Brauner" <brauner@kernel.org>
-Cc: "James Morris" <jmorris@namei.org>, "David Howells" <dhowells@redhat.com>, "Jarkko
- Sakkinen" <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, "Serge
- Hallyn" <sergeh@kernel.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
-In-Reply-To: <20261023-b4-setfcap-userns-v5-3-0620223be951@toxicpanda.com>
-References: <20261023-b4-setfcap-userns-v5-0-0620223be951@toxicpanda.com>
- <20261023-b4-setfcap-userns-v5-3-0620223be951@toxicpanda.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date: Fri, 23 Oct 2026 17:03:57 +0000
+	s=k20260515; t=1792777776;
+	bh=33tWk6OCF2KeTpoJqlGGB7ThoHd5/cgrTclvZjwIIdU=;
+	h=Date:From:To:Cc:Subject;
+	b=YIQuMMxKCB9t8Y8MYu7N+SuJ+J1La+t+z1hpD5c0tRz1C/d2cQPAJYiM2MozadDok
+	 DXck5DFXbDr/DQxAG8TqoBehJw6tiF7L8a8siG6Y/EJBSDjjrHi+YshXn7AcLfTA+f
+	 YLSp8fGL1veYw4QdRN/HZ+Nx7IUB0pMrBmEn3/7lY6xOlnhU3xAbxM6rJK2QPmAjgM
+	 AXsbd2X+eIILNxpCnrNvtjWYEoXD+u10YRJMwAWmhCq6YxsG5SZAgN/6TS6TtaEnXW
+	 wjGN1b2OreAOcRKfl8kmaWzpxPTo9BMvGJmDq94qjrefLHgrMzPCT8dkNyfCFTGq+M
+	 0+b/oK5O3pESQ==
+Date: Fri, 23 Oct 2026 20:49:31 +0300
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
+	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] TPM DEVICE DRIVER changes for v7.4-rc1
+Message-ID: <atueK3rp8d95-Uaj@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -63,166 +55,110 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thank you for your contribution! Sashiko AI review found 1 potential issue(=
-s) to consider:
-- [High] userns: missing CAP_SETFCAP check in verify_root_map() for tasks i=
-n map_ns
---
+I double-checked that this is now in-sync with linux-next.
 
-commit 715d4f4455aa94fb0eaba838f8aa378efb3afe54
-Author: Josef Bacik <josef@toxicpanda.com>
+I'll address this issue permanently by implementing linux-next
+validation to my script that prepares the PR, as that would
+have prevented this from happening.
 
-userns: check the opener and the writer before mapping uid 0
+The following changes since commit a1c2b1da93f5f612aa7a33190c4900c98e51f6da:
 
-This commit updates verify_root_map() to find the topmost ancestor whose ro=
-ot
-user is included in a new uid_map and checks that both the file opener and =
-the
-writer hold CAP_SETFCAP reaching that ancestor's level.
+  Merge tag 'for-linus-tsm' of https://github.com/jgunthorpe/linux (2026-10-22 10:41:18 -1000)
 
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index 7bd3692c2f3eb..661d7e9b72d56 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
+are available in the Git repository at:
 
-[ ... ]
+  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/tpm-v7.4-rc1-rebased
 
-> @@ -897,42 +937,40 @@ static bool verify_root_map(const struct file *file,
->  			    struct user_namespace *map_ns,
->  			    struct uid_gid_map *new_map)
->  {
-> -	int idx;
->  	const struct user_namespace *file_ns =3D file->f_cred->user_ns;
-> -	struct uid_gid_extent *extent0 =3D NULL;
-> -
-> -	for (idx =3D 0; idx < new_map->nr_extents; idx++) {
-> -		if (new_map->nr_extents <=3D UID_GID_MAP_MAX_BASE_EXTENTS)
-> -			extent0 =3D &new_map->extent[idx];
-> -		else
-> -			extent0 =3D &new_map->forward[idx];
-> -		if (extent0->lower_first =3D=3D 0)
-> -			break;
-> -
-> -		extent0 =3D NULL;
-> -	}
-> +	int level;
-> =20
-> -	if (!extent0)
-> +	level =3D map_root_level(map_ns->parent, new_map);
-> +	if (level =3D=3D INT_MAX)
->  		return true;
-> =20
->  	if (map_ns =3D=3D file_ns) {
->  		/* The process unshared its ns and is writing to its own
->  		 * /proc/self/uid_map.  User already has full capabilites in
->  		 * the new namespace.  Verify that the parent had CAP_SETFCAP
-> -		 * when it unshared.
-> +		 * when it unshared, as far up as those root users go.
->  		 * */
-> -		if (file_ns->setfcap_level >=3D file_ns->level)
-> +		if (file_ns->setfcap_level > level)
->  			return false;
->  	} else {
->  		/* Process p1 is writing to uid_map of p2, who is in a child
->  		 * user namespace to p1's.  Verify that the opener of the map
->  		 * file has CAP_SETFCAP against the parent of the new map
-> -		 * namespace */
-> -		if (!file_ns_capable(file, map_ns->parent, CAP_SETFCAP))
-> +		 * namespace, and as far up as those root users go.
-> +		 */
-> +		if (!file_ns_capable(file, map_ns->parent, CAP_SETFCAP) ||
-> +		    !cred_setfcap_reaches(file->f_cred, map_ns->parent, level))
->  			return false;
->  	}
-> =20
-> -	return true;
-> +	/* The file may have been handed to someone else since it was opened,
-> +	 * so the same goes for the process that is doing the write.
-> +	 */
-> +	if (map_ns =3D=3D current_user_ns())
-> +		return map_ns->setfcap_level <=3D level;
-> +
-> +	return ns_capable(map_ns->parent, CAP_SETFCAP) &&
-> +	       cred_setfcap_reaches(current_cred(), map_ns->parent, level);
->  }
+for you to fetch changes up to 071aa806f00cf2948ce8082102d5f64515f53215:
 
-[Severity: High]
-When a task is in map_ns (so map_ns =3D=3D file_ns for the opener or
-map_ns =3D=3D current_user_ns() for the writer), does checking only
-map_ns->setfcap_level <=3D level allow a task that has dropped CAP_SETFCAP =
-in
-map_ns to still map the ancestor root user?
+  tpm: reject duplicate PCR banks in tpm2_get_pcr_allocation (2026-10-23 00:59:21 +0300)
 
-For example, if a process running as uid 0 with CAP_SETFCAP in init_user_ns
-calls unshare(CLONE_NEWUSER), create_user_ns() sets map_ns->setfcap_level t=
-o 0.
-Inside map_ns (before uid_map is written), two cases can occur:
+----------------------------------------------------------------
+[GIT PULL] TPM DEVICE DRIVER changes for v7.4-rc1
 
-1. Task A opens /proc/self/uid_map and passes the descriptor (by fork or
-   SCM_RIGHTS) to Task B in map_ns, which has dropped CAP_SETFCAP and all
-   other capabilities via capset().
-2. A task in map_ns drops CAP_SETFCAP via capset() while keeping
-   CAP_SYS_ADMIN, and then opens /proc/self/uid_map itself.
+I had to revise my pull request because it came out with a stale tag.
+Apologies for that. While at it I refined my scripts to not have coherency
+issues.
 
-When the task without CAP_SETFCAP writes "0 0 1" through:
+All the content remains the same with no changes but I noticed one entry
+missing from the list in the next section, so I added that.
 
-  proc_uid_map_write()
-    -> map_write()
-      -> new_idmap_permitted()
-        -> verify_root_map()
+FEATURES AND IMPROVEMENTS
+=========================
 
-map_write() only checks file_ns_capable(file, map_ns, CAP_SYS_ADMIN) on the
-opener, and new_idmap_permitted() takes the single-extent unprivileged bran=
-ch
-which only checks uid_eq(ns->owner, cred->euid):
+- tpm_crb behaviour was improved by putting the chip into an idle state for
+  each transmission. This improves firmware behavior as the kernel now
+  better cancels its state as if it had never touched it in the first
+  place.
+- One spurious (but harmless) wmb() was dropped from tpm_pm_resume().
+- tpm_tis_i2c now requests the optional reset control and deasserts it
+  before communicating with the TPM.
+- SIMPLE_DEV_PM_OPS was replaced with DEFINE_SIMPLE_DEV_PM_OPS across the
+  whole driver stack.
+- Validate during driver initialization that no duplicate banks are
+  received. It's unlikely corruption but since it happening would
+  cause oops I decided to retain it as a sanity check.
 
-kernel/user_namespace.c:new_idmap_permitted() {
-	if (cap_setid =3D=3D CAP_SETUID && !verify_root_map(file, ns, new_map))
-		return false;
+BUGS
+====
 
-	if ((new_map->nr_extents =3D=3D 1) && (new_map->extent[0].count =3D=3D 1) =
-&&
-	    uid_eq(ns->owner, cred->euid)) {
-		u32 id =3D new_map->extent[0].lower_first;
-		if (cap_setid =3D=3D CAP_SETUID) {
-			kuid_t uid =3D make_kuid(ns->parent, id);
-			if (uid_eq(uid, cred->euid))
-				return true;
-		}
-}
+- tpm2_probe() misinterpreted a transport error on TPM2_GetCapability
+  as the chip not being probed, and the chip was detected as a TPM 1 chip.
+  This can happen in reality only in the extremely rare case of bus
+  corruption. Despite the odds, a fix was landed, as it is still
+  technically a legit bug fix.
+- It is not really worth the time and energy to go into details as tpm_nsc
+  is a somewhat legacy driver, but one null pointer dereference bug and
+  another causing use-after-free were fixed.
+- read() of /dev/tpm{,rm}0 with zero size caused a pending response to be
+  consumed. This was fixed simply by an immediate return.
 
-Because verify_root_map() only checks map_ns->setfcap_level <=3D level when
-map_ns =3D=3D file_ns and when map_ns =3D=3D current_user_ns(), the write s=
-ucceeds
-even though the task dropped CAP_SETFCAP. Once "0 0 1" is installed in
-map_ns->uid_map, make_kuid(map_ns, 0) becomes KUIDT_INIT(0) instead of
-INVALID_UID, allowing the task in map_ns to call execve() and regain full
-capabilities (including CAP_SETFCAP) via handle_privileged_root() in
-security/commoncap.c.
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Note that cap_setfcap_level() in security/commoncap.c already handles a cred
-whose user_ns is the target namespace by checking whether CAP_SETFCAP is st=
-ill
-raised in cred->cap_effective before returning cred->user_ns->setfcap_level:
+----------------------------------------------------------------
+Alexander Sverdlin (1):
+      tpm: tpm2_probe: propagate transport errors
 
-security/commoncap.c:cap_setfcap_level() {
-	if (cap_capable(cred, ns, CAP_SETFCAP, CAP_OPT_NOAUDIT) !=3D 0)
-		return ns->level + 1;
+Li Jun (2):
+      char: tpm: Use SIMPLE_DEV_PM_OPS for ibmvtpm power management
+      tpm: use DEFINE_SIMPLE_DEV_PM_OPS and pm_sleep_ptr()
 
-	if (cap_raised(cred->cap_effective, CAP_SETFCAP))
-		return cred->user_ns->setfcap_level;
+Mario Limonciello (1):
+      tpm: Call cmd_ready/go_idle for each command transmission
 
-	/* All we have is that we own a child of our namespace. */
-	return cred->user_ns->level + 1;
-}
+Pei Xiao (3):
+      tpm: tpm_nsc: fix NULL pointer dereference on init failure
+      tpm: tpm_nsc: stop using the cleanup callback as dev.release
+      tpm: fix zero-length read discarding the pending response
 
-When map_ns =3D=3D file_ns (or map_ns =3D=3D current_user_ns()), should
-verify_root_map() check file_ns_capable(file, map_ns, CAP_SETFCAP) and
-cred_setfcap_reaches(file->f_cred, map_ns, level) for the opener, and
-ns_capable(map_ns, CAP_SETFCAP) and
-cred_setfcap_reaches(current_cred(), map_ns, level) for the writer?
+Richard Lyu (1):
+      tpm: Remove ineffective wmb() from tpm_pm_resume()
 
---=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261023-b4-setfcap=
--userns-v5-0-0620223be951@toxicpanda.com?part=3D3
+Stefano Radaelli (1):
+      tpm: tis_i2c: Deassert optional reset line before probing
+
+Yuqi Xu (1):
+      tpm: reject duplicate PCR banks in tpm2_get_pcr_allocation
+
+ drivers/char/tpm/tpm-chip.c          | 24 ------------------------
+ drivers/char/tpm/tpm-dev-common.c    |  3 +++
+ drivers/char/tpm/tpm-interface.c     | 28 ++++++++++++++++++++++------
+ drivers/char/tpm/tpm2-cmd.c          | 21 ++++++++++++++++++++-
+ drivers/char/tpm/tpm_atmel.c         |  4 ++--
+ drivers/char/tpm/tpm_i2c_atmel.c     |  4 ++--
+ drivers/char/tpm/tpm_i2c_infineon.c  |  4 ++--
+ drivers/char/tpm/tpm_i2c_nuvoton.c   |  4 ++--
+ drivers/char/tpm/tpm_ibmvtpm.c       |  5 +----
+ drivers/char/tpm/tpm_infineon.c      |  7 +++----
+ drivers/char/tpm/tpm_nsc.c           | 12 ++++++++----
+ drivers/char/tpm/tpm_tis.c           |  4 ++--
+ drivers/char/tpm/tpm_tis_core.h      |  2 --
+ drivers/char/tpm/tpm_tis_i2c.c       | 16 ++++++++++++++--
+ drivers/char/tpm/tpm_tis_i2c_cr50.c  |  4 ++--
+ drivers/char/tpm/tpm_tis_spi_main.c  |  4 ++--
+ drivers/char/tpm/tpm_tis_synquacer.c |  4 ++--
+ 17 files changed, 87 insertions(+), 63 deletions(-)
