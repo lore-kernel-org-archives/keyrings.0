@@ -1,60 +1,60 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792774618;
-	b=dYUBJ6Bemp0X1yw2J7fAyBXbA1v4V42Tfq5FZaJQdLVrJ5x6w8nUr+wc8trPEi39ynXH
-	 lknICi+3vpINVC0iPsCLdgpYYKy3fWP6hPfdyDOH5JwXqntos/ykrwPts7hmxhcmqPDVt
-	 1a90jlLRi9wl06xz7dIKAL+Wwt2ckUTI51/0Ryf9QILemg7W00FlqcNPsSuY36nXi5lPA
-	 2z1Uiw4v4TENG4yDqDyEsLn6w5rUS4qY3nI2OBk4qvyZSMIm6JiUjWidBrilvD2EfPk8E
-	 PiBJ8WSOndlpRjd/J+uP5OmPG/xq6rK2uWezi0L7BgL/Ti9t5aWqVTwXqTTLGmfC9Ng==
+	t=1792775039;
+	b=ErcVmZUP8c65EWQSS7oseDIaTbOpy5zCft4SLJrfOHZsKD1Beem+Iu8EZVSu8zUOLThc
+	 Xujq7Tb/YM8S34yYrNFDmnFnmVxEzfp/4lEZjAA31miZAJomq/kx0hTBtJ8E0yYygOcar
+	 RjrWd5HiceLT0xXQMh1ZzscwfLW+GDIl0tRBcRIzQcTvd+KQZojhP7C5v/1jDSlh3WJb0
+	 9+Q+pVwupIWNblUfr6vU6LaWzeBzmhnnLgR2iUaZ3MGCymUwGwYpiNbN6ClM9T/GxaAMS
+	 cnSJXCD+Nuz3a1SpJX6dJOwnbTgoS2m89yS1kkXc7E07jOLjL82lTVOvI3qCjWJEUgQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792774618;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792775039;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=OWlsnGp1ddm01pWLl7MfgYBEzGueAiwmpHDUhMI1vWQ=;
-	b=V0zStxNiBEVV7ymFUp3wEOrTVX/pVHmsXq/iLgmkLgBbL9J0B86p9CmghI4FqccoRWsQ
-	 VL5syy6sCXsGlU2BW12TA7I9fREwgBmOs+lSb4jSpxm8s1kvrzYprwCUhIBzNL+S4N2BU
-	 Rc+j/76ZzK9HhI3W3sIGzWI2j+LSbWI/r2v1BMlRKSom9BtvBI6cNhN8sr8ofqIG/ti4s
-	 D7YhZfWTabl+jFv2NtiI8PKupsCZB2oeVXfcAAvQMKmF6y281F3pt8E813i8xDeICWQFt
-	 H2OEIjF339XJWsqWxqSMbfDMWQ6zCx0Jr7IKq8rOK+ooghKj0eMpekW3+s2W4U6Uk1w==
+	bh=ZCC5JOrUNQMIw+oFYvhFNHsJxczmFNPdzGDQMP8ys10=;
+	b=yGEGLdloVRe8nelKX8cT26QnZGS+xDFtQeXRk9+H22aDqnahS34O+bT1dEbIGPSMl2wz
+	 zI/756iQ8FkHtAQ9T3KM91ujzcgvdm4pUovEurrzyUCBoPGuxkdQpj/tkcqr8F9OR53Wi
+	 615Qg3r8Oanu50ygdTuFj48XXxRVDENKkWjoX/l4pgrU5obDC8zk0NFkAWa/CBfRf2dkI
+	 HhoaHVtdJ6o+sapSR1NBQTFBxndYVPzRTw+zkBl3WoQfqOlf++eMKsFXPEYQPYGUrdtGd
+	 Kauf2UrfaS6j/KtFSL94iM2+wOxNH4VXgoveUmoh1X85YyhY54ezZa+i31dDHie/vCA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=GfH9nEs7;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eB1cnVco;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 907CC606A31A;
-	Fri, 23 Oct 2026 16:56:58 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 07CB3606A323;
+	Fri, 23 Oct 2026 17:03:58 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=GfH9nEs7
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id E26201F01828;
-	Fri, 23 Oct 2026 16:56:57 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eB1cnVco
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 169491F01828;
+	Fri, 23 Oct 2026 17:03:58 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792774618;
-	bh=OWlsnGp1ddm01pWLl7MfgYBEzGueAiwmpHDUhMI1vWQ=;
+	s=k20260515; t=1792775038;
+	bh=ZCC5JOrUNQMIw+oFYvhFNHsJxczmFNPdzGDQMP8ys10=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=GfH9nEs7/bHzhrUk9EtdyZd6xlizw4pb8eqLkhuzpa9mRTutJcCBQ+H69OIrVOvSJ
-	 J7fZrx3SkMtemT4bARnidbXjRFYiOnUCTjjGWejwha/65opTpsskPJVgKpQldEhSNV
-	 IBIpZJC256/iP5bEyefSLoZWoH5BqMy4Y/qaWGcwI6iJ9eoHdkOop6TFO1tSU9kzv3
-	 FabKSz9DFnRNkGTWcn+o+aiCuDBSBZs495qoYYE4zHsm4w3lC40ThzYaiemdET4TDI
-	 sjHmGxiLzey3jr7UEja2OSoV3FDEKFOFSlZwfmwjL0MrRjiG1iQfzVpyysyuXWGXmL
-	 ZaZj2bfOEOEnA==
-Message-ID: <sashiko-outbox-182974@kernel.org>
+	b=eB1cnVcoJHwz3c3qlpp0xuDwmwy98GL2MrdJOudff26jviK7zMI3W5FT11p58oH/b
+	 U6V6O5R4TRMH11ym6Fnrj8jkDQAyQpO0FbogsoYkG3nsiutQ2/e/4VtIR0LcPAeXHw
+	 lfOyeG/Dh5LAbYRzCgocIlGIej0n0JVtRhsO8s/BQh5LZfWBBE9+PeYmhkS1LTGFZ2
+	 uh+ON9bOiZzw+4XVZDwCER7jNKnXN0svhJl2XikDiWUMM0xWRDCai8Q+tN3BygJzVK
+	 oesh/gTJZlk+RfpLwMnuZ5YDaE7yYB1zelnQFLJMSd92yt42I+AN0pnwg1wsy1KmgR
+	 mreXqIZcm95DA==
+Message-ID: <sashiko-outbox-182977@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v5 4/5] capabilities: limit fscaps to where CAP_SETFCAP
- reaches
+Subject: Re: [PATCH v5 3/5] userns: check the opener and the writer before
+ mapping uid 0
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Josef Bacik" <josef@toxicpanda.com>, "Serge Hallyn" <serge@hallyn.com>, "Paul
  Moore" <paul@paul-moore.com>, "Christian Brauner" <brauner@kernel.org>
 Cc: "James Morris" <jmorris@namei.org>, "David Howells" <dhowells@redhat.com>, "Jarkko
  Sakkinen" <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, "Serge
  Hallyn" <sergeh@kernel.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
-In-Reply-To: <20261023-b4-setfcap-userns-v5-4-0620223be951@toxicpanda.com>
+In-Reply-To: <20261023-b4-setfcap-userns-v5-3-0620223be951@toxicpanda.com>
 References: <20261023-b4-setfcap-userns-v5-0-0620223be951@toxicpanda.com>
- <20261023-b4-setfcap-userns-v5-4-0620223be951@toxicpanda.com>
+ <20261023-b4-setfcap-userns-v5-3-0620223be951@toxicpanda.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Fri, 23 Oct 2026 16:56:57 +0000
+Date: Fri, 23 Oct 2026 17:03:57 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -66,112 +66,163 @@ Precedence: list
 
 Thank you for your contribution! Sashiko AI review found 1 potential issue(=
 s) to consider:
-- [High] capabilities: unconverted v2 fscap bypass in cap_convert_nscap()
+- [High] userns: missing CAP_SETFCAP check in verify_root_map() for tasks i=
+n map_ns
 --
 
-commit e902e2977ca7e209d89cc64e5a8e3a585eddb980
+commit 715d4f4455aa94fb0eaba838f8aa378efb3afe54
 Author: Josef Bacik <josef@toxicpanda.com>
 
-capabilities: limit fscaps to where CAP_SETFCAP reaches
+userns: check the opener and the writer before mapping uid 0
 
-This commit restricts writing file capabilities in cap_convert_nscap() so
-that the root user named by a v2 or v3 security.capability xattr (both as
-seen through an idmapped mount and on the underlying filesystem) cannot be
-uid 0 in an ancestor user namespace beyond task_ns->setfcap_level.
+This commit updates verify_root_map() to find the topmost ancestor whose ro=
+ot
+user is included in a new uid_map and checks that both the file opener and =
+the
+writer hold CAP_SETFCAP reaching that ancestor's level.
 
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index 8a9d998b18972..3551ce9b046ad 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -216,6 +216,29 @@ bool cred_may_setfcap_userns(const struct cred *cred=
-, struct user_namespace *ns)
->  	return !top || cred_setfcap_reaches(cred, ns->parent, top->level);
->  }
+> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> index 7bd3692c2f3eb..661d7e9b72d56 100644
+> --- a/kernel/user_namespace.c
+> +++ b/kernel/user_namespace.c
+
+[ ... ]
+
+> @@ -897,42 +937,40 @@ static bool verify_root_map(const struct file *file,
+>  			    struct user_namespace *map_ns,
+>  			    struct uid_gid_map *new_map)
+>  {
+> -	int idx;
+>  	const struct user_namespace *file_ns =3D file->f_cred->user_ns;
+> -	struct uid_gid_extent *extent0 =3D NULL;
+> -
+> -	for (idx =3D 0; idx < new_map->nr_extents; idx++) {
+> -		if (new_map->nr_extents <=3D UID_GID_MAP_MAX_BASE_EXTENTS)
+> -			extent0 =3D &new_map->extent[idx];
+> -		else
+> -			extent0 =3D &new_map->forward[idx];
+> -		if (extent0->lower_first =3D=3D 0)
+> -			break;
+> -
+> -		extent0 =3D NULL;
+> -	}
+> +	int level;
 > =20
-> +/**
-> + * cap_root_level - Find the topmost namespace in which a kuid is the ro=
-ot user
-> + * @kuid: The kuid to look for
-> + * @ns: The user namespace to start from
-> + *
-> + * Return: the lowest ->level among @ns and its ancestors in which @kuid=
- is
-> + * uid 0, which is how far up file capabilities with that root user are
-> + * honoured; INT_MAX if there is no such namespace.
-> + */
-> +static int cap_root_level(kuid_t kuid, struct user_namespace *ns)
-> +{
-> +	int level =3D INT_MAX;
-> +
-> +	for (;; ns =3D ns->parent) {
-> +		if (from_kuid(ns, kuid) =3D=3D 0)
-> +			level =3D ns->level;
-> +		if (ns =3D=3D &init_user_ns)
-> +			break;
-> +	}
-> +
-> +	return level;
-> +}
-> +
->  /**
->   * cap_settime - Determine whether the current process may set the syste=
-m clock
->   * @ts: The time to set
-> @@ -671,19 +694,41 @@ int cap_convert_nscap(const struct mnt_idmap *idmap=
-, struct dentry *dentry,
->  		return -EINVAL;
->  	if (!capable_wrt_inode_uidgid(idmap, inode, CAP_SETFCAP))
->  		return -EPERM;
-> -	if (size =3D=3D XATTR_CAPS_SZ_2 && (idmap =3D=3D &nop_mnt_idmap))
-> -		if (ns_capable(inode->i_sb->s_user_ns, CAP_SETFCAP))
-> -			/* user is privileged, just write the v2 */
-> -			return size;
-> +	/*
-> +	 * A v2 xattr belongs to the root user of the filesystem's namespace,
-> +	 * which may be the root user of ancestors of our namespace as well.
-> +	 * Only write it unconverted if that root user is within reach, the
-> +	 * checks below handle everything else.
+> -	if (!extent0)
+> +	level =3D map_root_level(map_ns->parent, new_map);
+> +	if (level =3D=3D INT_MAX)
+>  		return true;
+> =20
+>  	if (map_ns =3D=3D file_ns) {
+>  		/* The process unshared its ns and is writing to its own
+>  		 * /proc/self/uid_map.  User already has full capabilites in
+>  		 * the new namespace.  Verify that the parent had CAP_SETFCAP
+> -		 * when it unshared.
+> +		 * when it unshared, as far up as those root users go.
+>  		 * */
+> -		if (file_ns->setfcap_level >=3D file_ns->level)
+> +		if (file_ns->setfcap_level > level)
+>  			return false;
+>  	} else {
+>  		/* Process p1 is writing to uid_map of p2, who is in a child
+>  		 * user namespace to p1's.  Verify that the opener of the map
+>  		 * file has CAP_SETFCAP against the parent of the new map
+> -		 * namespace */
+> -		if (!file_ns_capable(file, map_ns->parent, CAP_SETFCAP))
+> +		 * namespace, and as far up as those root users go.
+> +		 */
+> +		if (!file_ns_capable(file, map_ns->parent, CAP_SETFCAP) ||
+> +		    !cred_setfcap_reaches(file->f_cred, map_ns->parent, level))
+>  			return false;
+>  	}
+> =20
+> -	return true;
+> +	/* The file may have been handed to someone else since it was opened,
+> +	 * so the same goes for the process that is doing the write.
 > +	 */
-> +	if (size =3D=3D XATTR_CAPS_SZ_2 && idmap =3D=3D &nop_mnt_idmap &&
-> +	    ns_capable(fs_ns, CAP_SETFCAP) &&
-> +	    cap_root_level(make_kuid(fs_ns, 0), task_ns) >=3D
-> +	    task_ns->setfcap_level)
-> +		/* user is privileged, just write the v2 */
-> +		return size;
+> +	if (map_ns =3D=3D current_user_ns())
+> +		return map_ns->setfcap_level <=3D level;
+> +
+> +	return ns_capable(map_ns->parent, CAP_SETFCAP) &&
+> +	       cred_setfcap_reaches(current_cred(), map_ns->parent, level);
+>  }
 
 [Severity: High]
-What happens in cap_convert_nscap() if uid 0 is not mapped in fs_ns when
-writing a v2 capability xattr (size =3D=3D XATTR_CAPS_SZ_2) on a non-idmapp=
-ed
-mount (idmap =3D=3D &nop_mnt_idmap)?
+When a task is in map_ns (so map_ns =3D=3D file_ns for the opener or
+map_ns =3D=3D current_user_ns() for the writer), does checking only
+map_ns->setfcap_level <=3D level allow a task that has dropped CAP_SETFCAP =
+in
+map_ns to still map the ancestor root user?
 
-Unlike the v3 conversion path further down in cap_convert_nscap(), which
-checks vfsuid_valid(vfsrootid) and uid_valid(rootid) before calling
-cap_root_level(), this v2 fast-path passes make_kuid(fs_ns, 0) directly to
-cap_root_level() without checking uid_valid().
+For example, if a process running as uid 0 with CAP_SETFCAP in init_user_ns
+calls unshare(CLONE_NEWUSER), create_user_ns() sets map_ns->setfcap_level t=
+o 0.
+Inside map_ns (before uid_map is written), two cases can occur:
 
-When uid 0 is not mapped in fs_ns, make_kuid(fs_ns, 0) returns INVALID_UID.
-In cap_root_level(INVALID_UID, task_ns), from_kuid(ns, INVALID_UID) returns
-(uid_t)-1 for every namespace up to init_user_ns, so cap_root_level() retur=
-ns
-INT_MAX. Because INT_MAX >=3D task_ns->setfcap_level is always true,
-cap_convert_nscap() returns size and writes the unconverted v2 xattr.
+1. Task A opens /proc/self/uid_map and passes the descriptor (by fork or
+   SCM_RIGHTS) to Task B in map_ns, which has dropped CAP_SETFCAP and all
+   other capabilities via capset().
+2. A task in map_ns drops CAP_SETFCAP via capset() while keeping
+   CAP_SYS_ADMIN, and then opens /proc/self/uid_map itself.
 
-For example, if a task without CAP_SETFCAP unshares a user namespace
-(setting setfcap_level to 1) and maps only a non-zero UID (or creates an
-unmapped child user namespace and mounts a tmpfs in it), make_kuid(fs_ns, 0)
-is INVALID_UID. Wouldn't that allow the task to write an unconverted v2
-security.capability xattr on the tmpfs inode, which could then be honoured
-through an overlay mounted in init_user_ns, or honoured if fs_ns->uid_map is
-later written to map uid 0? And when task_ns =3D=3D fs_ns has no uid 0 mapp=
-ing,
-writing a v2 xattr writes an unconverted v2 xattr instead of falling through
-to rootid_from_xattr() and failing with -EINVAL.
+When the task without CAP_SETFCAP writes "0 0 1" through:
 
-Should the v2 check verify uid_valid(make_kuid(fs_ns, 0)) (or should
-cap_root_level() reject !uid_valid(kuid)) before allowing the unconverted v2
-xattr to be written?
+  proc_uid_map_write()
+    -> map_write()
+      -> new_idmap_permitted()
+        -> verify_root_map()
+
+map_write() only checks file_ns_capable(file, map_ns, CAP_SYS_ADMIN) on the
+opener, and new_idmap_permitted() takes the single-extent unprivileged bran=
+ch
+which only checks uid_eq(ns->owner, cred->euid):
+
+kernel/user_namespace.c:new_idmap_permitted() {
+	if (cap_setid =3D=3D CAP_SETUID && !verify_root_map(file, ns, new_map))
+		return false;
+
+	if ((new_map->nr_extents =3D=3D 1) && (new_map->extent[0].count =3D=3D 1) =
+&&
+	    uid_eq(ns->owner, cred->euid)) {
+		u32 id =3D new_map->extent[0].lower_first;
+		if (cap_setid =3D=3D CAP_SETUID) {
+			kuid_t uid =3D make_kuid(ns->parent, id);
+			if (uid_eq(uid, cred->euid))
+				return true;
+		}
+}
+
+Because verify_root_map() only checks map_ns->setfcap_level <=3D level when
+map_ns =3D=3D file_ns and when map_ns =3D=3D current_user_ns(), the write s=
+ucceeds
+even though the task dropped CAP_SETFCAP. Once "0 0 1" is installed in
+map_ns->uid_map, make_kuid(map_ns, 0) becomes KUIDT_INIT(0) instead of
+INVALID_UID, allowing the task in map_ns to call execve() and regain full
+capabilities (including CAP_SETFCAP) via handle_privileged_root() in
+security/commoncap.c.
+
+Note that cap_setfcap_level() in security/commoncap.c already handles a cred
+whose user_ns is the target namespace by checking whether CAP_SETFCAP is st=
+ill
+raised in cred->cap_effective before returning cred->user_ns->setfcap_level:
+
+security/commoncap.c:cap_setfcap_level() {
+	if (cap_capable(cred, ns, CAP_SETFCAP, CAP_OPT_NOAUDIT) !=3D 0)
+		return ns->level + 1;
+
+	if (cap_raised(cred->cap_effective, CAP_SETFCAP))
+		return cred->user_ns->setfcap_level;
+
+	/* All we have is that we own a child of our namespace. */
+	return cred->user_ns->level + 1;
+}
+
+When map_ns =3D=3D file_ns (or map_ns =3D=3D current_user_ns()), should
+verify_root_map() check file_ns_capable(file, map_ns, CAP_SETFCAP) and
+cred_setfcap_reaches(file->f_cred, map_ns, level) for the opener, and
+ns_capable(map_ns, CAP_SETFCAP) and
+cred_setfcap_reaches(current_cred(), map_ns, level) for the writer?
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261023-b4-setfcap=
--userns-v5-0-0620223be951@toxicpanda.com?part=3D4
+-userns-v5-0-0620223be951@toxicpanda.com?part=3D3
