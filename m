@@ -1,73 +1,55 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792756773;
-	b=s7c4kdtFll7pfOmogi2q4BkBS1CZCbriwxFas5TVr373vEfUPV2KcY5YM9tIuEtzduoG
-	 4qOSSKjZDxgHHon7kTEgkgElj5el8zJVkRxCjLvJ3J3SvSGim0zuKMeItWCWfpsslaOya
-	 wNoDtxJ3VIowU+2r/GKLHtRFsHOSllbfG2BJvTQk8+lifsPPdlHaZ+Dus4SR0h7e3Jnwp
-	 vJh7Jkv+Wh6iGwos3VmYVpMvlGi9cYx9Tb8DGQ5u1JER5YKoW2kxLm+71sNKTIqTrCWZ4
-	 0LsLI4NllLn5wwT4y57VePYAtInEbqteHN46kfOzjvGRjr2FtSa3+RBHQiyvoRQk8QA==
+	t=1792758490;
+	b=RieYm6GnDjHicg7zubagZrOWM9hSkcDJlk4qD1DL6Mj8yOmtaKHR6txvwlrP9U1jLrBa
+	 sfx4gXtmFZH3oX52oN/1m2ET41iGfRGAVU01+H/AHACNoLKWb5iF8uoeawL6bLrLY8Fe/
+	 rVKWJfg5RalEFUkxryiJrQql8QA2VUEtHsjIQco0Dcq2SfiyPFQy9jwsIOAASJ8Z3diSK
+	 WHo9isIMoiU8VatCxIel7/GvG2H9rxKFNk+ynoc89Di2l2hLfYTaNRvcJNC2ZRld0owB9
+	 EsPFiwOMHnVw/HPg3uNW2AZviEvQcQJpYJA46Rb5mtiQmlV4Au9LPl9Tn9f5ttnBgPA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792756773;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792758490;
 	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
-	 In-Reply-To:References:MIME-Version:Content-Type:Content-Disposition:
-	 X-Developer-Signature:X-Developer-Key:Content-Transfer-Encoding;
-	bh=5K0OBWvP6XN4AJpcqKwEAeoGjToHWAl6P5TGp/mreF4=;
-	b=pLt2KPW6l8AHF++E9e8/gZbMK9KRsns3Uwuu6m1DJDCscVRC8IXhG1YM034ArUNg/7zq
-	 QRSKpTNFrrGSpS3swcSPv52SuAmRmiVtsJJubeRsPoaqPPebPnfXwXD8pz9fCcUL8IviW
-	 2n6RPkJ1n7l59hwheSAI5i7QfFZfwCvX4vTRDZHnEtOqPkLnXfknviCrKQOw72rICpL81
-	 ffUZPapSAJsOxfS/ia5F7+EXaEe6JQmstLa3z+9DnVUAe29IQ6pHM0mtzDTmbHtD4ikwC
-	 sDIO+EdJCjpqrQOFQyiDT9E/x8sy0oL4a61VGbO8sRUoqYk66dNFpH+1u+o3PC2/4WA==
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=+8g+zaUdwuaMAYX7tKZS8H/PpvML2JWI8kqV+Tu+IpE=;
+	b=Dzi8Z8I2jUXci6LjCAdN+Js9TBeyNYKPAD8gvHe2caROmxcjmbtl5QioFqTiu0jFNnM5
+	 yfibqbiFhGDo16T47VQnoF/oHtfGwbgn5yh4ZlFCWysmsdZgiQzRUdF1+HiEpv3ajfbN3
+	 2TG++gHuIwfjhO60d6JB1F6jK7go1vKyBloCKozEPSXIgjqeuwMPANKdSV+1hR7IWnlTX
+	 O7Gxxz4qss4VfouwEvsSOEWF+lZEy4GOhwwK7N8n6C+WimZkn0SGOxiR5dAWznClAvmvG
+	 Vtk1KDuLYA0nmH594QPGBwG8tETxXBfeOp26E9bWjLy82pKQiCtYCj+f1PIdkeHx8Pw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=bZ4Z3epe;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LU9jUqla;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AB3F4606A330;
-	Fri, 23 Oct 2026 11:59:32 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 60C74606A31A;
+	Fri, 23 Oct 2026 12:28:10 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=bZ4Z3epe
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 2B0331F031E1;
-	Fri, 23 Oct 2026 11:59:27 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=LU9jUqla
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9369B1F01825;
+	Fri, 23 Oct 2026 12:28:09 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792756772;
-	bh=5K0OBWvP6XN4AJpcqKwEAeoGjToHWAl6P5TGp/mreF4=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=bZ4Z3epeXYXwpZ3tWg9wJXUibCizeqWhBcTTOJbFSLHdglyRZwgQqYZHJblL/YKQ4
-	 +bsZRTZUd9IePtONjuD4nlWZMN+AD8tZSZwhk8EXpwGi0kVkUNDxIil2kubIkYd5o1
-	 5fwniwoaauxkMuCt6zbBWE4hVAxxfq6alQ5kAyUXSByAGGXhpyuPE3j+FTjmbDLcHe
-	 Ve5D7JPGvipVQavc2VvLKXnkZtZaA1pNhn9k9rgXnpbc6FAXEc59VJevmUeVRw1FPG
-	 Ifcx//PW8liiNViGTcjjvtWjMSvGDJkHQKdXqoaGVBZ9HC99nbWERAllbMdLGT4IPE
-	 Y5uHX9GvZdniw==
-From: Christian Brauner <brauner@kernel.org>
-To: Fan Wu <wufan@kernel.org>
-Cc: Christian Brauner <brauner@kernel.org>,
-	Manuel Huber <manuelh@nvidia.com>,
-	David Howells <dhowells@redhat.com>,
+	s=k20260515; t=1792758490;
+	bh=+8g+zaUdwuaMAYX7tKZS8H/PpvML2JWI8kqV+Tu+IpE=;
+	h=From:To:Cc:Subject:Date;
+	b=LU9jUqla7mR+9SPXfT3tywrtxCbE5FiWfWoyKaU8cF8V3SnbvCXFb8udFfIyxhutL
+	 L3UzYK/dTgHdDU/NIIGj8Gjg0YsvGluz56hTHqFIdo+Gv9/qv5KRmo8FlQxRbvQ9+q
+	 cX+rHwhJ/2bX5x7mYJfAB9xqay4uoh1BrTmH0h1Sx3BzC8HGDwfu5RWs+4YTINUECQ
+	 Yr4ZAtJCaaHTq+TZxrhAxqpFLEbvXtHPZaAIdd4vU0yT2uAJxjV6yOLjTlBwODbnBt
+	 63Iuq6OzmoK4PdrOQYia/5gFceAgr9WJULV11GSN/duJ3BkPdVBpI0jDm4+Mtzi6yZ
+	 +1wJd6oMogQYg==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
 	Jarkko Sakkinen <jarkko@kernel.org>,
-	Andrew Halaney <andrew@amutable.com>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Jonathan Corbet <corbet@lwn.net>,
-	Shuah Khan <skhan@linuxfoundation.org>,
-	Shuah Khan <shuah@kernel.org>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	Alexei Starovoitov <ast@kernel.org>,
-	Daniel Borkmann <daniel@iogearbox.net>,
-	linux-security-module@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	linux-kselftest@vger.kernel.org,
-	linux-doc@vger.kernel.org,
-	bpf@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 1/4] ipe: add the .ipe policy keyring
-Date: Fri, 23 Oct 2026 13:59:14 +0200
-Message-ID: <20261023-kettenglied-vorsorge-beharrlich-d4aeb08f69ca@brauner>
-X-Mailer: git-send-email 2.53.0
-In-Reply-To: <CAKtyLkF3mVu8AXWybMGr3+=0F4OMndcV=M-2m-PGz5afE4H1cw@mail.gmail.com>
-References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com> <20261019-b4-ipe-keyring-rfc-v1-1-156f0b93e843@nvidia.com> <702ade20-a2f3-4919-97e6-c72faa89399a@kernel.org> <DM4PR12MB61369D00ED2FCFEDAE0E4597DE652@DM4PR12MB6136.namprd12.prod.outlook.com> <CAKtyLkF3mVu8AXWybMGr3+=0F4OMndcV=M-2m-PGz5afE4H1cw@mail.gmail.com>
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org (open list:LIBRARY CODE)
+Subject: [PATCH v2 0/6] KEYS: From assoc_array to rhashtable migration
+Date: Fri, 23 Oct 2026 15:09:20 +0300
+Message-ID: <20261023120953.1206778-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -77,56 +59,81 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-X-Developer-Signature: v=1; a=openpgp-sha256; l=1870; i=brauner@kernel.org; h=from:subject:message-id; bh=odpJiAcrzQlZy6uyTsV28Y4dhy5i8t2c+Ng1Hl1sjjI=; b=owGbwMvMwCU28Zj0gdSKO4sYT6slMWTd9pHWqvWTUbFbtl+D08P7wNJZJyuzpGxPsV6TFd9ff +kL502BjlIWBjEuBlkxRRaHdpNwueU8FZuNMjVg5rAygQxh4OIUgIm8tGP4zXo9ZFdblNzEgAub /lk/FwpeYNyembB/gvktYa6Gsw6TXjP8070qzdVjk6FzVsny3bkzGRwPTUPDfz+f3TM9N/2pvFY bCwA=
-X-Developer-Key: i=brauner@kernel.org; a=openpgp; fpr=4880B8C9BD0E5106FC070F4F7B3C391EFEA93624
 Content-Transfer-Encoding: 8bit
 
-On Thu, Oct 22, 2026 at 01:25:36PM -0700, Fan Wu wrote:
-> Also, one thing I missed earlier: before the policy verification call,
-> please also check:
->
-> ipe_keyring->restrict_link->check == restrict_link_reject
->
-> so we make sure the restriction function is the right one.
+The keyring subsystem depends on assoc_array for searching keys by their
+description, type and domain. It is the sole user of this data structure,
+which has during the age of LLMs transformed into a maintenance nightmare.
 
-I would advise against this. I'll explain why. Which restriction goes
-onto the keyring is intentionally userspace's policy. The two supported
-ones are:
+assoc_array needs to be replaced with a data structure meeting the
+following criteria:
 
-    keyctl restrict_keyring $id
+1. Must be suitable for a sparse key-value store.
+2. Must have multiple in-kernel users.
+3. Would be nice if it had dedicated maintainers.
 
-seals the keyring for good. Nothing can ever be added again. And
+rhashtable is likely the best pick from the available options as it is
+designed for a sparse key space, has dedicated maintainers, and multiple
+in-kernel users.
 
-    keyctl restrict_keyring $id asymmetric key_or_keyring:0:chain
+CHANGES
+=======
 
-only allows certificates that are signed by a key that is already in
-the keyring.
+v2:
+- Tried to address all the issues pointed out by David and Eric. Tell me
+  if something was ignored, as that would be an unintentional mishap.
+- Updated and trimmed the source code comments.
+- For assoc_array_edit I decided to go with two-element pointer array,
+  which shifts a bit what David suggested.
+- Dropped is_keyring flag. It was so obvious call so I mention it here
+  just in case because too obvious maxes out my self-doubt ;-)
+- Used cleanup.h primitives where I possibly could especially in order
+  to make fallible initializations more bug-resistant.
+- The already-ack'd bug fixes are included but will be dropped as soon
+  as I've sent them over to Linus.
 
-This allows userspace to enroll a vendor CA during boot and let
-per-image certificates that chain to it be added later after the trusted
-phase.
+VERSIONS
+========
 
-systemd-keyring-setup uses that second form for .dm-verity, .fs-verity
-and .bpf and then drops KEY_USR_SETATTR, so neither the restriction nor
-the permission mask can be changed anymore while root keeps write
-permission to enroll chained certificates.
+- v2:
+  https://lore.kernel.org/keyrings/20261016215326.4110064-1-jarkko@kernel.org/`
 
-Both are proper seals. A restriction can only be set once as afterwards
-keyring_restrict() returns -EEXIST. So there is no way to remove it.
+Jarkko Sakkinen (6):
+  KEYS: Expand key->{datalen,quotalen} to unsigned int
+  KEYS: Reject descriptions larger than KEY_MAX_DESC_SIZE
+  KEYS: Verify the key identity in __key_unlink_begin
+  KEYS: Introduce keyring_is_empty()
+  KEYS: Replace assoc_array with rhashtable
+  lib: Remove assoc_array
 
-So whoever restricts the keyring is the provisioner and whatever they
-pick is the policy. A random root process after the seal can't extend
-the set of trust anchors either way. With the chain restriction it needs
-a signature from a key that is already trusted.
+ Documentation/core-api/assoc_array.rst        |  564 ------
+ Documentation/core-api/index.rst              |    1 -
+ .../zh_CN/core-api/assoc_array.rst            |  473 -----
+ .../translations/zh_CN/core-api/index.rst     |    1 -
+ drivers/md/dm-verity-verify-sig.c             |    2 +-
+ fs/smb/client/cifsacl.c                       |    6 +-
+ fs/verity/signature.c                         |    2 +-
+ include/keys/keyring-type.h                   |    1 -
+ include/linux/assoc_array.h                   |   88 -
+ include/linux/assoc_array_priv.h              |  178 --
+ include/linux/key.h                           |   27 +-
+ lib/Kconfig                                   |   14 -
+ lib/Makefile                                  |    1 -
+ lib/assoc_array.c                             | 1724 -----------------
+ security/keys/Kconfig                         |    1 -
+ security/keys/internal.h                      |    9 +-
+ security/keys/key.c                           |   30 +-
+ security/keys/keyctl.c                        |    2 -
+ security/keys/keyring.c                       |  871 ++++-----
+ security/keys/request_key.c                   |   24 +-
+ .../dm-verity/test-dm-verity-keyring.sh       |    2 +-
+ 21 files changed, 457 insertions(+), 3564 deletions(-)
+ delete mode 100644 Documentation/core-api/assoc_array.rst
+ delete mode 100644 Documentation/translations/zh_CN/core-api/assoc_array.rst
+ delete mode 100644 include/linux/assoc_array.h
+ delete mode 100644 include/linux/assoc_array_priv.h
+ delete mode 100644 lib/assoc_array.c
 
-That's why .dm-verity and .bpf only test that restrict_link is set.
-"Restricted" is the state the kernel knows about. The policy belongs to
-userspace.
+--
+2.47.3
 
-So it would be really nice if we could've the same behavior for all
-these keyrings. I think that this is a really nice model and allows
-userspace to have a kernel enforced policy.
-
-Christian
