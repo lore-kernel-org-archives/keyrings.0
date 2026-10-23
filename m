@@ -1,59 +1,52 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792761763;
-	b=z5hra4aUkKQnvgJbBJ5cYlnjnoWWvyu3z9xHd3T3b3P8mC9YwR25CWtovySgDF2VU3mW
-	 Lj8XQQ5E4VKK8AshBIZuVuTjQjoXFi3riEzs8kDrJ2lOGTDJG13luQ3Ji52TyeVKu8INf
-	 L6VqDLtM+HKhBP2iII38XxBvR+O2+FlVZK74A3PaVtEkWY3qGZmwSlu9vX9XPlX1X6g3a
-	 fLwCxEQ78CoK1przwZCxwY8VTx4trSOnMCdJh5gzWG7wht89+XdlUlJEieoYE29EDDaxd
-	 DOczzGLLZSfAmVeDAbU4xNlI/WFSkza4k8LMxXrxA+DqHaeiQ3MjxtVrtrF9l30lH0g==
+	t=1792767910;
+	b=na96CYN+1os+FdN2gJwi/9u4Cz6sWEOESX8JoTMMq+LDBS0ZR4w9QINCBLKUZP50BRmU
+	 EffSEyPmLkpixH7b/OPCqRh5KAOe1qR4mDUkbwHJ/7b0PoGlgEgxyp+FOmUkbB2u36/Vk
+	 FyVjzkIB4DfPmPpjfODvTkK9OamO40rPmvYTQ3++zzeD5oLDMtWjh+bqTlDBFDxFodzwr
+	 BG1ng7z9jxLdCzTF8OxKrLhfgQ671hTTsJiIllxzS7q0mkLicPbk+1vyORe4+vLxZJ7YZ
+	 FXHDtkrXXVGACWXSFp1aTUI8HLpvXy5n70+ai0kx3zJaFYxggZScvBjR3bbK9Yf4WEA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792761763;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792767910;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=W2Cpxy4wVss+iIJW+q/MvPFsOUQNm5aAmpJ0e8BYxrw=;
-	b=czt0il+ZdeLgOPmf0gewkb3dPX9y3oWXB0iDwBJzYDQqrPVD5GlpsSqsEuMjyVnWmztY
-	 q/f0lm4Lzdgy3MxKdZ+M0ayf4u9ujkl5WX9WfV7v1Zc7O1Dvr+CU1kpzk24EyHq/NK3c6
-	 WciMORUJXgQrjQYHMrwMZfKfsbziTE/ZgdESq2K8INGdgchfcRDdvFopE5WhQJj5jytO5
-	 7u8xT9tJqWSk2SI+8BHTcVj2sV6t8TbHuTHqaBWqOevmyhqwlTukz7oXQVu0lb0G6h40n
-	 b06/43HyPNUx6nnTKwHD242H97EEwgYZIdxh6AypLLett4zh/6+XDhYcOAGnK/nWq7Q==
+	 MIME-Version:Content-Type:Content-Disposition;
+	bh=ZVcQPkNDOWQoPE4j6sKMTOGILAcsS100wFswAEPnnCE=;
+	b=r8fOd2URlv2to3hGrZORCDWratWmeVzevtKgDRJ0vtPDeLiGxo5cuWKQY1CNFvTSwB13
+	 H5DJJ609NYR/HrsPKFz4Vry3jrrGn6B9uImSUj9QCCPboI/j1lWMlf9BemtMoe5RMPCB/
+	 PVpEHLewndKyqegQdmuLyFzT/guUTo6X+MSDVz26TtD7Fl/y1FUb27/FZEoytAr5iQW99
+	 uOvmspI5ZMb6mf9JEkDrGgb/hj6+kMUaRhfKBjSWb7nyJYN1CHz+ox0yh4kRvC9Nk3Km8
+	 8XkYMuNmwVi548HgOtzdDavgQDEkoFThsQjROIP8jLJDnyGmmF/eKVtlCgVuRRlCxuQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=oCogN7ON;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=kNbLw9QV;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 5DA04606A31A;
-	Fri, 23 Oct 2026 13:22:43 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 54E1E606A31F;
+	Fri, 23 Oct 2026 15:05:10 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=oCogN7ON
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5B5061F01825;
-	Fri, 23 Oct 2026 13:22:42 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=kNbLw9QV
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 3D28B1F031E4;
+	Fri, 23 Oct 2026 15:05:08 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792761762;
-	bh=W2Cpxy4wVss+iIJW+q/MvPFsOUQNm5aAmpJ0e8BYxrw=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=oCogN7ON1s3A8gapiPvC+G8QBqjFb9jRSpQgM7yTWdjtD7NiA9wkYd+c6QwlopZEP
-	 vxPkhoUqWKapFuCAKBhYqkwiF/4Beq3LeOo86nE/hTzCQxM75To++V+PtmOx7GhO6g
-	 vwUiEHiTMfi40tTInELCf1eemkpf55kidv/2dfNkeVEHKlMBphQlOzr7R3qE2LTwKq
-	 UHX67RGrQNm60W39u7LaNN+VfPaMCB1DE5/GTSQ8jyQ4G4T/XBPoVGI0akNxOes4IY
-	 TZZzGsAh3HMcihhBkHlrVg1bbVJaSFqKGafBz/ZHb5Tu0Bp/LegvLcM/As1ztDI+75
-	 onGwtNPVbK/Ow==
-Date: Fri, 23 Oct 2026 16:22:39 +0300
+	s=k20260515; t=1792767910;
+	bh=ZVcQPkNDOWQoPE4j6sKMTOGILAcsS100wFswAEPnnCE=;
+	h=Date:From:To:Cc:Subject;
+	b=kNbLw9QVGkwIqha06HXuIE1qx3/sPWm3crthpNsEFtXABD1DX6jiGNzyyuojxxI3t
+	 RvnosSeYYzfKNJ4JoS+yXRmah8LFp+x3M53TxYBtkYTdltgn9VX2BtG6RFjllDRHRy
+	 wEPMhdGS1KCyBu/nFy2Hx2wLEmzzzV5ghQ3fABqGp57HIw2EhKzDo+d8ww939J8Ys5
+	 q6De6EZoL89k+cLa6bcoecz0R7PR55yAcLK6g3aA3FE7dDw7yS0dxGTM6kUcKy//E+
+	 R+kZcTus7SOt5ZVK91zkwnOGG4hqgsxVFKUp7xicFdZszcTh6sXeMKMGOpTtDb9sGn
+	 i4coKAhD94K/Q==
+Date: Fri, 23 Oct 2026 18:05:05 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Eric Biggers <ebiggers@kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v2 5/6] KEYS: Replace assoc_array with rhashtable
-Message-ID: <attfn7_lt4Zhl99e@kernel.org>
-References: <20261023120953.1206778-1-jarkko@kernel.org>
- <20261023120953.1206778-6-jarkko@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
+	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] TPM DEVICE DRIVER changes for v7.4-rc1
+Message-ID: <att3oe9CYJjuykq0@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,45 +58,91 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261023120953.1206778-6-jarkko@kernel.org>
 
-On Fri, Oct 23, 2026 at 03:09:25PM +0300, Jarkko Sakkinen wrote:
-> The keyring subsystem depends on assoc_array for searching keys by their
-> description, type and domain. It is the sole user of this data structure,
-> which has during the age of LLMs transformed into a maintenance nightmare.
-> 
-> assoc_array needs to be replaced with a data structure meeting the
-> following criteria:
-> 
-> 1. Must be suitable for a sparse key-value store.
-> 2. Must have multiple in-kernel users.
-> 3. Would be nice if it had dedicated maintainers.
-> 
-> rhashtable is likely the best pick from the available options as it is
-> designed for a sparse key space, has dedicated maintainers, and multiple
-> in-kernel users.
-> 
-> assoc_array is replaced with two new data types:
-> 
-> - keyring_index: contains a searchable index of links to keys and an RCU
->   protected list for active links, which is used to provide stable walks.
-> - keyring_link: a keyring node and its contents. Multiple of these can be
->   associated with a key as it can belong to multiple keyrings.
-> 
-> assoc_array_edit is substituted with two-element array of keyring_link
-> pointers with no specific data type defined.
-> 
-> Jenkins hash digest's used by rhashtable are rehashed from the SipHash
-> digests of search keys and links.
-> 
-> Assisted-by: LLM
-> Suggested-by: Eric Biggers <ebiggers@kernel.org>
-> Co-developed-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+The following changes since commit 722658cac48a6ba49f5506fd74d010ad9dbb2f05:
 
-I did quite extensive testing on this revision and have deployed these
-patches to my at-work project builds, which is a vLMM appliance type of
-an operating system.
+  keys/trusted_keys: reuse TPM version in option handling (2026-10-20 18:15:40 +0300)
 
-Br, Jarkko
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/tpm-v7.4-rc1
+
+for you to fetch changes up to 836952696d0260cca1de6d3300cd8fcd5687fe67:
+
+  tpm: reject duplicate PCR banks in tpm2_get_pcr_allocation (2026-10-21 13:20:58 +0300)
+
+----------------------------------------------------------------
+tpm: changes for v7.4-rc1
+
+FEATURES AND IMPROVEMENTS
+=========================
+
+- tpm_crb behaviour was improved by putting the chip into an idle state for
+  each transmission. This improves firmware behavior as the kernel now
+  better cancels its state as if it had never touched it in the first
+  place.
+- One spurious (but harmless) wmb() was dropped from tpm_pm_resume().
+- tpm_tis_i2c now requests the optional reset control and deasserts it
+  before communicating with the TPM.
+- SIMPLE_DEV_PM_OPS was replaced with DEFINE_SIMPLE_DEV_PM_OPS across the
+  whole driver stack.
+
+BUGS
+====
+
+- tpm2_probe() misinterpreted a transport error on TPM2_GetCapability
+  as the chip not being probed, and the chip was detected as a TPM 1 chip.
+  This can happen in reality only in the extremely rare case of bus
+  corruption. Despite the odds, a fix was landed, as it is still
+  technically a legit bug fix.
+- It is not really worth the time and energy to go into details as tpm_nsc
+  is a somewhat legacy driver, but one null pointer dereference bug and
+  another causing use-after-free were fixed.
+- read() of /dev/tpm{,rm}0 with zero size caused a pending response to be
+  consumed. This was fixed simply by an immediate return.
+
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+
+----------------------------------------------------------------
+Alexander Sverdlin (1):
+      tpm: tpm2_probe: propagate transport errors
+
+Li Jun (2):
+      char: tpm: Use SIMPLE_DEV_PM_OPS for ibmvtpm power management
+      tpm: use DEFINE_SIMPLE_DEV_PM_OPS and pm_sleep_ptr()
+
+Mario Limonciello (1):
+      tpm: Call cmd_ready/go_idle for each command transmission
+
+Pei Xiao (3):
+      tpm: tpm_nsc: fix NULL pointer dereference on init failure
+      tpm: tpm_nsc: stop using the cleanup callback as dev.release
+      tpm: fix zero-length read discarding the pending response
+
+Richard Lyu (1):
+      tpm: Remove ineffective wmb() from tpm_pm_resume()
+
+Stefano Radaelli (1):
+      tpm: tis_i2c: Deassert optional reset line before probing
+
+Yuqi Xu (1):
+      tpm: reject duplicate PCR banks in tpm2_get_pcr_allocation
+
+ drivers/char/tpm/tpm-chip.c          | 24 ------------------------
+ drivers/char/tpm/tpm-dev-common.c    |  3 +++
+ drivers/char/tpm/tpm-interface.c     | 28 ++++++++++++++++++++++------
+ drivers/char/tpm/tpm2-cmd.c          | 21 ++++++++++++++++++++-
+ drivers/char/tpm/tpm_atmel.c         |  4 ++--
+ drivers/char/tpm/tpm_i2c_atmel.c     |  4 ++--
+ drivers/char/tpm/tpm_i2c_infineon.c  |  4 ++--
+ drivers/char/tpm/tpm_i2c_nuvoton.c   |  4 ++--
+ drivers/char/tpm/tpm_ibmvtpm.c       |  5 +----
+ drivers/char/tpm/tpm_infineon.c      |  7 +++----
+ drivers/char/tpm/tpm_nsc.c           | 12 ++++++++----
+ drivers/char/tpm/tpm_tis.c           |  4 ++--
+ drivers/char/tpm/tpm_tis_core.h      |  2 --
+ drivers/char/tpm/tpm_tis_i2c.c       | 16 ++++++++++++++--
+ drivers/char/tpm/tpm_tis_i2c_cr50.c  |  4 ++--
+ drivers/char/tpm/tpm_tis_spi_main.c  |  4 ++--
+ drivers/char/tpm/tpm_tis_synquacer.c |  4 ++--
+ 17 files changed, 87 insertions(+), 63 deletions(-)
