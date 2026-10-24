@@ -1,59 +1,55 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792817897;
-	b=Ryn77VQhrT2+vM2a+RJhQuOoGhQJVmZGB3iMLyEyhgP+oE/PFv6rTH98hHsN5eYGzAiQ
-	 UCAhoMaRSk5vEoMXRVFodHkbLaRzDEPtV3AhCe9EkqBzZj4Z9DNl4bw5iidwhWgs1sG6Q
-	 j+Hyz7aGHP9XzboGCLgwURpCGv8FUFi/SakedOjBpIFFLOrpi8660CUMDHpjFtZEPFPFi
-	 EhtJFQF03qpvKtYUzlSRPNfhWanfZxR2Eh93/6UsEvju5KtwLL6cMj602j3Tx8K65amL2
-	 Tv+2XjtglQ1ZAWa4/6hgXCqCGbJ7fCz8o0Rur12bSDvan02tr2iFkqdIaIunOuCm4NA==
+	t=1792819255;
+	b=RrZ3uBpdXZxD7AmZteQg79rv1n6T6mOzb/fqX4QVFB8CHGLkyRaaYFdEB/OmSwIH7FhH
+	 rvmHL0WN6VR3IPbFCm1OuFkX5xasoEvofD+P2KSwMlA2anYGFjiSbl+62pqiSXUhuFap1
+	 Mq4UDN8DUSk0+sEpF+udO1FGYCuAP3iS3gd14y3Wg9G9tFkbpqBR4jaGwvvLoBRoOAuLU
+	 UKXwNVcnjFAI8TMOGz8eqcQQEQZl4PHE0Sjy3slOQDdKlDesm9g11q56iQ+KoeUV2Ydme
+	 ATyAGmduJ/LM74jDOCTlxOaZJR3CfajDFpiW5KpA/CE7W8Sv2rqFeSV30c6Q1L6z5Ow==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792817897;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792819255;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=uQmfOxNvc9iIeOJDbEHBzdrsJihOFNqCRHmYsABg43o=;
-	b=ZXgR+nnkv2KkSWR2d68CQsSo9DfeafJWKeu/JMQrwQhIbOuYVOiDrp3QrlfAfZxQcgsm
-	 8dtQtN64fskwkC2sYGpeXwtTxVnHH5WjNwufGoP4K70klPyfz64dqLy1DsTZix884GwCa
-	 Y2QUE6kqadlRNXUMY3tN4zgmvPoH6GI1KJ/dGiNXMaC5UWdqvoDGeIykuAj0fYAt52SVM
-	 XxW+M0v/o8NfJi5OXCWEAV9VzlJh/OlKnJ0ve80jprH0GuvjaXZYvZReniFe+b9XPLhfB
-	 IhIy5Y+DUkZIzyx+p8A879cmqGzZCI5Q0KR8XhceOc9zVTjwFyubIQFU+lfQEVP482w==
+	bh=xYHh2t4gmp4t/9L9LEjBajU/Uf/iAUb9KqQnGwg7gN4=;
+	b=zhrjrsR/vdGG4CUAtzM9ACJDeaUGwTaLclXOgNYZB83ulnj4ZXepQ/X+eZheCDrq8t0L
+	 Oyv3u1jUTcvnpmPNHdxMUd4xpgmKMssUa29xMbJ3NARoeWHsylfslz6Vb2uDIhhfHOhMO
+	 ruk7wapJAElRDjBUzpZAcldN/nOnGc9Y+o5F3nZSUQTEZrQKSzkiutFJckWrLrZn3zc4s
+	 WFuvAyLzo9O22lFfvq4JbSb0SRq3dAhv0+z01o+mz7uPfiaomaRRxiv4v5friY8VDhHfw
+	 yWJu8TobAY6BjOm6aNMglm/Flh5HPNRKYwVEwfLpLLvkajl4FQRUJx4rt/ft+zwtNfw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=aVup365A;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=I94jBxwW;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 97501606A31A;
-	Sat, 24 Oct 2026 04:58:17 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id EB595606A31A;
+	Sat, 24 Oct 2026 05:20:54 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=aVup365A
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9302E1F01825;
-	Sat, 24 Oct 2026 04:58:16 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=I94jBxwW
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 417001F01825;
+	Sat, 24 Oct 2026 05:20:54 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792817897;
-	bh=uQmfOxNvc9iIeOJDbEHBzdrsJihOFNqCRHmYsABg43o=;
+	s=k20260515; t=1792819254;
+	bh=xYHh2t4gmp4t/9L9LEjBajU/Uf/iAUb9KqQnGwg7gN4=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=aVup365AqJh+oAlm24iBEBkK1C+xYqVGJX7udxhoFJbdR/6Hwm6f0dwaBmo8di454
-	 cHDO7c/zz+fF/XFthNcf/eZIAu0OhY7EJeWxQWMAkAMgSU49XNYhjjS358pK2DRScW
-	 QgC94uRFbNSp1pBOMSYMWNHDC5dvTpIe2m6Huuy3POoQUNqhKLbytO1luz06EFmBrd
-	 FS/dXRomtv8oqn2fOXwS6xmm6+8uq5VXoZQLpXzlk51vg1D1RIKnBeQom8vMKPyogn
-	 7QPQHXm1wHTJbhFQWNUbjCbN02DtSuFd8O6hgBMucOr3YHdn7Ox+aEfuULQ8DyfkVY
-	 ZWxKc2MG/zalQ==
-Date: Sat, 24 Oct 2026 07:58:13 +0300
+	b=I94jBxwWaulFurt//1CDuYBXQGofSkrns9upf5ezh7ntuhY4GUZKtwyndfTSJXbCT
+	 QC49t6deoWqAYzRR7ilWZqKQsOmbRvIPc13yyEKDOE9I/4zZrIroAq6cNaPkXvKqYO
+	 Ft/YlTQ5WWjzltKiudnPhUN3CCYVEFII6P+u+1sTG8nDTdkboF2rm4k1ICOIONGKk1
+	 B0KdWFoXLgVywy9wGYJxjIPUyG+zMknRxHluYYiX31EbFxuX7geONEUL0tMNRUw8+5
+	 3TSqDHidMlnlx5UFzUwGIlSSSm9sQqlWrEa19aDy71DnhqlVYkA5wgBiVMKSAxsE3X
+	 K8mOgkksYbw5A==
+Date: Sat, 24 Oct 2026 08:20:51 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Eric Biggers <ebiggers@kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v2 5/6] KEYS: Replace assoc_array with rhashtable
-Message-ID: <atw65V6xfUJpUsN8@kernel.org>
-References: <20261023120953.1206778-1-jarkko@kernel.org>
- <20261023120953.1206778-6-jarkko@kernel.org>
+To: Eduard Zateev <hackerowskiy@gmail.com>
+Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+	serge@hallyn.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	syzbot+c15de43f1e7fffbb7b9b@syzkaller.appspotmail.com,
+	syzkaller-bugs@googlegroups.com
+Subject: Re: [PATCH] keys: use long workqueue for garbage collection
+Message-ID: <atxAM9JW6oi2MEeT@kernel.org>
+References: <20261024042944.52493-1-hackerowskiy@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,60 +61,74 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261023120953.1206778-6-jarkko@kernel.org>
+In-Reply-To: <20261024042944.52493-1-hackerowskiy@gmail.com>
 
-I'll just run through three issues that I forgot to update for this
-patch set version. I think it was good because probably these could
-use some feedback.
+On Sat, Oct 24, 2026 at 06:29:44AM +0200, Eduard Zateev wrote:
+> The key garbage collector can wait for RCU grace periods. This can occupy a
+> normal events worker for a long time and contribute to workqueue lockups.
+> 
+> Queue key GC on system_long_wq because its work may wait for long periods.
+> 
+> Reported-by: syzbot+c15de43f1e7fffbb7b9b@syzkaller.appspotmail.com
+> Link: https://syzkaller.appspot.com/bug?extid=c15de43f1e7fffbb7b9b
+> Signed-off-by: Eduard Zateev <hackerowskiy@gmail.com>
 
-On Fri, Oct 23, 2026 at 03:09:25PM +0300, Jarkko Sakkinen wrote:
-> +	WARN_ON(rhashtable_remove_fast(&links->ht, &link->node,
-> +				       keyring_link_params));
-> +	list_del_rcu(&link->list);
-> +	WRITE_ONCE(links->nr, links->nr - 1);
-> +	call_rcu(&link->rcu, keyring_link_free_rcu);
+This commit message is not huge selling point for any possible argument.
 
-keyring_remove_link() is called by __key_unlink() and keyring_gc(),
-which are infallible operations.
-
-At minimum this should be changed as:
-
-	if (WARN_ON(rhashtable_remove_fast(/* ... */))
-		return;
-	
-	/* ... */
-
-Alternatively, keyring_remove_link() could be fallible operation,
-and leave that decision up to the callers.
-
-> +		WARN_ON(rhashtable_replace_fast(&links->ht, &old->node,
-> +						&link->node,
-> +						keyring_link_params));
-> +		list_replace_rcu(&old->list, &link->list);
-> +		call_rcu(&old->rcu, keyring_link_free_rcu);
-
-__key_link() is called by __key_instantiate_and_link(), key_link(),
-key_move(), construct_alloc_key() and key_reject_and_link() i.e.,
-by majority fallible functions.
-
-Are all of these call sites such that if __key_link() was a fallible
-operation it would be impossible roll back, or is this something that
-could be addressed better?
-
-> +			WARN_ON(rhashtable_remove_fast(&keyring_index_locked(keyring)->ht,
-> +						       &link->node,
-> +						       keyring_link_params));
-> +			call_rcu(&link->rcu, keyring_link_free_rcu);
-
-__key_link_end() goes along the lines of keyring_link_remove().
-
-However these are decided I will remove keyring_link_remove(). There's
-enough symbols to get confused already, it has only two call sites and
-frankly I'd just want to see its contents open-coded in those sites.
-And it makes the level symmetric with __key_link_end().
-
-keyring_link_remove() is type of slop that needs to be wiped away
-constantly from any LLM sourced code, at least in my experience as models
-tend to build on top of that design, and soon you have a nest.
+> ---
+>  security/keys/gc.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/security/keys/gc.c b/security/keys/gc.c
+> index eda445f815d..b174b8c511b 100644
+> --- a/security/keys/gc.c
+> +++ b/security/keys/gc.c
+> @@ -19,6 +19,7 @@ unsigned key_gc_delay = 5 * 60;
+>   * Reaper for unused keys.
+>   */
+>  static void key_garbage_collector(struct work_struct *work);
+> +/* Key GC may wait for RCU grace periods, so queue it on system_long_wq. */
+>  DECLARE_WORK(key_gc_work, key_garbage_collector);
+>  
+>  /*
+> @@ -57,7 +58,7 @@ void key_schedule_gc(time64_t gc_at)
+>  
+>  	if (gc_at <= now || test_bit(KEY_GC_REAP_KEYTYPE, &key_gc_flags)) {
+>  		kdebug("IMMEDIATE");
+> -		schedule_work(&key_gc_work);
+> +		queue_work(system_long_wq, &key_gc_work);
+>  	} else if (gc_at < key_gc_next_run) {
+>  		kdebug("DEFERRED");
+>  		key_gc_next_run = gc_at;
+> @@ -85,7 +86,7 @@ void key_set_expiry(struct key *key, time64_t expiry)
+>  void key_schedule_gc_links(void)
+>  {
+>  	set_bit(KEY_GC_KEY_EXPIRED, &key_gc_flags);
+> -	schedule_work(&key_gc_work);
+> +	queue_work(system_long_wq, &key_gc_work);
+>  }
+>  
+>  /*
+> @@ -119,7 +120,7 @@ void key_gc_keytype(struct key_type *ktype)
+>  	set_bit(KEY_GC_REAP_KEYTYPE, &key_gc_flags);
+>  
+>  	kdebug("schedule");
+> -	schedule_work(&key_gc_work);
+> +	queue_work(system_long_wq, &key_gc_work);
+>  
+>  	kdebug("sleep");
+>  	wait_on_bit(&key_gc_flags, KEY_GC_REAPING_KEYTYPE,
+> @@ -322,7 +323,7 @@ static void key_garbage_collector(struct work_struct *work)
+>  	}
+>  
+>  	if (gc_state & KEY_GC_REAP_AGAIN)
+> -		schedule_work(&key_gc_work);
+> +		queue_work(system_long_wq, &key_gc_work);
+>  	kleave(" [end %x]", gc_state);
+>  	return;
+>  
+> -- 
+> 2.55.0
+> 
 
 Br, Jarkko
