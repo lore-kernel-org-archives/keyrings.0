@@ -1,61 +1,60 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792858545;
-	b=a8Xy/EtKXX7CBpX9dRADy9SKzRRlQGm4jfqB0R0ZYw//7eqaBEIKMCvY2iEw68mQTEsx
-	 jPVO/cEDincRe3NBLTgmPjlse4Ax5TkLmbFREdrEdRQZ8oHbQwCvhBXCb6+zNcEPel5gH
-	 LMqCynNL3CJLpfgkHWIwTG8wuFdf6Iy8kjHckiLWQRtq2HeVHYkKMLs5PzYapgcYRRKdp
-	 +PceZKoF2jE4gDf/gRlKZkviD2dDdbKfg3xLOBRHi7ar6Sv0Pvh6HJFFiC1R6YGs2XHnU
-	 26yECCig+tL5cpGRwTsi+HpJkUdGb8bj8pKWyf3mgdeAi/hFGJNJ3DgEX3csu837ezg==
+	t=1792859202;
+	b=vB2YTlHvlaIZo5t+N2CaU9B7DWge6H8187IjdP87eHYLA6UB0AQNQoOhtmu2kxuidP72
+	 3ujluOeu5PTSxARRsBVSJmLOMNowU5YoiVBWufLRZxitM5NNsYeQjU+ptszKUrergKwdR
+	 A7QoJq9MqQzvzmciolV3K8GvSB61BAWALl/8FsErKPz+yTrDS+OJYCdNHTTvXlsbnWYB9
+	 u6oEFPMSqnvFgG4nBp6bTZ1cgfHH0gPobq4TlKU1vTzigLyajV36MB9cHs+uxMrpduW5E
+	 byo9L3V0OkNF5LUonTzeNVfmP9A8rvjtxfond4ZKm/sFp1wXXWkMbKdSPhCvHjBl2hA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792858545;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792859202;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=1aAtzlGxYWM7+dYn3q9vh6JwVo0joCuPSK3S3WTbmy8=;
-	b=knqmezwnlYJ8hiXeuJUlQHLjjJuhnOIXbnQpI47LHb/2C0rMM3dg300YISEBzUkNPt/u
-	 5hToPcG43I7KV4Ljvk+nWZgNeGI2iuuuOad64Y4N6/XdCWCW3B1fEx5whhfa9dSBlUY/a
-	 UCp+Hqbyl51AeTInK9dLLRNmzj9UeLibH8SB9LCVUsUqgRbiCLeDveK0wI3AdoQYk143d
-	 fvv7GrcCCqh8qE4DOF66wWjFGbmsElm465K2mHj1gc5zBpxCd2nDhUB2KnCriO37uF6yJ
-	 64FvakzT+EhtG33druBYRZQ7JiY7aVyo5hpS4jkXqqsVieN83nyE2YHZ1ODGi5MJFUQ==
+	bh=cjCUpJFLgm36iIs/dyRyZyVqFTn0qb8FK16OH3CULcw=;
+	b=UBmH4T7bvt4H0vjB25fr2Jt1qbb743EYFzzge7b5xBWliPyRE9EgUKpNr1FRukFh5+XC
+	 KvHO2IziLeGeO6BsS5tfGdt/m3m89NpUmWXrc4N+P9kCQB4QDQN5R/erYfrUmD4QqFVrQ
+	 NliSqQe3qo5aMyXFgUd/+mq28HdEXeOtCcfk+MNRnnKJQt43oapgWpb7IBgRb8CpyQG4h
+	 gAcUf4ea5MDlKPIBrc5OBoxEltTpjbWvufI8S2C63SbdAuH8pu6gz/n75fcZ+QL9vfjO0
+	 eW6ilEr/mtm0/uU5YFU2LUzDrzOoOVIEqRMepM+cmQwyC517WQU/50CcaQzOn84CVfw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TcoWB7fR;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=jfjbYBYu;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 10F3D606A326;
-	Sat, 24 Oct 2026 16:15:44 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E1B97606A31A;
+	Sat, 24 Oct 2026 16:26:41 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TcoWB7fR
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 154991F01825;
-	Sat, 24 Oct 2026 16:15:43 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=jfjbYBYu
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 3B4051F01828;
+	Sat, 24 Oct 2026 16:26:41 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1792858544;
-	bh=1aAtzlGxYWM7+dYn3q9vh6JwVo0joCuPSK3S3WTbmy8=;
+	s=k20260515; t=1792859201;
+	bh=cjCUpJFLgm36iIs/dyRyZyVqFTn0qb8FK16OH3CULcw=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=TcoWB7fRRWMyLohC2lkFRvLSlqJ/GNvY0zQ9o27oZ8ZosabXpwOMiTRdlwoL5kr3a
-	 yUmmz0BXuG1yjBRXMUKJEiU+Og28KE5C30wy38bQRaP2Tx3/UTOB89eiZldJWrZmNK
-	 +MumTs86sALmhOjEZ1ifdJWwMItNntI3V9G4K16J3HWgF2H+4u/aoR6LWQY0h4yJHi
-	 mHs3bC6JKkUBdBWMN7ip/3V0oHMVtfqbiXP5ag9nIfcp5hnK0B5y8Spv31pZEGf0hc
-	 lXYTJxZ6dZz80yBqaMixsQi/WsN4Tp2i5OUbWvh5RTuzVVW2hecO3qUKrTSLL/yHCr
-	 eZn59bFDckrbg==
-Date: Sat, 24 Oct 2026 19:15:40 +0300
+	b=jfjbYBYufp5/BY1Pto7nqef9kFCdeVEqA8y+tZwDwIY9FGAi3PWm51z90I3YiIBwk
+	 tcJ3VUpUB7qzldNoi2j7Gkwlwv49KmdZyMwxylpXOv0V0PO1qxf5AvX2LRBFl4iWHM
+	 pbUFKAXNEpreuWKj3ECwC0pjriLFyQS9JHyhTGd1WJ4iRlYSGh7GSRU8+MEVa4S17h
+	 oXJYhvgXQYBsEY3EUVniqHI1ZI3wDsgBHt5XPl8/17qozvuZOGlmoaNYbD/56Cv/es
+	 lIj6php+Q8RiTMgQIdoR/isXkNmhkfNVNCXK63V6GRnwzOSxkaMKFbBS43n0KTk4fv
+	 xFGX1pGCnyYKw==
+Date: Sat, 24 Oct 2026 19:26:37 +0300
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: sashiko-reviews@lists.linux.dev
-Cc: Heiko Carstens <hca@linux.ibm.com>, Vasily Gorbik <gor@linux.ibm.com>,
-	Alexander Gordeev <agordeev@linux.ibm.com>,
-	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	Christian Borntraeger <borntraeger@linux.ibm.com>,
-	Sven Schnelle <svens@linux.ibm.com>, Kees Cook <kees@kernel.org>,
-	Ilya Leoshkevich <iii@linux.ibm.com>,
-	Anastasia Eskova <anastasia.eskova@ibm.com>,
-	Peter Oberparleiter <oberpar@linux.ibm.com>,
-	linux-s390@vger.kernel.org
-Subject: Re: [PATCH] s390/cert_store: Hold the keyring->sem while
- invalidating keys
-Message-ID: <atzZrGdjJhrivcQ0@kernel.org>
-References: <20261024144229.1546151-1-jarkko@kernel.org>
- <sashiko-outbox-183758@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Eric Biggers <ebiggers@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v2 5/6] KEYS: Replace assoc_array with rhashtable
+Message-ID: <atzcPWlu-vh0WHbT@kernel.org>
+References: <20261023120953.1206778-1-jarkko@kernel.org>
+ <20261023120953.1206778-6-jarkko@kernel.org>
+ <atzAk-1IhxTN5nk8@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,15 +66,21 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <sashiko-outbox-183758@kernel.org>
+In-Reply-To: <atzAk-1IhxTN5nk8@kernel.org>
 
-On Sat, Oct 24, 2026 at 02:58:25PM +0000, sashiko-bot@kernel.org wrote: 
-> include/linux/cleanup.h notes that goto-based cleanup and scope-based cleanup
-> helpers should not be mixed within the same function. Could key_array also be
-> declared with __free(kfree) = NULL so the out label and goto can be dropped,
-> or should explicit down_read() and up_read() calls be used instead?
+On Sat, Oct 24, 2026 at 05:28:39PM +0300, Jarkko Sakkinen wrote:
+>  	kenter("{%d},,%zu", key_serial(keyring), buflen);
+> @@ -512,20 +485,18 @@ static long keyring_read(const struct key *keyring,
+>  		return -EINVAL;
 
-This was actually a "design choice" as it is out of scope for the bug
-fix.
+This is another issue I have with the code that I recalled afters
+sending the patch set.
+
+Do we really want to retain kenter or kleave? I don't see any point
+as kprobes and kretprobes have literally existed for decades already.
+
+I propose removing them from add/modified functions in this patch
+set or alternatively prepend this with a commit that deletes them
+entirely from the subsystem (I like the latter better actually).
 
 Br, Jarkko
