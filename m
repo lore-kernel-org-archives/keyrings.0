@@ -1,68 +1,62 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=111.22.67.137
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792897123;
-	b=n/tDDfTk5Utt+BG1Z9W6gsr8/8LMA23qcxKB3lXtvu+Ik8WaJBMhOc7F5W7wMqhpHl8h
-	 5CnwsFS+619xuE9GBOD5lllfsuvJQRMYu+qqzDf9SclMFh/qUdFtEFWrF2QO2YSzlAbD0
-	 x4cHvljXkeD2PudgnCRKqDbOR51Ul6TRHjji1ECHGIqA6o4pcT5WgEE9StgGoqoTC5P+8
-	 AdPqtqCPH6Mpq7btmZSt8YsaYD9z++GyryOW1aD4j9o0EbJO6XaQulZCXGo+BWveWFaje
-	 6+sls9pRm/U0HkqUtu05phyEIxcTGtvQRTSUhPBj/gF7ShHlAJy8dl65lGImNg/M26A==
+	t=1792899357;
+	b=BDMeJ2c39+ljoDtvIbrApVbOtJ9F+lr/2VzkgIcm5qGLmazOQGkr7nbcwae2T5QmS+no
+	 xEnRREOktQTJuDMMU8Rp9ziCMhJRvnUTcXDor0OSHqETnMoVQJnzlItz8RC0/wH9nzO9c
+	 GCtva2FUxRE4Ig2cOrVZuOugIFuSlmT0v5yjcO7dQH/pTIXBUW+MyWzhdpCDvfaaDAVyi
+	 Bb/j5f2tAawVteBylkJUN+poiKtgKYWiE6vM6incAm7PFMOo5uK2laL8T3XNMfn+nifE7
+	 j99Y/aOOvS6v5fQ3+6IXHNsVKGQuVOQTqq7eKLbGSbAqWkmX1t0SHhFzgSNWPnCjn0g==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792897123;
-	h=DMARC-Filter:DKIM-Signature:X-RM-TagInfo:X-RM-SPAM-FLAG:Received:
-	 X-RM-TRANSID:X-RM-TagInfo:X-RM-SPAM-FLAG:Received:X-RM-TRANSID:From:
-	 To:Cc:Subject:Date:Message-ID:X-Mailer:MIME-Version:
-	 Content-Transfer-Encoding;
-	bh=cv9hAJb6OOBGgjMXAhD6mSWLhoRdml/4YCRPOys+VM0=;
-	b=MgohfAiT4A7W6PdnzWa84RAzfrfTGM6p5S3yjA4AalsV+DLsVJV8HqiuY2OCDNcwXV3X
-	 pkyxcO7xnALTn7s9P9N8dbZpMISbBMLuh0b0pMdXw8kpqqAAiEQPNKiXHwdtB8BrhlQ86
-	 azx51MAPe7fcjmwDrtpyKkhIe7QjqOXpv6uF9SX/EwAn+y1R4zuXOe8WsGHd33ufhwgYS
-	 z318GFxsieUwTBGYI7FOjw67Sphg1t+SF6pOdwz7B0GN3zpOspyPE9sxqEY417EkGly6U
-	 R6bDNN9I6nFwdYCnkyraO/D1EJjwtS+nm87G1EobJc74q0h7ma8bqxdFU8lbdFjYKJQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792899357;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=FmXgbLb2eu8UPTUou9likIbWaqH/8wlcxMjDZS1qE9I=;
+	b=vkd46Ts28D5QDILkVDTFG90ufjscWKqJg/Amah2sC46AcrQWM6DIXATxytgGxs+wzl1s
+	 t5yR7Egpj38b0XcF+KBTQlNO+Y1btg4qBdk6cja8CY4lqV3VgUzS/C2wNHDNs+W/hcCYW
+	 zGIdDW0awMFIDF4cZRZREvaqvPeayKWS0lAvr9m4Vf3xmgl6372SbfCh9YnJZUOSZKxcK
+	 vBKkc0kEflK6CP91gsHeHP0G/CQo3jEeZvio/4EhebKf5KIhEj/xVVXI7NTFtrWaNXNzX
+	 FbiqiimqjFvXVyFw3Z8xeI+lVWJEooErzZ0gtFcAK/MstaZcT0aTmp98NGGEAhN2Yzw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=cmss.chinamobile.com;
-	spf=pass smtp.mailfrom=cmss.chinamobile.com;
-	dkim=pass header.d=cmss.chinamobile.com header.i=@cmss.chinamobile.com header.a=rsa-sha256 header.s=default header.b=TDuHTHwE;
-	arc=none smtp.remote-ip=111.22.67.137
-Received: from cmccmta4.chinamobile.com (cmccmta4.chinamobile.com [111.22.67.137])
-	by smtp.subspace.kernel.org (Postfix) with ESMTP id B8B19606A31A;
-	Sun, 25 Oct 2026 02:58:39 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org B8B19606A31A
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=cmss.chinamobile.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cmss.chinamobile.com
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=mlv76WgW;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	(No client certificate requested)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id AA0B3606A31A;
+	Sun, 25 Oct 2026 03:35:56 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=cmss.chinamobile.com header.i=@cmss.chinamobile.com header.a=rsa-sha256 header.s=default header.b=TDuHTHwE
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-	d=cmss.chinamobile.com; s=default; l=0;
-	h=from:subject:message-id:to:cc:mime-version;
-	bh=47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=;
-	b=TDuHTHwE99WajUA2Hhc+0tvmyloDHsX0/zg4C/fCNX1uUriSmZL8Nx1v5hoOc2/6ZgUrxhoIEblC3
-	 dzB5zMfJKbBxX6Pb/JLAsf2iGFxCW91SXExnPfPivFKE7rRKadFaUoM/TfjmRnEQe2FLoaAJNvaoev
-	 Q9heKGgIZG/MEnYM=
-X-RM-TagInfo: emlType=0                                       
-X-RM-SPAM-FLAG:00000000
-Received:from spf.mail.chinamobile.com (unknown[10.188.0.87])
-	by rmmx-syy-dmz-app04-12004 (RichMail) with SMTP id 2ee46add70574a7-e26e3;
-	Sun, 25 Oct 2026 10:58:32 +0800 (CST)
-X-RM-TRANSID:2ee46add70574a7-e26e3
-X-RM-TagInfo: emlType=0                                       
-X-RM-SPAM-FLAG:00000000
-Received:from FHA-W6400298 (unknown[36.137.216.17])
-	by rmsmtp-syy-appsvr08-12008 (RichMail) with SMTP id 2ee86add70534cd-7b194;
-	Sun, 25 Oct 2026 10:58:32 +0800 (CST)
-X-RM-TRANSID:2ee86add70534cd-7b194
-From: Tang Bin <tangbin@cmss.chinamobile.com>
-To: dhowells@redhat.com,
-	lukas@wunner.de,
-	ignat@linux.win,
-	herbert@gondor.apana.org.au,
-	davem@davemloft.net
-Cc: keyrings@vger.kernel.org,
-	linux-crypto@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: [PATCH] certs: Print correct error on pkcs7_parse_message() failure
-Date: Sun, 25 Oct 2026 10:58:29 +0800
-Message-ID: <20261025025830.2239-1-tangbin@cmss.chinamobile.com>
-X-Mailer: git-send-email 2.52.0.windows.1
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=mlv76WgW
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id AAE111F01825;
+	Sun, 25 Oct 2026 03:35:55 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1792899356;
+	bh=FmXgbLb2eu8UPTUou9likIbWaqH/8wlcxMjDZS1qE9I=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=mlv76WgWT11G9JPvasaYbsQKatT0HIr15I6dvLZpPbUNeWA+6xhoOIaHseueBBiI9
+	 zrk0XSCZ1VDqXAkwhvJ7ngGuFUrgazUa5vFH1r8d63MojpS8vVxKd0s6a4f2bUjDoz
+	 Wpd2pGjsob9UnuMZvsxKJnQMRl9TybjG3GS4lFrxIGz04DTFSwXIYjbuRmAaUijUYz
+	 OyWE5rD33zpx7b1zQSgP5RaI59Du7aUgtMiaCM6O851cA7BSpNz76itDqvFwJ40v70
+	 oDg2YiopLbVIjmaV8mBqyGKlZWpHaw6+rj/juZsKUxrZ3mLtTngjYMhxnNzkO3FIh3
+	 VEzACdb8YesPg==
+Date: Sun, 25 Oct 2026 05:35:52 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: sashiko-reviews@lists.linux.dev
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Eric Biggers <ebiggers@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Graf <tgraf@suug.ch>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	"open list:RHASHTABLE" <linux-crypto@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v3 5/6] KEYS: Replace assoc_array with rhashtable
+Message-ID: <at15GLaxaMgRONYJ@kernel.org>
+References: <20261025001105.1824178-1-jarkko@kernel.org>
+ <20261025001105.1824178-6-jarkko@kernel.org>
+ <sashiko-outbox-183965@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -72,35 +66,26 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <sashiko-outbox-183965@kernel.org>
 
-The panic on IS_ERR(pkcs7) printed 'ret', which still holds the result of
-the prior successful x509_load_certificate_list() (0) rather than the pkcs7
-parse error. Use PTR_ERR(pkcs7) and %ld so the real failure code is
-reported.
+On Sun, Oct 25, 2026 at 01:05:06AM +0000, sashiko-bot@kernel.org wrote:
+> kernel/bpf/keys.c:bpf_lookup_keyring() {
+> 	struct bpf_key *bkey;
+> 
+> 	if (!bpf_keyring)
+> 		return NULL;
+> 	if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
+> 	    !READ_ONCE(bpf_keyring->restrict_link))
+> 		return NULL;
+> 	...
+> }
+> 
+> Should bpf_lookup_keyring() be updated to call keyring_is_empty(bpf_keyring)
+> instead?
 
-Fixes: 8cd9f234f706 ("certs: Move RSA self-test data to separate file")
+I don't have this file in my tree and git grep nr_leaves_on_tree gives
+nothing.
 
-Signed-off-by: Tang Bin <tangbin@cmss.chinamobile.com>
----
- crypto/asymmetric_keys/selftest.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/crypto/asymmetric_keys/selftest.c b/crypto/asymmetric_keys/selftest.c
-index 98dc5cdfd..179b385cc 100644
---- a/crypto/asymmetric_keys/selftest.c
-+++ b/crypto/asymmetric_keys/selftest.c
-@@ -41,7 +41,7 @@ void fips_signature_selftest(const char *name,
- 
- 	pkcs7 = pkcs7_parse_message(sig, sig_len);
- 	if (IS_ERR(pkcs7))
--		panic("Certs %s selftest: pkcs7_parse_message() = %d\n", name, ret);
-+		panic("Certs %s selftest: pkcs7_parse_message() = %ld\n", name, PTR_ERR(pkcs7));
- 
- 	pkcs7_supply_detached_data(pkcs7, data, data_len);
- 
--- 
-2.52.0.windows.1
-
-
-
+Br, Jarkko
