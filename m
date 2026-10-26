@@ -1,55 +1,68 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793058127;
-	b=p4/rx0h3B9/kVCCGwwp4Wo6Cz3cV9ukVNxtCjbk1HKsoYHRxbYfn6oPYeQzJuwzK8uu9
-	 1rqpc5dcqQ5Jvtmi0PjQVHN3WgU0ByNIpQ2k4oL/4wyajXdNLYwDPmMYgAqaKqs1INdRi
-	 Nb8MydPp7WxABJzOzFkDUb/iK1mSlGUxoF1kFOnfj8OU0/f1fppU2BgNsQBq0IXPpNImt
-	 AVyGv+zR5I6/L4uOlDnhbSEwwdOXREjfqJt56XJnWUcwbAXTZ18/z/4qrTvCuVH/L1N6y
-	 IVu4oS2CbH3PFa/WyydUJ7YVygJy8t7Ij4t+tyy39vuL/VgTJjLukv192eSFGs0E74Q==
+	t=1793058932;
+	b=YQViq9JxtW0mJRfHg9AXPnSQ8scZKMAldrq6I/yjNqkCfq++tlC70zgJs+G09ZpQRZIE
+	 uNxHhfxZPoqf1vqWMpfl9iP85Zz3Tw5FsgvzH7eOULnZ6T/TSjhdO+wkayB9Mm+yrnqIZ
+	 HzGAzg/uA+i7QyH4gS1tphWaGJ5UJMlyrgDV8E9vN7RwXysicGT4gWI9wtmSEnMZgqosM
+	 VHpbm+sM/fmxc2mevC3yg/jGJYiSx6WHkNuIAYAeHDt1vXm2ZRokWVixyzkBcjXM9X1K+
+	 z8/CGQLLLs+qK4Y0a+TI9obAkgZ03xhI0EXuGaCx34u3fEHNVSpk2G4a4ndg74sHY2w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793058127;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793058932;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=0Cref69zut0vAJQTI6AWgS5EX/rrz0wMNXR0pFiATGE=;
-	b=phW5KpG+G/lF3x3ReP6rw2rXa4FGoKuutgjp6qrEmKFW93svVjpaj0p9KhpFhpy70fRE
-	 zeb4v/Ywvdx2sjI3WWLuScZJGZ/u0zp9JT+GToJustuj4rcbnt7BewXsVkiQQL3ZOD58R
-	 w93CyXJdhpx2hl/J88/nk5W5oGfh4/k7dBGPiUYdCSi6ePRrZUXVZ9XM3/tdP5ez7/C6U
-	 j34YTH2rXB6vdF1zPhPInNcD11xCVYnDcJrXWXxF8qhLT3/WrbMj1PndnxupkSMyGuwy7
-	 lZwVVWwPw4CI1PUiMrJ4+/3nxcW1YQrCl60PVkYVJcuv82nRkQ2XK6tIIkpRRfEZIoQ==
+	bh=VynIgSurKHQaOCUBkhJuuPI91r+51atCbpgVjkqWOnM=;
+	b=RXVz5+Ur6yKBAlXpUg8OjjqL3XJFS8Ke3TFwruzDSWvarhpX15Wb6DXGg6RkfzZr/ZT/
+	 h4bdS1k96mgvPKZZ0U6BcxTjyQQdVw0/xjeplY70cwgCnh05xO0Ffs9MpdHLhn0TkXsbX
+	 zD7aa9HotBkOtTSOsnF6T1QK+xMajQN6BI8rKdLArCnU0f7lmkhQa4Jn8d5xqA7cFM/Px
+	 RETfugZh7Bxn03xgIhhn8qa8wIbav1G3M37foPR1edBvR7I9+ln+LPrtyRzlYIeD+pUBD
+	 66cd7cdFV1YESi/tZyUDuGPSIhaU2TWWfiXlZvKnBFsh12Aisw+PixnALE53oQuLC7Q==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=SSAuadB4;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eoGYorJ7;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id F159C606A31A;
-	Mon, 26 Oct 2026 23:42:06 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DD925606A31B;
+	Mon, 26 Oct 2026 23:55:31 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=SSAuadB4
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 00CC51F031E0;
-	Mon, 26 Oct 2026 23:42:05 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eoGYorJ7
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 4B0371F01825;
+	Mon, 26 Oct 2026 23:55:30 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793058126;
-	bh=0Cref69zut0vAJQTI6AWgS5EX/rrz0wMNXR0pFiATGE=;
+	s=k20260515; t=1793058931;
+	bh=VynIgSurKHQaOCUBkhJuuPI91r+51atCbpgVjkqWOnM=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=SSAuadB4/9et8dEpA6/NAMYUtFypD4j9oXg7GK8MupjPL30ISwdusmm2o8IcOlCTr
-	 nPx5Sk/asToergzCU3p/g0Ed/g3Tt1h9PZmqq8fM8qJ7lSr13bDzdZZczYTy6bcpPa
-	 4BYvXN8Ouih5Xbqsmt8EN0sW5/nqw0xQvgyFQOn/YfLe7jPHKnFmYwwazHE3a1bg2R
-	 fzNe3isTIZGVKJLk0XeTSftCsjNv9VlC4Cv/zoRU2fwKqBZcXa2l/pKOwwnHRaqTMu
-	 Za6aJw9j5maLhsW/Fw4uwDW3sMG9ttOAw/K/h+wr9mOOjCTzyJj4fQchcx92fOFS6n
-	 ogr0AIJ2TSJXg==
-Date: Tue, 27 Oct 2026 01:42:02 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Hillf Danton <hdanton@sina.com>
+	b=eoGYorJ7zvT8PcPJ1fs23u46Fhju/bkcw33/56WLZauBwe0CiVgIPS8uq+13xNP5C
+	 iq287Rm5RDqUJFitdyuCVhomIE/WZxYUqYATsKVhYXZcNQUS4KP0YEmQJj7qG6WKps
+	 PDCpiAmlYi9tzUvXrefuWbc8nNUNnuEBdIMZZ+dgPJbxn0TVSjD3SuSkEBInURKZhE
+	 u3XnjUZWPAZJP1V1uueG5Ov36zPXbNG2rhU+/tz6f/e2mxAlgaYMlLOtUpU0XEAvXM
+	 tz19eiItvTGMLR1d5YYW/reWzyBkD8WETi5UE0n/nD9TEqp4DucpujBbl4v3l4VQ11
+	 1HpjkOIbBDhog==
+Date: Mon, 26 Oct 2026 16:55:28 -0700
+From: Eric Biggers <ebiggers@kernel.org>
+To: Jarkko Sakkinen <jarkko@kernel.org>
 Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	Eric Biggers <ebiggers@kernel.org>,
-	syzbot+c15de43f1e7fffbb7b9b@syzkaller.appspotmail.com,
-	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] KEYS: dispatch key_gc_work to system_wq.
-Message-ID: <at_lSoqp4-2Var4S@kernel.org>
-References: <at-LgXM3BjyfF21u@kernel.org>
- <20261026222207.1237-1-hdanton@sina.com>
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	"Theodore Y. Ts'o" <tytso@mit.edu>, Thomas Graf <tgraf@suug.ch>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>, Shuah Khan <shuah@kernel.org>,
+	Christian Brauner <brauner@kernel.org>,
+	"open list:DEVICE-MAPPER (LVM)" <dm-devel@lists.linux.dev>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:FSVERITY: READ-ONLY FILE-BASED AUTHENTICITY PRO..." <fsverity@lists.linux.dev>,
+	"open list:RHASHTABLE" <linux-crypto@vger.kernel.org>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	"open list:KERNEL SELFTEST FRAMEWORK" <linux-kselftest@vger.kernel.org>
+Subject: Re: [PATCH v3 4/6] KEYS: Introduce keyring_is_empty()
+Message-ID: <20261026235528.GA2395@quark>
+References: <20261025001105.1824178-1-jarkko@kernel.org>
+ <20261025001105.1824178-5-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -61,61 +74,21 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261026222207.1237-1-hdanton@sina.com>
+In-Reply-To: <20261025001105.1824178-5-jarkko@kernel.org>
 
-On Tue, Oct 27, 2026 at 06:21:52AM +0800, Hillf Danton wrote:
-> On Mon, 26 Oct 2026 19:18:57 +0200 Jarkko Sakkinen wrote:
-> >On Mon, Oct 26, 2026 at 06:57:22PM +0200, Jarkko Sakkinen wrote:
-> >> > --- x/security/keys/gc.c
-> >> > +++ y/security/keys/gc.c
-> >> > @@ -270,9 +270,8 @@ contended:
-> >> >  
-> >> >  maybe_resched:
-> >> >  	if (cursor) {
-> >> > -		cond_resched();
-> >> > -		spin_lock(&key_serial_lock);
-> >> > -		goto continue_scanning;
-> >> > +		schedule_work(&key_gc_work);
-> >> > +		return;
-> >> >  	}
-> >
-> >I guess I'll to elaborate my fix and this proposal as you gave feedback
-> >of neither.
-> >
-> >What you wanted to respond to my patch other than nitpicking is probably
-> >this sequence:
-> >
-> Nope because synchronize_rcu() has nothing to do with workqueue lockup.
-> 
-> >  key_garbage_collector()
-> >    synchronize_rcu()
-> >      synchronize_rcu_normal()
-> >        wait_for_completion()
-> >          schedule_timeout()
-> >            schedule()
-> >
-> >I should have put this to the commit message, and missed also this
-> >detail.
-> >
-> >So the way I saw this, which could be wrong, is that the workqueue
-> >lockup would could happen less often as also other threads are scheduled
-> >preemptively in unbounded queue outside critical sections.
-> >
-> The unbound queue could also suffer lockup.
-> 
-> >What you are doing with early return is at least not right as it 
-> >corrupts the state. So you should supplement that with something
-> 
-> How?
->
-> >that carries it.
-> >
-> Feel free to post a diff?
+On Sun, Oct 25, 2026 at 03:10:12AM +0300, Jarkko Sakkinen wrote:
+> +/**
+> + * keyring_is_empty - Check whether a keyring contains any links
+> + * @keyring: The keyring to check.
+> + */
 
-Actually I choose not to answer to your questions as your only
-argument is "show the diff" or providing a diff without making
-your case. I'm sorry but I don't get anything from this.
+"contains any links" => "contains no links"?  Or even just "is empty".
+Otherwise it sounds backwards.
 
-If you want to help, be helpful.
+Note that another "is the keyring empty" check just showed up in
+mainline in kernel/bpf/keys.c.  So a new version of this patch will be
+needed to update that one too.
 
-Br, Jarkko
+Otherwise this patch looks good.
+
+- Eric
