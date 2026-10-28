@@ -1,94 +1,97 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=148.163.156.1
-ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793201674;
-	b=mMP6uCL6vVdnAeZDoZiB3ItopIwE29PbVMDeV9pw1iMgd+0gOEenxPUIzbPZ24wKxpjb
-	 lPE+/dZgxNv+UOjm1EKytP+ATHJNdBf1XxbsLR94mXv5PKxpeyVjkSWLUzeTO2bSCvacn
-	 FkGxPKviKHm/bixBtW9v/86QUQ7ui0x0EiPKmDYDOBmwBCNvFoUAzYMlPnf5zHIL3JUIs
-	 FEU6iQa1+zfFYE8Uz6I8JfiH3xFMYInnK+umTjuEGy4sg3RIuvbtWq47i9gVEQbY8q0iw
-	 7ZlgIn9/j3g9MvAfLoC+WiuuCLCX5p0ZICnuiJG6aU6gbCzGEkUDGYo7mqc15IZmrGw==
-ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793201674;
-	h=DMARC-Filter:Received:DKIM-Signature:Received:Received:Received:
-	 Received:Received:Received:Received:Date:From:To:Cc:Subject:
-	 Message-ID:References:MIME-Version:Content-Type:Content-Disposition:
-	 In-Reply-To:X-TM-AS-GCONF:X-Proofpoint-Spam-Details-Enc:
-	 X-Proofpoint-Spam-Info:X-Proofpoint-ORIG-GUID:X-Proofpoint-GUID:
-	 X-Authority-Analysis:X-Proofpoint-Virus-Version:
-	 X-Proofpoint-Spam-Details;
-	bh=fJh4nHfo8vDIas+JM/zBTxdDZjFMAqozk5NvMGQRHBA=;
-	b=ATN/0EK8UlKtLHCHZq4NymZskGbz6mD26IIVh3NNR+qwA6rvB7gEEkoFQ79k5v06wnM8
-	 jR580eN1vkYywQt78Gh644Ft/Srr3m37u4UMzT0NTBlw3I/gh/IZ63wdkbjOmPSFmxwCw
-	 lAoyECGxgqyAQU0NenJyvA9NCe3Kf0IHpSu5X6+LSmiGFF8apPhqMkeU1wQ3OWlseT1ZB
-	 znkifh5MfjLuhfyBopquFpCWeBlcoE9QBu3o4nh41P9Cdv4PW92lqX3CRjg6ZKhp4sUN7
-	 Y742EgGWnAmxMBFjdpTLLY4nQMVH5DlVb/qWWK+7zcYy6Vc6FD4BeYuNhoKta8Wzx2A==
-ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=linux.ibm.com;
-	spf=pass smtp.mailfrom=linux.ibm.com;
-	dkim=pass header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=DvyKXzkj;
-	arc=none smtp.remote-ip=148.163.156.1
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.160.43
+ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=pass;
+	t=1793202108;
+	b=aMY2QWov75jwtaCVqN+uZjdODIqcotSKBm2tSKsuMgflFmA4cFlIuCT/qDvMC3faL3Ai
+	 pd4LsvYmuUm6LC8Of3WWAin6R0jgp4rIgcFlR85xlv0wngsjMR+RQW5KTxeaOPUADRbjq
+	 9TG22QC6WmdEZMsMQM/PC+ItM/8+VBokfKXg/vDmSHfnKYrJTlDCyYsPIXg0QVkxJieyj
+	 nd8Tui2ziWlTXSp+/rFP4kgkWsKmkYxXLd+GinTCTM7lGbbfx0Unqgj1PlFR94EKlxQfh
+	 EBN40ySUoKbC0OU1CB18EofQ4FD4atbP5j+DpUK8/H0gUzRr3sVkJlp/6W6qEyLFQlA==
+ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793202108;
+	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
+	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:
+	 MIME-Version:From:Date:X-Gm-Features:Message-ID:Subject:To:Cc:
+	 Content-Type;
+	bh=tjrlHX/0kdwAUKf7ZIYHTYFr6AhUQSO4XSQL32E0SVU=;
+	b=iAouYburYIzzhx304xAH4h3SkfRIpBWIqRfoVTrmH/ozeHPwmfKuQh5+T5rkuUzx7jDn
+	 YtEqtCOjMoL66jZgr9dSWeYGqR/4ZZruvcmDfvhVnUq6ramsDHhebnfZCqul9HoEJTNoc
+	 hgI2CNPQGAg1RYNDLKHH3ZplLqGyWloyJWicbLwEt3NPXAx4xWk/Y638UwFDdIGoRRcbJ
+	 RixMcsRD/Z+Ce/NDsWIwL+yCa+4GxMYvQQwPwBkm9wnHHSN1pD8lW6u13c932PsltRkmC
+	 NHpLyaAp33tpuuTtpuShcufQaofm7sXjzk/5MmK4FEglCRLW20ERZhvh8I68ttATVSg==
+ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
+	dmarc=pass header.from=gmail.com;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=c2+pBuBK;
+	arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.160.43
+Received: from mail-oa1-f43.google.com (mail-oa1-f43.google.com [209.85.160.43])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8F2A8606A31D;
-	Wed, 28 Oct 2026 15:34:33 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 8F2A8606A31D
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D8B8B606A322
+	for <keyrings@vger.kernel.org>; Wed, 28 Oct 2026 15:41:47 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org D8B8B606A322
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=DvyKXzkj
-Received: from pps.filterd (m0353729.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 69SFE41L4147837;
-	Wed, 28 Oct 2026 15:34:26 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-type:date:from:in-reply-to:message-id:mime-version
-	:references:subject:to; s=pp1; bh=fJh4nHfo8vDIas+JM/zBTxdDZjFMAq
-	ozk5NvMGQRHBA=; b=DvyKXzkjqrdeQJ985EbnmXGQ6PjX4hmQ42WfThqNE/Oumg
-	0jPFfQzkio4NRlzMgHtk0SGpAJuQaw5DxokIeQhkwZ8R3hxpPx3ZaEkR7UhmlBz/
-	WLgFDq/cNVYsk1YoHsqr14yvkPjnKUV7M1pOt013O27zui2CgI2qu9Uj6jgMqGwv
-	aqifV+HTBBpz3aCyhaVoWSerhIOWYDj95zKCRu9Nbp3izTa2yMbNU5K7bFCUL1Fb
-	l73OtA56WKkDxuDrWuz00rNW+zhqQLwAb2ozmBF6sUgJMJ3xWiVr9KwnFFuuiGPj
-	x/WLMXzUkaEGnKPT+J42jH4J3ifXIdYuFgb2NZNw==
-Received: from ppma23.wdc07v.mail.ibm.com (5d.69.3da9.ip4.static.sl-reverse.com [169.61.105.93])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4hgmbt5j38-1
-	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
-	Wed, 28 Oct 2026 15:34:26 +0000 (GMT)
-Received: from pps.filterd (ppma23.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma23.wdc07v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 69SFK5pY1784791;
-	Wed, 28 Oct 2026 15:34:25 GMT
-Received: from smtprelay02.fra02v.mail.ibm.com ([9.218.2.226])
-	by ppma23.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4hh8gh7wfn-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 28 Oct 2026 15:34:25 +0000 (GMT)
-Received: from smtpav02.fra02v.mail.ibm.com (smtpav02.fra02v.mail.ibm.com [10.20.54.101])
-	by smtprelay02.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 69SFYLhs39649706
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Wed, 28 Oct 2026 15:34:21 GMT
-Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 9418B20043;
-	Wed, 28 Oct 2026 15:34:21 +0000 (GMT)
-Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 616A520040;
-	Wed, 28 Oct 2026 15:34:21 +0000 (GMT)
-Received: from osiris (unknown [9.68.31.201])
-	by smtpav02.fra02v.mail.ibm.com (Postfix) with ESMTPS;
-	Wed, 28 Oct 2026 15:34:21 +0000 (GMT)
-Date: Wed, 28 Oct 2026 16:34:19 +0100
-From: Heiko Carstens <hca@linux.ibm.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Vasily Gorbik <gor@linux.ibm.com>,
-        Alexander Gordeev <agordeev@linux.ibm.com>,
-        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-        Christian Borntraeger <borntraeger@linux.ibm.com>,
-        Sven Schnelle <svens@linux.ibm.com>, Kees Cook <kees@kernel.org>,
-        Ilya Leoshkevich <iii@linux.ibm.com>,
-        Anastasia Eskova <anastasia.eskova@ibm.com>,
-        Peter Oberparleiter <oberpar@linux.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390/cert_store: Hold the keyring->sem while
- invalidating keys
-Message-ID: <20261028153419.8417E3b-hca@linux.ibm.com>
-References: <20261024144229.1546151-1-jarkko@kernel.org>
+	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=c2+pBuBK
+Received: by mail-oa1-f43.google.com with SMTP id 586e51a60fabf-490d838b425so619641fac.3
+        for <keyrings@vger.kernel.org>; Wed, 28 Oct 2026 08:41:47 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1793202107; cv=none;
+        d=google.com; s=arc-20260327;
+        b=DBqkOyfjHcK/y8DZ57c8Fvdf3Tk6Tj/3aoijQALuvFJ7MB2da/0H3gN3B0ZLuNxke2
+         2lFv3nQRelGP3VCPjS2vAN5CVOmdIB7kOjmewaHG6scLVaR+5IGsl4W6uss5/4oEQDJZ
+         7Mgr6CDwgItOSvPHBPkUsWSwJh58ZEi1Mr1rZ++07EXXU+LWV+x9B9tiUqamVTm2b8D1
+         StDn5mXbE0LuD97Vei+nXplQUrpb6cAULTSjKTtLAVjkGp74w3RZiR2BDyNfSxiBKmNN
+         acrIKUddIhIv3+lykSc/Nxeydj8f7wn13DnBMNB6iff2fU1X20tfSam2/S80CMlYSzwX
+         B6ng==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=cc:to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=tjrlHX/0kdwAUKf7ZIYHTYFr6AhUQSO4XSQL32E0SVU=;
+        fh=Yeu30P0kDRmHg9zewWwCgIrDkTmqA+zcLUPwSGMlAY0=;
+        b=TLsh0HGtR0rLxyvE9FRE1Eu1OTZhavDG/w9DC0ATPxmoLbwhJIQYP81NkwXL1fpgv6
+         YvH16pizEQpo5GOq3MXjyuLaSYtimzvJzIg6AI5aA1o/PgwzkOAfawZ6vpE/o2vlQfpf
+         xByMgMuduviwiVdyRf3fVMjM+Gv3BDp0kTIjQL7SAMV5WL6mDZD41wAUxRD3Q6LyJJbC
+         oBS6w77aE7BYN6q6hfKCSWtacH8zV4Ci22jZMZm7KxmxSkV6wwx72PvqfcLzTE/cPsWf
+         GFzwM0LaZiXwH7hSJtN72/7p7L7KWIqVOAMz0yt9jxlbO1LIcl1e36oHtAb0+M4iqgyz
+         1KfQ==;
+        darn=vger.kernel.org
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20260707; t=1793202107; x=1793806907; darn=vger.kernel.org;
+        h=content-type:cc:to:subject:message-id:date:from:mime-version:from
+         :to:cc:subject:date:message-id:reply-to:content-type;
+        bh=tjrlHX/0kdwAUKf7ZIYHTYFr6AhUQSO4XSQL32E0SVU=;
+        b=c2+pBuBKpMrcTM4Fj/aKEJXXW8NZq1OG+IQlwwJuYHFBMsAQsldJEvNdTSzKmgXHpF
+         z9z4jr6dfOZ4k2/JHLFshAOO5/lrmz5iY0AqIVoTFaCSxne3pBAWJN8qF6PZqpaTxf6l
+         fdPto5dhQH4pnfOPP3lthbkCatmfWBExe4bdZzlBKRigUa3SZxs1FLsKACvU0xNpUV01
+         EgtXWQsIK09V3CeswiMcfiEXC6RYjHOO8dn9X9NSn5FAnZK4xTxkapcerl6L/gwDBeeL
+         +dl/MTVpnPGmbbM3gQaJBxBhMVhTu4GWTfAyzDrySavI2JuKXSAXtKkyumFYKYdxbgcg
+         15Qg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1793202107; x=1793806907;
+        h=content-type:cc:to:subject:message-id:date:from:mime-version
+         :x-gm-gg:x-gm-message-state:from:to:cc:subject:date:message-id
+         :reply-to:content-type;
+        bh=tjrlHX/0kdwAUKf7ZIYHTYFr6AhUQSO4XSQL32E0SVU=;
+        b=FdSympYKE5PwaTpENfzyuku90+NTs1i/xDFXuIpvxYpPWNErctlZSdcYY+OX31aJmm
+         Skhj4qQp01w/m3z9hLWJB0QaY2L8JRuY5vCKa7d3M5rNSlAW0L0FBY5MeMwUDX8P8Zcl
+         BA3kQ5jbdV7OJmiPblhnX+A/259gRtlTHJA0fUTxcZ7oA8oPrA8ShyH1Cq0DiSg8VQ0l
+         gFeJjuzZLHCVzTre7H+U/zKgEIVnuI/wLtMP3WiAyPmX1qNGmJQ3s350oO6h5QPLZnGQ
+         oZv6d0CRGYkQJCltZwgM2/XbpQzLvLFRAJa2iLGaVgpiGN/nEOOgchGOIiN6tRF6wl1T
+         Tr3Q==
+X-Forwarded-Encrypted: i=1; AKwUvByRIsis2KSd2qdpeZyJnaogHdMzzr6bzmWDXG1Du2ihfILFKFRVZYO/cxkYvrvv3WdWnvUy7eWPcQ==@vger.kernel.org
+X-Gm-Message-State: AFq9FYId8nIHD4xLGLw0iGntTlU4nkaSU31cB1pyBC6rVR9dBwdn1edS
+	xuJNPGBwQy5O1k4K6moU21qwFjrIIDdf6ewwEysTD0u4gUfaQohg3LZ7UAa4mcuxZqqGTROgsAJ
+	9xYUrkY6oGE1hzKUU/e7Q6pcYL/1RHzg=
+X-Gm-Gg: AYBFou2KJzomz5bNTOvZKOP8bsNsFn7I3oGwkZBsl57ATTVmNo6jP3hq+r21DjZmaQ+
+	TOZE/eyQexi5RE5DQKOCSTBtQmI2p0g7u1iJNOG0fGuKyPMJVBwFOrfcHalknW/XfXZjwRF5MJh
+	hIpzosegLSfnYa1eW8yWJpH2jVr3YXz3kKdG85S40JKb4X2kofJY9x42AOQlNBfT1tETrBGBT2g
+	hxSZHWhJEWu1p1Waiy0+ZUVM5PI8+7yqKvBinbnBFAy1SQ7EfdF7x4ITmU0oD/HMfijvgaTnzVZ
+	g/+0n9ojPkQIw22zOvXmIbCJ9lYfUETzGL2Oc+rPzNabP+JadxHNoLHuYjPi9nwhy24YUb/Dhfa
+	u6CftNyTsrgDFT6n83Vb18emDZXduMG+94UgW
+X-Received: by 2002:a05:6871:7516:b0:49b:ef98:3f62 with SMTP id
+ 586e51a60fabf-4a8bbc2726amr2070793fac.35.1793202106382; Wed, 28 Oct 2026
+ 08:41:46 -0700 (PDT)
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -98,65 +101,73 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261024144229.1546151-1-jarkko@kernel.org>
-X-TM-AS-GCONF: 00
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMDI4MDA2MCBTYWx0ZWRfX/uhailaaCKMx
- ANIs4L918l2swsBLRVdrjxbxmVXvA/FyhCbgLnxpxUyr0WsAie97suX/jbjAotoG17qLKI2iaX9
- qCiJFCGd3yvnFy5zrwY/NZEyXNWc8V3dvHYrwXddHBwRIPbsBSZwTF53DNs1q9V6AIhqpzI3KTi
- biNnjlV7A0rjc2TzE9bLIbHV7HxPb/wjCssch95wdhVFMZycT8vg5MoA8e2EzLxtK5az/HN8HqP
- +dddnsQfcrnrp72JUko1v0PxBKChOQZD2W5Aehz95d7t9gcl2qWVQahmz7ty4cAn+2SCsjYynpN
- fsPl8bRzVaPyUIHoym3BgtfshFdSW/ZDBgTCWB/Z3RK1nAiwLlT/wjkjw3V6Vm16aUIg/Jawymx
- DCr+gX0V6vtBQCA6twhJx4bTn/zWrm1NF/f38La62M8Gbo2UtvolhFnAU89RNZs4FFKIhy5MY19
- OQJbAHfpkH4JlmuNdDw==
-X-Proofpoint-Spam-Info: AW1haW4tMjYxMDI4MDA2MCBTYWx0ZWRfX5M7xxQ9+SlmB
- a87JDv8cMBDl/V2uuMh9Vosch7oKAu2wQh41mCW+PwGQ7sxj9vg864tJMhoXPUiDdDhdYo0gWwY
- Hi2V6btNd3ijv5FtLfRA8skq6S9ARv8=
-X-Proofpoint-ORIG-GUID: XE_KJxF2zpnToa9w-7rI8aTAMMwylbrO
-X-Proofpoint-GUID: XE_KJxF2zpnToa9w-7rI8aTAMMwylbrO
-X-Authority-Analysis: v=2.4 cv=CeKdd7rl c=1 sm=1 tr=0 ts=6ae21602 cx=c_pps
- a=3Bg1Hr4SwmMryq2xdFQyZA==:117 a=3Bg1Hr4SwmMryq2xdFQyZA==:17
- a=kj9zAlcOel0A:10 a=660iZSQnnn4A:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=uAbxVGIbfxUO_5tXvNgY:22 a=VwQbUJbxAAAA:8
- a=DPC3QgldnefEYUrkxV0A:9 a=CjuIK1q_8ugA:10
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.138,FMLib:17.12.100.49
- definitions=2026-10-28_05,2026-10-21_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- spamscore=0 suspectscore=0 malwarescore=0 phishscore=0 clxscore=1011
- adultscore=0 lowpriorityscore=0 priorityscore=1501 bulkscore=0
- impostorscore=0 classifier=typeunknown authscore=0 authtc= authcc=
- route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2610190000
- definitions=main-2610280060
+From: Zhiyu Zhang <zhiyuzhang999@gmail.com>
+Date: Wed, 28 Oct 2026 23:41:35 +0800
+X-Gm-Features: AclHuK8sIaut7YlkPpWH227XFVgQSL3JAg2wQtfEBeRe1A60FwEilkx8nA8Jty4
+Message-ID: <CALf2hKveij_sHgANY9Aktm1dPa4wfKjKNkHyp9yPbjORWFXagA@mail.gmail.com>
+Subject: [BUG] watch_queue: RCU/info_id overlap leaks kernel stack
+To: brauner@kernel.org, dhowells@redhat.com, jarkko@kernel.org, 
+	keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, security@kernel.org, 
+	edumazet@kernel.org, ncardwell@google.com
+Cc: lyutoon@gmail.com, tpluszz77@gmail.com
+Content-Type: text/plain; charset="UTF-8"
 
-On Sat, Oct 24, 2026 at 05:42:25PM +0300, Jarkko Sakkinen wrote:
-> invalidate_keyring_keys() does not hold keyring->sem while calling
-> keyring_read(), which is contrary to what keyring assumes from its callers,
-> and can lead to reoccuring bugs.
-> 
-> KEY_FLAG_KEEP alone does not e.g.,  protect from  the following call path:
-> 
-> 1. keyctl_keyring_move()
-> 2. key_move()
-> 3. __key_unlink()
-> 
-> Address the issue by guarding the critical section.
-> 
-> Fixes: 8cf57d7217c3 ("s390: add support for user-defined certificates")
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-> ---
-> This came up as a side product while working on assoc_array to
-> rhashtable migration and going through various callers of the keyring.
-> It's made by me but please keep in mind that I don't even have a
-> toolchain for s390 setup so it is based only on reading code and I have
-> not even compiled this.
-> 
-> Just wanted to clarify the background for this fix as I'm not a regular
-> contributor over here. If for any reason it turned out to be false
-> positive, I'm fine with that too.
+Hello Linux Kernel Developers and Maintainers,
 
-It is not a false positive. There seem to be more bugs in the code.
-I'll take your patch and create a series with other fixes.
+We found a race in watch_queue that lets an unprivileged process over-read the
+kernel stack of the task posting a key notification. On x86-64 the disclosure
+contains that task's stack canary, kernel-stack and task_struct pointers, and
+two return addresses that reveal the KASLR slide.
 
-Thanks a lot!
+The bug was introduced by c73be61cede5882f9605a852414db559c0ebedfd
+("pipe: Add general notification queue support") and is present in current
+mainline d135ab453a7400a34930bdda1ef4bdc8acfac80e. We reproduced it there as
+an ordinary user. CONFIG_WATCH_QUEUE and CONFIG_KEY_NOTIFICATIONS are
+required.
+
+Root cause:
+
+struct watch overlays u32 info_id with struct rcu_head. A notification poster
+reads info_id under rcu_read_lock(), but a concurrent final put can enqueue the
+watch with call_rcu(). Enqueueing the callback writes rcu_head before the
+grace period ends, replacing info_id while the object remains visible to the
+reader.
+
+__post_watch_notification() then merges the corrupted value into the
+notification info word without masking it. Pointer bits can enter
+WATCH_INFO_LENGTH, causing post_one_notification() to copy beyond the 16-byte
+notification record from the posting task's live stack into the
+attacker-readable pipe.
+
+This disclosure is independently security-relevant. It is also the canary
+and KASLR bypass for the TCP stack overwrite reported in:
+
+https://lore.kernel.org/netdev/CALf2hKvp0NPVLwr=a3+jUHtPohxbra8gox+aYAfWathJnn-J+Q@mail.gmail.com/T/#u
+
+We demonstrated uid 65534 to root by composing the two issues in the same
+unprivileged thread.
+
+Reproduction and fix:
+
+We have a short source reproducer, exact config and QEMU results. In
+accordance with the kernel policy, we are not posting the reproducer publicly.
+We can provide it privately if a maintainer requests it. On the vulnerable
+baseline it normally reports the canary, stack/task pointers and two agreeing
+KASLR anchors within a few seconds.
+
+Our tested fix gives info_id storage separate from rcu_head and masks it with
+WATCH_INFO_ID before merging it into a notification. On x86-64, placing
+info_id after the kref consumes existing tail padding and does not change the
+size of struct watch. We will post the mergeable patch separately and link
+that thread here.
+
+AI-agent tooling assisted in identifying and analyzing the issue, developing
+the reproducer, and preparing the initial fix. The reporters reviewed the
+affected paths and reproduced the issue and the fixed result in QEMU.
+
+Reported-by: Tong Liu <lyutoon@gmail.com>
+Reported-by: Qi Tang <tpluszz77@gmail.com>
+Reported-by: Zhiyu Zhang <zhiyuzhang999@gmail.com>
+
+Best regards,
+Zhiyu Zhang
