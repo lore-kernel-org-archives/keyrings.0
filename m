@@ -1,54 +1,61 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793202966;
-	b=Vg5Gt43ozpEv+eDa9t+Kyq+v6Pd32rOEEhUze2gX1b/Zp8xvTZU6wwf8YTxu7AkPINcx
-	 x+FQDsEDn+xJbNtQrddbU6z8yNqd3y2mIRhOVoEW1yboJaPJRbNmNH7vryZPS5CyjcfJD
-	 8yEok6loYzb7ldittVtTEGG2wCJl6LRwxUZELrXSwZt/tLT9+tqp9w8zTSpJFMWe42iDr
-	 RBsbhlAw78r3sPMq6a5ARK4VGefAqiKnhxiyXEVOR5ozhNkq4O17OFyLi6x5TIqHZTs9S
-	 N2IwBJLtQSaul1K0BaFa3N7AhfJGTNBFDLiK2v+c5eOCu4a9pxwwD7N3BY1pXCH4zQw==
+	t=1793203165;
+	b=g6JRA02wLnP2z9LsH4Vz+PgKVMKPHiSn58i1+lNHdBMi1jvXcNP112gtg+8YtgiYGI5V
+	 FkjPDo1Be+HD/IN6IliwsFwb7YTIpKp6yFTA2oYrR99/98QH5Uugcrvv9rAfiYeNS9Cb/
+	 2aDWDCOqLlQnCG6gKmWwKJMelCaZQ4f/sJEJg2/NWMDau0691NNvUlj4QYglDo/o+Wle/
+	 UGI2Rco+goqsZmDC3FF2fCTCHwLltcOdJQPhBijvBYmDtgrBGXapcc/EZWeYlLN4SlioR
+	 C/A4nC745iHB78Me5w2ZYb0yt4CbRj/7KM14hMLW8iGxsRyPH3Rz49F83XgFy8UEIvw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793202966;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793203165;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=XEte9deMkeckVaA8ApPdXdNCM2Wun8V+QFtnoRsKKwE=;
-	b=NrRLf9+X+GRRjxWC+DhBIRODerdI4H/Q7SxNhvdKmMHX1OR5vsdc2svIFne169pvXV1Z
-	 4CsvQS4layQMSOxSRu9jTgO7Du3IsB7Vh8hT2Ng33YsyBHA9u5Zwk5JBJey8zxRh/Nn74
-	 JkRofOWED0gOHGQU9WmFYWBXs8VWVSHvnAyeteUJq+b/vXlFuu3x1lirzx0E9X4wr4QsA
-	 uqCyQT7umsgqoajHveL74mtzOATtWjULVyX4wPnU4PsWdT2QevihFWLcg9RtUeCU9Nc2E
-	 iAgUKd+sdDWJbIy9U2A8xCyJV2Mx6e8z5vV0cHyvhJmn0LHGeE6a3/NEoMZ56Uzssxg==
+	bh=yVrRn+kNyHMN16qkTjjCdFdFIshmK/rzY5bBip8I5Z0=;
+	b=122lpQK9TvlXmclutnsRAvZJEUSVcInilSe94haRQjWSKSTJTqUpR9ooMooeWLUQYi+p
+	 qLNR/2QRtRBezpwT53LYASXsn//KT03PnP9NUQ5ChZUbIxq4sXE2mUsHn/4cJ3FVT/v+L
+	 uFortng0HecrLT5mlN0MnrsANa2Quw2f0XYaKwRm58n0IOhYVfKaxi6NjVOg5Lk3NjNtO
+	 muhtWm3t3ddVaJ1rqRbx+6En9UXYWyXz83PAaFGr3cSHGwqwv34FzFOO7jEvrw5sJdtyO
+	 fc/Gq1lEmoWIijNS5B50SJ20PKUR5KsmaLaCS46UwZ0KaorWLOITtqqIJexZ86DGb0g==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=FuyFOKmV;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=haEwZa92;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A7A46606A324;
-	Wed, 28 Oct 2026 15:56:05 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 99C09606A324;
+	Wed, 28 Oct 2026 15:59:25 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=FuyFOKmV
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id ED4F01F01825;
-	Wed, 28 Oct 2026 15:56:04 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=haEwZa92
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A21A11F01829;
+	Wed, 28 Oct 2026 15:59:24 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793202965;
-	bh=XEte9deMkeckVaA8ApPdXdNCM2Wun8V+QFtnoRsKKwE=;
+	s=k20260515; t=1793203165;
+	bh=yVrRn+kNyHMN16qkTjjCdFdFIshmK/rzY5bBip8I5Z0=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=FuyFOKmV7NGZYhOkrld6JNAlxsGMz+aPPE0uWeh1CtrEqQZKhmPwR420qGcbd9UiM
-	 0K7k3qu+vw3hlmZLDccgSRZL49E4ygOP3+jahSW5xfQLbukdoFO9XPFxw2HmS1kzO7
-	 cHQuT0OEqKJu4Raev09ZQERuxeY5o5LuQTjiNXXOEzY9c1mBhTUWO54RjizXX/bCWN
-	 Ji946MRT0L47pjdw8jZWn9TJlhB0Vsz+0ADLHYyy/nZ7wYPbYECVLOJLxP/BHIajch
-	 icmK/sfLq4lafmy75G04p5J9t6O9VC43GFk6ZgAXpaBFRpmLXNfU2fV1Lje2DUA7LL
-	 mZ4GZ3O6ULl5g==
-Date: Wed, 28 Oct 2026 17:56:01 +0200
+	b=haEwZa927ysjydVPPZvQacM6MQzUQamA8aF+y/8oZE1NXqZ5v6mecBENbp0DIN5O7
+	 dixNmuuLzrhsRhKvn6jagAqSBHBR7wDWR3HRAQrOEykAzgNm5NgqGK4BIihFa5PrE8
+	 0eZe7qMiSCTgtvrSgwapjuHUy71kSSIjPNqbIdsnlhih/7ob5CdXGbRbmsy2p39Oz7
+	 2R7bXKbCteqlv0sJIBt8rYNaWAicnVLm5JP9GHOlEjIrbfIpppXSAuHLkl9u4T9yyJ
+	 B/7ilsOgRpnLLCoLHCN7WDH32TPmT7YgjVSnz/EwPDi6p/ZWEIX0UMEOC7iOuqFfn+
+	 ldNZmUV8ncjMg==
+Date: Wed, 28 Oct 2026 17:59:21 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Zhiyu Zhang <zhiyuzhang999@gmail.com>
-Cc: brauner@kernel.org, dhowells@redhat.com, keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org, security@kernel.org,
-	edumazet@kernel.org, ncardwell@google.com, lyutoon@gmail.com,
-	tpluszz77@gmail.com
-Subject: Re: [BUG] watch_queue: RCU/info_id overlap leaks kernel stack
-Message-ID: <auIbEZv5macfZ4aq@kernel.org>
-References: <CALf2hKveij_sHgANY9Aktm1dPa4wfKjKNkHyp9yPbjORWFXagA@mail.gmail.com>
+To: Heiko Carstens <hca@linux.ibm.com>
+Cc: Vasily Gorbik <gor@linux.ibm.com>,
+	Alexander Gordeev <agordeev@linux.ibm.com>,
+	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	Christian Borntraeger <borntraeger@linux.ibm.com>,
+	Sven Schnelle <svens@linux.ibm.com>, Kees Cook <kees@kernel.org>,
+	Ilya Leoshkevich <iii@linux.ibm.com>,
+	Anastasia Eskova <anastasia.eskova@ibm.com>,
+	Peter Oberparleiter <oberpar@linux.ibm.com>,
+	linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390/cert_store: Hold the keyring->sem while
+ invalidating keys
+Message-ID: <auIb2VIyDPqcgSgS@kernel.org>
+References: <20261024144229.1546151-1-jarkko@kernel.org>
+ <20261028153419.8417E3b-hca@linux.ibm.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -60,25 +67,43 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALf2hKveij_sHgANY9Aktm1dPa4wfKjKNkHyp9yPbjORWFXagA@mail.gmail.com>
+In-Reply-To: <20261028153419.8417E3b-hca@linux.ibm.com>
 
-On Wed, Oct 28, 2026 at 11:41:35PM +0800, Zhiyu Zhang wrote:
-> We have a short source reproducer, exact config and QEMU results. In
-> accordance with the kernel policy, we are not posting the reproducer publicly.
-> We can provide it privately if a maintainer requests it. On the vulnerable
-> baseline it normally reports the canary, stack/task pointers and two agreeing
-> KASLR anchors within a few seconds.
+On Wed, Oct 28, 2026 at 04:34:19PM +0100, Heiko Carstens wrote:
+> On Sat, Oct 24, 2026 at 05:42:25PM +0300, Jarkko Sakkinen wrote:
+> > invalidate_keyring_keys() does not hold keyring->sem while calling
+> > keyring_read(), which is contrary to what keyring assumes from its callers,
+> > and can lead to reoccuring bugs.
+> > 
+> > KEY_FLAG_KEEP alone does not e.g.,  protect from  the following call path:
+> > 
+> > 1. keyctl_keyring_move()
+> > 2. key_move()
+> > 3. __key_unlink()
+> > 
+> > Address the issue by guarding the critical section.
+> > 
+> > Fixes: 8cf57d7217c3 ("s390: add support for user-defined certificates")
+> > Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+> > ---
+> > This came up as a side product while working on assoc_array to
+> > rhashtable migration and going through various callers of the keyring.
+> > It's made by me but please keep in mind that I don't even have a
+> > toolchain for s390 setup so it is based only on reading code and I have
+> > not even compiled this.
+> > 
+> > Just wanted to clarify the background for this fix as I'm not a regular
+> > contributor over here. If for any reason it turned out to be false
+> > positive, I'm fine with that too.
+> 
+> It is not a false positive. There seem to be more bugs in the code.
+> I'll take your patch and create a series with other fixes.
 
-This is public nobody cares. Likely I could make the reproducec with a
-couple of prompts. 
+OK, great :-)
 
-What if you instead spent some time with your "short reproducer" and figure
-out how to make equal reproducer with bash and keyctl? It's a good
-habbit and helps to check the relevance because you have to think things
-through.
+> 
+> Thanks a lot!
 
-This announcement is just total waste of time and energy anyhow.
+You're welcome!
 
 Br, Jarkko
-
-
