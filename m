@@ -1,99 +1,94 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.128.170
-ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=pass;
-	t=1793197578;
-	b=lZk6FduMwGGYml7JGWkSOralx23+oI4nHfU/mM5T+po/oTdL2rBNzbuanaEzQnhctPSX
-	 bMz29iRB4YxMspK+t5ydaxXuj/CoPWIMOpSTC8KkQZyFDQ3MqOEsEPB0ArNTtWbrRGrcA
-	 LjjtfR39SjhFI62HwzbQxPOUuw9OUOwxr6+mv+sKM2Y9z2CUptPsh/vkptANV9DiIM+dJ
-	 faM3JtbPcH3ZyVNzuhvGyFZ9liNo/umXKFI+Ad/WIY3hkznGHWr6u7/ImfVuG7OfW5dCN
-	 bkfqXP0Hkpp+T93iXXyp5jny6Yu2oW6SCSXNngZLqOBL8Zzu3ChdW8HTecPVFKhJP7Q==
-ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793197578;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:
-	 MIME-Version:References:In-Reply-To:From:Date:X-Gm-Features:
-	 Message-ID:Subject:To:Cc:Content-Type;
-	bh=6CnDrX+La+2Fu6jP7wM+lot0uCoQlPoWp1MsRc4XNYs=;
-	b=hgzvXB0pNCNa4dCl+Z70ryKriemTWcaTfl2m3zNPQxv9PRw+UhbdvlSWLVyDkElBLauJ
-	 vcQ1+Pgl5C8noecZP6czwB5lHT3SZKm0hpzrwwfQUvjUGvEKCnrq7kT1HolD8I3dTXc3N
-	 Zx09XZ563qj8NETLeK7lHxPKe0i3KIri6Onacrf8aX8vHSwGEoZlPPpRC8p4kb7k5f4VW
-	 gHl7afC0swRzpPpfaMx6yAKGlka3EZx6tbubwh7F2tbmSCZ9bKYaHqGMw2S8EWR6ql4/P
-	 9Yj+tMSJQGIX0Z0Ub04/Pme0WeYTGJwjcgked5gVWFsks53sdL477ll76X67INJi/aQ==
-ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gmail.com;
-	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=DfRFAWrm;
-	arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.128.170
-Received: from mail-yw1-f170.google.com (mail-yw1-f170.google.com [209.85.128.170])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=148.163.156.1
+ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
+	t=1793201674;
+	b=mMP6uCL6vVdnAeZDoZiB3ItopIwE29PbVMDeV9pw1iMgd+0gOEenxPUIzbPZ24wKxpjb
+	 lPE+/dZgxNv+UOjm1EKytP+ATHJNdBf1XxbsLR94mXv5PKxpeyVjkSWLUzeTO2bSCvacn
+	 FkGxPKviKHm/bixBtW9v/86QUQ7ui0x0EiPKmDYDOBmwBCNvFoUAzYMlPnf5zHIL3JUIs
+	 FEU6iQa1+zfFYE8Uz6I8JfiH3xFMYInnK+umTjuEGy4sg3RIuvbtWq47i9gVEQbY8q0iw
+	 7ZlgIn9/j3g9MvAfLoC+WiuuCLCX5p0ZICnuiJG6aU6gbCzGEkUDGYo7mqc15IZmrGw==
+ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793201674;
+	h=DMARC-Filter:Received:DKIM-Signature:Received:Received:Received:
+	 Received:Received:Received:Received:Date:From:To:Cc:Subject:
+	 Message-ID:References:MIME-Version:Content-Type:Content-Disposition:
+	 In-Reply-To:X-TM-AS-GCONF:X-Proofpoint-Spam-Details-Enc:
+	 X-Proofpoint-Spam-Info:X-Proofpoint-ORIG-GUID:X-Proofpoint-GUID:
+	 X-Authority-Analysis:X-Proofpoint-Virus-Version:
+	 X-Proofpoint-Spam-Details;
+	bh=fJh4nHfo8vDIas+JM/zBTxdDZjFMAqozk5NvMGQRHBA=;
+	b=ATN/0EK8UlKtLHCHZq4NymZskGbz6mD26IIVh3NNR+qwA6rvB7gEEkoFQ79k5v06wnM8
+	 jR580eN1vkYywQt78Gh644Ft/Srr3m37u4UMzT0NTBlw3I/gh/IZ63wdkbjOmPSFmxwCw
+	 lAoyECGxgqyAQU0NenJyvA9NCe3Kf0IHpSu5X6+LSmiGFF8apPhqMkeU1wQ3OWlseT1ZB
+	 znkifh5MfjLuhfyBopquFpCWeBlcoE9QBu3o4nh41P9Cdv4PW92lqX3CRjg6ZKhp4sUN7
+	 Y742EgGWnAmxMBFjdpTLLY4nQMVH5DlVb/qWWK+7zcYy6Vc6FD4BeYuNhoKta8Wzx2A==
+ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
+	dmarc=pass header.from=linux.ibm.com;
+	spf=pass smtp.mailfrom=linux.ibm.com;
+	dkim=pass header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=DvyKXzkj;
+	arc=none smtp.remote-ip=148.163.156.1
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DD63F606A31A
-	for <keyrings@vger.kernel.org>; Wed, 28 Oct 2026 14:26:17 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org DD63F606A31A
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8F2A8606A31D;
+	Wed, 28 Oct 2026 15:34:33 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 8F2A8606A31D
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=DfRFAWrm
-Received: by mail-yw1-f170.google.com with SMTP id 00721157ae682-8565d77c277so9038357b3.0
-        for <keyrings@vger.kernel.org>; Wed, 28 Oct 2026 07:26:17 -0700 (PDT)
-ARC-Seal: i=1; a=rsa-sha256; t=1793197577; cv=none;
-        d=google.com; s=arc-20260327;
-        b=YX7/GUTN4RCSRDIBIZAoYjL0q4rOJ8ZrSDVYlEOIqWsU8YUzUK/wnh4Kjz94xYbERz
-         Nmd6efPh0HaPhlZKx0dDftZZn+FzRbvY9ndXFZiMp0XCFliTtMums9wry9PrIWWNKnF4
-         Z9WXYv6XJ5q+f684CyCqFi1vRGWJtZGpjuWWGKQi3GVMecNeiIXt5p6LyugzgACW+Y44
-         rkdYesGp45HH9248RJr24HRU2pajQz7cLswrBD/Xpkdv2+kixDNcwMV1rROQJxDmwBTp
-         5EhPZsHwlKuQqZiJR/GAnHDDP7h1yHv7XUmumsn2BNRwzx+rAcq9me/CnENjuBROssNA
-         yKIA==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
-        h=cc:to:subject:message-id:date:from:in-reply-to:references
-         :mime-version:dkim-signature;
-        bh=6CnDrX+La+2Fu6jP7wM+lot0uCoQlPoWp1MsRc4XNYs=;
-        fh=Ysp2ppTXAjXlY2KVQRTI4EHtXDrfaU7TeYrodVlQQkE=;
-        b=GLhf2vIAQXujckZq5x1rkGNqcWeXWRa73QYSG7Z1M0PS3f9IN5ob4+7D/p+exZ5p00
-         fLxXJfGotoQ0m1vGxeq5esPxqLdkOz3DXskSzDugIYKsnH1mnX6B+AR1a75rSycJ/zfF
-         KjS1S0eIhJIZPynhY3xrN8H8gbGnF+kH2NuaOlDcXiGr/gVLwCwNzZI1ShhlFQxF6r1x
-         C1e0hIXmxaoHS+KYXc/fJYqhJsQ+tWQYOSELBl03ju38XM/ZHfQjI13NELJdLb81nZBk
-         qjWZKTzykL65NU823RQWS8ldtusHBYqLRebojtBgWZlIQvvxfhRShofNHTiURydP+0UX
-         K5fA==;
-        darn=vger.kernel.org
-ARC-Authentication-Results: i=1; mx.google.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20260707; t=1793197577; x=1793802377; darn=vger.kernel.org;
-        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
-         :references:mime-version:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=6CnDrX+La+2Fu6jP7wM+lot0uCoQlPoWp1MsRc4XNYs=;
-        b=DfRFAWrmO+/Bj131K7+MGGvRusTiq7Cc5X579DXdy+WsyQOlHXS84rhXCmVmsKOZC1
-         jfuHEhsyE6S5Hv/g/4Ce6BjpcZobIYAK7e7SRGOKE2sQnrptMyZ/rcfRlucg4dR4ESXM
-         2gkEM+ETeUkrfFJD5xphI1XdRbsTnl/m+NHm4YrmXbfagBxPULfxYRHU88tAoNYxU0fD
-         Sk8MihQlJ6G7wkMm9i9Z8l/r1iyrvuPMo1oPpQz0ZlNwKWJeP4IMCT2IjKSoAP5RqzaI
-         HDHSC06lEs0YPSK/mdKu+B4W4LgKQdZyBezNe4ZWTbOgw79zb6SISHpGLp8kXM1lynRT
-         +z9g==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1793197577; x=1793802377;
-        h=content-type:cc:to:subject:message-id:date:from:in-reply-to
-         :references:mime-version:x-gm-gg:x-gm-message-state:from:to:cc
-         :subject:date:message-id:reply-to:content-type;
-        bh=6CnDrX+La+2Fu6jP7wM+lot0uCoQlPoWp1MsRc4XNYs=;
-        b=v/nTEI1dLyvCLrTOGLcmfNL63HbyVxGO2XifZW8/efJHgQwAgoKWcV0dZim8T+92S2
-         rZfB+u5Bf0Q6XQ2lQvhw4tvVxfX7zqLlaFC224KdIWz1WZXh47kvt5qtVF1YMVtf/O0j
-         l2jdlMPgbAxPAdUqfXaPwIse8EveYCcux79qm3LGp4lW9q8twlSyBP2V/pFlmIYUnA4K
-         CunWov65sP0MXGKPm7N6UtSfxa5AN23Ei8THbGg2rPPJZBARRtiqvzGUjKRlWS2OM49B
-         Bck0TWR/F9F8R5jG49odPamGZkt/Lj3awuk5Fk+ZwWVV9jGruiYrdQX7P1Y28CxZzH4F
-         adSA==
-X-Forwarded-Encrypted: i=1; AKwUvByYRuEN7gSU1iKgvsA5fD0wco0XityND/HpdglnVyO+mELRgDvl6/jJ5DMqySjUOLRJRlDZ9w88WA==@vger.kernel.org
-X-Gm-Message-State: AFq9FYLbzveQ/gMLSRXYDfZQhkb3Ti882dOV1L8IQgQQv8N9qdWaE34n
-	s/3h2/oBErnyFYD6IdzaT3Sy2sGScHvq15FxL39mHZcanXDgibsLdaw/T2ak0SwokLnaGMH/JeY
-	st09qrQnl+ruvXeh7/Z0tBTeGRSui5Oc=
-X-Gm-Gg: AYBFou0bYoh3vCBvl2rNspT/m/vJshzxiSqkywN4P5/TRmFFOuoOgfQ/dg6L78UeiIC
-	EiYH35JIRMH5D9lNW89E61HVAznjHKP+WsJalS5yt5sC71yvSzBBXCVhiDgqXR7FTFwpvZzMDQ3
-	DhSJse2sPsjCht9Pr7dMKyjP2GP+lN2fwWB6KzeZ7WsuvRNJFdEis+zaVCxJBJkteCvG6kZ9we7
-	4d5g9RdLNl8Wy2oEkd9vWGEtI/HgCqM4szrRFEVP7BtK+dNR07/HXWTGF97RbWbr+UbUL/icBSg
-	Qdts12Xoozq6cA00NlsgzOKp2Q7c4Bp+k3z0AoU42Sz6iaDDnNmZlT8qNbsBmbZImZY5/ACFfqb
-	7GvPi40/8LIQW1ATWYCvMl6P0TnJUYlzubFZ/lRKMht9kMT/J9MolmywX3A0Q1GNGptsrZlc=
-X-Received: by 2002:a05:690c:e90d:b0:8b0:d42c:54e9 with SMTP id
- 00721157ae682-8b1b5c9953bmr12024777b3.34.1793197576747; Wed, 28 Oct 2026
- 07:26:16 -0700 (PDT)
+	dkim=pass (2048-bit key, unprotected) header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=DvyKXzkj
+Received: from pps.filterd (m0353729.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 69SFE41L4147837;
+	Wed, 28 Oct 2026 15:34:26 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-type:date:from:in-reply-to:message-id:mime-version
+	:references:subject:to; s=pp1; bh=fJh4nHfo8vDIas+JM/zBTxdDZjFMAq
+	ozk5NvMGQRHBA=; b=DvyKXzkjqrdeQJ985EbnmXGQ6PjX4hmQ42WfThqNE/Oumg
+	0jPFfQzkio4NRlzMgHtk0SGpAJuQaw5DxokIeQhkwZ8R3hxpPx3ZaEkR7UhmlBz/
+	WLgFDq/cNVYsk1YoHsqr14yvkPjnKUV7M1pOt013O27zui2CgI2qu9Uj6jgMqGwv
+	aqifV+HTBBpz3aCyhaVoWSerhIOWYDj95zKCRu9Nbp3izTa2yMbNU5K7bFCUL1Fb
+	l73OtA56WKkDxuDrWuz00rNW+zhqQLwAb2ozmBF6sUgJMJ3xWiVr9KwnFFuuiGPj
+	x/WLMXzUkaEGnKPT+J42jH4J3ifXIdYuFgb2NZNw==
+Received: from ppma23.wdc07v.mail.ibm.com (5d.69.3da9.ip4.static.sl-reverse.com [169.61.105.93])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4hgmbt5j38-1
+	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
+	Wed, 28 Oct 2026 15:34:26 +0000 (GMT)
+Received: from pps.filterd (ppma23.wdc07v.mail.ibm.com [127.0.0.1])
+	by ppma23.wdc07v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 69SFK5pY1784791;
+	Wed, 28 Oct 2026 15:34:25 GMT
+Received: from smtprelay02.fra02v.mail.ibm.com ([9.218.2.226])
+	by ppma23.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4hh8gh7wfn-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Wed, 28 Oct 2026 15:34:25 +0000 (GMT)
+Received: from smtpav02.fra02v.mail.ibm.com (smtpav02.fra02v.mail.ibm.com [10.20.54.101])
+	by smtprelay02.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 69SFYLhs39649706
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Wed, 28 Oct 2026 15:34:21 GMT
+Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 9418B20043;
+	Wed, 28 Oct 2026 15:34:21 +0000 (GMT)
+Received: from smtpav02.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 616A520040;
+	Wed, 28 Oct 2026 15:34:21 +0000 (GMT)
+Received: from osiris (unknown [9.68.31.201])
+	by smtpav02.fra02v.mail.ibm.com (Postfix) with ESMTPS;
+	Wed, 28 Oct 2026 15:34:21 +0000 (GMT)
+Date: Wed, 28 Oct 2026 16:34:19 +0100
+From: Heiko Carstens <hca@linux.ibm.com>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Vasily Gorbik <gor@linux.ibm.com>,
+        Alexander Gordeev <agordeev@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+        Christian Borntraeger <borntraeger@linux.ibm.com>,
+        Sven Schnelle <svens@linux.ibm.com>, Kees Cook <kees@kernel.org>,
+        Ilya Leoshkevich <iii@linux.ibm.com>,
+        Anastasia Eskova <anastasia.eskova@ibm.com>,
+        Peter Oberparleiter <oberpar@linux.ibm.com>,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390/cert_store: Hold the keyring->sem while
+ invalidating keys
+Message-ID: <20261028153419.8417E3b-hca@linux.ibm.com>
+References: <20261024144229.1546151-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -103,101 +98,65 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-References: <20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com>
- <20261019-b4-ipe-keyring-rfc-v1-1-156f0b93e843@nvidia.com>
- <702ade20-a2f3-4919-97e6-c72faa89399a@kernel.org> <20261021-groll-donnerstag-erfuhren-ce34a0ed4e97@brauner>
- <CAHC9VhTHUU0h9k74CMT6wYhMwyY3YhbSSFwJoDTvoFRyTFVZwg@mail.gmail.com>
- <20261022-hausbank-dozent-hurtig-9443f3777475@brauner> <CAHC9VhQ4sdCRvJ+YPZoiQzR_hgQN6-=84qvnTDDGPf=7=L9-jA@mail.gmail.com>
- <5143896100674c9fd744c4d7d6ce12232910e789.camel@gmail.com>
- <CAMw=ZnR54hMBwGTps23t9Mm_VO1bAvmeX8uTf_VJ0rJsFNMLuw@mail.gmail.com> <37b653494cf282c6e428e2ae8fd781a0ea69bf3f.camel@HansenPartnership.com>
-In-Reply-To: <37b653494cf282c6e428e2ae8fd781a0ea69bf3f.camel@HansenPartnership.com>
-From: Luca Boccassi <luca.boccassi@gmail.com>
-Date: Wed, 28 Oct 2026 14:26:05 +0000
-X-Gm-Features: AclHuK_2pDead4oUBgww1V4NOQP7FrJJqtxPGmwYbVPNkoSmhvEEW-kSQFaRSpM
-Message-ID: <CAMw=ZnQU0PRSn5gh-QNT+GuKroQaRsRUUMDB=rM=LSX+=h-JkQ@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/4] ipe: add the .ipe policy keyring
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Paul Moore <paul@paul-moore.com>, Christian Brauner <brauner@kernel.org>, Fan Wu <wufan@kernel.org>, 
-	Manuel Huber <manuelh@nvidia.com>, David Howells <dhowells@redhat.com>, 
-	Jarkko Sakkinen <jarkko@kernel.org>, Andrew Halaney <andrew@amutable.com>, 
-	James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
-	linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, 
-	linux-kernel@vger.kernel.org, kexec@lists.infradead.org, 
-	Mike Rapoport <rppt@kernel.org>, Pasha Tatashin <pasha.tatashin@soleen.com>, 
-	Pratyush Yadav <pratyush@kernel.org>, Alexander Graf <graf@amazon.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261024144229.1546151-1-jarkko@kernel.org>
+X-TM-AS-GCONF: 00
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMDI4MDA2MCBTYWx0ZWRfX/uhailaaCKMx
+ ANIs4L918l2swsBLRVdrjxbxmVXvA/FyhCbgLnxpxUyr0WsAie97suX/jbjAotoG17qLKI2iaX9
+ qCiJFCGd3yvnFy5zrwY/NZEyXNWc8V3dvHYrwXddHBwRIPbsBSZwTF53DNs1q9V6AIhqpzI3KTi
+ biNnjlV7A0rjc2TzE9bLIbHV7HxPb/wjCssch95wdhVFMZycT8vg5MoA8e2EzLxtK5az/HN8HqP
+ +dddnsQfcrnrp72JUko1v0PxBKChOQZD2W5Aehz95d7t9gcl2qWVQahmz7ty4cAn+2SCsjYynpN
+ fsPl8bRzVaPyUIHoym3BgtfshFdSW/ZDBgTCWB/Z3RK1nAiwLlT/wjkjw3V6Vm16aUIg/Jawymx
+ DCr+gX0V6vtBQCA6twhJx4bTn/zWrm1NF/f38La62M8Gbo2UtvolhFnAU89RNZs4FFKIhy5MY19
+ OQJbAHfpkH4JlmuNdDw==
+X-Proofpoint-Spam-Info: AW1haW4tMjYxMDI4MDA2MCBTYWx0ZWRfX5M7xxQ9+SlmB
+ a87JDv8cMBDl/V2uuMh9Vosch7oKAu2wQh41mCW+PwGQ7sxj9vg864tJMhoXPUiDdDhdYo0gWwY
+ Hi2V6btNd3ijv5FtLfRA8skq6S9ARv8=
+X-Proofpoint-ORIG-GUID: XE_KJxF2zpnToa9w-7rI8aTAMMwylbrO
+X-Proofpoint-GUID: XE_KJxF2zpnToa9w-7rI8aTAMMwylbrO
+X-Authority-Analysis: v=2.4 cv=CeKdd7rl c=1 sm=1 tr=0 ts=6ae21602 cx=c_pps
+ a=3Bg1Hr4SwmMryq2xdFQyZA==:117 a=3Bg1Hr4SwmMryq2xdFQyZA==:17
+ a=kj9zAlcOel0A:10 a=660iZSQnnn4A:10 a=VkNPw1HP01LnGYTKEx00:22
+ a=RnoormkPH1_aCDwRdu11:22 a=uAbxVGIbfxUO_5tXvNgY:22 a=VwQbUJbxAAAA:8
+ a=DPC3QgldnefEYUrkxV0A:9 a=CjuIK1q_8ugA:10
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.138,FMLib:17.12.100.49
+ definitions=2026-10-28_05,2026-10-21_02,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ spamscore=0 suspectscore=0 malwarescore=0 phishscore=0 clxscore=1011
+ adultscore=0 lowpriorityscore=0 priorityscore=1501 bulkscore=0
+ impostorscore=0 classifier=typeunknown authscore=0 authtc= authcc=
+ route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2610190000
+ definitions=main-2610280060
 
-On Wed, 28 Oct 2026 at 12:42, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
->
-> On Tue, 2026-10-27 at 11:07 +0000, Luca Boccassi wrote:
-> > On Mon, 26 Oct 2026 at 12:57, <luca.boccassi@gmail.com> wrote:
-> > > I think there is one issue with the design pattern where keyrings
-> > > are set up in userspace, that I have mentioned a few times already
-> > > and I got documented in
-> > > https://www.freedesktop.org/software/systemd/man/latest/systemd-system.conf.html#RestrictFileSystemAccess=
-> > > as well: they are trivially bypassable if the kernel has kexec
-> > > enabled and it is signed. The security model relies on the "good"
-> > > userspace running first, but if kexec is enabled, there's no
-> > > guarantee that will be the case, and as far as I can tell it gives
-> > > root trivial capability of overriding it and extending the trust
-> > > chain as the attacker wishes.
->
-> The attack sounds doable, but it also seems to be exploiting a gap in
-> kexec policy: kexec is supposed to behave like a warm reboot so if boot
-> policy requires UKI only then so should kexec and that sounds like the
-> thing that should be fixed.
+On Sat, Oct 24, 2026 at 05:42:25PM +0300, Jarkko Sakkinen wrote:
+> invalidate_keyring_keys() does not hold keyring->sem while calling
+> keyring_read(), which is contrary to what keyring assumes from its callers,
+> and can lead to reoccuring bugs.
+> 
+> KEY_FLAG_KEEP alone does not e.g.,  protect from  the following call path:
+> 
+> 1. keyctl_keyring_move()
+> 2. key_move()
+> 3. __key_unlink()
+> 
+> Address the issue by guarding the critical section.
+> 
+> Fixes: 8cf57d7217c3 ("s390: add support for user-defined certificates")
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+> ---
+> This came up as a side product while working on assoc_array to
+> rhashtable migration and going through various callers of the keyring.
+> It's made by me but please keep in mind that I don't even have a
+> toolchain for s390 setup so it is based only on reading code and I have
+> not even compiled this.
+> 
+> Just wanted to clarify the background for this fix as I'm not a regular
+> contributor over here. If for any reason it turned out to be false
+> positive, I'm fine with that too.
 
-I don't think that's the case though, even before KHO/LUO existed,
-kexec has never really behaved like a warm reboot, as for example boot
-services do not run again, so various chains of trusts are not reset
-(eg: a bootloader might now be blocked so warm reboot would not work,
-but kexec would). And since KHO now exists, the difference is even
-greater, as more and more state is retained across the boundary.
+It is not a false positive. There seem to be more bugs in the code.
+I'll take your patch and create a series with other fixes.
 
-> What's the mechanism boot uses to ensure UKI only? So we can see if it
-> can be adopted to kexec.
-
-There isn't one, and I don't think there is correlation, as booting a
-UKI is not the only way to boot a system. Eg: this problem applies
-just as well to booting an arm system on uboot. So I really would not
-tie this to UKI or UEFI specifics, it's more generic.
-
-> > > This is of course not to say this new IPE keyring shouldn't be
-> > > added. But perhaps it would be nicer if the default build flag was
-> > > mutually exclusive with kexec being enabled? Not sure if that can
-> > > be expressed in Kconfig though? default: yes-if-kexec-off, no-if-
-> > > kexec-on
->
-> I wouldn't do this because a) I don't think it's an IPE problem, I
-> think it's a kexec one and b) distros get very tetchy about hard to
-> solve feature anti dependencies.
-
-Note that I wasn't suggesting an explicit conflict, but merely to
-model the default values of the kconfigs with such a relationship,
-allowing manually setting any combination the user wants. But it was
-just an idea, maybe it's not worth it, dunno.
-
-> > > At the very least IMHO this relationship should be documented
-> > > explicitly in the kconfig blurb, as it seems to me it's a major
-> > > footgun to leave laying around, and users might not necessarily be
-> > > aware of it.
->
-> I'd document the need for trusted userspace on kexec if it was a boot
-> requirement, yes.
->
-> > KHO/keyring folks, what would you think about preserving sealed
-> > keyrings across kexec via KHO so that the chain of trust can't be
-> > reset by userspace? Good idea/bad idea/yes send patches/no go
-> > away/etc?
->
-> Well, yes, we do have a similar problem with the trusted keyrings.
-> They're actually initialized from the shim created ..RT variables
-> (which are volatile, but don't die on kexec).  On first boot they're
-> initialized before user space, so we know they came from shim (or
-> another trusted component in the boot chain) but if root uses UEFI RT
-> services to add to a ..RT keyring, the added key will appear trusted
-> after kexec.
-
-If it is possible to overwrite the RT variables then yeah it sounds
-like we want to preserve the machine/platform keyrings too via KHO.
+Thanks a lot!
