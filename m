@@ -1,79 +1,61 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=100.103.45.18
-ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=pass;
-	t=1793233878;
-	b=PcUiZEEbh7+6kX/lSTAsO1XYJQzHaJxwiR8bGBBqQaacnvmp0mjDFxECczhKQy0uLVpp
-	 WPwQV1iURfg1EBOENwfYossdhYfLhoYZyi83ssvbbPgQ7oq7cO6X1njrAu6ctD+Fvt3l/
-	 dr0aRT3L+pPqwKOL1+2nkNLhpnyPMMY4uCcnkjeo/3CrlxOGW2Yde5PNmj0WbqjnoatRB
-	 5VwYYz4rlCN65Qyo8m4BSlH4ZYW1FaBz3LDiw7tuZ4ImX2ls5pNj3xRO3GoyEDD8woFky
-	 +NYMy86jXwfAAnvrTTZzjFGvnZNs2T/Ud4vBmIVuWK1T2h6KjCZWSCbOTyrrbv8OwYQ==
-ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793233878;
-	h=Received:DKIM-Signature:Received:From:Subject:Date:Message-Id:
-	 MIME-Version:Content-Type:Content-Transfer-Encoding:X-B4-Tracking:
-	 X-Change-ID:To:Cc:X-Mailer:X-Developer-Signature:X-Developer-Key:
-	 X-Endpoint-Received:X-Original-From:Reply-To;
-	bh=6igf4MLXgRFM8Z+Ioi87X451yx61Kkxpwy6iuQ6dvIg=;
-	b=gsGi/mqby0yFy8gU2d3/ge6/xfrzM/Rm8Y3E1OOFuNcU4CYHTUP7JQa62YRX4C1yzwP+
-	 YO6UBHheuBBW4eCzUNOWRuYEjHSsuZ/2fkQn57YOM/Bhbxihe+U7tsBFjR22wp3f4mYMw
-	 0jVekljMXloYM/0ZV6jyyVuWbaftGGTQzm7Q7rLse5IV1JxloFddigyFYIY28twef9WyU
-	 k/xvTpgluKr+EHzVFs8OU8wvPticZA4nrzZSyHE1o68G6n8k146nkQUDbMzFaRl4sMTBZ
-	 PUJQAc0HsSlFsMZZUnR7rGxSNU4V83buEno67VKhVRhecJImt2N5FaNXogUHAtE+u1Q==
-ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=U6xGsjjW;
-	arc=pass header.oldest-pass=0 smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
+	t=1793235003;
+	b=iNbCATU4I+2vKT3R8t8LL40MO1Mchi37+kx1SP/5iBEqQTn3TSfrPsO73QoY2o5YTyLb
+	 vRd/0UUcXbu//PhjZ6IZx0g4Qmrf3PY9Fr7sdNgc2sA3mfo0dGMHXPC8s8ixrZoSbc4QZ
+	 B03e2Ullqa7mPJP6LWJIHN5eA2ksrWV+pWIeRhFRrjLMWkLBdyri0EUcKyZA8/zL0C62G
+	 OKoyEiSBNKjvomQwd0MEL2o7jG/lKrXTrurTRsddoCKiITA8sNEMpx2z4OoNe16hZBeI1
+	 a/f/ISv9Ga0/JyWjlycyFBT7P3OkTJkdKscWU02+865+B5KGgOC7MHcpZulM3mySTHQ==
+ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793235003;
+	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
+	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
+	bh=9ctWfCaikZBDGwBDGZ92QONpbazh9MI/L9SBN/1BcH0=;
+	b=xkcgI1QBy0+DsxSnW/OUbmkJn50KmqzyVqgecs0qWZh2GFmSNudidg5rEQi+V2fOsprk
+	 cjBzP5P5OtyaDGmOl+PX3HPyCGym0ofHiOnXEoHPNBQT82WM8ZMgtl4t3STnic+15+gUA
+	 yigDcEL8fjGV2ga3cwLfs8WdJ3aD3uwJ2idrFnG+t4h/ipBvmfwtSCfJ2aD+nJ3ZakiJ0
+	 wyyS0gabc4pcqGRZX7YQw3vRVRA1OL1nCvl/ftzKAR7bLA2MxSt1EjYmRu9HP7Jedrzy7
+	 rsLryFVc4GwbqFdSYZWT4MNtu51pbrWkmwr4DYE1i4HUIuwmKnuskpkMIOul4fhCpxg==
+ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=fLuf2ql1;
+	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4337D606A333;
-	Thu, 29 Oct 2026 00:31:18 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 69330606A31A;
+	Thu, 29 Oct 2026 00:50:03 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=U6xGsjjW
-Authentication-Results: smtp.kernel.org; arc=none smtp.remote-ip=100.80.115.77
-ARC-Seal: i=1; d=kernel.org; s=arc20260519; a=rsa-sha256; cv=none;
-	t=1793233877;
-	b=E+rhWHXBJvf6p4cOhKI9whpiK9dUTOU7eWxjgXUdX2e0BGgRHI5tCwSga+JifpfmfXgJ
-	 abh1l2p9B8iWa33HeYSf2klH34ccxYE/hwE5T1Z6lTkJQwYF5Tv9sg/uaf/Bb5jdLRmtj
-	 RKP3sFYe/6LqOyI4t9PnYVHBP+JSO1oHuECh2q4Dqyn7dczybJwM/VLvXNTzRJxTiaXMI
-	 AXlIxC3eTIdiZBshfUNWurmYJyOjCjchxkCTcjdqzVCy9mZzzx+k0rTCnSK+weHfmnNFF
-	 zNwWIqrKKUBBd2d8mk8UP75nemBV3IyWUumk/0+QKFmC3bKNgvZInj70Org4WIeBfwQ==
-ARC-Message-Signature: i=1; d=kernel.org; s=arc20260519; a=rsa-sha256;
-	c=relaxed/relaxed; t=1793233877;
-	h=DKIM-Signature:Received:From:Subject:Date:Message-Id:MIME-Version:
-	 Content-Type:Content-Transfer-Encoding:X-B4-Tracking:X-Change-ID:To:
-	 Cc:X-Mailer:X-Developer-Signature:X-Developer-Key:X-Endpoint-Received:
-	 X-Original-From:Reply-To;
-	bh=6igf4MLXgRFM8Z+Ioi87X451yx61Kkxpwy6iuQ6dvIg=;
-	b=llkj9ua2HGxYX/+GlmFQbtcjSRPwGpkyIxWeOtZ9xvNWS0KrYmb6TSgfsjf5MImTSQIX
-	 o6RPqmKRHlHl/7QkCWq/6/VkkDvzJlkAZ0V+8ulQYFMbPnp98Na2TI5DH03h2s5HTofk9
-	 RW2tijrj+kdsMU29y3gEMkA7MxwRiDhB07KeBu8KjGG2zRWCjRZ+ZU9X0JO9lLHYBFA6f
-	 +x+KQNSbR+/xaq0Or0MW4uwt2KR/yhK4IGHjrkbK3SB7ViXJa2uB8fw5M0YlSmBJ+1c5A
-	 9ndZaZsoPThzZhEY+pSuJDJe1fp1rlfTK4YrYZM/ii/5z8YM/hAmtwJihKtFwVDtsxA==
-ARC-Authentication-Results: i=1; smtp.kernel.org; 
-	arc=none smtp.remote-ip=100.80.115.77
-Received: from lkml.kernel.org (nexus.subspace.kernel.org [100.80.115.77])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
-	(No client certificate requested)
-	by smtp.kernel.org (Postfix) with ESMTPS id 13A7A1F01829;
-	Thu, 29 Oct 2026 00:31:16 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=fLuf2ql1
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 503D01F031E5;
+	Thu, 29 Oct 2026 00:50:02 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793233877;
-	bh=6igf4MLXgRFM8Z+Ioi87X451yx61Kkxpwy6iuQ6dvIg=;
-	h=From:Subject:Date:To:Cc:Reply-To;
-	b=U6xGsjjWZ8tm9J0oOSNTrociqWDbnnvih9DrVpkAWVLQrRhmxLJ/XPIiM1zceLgtC
-	 kLESzZblSH1HDt1rPHi1zHWcVLUZfcHT9qJyBOx5XbFyMA66Ac9En3ufh8LzoL2EXO
-	 Fa6/nIbI/aXbxemVeJ6EY8VRNAFfs/syK8EB8jzmOwMu5/wh7ZB/dtRtnE0EDDdDcZ
-	 1+Db6rnvjBb0lV8anblHFl8ZMZpFaaSzC3n9r2wyURwBfDJ3GlroZ0i2XGQSE+jLXr
-	 QEwPCh49UNezbyXDrKaomURbNGw0eaGyiXS8eizy2RXjYy64dMRKXfHxWx72eZNDFM
-	 AEvdRXmJTMEbA==
-Received: from nexus.subspace.kernel.org (localhost [IPv6:::1])
-	by lkml.kernel.org (Postfix) with ESMTP id 6227845648;
-	Thu, 29 Oct 2026 00:31:15 +0000 (UTC)
-From: Manuel Huber via B4 Relay <devnull+manuelh.nvidia.com@kernel.org>
-Subject: [PATCH v2 0/3] IPE: add a dedicated policy keyring
-Date: Thu, 29 Oct 2026 00:30:37 +0000
-Message-Id: <20261029-b4-ipe-keyring-rfc-v2-0-77727b205844@nvidia.com>
+	s=k20260515; t=1793235003;
+	bh=9ctWfCaikZBDGwBDGZ92QONpbazh9MI/L9SBN/1BcH0=;
+	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
+	b=fLuf2ql1SXVYJMRtj8ZG8+jRqsezkB8gsszBJAgKL2XwG5cR6pi7Lso2HmRr0EC0B
+	 QWIcOdBgbXKrO8LhmXYnOExLTGgG7XejY8HVD+56S2+XFXYPIKxz5EgJKkAMLKUiA3
+	 tYkv88wAmMt3tbS9U1qLSZJ1soralOR0VFSPIwAhHIbu9mZ370PFygDuI+ffCeJFX/
+	 XOFbSr3IJ7s1xi46/FHDUjCTnY57/eVqwH8UnlWa2fudq0As9BuR3IqAxV+G5jUR9v
+	 eUQjmHZWY6ucmwyRNm6K+YjoEt5dzNB4tOuyz6BifVxwlnciP+xHsl2607nHTx10Mz
+	 Ky9kQK2xDVPmg==
+Message-ID: <sashiko-outbox-188577@kernel.org>
+From: sashiko-bot@kernel.org
+Subject: Re: [PATCH v2 2/3] keys: add KEY_SPEC_IPE_KEYRING
+Reply-To: sashiko-reviews@lists.linux.dev
+To: "Manuel Huber" <manuelh@nvidia.com>, "Fan Wu" <wufan@kernel.org>, "David
+ Howells" <dhowells@redhat.com>, "Jarkko Sakkinen" <jarkko@kernel.org>
+Cc: "Christian Brauner" <brauner@kernel.org>, "Andrew Halaney" <andrew@amutable.com>, "Paul
+ Moore" <paul@paul-moore.com>, "James Morris" <jmorris@namei.org>, "Serge E.
+ Hallyn" <serge@hallyn.com>, "Jonathan Corbet" <corbet@lwn.net>, "Shuah Khan" <skhan@linuxfoundation.org>, "Randy
+ Dunlap" <rdunlap@infradead.org>, "Luca Boccassi" <luca.boccassi@gmail.com>, "James
+ Bottomley" <James.Bottomley@HansenPartnership.com>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kexec@lists.infradead.org
+In-Reply-To: <20261029-b4-ipe-keyring-rfc-v2-2-77727b205844@nvidia.com>
+References: <20261029-b4-ipe-keyring-rfc-v2-0-77727b205844@nvidia.com>
+ <20261029-b4-ipe-keyring-rfc-v2-2-77727b205844@nvidia.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date: Thu, 29 Oct 2026 00:50:01 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -82,109 +64,98 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-B4-Tracking: v=1; b=H4sIAAAAAAAC/32NQQ7CIBBFr9LM2jFAayOuvIfpAujQToy0AUNsG
- u4u9gAu30v++zskikwJbs0OkTInXkIFdWrAzSZMhDxWBiVUL4XUaDvklfBJW+QwYfQOrW6tNiS
- VNgrqcI3k+XNEH0PlmdN7idvxkeXP/s1liQLlpfeihunatfeQeWRzdssLhlLKFxAewIm1AAAA
-X-Change-ID: 20261019-b4-ipe-keyring-rfc-b93b9ae129a2
-To: Fan Wu <wufan@kernel.org>, David Howells <dhowells@redhat.com>, 
- Jarkko Sakkinen <jarkko@kernel.org>
-Cc: Christian Brauner <brauner@kernel.org>, 
- Andrew Halaney <andrew@amutable.com>, Paul Moore <paul@paul-moore.com>, 
- James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, 
- Jonathan Corbet <corbet@lwn.net>, Shuah Khan <skhan@linuxfoundation.org>, 
- Randy Dunlap <rdunlap@infradead.org>, 
- Luca Boccassi <luca.boccassi@gmail.com>, 
- James Bottomley <James.Bottomley@HansenPartnership.com>, 
- linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, 
- linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, 
- kexec@lists.infradead.org, Manuel Huber <manuelh@nvidia.com>
-X-Mailer: b4 0.14.3
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1793233875; l=3522;
- i=manuelh@nvidia.com; s=20261019; h=from:subject:message-id;
- bh=pTATwWDEl4HWcrF9PyrJWcbEkLf1+DklVc30h0qdx5g=;
- b=vDmytWLoNFu6z92hq+UUXOOaRVOC9WPlYNxEWJbbVI+bBd9Wh4fTTtwYSB85f7xz/+Xf1p0iH
- oA0oLNoSbQSBRM0M3jPBepMg+EUjIqDohlmCmxUePa09iqheN2gf7ZR
-X-Developer-Key: i=manuelh@nvidia.com; a=ed25519;
- pk=uKggxpZ/mM0qtFnudxvh5Dfz8I6VoehwoM3eYCe3tyU=
-X-Endpoint-Received: by B4 Relay for manuelh@nvidia.com/20261019 with
- auth_id=1244
-X-Original-From: Manuel Huber <manuelh@nvidia.com>
-Reply-To: manuelh@nvidia.com
 
-Add a dedicated ".ipe" keyring for IPE policy-signature verification,
-allowing userspace to provision IPE-specific policy-signing certificates.
-Systems that do not provision the keyring retain their existing behavior.
+Thank you for your contribution! Sashiko AI review found 1 potential issue(=
+s) to consider:
+- [Medium] keys: KEY_SPEC_IPE_KEYRING uses -12 assuming nonexistent keyring=
+ IDs
+--
 
-This series is based on commit 48f936e302a9 ("ipe: update the project and
-test suite links") from ipe/next. The BPF, dm-verity, and fs-verity
-well-known key IDs are now in mainline [1]; KEY_SPEC_IPE_KEYRING follows
-these IDs at -12. The series should be rebased once that work is available
-in ipe/next.
+commit 44da1efd13cdd5eb92238870e4d4626fe42f170e
+Author: Manuel Huber <manuelh@nvidia.com>
 
-IPE currently checks the keyring's entry count directly. A separate
-keys RFC proposes keyring_is_empty() to encapsulate this check [2].
-This series does not depend on that RFC; it should use the helper if
-available in the submission base.
+keys: add KEY_SPEC_IPE_KEYRING
 
-Testing:
-- Built x86_64 kernels with GCC 15.2.0 and Clang/LLD 21.1.8.
-- Passed all 33 in-tree IPE parser KUnit cases under QEMU/KVM.
-- Passed all 2,364 IPE CI cases under QEMU/KVM, including eight new
-  .ipe keyring cases [3]. The CI changes are in draft PR [4].
+This commit adds the KEY_SPEC_IPE_KEYRING (-12) special key ID so that
+userspace can directly reference the .ipe keyring via lookup_user_key()
+without resolving it through process keyrings or /proc/keys.
 
-[1] https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=62c457528529
-[2] https://lore.kernel.org/r/20261016215326.4110064-5-jarkko@kernel.org
-[3] The CI run used a local compatibility adjustment to locate
-    usr/gen_init_cpio on this kernel base.
-[4] https://github.com/Integrity-Policy-Enforcement/ci/pull/4
+>     keys: add KEY_SPEC_IPE_KEYRING
+>    =20
+>     The BPF, dm-verity, and fs-verity keyrings have well-known IDs which
+>     allow userspace to directly address them. This commit follows the same
+>     pattern for the .ipe keyring.
+>    =20
+>     This provides a direct interface independent of resolving %:.ipe thro=
+ugh
+>     process keyrings and /proc/keys.
+>    =20
+>     Signed-off-by: Manuel Huber <manuelh@nvidia.com>
+>=20
+> diff --git a/Documentation/security/keys/core.rst b/Documentation/securit=
+y/keys/core.rst
+> index 326b8a9738289..64b37817a3356 100644
+> --- a/Documentation/security/keys/core.rst
+> +++ b/Documentation/security/keys/core.rst
+> @@ -373,6 +373,18 @@ process making the call::
+>  	KEY_SPEC_REQKEY_AUTH_KEY	-7	assumed request_key()
+>  						  authorisation key
+> =20
+> +There are also values that refer to a specific kernel keyring rather tha=
+n to
+> +anything belonging to the caller.  These well-known IDs allow userspace =
+to
+> +name kernel keyrings directly even when they are not linked into a proce=
+ss
+> +keyring::
+> +
+> +	CONSTANT			VALUE	KEY REFERENCED
+> +	=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D	=3D=3D=3D=3D=3D=3D	=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> +	KEY_SPEC_IPE_KEYRING		-12	the ".ipe" keyring
+> +
+> +The availability of a subsystem keyring depends on its kernel configurat=
+ion.
+> +Looking up an unavailable keyring returns ``ENOKEY``.
+> +
+> =20
+>  The main syscalls are:
+> =20
 
-Signed-off-by: Manuel Huber <manuelh@nvidia.com>
----
-Changes in v2:
-- Drop the RFC designation.
-- Replace ipe.keyring_unsealed with default-off CONFIG_SECURITY_IPE_KEYRING;
-  leave provisioning and restriction of the enabled keyring to userspace.
-- Require restrict_link_reject before using .ipe for policy verification.
-- Access the keyring directly instead of through a lookup helper, and panic
-  if keyring allocation fails.
-- Explain the per-guest signing use case and the reason for avoiding a
-  static private key in guest build artifacts.
-- Retain the well-known key ID commit, but refine its commit message.
-- Define the IPE acronym in kernel-parameters.txt.
-- Document the userspace-provisioned threat model and kexec requirements.
-- Drop the kselftest commit; instead, add tests to IPE CI's policy_signature
-  batch [4].
-- Link to v1: https://lore.kernel.org/r/20261019-b4-ipe-keyring-rfc-v1-0-156f0b93e843@nvidia.com
+[ ... ]
 
----
-Manuel Huber (3):
-      ipe: add the .ipe policy keyring
-      keys: add KEY_SPEC_IPE_KEYRING
-      Documentation: ipe: document the IPE keyring
+> diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+> index 4c8884eea8084..e42fca286b156 100644
+> --- a/include/uapi/linux/keyctl.h
+> +++ b/include/uapi/linux/keyctl.h
+> @@ -24,6 +24,7 @@
+>  #define KEY_SPEC_GROUP_KEYRING		-6	/* - key ID for GID-specific keyring =
+*/
+>  #define KEY_SPEC_REQKEY_AUTH_KEY	-7	/* - key ID for assumed request_key =
+auth key */
+>  #define KEY_SPEC_REQUESTOR_KEYRING	-8	/* - key ID for request_key() dest=
+ keyring */
+> +#define KEY_SPEC_IPE_KEYRING		-12	/* - key ID for the .ipe keyring */
 
- Documentation/admin-guide/LSM/ipe.rst           | 77 ++++++++++++++++++++++++-
- Documentation/admin-guide/kernel-parameters.txt |  1 +
- Documentation/security/ipe.rst                  | 19 ++++--
- Documentation/security/keys/core.rst            | 12 ++++
- include/linux/key.h                             |  2 +
- include/uapi/linux/keyctl.h                     |  1 +
- security/ipe/Kconfig                            | 16 +++++
- security/ipe/Makefile                           |  2 +
- security/ipe/ipe.c                              |  4 ++
- security/ipe/keyring.c                          | 32 ++++++++++
- security/ipe/keyring.h                          | 17 ++++++
- security/ipe/policy.c                           | 17 ++++++
- security/keys/process_keys.c                    | 23 ++++++++
- 13 files changed, 217 insertions(+), 6 deletions(-)
----
-base-commit: 48f936e302a9c48cfc032eb5944c3a6246bc9043
-change-id: 20261019-b4-ipe-keyring-rfc-b93b9ae129a2
+[Severity: Medium]
+The commit message states that the BPF, dm-verity, and fs-verity keyrings
+have well-known IDs, and defines KEY_SPEC_IPE_KEYRING as -12 immediately
+after KEY_SPEC_REQUESTOR_KEYRING (-8) in include/uapi/linux/keyctl.h.
 
-Best regards,
--- 
-Manuel Huber <manuelh@nvidia.com>
+However, in the kernel tree, none of the BPF, dm-verity, or fs-verity
+keyrings have KEY_SPEC_* IDs in include/uapi/linux/keyctl.h,
+Documentation/security/keys/core.rst, or lookup_user_key() in
+security/keys/process_keys.c.
 
+This leaves an unexplained gap (-9 through -11) in the UAPI numbering and
+makes KEY_SPEC_IPE_KEYRING (-12) the sole entry in the kernel keyring table
+in Documentation/security/keys/core.rst.
 
+Was this patch based on an unmerged series that assigned -9, -10, and -11 to
+those keyrings, and should the numbering and commit description be adjusted
+to match the current tree?
+
+--=20
+Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261029-b4-ipe-key=
+ring-rfc-v2-0-77727b205844@nvidia.com?part=3D2
