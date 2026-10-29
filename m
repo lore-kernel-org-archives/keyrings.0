@@ -1,87 +1,142 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=198.175.65.12
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=74.125.82.171
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793263476;
-	b=DMSR0ar6Ba/Gyn5kDjFFKfMS3vvmMcr1Xw9mLEqtAuhAGTg4gEwS7IXpOiJqvR5/KHzQ
-	 p39uq4xwT3J00sJlRZ9EGrE6hMmB10Q/HF2wOEjWVgL3hXxCWF81D64sBfyNrmaceNkK4
-	 v9c8Kz/lAlW9XhQ/SHPgrmBUlGUgHY14VXQqi76Riw+eC/E9n0q+81aHfusrTN/xG3fdY
-	 TEfHjoayxYiYvcviQnzqg80ijlaPY/TMiuw/kHZoq2PPeDhNvdV0Q7WrkEhfhc4X8cJlp
-	 Kc6n7mJEN5t+Nk0bzGT55BByYUkQ4H18OLLj5nF4BE2/0UqvL/UFHFVCfgEuum2vW+A==
+	t=1793264153;
+	b=4qm2keWRoeJQTJ0LNDZZRqTcSOlvVhOvUkywjPEJdaScNKhtj+8Q1ex2Iryh9cSoW6E7
+	 ak9QE5/eE8loseYsm4gSE8BeJIJsLwQlKTm7ev+193Y74LZjTGzmWHSlCZgXpkwhXxmJg
+	 cVd3GFXvGh06z9uSGvkLLkEBdFTj38xX7DzNsNa3w1nwgNBlQuGF/yvvj5He9oNfoDdjv
+	 m8LpTWc3SB2SEmYDMXGLm7H1ysgBV8b/HM8aL6hKqGDjfCEGdOfdpnxqfdbEKbfebZ7m0
+	 ne7wz9Vc58wZphcBWHdq6qUctnq9DeYfgRXNbKrpGTZZJ1Xd4CcyM045s+JpUVJ/zVQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793263476;
-	h=DMARC-Filter:DKIM-Signature:X-CSE-ConnectionGUID:X-CSE-MsgGUID:
-	 X-IronPort-AV:X-IronPort-AV:Received:X-CSE-ConnectionGUID:
-	 X-CSE-MsgGUID:X-ExtLoop1:X-IronPort-AV:Received:Received:Date:From:To:
-	 Cc:Subject:Message-ID:References:MIME-Version:Content-Type:
-	 Content-Disposition:In-Reply-To;
-	bh=/oWraMZQPV6fMMEjMwIgrElFPlULY+ClRBpUMakebME=;
-	b=02GvyR4uN4qTKIkJ0NiO9PdF+s1mfZf12vj0Xx8YlRokuvWcBoKDjFgyodhFkOa+FvC3
-	 PWsmfbgwBPhZGSPuYKdpMaigvgfHgQjNTjJhJpJVbia+5Wy4u5IsCl+BiPtRQGv5+FiUM
-	 Y9r2syk3eAiKlYCyi91vJeNxyOLqkc5XWVr/AQzuHBrboPEZW5XTnOjN3vbQxAbm32J0E
-	 +EUlMi82Q2Kj0YNRjwPP1IVOt/qu2CmDi6YQgbNOkVyr0uQq8kVhsD4/e5BJx/D8Bmwwu
-	 SJJu8vBFJU/i89H/QQrmPUwE1S+XqVl4HGhdbzk2/T2CUP7SZPURoSxpL9K7rvY08+A==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793264153;
+	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
+	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
+	 From:To:Cc:Subject:Date:Message-ID:X-Mailer:MIME-Version:
+	 Content-Transfer-Encoding;
+	bh=YYDnw0w3VJ1m8RLFL/nZJuly2Onkx72MVUQSXk8vs44=;
+	b=zPqkRVs9M+HRPtB5REvkP6JGXD19x7hnwvCdn/fWIbI66XfCrUCwf33un6Bm9oyGf0Mk
+	 eEGxPSDspA7+Gm+NXyoqbvoU+sVLi1VXKx6UXa/KynvXJFviB/tk/nnfq9NvbdBpHOxsn
+	 RuuhciLn3ZyF7M6seT/oYGjj/rvGjS9hI9MjK7BgP06tl8yEO9G+iWI4571uRoDFdDldX
+	 L5P1HuCYAX6yeA+sqg7hkMjO1H+8CZcLQKOv7/4gjxm5HGhzutW7wW68orBQDMnsftAXI
+	 BtSChQrpqglvBDSw+zwa7GjHZfaQ4971Nb3j/mLuUOTaphXaZnCKoX3Ueo2Ao2m2hrg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=intel.com;
-	spf=pass smtp.mailfrom=intel.com;
-	dkim=pass header.d=intel.com header.i=@intel.com header.a=rsa-sha256 header.s=Intel header.b="N/YldqI7";
-	arc=none smtp.remote-ip=198.175.65.12
-Received: from mgamail.intel.com (mgamail.intel.com [198.175.65.12])
-	(using TLSv1.2 with cipher ECDHE-ECDSA-AES256-GCM-SHA384 (256/256 bits))
+	dmarc=pass header.from=gmail.com;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=DLptjGD4;
+	arc=none smtp.remote-ip=74.125.82.171
+Received: from mail-dy1-f171.google.com (mail-dy1-f171.google.com [74.125.82.171])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0FFA0606A31C;
-	Thu, 29 Oct 2026 08:44:34 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 0FFA0606A31C
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=intel.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=intel.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EF651606A31F
+	for <keyrings@vger.kernel.org>; Thu, 29 Oct 2026 08:55:52 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org EF651606A31F
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=intel.com header.i=@intel.com header.a=rsa-sha256 header.s=Intel header.b=N/YldqI7
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
-  t=1793263475; x=1824799475;
-  h=date:from:to:cc:subject:message-id:references:
-   mime-version:in-reply-to;
-  bh=zP6j9o6F/w03axY+MsD6UxM7gNTFpqrQ1pytm/sRx+k=;
-  b=N/YldqI7ne2V98PNHu6FXMXomdG9cX9o9cei0knZRPnhzS9ANauYcKxs
-   g9Lbc8aXnAGnJGji+3hS5sP5IHfxrVQ7/0eLI9slrjmBxPpIOlfpiWFL4
-   6Tc0DQkrvNBO6ukCp1UvDbEr3DLOYddyqZXT5n61Cwuju1t2nvdwghm5n
-   geUrS+vsgGxR9JDSsZK+8nnNwW1HLEZINriC7usDVTt20B+m7a12Rh7ks
-   bIvlAX7QY8EfVhCmvzt266Z5UstxKvqtmqLd4QQL+bvRa9e/aiw298m3T
-   QMChIara4DR2ODRVRQYnHQjxo1yeW4BblGG11tDLXnYoLP7DzAOv3qsf5
-   w==;
-X-CSE-ConnectionGUID: F9urCpzVSbeJAwhG/kfrYw==
-X-CSE-MsgGUID: kF81pAjhTz6Y7LirktJ+PQ==
-X-IronPort-AV: E=McAfee;i="6800,10657,11949"; a="1883081"
-X-IronPort-AV: E=Sophos;i="6.27,184,1787036400"; 
-   d="scan'208";a="1883081"
-Received: from orviesa005.jf.intel.com ([10.64.159.145])
-  by orvoesa104.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 29 Oct 2026 01:44:34 -0700
-X-CSE-ConnectionGUID: 4rCsOan0TAGSv25eri71LQ==
-X-CSE-MsgGUID: rzUW03PeSzOCgCTooWn4jw==
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="6.27,184,1787036400"; 
-   d="scan'208";a="4986244"
-Received: from lkp-server01.sh.intel.com (HELO 0caa9d2d175c) ([10.239.97.150])
-  by orviesa005.jf.intel.com with ESMTP; 29 Oct 2026 01:44:31 -0700
-Received: from kbuild by 0caa9d2d175c with local (Exim 4.98.2)
-	(envelope-from <lkp@intel.com>)
-	id 1xMLkK-00000000Zqq-0ZYA;
-	Thu, 29 Oct 2026 08:44:28 +0000
-Date: Thu, 29 Oct 2026 16:43:48 +0800
-From: kernel test robot <lkp@intel.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>,
-	David Howells <dhowells@redhat.com>
-Cc: oe-kbuild-all@lists.linux.dev, keyrings@vger.kernel.org,
-	Eric Biggers <ebiggers@kernel.org>,
+	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=DLptjGD4
+Received: by mail-dy1-f171.google.com with SMTP id 5a478bee46e88-369f33df08eso3510996eec.0
+        for <keyrings@vger.kernel.org>; Thu, 29 Oct 2026 01:55:52 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20260707; t=1793264152; x=1793868952; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=YYDnw0w3VJ1m8RLFL/nZJuly2Onkx72MVUQSXk8vs44=;
+        b=DLptjGD46znSG6byzVrIUXtEd0wYp2ocot16hHp52y7rmlSFqfhMJlc6i2rtkGMNBC
+         Lgp16RnFrXpaOvusnzJqL0Eh7tb8mrb+2S6ryqC4/zFcjcyLv9hWVwYn3Ct8znpb1mAY
+         so8I8+u8h95CImV2pByyPmF8cmpo1oCNQNz8QowMRx103M7m3wqfPNJaNdCOnyzam9aC
+         s0Ew2+a8RHtNJQMbBZr3Fuyn6iie3/gbNdgGgCe1hA1aD+U7IEXr99AgA0mAo/8Z543B
+         gQLUedJ85qZ4m2DMMLVn/f/dF2yt6LCZfyLT6jtXnVAoOe+nA0P/YgtA+MtL7Neibt5k
+         lprw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1793264152; x=1793868952;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=YYDnw0w3VJ1m8RLFL/nZJuly2Onkx72MVUQSXk8vs44=;
+        b=jXGnL8n1rOo1X94cjE6NVvsdkLTxFHQqlmYJVt5ndMgTeh8H+5urbIOKKqVc/ix5yj
+         SHcO/XLJgNikWz0D03iluzTT+y085GeD7vEWVD9ftmUS9s+Haj+X5CsHleZRylxZmXTM
+         O721epa4Hy8rheGRu+BMG24Za+rGc6xYDn1oEqCpRwqhspm55osy4bHtfZnOvlIlLPFJ
+         7bcMbmd0WXKsn/+o09kjlaQjxenh+PX1UTn8xgkolvjnsLE1dsIz+MWoJREyjxrWBrl1
+         VoNORmHb+Cw9A9ChLiFdP/ccz99W8J/ik9Z9eCLOtVxqIiIWwOHUnJIKYN2ASYn/3kNj
+         arXg==
+X-Forwarded-Encrypted: i=1; AKwUvByonnPldSJZp+GAy5+y8vzc7/iDwWFVY7o+jYGVgaJY4Zup7JJXIAuISAa33Y2raDrx3piXPx1HCw==@vger.kernel.org
+X-Gm-Message-State: AFq9FYI/1R8tlNdp/7EJkyI+Pb5sSX/kEE5hrn1lXqxTDSXXJpVdhkSU
+	4xB6+ccq2SiDgbBOIAbogw3FoWB+dKfeEpc/Vxn2eQAiWIs3G4x4mDY=
+X-Gm-Gg: AYBFou0Y3tXSDCxc3AIbzrI5oGf6OktIml1NX1dWV4nERu7Hp25pOBG9qEVjjWlT3DY
+	ifUBUtdfX26C7NBXH//xWF2crjXqAwDXofcomRe5TnPJbN+iNk2kk8v5Nj4kSmkGunQJYatvLPe
+	Jb/aGErljiYs0qN4qoLhT8/2q0TyIXgzdZtO4QEQWQ3BpAaNyh5hZUNjlHsSm9PT1Kchj4v9ylk
+	KR+FzhhfP2M3covIQ2Ud5bmd5j63LcdzRlildOxrSpUzQiWhQbV4Pb/Fk98SrcFKE0ZKXqMa3At
+	ls3mcvI7XgtJsj5ctc3V3QSTvkZNNQQ/Fmj/Nrevf8QSK9YkEfx60Hcu60KOr/M0rZ6onjajxZG
+	S8+loo4I8T7uzxayE6mUJ4T3hWkBd1nOdISfD32DMQ1O834bmGsLD181V1+0QDoBXQ8lT9vMJSn
+	T7Br+HDVpJTHhU6cR5zDug7ejmr3e1Tv79cujcRK131aOOrJgV6d3nkdtZAoUt3KGIpkDx7RWaz
+	JYLjb8ENS1xai8r1uLEtZh/NjXYXD/HI0GZyoBH7mjrpq6WRKjy+fMOx9y2zRAlp6a3KG1kf4mG
+	0HZ2PgLmUSFHObheRebl+Ewl8BTawrdw6in0H7zZYSToC6439s5kv/PWVGUAsOGx8a69xcrxahu
+	X6aT1NnA=
+X-Received: by 2002:a05:7301:7c12:b0:35c:ba31:6fef with SMTP id 5a478bee46e88-36a2016c61dmr10086277eec.36.1793264151721;
+        Thu, 29 Oct 2026 01:55:51 -0700 (PDT)
+Received: from at-Standard-PC-Q35-ICH9-2009 ([27.60.20.232])
+        by smtp.gmail.com with ESMTPSA id 5a478bee46e88-36a23641e78sm16497937eec.0.2026.10.29.01.55.33
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 29 Oct 2026 01:55:51 -0700 (PDT)
+From: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>
+To: 
+Cc: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Thomas Gleixner <tglx@kernel.org>,
+	Ingo Molnar <mingo@redhat.com>,
+	Borislav Petkov <bp@alien8.de>,
+	Dave Hansen <dave.hansen@linux.intel.com>,
+	x86@kernel.org,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Rafael J. Wysocki" <rafael@kernel.org>,
+	Len Brown <lenb@kernel.org>,
+	Linus Walleij <linusw@kernel.org>,
+	Bartosz Golaszewski <brgl@kernel.org>,
+	Sven Peter <sven@kernel.org>,
+	Janne Grunau <j@jannau.net>,
+	Neal Gompa <neal@gompa.dev>,
+	Guenter Roeck <linux@roeck-us.net>,
+	Jonathan Cameron <jic23@kernel.org>,
+	David Lechner <dlechner@baylibre.com>,
+	=?UTF-8?q?Nuno=20S=C3=A1?= <nuno.sa@analog.com>,
+	Andy Shevchenko <andy@kernel.org>,
+	Lee Jones <lee@kernel.org>,
+	Pavel Machek <pavel@kernel.org>,
+	Griffin Kroah-Hartman <griffin@kroah.com>,
+	Hans de Goede <hansg@kernel.org>,
+	=?UTF-8?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@linux.intel.com>,
+	Sebastian Reichel <sre@kernel.org>,
+	Alexandre Belloni <alexandre.belloni@bootlin.com>,
+	Wim Van Sebroeck <wim@linux-watchdog.org>,
 	Jarkko Sakkinen <jarkko@kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Memory Management List <linux-mm@kvack.org>,
-	Thomas Graf <tgraf@suug.ch>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-	linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v3 5/6] KEYS: Replace assoc_array with rhashtable
-Message-ID: <202610291634.MckYHsJq-lkp@intel.com>
-References: <20261025001105.1824178-6-jarkko@kernel.org>
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Roberto Sassu <roberto.sassu@huawei.com>,
+	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+	Eric Snowberg <eric.snowberg@oracle.com>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	linux-kernel@vger.kernel.org,
+	linux-pci@vger.kernel.org,
+	linux-acpi@vger.kernel.org,
+	linux-gpio@vger.kernel.org,
+	asahi@lists.linux.dev,
+	linux-arm-kernel@lists.infradead.org,
+	linux-hwmon@vger.kernel.org,
+	linux-iio@vger.kernel.org,
+	linux-leds@vger.kernel.org,
+	mfd@lists.linux.dev,
+	platform-driver-x86@vger.kernel.org,
+	linux-pm@vger.kernel.org,
+	linux-rtc@vger.kernel.org,
+	linux-watchdog@vger.kernel.org,
+	linux-integrity@vger.kernel.org,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org
+Subject: [RFC PATCH 00/14] Add macsmc support for Intel Macs, replacing applesmc
+Date: Thu, 29 Oct 2026 04:51:57 -0400
+Message-ID: <20261029085504.3547-1-atharvatiwarilinuxdev@gmail.com>
+X-Mailer: git-send-email 2.55.0
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -91,190 +146,123 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261025001105.1824178-6-jarkko@kernel.org>
+Content-Transfer-Encoding: 8bit
 
-Hi Jarkko,
+applesmc is very old, and all of its code is lumped into one
+driver. Fan control, sensors, the light sensor, the motion
+sensor and the keyboard backlight in a single file
+with its own way of talking to the SMC. It is hard to extend
+and to support new machines.
 
-kernel test robot noticed the following build errors:
+This series adds Intel Mac support to the macsmc drivers that
+were written for Apple Silicon (the Asahi implementation).
+The SMC works the same way on both platforms, so we share a
+lot of code with Asahi. Only the way of talking to the SMC
+differs.
 
-[auto build test ERROR on linus/master]
-[cannot apply to akpm-mm/mm-nonmm-unstable manguebit/cifs-next manguebit/cifs-fixes device-mapper-dm/for-next fsverity/for-next fsverity/for-current shuah-kselftest/next shuah-kselftest/fixes dhowells-fs/fscache-next dhowells-fs/keys-next v7.3 next-20261028]
-[If your patch is applied to the wrong git tree, kindly drop us a note.
-And when submitting patch, we suggest to use '--base' as documented in
-https://git-scm.com/docs/git-format-patch#_base_tree_information]
+To make that work, patch 1 splits the macsmc driver into a
+common core and a backend. The existing RTKit code moves into
+its own backend. Patch 2 adds an ACPI backend for Intel Macs
+with I/O port, MMIO and interrupt support. After that, each
+function gets its own small driver using the standard kernel
+interfaces (hwmon, IIO, LEDs, power supply, RTC, watchdog),
+instead of one large driver doing everything.
 
-url:    https://github.com/intel-lab-lkp/linux/commits/Jarkko-Sakkinen/KEYS-Expand-key-datalen-quotalen-to-unsigned-int/20261025-031009
-base:   linus/master
-patch link:    https://lore.kernel.org/r/20261025001105.1824178-6-jarkko%40kernel.org
-patch subject: [PATCH v3 5/6] KEYS: Replace assoc_array with rhashtable
-config: x86_64-rhel-9.4 (https://download.01.org/0day-ci/archive/20261029/202610291634.MckYHsJq-lkp@intel.com/config)
-compiler: gcc-14 (Debian 14.2.0-19) 14.2.0
-reproduce (this is a W=1 build): (https://download.01.org/0day-ci/archive/20261029/202610291634.MckYHsJq-lkp@intel.com/reproduce)
+On Intel Macs these drivers replace applesmc (hwmon, light
+sensor, motion sensor and keyboard backlight) and acpi-sbs
+(battery and adapter). They are mutually exclusive with the
+drivers they replace, so only one is used at a time.
 
-If you fix the issue in a separate patch/commit (i.e. not just a new version of
-the same patch/commit), kindly add following tags
-| Reported-by: kernel test robot <lkp@intel.com>
-| Closes: https://lore.kernel.org/oe-kbuild-all/202610291634.MckYHsJq-lkp@intel.com/
+This is an RFC to get early feedback on the design. The macsmc
+split and the Intel Mac backend touch fundamental parts, so I
+would rather change them now if maintainers ask. After that I
+will test the series on more macsand send it upstream as a
+proper series.
 
-All errors (new ones prefixed by >>):
+The series is organised as follows:
 
-   In file included from <command-line>:
-   kernel/bpf/keys.c: In function 'bpf_lookup_keyring':
->> kernel/bpf/keys.c:32:35: error: 'struct key' has no member named 'keys'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |                                   ^~
-   include/linux/compiler_types.h:682:23: note: in definition of macro '__compiletime_assert'
-     682 |                 if (!(condition))                                       \
-         |                       ^~~~~~~~~
-   include/linux/compiler_types.h:702:9: note: in expansion of macro '_compiletime_assert'
-     702 |         _compiletime_assert(condition, msg, __compiletime_assert_, __COUNTER__)
-         |         ^~~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:9: note: in expansion of macro 'compiletime_assert'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |         ^~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:28: note: in expansion of macro '__native_word'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |                            ^~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:49:9: note: in expansion of macro 'compiletime_assert_rwonce_type'
-      49 |         compiletime_assert_rwonce_type(x);                              \
-         |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   kernel/bpf/keys.c:32:14: note: in expansion of macro 'READ_ONCE'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |              ^~~~~~~~~
->> kernel/bpf/keys.c:32:35: error: 'struct key' has no member named 'keys'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |                                   ^~
-   include/linux/compiler_types.h:682:23: note: in definition of macro '__compiletime_assert'
-     682 |                 if (!(condition))                                       \
-         |                       ^~~~~~~~~
-   include/linux/compiler_types.h:702:9: note: in expansion of macro '_compiletime_assert'
-     702 |         _compiletime_assert(condition, msg, __compiletime_assert_, __COUNTER__)
-         |         ^~~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:9: note: in expansion of macro 'compiletime_assert'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |         ^~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:28: note: in expansion of macro '__native_word'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |                            ^~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:49:9: note: in expansion of macro 'compiletime_assert_rwonce_type'
-      49 |         compiletime_assert_rwonce_type(x);                              \
-         |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   kernel/bpf/keys.c:32:14: note: in expansion of macro 'READ_ONCE'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |              ^~~~~~~~~
->> kernel/bpf/keys.c:32:35: error: 'struct key' has no member named 'keys'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |                                   ^~
-   include/linux/compiler_types.h:682:23: note: in definition of macro '__compiletime_assert'
-     682 |                 if (!(condition))                                       \
-         |                       ^~~~~~~~~
-   include/linux/compiler_types.h:702:9: note: in expansion of macro '_compiletime_assert'
-     702 |         _compiletime_assert(condition, msg, __compiletime_assert_, __COUNTER__)
-         |         ^~~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:9: note: in expansion of macro 'compiletime_assert'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |         ^~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:28: note: in expansion of macro '__native_word'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |                            ^~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:49:9: note: in expansion of macro 'compiletime_assert_rwonce_type'
-      49 |         compiletime_assert_rwonce_type(x);                              \
-         |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   kernel/bpf/keys.c:32:14: note: in expansion of macro 'READ_ONCE'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |              ^~~~~~~~~
->> kernel/bpf/keys.c:32:35: error: 'struct key' has no member named 'keys'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |                                   ^~
-   include/linux/compiler_types.h:682:23: note: in definition of macro '__compiletime_assert'
-     682 |                 if (!(condition))                                       \
-         |                       ^~~~~~~~~
-   include/linux/compiler_types.h:702:9: note: in expansion of macro '_compiletime_assert'
-     702 |         _compiletime_assert(condition, msg, __compiletime_assert_, __COUNTER__)
-         |         ^~~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:9: note: in expansion of macro 'compiletime_assert'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |         ^~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:28: note: in expansion of macro '__native_word'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |                            ^~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:49:9: note: in expansion of macro 'compiletime_assert_rwonce_type'
-      49 |         compiletime_assert_rwonce_type(x);                              \
-         |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   kernel/bpf/keys.c:32:14: note: in expansion of macro 'READ_ONCE'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |              ^~~~~~~~~
->> kernel/bpf/keys.c:32:35: error: 'struct key' has no member named 'keys'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |                                   ^~
-   include/linux/compiler_types.h:682:23: note: in definition of macro '__compiletime_assert'
-     682 |                 if (!(condition))                                       \
-         |                       ^~~~~~~~~
-   include/linux/compiler_types.h:702:9: note: in expansion of macro '_compiletime_assert'
-     702 |         _compiletime_assert(condition, msg, __compiletime_assert_, __COUNTER__)
-         |         ^~~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:36:9: note: in expansion of macro 'compiletime_assert'
-      36 |         compiletime_assert(__native_word(t) || sizeof(t) == sizeof(long long),  \
-         |         ^~~~~~~~~~~~~~~~~~
-   include/asm-generic/rwonce.h:49:9: note: in expansion of macro 'compiletime_assert_rwonce_type'
-      49 |         compiletime_assert_rwonce_type(x);                              \
-         |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   kernel/bpf/keys.c:32:14: note: in expansion of macro 'READ_ONCE'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |              ^~~~~~~~~
->> kernel/bpf/keys.c:32:35: error: 'struct key' has no member named 'keys'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |                                   ^~
-   include/linux/compiler_types.h:635:53: note: in definition of macro '__unqual_scalar_typeof'
-     635 | #define __unqual_scalar_typeof(x) __typeof_unqual__(x)
-         |                                                     ^
-   include/asm-generic/rwonce.h:50:9: note: in expansion of macro '__READ_ONCE'
-      50 |         __READ_ONCE(x);                                                 \
-         |         ^~~~~~~~~~~
-   kernel/bpf/keys.c:32:14: note: in expansion of macro 'READ_ONCE'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |              ^~~~~~~~~
-   In file included from ./arch/x86/include/generated/asm/rwonce.h:1,
-                    from include/linux/compiler.h:391,
-                    from include/uapi/linux/filter.h:9,
-                    from include/linux/bpf.h:8,
-                    from kernel/bpf/keys.c:4:
->> kernel/bpf/keys.c:32:35: error: 'struct key' has no member named 'keys'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |                                   ^~
-   include/asm-generic/rwonce.h:44:73: note: in definition of macro '__READ_ONCE'
-      44 | #define __READ_ONCE(x)  (*(const volatile __unqual_scalar_typeof(x) *)&(x))
-         |                                                                         ^
-   kernel/bpf/keys.c:32:14: note: in expansion of macro 'READ_ONCE'
-      32 |         if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-         |              ^~~~~~~~~
+  1      Split macsmc into a core and backends
+  2      ACPI backend for Intel Macs
+  3-6    New drivers: watchdog, IIO light and accelerometer,
+         keyboard backlight LED
+  7-9    RTC support for T2 Macs, a T2 detection flag, and
+         disabling the broken ACPI RTCs
+  10-11  Power supply support, replacing acpi-sbs
+  12-13  hwmon support for Intel Macs
+  14     ioctl for userspace access to SMC keys
 
 
-vim +32 kernel/bpf/keys.c
+Tested-on: MacBookPro16,1 , iMac20,1 , MacBookAir4,2 , MacBookPro12,1 ,
+MacBookPro15,1
 
-abaa0835b4f3810 Daniel Borkmann 2026-08-28  25  
-264d8fd2794fabe Daniel Borkmann 2026-08-28  26  struct bpf_key *bpf_lookup_keyring(void)
-264d8fd2794fabe Daniel Borkmann 2026-08-28  27  {
-264d8fd2794fabe Daniel Borkmann 2026-08-28  28  	struct bpf_key *bkey;
-264d8fd2794fabe Daniel Borkmann 2026-08-28  29  
-264d8fd2794fabe Daniel Borkmann 2026-08-28  30  	if (!bpf_keyring)
-264d8fd2794fabe Daniel Borkmann 2026-08-28  31  		return NULL;
-264d8fd2794fabe Daniel Borkmann 2026-08-28 @32  	if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
-264d8fd2794fabe Daniel Borkmann 2026-08-28  33  	    !READ_ONCE(bpf_keyring->restrict_link))
-264d8fd2794fabe Daniel Borkmann 2026-08-28  34  		return NULL;
-264d8fd2794fabe Daniel Borkmann 2026-08-28  35  
-264d8fd2794fabe Daniel Borkmann 2026-08-28  36  	bkey = kmalloc_obj(*bkey);
-264d8fd2794fabe Daniel Borkmann 2026-08-28  37  	if (!bkey)
-264d8fd2794fabe Daniel Borkmann 2026-08-28  38  		return NULL;
-264d8fd2794fabe Daniel Borkmann 2026-08-28  39  
-264d8fd2794fabe Daniel Borkmann 2026-08-28  40  	bkey->key = bpf_keyring;
-264d8fd2794fabe Daniel Borkmann 2026-08-28  41  	bkey->has_ref = false;
-264d8fd2794fabe Daniel Borkmann 2026-08-28  42  	return bkey;
-264d8fd2794fabe Daniel Borkmann 2026-08-28  43  }
-264d8fd2794fabe Daniel Borkmann 2026-08-28  44  
+NOTE: Almost all drivers have been tested except the motion sensor
+driver as i was not able to find any device that had one.
 
---
-0-DAY CI Kernel Test Service
-https://github.com/intel/lkp-tests/wiki
+Atharva Tiwari (14):
+  treewide: Add backend for macsmc
+  platform/x86: add backend for macsmc in intel macs
+  watchdog: add driver for apple smc
+  iio/light: add new driver for macsmc
+  iio/accel: add driver for apple SMS
+  leds: add support for macsmc kbl
+  rtc: add support for x86 macs in macsmc-rtc
+  treewide: Add a flag to detect the Apple T2 chip
+  treewide: disable other rtc's in t2 macs
+  power/supply: add support for x86 macs in macsmc-power
+  acpi: disable battery and adapter for x86 apple machines
+  hwmon/macsmc: add more types
+  hwmon: add support for x86 macs in macsmc-hwmon
+  mfd/macsmc: add ioctl to access smc keys
+
+ MAINTAINERS                                   |    2 +-
+ arch/x86/kernel/quirks.c                      |   37 +
+ drivers/acpi/acpi_tad.c                       |    4 +
+ drivers/acpi/sbs.c                            |   17 +-
+ drivers/acpi/x86/utils.c                      |    4 +
+ drivers/gpio/Kconfig                          |    2 +-
+ drivers/gpio/gpio-macsmc.c                    |   13 +-
+ drivers/hwmon/Kconfig                         |    7 +-
+ drivers/hwmon/macsmc-hwmon.c                  | 1126 ++++++++++++++++-
+ drivers/iio/accel/Kconfig                     |   10 +
+ drivers/iio/accel/Makefile                    |    1 +
+ drivers/iio/accel/macsmc-accel.c              |  248 ++++
+ drivers/iio/light/Kconfig                     |   11 +
+ drivers/iio/light/Makefile                    |    1 +
+ drivers/iio/light/macsmc-light.c              |  189 +++
+ drivers/leds/Kconfig                          |   11 +
+ drivers/leds/Makefile                         |    1 +
+ drivers/leds/leds-macsmc.c                    |   69 +
+ drivers/mfd/Kconfig                           |   15 +-
+ drivers/mfd/Makefile                          |    2 +-
+ drivers/mfd/macsmc-core.c                     |  362 ++++++
+ drivers/platform/x86/Kconfig                  |   10 +
+ drivers/platform/x86/Makefile                 |    1 +
+ drivers/platform/x86/macsmc-acpi.c            |  642 ++++++++++
+ drivers/power/reset/Kconfig                   |    2 +-
+ drivers/power/supply/Kconfig                  |    2 +-
+ drivers/power/supply/macsmc-power.c           |  751 ++++++++---
+ drivers/rtc/Kconfig                           |    2 +-
+ drivers/rtc/rtc-cmos.c                        |    4 +
+ drivers/rtc/rtc-macsmc.c                      |  126 +-
+ drivers/soc/apple/Kconfig                     |   14 +
+ drivers/soc/apple/Makefile                    |    2 +
+ .../macsmc.c => soc/apple/macsmc-rtkit.c}     |  185 ++-
+ drivers/watchdog/Kconfig                      |   11 +
+ drivers/watchdog/Makefile                     |    2 +-
+ drivers/watchdog/macsmc_wdt.c                 |  140 ++
+ include/linux/mfd/macsmc.h                    |  104 +-
+ include/linux/platform_data/x86/apple.h       |    5 +
+ .../platform_certs/keyring_handler.h          |    8 -
+ security/integrity/platform_certs/load_uefi.c |   38 +-
+ 40 files changed, 3786 insertions(+), 395 deletions(-)
+ create mode 100644 drivers/iio/accel/macsmc-accel.c
+ create mode 100644 drivers/iio/light/macsmc-light.c
+ create mode 100644 drivers/leds/leds-macsmc.c
+ create mode 100644 drivers/mfd/macsmc-core.c
+ create mode 100644 drivers/platform/x86/macsmc-acpi.c
+ rename drivers/{mfd/macsmc.c => soc/apple/macsmc-rtkit.c} (70%)
+ create mode 100644 drivers/watchdog/macsmc_wdt.c
+
+-- 
+2.55.0
+
