@@ -1,78 +1,78 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=100.103.45.18
 ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=pass;
 	t=1793233878;
-	b=yCCqnAVL4OwUcjf7+Mf64W0mqscpVnbSz13lBl1GVxSP64KxayN+bcTOx0Yb5bEDO6/u
-	 ogbMjTYU/AWm8qleaPNaCZrGz7pLepuG88ttkZnkuZDlXgXejRBvNcOkUqa9vkBRYGAq7
-	 wPIwdlEOs+73fWBT2TBg9jwH2iowtOJ29t6tDykd2wC1E2uZH6vYimKQTGVNHWCQlPES+
-	 shg5Xm5m2LHCH0dCcdxIJuWfTDlUj0PjugnQHN2TPN/LNxijbCGQtV8SK+9aHupqxbxWG
-	 wqbPdI78dqD7kGs1D512AW+YXp1kTNBAS2DxGoeRtGRR85g83zD6DtCFH+Sa3VxLM/g==
+	b=WR5DUHt1zDDgALHZrF+BFXA1Yyc/5hEKwAySTLtAaaAIaH1/KcXQg4HHC54xAZu9Mc3p
+	 nY0sS64N14o3OU2q9SXyIqAgAw4nOnlqigbWzlPvvC1lYawCWVp8kn6yX0boP4NOYBtLf
+	 IYZcRy++FLLJ4Ud89p085uv24Ois1UhjZu2PxyjSDtC9MGXrdS8hYBCadWgAzG0gqAMA/
+	 bj6QRRRck/rQQb2jWjMj/dBjuPckumW6qWSzbBIt/wFAsWYqQRhqlt1h4s3qj83l78fRW
+	 +dPvieF607ICd1aAfKTM+WtnXe+zS6k9hT1pe6Iuq7upOM6GE7w4Fwze+nvmA5YTRug==
 ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
 	a=rsa-sha256; c=relaxed/relaxed; t=1793233878;
 	h=Received:DKIM-Signature:Received:From:Date:Subject:MIME-Version:
 	 Content-Type:Message-Id:References:In-Reply-To:To:Cc:X-Mailer:
 	 X-Developer-Signature:X-Developer-Key:X-Endpoint-Received:
 	 X-Original-From:Reply-To:Content-Transfer-Encoding;
-	bh=zJlwqunvja1+hbNO+ndF9qMacVMMl8ctft2u4mlfKb8=;
-	b=uI9+eNs7mz17HhGAI3xxMUyqsI2wcWUHo1mnWweT9KvlFlRWbt69EGOPRc33T/IBnvuv
-	 2i7TRCdaoLNrGrK+Q2xMLSydDXIyhhXdE8iKiPvImtoqK1SWYVSF76NxhXlcxizvSLzSN
-	 7dRM/HTE2oR5oqdFadjwLDRq6ByVbodpFXpEHrS9fUm/h9nQjVunJ8hhSZoNgbdLbSGPj
-	 vCEbVxSXBer5v8SjPsefqOI52ULSb/PPi1yxzzXUvCJDnuYb3F87PyzZP/1ihHhH0qcy6
-	 JM4i/MYWnjxHN7aTQIYQ/rcMByMYkN6BNsQPqHx+yM6eaJcdx6xsvg+JUQ+WYD0PJOg==
+	bh=wHgrig9qjFP2gPZLGaq7vPBylHZ9kF92oCc7Wi052Sw=;
+	b=h9q1NWiaYkcLDuB4jkraCSjWkfRxJ9kCDo/715CebqFonptTEG0xx42+rL+RCMMRVvsw
+	 KZuXxWxahcj5Z/2sQW4ZiHHr6a3w9eEiwxeiq2KmosBOgHr6xmdfWX7FfUREMkUFX+Cju
+	 bpFBbE4N8F8pryTeTGzimqo4ljFvFmHfR932SCt5LWQx+msHSPRFj846vKRXzkAuOOkRA
+	 SJZov4xIlW4q7oXwrfhKJZYgOqCJsM4uyd4dPbVGet5ABdbKwIEnjMqTjKPlx3BjRvgIR
+	 qssSukEUUQBamJInOF51naNsRhuQ0r7bIrXIBLl2M9nxLu5C07vIp8T8UGMhlfGoQ7w==
 ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="ILf/SieR";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="DEF4MGo/";
 	arc=pass header.oldest-pass=0 smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8A22A606A31C;
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C0566606A31D;
 	Thu, 29 Oct 2026 00:31:17 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ILf/SieR
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=DEF4MGo/
 Authentication-Results: smtp.kernel.org; arc=none smtp.remote-ip=100.80.115.77
 ARC-Seal: i=1; d=kernel.org; s=arc20260519; a=rsa-sha256; cv=none;
 	t=1793233877;
-	b=1Y+co5982V5LVlLrtYhwCN+17kMvxQoHr2S1HSjwF48BB1FIVzbZtn4zUpXBvfvbrB8+
-	 gBupZ0JwDc0Tw9nQJmqG0R5255df/KhCdX6mQNXdSPbTERsp4xEODnJrf7UTYexBUJ8VI
-	 RbSC1zIj4KcQDiNiT5dDoMNWgGpSYXxWQ1bJFIVjeTw56Y91SZQVzguPKNY9XB9HS1l8v
-	 Z5/oAiFHOtgZBGVEXHNt152juooHJNbPpCzS04h6Eo6Zc0s//+xCSWstB1AWvk31MNm2E
-	 4zLBPxy5ph+5rDyUoJ806L0uF1zRuLBjhbMiEXv7+cY2JE8TSPO6BGUPFfB02x3Vs2A==
+	b=cQ036rESxVHkrk4ST7+vnZKcAYa4B59U76MJX1g9VI6Z9RXJ7Qwj6avzPu4Gux+TOGKR
+	 tZ3fvDtxgMDhigAf/c6g2yTUB7tUjo4EMsXfzqwFziqUabNnunEQiWh9L5U7jruwEIweo
+	 NfOKfjRC478mMK/Y4Tv3N2BpTsPCrlinr9ciSUu2RaiARoM3dEmeJadmzhzTxfr1xVlky
+	 SKFKQSCGCo3S+NsGy8G5mXBuTDnLJ+8QvzQQCiP4P549bVtbbbI7xf7yfp9H7pWEI8hNU
+	 z9/doSgoB/EuVLcKTvTP9P+AT6qmd4yYlO554ka6H3E5ABoioogfzxifxrwAmfUr99A==
 ARC-Message-Signature: i=1; d=kernel.org; s=arc20260519; a=rsa-sha256;
 	c=relaxed/relaxed; t=1793233877;
 	h=DKIM-Signature:Received:From:Date:Subject:MIME-Version:Content-Type:
 	 Message-Id:References:In-Reply-To:To:Cc:X-Mailer:
 	 X-Developer-Signature:X-Developer-Key:X-Endpoint-Received:
 	 X-Original-From:Reply-To:Content-Transfer-Encoding;
-	bh=zJlwqunvja1+hbNO+ndF9qMacVMMl8ctft2u4mlfKb8=;
-	b=0WiNzgjmwLa2qd3tE8EJLtJ9DbAWt2igXD8a66Q+Gz/VvgWgW08wl+0N7RBMrA+ZG9kv
-	 9Lb4Ma+SHfiHkbh1YVcajWVafxZD9iC5gaKwGCMPrbSzyR1/v+oDOW5BiPfIrAUXD5ZzN
-	 KoL1fe7Phqk9yVOhOtehOM7W/EZue4O8fCzPc9idDHjNAZeM7CK3jh4eibKa6heKiP54K
-	 nU2W3QR+fnKxnhnB4QIyucYfJn/c0uxHD5k/FNfPQ22Dis9j25mOONvaeW0YMilm9STXo
-	 dooRl9uCIUobvxJsHsjWy1pP79kY8j0FzZWo5+qnkPoEXExbncjBdHIjiIRqPZ5nh2g==
+	bh=wHgrig9qjFP2gPZLGaq7vPBylHZ9kF92oCc7Wi052Sw=;
+	b=a9uxWMdGKhN5fVbvtS31duEnvbj9fNjFwnVx3a7gJoGGBRbHAabHy6zLPDJX2R5IFjmF
+	 QbOagnqOY7M3NvERLvS4Ht8ZUn42t522iAs+g5NvsiL5f2k20K+FBh0ujK222cgoViXT6
+	 N/6cAIZlEUVRAbHpcsqfSqLpvW+2RDBmp0iDsIRB8fpmJ/9+Gnse1TyuiM8fH3G6bYj3p
+	 ohs6ql6P3BW2zgzdNF+z/MZLzMmUZ8W9OXFgJd8Zb0M4gpK1doJS8hMurR21qxphwhxem
+	 KTWWkKD9mf4B9xSDHbsGsCCYL3Nc/qN4Z87QRuu1LlZnsEOf/bOEHlZZhxmmZFavfPQ==
 ARC-Authentication-Results: i=1; smtp.kernel.org; 
 	arc=none smtp.remote-ip=100.80.115.77
 Received: from lkml.kernel.org (nexus.subspace.kernel.org [100.80.115.77])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.kernel.org (Postfix) with ESMTPS id 139CB1F01828;
+	by smtp.kernel.org (Postfix) with ESMTPS id 13F4B1F031E0;
 	Thu, 29 Oct 2026 00:31:16 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
 	s=k20260515; t=1793233877;
-	bh=zJlwqunvja1+hbNO+ndF9qMacVMMl8ctft2u4mlfKb8=;
+	bh=wHgrig9qjFP2gPZLGaq7vPBylHZ9kF92oCc7Wi052Sw=;
 	h=From:Date:Subject:References:In-Reply-To:To:Cc:Reply-To;
-	b=ILf/SieRqerEMSonFvZJ+3GWYeC3ZPbSCe4Z/qxYMUZ3FLTnp+mCmGF5EnBZJUdtX
-	 mFYg+Om5NqInzYBgul262w1JS8dJ1IiOs2Fe5EwTNa6Y6jTMuTi6XBbPKzb8XZlHug
-	 WKqWTy6M8NivuW/2ErUgjh7edkLw3WzypBWdPZK8JyHmLB8a40D4lgxmKB+VzR7JEn
-	 WMT79XSUaF0B2XV4M+4omXlzSKTTrFehn2/9JZLo2mdXzVwR3DQUrRMpeUVYyb3HkG
-	 va6MwYNmXNyYlKfHWB63+3t7eoloxT6GO65Y0/Gph/+1dxJpIf3MJxReYf//bz7uPW
-	 QpjrK7pccq8pg==
+	b=DEF4MGo/SXzQnYAvszVzL8Gt+FB5/8tW3Aur1B8+yIkCUrLlgyiaM1+HTfwdj2yhP
+	 bEHAYVKQr3yw6ZpolEz6EfAW6mzT8vpJBroN1Awu5Md6c0sL50Cb4xwvDteGASXZWH
+	 WlF/mkFCZkk4XX0JV0NUQrsqY9NChyaUrmTofyMhn8LqTuK0x8pBEEIUpxKg/COALl
+	 k66rtfG5uBL5etdm8EFpBotzUuEoFFbGub0HBLeOdQUkJUvBDgw0+9D+WeMLOo9c94
+	 iTW8TzAfgkvF9Oft+jLbkxKaiJrm6EiRZacmR3S2+vjGPW9S/q3Gjy7uiOdZ1+iFWZ
+	 tamkjSzaT5EiQ==
 Received: from nexus.subspace.kernel.org (localhost [IPv6:::1])
-	by lkml.kernel.org (Postfix) with ESMTP id 7FA664564C;
+	by lkml.kernel.org (Postfix) with ESMTP id 738864563B;
 	Thu, 29 Oct 2026 00:31:15 +0000 (UTC)
 From: Manuel Huber via B4 Relay <devnull+manuelh.nvidia.com@kernel.org>
-Date: Thu, 29 Oct 2026 00:30:39 +0000
-Subject: [PATCH v2 2/3] keys: add KEY_SPEC_IPE_KEYRING
+Date: Thu, 29 Oct 2026 00:30:38 +0000
+Subject: [PATCH v2 1/3] ipe: add the .ipe policy keyring
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -83,7 +83,7 @@ List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Message-Id: <20261029-b4-ipe-keyring-rfc-v2-2-77727b205844@nvidia.com>
+Message-Id: <20261029-b4-ipe-keyring-rfc-v2-1-77727b205844@nvidia.com>
 References: <20261029-b4-ipe-keyring-rfc-v2-0-77727b205844@nvidia.com>
 In-Reply-To: <20261029-b4-ipe-keyring-rfc-v2-0-77727b205844@nvidia.com>
 To: Fan Wu <wufan@kernel.org>, David Howells <dhowells@redhat.com>, 
@@ -99,11 +99,11 @@ Cc: Christian Brauner <brauner@kernel.org>,
  linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, 
  kexec@lists.infradead.org, Manuel Huber <manuelh@nvidia.com>
 X-Mailer: b4 0.14.3
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1793233875; l=4547;
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1793233875; l=8137;
  i=manuelh@nvidia.com; s=20261019; h=from:subject:message-id;
- bh=/BFpBbq1FQa32YOzNX0aI7W2U2EGLrFUn65BbO8gg8g=;
- b=a8U5f4fDz3jnb/NdfevMsgRLh/Bpxd/5HEOmei1beg5hrND+EV39Tf8E8oS855+nuFE+ElntV
- n91Ec7ANsvBAm1CF9zhXRGxQp3PZor/EBkp5EHuKnB0+Vk+S+UDqvu0
+ bh=qUKO8xyX+/8KnwHErrUte/NPW7CoaYPDwwyvYL+BdNU=;
+ b=MXkQBF9XIPmW3lQQqP3IeEwfmaFpTfmzIFwNsZAfrIlG+uYj7UlcRHC7eY3gmY9NLyjJSOSXl
+ UChshGXrzhTCTBe+wgtGrLi/y93tQwVlFJqhvvfgB0ri92DtgmGQM/r
 X-Developer-Key: i=manuelh@nvidia.com; a=ed25519;
  pk=uKggxpZ/mM0qtFnudxvh5Dfz8I6VoehwoM3eYCe3tyU=
 X-Endpoint-Received: by B4 Relay for manuelh@nvidia.com/20261019 with
@@ -114,130 +114,232 @@ Content-Transfer-Encoding: 7bit
 
 From: Manuel Huber <manuelh@nvidia.com>
 
-The BPF, dm-verity, and fs-verity keyrings have well-known IDs which
-allow userspace to directly address them. This commit follows the same
-pattern for the .ipe keyring.
+Add a dedicated .ipe keyring for IPE policy signature verification.
+With this, userspace can provision its own keys into the keyring,
+then restrict it and activate it for IPE policy signature verification.
 
-This provides a direct interface independent of resolving %:.ipe through
-process keyrings and /proc/keys.
+Gate creation of the keyring behind a new by-default disabled
+CONFIG_SECURITY_IPE_KEYRING Kconfig option. When created, the keyring
+is empty and writable. The keyring is used as a fallback after the
+existing policy trust sources only when it is created, non-empty, and
+restricted with restrict_link_reject.
+
+This enables scenarios in which a trusted userspace component generates
+an IPE policy, and creates an ephemeral policy-signing key pair,
+provisions its public certificate, and restricts the IPE keyring during
+the early lifetime of a system. The trusted component can then sign the
+IPE policy, destroy the private key, and load and activate the policy.
+During that phase, the system is considered in a trusted state whereas
+the system transitions into a possibly untrusted state afterwards,
+running arbitrary user-provided applications. In such a scenario, the
+trusted userspace component could reside on a dm-verity protected
+rootfs disk, and applications would reside on additional dm-verity
+protected disks. The latter disks would be dynamically attached and
+their dm-verity root hashes and/or signatures not known a priori to
+launching the system.
+
+A concrete usage scenario could be Kata Containers, which enables
+running Kubernetes pods in ephemeral, headless utility VMs, possibly
+without systemd. The rootfs disk is static and known beforehand, but
+containerd's image layers might be acquired and transported into the
+VM using the erofs snapshotter and dynamic block device attachment
+using dm-verity. While in that usage scenario, signing a per-guest
+policy with a pre-provisioned policy-signing certificate in the
+builtin, secondary, or platform keyrings would be technically possible,
+it would require including its corresponding private key in the guest
+build artifacts. Making it possible to use an ephemeral,
+userspace-provided key avoids shipping a static policy-signing private
+key with the guest rootfs.
 
 Signed-off-by: Manuel Huber <manuelh@nvidia.com>
 ---
- Documentation/security/keys/core.rst | 12 ++++++++++++
- include/linux/key.h                  |  2 ++
- include/uapi/linux/keyctl.h          |  1 +
- security/ipe/keyring.c               |  2 ++
- security/keys/process_keys.c         | 23 +++++++++++++++++++++++
- 5 files changed, 40 insertions(+)
+ Documentation/admin-guide/kernel-parameters.txt |  1 +
+ security/ipe/Kconfig                            | 16 +++++++++++++
+ security/ipe/Makefile                           |  2 ++
+ security/ipe/ipe.c                              |  4 ++++
+ security/ipe/keyring.c                          | 30 +++++++++++++++++++++++++
+ security/ipe/keyring.h                          | 17 ++++++++++++++
+ security/ipe/policy.c                           | 17 ++++++++++++++
+ 7 files changed, 87 insertions(+)
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index 326b8a973828..64b37817a335 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -373,6 +373,18 @@ process making the call::
- 	KEY_SPEC_REQKEY_AUTH_KEY	-7	assumed request_key()
- 						  authorisation key
+diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
+index e75344f4e0cd..9fabbc1c95b6 100644
+--- a/Documentation/admin-guide/kernel-parameters.txt
++++ b/Documentation/admin-guide/kernel-parameters.txt
+@@ -23,6 +23,7 @@
+ 	HW	Appropriate hardware is enabled.
+ 	HYPER_V HYPERV support is enabled.
+ 	IMA     Integrity measurement architecture is enabled.
++	IPE	Integrity Policy Enforcement is enabled.
+ 	IP_PNP	IP DHCP, BOOTP, or RARP is enabled.
+ 	IPV6	IPv6 support is enabled.
+ 	ISAPNP	ISA PnP code is enabled.
+diff --git a/security/ipe/Kconfig b/security/ipe/Kconfig
+index a110a6cd848b..5c51da074264 100644
+--- a/security/ipe/Kconfig
++++ b/security/ipe/Kconfig
+@@ -51,6 +51,22 @@ config IPE_POLICY_SIG_PLATFORM_KEYRING
  
-+There are also values that refer to a specific kernel keyring rather than to
-+anything belonging to the caller.  These well-known IDs allow userspace to
-+name kernel keyrings directly even when they are not linked into a process
-+keyring::
+ 	  If unsure, answer Y.
+ 
++config SECURITY_IPE_KEYRING
++	bool "IPE policy keyring"
++	default n
++	help
++	  This option creates the .ipe keyring, which allows trusted
++	  userspace to provision certificates for IPE policy signature
++	  verification. IPE uses the keyring only after userspace has added
++	  at least one certificate and applied a reject-all restriction.
 +
-+	CONSTANT			VALUE	KEY REFERENCED
-+	==============================	======	===========================
-+	KEY_SPEC_IPE_KEYRING		-12	the ".ipe" keyring
++	  Enable this only when the userspace component that provisions and
++	  restricts the keyring is part of the system's trusted computing
++	  base. Such systems must also prevent unauthorized kexec, which
++	  would start a new kernel without preserving the keyring state.
 +
-+The availability of a subsystem keyring depends on its kernel configuration.
-+Looking up an unavailable keyring returns ``ENOKEY``.
++	  If unsure, answer N.
 +
+ menu "IPE Trust Providers"
  
- The main syscalls are:
+ config IPE_PROP_DM_VERITY
+diff --git a/security/ipe/Makefile b/security/ipe/Makefile
+index 2ffabfa63fe9..78161dfb48ea 100644
+--- a/security/ipe/Makefile
++++ b/security/ipe/Makefile
+@@ -25,6 +25,8 @@ obj-$(CONFIG_SECURITY_IPE) += \
+ 	policy_parser.o \
+ 	audit.o \
  
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 81b8f05c6898..9c2ac0c70d56 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -440,6 +440,8 @@ extern key_ref_t keyring_search(key_ref_t keyring,
- extern int keyring_restrict(key_ref_t keyring, const char *type,
- 			    const char *restriction);
- 
-+extern void key_register_ipe_keyring(struct key *keyring);
++obj-$(CONFIG_SECURITY_IPE_KEYRING) += keyring.o
 +
- extern struct key *key_lookup(key_serial_t id);
+ clean-files := boot_policy.c \
  
- static inline key_serial_t key_serial(const struct key *key)
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 4c8884eea808..e42fca286b15 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -24,6 +24,7 @@
- #define KEY_SPEC_GROUP_KEYRING		-6	/* - key ID for GID-specific keyring */
- #define KEY_SPEC_REQKEY_AUTH_KEY	-7	/* - key ID for assumed request_key auth key */
- #define KEY_SPEC_REQUESTOR_KEYRING	-8	/* - key ID for request_key() dest keyring */
-+#define KEY_SPEC_IPE_KEYRING		-12	/* - key ID for the .ipe keyring */
+ obj-$(CONFIG_SECURITY_IPE_KUNIT_TEST) += \
+diff --git a/security/ipe/ipe.c b/security/ipe/ipe.c
+index 495bb765de1b..ee8731eb4070 100644
+--- a/security/ipe/ipe.c
++++ b/security/ipe/ipe.c
+@@ -7,6 +7,7 @@
+ #include "ipe.h"
+ #include "eval.h"
+ #include "hooks.h"
++#include "keyring.h"
  
- /* request-key default keyrings */
- #define KEY_REQKEY_DEFL_NO_CHANGE		-1
+ extern const char *const ipe_boot_policy;
+ bool ipe_enabled;
+@@ -97,4 +98,7 @@ DEFINE_LSM(ipe) = {
+ 	.init = ipe_init,
+ 	.blobs = &ipe_blobs,
+ 	.initcall_fs = ipe_init_securityfs,
++#ifdef CONFIG_SECURITY_IPE_KEYRING
++	.initcall_late = ipe_keyring_init,
++#endif
+ };
 diff --git a/security/ipe/keyring.c b/security/ipe/keyring.c
-index 8502f825945d..14626df46e71 100644
---- a/security/ipe/keyring.c
+new file mode 100644
+index 000000000000..8502f825945d
+--- /dev/null
 +++ b/security/ipe/keyring.c
-@@ -26,5 +26,7 @@ int __init ipe_keyring_init(void)
- 			      KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
- 	if (IS_ERR(ipe_keyring))
- 		panic("failed to allocate \".ipe\" keyring");
-+	key_register_ipe_keyring(ipe_keyring);
-+
- 	return 0;
- }
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index a63c46bb2d14..20d6faefb75e 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -22,6 +22,9 @@
- /* Session keyring create vs join semaphore */
- static DEFINE_MUTEX(key_session_mutex);
- 
-+/* IPE keyring reachable through KEY_SPEC_IPE_KEYRING */
-+static struct key *ipe_keyring __ro_after_init;
-+
- /* The root user's tracking struct */
- struct key_user root_key_user = {
- 	.usage		= REFCOUNT_INIT(3),
-@@ -590,6 +593,18 @@ bool lookup_user_key_possessed(const struct key *key,
- 	return key == match_data->raw_data;
- }
- 
-+/**
-+ * key_register_ipe_keyring - Publish the IPE keyring
-+ * @keyring: The keyring to publish
-+ *
-+ * Make @keyring reachable by userspace through the KEY_SPEC_IPE_KEYRING
-+ * special key ID. Called once, from an initcall, and never undone.
+@@ -0,0 +1,30 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 + */
-+void key_register_ipe_keyring(struct key *keyring)
++
++#include <linux/cred.h>
++#include <linux/err.h>
++#include <linux/key.h>
++
++#include "keyring.h"
++
++struct key *ipe_keyring __ro_after_init;
++
++/**
++ * ipe_keyring_init() - Allocate and configure the IPE keyring.
++ *
++ * Return: Always %0.
++ */
++int __init ipe_keyring_init(void)
 +{
-+	ipe_keyring = keyring;
++	ipe_keyring =
++		keyring_alloc(".ipe", GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
++			      current_cred(), KEY_POS_SEARCH |
++				KEY_USR_VIEW | KEY_USR_READ | KEY_USR_WRITE |
++				KEY_USR_SEARCH | KEY_USR_SETATTR,
++			      KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
++	if (IS_ERR(ipe_keyring))
++		panic("failed to allocate \".ipe\" keyring");
++	return 0;
 +}
+diff --git a/security/ipe/keyring.h b/security/ipe/keyring.h
+new file mode 100644
+index 000000000000..d9a057a14978
+--- /dev/null
++++ b/security/ipe/keyring.h
+@@ -0,0 +1,17 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
++ */
 +
- /*
-  * Look up a key ID given us by userspace with a given permissions mask to get
-  * the key it refers to.
-@@ -741,6 +756,14 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 		key_ref = make_key_ref(key, 1);
- 		break;
++#ifndef _IPE_KEYRING_H
++#define _IPE_KEYRING_H
++
++#include <linux/init.h>
++
++struct key;
++
++extern struct key *ipe_keyring;
++
++int __init ipe_keyring_init(void);
++
++#endif /* _IPE_KEYRING_H */
+diff --git a/security/ipe/policy.c b/security/ipe/policy.c
+index e542329726bc..514a1985b5e1 100644
+--- a/security/ipe/policy.c
++++ b/security/ipe/policy.c
+@@ -4,11 +4,13 @@
+  */
  
-+	case KEY_SPEC_IPE_KEYRING:
-+		key = ipe_keyring;
-+		if (!key)
-+			goto error;
-+		__key_get(key);
-+		key_ref = make_key_ref(key, 0);
-+		break;
-+
- 	default:
- 		key_ref = ERR_PTR(-EINVAL);
- 		if (id < 1)
+ #include <linux/errno.h>
++#include <linux/key.h>
+ #include <linux/verification.h>
+ 
+ #include "ipe.h"
+ #include "eval.h"
+ #include "fs.h"
++#include "keyring.h"
+ #include "policy.h"
+ #include "policy_parser.h"
+ #include "audit.h"
+@@ -160,6 +162,9 @@ struct ipe_policy *ipe_new_policy(const char *text, size_t textlen,
+ 				  const char *pkcs7, size_t pkcs7len)
+ {
+ 	struct ipe_policy *new = NULL;
++#ifdef CONFIG_SECURITY_IPE_KEYRING
++	struct key_restriction *restriction;
++#endif
+ 	int rc = 0;
+ 
+ 	new = kzalloc_obj(*new);
+@@ -188,6 +193,18 @@ struct ipe_policy *ipe_new_policy(const char *text, size_t textlen,
+ 						    VERIFY_USE_PLATFORM_KEYRING,
+ 						    VERIFYING_UNSPECIFIED_SIGNATURE,
+ 						    set_pkcs7_data, new);
++#endif
++#ifdef CONFIG_SECURITY_IPE_KEYRING
++		if (rc == -ENOKEY || rc == -EKEYREJECTED) {
++			restriction = READ_ONCE(ipe_keyring->restrict_link);
++			if (READ_ONCE(ipe_keyring->keys.nr_leaves_on_tree) &&
++			    restriction &&
++			    READ_ONCE(restriction->check) == restrict_link_reject)
++				rc = verify_pkcs7_signature(NULL, 0, new->pkcs7,
++							    pkcs7len, ipe_keyring,
++							    VERIFYING_UNSPECIFIED_SIGNATURE,
++							    set_pkcs7_data, new);
++		}
+ #endif
+ 		if (rc)
+ 			goto err;
 
 -- 
 2.53.0
