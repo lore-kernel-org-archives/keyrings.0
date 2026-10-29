@@ -1,97 +1,122 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=74.125.82.177
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=202.12.124.139
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793252727;
-	b=mlnWsuvxQpSu/qA480pxXmzXVh2aTdJEi7ndsi+mTAXkY7oX6/Rk/vP1S7Yo29ijX3N3
-	 ocQqrKs5XLmpYn1cc36SqbhscNDGr7bYpv0ZrBBc/CupT2aNupvqKcZ+tkLX5KKH/SNVE
-	 l7Yk919YOHmWqkxXcW9JaYIuixwM33AJVNbkCXvBzOZMvpIeg/mcoC3v3rqys19A5QH+T
-	 u6N9M8qDsBjzRYJLbIPKNTGqN4VF7ACqFOP8YYG+NwwTDY4zqMKwISkxtx+Vs6y2mtZ2t
-	 eBRGhaR4/1eq+MueQk/ps8mkCu6eeOQF8i9eKxiAXH4JjG3hgXujksCPjroJp4X0i/Q==
+	t=1793256230;
+	b=FkQX5s1lb2dijaP8juvzSezgYtHbPNcj/YumGVEmPlMCY/6v8INZtS3scVRx/O7KQEIl
+	 VDVQsefQdGz+bVpGgBG+O7dvWApJ7cRg04KoEvYXE+HJCsYZl/Wj/BxRDX64GlYJPngY2
+	 yXiB0z86LpZ/tVNsiGJH2q764HYmiyzPV5trJ4vS5T4Urvszh0/oG9qUpYZ9JtFvdiZHx
+	 gvYYrlVbyGlKyosC9JHZ4+yii5sR10DalaTr+pQMbTw01TtPiAObfLXeN35g+hqD/Kfid
+	 2/4L38MYHPpjNNhib/Ssk5C6HQjlRMKgZqH841TiJp5vrHvy4LLYNRgWFahXXDrK1yQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793252727;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
-	 From:To:Cc:Subject:Date:Message-Id:X-Mailer:MIME-Version:
-	 Content-Transfer-Encoding;
-	bh=adSYFoYAePHJdbuRdaHU8dMgoKI+1ZI1I5xA5eoT1QA=;
-	b=au6yo1lw6zYVPMyUJ8rcUWOpYQ7ufx3CtbE7YyxpgM+Z3OaSGxIIojl9QIpAqpwwWdHy
-	 EBL4gvKuX20isg/t5G7R1308psm0EZO9xku3OF1IsIAUhr7bK0R1IIcsK6SIdeDG0WXoL
-	 0uY61VIAh+7XX9ARoPGBE9dMnwL7p2tXvJlUEAMVAoedmYXQg2NtCJTYiUjBbBOfZQZbR
-	 /UHNGlr8JHRMPPc1a/JJYy5K+3lfcpRC50KxYEhw7jOFeZO8nwuaMrqTI+0eD2WIBiVqo
-	 CpnU6LokhhmU25gs/dnPEbA3dzzRLx1ZhndTAWg5MUuUlUWb9cYJrQKsbSaomT6oZpw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793256230;
+	h=DMARC-Filter:Received:Received:DKIM-Signature:DKIM-Signature:
+	 X-DKIM2-Info:DKIM2-Signature:X-DKIM2-Info:Message-Instance:
+	 X-ME-Sender:X-ME-Received:X-ME-Proxy-Cause:X-ME-Proxy:Feedback-ID:
+	 Received:Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To;
+	bh=LYSppn+c8e5u6slhU90tGiZOtFKk/+H1GYWinE/YCks=;
+	b=ntDvKQMkTup09sfU3j7zh3z5HS7aSGumCT65W0XNou2NEFHO8kVV+LyTgX21bkNSkOtt
+	 KwpbGTujIMRaVj+DT6c04kmJ/oiA8wsGdH3nb1ru9VrKceTNvaOm7Wy8ZTolg+HicN2sm
+	 TzFyvGDUifiENn6NMK4YqHsr+Tn5IJrinT56kiimvzWvpP+cCW3CG9ahT4h9wAmXkZ0OO
+	 NBwbzOKGsRBYCtuN5MaaiRkv6Fl4z7LJLUwZVkaICLo8U35PY/4u8xFFpnnn/y46MYWo4
+	 +ZXiZQyoJKm7M3Q9O0k6/jnY1FKWCGCicgmzyJ12YVFvObHJDUaj49LB5Ly8miVwOJQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gmail.com;
-	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=0Jg96Hof;
-	arc=none smtp.remote-ip=74.125.82.177
-Received: from mail-dy1-f177.google.com (mail-dy1-f177.google.com [74.125.82.177])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	dmarc=pass header.from=kroah.com;
+	spf=pass smtp.mailfrom=kroah.com;
+	dkim=pass header.d=kroah.com header.i=@kroah.com header.a=rsa-sha256 header.s=fm2 header.b=ZjH5utAS;
+	dkim=pass header.d=messagingengine.com header.i=@messagingengine.com header.a=rsa-sha256 header.s=fm2 header.b=Teet5Hsn;
+	arc=none smtp.remote-ip=202.12.124.139
+Received: from flow-b4-smtp.messagingengine.com (flow-b4-smtp.messagingengine.com [202.12.124.139])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A6A88606A31D
-	for <keyrings@vger.kernel.org>; Thu, 29 Oct 2026 05:45:26 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org A6A88606A31D
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9130B606A31E
+	for <keyrings@vger.kernel.org>; Thu, 29 Oct 2026 06:43:49 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 9130B606A31E
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=kroah.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kroah.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=0Jg96Hof
-Received: by mail-dy1-f177.google.com with SMTP id 5a478bee46e88-35b2c599f43so3808480eec.0
-        for <keyrings@vger.kernel.org>; Wed, 28 Oct 2026 22:45:26 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20260707; t=1793252726; x=1793857526; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=adSYFoYAePHJdbuRdaHU8dMgoKI+1ZI1I5xA5eoT1QA=;
-        b=0Jg96Hofm475on7M+bD3y2loejPit6r7Nm73lNMFr8CtE8Yx3nWrfC0xh6dhkIs5hU
-         LKQwBIH/y4FLOj90dfz2buYbax+izjBJLxZ0iZmY0Iu6hpLYr/ELKHXlryxBGJXhKgYs
-         zfoDgfSt0++gOk/BZJOk4p17ywb16bghajH3DiVauI0Rbs5cAIeDXtH06leTZbEBesqB
-         fCXHdDm2v5VutKkOrA62H6R/uVPqkjgl0Cz5bhedxZLO89F6YHnoCLMhZQ5Qh2KGFkcC
-         1q75Ow/s0DpKNzGVAVUpSrozSG4uWq/NSDLa9Zj2IELvT8oiznN1FH+/jRSU9j2FUkux
-         k9yg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1793252726; x=1793857526;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=adSYFoYAePHJdbuRdaHU8dMgoKI+1ZI1I5xA5eoT1QA=;
-        b=s6czXR8DZyTyRAxiNqp4pmTuj0WHdQ9oMvOYuSLRt/+aaVK+2j6wKyWpimGPcUi7GW
-         4Rj7P65i+iig6NVeoDUxa6/MXVtdvILXx9O+aDn5vSQG4MqZiW1ugfMc0PTVzYzktIdK
-         ntXIMhsI3+SoqX1jEmHgcmNt6v0wHfDIi7GrWdgrBMFAxgofIFYhgotlUqnnexJ4+tHU
-         YwQfk71XE4thovPVAM68oJmS6VEonS+a7lisrqjcJjks9V5dtKh78kdQPR+xYAQTBz9L
-         3c2z0Y7M5evUi7Jprtw6eJNPzjU0BtGX62hLONFKC1rc0yJKr0Dpsul+V3rl25AeUofu
-         aG9A==
-X-Forwarded-Encrypted: i=1; AKwUvBzBAeGWNP6YFLsMn3hlUo3r0C50StKOrCO8oLLSpC91981181u8wditvtCP6adsMZdcDkd7gJNY7w==@vger.kernel.org
-X-Gm-Message-State: AFq9FYJCB3MSBaRcUmZQ/Dp4e9jn+xUm9PhhFYgtkucvR03Y9jyqsoza
-	nBG2w0k89246Fv2BJa/23I+f5xf5hQWi95bCdLTiiZl5hDu8rdE3vWPB
-X-Gm-Gg: AYBFou2RfJMvPUReoPh0bLasaD+uRfEm7giSHRuhjF1+wddSgVs1/oXH14cNW4yX3dY
-	dVG1QU/r/UkWeIcM6792NGQtkdZTmEb6GOx0M7b5UcAcJIZeg3olTSIhMzA6JNA2tdICV+2LHsB
-	BYU4Q9onQG45Tg8LiMrDcOpTW+9GYyGEwHJbE8S2CCkD6WWk4SEqJ7IrTCgV9SeM8H59/7X1+c+
-	WpR4FdPtDQw45JaU9NbfIdoM+RA6F6dbnVaKClTm8NLtgXWcRrY4hed3WEcBYXzsBLcUf0bZgb/
-	LfwkZ1EOtZjYPfUnHx9FccvRPMt2VjI/dR5ExN7GhIps6SMhRGS7k7Un4frGmZF7KbSNxRh/gZN
-	K1nPLWDb8bEsnzuQjygZbmggQDVFFc/GFpFGeg9GpRoMbLEq+wkndt9VkWpRvCdnG4cUeFmpOXC
-	qOd5EftMFSJox2gV8+0/WcWnV4R6AzGtW100QfRRGJPBoik955/GjbXqdxqrqTRaJWuTqoDCigk
-	OXgNzD8EsdMdA0iYNoFZ4WJGyl7hP83o8e3FyPJeNAGixGf4C/JEJt8zh8CbM2y3L9p+XuEqqs2
-	GGWuy+7GMrsObEiZkz29i7bYew==
-X-Received: by 2002:a05:693c:638e:20b0:369:9eea:cd25 with SMTP id 5a478bee46e88-36a204065cbmr6483826eec.7.1793252725624;
-        Wed, 28 Oct 2026 22:45:25 -0700 (PDT)
-Received: from lion.. ([166.1.190.168])
-        by smtp.gmail.com with ESMTPSA id 5a478bee46e88-36a237bddb7sm12294142eec.3.2026.10.28.22.45.23
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 28 Oct 2026 22:45:25 -0700 (PDT)
-From: Zhiyu Zhang <zhiyuzhang999@gmail.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>,
-	Christian Brauner <brauner@kernel.org>
-Cc: David Howells <dhowells@redhat.com>,
-	Cen Zhang <cenzhang@linux.microsoft.com>,
-	Davidlohr Bueso <dave@stgolabs.net>,
-	Bradley Morgan <brads@mainlining.org>,
-	linux-kernel@vger.kernel.org,
-	keyrings@vger.kernel.org,
-	Tong Liu <lyutoon@gmail.com>,
-	Qi Tang <tpluszz77@gmail.com>
-Subject: [PATCH] watch_queue: keep info_id separate from rcu_head
-Date: Thu, 29 Oct 2026 01:41:36 -0400
-Message-Id: <20261029054136.1174216-1-zhiyuzhang999@gmail.com>
-X-Mailer: git-send-email 2.34.1
+	dkim=pass (2048-bit key, unprotected) header.d=kroah.com header.i=@kroah.com header.a=rsa-sha256 header.s=fm2 header.b=ZjH5utAS;
+	dkim=pass (2048-bit key, unprotected) header.d=messagingengine.com header.i=@messagingengine.com header.a=rsa-sha256 header.s=fm2 header.b=Teet5Hsn
+Received: from phl-compute-01.internal (phl-compute-01.internal [10.202.2.41])
+	by mailflow.stl.internal (Postfix) with ESMTP id E3B2C130281F
+	for <keyrings@vger.kernel.org>; Thu, 29 Oct 2026 02:43:48 -0400 (EDT)
+Received: from phl-frontend-03 ([10.202.2.162])
+  by phl-compute-01.internal (MEProxy); Thu, 29 Oct 2026 02:43:48 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kroah.com; h=cc
+	:cc:content-type:content-type:date:date:from:from:in-reply-to
+	:in-reply-to:message-id:mime-version:references:reply-to:subject
+	:subject:to:to; s=fm2; t=1793256226; x=1793263426; bh=LYSppn+c8e
+	5u6slhU90tGiZOtFKk/+H1GYWinE/YCks=; b=ZjH5utAS2CIm+N6ZzEunmjbfaB
+	jhz9ts7I2sgJltgYFHi2Z4jPCcLO8e+W7PqTWTc1dDTuW3LeQHx+X6O183tPvyCF
+	ePdueWqG8ujRpAsGJAd6k/zIJJriD64N7UjUM+jElD0KkR6jqX1udS8/xcVb1BUM
+	RlawQGpC8Tj0LyZ0qjOBuf7NPS3tZ293ip/Mh2rc5wpG3hfLf3Cy/XQ6hgm4RORT
+	HklArEfbuSQdCm/3lKMvETALUqadSmjgIImM/xyGEZm2qhZObg5YlLdEW1OxOYev
+	Y9PkeSxvlOZbOVP4LsTBPBFCrMsxhdPiCaT6TLEPf469IHTvWF/7pZ6l+JIg==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=
+	messagingengine.com; h=cc:cc:content-type:content-type:date:date
+	:feedback-id:feedback-id:from:from:in-reply-to:in-reply-to
+	:message-id:mime-version:references:reply-to:subject:subject:to
+	:to:x-me-proxy:x-me-sender:x-me-sender:x-sasl-enc; s=fm2; t=
+	1793256226; x=1793263426; bh=LYSppn+c8e5u6slhU90tGiZOtFKk/+H1GYW
+	inE/YCks=; b=Teet5Hsnckb6lm1pCbXvX4WOxuD5PtzRB2GetTnYXKxpT84YW73
+	+a8bCgiFTwKJsVC7dRhK3t86gjC9h5sW0xz/Xymm5ENa0J5T/vGsI2W3HxbcK7GF
+	3yAF+Ux88nN7oRF6S50uyJJnmiwzsJPOZGVY4xHpavmuz/e188QEUpzd+NEknDgz
+	8pCWPaJUWWmLt21jXmpKEBhNI9ijcR6YUjAepodg44V2f0ub9qb4+zHCibHCdxNv
+	zkLhtKheZTqBPOoOMUKXCJMR9P8SHeAwUmmBIQbN+G9HukGvtbvhzW1G4s8h6T5X
+	lNxrV6/IbaJw9jsoMO1kgAUH/ws3LhFmuHg==
+X-DKIM2-Info: draft=ietf-dkim-dkim2-spec-08;
+	repo=github.com/dkim2wg/interop; date=2026-10-28; sw=lmtpprox;
+	action=sign d=kroah.com a=rsa-sha256;
+DKIM2-Signature: i=1; m=1; t=1793256226; d=kroah.com;
+	mf=PGdyZWdAa3JvYWguY29tPg==;
+	rt=PGtleXJpbmdzQHZnZXIua2VybmVsLm9yZz4=;
+	s=fm2:rsa-sha256:E/Aa+xJzi5MyfWU/z4zRqrQUv9Pk7DyKxKz7fjRZa0TTUnV
+	u0Etw4wkUAsoDn4S9HXVWobPmHeqdpr+aboQdPXIkRqQblxJKwfTf3p8kRlKLkfN
+	z8BOZbSchgbrw0cNDSD9ahBtxu07JgFMiy8bJZPe9Zix0EfcDaCk2WpsnltPXJO8
+	kMtfNivalscqPMS9zgcM2UhbDQbO9FF3w4+ZiyOdD1BsCY79CFVun7Y1YG/cubNZ
+	atEpzenVtlY6cS7uFdORSAPyvAq6mN6P15fXYEKGZxQn/NlZWTAuTeMZEShZuiJ6
+	0K5gS+gFmHlvsyWRgvSN8hyONTnZ4+EmnC8SlPw==;
+X-DKIM2-Info: draft=ietf-dkim-dkim2-spec-08;
+	repo=github.com/dkim2wg/interop; date=2026-10-28; sw=lmtpprox;
+	action=mi-m=1; hc=12;
+	hn=cc,content-disposition,content-type,date,feedback-id,from,
+	in-reply-to,message-id,mime-version,references,subject,to;
+Message-Instance: m=1; h=sha256:sNXm1VZHPLvxi2/PmVkw4u3FhZW7bm07fmgeKTb4hjY=:LYSppn+c8e5u6slhU90tGiZOtFKk/+H1GYWinE/YCks=;
+X-ME-Sender: <xms:IuviaqMBY1oagLgP8jBpJuwzCqNWF2vM1_6SCBTSG2dWL5myPu9iRw>
+    <xme:IuviapbrUGenXxyL_9Tlgd5ElNFzEjqnag59RW0zrdC2CAXMto0GK89vUrCt_59Ox
+    z0jbX9iCtvQRbXVVcjoOw6h21LP2dgzoj1Cu4Pt_3yoTcS31AM>
+X-ME-Received: <xmr:IuviamtWI8iperDNxA78ylItBUQdP0DvQG7tZf7bqz6m79bima_B9NXXM8G0e69URME-7RhzhK9ffrLTqD5x00lOoU-6Vo7yFZzoQNohGIQ>
+X-ME-Proxy-Cause: dmFkZTGXI/sv7Q3ryCVVO7Xkbkb5CXjELT7BUMWJ5iydtxBy6d5IEU2kFOL1C3R3qccr0y
+    cxFeikHBBYQ4oJ5QDRf88fxh5criWaOgLcLTynDQ3nCU63yAkfupVkGirzLHQOQvJ+pzKZ
+    FkTU9agIFQ1vdeeo1rEotZj8YUCRvpbu2QY4zMPVrqwT3boHBPL8tcUvjNQYuQiji8d+lI
+    4SRuenta5RYjFCtfRd88OnECiKwyD7WXLC7485injrQvGU4+6hQQpkovBRdYHVTcvLgWK3
+    l0FBkn8daNvWgZP/Y43zojH5uPEbHh43NAJBW8KgYymW9ZKgT1yNI3lDm07GSaSohHW2Y5
+    VW3G7JmtQPGUNJKMRC2eV/inWDyyheRirRxl+LwqRvh+GRuExXSYIqNYNmIwEEmw6nsA7Y
+    FtZrJCnm61HbJC4CXX7daYadxsOFERsDL9OL8MbAXrNCLCv04t4jIttJncLSO2rFYe9GC3
+    3RHvogfuY6uYy0eYCDSJZOdoMxZJqtCNWJem4HVA+KD+EyUJ1+HKSYgqWmxbQOKEUDuOau
+    S46NyAY9pdt/JorF4bPSQDU6B0s0KCn76BqqOf4uTdWyhwLVxOxnYYlHXjbDlWciacnesZ
+    QYrgOobiPctt1OY9D9zpgc7GRjN70m39VrUMTgpfBwgpJRW7B1GpAsu61/Xw
+X-ME-Proxy: <xmx:IuviaopEjIGElkTtFCPE2t2DVD7aFg73Q26L5EIFQZP0HAj-BfW6FA>
+    <xmx:IuviamSjPAE-z7mnIgpNL33jE6bTLUzZyYKeyEfWVKnn6SoT0c-0QA>
+    <xmx:IuviatZwlm8lFD7cn5QqU3MIUf8nwVvNkKqv7G6w8EchDBZ_dHT0GQ>
+    <xmx:Iuvian40eKwGlYmYUZWuZM9JeSKHEUZ06D3fLRHRTax6NQaBMNg6Hw>
+    <xmx:Iuviaolo3xcF3g1RQw5hN6DBnCOZT28ZIp-v-4L_dHpaboqcWk3TJZeR>
+Feedback-ID: i787e41f1:Fastmail
+Received: by mail.messagingengine.com (Postfix) with ESMTPA; Thu,
+ 29 Oct 2026 02:43:45 -0400 (EDT)
+Date: Thu, 29 Oct 2026 07:43:43 +0100
+From: Greg KH <greg@kroah.com>
+To: Zhiyu Zhang <zhiyuzhang999@gmail.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>, brauner@kernel.org,
+	dhowells@redhat.com, keyrings@vger.kernel.org,
+	linux-kernel@vger.kernel.org, security@kernel.org,
+	edumazet@kernel.org, ncardwell@google.com, lyutoon@gmail.com,
+	tpluszz77@gmail.com
+Subject: Re: [BUG] watch_queue: RCU/info_id overlap leaks kernel stack
+Message-ID: <2026102915-safeness-snazzy-a36d@gregkh>
+References: <CALf2hKveij_sHgANY9Aktm1dPa4wfKjKNkHyp9yPbjORWFXagA@mail.gmail.com>
+ <auIbEZv5macfZ4aq@kernel.org>
+ <CALf2hKty86GatQ01C30j20oa+TeVdJRvbX=a_+0Rga33woJ6Lw@mail.gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -101,77 +126,22 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALf2hKty86GatQ01C30j20oa+TeVdJRvbX=a_+0Rga33woJ6Lw@mail.gmail.com>
 
-struct watch overlays info_id with rcu_head. A notification poster reads
-info_id under rcu_read_lock(), but a concurrent final put can enqueue the
-watch with call_rcu(). Enqueueing the callback writes rcu_head before the
-grace period has elapsed, so it can corrupt info_id while the object
-remains legally visible to the reader.
+On Thu, Oct 29, 2026 at 01:06:28AM +0800, Zhiyu Zhang wrote:
+> We will send the reproducers (including the complete exp for lpe) to you
+> and the relevant maintainers privately. I understand your point that a
+> similar reproducer can likely be recreated with a few LLM prompts.
+> Nevertheless, Documentation/process/security-bugs.rst says not to
+> publish a reproducer for an AI-assisted finding, so we are keeping it off-list.
+> The same guidance says that AI-assisted findings must be treated as public,
+> which is why the report was posted publicly.
 
-__post_watch_notification() then merges that value into the notification
-info word without masking it. Pointer bits can corrupt WATCH_INFO_LENGTH
-and make post_one_notification() copy beyond the posting task's stack
-record.
+The documentation also says that a patch should be sent which I can't
+seem to find here, am I missing it somewhere?
 
-Give info_id storage separate from rcu_head so RCU enqueueing cannot modify
-it. Place it after the kref, which uses existing tail padding on x86-64.
-Mask info_id with WATCH_INFO_ID at the point of use as an additional
-invariant check.
+thanks,
 
-An unprivileged shell and keyctl reproducer was run for 30 seconds in QEMU.
-The vulnerable baseline produced malformed notification lengths, while this
-change completed with 288631 key notifications and no malformed record.
-
-Fixes: c73be61cede5 ("pipe: Add general notification queue support")
-Reported-by: Tong Liu <lyutoon@gmail.com>
-Reported-by: Qi Tang <tpluszz77@gmail.com>
-Reported-by: Zhiyu Zhang <zhiyuzhang999@gmail.com>
-Closes: https://lore.kernel.org/lkml/CALf2hKveij_sHgANY9Aktm1dPa4wfKjKNkHyp9yPbjORWFXagA@mail.gmail.com/
-Link: https://lore.kernel.org/netdev/CALf2hKvp0NPVLwr=a3+jUHtPohxbra8gox+aYAfWathJnn-J+Q@mail.gmail.com/
-Signed-off-by: Zhiyu Zhang <zhiyuzhang999@gmail.com>
----
- include/linux/watch_queue.h | 6 ++----
- kernel/watch_queue.c        | 2 +-
- 2 files changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/watch_queue.h b/include/linux/watch_queue.h
-index 429c7b6afead..b87e1babb5f0 100644
---- a/include/linux/watch_queue.h
-+++ b/include/linux/watch_queue.h
-@@ -52,10 +52,7 @@ struct watch_queue {
-  * Representation of a watch on an object.
-  */
- struct watch {
--	union {
--		struct rcu_head	rcu;
--		u32		info_id;	/* ID to be OR'd in to info field */
--	};
-+	struct rcu_head		rcu;
- 	struct watch_queue __rcu *queue;	/* Queue to post events to */
- 	struct hlist_node	queue_node;	/* Link in queue->watches */
- 	struct watch_list __rcu	*watch_list;
-@@ -64,6 +61,7 @@ struct watch {
- 	void			*private;	/* Private data for the watched object */
- 	u64			id;		/* Internal identifier */
- 	struct kref		usage;		/* Object usage count */
-+	u32			info_id;	/* ID to be OR'd in to info field */
- };
- 
- /*
-diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
-index 932a88ac1f39..453dcf613205 100644
---- a/kernel/watch_queue.c
-+++ b/kernel/watch_queue.c
-@@ -212,7 +212,7 @@ void __post_watch_notification(struct watch_list *wlist,
- 		if (watch->id != id)
- 			continue;
- 		n->info &= ~WATCH_INFO_ID;
--		n->info |= watch->info_id;
-+		n->info |= watch->info_id & WATCH_INFO_ID;
- 
- 		wqueue = rcu_dereference(watch->queue);
- 		wf = rcu_dereference(wqueue->filter);
--- 
-2.34.1
-
+greg k-h
