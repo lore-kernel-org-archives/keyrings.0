@@ -1,61 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793284390;
-	b=rYwjf+LxOBO4lgWyb6HJqK2HmrECyUTC3TAPeo3036G5uWhKe3V4SEMy9T5XMTVOSIRj
-	 9wTI4iJiC71Rf34h9BUM+6BhqEkYKK/TwNmg5ix+WwAE5n8chJGald+t2Mg32eHpNdxEH
-	 yvxa/Cby6K+kHVAuWAM80RNiVvyV1s79V2rOKjMvOfG6vBgC8nfdRB8i0lsAzUExEXboq
-	 0rqKuPSj3+F3noGtejBrqF/RIUjcoQGfJVXK9Yk81h/NIgROu7W6K9rYiOo8cHwBCUMpI
-	 uN41eqRR0D/PQOPc4QUpkRkleMkKFBx/AgtrnPTvFWDZYpg6qVPRvbNPNJWz7PVcTGg==
+	t=1793286283;
+	b=HJ+ZINIw2RpMfenLY9WMf5ZjqYeLycB5VRood+Lh0ZPv5e29gExGBlu/JN95IOxvTbxD
+	 xj+TnsvtfVKos0VqD4d5CHhdFyC5ndS16io6v6kJw3u4yzwDnkeq8Nx/tqJB0UFnPx/XD
+	 fq+qrZaBiV23+QU/D00qeagurH6Z+nBBPCgo+xnnZUiyc4vNoHpEHihXHDsNJTJfd4gE5
+	 VbuRQL5NG5eIDR2Im40O5Zr3DaEreVR+8/lzVJuO3+8uL7rydj8qQfnbORIMK4V8hCVTW
+	 Cdtx1AasNFJSQ45hUWN30qSxpOo+rbrui2r9rc2CW2hzlMZqaPESRE+H9lxW8wBLLKg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793284390;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793286283;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=PI6XV6wRBKnwx25utlIFilIARw4g6CWAbZMbWDcIpcQ=;
-	b=G5OvUlr9JSTGKjO6O0W4JOHlPsYIZn71RF/QUx5FAEuYTHnxP1aG31qDqiGMhFIJHu45
-	 bYjhQFqz3MXEwhObbqqjujWAMFSE4uDdI/fpBRw5F84qu39RSvQYVZM5itfbKDkGck1VH
-	 6W+KIx72Zb46VQHzDZyr9uCPsOVS2yy3u/Lmu60Iu/dHU+4gAxp5BjtdKF36CdB4w0v2k
-	 xU5K3z9hhbQEsaQIXjbno1Wd2GsCPHO0+/GLb5nzmPQynNUZHKjpt/5H+nRg5D4PP42Xf
-	 GmJZSkOyaMPNe+MIO+4kXhzKqk+kNS3V4GV8/M3lTCwGQe2Z1lr4xO8MUyWimt7d/4A==
+	 References:MIME-Version:Content-Type:Content-Disposition:
+	 Content-Transfer-Encoding:In-Reply-To;
+	bh=RuqhMejpCTxUcbY4K+pNGmbpnR6NoV1QS3505981Rmg=;
+	b=BZyKwqvSNK4EJ0uI5a12jEaE7wDVsk68+59CNqjRva75Uv6qjkUatI80x/I5ikwteYqO
+	 GXqlUr2i1XGUr/Q2P1/tVeozdzuMI+8tYeXTOXobM1e+r/zpwtQKvyUx8eoMTlc1Ef6B0
+	 S/RzI/k+L3zUR6K8mlvCxdWvhcFYNJX3rG7QDbhFy68WKlcOMQgcSmf1e7LZ0DfGPIZ6Y
+	 U/f42ynCxOJ75g8uLVGf4dpm3BtHHld0rgpcURE6VP24McyyQgKMh7htPvBISjNgPoZOx
+	 ClTst4kdc5tR84qtBe3hHGo3Ma2IsxSMPEj7NZHdUhCqZRDA4GytKcg8D8C774E/2bw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=WYNGdT+r;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=BZB54+TM;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 20680606A31A;
-	Thu, 29 Oct 2026 14:33:09 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A95BF606A31C;
+	Thu, 29 Oct 2026 15:04:42 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=WYNGdT+r
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 2ED241F01825;
-	Thu, 29 Oct 2026 14:33:09 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=BZB54+TM
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B31E31F01825;
+	Thu, 29 Oct 2026 15:04:41 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793284389;
-	bh=PI6XV6wRBKnwx25utlIFilIARw4g6CWAbZMbWDcIpcQ=;
+	s=k20260515; t=1793286282;
+	bh=RuqhMejpCTxUcbY4K+pNGmbpnR6NoV1QS3505981Rmg=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=WYNGdT+rZn4iYkTdtrdt3yuFvlGqH5uylT98HcZQ3aJNXPlAvgkHO1ioTcugnRfIy
-	 XmIrucKme8qfrUAL7hzh2Q54kdl6bciwVvpW6aM9ObAgOvrd8tN1ovtGCyslVsk30H
-	 Yk0FQtK/OLbXZFW/feOMlCAijzixxNn8zpUnO6NHpzHD843UAlgZOMHvtqbCsdePtz
-	 RFoqmX3AJWuBGJatHpNa9ArDNmDRK4uF5IRckWsthtwAaXt89x5Hie04fUvL7oiGec
-	 H0GJEicq/SXsLHQlsB7ttycEVWzf9by0RKBotVPwPomh+6oqtkGeOgA1KwRBTWwPZv
-	 wiNYp+4z03TPA==
-Date: Thu, 29 Oct 2026 16:33:06 +0200
+	b=BZB54+TMwWlngBpoZx1TNgTrhLo7EdO6maQVqftGvzh37AhVGicYoOY1qMYa0K0Hq
+	 piRJrj3U5/HNoW38ixTvthgDlAsgtkAJNXxqnSmAs75rIGTScV34yNwxPfKzcb8hgg
+	 HG7A7UloBKKC5APoixn4EtiWhFGHqgZlS9JpwkgT3/e8czf/bpf09Wrd4ZeVARhUER
+	 LLl3XWn44gAjYtAiFo9wWQff/CGSsZ3uBq2zZdQA1Gpzn481IPztpBtSiOSLqyvMCN
+	 xXK5jt9+3EuFkxAYPBHb40gyAt57nS/z8UCACOCfJIUc+c88nHMOxv4s8Gkps/GuAF
+	 V/D6RF1oi2x4g==
+Date: Thu, 29 Oct 2026 17:04:38 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Biggers <ebiggers@kernel.org>, linux-integrity@vger.kernel.org,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	syzbot+c15de43f1e7fffbb7b9b@syzkaller.appspotmail.com,
-	Roberto Sassu <roberto.sassu@huawei.com>,
-	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-	Eric Snowberg <eric.snowberg@oracle.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>
-Subject: Re: [PATCH v4] KEYS: key_garbage_collector(): process in chunks
-Message-ID: <auNZIm0meBH7zHQX@kernel.org>
-References: <20261029140707.2010100-1-jarkko@kernel.org>
+To: Cen Zhang <zzzccc427@gmail.com>
+Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+	serge@hallyn.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	baijiaju1990@gmail.com, jjzuming@gmail.com
+Subject: Re: [PATCH] keys: Protect the update method check against type
+ removal
+Message-ID: <auNghmbNdKLQ2hmH@kernel.org>
+References: <pm-keys-update-type-removal-20261029-v6-3d92b2f9693854230a02@gmail.com>
+ <auNGzJIWFt64IMWY@kernel.org>
+ <CAFRLqsXdUfqvNyzNpnz=dvgtHrVyRhYoZqt-CQUo98HW7BtNJA@mail.gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,34 +62,101 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20261029140707.2010100-1-jarkko@kernel.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFRLqsXdUfqvNyzNpnz=dvgtHrVyRhYoZqt-CQUo98HW7BtNJA@mail.gmail.com>
 
-On Thu, Oct 29, 2026 at 04:07:05PM +0200, Jarkko Sakkinen wrote:
-> keygcbench results without the patch:
+On Thu, Oct 29, 2026 at 10:04:13PM +0800, Cen Zhang wrote:
+> Hi Jarkko,
 > 
-> unused:   min=3016.754 avg=11859.097 max=28667.645 var=141391574.712
-> expired:  min=0.015 avg=12758.165 max=21516.237 var=85158284.646
-> combined: min=0.015 avg=12308.631 max=28667.645 var=113477010.596
+> Jarkko Sakkinen <jarkko@kernel.org> 于2026年10月29日周四 21:14写道：
+> >
+> > On Thu, Oct 29, 2026 at 07:58:06PM +0800, Cen Zhang wrote:
+> > > key_update() reads key->type->update, ->def_datalen and ->preparse
+> > > before it takes key->sem. A reference on the key does not pin the
+> > > module that provides its type, so KEYCTL_UPDATE can race with the
+> > > unloading of that module, for example dns_resolver:
+> > >
+> > >   KEYCTL_UPDATE task                  Module unload and key GC
+> > >   ------------------                  ------------------------
+> > >   keyctl_update_key()
+> > >     key_update()
+> > >       key_permission()
+> > >       load key->type
+> > >                                       exit_dns_resolver()
+> > >                                         unregister_key_type()
+> > >                                           GC: down_write(&key->sem)
+> > >                                           GC: retype to key_type_dead
+> > >                                           GC: up_write(&key->sem)
+> > >                                         unregister_key_type() returns
+> > >                                       free_module()
+> > >       read saved type's update member
+> > >
+> > > The final access reads freed module memory. With the updating task
+> > > held after the key->type load, it faults:
+> > >
+> > >   BUG: unable to handle page fault for address: fffffbfff804107f
+> > >   #PF: supervisor read access in kernel mode
+> > >   RIP: 0010:key_update+0x12d/0x550
+> > >   Call Trace:
+> > >    keyctl_update_key+0x6b/0x110
+> > >    __do_sys_keyctl+0x21d/0x4f0
+> > >
+> > > This is the same problem that commit 925c84e3cc21 ("keys: Protect the
+> > > read method check against type removal") fixed for KEYCTL_READ.
+> >
+> > This is useful bit, thanks.
 > 
-> keygcbench results with the patch:
+> Thanks for the review.
 > 
-> unused:   min=0.225 avg=13.991 max=853.100 var=858.700
-> expired:  min=0.016 avg=30.442 max=2791.695 var=14187.539
-> combined: min=0.016 avg=19.249 max=2791.695 var=5177.436
+> >
+> > >
+> > > The encrypted and trusted types can be built as modules and have an
+> > > update method. For them there is a second window: the GC can move the
+> >
+> > How is the second window related to the fact that encrypted and trusted
+> > can be built as LKMs and where is "there"?
+> >
+> > > key to key_type_dead after the method check and before key_update()
+> > > takes key->sem. key_update() then calls the NULL update method of
+> > > key_type_dead.
+> >
+> > I don't understand this paragrap overall. Needs a rewrite.
+> 
+> Sorry for that. Perhaps this wording would be better:
+> 
+> For dns_resolver, which has no update method, key_update() returns at
+> the check, so doing the check with key->sem held would be enough. A
+> key type that is built as a module and has an update method, like
+> encrypted or trusted, gets past the check. If its module is unloaded
+> after the check and before key_update() takes key->sem, the GC has
+> already moved the key to key_type_dead, and key_update() calls the
+> update method of key_type_dead, which is NULL. So key->sem has to stay
+> held from the check until the update is done.
+> 
+> > >
+> > > Assisted-by: LLM
+> >
+> > Please run checkpatch.pl --strict for the next version.
+> 
+> Thanks, I see that the Assisted-by tag has been removed from the
+> documentation and checkpatch. I will drop it in v2.
 
-I personally would optimize all-in for variance because:
+Yeah, overall I think this is improving and that's why I'm nitpicking
+stuff. What I would wish that if you could hold with any other fixes up
+until we've got the previous fully addressed.
 
-1. It is insignificant drawback for any practical keyring workload
-   if the total time increases slightly.
-2. Latency peaks are a signifiant drawback for any possible latency
-   sensitive workload running in the system.
+I mean submitting a fix trial that is not correct is not a problem
+or wrong for that matter. The problem is that if you put stuff out in
+volumes with patches in various phases, the odds that fix will land
+to the mainline tree rise.
 
-What I'm doing now is to find sweet spot chunk size below 1024 where
-variances reaches its lowest value.
-
-The latency part makes this change more valuable than focusing on
-only on the regression itself.
+This is exactly what I got pissed of last time. Just wanted to this
+clear this one up. Also, you can use that on-hold time to re-check
+your unsubmitted patches one more time i.e., do your job better
+;-) At leas for me that is something that I want to continuously
+improve.
 
 Br, Jarkko
+
