@@ -1,54 +1,61 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793384297;
-	b=Ghvv7Skl5gE9RzPsOrt53mCkh426sNPQ75qP2Qrgzck+f5cO4DHoM2mRWmptvAM6EPnH
-	 AR3gnZYlWLSYjbCZBoyS5lZfxMZR7hvITaA5+J9HeXgtQhseJQXJKfRPyikfHdVxcB8Qs
-	 f56splUjo9UIaeUpLUPAN2j/6GSIZDbImCYlEEcJXqyBarYoDgnbPeWMDJKHHYsVXjIRf
-	 ydO0thvUpClfGZCOjbh1AzqCyCWTSbbr7uDYt7JjY5YmD12MJn1VtN+MooTwKTlYms8o3
-	 JTuB80zsI5EcuGmVr594G4usKsNJf0Tiki5JAgq/HinXxnJL7/8rX6RORuaKNVYtxOg==
+	t=1793390626;
+	b=1dpPyws2rTGae7TWbCtRDv0R8fq+O1YE5i9VSru09QUc6KYqdU1ff2qZCILk3oid+rqa
+	 eaK+CGKFTYx99w5vm6pejCYkkHKCnvyA4BvOPn9x1bMcEFY0egWlcz++3CBHMLR5OM5ru
+	 gJnRr8zQ7gP68bgatYvIN8chOjvIZ81vt1hvrKmbwnH1i4VbfuVfN7HkKo4Vs2HndEbC9
+	 mY22Jn8eYKDETfRaJtyKa5KJjIEmBCDMcuGk0F8NO0qB1bm3UZDjvv+g0q2rNjnEsfNf2
+	 k1y+vX3uM24GcZsscZyVqI/YDk2SCYFa75Y66HQOVp3iDRioHabc0T35TWpDtFfhJOg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793384297;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793390626;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=0oJND6e7p/41BF94Xli4Q3w1gwBLk8Sl1xYufIRgeVw=;
-	b=w8k93rJTguN7gZ1zsI9iN4Sw20uS5kcSZq4GU52j4jomcoNQOWnvpY8Jz+1ECOTbrwwB
-	 m77p6ulPYspongnI7VnllwDNJlwj3cwO8f5//pb6pGk03AOctAxHaGsIFPi17JAbFFr+h
-	 h2etc3Db8TIy9Zt6okJm1gKNd6OVjoEitlftv4N80/+VegX4ZfdT3jt7M5HudXSZ2ls7p
-	 dMRGKbFsrgZhPjD1vqO2dt3TF1FcFyj4A5bAL6dzku3Y4svfbAAest5p72c7QNSYu2hpt
-	 uZmkMFSjlhmxJLaSXgJDTLOTkQyUAQCohYdC2MoX2ZYeFt2u6doUtK9H0Hb5I+yuquA==
+	bh=LMrpGWdovgMZm3Jh+xDymgzpR6x6xtVPMjUx+UZI4Fc=;
+	b=g8/8Kn6sB4b0MjyR19iFQv63A4TzvfwV9tKBVbajXd4kHs+DtAU8qGYf+QxRRGI+3rdC
+	 c0SZr8qCXSc1ggWBTMoe9Cgouz+xiUJgUMKlC24rzyATdWRYZ4KVuglrMpFJa2J0WxAsv
+	 F2gPG2niG0Xu+vir72JNcSQxw2dreJ+OY42Z2kCTDTRaqmNr5UK1xcwaarvTgHIFcjI3K
+	 Dptw5HHlK0ohTRfJ3Gx/aH6N6W+RoBcbCeJDxpWMNLyQYq22dJuyXX0Z+dBc7Efxl4las
+	 ebugEqU0AXFZK6aqndqjK9fNJwle9avLuq6lrha17SL5O7RpZ6XAsM2UW6tAbkf0bJQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ZM7bRbW1;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f1TKrk6A;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E4150606A31C;
-	Fri, 30 Oct 2026 18:18:16 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 58022606A31A;
+	Fri, 30 Oct 2026 20:03:46 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ZM7bRbW1
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DBF571F000C1;
-	Fri, 30 Oct 2026 18:18:15 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f1TKrk6A
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 6DB5C1F000C1;
+	Fri, 30 Oct 2026 20:03:45 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793384296;
-	bh=0oJND6e7p/41BF94Xli4Q3w1gwBLk8Sl1xYufIRgeVw=;
+	s=k20260515; t=1793390626;
+	bh=LMrpGWdovgMZm3Jh+xDymgzpR6x6xtVPMjUx+UZI4Fc=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=ZM7bRbW1rIAhx89d7oAG7MOv2oBHD2jsurHIdrLr7DkrPtO/S2JU/nK6I1aITh1YG
-	 dAtqFtAD5tMivuMd+5kG6hkv9usgsOqHijCTpp+LX/2OsiF+F4iVjE/ztA9eScl/cs
-	 AO5Emb1HOxQj1V/0XIBZopCIIW+U26yDjjtSbPeuj40nOPF0rlJ+Lg16HYDPD7eMhK
-	 fMQkuXxH6CcstR5kklPxzp0N/d/MVRaIv52DaNwkXFDSNP+kqfVncFFXYGD+Pi7eYL
-	 0JctbfttZ9ainuCvEZe8StrIyKmgB4wPXxfYN9ek09+RqPyEP3vVqIOq9Vxy/LEv/F
-	 /6JvhEpTAO9CQ==
-Date: Fri, 30 Oct 2026 20:18:12 +0200
+	b=f1TKrk6Aby/BGX2H16b9sfxyMcoJQgwIZ2DVnXbv1K2wZCv27aNccT8u41H8gMORa
+	 F8GU64l5tiid198wyLoIH78SlRdjy9ONQ/Q8X/OFNdjfUfOo/FCBm2aA0g31uCg6OZ
+	 TIm0ff0lXKR513MM9Vi4myfqAFZThFLTniJoRVPHWI6gm4OuE9MLOwvJndQjeUGjxp
+	 e328H9QD3LyQHyISQJVMTBRKJKgE6NsbPEqEcVnC4obxr1Sjwn/EmLUi/yibAG2XsN
+	 MXLpgGICEszd00QqpxOJ/JAKoSgdBDapA6JAFISN03MCEIcXXVbSpeyEUYXubzk1Wi
+	 BAhUiKcAWabBw==
+Date: Fri, 30 Oct 2026 22:03:42 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Anvik Loitongbam <permissiontogallop@gmail.com>
-Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-Subject: Re: [PATCH] KEYS: request_key: enforce keyring restrictions on
- constructed keys
-Message-ID: <auTfZL8RjQqT8uiW@kernel.org>
-References: <20261030173930.40948-1-permissiontogallop@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers@kernel.org>, linux-integrity@vger.kernel.org,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Roberto Sassu <roberto.sassu@huawei.com>,
+	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+	Eric Snowberg <eric.snowberg@oracle.com>,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>,
+	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>
+Subject: Re: [PATCH v6] KEYS: key_garbage_collector(): process in chunks
+Message-ID: <auT4HmJImLQHmsTk@kernel.org>
+References: <20261030160924.2919363-1-jarkko@kernel.org>
+ <auTKovajh5MQlbre@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -60,32 +67,24 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261030173930.40948-1-permissiontogallop@gmail.com>
+In-Reply-To: <auTKovajh5MQlbre@kernel.org>
 
-On Fri, Oct 30, 2026 at 11:09:30PM +0530, Anvik Loitongbam wrote:
-> construct_alloc_key() pre-links a newly allocated key into the destination
-> keyring with __key_link(), bypassing __key_link_check_restriction(). If
-> the request-key helper instantiates the key with ringid 0 (or any keyring
-> other than the restricted destination), the key becomes positive while the
-> provisional link in a restricted keyring remains, so the restriction never
-> sees the payload, potentially resulting in a policy violation, where a
-> user with write access can inject keys which are restricted on the restricted
-> keyring.
-
-What does "key becoming positive" mean here broken down?
-
-Also I have really hard time on reading the second paragrah as it is,
-let me count, over five lines long. I honestly cannot say that I
-understood what I read. I tried it three times.
-
-If you understand your fix, you should be able to nail it.
-
+On Fri, Oct 30, 2026 at 06:49:45PM +0200, Jarkko Sakkinen wrote:
+> Interesting :-) It has been idential other than block size change
+> for v4, v5 and v6 and updating benchmark result but this is the
+> first version with Sashiko feedback.
 > 
-> Restricted destinations lose the provisional-link deduplication while the
-> key is being constructed. Callers that pass
-> KEY_ALLOC_BYPASS_RESTRICTION keep the existing provisional-link behavior.
+> Looking into it...
 
-The second paragraph should be reformatted and there is no rationale
-or descriptio for the code change.
+Couple of things:
+
+1. Sashiko reported issue, which would result key_gc_schedule_links()
+   call in the place of key_gc_schedule_work().
+2. I think it would be best if flags were set in the expired case
+   with a single atomic operation, which does not realize now when
+   key_gc_schedule_links()->key_gc_schedule_work() call path is
+   used.
+
+I'll address the both issues.
 
 Br, Jarkko
