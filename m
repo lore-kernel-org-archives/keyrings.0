@@ -1,60 +1,55 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793440166;
-	b=LQcPLFS8drX8jZrU7QzcIlyUSkKLQPEmaZ/5NKk0+oMIvyhPBB04H6Way1i+3BwNlcxZ
-	 v+U3nbBHNfDdUZ67BxDAMf6MCBX8nAhsd1jvVaYRzHqEgMtM9D1ps0tq/M6Gu9cw7V8rL
-	 3Bbf87MOBmwcotCiuS8azIzqFjvwHS0VaIEl3UQXKl2T3q4y1t885EpaEy89tMD0P5pqf
-	 s7iVs+iZhxReWR0bGDd3BKPKE/CC17GfMnwFd8f3VEp+uu+Nbz2lyWgC5XQkeBUy5dmMj
-	 GvQspWY+6PVb5cuD0lpAfBTFUJzWxM/VYDg/iiWHq47Z/XgUGvbXcBKNsKeMgAbwq2A==
+	t=1793440234;
+	b=EMcUrVTysIkLjZ5sBeg6mfEbTe1ihrp1qUD7/HY2SpLB7zMbzbsIWkOHY7XcVLrjhcb/
+	 5CntEw3qr2RbMnWHVJTraC+fLyIx/VNMYfk3xC0BhNczEENwvj6tr7tWy49v1mUSXKSFn
+	 P9Ev5b4fL9mn53dy9gaJPh9bMgP73FXg7++R2kER77qATjDaM350L0fNSPIwbYpxkjSQz
+	 1Z7D6BDPFY9hz5sR0fW9C9SKN0gTOIdgmF9Tu1mmQs+CcuIFdAcfqLtdto5n4AcWqtzq9
+	 2tj0r7lwOKtUdiJH+7DXmFdhEDrDOjE6yb7A9DGMq0XdTzJIZHQHcUggEj46pXzz7Bg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793440166;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793440234;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=rZ1QUgF5Wn869NtHgEzrQvpkmj17z/XZt5x5Ck7PREo=;
-	b=sJmEHARAoqD5t7WOrp75NbnTnzXSEq0Ra8VRFGm9FP1ARg4jrEpQbj+m/dmQazEhjpkU
-	 U5EVF1hqa8K0Z02XUCMy3HiV5ZBpo/BswlZRLwJsvw1YybWfcyMcGPfBCjCwY6Q0LYpuo
-	 hh4TdAMsHKZnKHW/g2rvxTostbvo2vmwX+xN2Rg7HNsNrd7YvNbHLWpDwguvvPGDt6wB9
-	 nF55ouZKa1CdtEn9ZF5pkSyG3XYiVTEL7UMMQBCuSvs5jD/BcWZvIS9XgqPm8F/fJdPYR
-	 4SLv9KrYqaCZ95l+2U4/o5WVW22RKFKJ9TLBLhN/Pc2ecQWPkaVv7amNdO4audLJoSw==
+	bh=km7+5bxn6+/GEe9g7YXFirTDc3Wlqa6U9gbRkERxxbQ=;
+	b=IKC14bpQ5CY/Sq5vFBtcUPeUCL2Ml/K/gcmZtyYc/I4yr9EmGiJYV3xvwCbbrSqrthFu
+	 yeZP5pH0JM/JZGP3wcVLNjQM2ck0YEZiOgYHlvEadJ9VUClprO8KQXY4QjgDgVGU9H6WH
+	 QoBLz1TghcXGgb37x1RNJmtapVuUq1aEbNFWwJ5yA9a2cUICKjHfzN+PW/GBxgQhyM+go
+	 PhKZYnaPb/RRnsK47sh6FSbA5uZzqSZgiGiVIv3wVs/WBiZ4sE9aA+ka4ymSQ0Y2rBMkp
+	 fTfXWifO2uK8lWuYnjC9DhdSIImFLIqaX8p6FUD5cKKwr64ec+GWr0QcY8hbfXpCDtw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=VySt+kOr;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EQY6CxfR;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 805C7606A324;
-	Sat, 31 Oct 2026 09:49:26 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 207C1606A31F;
+	Sat, 31 Oct 2026 09:50:34 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=VySt+kOr
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9F9AC1F00919;
-	Sat, 31 Oct 2026 09:49:25 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EQY6CxfR
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 72E041F0093A;
+	Sat, 31 Oct 2026 09:50:33 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793440166;
-	bh=rZ1QUgF5Wn869NtHgEzrQvpkmj17z/XZt5x5Ck7PREo=;
+	s=k20260515; t=1793440234;
+	bh=km7+5bxn6+/GEe9g7YXFirTDc3Wlqa6U9gbRkERxxbQ=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=VySt+kOrreYlFHN5gKrUaKjEV9+gQgq3VUEygWX1Og1b8x1sKXlOwxlNf2AJAUlW8
-	 wMX4iPvq1tWcgGzogLN1/45E40E29bG4KDyFu6dNlO7gAAOYmlYkXZz6wMltQzeFH8
-	 +nqTZlPASNU2WDljK59I2f3FKRAogs6ZdF3tk0XZ2eGI0Lu1Uc17qVtInOPWAS7eZD
-	 wabTqtoKrFXm1ZnvycRozqpH6H4/puTBOIdEFZMPO5lm/4UhjGF/YEo8Cca9fKvLOE
-	 BBdxCPqZEPn+Gbz8hsDMr9JLJ8YxDsHXrtnztEA9B8Tzws/5ORwobTbzKRKoWhQ7PK
-	 ZEboe98oLn5Mg==
-Date: Sat, 31 Oct 2026 11:49:22 +0200
+	b=EQY6CxfRlDxXObDjvGWVxJ4p2ErigmZMcSLrrUq/YxRq4fOP3n5fNlclzftM+gNQ5
+	 v/eHLmhWAlk29TsnQ6fL5gG7nBeGIrQrXJ6Ny7M4G3ik3QY8JzrPRM6yjAjRlTicYN
+	 P8h5Fnn4pPK2XZGKQeZSbAab6K0XnYUzQeh/ums/8takpqFjZ0kjdPIlPetgFsak/w
+	 ai9q8N2HZ9P3NqOgBMRY7mqf8yrSXf5YI8BHLudmeNJbVgthZzA3e0YDs3e+1MPZzl
+	 DjoFYj9+hd0xD4PqPh5ZSqzqVCo+dQJ71LasUHKx8J0m67GQLNkKcDdsZ7z7j6DyVP
+	 fCE4hVa9ZxOlw==
+Date: Sat, 31 Oct 2026 11:50:30 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Biggers <ebiggers@kernel.org>, linux-integrity@vger.kernel.org,
-	stable@vger.kernel.org,
-	Anvik Loitongbam <permissiontogallop@gmail.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Mimi Zohar <zohar@linux.vnet.ibm.com>,
-	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KEYS: Reject restricted dest_keyring in
- construct_alloc_key()
-Message-ID: <auW5oonD4v63Cog6@kernel.org>
-References: <20261031092820.497238-1-jarkko@kernel.org>
+To: Cen Zhang <zzzccc427@gmail.com>
+Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+	serge@hallyn.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	baijiaju1990@gmail.com, jjzuming@gmail.com
+Subject: Re: [PATCH v3] keys: Protect the update method check against type
+ removal
+Message-ID: <auW55lFj1MZZcWIo@kernel.org>
+References: <pm-keys-update-type-removal-20261029-v8-a0dbc48c588bf2b6a278@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -66,22 +61,28 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261031092820.497238-1-jarkko@kernel.org>
+In-Reply-To: <pm-keys-update-type-removal-20261029-v8-a0dbc48c588bf2b6a278@gmail.com>
 
-On Sat, Oct 31, 2026 at 11:28:18AM +0200, Jarkko Sakkinen wrote:
-> construct_alloc_key() links keys into dest_keyring without checking
-> restrict_link, allowing keys whose key->state reaches KEY_IS_POSITIVE to
-> remain in a restricted keyring when instantiated without relinking into
-> dest_keyring. Reject restricted destination keyrings with -EPERM after
-> __key_link_lock() unless KEY_ALLOC_BYPASS_RESTRICTION is set.
+On Sat, Oct 31, 2026 at 05:26:36PM +0800, Cen Zhang wrote:
+> +out_free_preparse:
+>  	if (key->type->preparse)
+>  		key->type->free_preparse(&prep);
+> +
+> +out:
+> +	up_write(&key->sem);
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL(key_update);
 > 
-> Cc: stable@vger.kernel.org
-> Fixes: 5ac7eace2d00 ("KEYS: Add a facility to restrict new links into a keyring")
-> Reported-by: Anvik Loitongbam <permissiontogallop@gmail.com>
-> Closes: https://lore.kernel.org/keyrings/20261030173930.40948-1-permissiontogallop@gmail.com/
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+> base-commit: 9a2a4c51dccc3168c3dc949fcbaa360a478fa228
+> -- 
+> 2.43.0
+> 
 
-I don't understand why this came out twice. I must have forgot to add
---dry-run when I trialed it. Sorry about that; was unintended.
+Thanks for taking the trouble addressing this part.
+
+I'll apply it soon'ish.
+
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
 Br, Jarkko
