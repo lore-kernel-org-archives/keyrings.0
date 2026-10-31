@@ -1,96 +1,62 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.215.169
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793438804;
-	b=LDxuOyxRzK910AneEUfEMjL5Ks/i+Cy5UcMd4bjdJi6CfcXr69CZSQ/gbdPmJ+N8W7Kp
-	 nmNvsajBFuA46s5tHi/LqWTe9ku8R6G8c2UZ7jQh0kOWFFTTO7b9PEnITE4u5pR49bk9t
-	 b3SXyH3JK9v9Xn72fzpNkXVj8/7DyrkPF2dIz4I3uJpY8MYZw+zqP6WelkTLMPUl5b19b
-	 OVyZPIrKl8ue4TzyrOvSzG20sQnXCHhh1SZE7NgHI6sQt+6os9Ni1O4kVx3Q26A5c8v9F
-	 HnGVXsIXnLWvJP6M4DMjos1iyyEs/6kw81+M5aaSzgGWxWXPcTaMhfNKkM6FMFutZVQ==
+	t=1793438908;
+	b=VGJybkNzerQ9kK/QGOxxeWyw4aeMObVjJIYmuxklfkMUsnL9oXiwW8zwcqXnybmTGt4M
+	 DT3xwWE3Idyv8d1et4u1jpzwSv5kOlRv9WEiINksol/FFBkJThqhowwXrNKjNC8cV66vk
+	 +RudNvKUw+wwt/62zOpweqsTtQgoHSo7fKhLaeWXI2/muHsXGdWT8GcKL7uvr+//+eDZQ
+	 RimcEpls3zkc4oLR2BZ8uQH0hUVCTKBxmYhh0OMbZqmc2o4EMrQNAiuJuWkuFJsi/Dk1g
+	 gCc5tHolP0oCXXyMDP0txCT/4UuQarFacTo0TPa0CzM1yL/sOo/bVARFEBHPjgz7J7g==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793438804;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Gm-Message-State:X-Gm-Gg:X-Received:Received:From:To:Cc:Subject:
-	 Date:Message-Id:X-Mailer:MIME-Version:Content-Transfer-Encoding;
-	bh=lvUARKSFlBFo1wd0FtQ9SAcYovSttrZG7U4+Cm7iAqg=;
-	b=qppHUpqfljQXf+sw+WaAT7ZbRlH2Uo+V+53j8lWOcKxJNgjjwPyKREOjwcymiAyJfvgn
-	 DZaevTaw+uSyd6RkjQ4XLQzeFyXlmw6v/0TTD+DVO3j3Qd/UrBVMH/YSvTuB7Wzj0OJJo
-	 vO36P33xEX2rBBg2xGmMwa9cEkhk0Pat/FandEKltRbBZHZDc9jsNdXxYhzQjJoOc3dtq
-	 tESBstCONdOngJFeE5CRk2I9qAz2dSnm9KUMO10VeoqD5TSAyahyYaGdygoU4CY6w24ld
-	 O0kMcBPYA0cgaBdL3cntM/h3smzNfLYapkngYaQdwEM27QgnKZSr1RFS3fX+RLCZRiw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793438908;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=hjlx15+/WpY84ogewYYrVLgz+B1Dn4l9XY08MaKTAGg=;
+	b=2st52tQcl/9HB5oeV2BY4wxxBKJu6gGw4CDYaGpUElKVmzpO0mgH4ZZfJVvqWh6PcGBb
+	 8IgsO3AiDYOQw58YqY1cMRn6mCDYgS6jgidqgAAQJheLh35q0GwzeQxJG+aTeBCzTqUVE
+	 hjewxLN3SCqKvTWxt8jnqTi4jJXn+kasP2zI/CxREfITLnCnbLZa8nNWPht+UWzTcBcsc
+	 9/hw9HlQa7bXU0A0k2rlD/jpSi2oiSTe24LEu+TVcmBJIgScbCsHGVAlbX3NPcr9buhNo
+	 xiKZTDDAzPFMywZ1oa2sVTbnnBbC21z+9nzGvebZT7bGtzXLb6dzAzUCip4RxDGrnmQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gmail.com;
-	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=c7UqJmIB;
-	arc=none smtp.remote-ip=209.85.215.169
-Received: from mail-pg1-f169.google.com (mail-pg1-f169.google.com [209.85.215.169])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f0zzDpMu;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1B62B606A322
-	for <keyrings@vger.kernel.org>; Sat, 31 Oct 2026 09:26:43 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 1B62B606A322
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id EF63E606A31A;
+	Sat, 31 Oct 2026 09:28:27 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=c7UqJmIB
-Received: by mail-pg1-f169.google.com with SMTP id 41be03b00d2f7-cd6acc50b8dso554555a12.3
-        for <keyrings@vger.kernel.org>; Sat, 31 Oct 2026 02:26:43 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20260707; t=1793438803; x=1794043603; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=lvUARKSFlBFo1wd0FtQ9SAcYovSttrZG7U4+Cm7iAqg=;
-        b=c7UqJmIB3XfO5cXQf7NNZEei/zDfkbCL7tJu8wVEmOmKHpB3zzv2a3oVUG3wOOqbMo
-         mlWMk5eu3YBFr3n5o3iD7EUzZ8WPZnIMUIv7MfYgQCw1vMSZ3+7OiAQm5xcxL7rBEfns
-         1fPR0hpQ4aMt4gcx3QQi7tZaCQRbgVKg6r5cZtrSDfZpsDaKhWUvaFMlWCUedG/nHmlO
-         o2h/P9yaqByNTXYRLW1a906oXI1DDR1m2EY6hzubeTwkH79Mc1WKih1L1BBIhwhrj7hb
-         pgOSJfDYT8snbBJyidxMDni17AIczscQd3OOc8/E3aj4IiUlDXcC1fAjfLO5O5a21ZVJ
-         qfkw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1793438803; x=1794043603;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=lvUARKSFlBFo1wd0FtQ9SAcYovSttrZG7U4+Cm7iAqg=;
-        b=pqZsAf8UC6EB1IExMKZ1vUXsTjE+OfMmVvLgzwt4+C4JpV+Kk85F0fJDO4x9WhAJug
-         LeHjA9dDui+Df7wIWy+6oGsssNRkmLsP8bBKA+yO6cpY7vU1MUIIGkSK2oj/Yikkyo3V
-         1ElzUFovFcIHvr8d4m8Omv3Xe0RqXDDizryuTnO/C5uT5CjOIDux5BSNIjhmwZ6twzFL
-         PCLwFfoMb3FLXZDYcu3PIKnu1o6hhs2ZdeEehMuib7cajrjiTDp/hJ7QoVCN48ciYVjF
-         VJTQ74scHatcubnfxBAOIYnNJhrWXj190aZcmcghKmtJ0WSrtJ2qqeFOKVbWjJwemlz/
-         gMRQ==
-X-Gm-Message-State: AFq9FYIMwRQxD0N6GJpsgRoPVnFF8xUTUyYrxOL55ETl3tRGgW5Hj7ZT
-	xUDx8sWuIQDpWpMk6OT71Wsja6glSkSa+03TaRdL9aXcjpQaW9PidJv3
-X-Gm-Gg: AYBFou1AV/zp8KJ+SVKAH5waJiNNBrAZrDFoHNATNgz+TJCLZxWJ7S+4XjTo5TAo0zX
-	Emz+Y+FE3d1zF4PzBvtV3z8wiznxgKjnrtKvk/YmZQ571u/971w8GiUw7DpyZO/fdoJs+dGXeOW
-	nEPv6mQR14WOirbOTzJCZPcrMFFvaIEtE5AhASdWp935ED5kKFid/QzTEhuRhBVC9XbUt4G6dEF
-	sDPdrmJRuep2ktppSfmt6T2sdSg2DXlS52OHb3PtNz3yp0NQWk6PseygJvmuxZT2bkg3CGkeoc9
-	Cel2xF8oD6H0zIa3X1oHOLz+xh+eQTKQryK4C9nxJxkoEfVCdJvUWuihn8oBqyYMg59cMqeqf3y
-	PcP1KfitSSleI/jzzNB+LYNgaLQAssnIw17Uk2sRqpiEKasf86bUGL1ViyBx5ebT/Z0dniVHx03
-	y4KO28uUoTSzFo5HRlAl1gw3l5Kb/OwP13DRzCJ0iUlYSbDxsvVIy/DakfglfJ4/YCffhrGbFM5
-	9ltz1aPVOBpaBBZhzKPWCKlNHuXPzIvTt8IRpIKWV3SEEr8M2J2yb2S/PbydTtlBt6be0+BAu4S
-	dzGe4DL3KMCDVF/WbrPTX7od
-X-Received: by 2002:a17:90b:2ccf:b0:3a4:6e84:e7d8 with SMTP id 98e67ed59e1d1-3ae897a8b33mr4034663a91.54.1793438803364;
-        Sat, 31 Oct 2026 02:26:43 -0700 (PDT)
-Received: from localhost ([111.228.63.84])
-        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3ae87f5dcc3sm3622395a91.3.2026.10.31.02.26.39
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sat, 31 Oct 2026 02:26:43 -0700 (PDT)
-From: Cen Zhang <zzzccc427@gmail.com>
-To: dhowells@redhat.com,
-	jarkko@kernel.org,
-	paul@paul-moore.com,
-	jmorris@namei.org,
-	serge@hallyn.com
-Cc: keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	baijiaju1990@gmail.com,
-	jjzuming@gmail.com,
-	zzzccc427@gmail.com
-Subject: [PATCH v3] keys: Protect the update method check against type removal
-Date: Sat, 31 Oct 2026 17:26:36 +0800
-Message-Id: <pm-keys-update-type-removal-20261029-v8-a0dbc48c588bf2b6a278@gmail.com>
-X-Mailer: git-send-email 2.34.1
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f0zzDpMu
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 034991F00919;
+	Sat, 31 Oct 2026 09:28:26 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1793438907;
+	bh=hjlx15+/WpY84ogewYYrVLgz+B1Dn4l9XY08MaKTAGg=;
+	h=From:To:Cc:Subject:Date;
+	b=f0zzDpMuxAnCwW2OVLdWIJw9g2ks9oB3Pl/9WZEuKHCaH+6tTHttBtgZSzXTYHatA
+	 zZ6cPb9wdgNCZwsOPCMtJEfFhGPXMIzPXi0OA3IpOVOEXdMyF4bEYKT6F6zir3359x
+	 Rw0bn7z/L/JUUYJXXQW5CKLkWqhc6/NXvWIV0lWjBeIOS8nfaU/2Ui3e+6HPxmrhCK
+	 AfWOhJ6tgAc8brtbRWSFM7LT0gmiWaYNhYsix5t9NV7e3Z8ZN7IXZY1lqRrG1sZQBJ
+	 ji/BWP2SFFucqj9fihHjOSAImBy/muE/HJ9uQ7t828M/4zEyiRto321EhJGuR1Dhop
+	 EWvnVob2tS+qg==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers@kernel.org>,
+	linux-integrity@vger.kernel.org,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	stable@vger.kernel.org,
+	Anvik Loitongbam <permissiontogallop@gmail.com>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Mimi Zohar <zohar@linux.vnet.ibm.com>,
+	keyrings@vger.kernel.org (open list:KEYS/KEYRINGS),
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
+	linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] KEYS: Reject restricted dest_keyring in construct_alloc_key()
+Date: Sat, 31 Oct 2026 11:28:18 +0200
+Message-ID: <20261031092820.497238-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -102,119 +68,37 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-key_update() reads key->type->update, ->def_datalen and ->preparse
-before it takes key->sem. A reference on the key does not pin the
-module that provides its type, so KEYCTL_UPDATE can race with the
-unloading of that module, for example dns_resolver:
+construct_alloc_key() links keys into dest_keyring without checking
+restrict_link, allowing keys whose key->state reaches KEY_IS_POSITIVE to
+remain in a restricted keyring when instantiated without relinking into
+dest_keyring. Reject restricted destination keyrings with -EPERM after
+__key_link_lock() unless KEY_ALLOC_BYPASS_RESTRICTION is set.
 
-  KEYCTL_UPDATE task                  Module unload and key GC
-  ------------------                  ------------------------
-  keyctl_update_key()
-    key_update()
-      key_permission()
-      load key->type
-                                      exit_dns_resolver()
-                                        unregister_key_type()
-                                          GC: down_write(&key->sem)
-                                          GC: retype to key_type_dead
-                                          GC: up_write(&key->sem)
-                                        unregister_key_type() returns
-                                      free_module()
-      read saved type's update member
-
-The final access reads freed module memory. With the updating task
-held after the key->type load, it faults:
-
-  BUG: unable to handle page fault for address: fffffbfff804107f
-  #PF: supervisor read access in kernel mode
-  RIP: 0010:key_update+0x12d/0x550
-  Call Trace:
-   keyctl_update_key+0x6b/0x110
-   __do_sys_keyctl+0x21d/0x4f0
-
-This is the same problem that commit 925c84e3cc21 ("keys: Protect the
-read method check against type removal") fixed for KEYCTL_READ.
-
-For dns_resolver, which has no update method, key_update() returns at
-the check, so doing the check with key->sem held would be enough. A
-key type that is built as a module and has an update method, like
-encrypted or trusted, gets past the check. If its module is unloaded
-after the check and before key_update() takes key->sem, the GC has
-already moved the key to key_type_dead, and key_update() calls the
-update method of key_type_dead, which is NULL. So key->sem has to stay
-held from the check until the update is done.
-
-Take key->sem before the first access to key->type and hold it until
-the preparsed payload has been freed. Once a key exists, only the GC
-changes key->type, and it does so with key->sem held for writing.
-
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Cen Zhang <zzzccc427@gmail.com>
+Cc: stable@vger.kernel.org
+Fixes: 5ac7eace2d00 ("KEYS: Add a facility to restrict new links into a keyring")
+Reported-by: Anvik Loitongbam <permissiontogallop@gmail.com>
+Closes: https://lore.kernel.org/keyrings/20261030173930.40948-1-permissiontogallop@gmail.com/
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
-Changes in v3:
-- Rename the error label to out_free_preparse and add an empty line before
-  the out label.
+ security/keys/request_key.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Changes in v2:
-- Refine the commit message.
-- Remove the code comment in key_update().
-- Drop the Assisted-by tag.
-
-Link to v1: https://lore.kernel.org/r/pm-keys-update-type-removal-20261029-v6-3d92b2f9693854230a02@gmail.com
-Link to v2: https://lore.kernel.org/r/pm-keys-update-type-removal-20261029-v7-e79d113bcff91e140d04@gmail.com
-
- security/keys/key.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/security/keys/key.c b/security/keys/key.c
-index e88548f1a704..3f1f0fc13710 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -1101,9 +1101,12 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
- 	if (ret < 0)
- 		return ret;
- 
-+	down_write(&key->sem);
-+
- 	/* attempt to update it if supported */
-+	ret = -EOPNOTSUPP;
- 	if (!key->type->update)
--		return -EOPNOTSUPP;
-+		goto out;
- 
- 	memset(&prep, 0, sizeof(prep));
- 	prep.data = payload;
-@@ -1113,11 +1116,9 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
- 	if (key->type->preparse) {
- 		ret = key->type->preparse(&prep);
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 22cd66a44da5..d4611dd7cb49 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -404,6 +404,11 @@ static int construct_alloc_key(struct keyring_search_context *ctx,
+ 		ret = __key_link_lock(dest_keyring, &key->index_key);
  		if (ret < 0)
--			goto error;
-+			goto out_free_preparse;
- 	}
- 
--	down_write(&key->sem);
--
- 	ret = key->type->update(key, &prep);
- 	if (ret == 0) {
- 		/* Updating a negative key positively instantiates it */
-@@ -1125,11 +1126,12 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
- 		notify_key(key, NOTIFY_KEY_UPDATED, 0);
- 	}
- 
--	up_write(&key->sem);
--
--error:
-+out_free_preparse:
- 	if (key->type->preparse)
- 		key->type->free_preparse(&prep);
+ 			goto link_lock_failed;
 +
-+out:
-+	up_write(&key->sem);
- 	return ret;
- }
- EXPORT_SYMBOL(key_update);
++		if (dest_keyring->restrict_link && !(flags & KEY_ALLOC_BYPASS_RESTRICTION)) {
++			ret = -EPERM;
++			goto link_alloc_failed_unlocked;
++		}
+ 	}
 
-base-commit: 9a2a4c51dccc3168c3dc949fcbaa360a478fa228
--- 
-2.43.0
+ 	/*
+--
+2.47.3
 
