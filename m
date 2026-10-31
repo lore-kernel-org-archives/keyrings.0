@@ -1,61 +1,56 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793395264;
-	b=VvAyZofesoiBpZtN71iLQo1DESNKu+qvz41u5adWAUPVzgJiT0PWpqpNZ0OyNhh6zRWk
-	 s0zZDghfxkvo2Y3vhI/oL+kf2iJ34jJrJf5luXIAR2AYKTARC4LtZS6J5be3OjSI73AvT
-	 Hb7p+pWdFbfJFvkegmFFROxuBd3i70exDyVkPhyJ/qpLWqcNq5APTjKmnhBOEoMowR24U
-	 z9wTsLgXIENLVOUY70TEuxjoIdJ+W7FM8gJtNnd+QF5UxD5tbmRK6QXkGms8jRR9sWCmX
-	 h609vQb4YGgS10GByesKL6Lr+bnqnkMMzqERbo8lShPB7SCEr8Os59USyfzXhgZcYBg==
+	t=1793415669;
+	b=nqjezm6rtLFLcQ4i+Ijj35ohSai/5F0RafFknRvZMgoe/bPW+nmlkW6xQduXYNshdLoW
+	 3K5C0boOTJKZq5uIfPnq1JhEEDRP91fQfBUWfz7Tjkr6YDm4USbZ5mtfqduBrQ32953eN
+	 43O4HyU0IjzexKcSJaxYUCIftSmFEZOXb4G3jeshRCVArkUZjJNimK4ZTLqkhXFvN3zfo
+	 8Xa/Q1izhy0EEQ3CaAerDD9lnnvk1iZmfZRouHRjO9ZyyUYb/crx4GQFcqlDBa1/hTaUD
+	 GBZqHVKtp1z7THnb2bozgErdVJdyHMGyCRjIu4UBObbfNglWJOhzUn/oIfUr25629gQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793395264;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793415669;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=mhaMz0y2lVo6uQVjZqe2v/nDHi9BfqrR/10spk7R40U=;
-	b=UAuy1JUqnKaIppL/Ve6tTHhOraNpPu6QQ9F+7zihHzx+0KKtSCfGbTkQ12RENw9MSr42
-	 H+kdtEUnqZrxZTWbDpiw6rj4F0Xw3Xzq/gFQm8hcaFnnUp4QLu4rztDORLAj3LaBY+x5n
-	 fl01WuKZKc/6560ww+L66tZc5Co2twWeCTjFdl/ldeHTLMb89IDdg0dRcTRHDCtseH/E7
-	 Kb5N55NgtltluFBg2/nAb+Xfa6DmJBCPDw1ZjnMgAoPysXUZABDbnMLZTvIrH9VbC3UKP
-	 +nZ4wgXEXAxAcaTcE2wtGge40Hl5UEJwVOyHveuErH/fgKw5LWaKYne/6QVMZ92LAbQ==
+	bh=BngSBXTp+deGkFdRSOmECpX1qa4udSKk9eVqZM6ckQs=;
+	b=YSe2HFYYDU0qva1DgzWG2f2n4mytpx1Pn9jHjdsXrvvWnUdogd22BNaFy5vmHEmAxUSC
+	 2elthGW2RPJeYkXuM+iW00Eltu3B29AnmdPafixIaD51pM7CAQuWK9uAHZz2DCQ2wK7qH
+	 hWrokd/aYuTqpLiyFM7eMFvtz39p9pHtI9Fk8BQAyTIdi+VAHvH2kkTQJrwnY5tWXqSVj
+	 OibyvbGofX2+i5xbtMynQfmxFw6ci4S1qSIkx7Ac7gx5zB0L/29LSZ1durE7Uatyq6blo
+	 TKFGPmVJgDXeK9JuOrbvNsrwH4oNv21J5SJUAh1SjUKxwKbDd36SelDntatglUcIoyQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AMhUMRo1;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=K5tBDEg3;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 4094E606A31C;
-	Fri, 30 Oct 2026 21:21:03 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 65E29606A31A;
+	Sat, 31 Oct 2026 03:01:09 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AMhUMRo1
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 39D231F000C1;
-	Fri, 30 Oct 2026 21:21:03 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=K5tBDEg3
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 6155B1F000C1;
+	Sat, 31 Oct 2026 03:01:08 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793395263;
-	bh=mhaMz0y2lVo6uQVjZqe2v/nDHi9BfqrR/10spk7R40U=;
+	s=k20260515; t=1793415669;
+	bh=BngSBXTp+deGkFdRSOmECpX1qa4udSKk9eVqZM6ckQs=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=AMhUMRo1ieVn+nWKa1WA2rjOXwwfisGTA9Q+r8wiUTAdE10Z+0KukKypKYiPrejlD
-	 A2NuHcIPRpsAhqtwaasnBsZuoKsC7e2ivmrEWy9TibT5kl1Oivp2o2HkKG1eeBj0hF
-	 GmYyRzKpshRBNnzHlGGMrdP5YYYXTcMVWqEpO+hVh5F5OPEpKmXMVQ2DQzpeC2gY8R
-	 8oCnQUdBNJLzpP8lIj/ZwN6IdskHIiImUc3lkJG0S/wRgzzN8r7pcVM9kEuUqP7WAc
-	 O6TiUfYB36IUOGJioQ8FydCO9zatAcuVl+VORxowbIU98UR/JZVHgLClm25qf84rYx
-	 lc1EekkbVUlMA==
-Date: Fri, 30 Oct 2026 23:21:00 +0200
+	b=K5tBDEg3PiRlab478XW6PS7L4wUZFmiKjSTa5yM23K+XR5iNzDS+zBV06lnLbqf13
+	 /zb5sNkIHZNfa+A1k0HIT7zUjUQyNYOgwmILdmgi2WdCepEhtM42cFKKwFcCYiDRdx
+	 ZfI8NzwC11B98IA4FyOGG9xNK3fCIWXABm/XLw9QydHm1VTYfy8kjvHnpr2j32ymMt
+	 6Hxhf20TsSWLlOD+MfUHJsW+ECBxBtcGz4UxKJ0JN/r23xwEnSikQYeroaJ0JtDYMz
+	 dLdO38ky/dpx3/4bHDxzQwpDfU5uRZ8Jt9KDHEY4DG6t6r657KhyyqUjy6WEQ2Vxlm
+	 rtmRfmMAHcgkQ==
+Date: Sat, 31 Oct 2026 05:01:04 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Biggers <ebiggers@kernel.org>, linux-integrity@vger.kernel.org,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	syzbot+c15de43f1e7fffbb7b9b@syzkaller.appspotmail.com,
-	Roberto Sassu <roberto.sassu@huawei.com>,
-	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-	Eric Snowberg <eric.snowberg@oracle.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>
-Subject: Re: [PATCH v8] KEYS: key_garbage_collector(): process in chunks
-Message-ID: <auUKPAAbye64m-mG@kernel.org>
-References: <20261030205412.3138975-1-jarkko@kernel.org>
+To: Matthew Garrett <matthewg@nvidia.com>
+Cc: mjg59@srcf.ucam.org, keyrings@vger.kernel.org,
+	James.Bottomley@hansenpartnership.com,
+	linux-integrity@vger.kernel.org, rafael@kernel.org,
+	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Make hibernation work with lockdown
+Message-ID: <auVZ8AvMXqqKXl7S@kernel.org>
+References: <20261008132532.1155166-1-matthewg@nvidia.com>
+ <att9OPPi0sPqt_CW@kernel.org>
+ <atux0EFb_euN6pM3@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,65 +62,34 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261030205412.3138975-1-jarkko@kernel.org>
+In-Reply-To: <atux0EFb_euN6pM3@kernel.org>
 
-On Fri, Oct 30, 2026 at 10:54:08PM +0200, Jarkko Sakkinen wrote:
-> key_garbage_collector() has a design that is not resistant enough for
-> workqueue lockups. The duration scales up relative to the number of items
-> in the serial tree, which causes a reoccuring theme of being guilty of
-> causing workqueue lockups.
+On Fri, Oct 23, 2026 at 10:13:20PM +0300, Jarkko Sakkinen wrote:
+ > As the next step I'll expand the bootc OS installer that I did to have an
+> option for hibernate so that it does partition layout and all the wiring
+> required. I can then integrate that to my test environment and test it
+> in a libvirtd VM.
 > 
-> Resolve the problem by processing in chunks:
+> It's not as tedious as it sounds :-)
 > 
-> 1. Declare a static variable key_gc_work, which owns the garbage collection
->    in-flight state, and key_schedule_gc_work() for re-scheduling the work.
-> 2. Define KEY_GC_CHUNK_SIZE, set to 64 keys, as the bound for the number
->    of items scanned and destroyed.
-> 3. Define KEY_GC_DESTROYING to mark resume to destruction without repeating
->    the RCU grace period. Drain the graveyard before advancing key-type
->    reaping.
-> 4. Define KEY_GC_REAP_REQUESTED for preserving full-pass requests across
->    the continuations.
+> There would be faster routes but this is the only one that is not a
+> tower of cards. I'll just shovel it through.
 > 
-> keygcbench results without the patch:
+> I'd figure that it's also modelling quite well any possible production
+> environment where this feature might be ever used (reproducible build,
+> read-only rootfs, bootc container).
 > 
-> unused:   min=798.785 avg=4181.989 max=7565.193 var=11446068.927
-> expired:  min=0.003 avg=2404.971 max=4111.065 var=3061018.501
-> combined: min=0.003 avg=3115.778 max=7565.193 var=7172908.943
-> 
-> keygcbench results with the patch:
-> 
-> unused:   min=0.005 avg=0.125 max=79.590 var=1.088
-> expired:  min=0.002 avg=0.196 max=236.207 var=8.121
-> combined: min=0.002 avg=0.154 max=236.207 var=3.912
-> 
-> These results translate to:
-> 
-> - 93% drop in the combined variance.
-> - 2.2% increase in the total task time.
-> 
-> The value 64 for KEY_GC_CHUNK_SIZE was cherry-picked from the set {1, 2,
-> ..., 1024} by running the benchmark for each chunk size three times.
-> 
-> At the far left variance is 97% lower but at the same time total time
-> grows by 133%, when compared to the selected chunk size. The size was
-> picked based on getting a reasonable variance with a minimal throughput
-> decline.
-> 
-> Fixes: 0c061b5707ab ("KEYS: Correctly destroy key payloads when their keytype is removed")
-> Reported-by: syzbot+c15de43f1e7fffbb7b9b@syzkaller.appspotmail.com
-> Closes: https://syzkaller.appspot.com/bug?extid=c15de43f1e7fffbb7b9b
+> 1. https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd-test.git/
+> 2. https://github.com/puu-os/installer
 
-These re-appeared because last time I fixed up them in the patch and
-forgot to remove them from the commit. Not submitting a new version
-for this but it can be done :-)
+My kernel test build is now generating installable bootc container, and
+has hibernate working (not all changes have been pushed yet). Not being
+completely ad-hoc environment allows effortless testing, which is
+essential in order to get all of this eventually applied. 
 
-It's just so irrelevant detail in the end of the day so I had my
-eyes more on the code than the tag; thus slipped.
-
-> Link: https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd-test.git/tree/package/keygcbench
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-
-No new Sashiko issues reported. Weird that they came so late.
+The next step is to test with the patches applied but without secure
+boot at first.
 
 Br, Jarkko
+
+
