@@ -1,81 +1,55 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793497118;
-	b=iBZj4RXBewisOAdtOftUv2+ywrYRsQ37SShQgf9IEJ377UcD3h8xpwOvWdmJvuR00WLp
-	 bv3FRFEDb8nqNX69csjKhFH25U+q29J52o0Lweyq+eMwEg3myGpC4KIokTANXCpN3RY9E
-	 l6Z/yrV9xmjZTNfUqGRaw1+PIfpNhlWG9mQ8rSGpVRAIiPQ9XZFCcEGrXSvdWKWUe8CuL
-	 K39m0FtrVOHmZB7QeSYc9tbrett05wahuVxlvQRlDHY8qbYoitB9TWnrDKrs8D0t9rQP0
-	 t/kqRbCuehkVmMRcbZpPMz1FsBq9CRg3hYuxl34L4dLMxAuTqpMsrn3zHfBvRPfJqcA==
+	t=1793571323;
+	b=4+OdPu1jRWjsp1SN6I7DLiz8odBNwpV1qU9E2l+tgPBjFFXzwzXbdbnTwuBcqvqinVCN
+	 XirusC8gusP8diIp6qCEs4mO1vxjEMbkVBq1pSmCnKCGhaauO7JP1gmBpG37HXK8Zb4Vn
+	 bvgVcf/x9dZWdLVZr/ud1gXle7uSBCsM3+YvPdRlIuP+UMT/LVemcT1Mu+yGLRsQzxydw
+	 leRWN+GK3kDZbWUgnAat+nUEBzXS5APuSNxBE8H/JcdDW6OlCAMfj0XAgJnxuWZJtr6dS
+	 c5rGIX0IY9OR47Z+IeUrpsUa3KdmDucTFZ0/+/xhW/TZyztLcqkcKM0SvsK1tmu0o7g==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793497118;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793571323;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 In-Reply-To:References:X-Mailer:MIME-Version:Content-Type:
-	 Content-Transfer-Encoding;
-	bh=wkggvdD4Daf1drrMBcb90xMWnEWnBOyml4nDOqyyoZg=;
-	b=3fY7g2vUT4wcov7H8TuV2W9MvImf5//vz+5QG1eQIHo/n2iyedEqRSuKA7edQkjY+R8/
-	 QMSrpUYsmowJ+2Ma5rzeI2ltYvAxNHMR6xQjnoVYX/HKxoKdmSniBkiDHiMTblCdDLBu2
-	 0aSlbjg/dJFXVY6cQnguIWjq0Eyl8jjeZyFxSQlF7JwPm/XueMBynApq6KSkmDdXGoEXd
-	 YOnF6NVk66H+5qjfW/NGgYHVT/m1gLHlFpmFvVvPMbZNu9SAw09e5GnMTjmiSibuJjlO2
-	 /Z3zgamX9VCXSsLzzVmh0cvUwyX8R2VLaXkhDbSXmDYTcb9C/8yBlSbu43KLOmfnHbg==
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=my3CA61mY/1wZ7LAKREqaXuJzGaLAWtRNSkSCjpW/eE=;
+	b=xNuon4swn6/cQSYZ2huuQR8WgVJxuGG0Fd845rDEmaSp4wlOmFZrLSAHn4jdkjSwuKUP
+	 BuwrUKe/7DPGjTemfuuV3/ISnegNPwFw8Zwsk6SQQvRbzp16Gy0EsDwx3nplbHSp2qAiu
+	 UtbVH5D7jTTpVgVEv1o93HAwImyxZhqNvhjksrrxuwk/lLSh+z55EiVoot+yFCi+ccqy2
+	 qc1lIIo5E32PsJHtyp32lBsP55M4P2npqun4U1WlQUWqsFjNXJaAY7oUCKwy6uy9GC3MA
+	 vqvo3BUwLUoPRePsD5JBrBeLX34MDTIXTjEj/ibV095mOe0MgcWBAsa4yE/A/da4nQA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="L/0GaqtI";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=k7ObXWC6;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0FD50606A31A;
-	Sun,  1 Nov 2026 01:38:37 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D4C2A606A330;
+	Sun,  1 Nov 2026 22:15:22 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=L/0GaqtI
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 258EE1F000C1;
-	Sun,  1 Nov 2026 01:38:22 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=k7ObXWC6
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id E7FE81F0093A;
+	Sun,  1 Nov 2026 22:15:21 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793497117;
-	bh=wkggvdD4Daf1drrMBcb90xMWnEWnBOyml4nDOqyyoZg=;
-	h=Date:From:To:Cc:Subject:In-Reply-To:References;
-	b=L/0GaqtIo4ljcF6HhkiYfZqgqFfzu7sb2NkCwbaTtE2OUjTcTLJRXTyZtUK1Narrr
-	 BtQLDj7zRIIYxbD8+FBD4wlKou3nEAPke635eAz7vVjuDKwzzXPCAQT16jTp9CgGL0
-	 ba2LaOoHCP9feeoX8BP8LKv4yveSZWwZo6yHjtlYIjXCx4V0POS1oHKma+w2QDRFaw
-	 bFs3gxmRlx8fBdDMx60B/RskaLNeuJ3lyaYWZfLal9k+4P7aIxa899xvKOLsT5R/bB
-	 bFVyAcYisN4dpM7gjUbRJx96JJ4SZsMz1PSkwib+7dreMZmtGyU+hikjLVEkCGsSCI
-	 8TqVyGhsXxtwg==
-Date: Sun, 1 Nov 2026 01:38:17 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-To: Atharva Tiwari <atharvatiwarilinuxdev@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@kernel.org>,
- Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>, Dave Hansen
- <dave.hansen@linux.intel.com>, x86@kernel.org, "H. Peter Anvin"
- <hpa@zytor.com>, "Rafael J. Wysocki" <rafael@kernel.org>, Len Brown
- <lenb@kernel.org>, Linus Walleij <linusw@kernel.org>, Bartosz Golaszewski
- <brgl@kernel.org>, Sven Peter <sven@kernel.org>, Janne Grunau
- <j@jannau.net>, Neal Gompa <neal@gompa.dev>, Guenter Roeck
- <linux@roeck-us.net>, David Lechner <dlechner@baylibre.com>, Nuno
- =?UTF-8?B?U8Oh?= <nuno.sa@analog.com>, Andy Shevchenko <andy@kernel.org>,
- Lee Jones <lee@kernel.org>, Pavel Machek <pavel@kernel.org>, Griffin
- Kroah-Hartman <griffin@kroah.com>, Hans de Goede <hansg@kernel.org>, Ilpo
- =?UTF-8?B?SsOkcnZpbmVu?= <ilpo.jarvinen@linux.intel.com>, Sebastian Reichel
- <sre@kernel.org>, Alexandre Belloni <alexandre.belloni@bootlin.com>, Wim
- Van Sebroeck <wim@linux-watchdog.org>, Jarkko Sakkinen <jarkko@kernel.org>,
- Mimi Zohar <zohar@linux.ibm.com>, Roberto Sassu <roberto.sassu@huawei.com>,
- Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, Eric Snowberg
- <eric.snowberg@oracle.com>, Paul Moore <paul@paul-moore.com>, James Morris
- <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
- linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
- linux-acpi@vger.kernel.org, linux-gpio@vger.kernel.org,
- asahi@lists.linux.dev, linux-arm-kernel@lists.infradead.org,
- linux-hwmon@vger.kernel.org, linux-iio@vger.kernel.org,
- linux-leds@vger.kernel.org, mfd@lists.linux.dev,
- platform-driver-x86@vger.kernel.org, linux-pm@vger.kernel.org,
- linux-rtc@vger.kernel.org, linux-watchdog@vger.kernel.org,
- linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
- linux-security-module@vger.kernel.org
-Subject: Re: [RFC PATCH 14/14] mfd/macsmc: add ioctl to access smc keys
-Message-ID: <20261101013817.22d67ea7@jic23-hlaptop>
-In-Reply-To: <20261029085504.3547-15-atharvatiwarilinuxdev@gmail.com>
-References: <20261029085504.3547-1-atharvatiwarilinuxdev@gmail.com>
-	<20261029085504.3547-15-atharvatiwarilinuxdev@gmail.com>
-X-Mailer: Claws Mail 4.4.0 (GTK 3.24.52; x86_64-pc-linux-gnu)
+	s=k20260515; t=1793571322;
+	bh=my3CA61mY/1wZ7LAKREqaXuJzGaLAWtRNSkSCjpW/eE=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=k7ObXWC6zlhzgQJ8mF8kh/UBP9R0v+gM6DTg5cp//WIM2AV0REv8Bmpq6Jh4og2VY
+	 la92iMIbp3BuD1FSNlJ8cm45r9Xli1LPuqdss7IdHGMr5ymi6RWwuFwFzGc8BNz5rc
+	 VCwALBUgNuqknU9TF7IVWa2CXsgwqkGzFLvq5MGAsLigS6dXQTuHeBbKgWJ38O9gxk
+	 QQiVGD4wrKY9lwiZmlpcAk5JquFF5qf9yTzsd5LbGVGqckp11DcRxZIIoJ1YIlpZ4Y
+	 gP/vZKs7jZghFQhMMLO1WbcE1TAGz7A9nWpXflRxNhdk7nICItlYLdVZj3Mjn5xSe3
+	 nv5dEH0r/oZZQ==
+Date: Sun, 1 Nov 2026 14:15:19 -0800
+From: Eric Biggers <ebiggers@kernel.org>
+To: Cen Zhang <zzzccc427@gmail.com>
+Cc: dhowells@redhat.com, jarkko@kernel.org, paul@paul-moore.com,
+	jmorris@namei.org, serge@hallyn.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	baijiaju1990@gmail.com, jjzuming@gmail.com
+Subject: Re: [PATCH v3] keys: Protect the update method check against type
+ removal
+Message-ID: <20261101221519.GB2689@quark>
+References: <pm-keys-update-type-removal-20261029-v8-a0dbc48c588bf2b6a278@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -85,25 +59,18 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <pm-keys-update-type-removal-20261029-v8-a0dbc48c588bf2b6a278@gmail.com>
 
-On Thu, 29 Oct 2026 04:52:11 -0400
-Atharva Tiwari <atharvatiwarilinuxdev@gmail.com> wrote:
+On Sat, Oct 31, 2026 at 05:26:36PM +0800, Cen Zhang wrote:
+> Take key->sem before the first access to key->type and hold it until
+> the preparsed payload has been freed. Once a key exists, only the GC
+> changes key->type, and it does so with key->sem held for writing.
 
-> Add a /dev/smc device so userspace can talk to the SMC
-> directly. Some keys that need to be written aren't handled by
-> any driver, or affect several drivers at once, so they
-> can't be exposed cleanly through the kernel interfaces.
-> 
-> Keys already managed by kernel drivers can't be written this
-> way, to avoid conflicts.
+Reviewed-by: Eric Biggers <ebiggers@kernel.org>
 
-If this isn't matching some legacy interface, then we need more
-on what these do.  Maybe they are suited to some other kernel
-interface? In particular they might need the various controls
-on how destructive they are that something like fwctl brings.
+But it seems broken that a key type can be removed while keys of that
+type still exist.
 
-Generally an arbitrary opaque path to firmware isn't a good idea...
-
-Jonathan
+- Eric
