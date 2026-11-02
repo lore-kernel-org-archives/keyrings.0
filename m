@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793622108;
-	b=rgwNuhiud/GFSkhmED2cp9hQN2pgENT9qWfCWiXzI0n+t81cEFgUiZAMOOB6SC+MI3vU
-	 uN+FlrY79+1F0Tlyyt6GTh+q7gVgrDW8VzKqzcUIQs4GNY8dnr7+yyvm9sezItn8uz/9L
-	 NbGCQyMhxeGbJUPSY/vdtB6QFlyRlZSMWWhiCK2bUYdrCuR15R1O61FOp0OHIYeyqqC0X
-	 KSL14+60Xj/qDmN3oo+whVBbOayBnue2H2m20Pja2u0etbERsWBJ/sknjY1Zc/BwsIrMB
-	 ru9++tzrD5LvlRrc/rSf7E2b41WZKoU+mTehEjLxfqhV2BVFyBc4/hUpY1+DPj8cDRQ==
+	t=1793622171;
+	b=N14Pk7iwsHiGtHDQ53ZJVwiV5cU8xjvmX7B2eoheVyWHqji5mXeJ2qflB0QBlyUkerzI
+	 i7Z6k8ZS2Lim9/6fl37F91XMx6rUs80Q6eOXqg5sXaeDFAlNw2VLvqcn4NKMrqvR+wUJo
+	 bJRR4t3YvCRDOzRF7Sbr/WkqaTdrxWS6Z9F7kVbHhmzSBijMx2bbHprn4YEXwTumaL0F6
+	 L7lbn8igTVaCcFtydLzLTG/Ppkv4TkY7ye293xbWXr0FvtHFPpgFsi81x3QLLlWD3JEH4
+	 wgmcteM0aqig/+VePqk+xoZ2Vi1FYUSBeKwcdTNfrE+xKjPn97oIoGlY+VyzzVnMrDQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793622108;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793622171;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=GHovLVucfyKq5UqgyfiXId8rVl0+79MEBkzUXLNAN7I=;
-	b=ajhua/5XvvWWdgpSZixbDaHcNgsCaDrQIpbbbwuBRnEh3K6Dkst8ltIRSji+i1lXKwMM
-	 qA1TfQLfbS9WPHw+F50hpMl+hGoE96c4Hja+NmDvR3iWp8acqYUrYv3eSlAiNq6sK75DN
-	 boVg+krTVDbSFr4zVPwE5FnTnkHwhNbTOTEDF0OlIR5KFjkbXI+wx7vnt8FBEchlW8ZPQ
-	 YF1brujdPR8xvS7V8/Q+GEN6fIZJFUYsxFHo9aeGMk+TlAD9sPdUIys1/uTt51rsgTN3y
-	 Jox04DP1yZUEdKAgmuhcFoJdG0Bx09Vome0GhFg/Ewe2v6sE1MMm4YI+tBUQi3tyGqA==
+	bh=gepjhEh5Sov+Q7ZXXNj29uJsGq+uGav7cLAnMb9XsEg=;
+	b=mm1L2fZizYbPAs6Gdj0gDsmlKgb2HE4Qz2fx9yAQF/lnjxIZKlo7PrcJgl6w+0SeH+0A
+	 hpHkNlBkWJkT7OEc48C+xW5ERUMFpNFg7mLPLGe5P2Id0I6z01qV6+NqofHBZYLb9Yjj5
+	 AjOp0eGyiie09OC58RoFMujVIwBKNfEL2LRNvUB1NqHW/5Lx3h0o+5aZv6dNYA3a57b+V
+	 poNJee+TcQaOYjgdFW9cycARzrXCdcRFGWOv5NseMKtB9B4wCd9LekRBQXxPEwEVDGvh1
+	 uGPu9mx3L514trrPXEmm58gVJ5WIbnAfn49qiesw6/bFdtA/gxCT6FDjqBch6FmhVWQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=E4R2LTHk;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=d7vGAKyc;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 222FF60A5BD0;
-	Mon,  2 Nov 2026 12:21:47 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E5774606A336;
+	Mon,  2 Nov 2026 12:22:50 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=E4R2LTHk
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 058621F00A16;
-	Mon,  2 Nov 2026 12:21:46 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=d7vGAKyc
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 1FE2E1F00A20;
+	Mon,  2 Nov 2026 12:22:49 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793622107;
-	bh=GHovLVucfyKq5UqgyfiXId8rVl0+79MEBkzUXLNAN7I=;
+	s=k20260515; t=1793622170;
+	bh=gepjhEh5Sov+Q7ZXXNj29uJsGq+uGav7cLAnMb9XsEg=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=E4R2LTHkPbsCTOWRAU9jt7D/+oHDv3ggE25SgObERnWJzJifuU5G4jVybbx+hrScw
-	 ypa568/IcWGmR545l0LEUUKt4crFx0UQPHPZ1FeLgE/wODPyoO8lkQ76Y+IIrXvJHt
-	 S2DFE5uJOFgqNZE31+1wzQQYhpHCB3q9AAq2lc28b0METdC4vusvQtTkiAM7i0TVHB
-	 jrgppPq9iPTOLHa0htEwq7h/xsmRAjrS6NXCUOIOpl2w/tONEPYXD/H4ojqe98L/Ou
-	 teOewByHsNweghD7lrp2PvgOin4j3QYZ4YNBMgcKse7zkNARrIUwJt6YSnOcH2VZsH
-	 o2FIQAsBttx9Q==
-Date: Mon, 2 Nov 2026 14:21:43 +0200
+	b=d7vGAKycyuLLecvUu89gLjDJ6QO09PpM4G7Qn88jrm7im/52Eqem9mzUAAseoe/OQ
+	 RcV/5wNmE6BTbAd6UdkWrr/cmLCXR9sjUAyAKX/GBHzgm71SCmjnBmUFaWLHevjpXo
+	 HpXP+w13Z4dWFXoPoJWu7gO31YcxTSqv26l10fFtCWSUPjXEeujX+t2hE3byIziebn
+	 /0C1od3lyvs/O5eCXxl7qx2KT4sYy3ztYU2AeIlZLtH69yyqgkCdjS4FhHsaYbdm98
+	 nRa2MzOuPp6Xbq4ivjYeSiGAN/oZSru0ZJ6G65iB4oSiiDqwK4031kQPr+jr98a43O
+	 TzYSun7uSI/tQ==
+Date: Mon, 2 Nov 2026 14:22:47 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: Eric Biggers <ebiggers@kernel.org>, linux-integrity@vger.kernel.org,
@@ -49,13 +49,13 @@ Cc: Eric Biggers <ebiggers@kernel.org>, linux-integrity@vger.kernel.org,
 	Eric Snowberg <eric.snowberg@oracle.com>,
 	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>,
 	open list <linux-kernel@vger.kernel.org>,
-	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>
-Subject: Re: [RFC PATCH 3/4] KEYS: Remove key_type_dead
-Message-ID: <auiAVx5DrjNSMSpS@kernel.org>
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/4] KEYS: Pin the backing module for struct key_type
+Message-ID: <auiAl6vN0ZRYa3ET@kernel.org>
 References: <20261102121518.1197453-1-jarkko@kernel.org>
- <20261102121518.1197453-4-jarkko@kernel.org>
+ <20261102121518.1197453-3-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,18 +67,17 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261102121518.1197453-4-jarkko@kernel.org>
+In-Reply-To: <20261102121518.1197453-3-jarkko@kernel.org>
 
-On Mon, Nov 02, 2026 at 02:15:14PM +0200, Jarkko Sakkinen wrote:
-> unregister_key_type() no longer needs to retype live keys as keys and
-> restrictions pin the module while they reference it.
+On Mon, Nov 02, 2026 at 02:15:13PM +0200, Jarkko Sakkinen wrote:
+> Add the owner field (populated with THIS_MODULE) to struct key_type.
 > 
-> Remove key_type_dead and associated code from the keyring GC.
+> Pin the module in key_alloc() and keyring_restrict(), and release it in
+> key_gc_unused_keys() and keyring_destroy(). These functions are the entry
+> points for keys and restrictions.
 > 
 > Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-This was not too hard as I had just paid tons of time implementing
-and benchmarking the chunk processing code, and I think these
-features supplement quite nicely each other.
+Missing suggested-by from Eric.
 
 Br, Jarkko
