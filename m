@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793623269;
-	b=cqavQHMOAxlvBnCt/TFBWH684rB1FH8hk/Z3VkzxT0LtJU/B1XKeb6RUqH2yI8ORilRp
-	 1QZgx8/eR2CYAcn1bo16TUzMtavC3R0S/MyQkqEASG8wdyEKzfDthq9sIz4HGhRivI/mo
-	 rP/0gEyCr6osXQ3JD/l/XM7+9IhTYHzdKzPfb2dxzYWu381BS4FrEXQVTCUSK2Yi0n4Hw
-	 SnyZdPFi358xfobvMjTrpS3AhcrXU7820GBCNwKDeM8/rGvAJvLYp3Sflric9kDievb44
-	 d1qfn2ZVHyj6rstUPjSQzS6zuszmMhGlktecUZv5NdExwszApoK3/ntdR5J7F1xO2nw==
+	t=1793626482;
+	b=TtawdbXSPDUy0Lae3to8v4SqQm1O0+UXGtpFuaavUJw6IOQRkWoVwhtZj/hkgEgpd/Lt
+	 j1K2qqfbh3uj5ZqgobngZ9cx/dGVwRO1AIahObGleDm8Xwo3MMyNZ+29uSyMcunhdJJWt
+	 3NWE9s4dx2c4yhY9zftYrsFmaC8lhzGsXwPENAas1gjEVJmoYt0bhtrTFsOTZYBXG+xqz
+	 wt2zFK8d5YVI7ZtKB0jv4dyfYsP8G+CLUmL/COZ1UixTY/jrlO1W1+hHuDFTTmFSOzNNy
+	 E0unkErVACOocPe440+mRQWKupZa89jabZYAPJoBK7TBYNUqDENe/udyokb6cIyrqkg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793623269;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793626482;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=PiLUQ0nWHS5zwThndIBCzrGp6LTAmh5lgj9gktWhcBo=;
-	b=W9fEAEk8r1DEhFnxsNGJx26/3ieGWs/Ydic8YEotE0duCB133Cdo1z52NxPO70cHGHlV
-	 khgaG4FE7hsD4MmuqXeiubUcHgTcgsK8TWFdz21ZaSYyCKF9wBA26Iq+x+68zC1mLKiCE
-	 u+N0nC0hTsxSTaTP3EKbN+Zn1wWMqeUxOQsdCiQRKYOluaZysR/WqHd6FSKxs5qF3AvfM
-	 pul42z6pQPHV4I1BcXXH08VUOIcfbykAglqWf1titoZgVdiQ4kNYlmi+Ri892pj04dGUr
-	 1crLNLiF5NVTWzv6UxNG4k8FXMlpOExM6zhZUwob9NO9AXYWqzEaJxvtge/QoWfL8Ag==
+	bh=hHK7Mmgyiu+tDJa8gI3Bjskl7GXIjPStGml36Gdpu74=;
+	b=RTdM5qde0avvNwEO6TKOWSbr1Bojb6LDTxLYLlgM5s9guNCqEuzp7nwbZ+gJ1QVovFCi
+	 q0GqFDWCGbNw6guOUBz0Iwm1WwHxmdi66eCEVOOvdEBsfgfXRSlcuEdk4cIY/Gs7SS3yC
+	 QSkiZuEuAtcaTe0zsmhIqT+J4xJZpHgli4Gnw5b+c3/A/l3Bs4Wq5axpm5miTMYEHf4ji
+	 KK60o5rT6oue0EZDSCnGm2MNfNONtSPQQjbm/LR2vBkOzQU6Racffzv+Olk60xUdCDaRl
+	 zsBMOTPF3Ugyvfxp2hNjJ0jXL/pI0HK4eDiEqFzmBrPwXyk4LloGMXhPdm9knVQRJ0g==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=lB1ILR4E;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Xg53petf;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E8BD5606A324;
-	Mon,  2 Nov 2026 12:41:08 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A75FB60A3803;
+	Mon,  2 Nov 2026 13:34:42 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=lB1ILR4E
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 05B051F00A17;
-	Mon,  2 Nov 2026 12:41:07 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Xg53petf
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A8A1C1F00A17;
+	Mon,  2 Nov 2026 13:34:41 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793623268;
-	bh=PiLUQ0nWHS5zwThndIBCzrGp6LTAmh5lgj9gktWhcBo=;
+	s=k20260515; t=1793626482;
+	bh=hHK7Mmgyiu+tDJa8gI3Bjskl7GXIjPStGml36Gdpu74=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=lB1ILR4EeVVIEFfE5OhyJ+P6ZBavnJ4AFBJgsBvoMeh7fndAXVVl1Ct58qDJkoTwC
-	 DyIOnRiBB5kOwVEK8bsLipfN4BiJSBkcfHZoEFbaWEe59VkV1dejPE0MIxxJ5hQgOW
-	 QlDE3SzREZI7HhHpAD/RsmItLcYaSrwAKn2DShmh86PK38mc+dlgyAI6SX//dn9hKO
-	 gJ9OuZI0YuL6HhucLKsQ5YTL4fZOHChuPxmcR2d1yU/7R9HS7mx08QolNXexvGCJ4T
-	 n/z+miZU7KqwMdbMllTUZfSs6ImA+hDtl6dCxXSbu2ohdG7uRbsi5E4R2Q61Nv8642
-	 mpXlWZht9Beiw==
-Date: Mon, 2 Nov 2026 14:41:04 +0200
+	b=Xg53petf/FtTy98vgvbgWIajMU729Bny6DZUrlEG2VarG6ItwOkRwcOFZ+MtJbMD4
+	 AtEkUzaFLIQIlcEYq5LutiBcwZWF2kd3044av+9TYNk2O1bw6vw2fwzpUwJBaRrqQ0
+	 IN46jDw/iLECQlHLYIQ7LYdqmhCTZXIA4WyJGRHbZRdjM/c+DbFi9WcEAEmbQmiWTz
+	 VhQZuqZVYlH8uOei3GRGqIlHuHaCvMrMSafsHz4yp4fQrIH3nTJogYmZNPrB5obSTc
+	 u8xufgakWbjXSfCs4sRy3oad7260hVFiljwObaoLZUry30J25HXu0lkYf9RH8lFY4x
+	 JxrcmYmLDfu2g==
+Date: Mon, 2 Nov 2026 15:34:38 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: sashiko-reviews@lists.linux.dev
 Cc: David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@kernel.org>,
@@ -49,13 +49,13 @@ Cc: David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@kernel.org>,
 	Eric Snowberg <eric.snowberg@oracle.com>,
 	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/4] KEYS: Pin the backing module for struct key_type
-Message-ID: <auiE4Iabcbro4LiW@kernel.org>
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>
+Subject: Re: [RFC PATCH 4/4] KEYS: key_garbage_collector(): process in chunks
+Message-ID: <auiRbvC-tomWC_WD@kernel.org>
 References: <20261102121518.1197453-1-jarkko@kernel.org>
- <20261102121518.1197453-3-jarkko@kernel.org>
- <sashiko-outbox-193418@kernel.org>
+ <20261102121518.1197453-5-jarkko@kernel.org>
+ <sashiko-outbox-193421@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,39 +67,24 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <sashiko-outbox-193418@kernel.org>
+In-Reply-To: <sashiko-outbox-193421@kernel.org>
 
-On Mon, Nov 02, 2026 at 12:32:55PM +0000, sashiko-bot@kernel.org wrote:
-> drivers/nvme/common/keyring.c:nvme_keyring_exit() {
-> 	unregister_key_type(&nvme_tls_psk_key_type);
-> 	key_revoke(nvme_keyring);
-> 	key_put(nvme_keyring);
-> }
+On Mon, Nov 02, 2026 at 12:32:57PM +0000, sashiko-bot@kernel.org wrote:
+> Thank you for your contribution! Sashiko AI review found 1 potential issue(s) to consider:
+> - [Medium] keys: non-atomic flag clearing in key_garbage_collector() drops link reaping
+> --
 > 
-> fs/nfs/nfs4idmap.c:nfs_idmap_quit() {
-> 	key_revoke(id_resolver_cache->thread_keyring);
-> 	unregister_key_type(&key_type_id_resolver);
-> 	unregister_key_type(&key_type_id_resolver_legacy);
-> 	put_cred(id_resolver_cache);
-> }
+> commit 9857f1d86bdced127ae471468f5b25b61aa04d0f
+> Author: Jarkko Sakkinen <jarkko@kernel.org>
 > 
-> fs/smb/client/cifsacl.c:exit_cifs_idmap() {
-> 	key_revoke(root_cred->thread_keyring);
-> 	unregister_key_type(&cifs_idmap_key_type);
-> 	put_cred(root_cred);
-> 	cifs_dbg(FYI, "Unregistered %s key type\n", cifs_idmap_key_type.name);
-> }
+> KEYS: key_garbage_collector(): process in chunks
 > 
-> net/dns_resolver/dns_key.c:exit_dns_resolver() {
-> 	key_revoke(dns_resolver_cache->thread_keyring);
-> 	unregister_key_type(&key_type_dns_resolver);
-> 	put_cred(dns_resolver_cache);
-> }
+> This commit updates key_garbage_collector() to scan the serial tree and
+> destroy unused keys in chunks of 64 items, tracking in-flight state across
+> workqueue continuations to prevent workqueue lockups.
+> 
+> Link: https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd-test.git/tree/package/keygcbench
 
-I did this on purpose to check which sites Sashiko detects so this was
-expected outcome.
-
-I'll address all the Sashiko issues and send v2 so that they are out
-of the way.
+I'm addressing all the Sashiko issues also for this.
 
 Br, Jarkko
