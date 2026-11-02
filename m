@@ -1,62 +1,62 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793622776;
-	b=aibjv47CiCnQvnE6a0f22kzF9fVdLxLGSEaEkfOKc4PwHOJNOOxc5U7ydNLp+5h5Tmbm
-	 PhQJUfBxJyGOBvmoYS20X6GrWFyRoWv24JCuLqTDAkma9dg6T3fj45kLTgAxQcXHZcu/b
-	 SKSoMsNSrHCE5MmUBxqTGilgCQhVuyjByomiMO2+XuyS/TPZHoi8HjgqWmUCr9Bf8+s9Y
-	 eAdTh0zmykjwZEasvT/+nHIk7YoR3RtJYkicDDQU/enppiBnZs4E020EEmzUy0NOSa9Iy
-	 2a/BUfWtqG0JNMKegL4yLadFdJUMqdzx6qPpdYniYcks26a3kcjbq1+xpncOclCOWlQ==
+	t=1793622779;
+	b=Lymj/TNZnoCaa0LcFC8imKiYoAgLqMvANZUsTpOXump6tT0z5J4VX0Xz5qWKtRkSJIHX
+	 tBfjrFMtw1WGA1PxMU95IeaIVVrAmWsSmAM+Tsl3OxXVSnR8zqMrJEWPnuWpv83rg6gZ/
+	 9LSPjs0FDwXDNkPrvhCHrnr8uQREDu1uM7/9EOpPalDJh8obpmfEhsR88OBn0gXyxWwka
+	 hoQiAQwU8jB9r7184pmCwIt0xDNrRhNvJeTZkGsnW4Jzd+rVbLuqapPY98eNn2nAwyNHW
+	 miyHFsgnsuveZzlcYUWWCeR4E3zGlIX8mh9x8zwaBj2kwh4fzBP9XQkKeb1dMPTAKLA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793622776;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793622779;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=DIdk7DzURrNX9GZQcDmly77A+mdvHLOyQp+ak9tboms=;
-	b=tevXbBnowWbWNQqLqOg29OK/3y4YdFmG96Q6csdxQsHyo2o8lGUp0aoqo4/rN87R94GZ
-	 +JMvAfEy+NDaCgGICTrLpZ5OfAmMlHH9QFh/XPTQyEa+NZBKFBEWc3vNQm6Bp+qgwFj13
-	 RXKYqB/G3k54yesFhNp0a2XT+7URPGbyjVmA8xLkB7VEF8Xnzj4WW8kIOv4FF+f1ozXme
-	 g87ZEGjmAMlRleRDOvr4wC5WQblDlE9Jt3Vlhj0v9yRhSbVgYuECj4hWgl5gxuMBGyqwe
-	 E7XMSUUqeiutzsiwtKrsp+CyqUkv7LZdNwmVinP0rBf+Ounx29ASBBjliJPw4WLdykA==
+	bh=5cK176MvYbDRYoWTIM0ndVdF1rozXQ8JRU80zMKEZ+c=;
+	b=H1pAB6OuJBgSnMWBdO0HfDirdxEklYbPANQThbnAfL6HO6iJCSzuDkAZuf7pOVNHTZaG
+	 T6194mqgqw54oV/Ag1zjqfbpLYYTD8MrFwf57/XV95iywdMmt1KG+hCIVs2q0FoLxV3n3
+	 yf2bP7D3m+LL4WgOMz7QpAQffNleReYNv5U0nCKf4seYgjca04zYg6jVglceLcSYihvz8
+	 WwMKLZ/Q9/LPU8GQZSnPavZKoG+ctBipsF7eGmmrRw0veQMpkX0DqHwnlV0xI3NykLLka
+	 J+8BV8b0M1zYET5f69VqWnMfXddesXq5/ddR0vfAirYVPKCZ0OT/m+xicyt1jvwB1yg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="W/wScyaM";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=jNCN7vhl;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 692D160A2613;
-	Mon,  2 Nov 2026 12:32:56 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EED2B606A32F;
+	Mon,  2 Nov 2026 12:32:58 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=W/wScyaM
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 901321F00A1A;
-	Mon,  2 Nov 2026 12:32:55 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=jNCN7vhl
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 06F5F1F00A17;
+	Mon,  2 Nov 2026 12:32:57 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793622776;
-	bh=DIdk7DzURrNX9GZQcDmly77A+mdvHLOyQp+ak9tboms=;
+	s=k20260515; t=1793622778;
+	bh=5cK176MvYbDRYoWTIM0ndVdF1rozXQ8JRU80zMKEZ+c=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=W/wScyaMdRqkqwbsndWlsmXPIFlMIiX3KtU+ErRjvlYDCqB8xAtAtmVDNpJYfpWgS
-	 RIhO9F0aw6+/rrP4ZY1tRTftZj6E15rJkcg4YI3tNZzBL/g5Vplzkg5mXoQek0VBvR
-	 cYQjqYO44Uv63d6Q6YZwqNwPoVpr7nFZ9Od9susyPYdUb1rP5Uj+wGK1I0shVIdlb4
-	 sHSRjWbtXa2Tmtm2b8R05hPt5fPbNRpmeGUtW/cJpGkbjYPKd/z26+JbpgWWW2Rr2V
-	 w3bjWOxqrBQMdexVBF0CTjXm5ltmuJxVITCkJcGLzhc0/NXbVGIXu7oj0WP65KcHQX
-	 5q5Uhrd6zapxQ==
-Message-ID: <sashiko-outbox-193418@kernel.org>
+	b=jNCN7vhlG6flwRSh+y7+3Ry4Ey5en6SFHsj0yNbk71GxaJLfqA4xbn8TNKur66Kfm
+	 Q6WnqeMzS+EzMw+GdKG6Oe7Vf2YflfFsTh/R6z1ANRDAe2ZoY7zj6/8cRQgJBZ4npV
+	 g7TUGJe6GDXteanXTGSsrHBWxJ3N+AD8XPFmIKDAnckwSaa84QJ3pJA1CPey92yOi9
+	 uVHoXNI86OSYclt0o+nEaOXO+Iwttj1gGpydpuK4sLzrHi4lsWePUd+j6mQVk4DN4Q
+	 YvzgWPVK0bhkf2Va0isj5DC8/twLfmjpaN5HyXabLeqcZtfsDX27uG0i4FgjL5R8XS
+	 LxDh3eXAwkFAw==
+Message-ID: <sashiko-outbox-193421@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH 2/4] KEYS: Pin the backing module for struct
- key_type
+Subject: Re: [RFC PATCH 4/4] KEYS: key_garbage_collector(): process in
+ chunks
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
 Cc: "Eric Biggers" <ebiggers@kernel.org>, "Mimi Zohar" <zohar@linux.ibm.com>, "Roberto
  Sassu" <roberto.sassu@huawei.com>, "Dmitry Kasatkin" <dmitry.kasatkin@gmail.com>, "Eric
  Snowberg" <eric.snowberg@oracle.com>, "Paul Moore" <paul@paul-moore.com>, "James
  Morris" <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
- =?utf-8?b?b3BlbiBsaXN0OktFWVMvS0VZUklOR1M=?= <keyrings@vger.kernel.org>,
- =?utf-8?b?b3BlbiBsaXN0OlNFQ1VSSVRZIFNVQlNZU1RFTQ==?= <linux-security-module@vger.kernel.org>
-In-Reply-To: <20261102121518.1197453-3-jarkko@kernel.org>
+ =?utf-8?b?b3BlbiBsaXN0OlNFQ1VSSVRZIFNVQlNZU1RFTQ==?= <linux-security-module@vger.kernel.org>,
+ =?utf-8?b?b3BlbiBsaXN0OktFWVMvS0VZUklOR1M=?= <keyrings@vger.kernel.org>
+In-Reply-To: <20261102121518.1197453-5-jarkko@kernel.org>
 References: <20261102121518.1197453-1-jarkko@kernel.org>
- <20261102121518.1197453-3-jarkko@kernel.org>
+ <20261102121518.1197453-5-jarkko@kernel.org>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Mon, 02 Nov 2026 12:32:55 +0000
+Date: Mon, 02 Nov 2026 12:32:57 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -68,98 +68,126 @@ Precedence: list
 
 Thank you for your contribution! Sashiko AI review found 1 potential issue(=
 s) to consider:
-- [High] KEYS: self-pinning module reference cycle in key_alloc()
+- [Medium] keys: non-atomic flag clearing in key_garbage_collector() drops =
+link reaping
 --
 
-commit 8793dbc22dd9f6067e0bfcfa9c4b1b437edcf052
+commit 9857f1d86bdced127ae471468f5b25b61aa04d0f
 Author: Jarkko Sakkinen <jarkko@kernel.org>
 
-KEYS: Pin the backing module for struct key_type
+KEYS: key_garbage_collector(): process in chunks
 
-This commit adds an owner field populated with THIS_MODULE to struct key_ty=
-pe
-when registering a key type. It pins the module in key_alloc() and
-keyring_restrict(), releasing the reference in key_gc_unused_keys() and
-keyring_destroy().
+This commit updates key_garbage_collector() to scan the serial tree and
+destroy unused keys in chunks of 64 items, tracking in-flight state across
+workqueue continuations to prevent workqueue lockups.
 
-> diff --git a/security/keys/key.c b/security/keys/key.c
-> index e88548f1a7040..9f1f08fcbe863 100644
-> --- a/security/keys/key.c
-> +++ b/security/keys/key.c
-> @@ -7,6 +7,7 @@
-> =20
->  #include <linux/export.h>
->  #include <linux/init.h>
-> +#include <linux/module.h>
->  #include <linux/poison.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
-> @@ -234,19 +235,24 @@ struct key *key_alloc(struct key_type *type, const =
-char *desc,
-> =20
->  	key =3D ERR_PTR(-EINVAL);
->  	if (!desc || !*desc)
-> -		goto error;
-> +		goto out;
+Link: https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd-te=
+st.git/tree/package/keygcbench
+
+> diff --git a/security/keys/gc.c b/security/keys/gc.c
+> index 876c30c019ad4..fc1e5e39b828c 100644
+> --- a/security/keys/gc.c
+> +++ b/security/keys/gc.c
+
+[ ... ]
+
+> @@ -31,6 +42,23 @@ static DEFINE_TIMER(key_gc_timer, key_gc_timer_func);
+>  static time64_t key_gc_next_run =3D TIME64_MAX;
+>  static unsigned long key_gc_flags;
+>  #define KEY_GC_KEY_EXPIRED	0	/* A key expired and needs unlinking */
+> +#define KEY_GC_REAP_REQUESTED	1	/* Another complete pass was requested */
 > +
-> +	if (!try_module_get(type->owner)) {
-> +		key =3D ERR_PTR(-ENOENT);
-> +		goto out;
+> +/*
+> + * Schedule a new GC pass or re-schedule an ongoing GC pass.
+> +*/
+> +void key_schedule_gc_work(bool expired)
+> +{
+> +	unsigned long flags =3D BIT(KEY_GC_REAP_REQUESTED);
+> +
+> +	if (expired)
+> +		flags |=3D BIT(KEY_GC_KEY_EXPIRED);
+> +
+> +	/* Publish all request flags together, after the caller's updates. */
+> +	set_mask_bits(&key_gc_flags, 0, flags);
+> +	schedule_work(&key_gc_work.work);
+> +}
+
+[ ... ]
+
+> @@ -137,35 +159,45 @@ static noinline void key_gc_unused_keys(struct list=
+_head *keys)
+>  static void key_garbage_collector(struct work_struct *work)
+>  {
+>  	static LIST_HEAD(graveyard);
+> -	u8 gc_state =3D 0;
+> +	typeof(key_gc_work) *gc =3D &key_gc_work;
+>  #define KEY_GC_REAP_AGAIN	0x01	/* - Need another cycle */
+>  #define KEY_GC_REAPING_LINKS	0x02	/* - We need to reap links */
+> +#define KEY_GC_DESTROYING	0x04	/* - We need to destroy keys */
+> =20
+> -	struct rb_node *cursor;
+> +	unsigned int chunk =3D KEY_GC_CHUNK_SIZE;
+>  	struct key *key;
+> -	time64_t new_timer, limit, expiry;
+> +	time64_t expiry;
+> =20
+> -	kenter("[%lx]", key_gc_flags);
+> +	kenter("[%lx,%x]", key_gc_flags, gc->state);
+> =20
+> -	limit =3D ktime_get_real_seconds();
+> +	if (gc->state & KEY_GC_DESTROYING)
+> +		goto destroy_keys;
+> +	if (gc->cursor) {
+> +		spin_lock(&key_serial_lock);
+> +		goto continue_scanning;
 > +	}
+> =20
+> +	test_and_clear_bit(KEY_GC_REAP_REQUESTED, &key_gc_flags);
+> +	gc->start =3D ktime_get_real_seconds();
+> +	gc->state =3D 0;
+>  	if (test_and_clear_bit(KEY_GC_KEY_EXPIRED, &key_gc_flags))
+> -		gc_state |=3D KEY_GC_REAPING_LINKS;
+> -	kdebug("new pass %x", gc_state);
+> +		gc->state |=3D KEY_GC_REAPING_LINKS;
 
-[Severity: High]
-Does pinning type->owner in key_alloc() until key_gc_unused_keys() create a
-self-pinning reference cycle for modular key types that cache keys in their
-own internal keyrings?
+[Severity: Medium]
+Can clearing KEY_GC_REAP_REQUESTED and KEY_GC_KEY_EXPIRED in two separate
+operations on opposite sides of ktime_get_real_seconds() cause a link-reapi=
+ng
+request to be dropped?
 
-With register_key_type() setting ktype->owner to THIS_MODULE:
+In key_schedule_gc_work(true), called from key_gc_timer_func(),
+key_schedule_gc(), key_invalidate(), and key_remove_domain(), both
+KEY_GC_REAP_REQUESTED and KEY_GC_KEY_EXPIRED are published together via
+set_mask_bits().
 
-include/linux/key-type.h:
-#define register_key_type(ktype) __register_key_type(ktype, THIS_MODULE)
+However, if another CPU calls key_schedule_gc_work(true) after
+key_garbage_collector() executes:
 
-every allocated key of that type holds a module reference on its owning
-module until the key's reference count drops to zero and it is garbage
-collected in key_gc_unused_keys().
+    test_and_clear_bit(KEY_GC_REAP_REQUESTED, &key_gc_flags);
+    gc->start =3D ktime_get_real_seconds();
 
-However, several loadable modules allocate an internal keyring during module
-initialization, link keys of their own key_type into that keyring during
-normal operation, and only revoke and release that keyring in their module
-exit path:
+(for example, right after the clock ticks to a new second, or after a new k=
+ey
+is invalidated or a domain is removed) and before:
 
-drivers/nvme/common/keyring.c:nvme_keyring_exit() {
-	unregister_key_type(&nvme_tls_psk_key_type);
-	key_revoke(nvme_keyring);
-	key_put(nvme_keyring);
-}
+    if (test_and_clear_bit(KEY_GC_KEY_EXPIRED, &key_gc_flags))
 
-fs/nfs/nfs4idmap.c:nfs_idmap_quit() {
-	key_revoke(id_resolver_cache->thread_keyring);
-	unregister_key_type(&key_type_id_resolver);
-	unregister_key_type(&key_type_id_resolver_legacy);
-	put_cred(id_resolver_cache);
-}
+then the current pass consumes KEY_GC_KEY_EXPIRED while leaving
+KEY_GC_REAP_REQUESTED set.
 
-fs/smb/client/cifsacl.c:exit_cifs_idmap() {
-	key_revoke(root_cred->thread_keyring);
-	unregister_key_type(&cifs_idmap_key_type);
-	put_cred(root_cred);
-	cifs_dbg(FYI, "Unregistered %s key type\n", cifs_idmap_key_type.name);
-}
+The current pass will run keyring_gc(key, gc->start) with the older gc->sta=
+rt
+timestamp (or after already having scanned past a keyring if this were not
+the start of the pass, or before the new expiry second is reached in
+key_is_dead()), and when the follow-up pass triggered by
+KEY_GC_REAP_REQUESTED runs, KEY_GC_KEY_EXPIRED is already clear so
+KEY_GC_REAPING_LINKS will not be set.
 
-net/dns_resolver/dns_key.c:exit_dns_resolver() {
-	key_revoke(dns_resolver_cache->thread_keyring);
-	unregister_key_type(&key_type_dns_resolver);
-	put_cred(dns_resolver_cache);
-}
-
-Once any key is linked into one of these internal module keyrings (or added
-by userspace via add_key() to a session or user keyring), the key holds a
-reference on the module while the module's keyring holds a reference on the
-key. Won't this prevent the module reference count from ever reaching zero,
-making it impossible to unload these modules unless all cached keys expire =
-or
-are manually evicted first?
+Should key_gc_flags be consumed atomically with xchg(&key_gc_flags, 0) befo=
+re
+sampling gc->start =3D ktime_get_real_seconds()?
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261102121518.1197=
-453-1-jarkko@kernel.org?part=3D2
+453-1-jarkko@kernel.org?part=3D4
