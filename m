@@ -1,61 +1,77 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.208.51
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793626482;
-	b=TtawdbXSPDUy0Lae3to8v4SqQm1O0+UXGtpFuaavUJw6IOQRkWoVwhtZj/hkgEgpd/Lt
-	 j1K2qqfbh3uj5ZqgobngZ9cx/dGVwRO1AIahObGleDm8Xwo3MMyNZ+29uSyMcunhdJJWt
-	 3NWE9s4dx2c4yhY9zftYrsFmaC8lhzGsXwPENAas1gjEVJmoYt0bhtrTFsOTZYBXG+xqz
-	 wt2zFK8d5YVI7ZtKB0jv4dyfYsP8G+CLUmL/COZ1UixTY/jrlO1W1+hHuDFTTmFSOzNNy
-	 E0unkErVACOocPe440+mRQWKupZa89jabZYAPJoBK7TBYNUqDENe/udyokb6cIyrqkg==
+	t=1793652609;
+	b=wALIQJUMQNW+HZHUDeuxl+ankFgNz1CpCGts41koXRerNZOgyGVuA4Q5JI8YDNB29Qn9
+	 Y/c1m8aFq82I4/FVC4MUGrXVHj9KCxvt5ZFS17G+EfAymNjFZSCsJ0ecFwUqfTYRFGIWb
+	 AoFe7cYKhs9uph0Vo7gqqRRp5/DwpKHXQyTiFt2xYnAa4oLJ5zuvi/LbrJCDvJzQxY063
+	 VDQIhHGHutfG6qxkCIitkhitN8xdd5nFrO8nMFl6jTPfD4MikQWbIPkjmk3EfcHlX3fNR
+	 IfaRbuPAR6+lO0R85ch2S+Fzj7XA7MaPvziz23ALiKIxVhR69UwH6mE0ky8GHGTV8IA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793626482;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=hHK7Mmgyiu+tDJa8gI3Bjskl7GXIjPStGml36Gdpu74=;
-	b=RTdM5qde0avvNwEO6TKOWSbr1Bojb6LDTxLYLlgM5s9guNCqEuzp7nwbZ+gJ1QVovFCi
-	 q0GqFDWCGbNw6guOUBz0Iwm1WwHxmdi66eCEVOOvdEBsfgfXRSlcuEdk4cIY/Gs7SS3yC
-	 QSkiZuEuAtcaTe0zsmhIqT+J4xJZpHgli4Gnw5b+c3/A/l3Bs4Wq5axpm5miTMYEHf4ji
-	 KK60o5rT6oue0EZDSCnGm2MNfNONtSPQQjbm/LR2vBkOzQU6Racffzv+Olk60xUdCDaRl
-	 zsBMOTPF3Ugyvfxp2hNjJ0jXL/pI0HK4eDiEqFzmBrPwXyk4LloGMXhPdm9knVQRJ0g==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793652609;
+	h=DMARC-Filter:Received:X-Google-DKIM-Signature:X-Forwarded-Encrypted:
+	 X-Gm-Message-State:X-Gm-Gg:X-Received:Received:Received:
+	 X-Forwarded-Encrypted:X-Received:MIME-Version:References:In-Reply-To:
+	 From:Date:X-Gmail-Original-Message-ID:X-Gm-Features:Message-ID:
+	 Subject:To:Cc:Content-Type:Content-Transfer-Encoding;
+	bh=YZHqs0S+0eF//NcnMf6waWSJNb6hMzfVqF5rDbvKzzE=;
+	b=BvHFEVMmfdMZRRzHRKu+x+eCzmxFHMXHU/pFVPKWYllWfN+dlCXAAloPZ+pFik8BCkSa
+	 MRPULuxFLKx1dqGFbvD2A+ebRcs4Guy84LgUGYAAuhmVfTfxyBhhDmTk8zqFaGrwA5/1T
+	 OGHNLbpxeKjsLUg+Pe8tHcEGCzJcs8jy3mBzsPi0jOn2fExgp2cuq0lBVlA8kWLQVaBfY
+	 yy0v4IaPBd3nUGiOZRE4YNciSvh8b1nc6giN+xbzGGxC9xDGZc/utScPCKvI/4VuaRkHr
+	 zhRsB2HzDMpGdoIyql8tXkUHPaP9ISL2jvdFbyy3N5cWYkkS7Uhrx+tGkrPTaIFOlJA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Xg53petf;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	dmarc=none header.from=linux.win;
+	spf=pass smtp.mailfrom=gmail.com;
+	arc=none smtp.remote-ip=209.85.208.51
+Received: from mail-ed1-f51.google.com (mail-ed1-f51.google.com [209.85.208.51])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A75FB60A3803;
-	Mon,  2 Nov 2026 13:34:42 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Xg53petf
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A8A1C1F00A17;
-	Mon,  2 Nov 2026 13:34:41 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793626482;
-	bh=hHK7Mmgyiu+tDJa8gI3Bjskl7GXIjPStGml36Gdpu74=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=Xg53petf/FtTy98vgvbgWIajMU729Bny6DZUrlEG2VarG6ItwOkRwcOFZ+MtJbMD4
-	 AtEkUzaFLIQIlcEYq5LutiBcwZWF2kd3044av+9TYNk2O1bw6vw2fwzpUwJBaRrqQ0
-	 IN46jDw/iLECQlHLYIQ7LYdqmhCTZXIA4WyJGRHbZRdjM/c+DbFi9WcEAEmbQmiWTz
-	 VhQZuqZVYlH8uOei3GRGqIlHuHaCvMrMSafsHz4yp4fQrIH3nTJogYmZNPrB5obSTc
-	 u8xufgakWbjXSfCs4sRy3oad7260hVFiljwObaoLZUry30J25HXu0lkYf9RH8lFY4x
-	 JxrcmYmLDfu2g==
-Date: Mon, 2 Nov 2026 15:34:38 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: sashiko-reviews@lists.linux.dev
-Cc: David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@kernel.org>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	Roberto Sassu <roberto.sassu@huawei.com>,
-	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-	Eric Snowberg <eric.snowberg@oracle.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
-	"open list:KEYS/KEYRINGS" <keyrings@vger.kernel.org>
-Subject: Re: [RFC PATCH 4/4] KEYS: key_garbage_collector(): process in chunks
-Message-ID: <auiRbvC-tomWC_WD@kernel.org>
-References: <20261102121518.1197453-1-jarkko@kernel.org>
- <20261102121518.1197453-5-jarkko@kernel.org>
- <sashiko-outbox-193421@kernel.org>
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5B557606A329
+	for <keyrings@vger.kernel.org>; Mon,  2 Nov 2026 20:50:09 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 5B557606A329
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+Received: by mail-ed1-f51.google.com with SMTP id 4fb4d7f45d1cf-6b4f7d3cd98so2554913a12.0
+        for <keyrings@vger.kernel.org>; Mon, 02 Nov 2026 12:50:09 -0800 (PST)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1793652608; x=1794257408;
+        h=content-transfer-encoding:content-type:cc:to:subject:message-id
+         :date:from:in-reply-to:references:mime-version:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=YZHqs0S+0eF//NcnMf6waWSJNb6hMzfVqF5rDbvKzzE=;
+        b=SHsoKmxIEUZ/ploS00YKkdboCzeZFNr0lHxoYCnOYCJY+WVU3BKRNJKhubYRFXo2rb
+         0KaIS/EJ9Bh6zaO91pS9jniOMRnKKGdKiE3xN3mcKLc6NDrDUEdn7Y6WJe8ryPfUJ+ZW
+         tmwNirWTThQb9/uaPLuhX9cST6ZGFSvoDA1yWXFDS/OPcLO5MKuBnfVKkH2QiLroh1y6
+         11vohb8tdQ9WLpT4suqqY0gG0WLSsk+T4hwISIPhpkUPDmtkoNytom5d+O2ge9Gb09JX
+         W4gUcwzQvnpFErM8ZY6YFoj5GkS0NKCMvV4Nkde3uRH0pMHmkUAS29H/flR1HTfADH6e
+         tvZg==
+X-Forwarded-Encrypted: i=1; AKwUvBwiCeqPnVNLWGK4wUhuKBwLdSfmOn2wHE5FWDAQV5Q2qJoHcjBPN+id3RnbNjMFOEuA3iKs4ctY5Q==@vger.kernel.org
+X-Gm-Message-State: APuU4Z8eM780BHsRyP9zIMd3aFZLbFoeJVhlbQ4rHMqtjxfgrUIms9mC
+	ZL+qu/rzXn98yDEebQ6OfpjvzyFczUPVe5mY3fSZ9xsoCyOBCiYpwUh9yoYCLP33Z9I=
+X-Gm-Gg: AYBFou0V1rUqBb8RkrsZTFcbJlOlc1bDdWKMJVPkVcE0po42sZyCVrSQNN+9PUlxib8
+	Jbc5T4/kZ2yaL9xoGi5lWBv6FD0rCaNKXrPPoP9VAwBKXpL94GhzUTwHrgnj7shwXKscf07rPFJ
+	7Ok4eYHTmKycgxWJoMmpfBPF+lWfbeXtsrYVHt4VuSjLA6ssStDTBcqStIzzAHhf3qiCX5gZPcG
+	TrH8sjRLrPZ6aLGG83yf+vJ7C4qf51ShEHKt6t3TjWbnkKqkqLuVBKatxMfv2DFH10Sgc6lWrSY
+	wdWsbQifJXSYyjohQw8enXNXnvSVK52RiI2zWYIZ3wioHDA8P4/+4rELLr4H4gaB7EITVS8IIW5
+	xBAJzdz524pcTRpNR6sKve+G7n7Za3H/9akxG5WitLfvzrfeMT11wVTsDPF6SZr1zSqVg4UhUnT
+	tT4nZOL0Bvc3s2o686sDOqUJBJoD0N58mtlyFJpVpTQuwK3BoSpDZ7G6Fhx1OSiTzsr/BKuLLmE
+	+Wo2StpH+5oZBR8XwbpRki75IOm6MeVRCFoJ8hUW2rx+hbQU4nrmcKKHZIOuJ+Kpczk8+4V5w1g
+	W3sOAHkH28wtPR8qdnSX01+zCu+Hc/7G+rJ9t4ssx8PpzQmvz4rCKLgUmhE=
+X-Received: by 2002:a05:6402:c50d:20b0:6b1:b5b8:b691 with SMTP id 4fb4d7f45d1cf-6b4d4c7353emr5551221a12.21.1793652607921;
+        Mon, 02 Nov 2026 12:50:07 -0800 (PST)
+Received: from mail-ej1-f45.google.com (mail-ej1-f45.google.com. [209.85.218.45])
+        by smtp.gmail.com with ESMTPSA id 4fb4d7f45d1cf-6b4ec9ee537sm3554951a12.10.2026.11.02.12.50.07
+        for <keyrings@vger.kernel.org>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Mon, 02 Nov 2026 12:50:07 -0800 (PST)
+Received: by mail-ej1-f45.google.com with SMTP id a640c23a62f3a-c45551fa84eso506361966b.3
+        for <keyrings@vger.kernel.org>; Mon, 02 Nov 2026 12:50:07 -0800 (PST)
+X-Forwarded-Encrypted: i=1; AKwUvBw+J50GMiruHnDpZYwU7kNxG736tbYeVSaNDHGWCWDL9XzEPQzndeWaWdq0FXh3h3mL1XVbVUWQRg==@vger.kernel.org
+X-Received: by 2002:a17:907:930d:b0:c46:9ee5:eeee with SMTP id
+ a640c23a62f3a-c4ca79357a1mr947048866b.6.1793652606765; Mon, 02 Nov 2026
+ 12:50:06 -0800 (PST)
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,26 +81,109 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <sashiko-outbox-193421@kernel.org>
+References: <20261102074934.2925339-1-gubowen5@huawei.com>
+In-Reply-To: <20261102074934.2925339-1-gubowen5@huawei.com>
+From: Ignat Korchagin <ignat@linux.win>
+Date: Mon, 2 Nov 2026 20:49:55 +0000
+X-Gmail-Original-Message-ID: <CAOs+rJWjCTUwuYQMcBcbiUk8K_NQQtYGVFEBDEMZAKHWCLv98A@mail.gmail.com>
+X-Gm-Features: AclHuK9uKtGwMBZoHntdWHPm90lnYY-0KuyQanxDFP3TVplvFnPCOByhCba7eNE
+Message-ID: <CAOs+rJWjCTUwuYQMcBcbiUk8K_NQQtYGVFEBDEMZAKHWCLv98A@mail.gmail.com>
+Subject: Re: [PATCH -next] crypto: asymmetric_keys: verify_pefile: fix integer
+ underflow in pefile_strip_sig_wrapper
+To: Gu Bowen <gubowen5@huawei.com>
+Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>, 
+	Herbert Xu <herbert@gondor.apana.org.au>, keyrings@vger.kernel.org, 
+	linux-crypto@vger.kernel.org, kexec@lists.infradead.org, 
+	linux-kernel@vger.kernel.org, stable@vger.kernel.org, lujialin4@huawei.com
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 02, 2026 at 12:32:57PM +0000, sashiko-bot@kernel.org wrote:
-> Thank you for your contribution! Sashiko AI review found 1 potential issue(s) to consider:
-> - [Medium] keys: non-atomic flag clearing in key_garbage_collector() drops link reaping
+On Mon, Nov 2, 2026 at 7:32=E2=80=AFAM Gu Bowen <gubowen5@huawei.com> wrote=
+:
+
+nit: the subject line looks malformed: weird "-next" suffix pointing
+nowhere. Otherwise:
+
+> The pefile_strip_sig_wrapper() function validates the win_certificate
+> wrapper that precedes the PKCS#7 signature in a PE binary.  It checks
+> that the wrapper length does not exceed the certificate table size
+> (``wrapper.length > ctx->sig_len``) but fails to verify that the
+> wrapper length is at least ``sizeof(struct win_certificate)`` (8 bytes).
+>
+> When a crafted PE image supplies a wrapper with ``length`` in the range
+> [1, 7], the subsequent arithmetic::
+>
+>     ctx->sig_len =3D wrapper.length;      /* e.g. 1 */
+>     ctx->sig_offset +=3D sizeof(wrapper);
+>     ctx->sig_len -=3D sizeof(wrapper);    /* 1 - 8 =3D 0xFFFFFFF9 (unsign=
+ed) */
+>
+> underflows the unsigned ``ctx->sig_len`` to a value near UINT_MAX.  The
+> following ``sig_len < 4`` sanity check is bypassed because 0xFFFFFFF9 is
+> greater than 4.
+>
+> The underflowed ``sig_len`` is then passed to verify_pkcs7_signature()
+> and onwards to asn1_ber_decoder().  The ASN.1 decoder's own
+> ``datalen > 65535`` entry guard can be satisfied by constructing a
+> PKCS#7 length field of exactly 65535 (e.g. ``30 82 ff fb``), allowing
+> the decoder to proceed and attempt to read OID octets beyond the
+> allocated vmalloc buffer, triggering a page fault in look_up_OID()::
+>
+>   BUG: unable to handle page fault for address: ffffd1e986cb2000
+>   #PF: supervisor read access in kernel mode
+>   RIP: 0010:look_up_OID+0x14/0x100
+>   Call Trace:
+>    pkcs7_note_OID+0x33/0xa0
+>    asn1_ber_decoder+0x363/0xbd0
+>    pkcs7_parse_message+0xd9/0x1b0
+>    verify_pkcs7_signature+0x24/0x80
+>    verify_pefile_signature+0x7b/0xf0
+>    kexec_kernel_verify_pe_sig+0x1b/0x40
+>    kimage_file_alloc_init+0x1d8/0x3f0
+>    __se_sys_kexec_file_load+0xc6/0x270
+>
+> This is reachable through the kexec_file_load syscall on architectures
+> that verify PE signatures (x86 bzImage with
+> CONFIG_KEXEC_BZIMAGE_VERIFY_SIG, arm64 Image with
+> CONFIG_KEXEC_IMAGE_VERIFY_SIG), requiring CAP_SYS_BOOT.
+>
+> The oops occurs while the caller holds kexec_lock; if the faulting task
+> is killed, the lock is never released, leaving all subsequent kexec and
+> kdump operations permanently returning -EBUSY until reboot.
+>
+> Add a lower-bound check on wrapper.length before the subtraction to
+> prevent the underflow.
+>
+> Fixes: 09dacbbda935 ("pefile: Strip the wrapper off of the cert data bloc=
+k")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Gu Bowen <gubowen5@huawei.com>
+
+Reviewed-by: Ignat Korchagin <ignat@linux.win>
+
+> ---
+>  crypto/asymmetric_keys/verify_pefile.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+>
+> diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_k=
+eys/verify_pefile.c
+> index cec99db14129..cfa85ccb1cf7 100644
+> --- a/crypto/asymmetric_keys/verify_pefile.c
+> +++ b/crypto/asymmetric_keys/verify_pefile.c
+> @@ -146,6 +146,11 @@ static int pefile_strip_sig_wrapper(const void *pebu=
+f,
+>                         ctx->sig_len, wrapper.length);
+>                 return -ELIBBAD;
+>         }
+> +       if (wrapper.length < sizeof(wrapper)) {
+> +               pr_warn("Signature wrapper too small (%x < %zx)\n",
+> +                       wrapper.length, sizeof(wrapper));
+> +               return -ELIBBAD;
+> +       }
+>         if (wrapper.revision !=3D WIN_CERT_REVISION_2_0) {
+>                 pr_warn("Signature is not revision 2.0\n");
+>                 return -ENOTSUPP;
 > --
-> 
-> commit 9857f1d86bdced127ae471468f5b25b61aa04d0f
-> Author: Jarkko Sakkinen <jarkko@kernel.org>
-> 
-> KEYS: key_garbage_collector(): process in chunks
-> 
-> This commit updates key_garbage_collector() to scan the serial tree and
-> destroy unused keys in chunks of 64 items, tracking in-flight state across
-> workqueue continuations to prevent workqueue lockups.
-> 
-> Link: https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd-test.git/tree/package/keygcbench
-
-I'm addressing all the Sashiko issues also for this.
-
-Br, Jarkko
+> 2.43.0
+>
+>
