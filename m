@@ -1,64 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793581700;
-	b=pRa5QntsLsiQDWIc9cFshXY0ClgIPjQI1pomWM5PJdPnOViwtZ1KY+fTs7H3IOLl4g/T
-	 noryPDoVkGcW2mi37C44j3VOukHPoTup4Df8KCAy/nCEPxDUbATVnyLwHcYizgU95QGI1
-	 tNo4BDgX+qHx63GRz7Q4SzXacOUQ0Zqdnzw/xjjUHLtAgtWhLeFHJjt99OQmnK/Mfr6Ik
-	 ir3YAHRspBfQy4oLLg/eiM/KEWyFYreRD5YXZBQtWqyN/PhxeTRegpKsA4mJkwQo2JE0A
-	 IK0HSg3c8lq1kWNED4zmBTTeBhEMlNWZc8eP3QIpl4eUFSXLdH8quL+hk8dT1nrt5Nw==
+	t=1793602810;
+	b=vgG+dsTg1zsflDVOAMWOs4ifv8xG+EPFj5ERUzxLH7hkewYn2TyO3Cjfcyo+/hEIe2UP
+	 fdCqYfMXM4rc5tDRhxSsNfUc0CfcEB+e7Rm/1CJpqIDXO89512RhJUiCIY3IDHj1JCC99
+	 Sn5+dih/tGZC4+cnnqDW/zH3NM+0lV7ezvR0JYXT96dueTSxfw3J8mDPW2lynzPv81V+q
+	 W7mTOCIj0V8Qn1IKd7vIXu6CI0fSd/8oCsov8W8txZFuQ/bMaXfMGrG0sIWcKDIxCa+Wa
+	 I1I2UuHxH6+ll80e18I8pFqxDAMrGCamS1+VH5c+RGot/mDh17mXCTnRH+XwYHSzlAQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793581700;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793602810;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=veR8q9v0OA1Q+QVhyvn39Itk2zf2DJACfdZv5+IibhY=;
-	b=G7znGgOebKscp47L6gUnjPM8lNpbfTUxJc5CbJJBWKLYKhmot+Uy94d1sIbt2o467pHA
-	 T5N7mJ7s5mPN8POkoV+7sug8T2GGd9qyVylx7H81m0Xsczb6BoOEaPZizJM1YrcFkvU3e
-	 4FIZ2sEglr7ncOfr47BVC0myqUcJn/DRBbcv4ZAhvVV5anWaC7j58FLtq9400DT1jDWzP
-	 aDaF5q8k11jzwb52GkK5ewhKyIlGouAcKlDL/B5Ti5MCMmDTx4arZwdCBHmQKR40zIOMM
-	 +5tW5ZvsfDC6E22ldc9peTuCPoaTLQ8dQBz8wd6q62+okPoUPBLDXvEQHf9LpWmPv3g==
+	bh=QhazFK2BxvBECN5RgcF69zEUpMOSy6hAZ3XTzXMTcVE=;
+	b=rJ//uktIIQQuY8xqOJEXSvH36keCyp7sO0OS68GLmkRoFhqlX+zpCZVUoXQpQJiXxoAy
+	 OHP30LQAnor/wBLYsLvLtkhuGslUruna9qDkfRa9iBravTaT9Lvldnl76cs+v5BPhwXbR
+	 HTfiOdoPOUy2ECF6o8d1ARw/1101bflS3NphAppt/EDa9Nuw8COyXFYleyeAf/mC9rvVW
+	 4h/YedDuOl+B8n3FqLPy/Qj2N5+Fy7pec1O78T5hGo94ZCCRtLx+mFVAtxdFGUvxfL9mS
+	 QZWCA8tHta2LrME/oHGQttR6E5ddUQtGy8oOVsNY3TppzqIjj5CKn4SXfrEzd2sryLQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TWhyC73b;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nZ1fpzCa;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id D1655606A326;
-	Mon,  2 Nov 2026 01:08:19 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A667D606A326;
+	Mon,  2 Nov 2026 07:00:03 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TWhyC73b
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id D748A1F000C1;
-	Mon,  2 Nov 2026 01:08:18 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nZ1fpzCa
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 1A6621F000C1;
+	Mon,  2 Nov 2026 07:00:02 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793581699;
-	bh=veR8q9v0OA1Q+QVhyvn39Itk2zf2DJACfdZv5+IibhY=;
+	s=k20260515; t=1793602803;
+	bh=QhazFK2BxvBECN5RgcF69zEUpMOSy6hAZ3XTzXMTcVE=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=TWhyC73bKY1y4jAAwZH9MuvbegRenyAHqF4o3GT0HjMTOU0rk8Z4hvYfxKctuMKjH
-	 BhZzekKFm5QUEhqXjH9qmLxWszWq3h+FHpG1l/J+F624Vp6VnZMrxNyetEwMc2sG72
-	 B8M8aMChgQEXFZeJET0ny182ZQIFxnjQCnOR/21Y17z1wm4QXvTXiWohgXB6/Nm5xJ
-	 oxuE+BY2R83st8jlMcNLag1m4C/MS3LvGAN/3iDVX9cXFKvCMrS3eqbJTNebKmby85
-	 nTC38KBE7XuDgFgO1w7zm36lWVKL78w5VHeSWTjv60UJCtAEBSuOM3hIciDGPrHzlV
-	 q3LHgzmc7WMNw==
-Date: Mon, 2 Nov 2026 03:08:15 +0200
+	b=nZ1fpzCajPUVedS98lnw5TJ3fDB1QuJ3qI/LzCS9FDPP/jTPbjquXINWPZ4/Ew3nK
+	 Q4Q5jEcWLPHNPa5B06AXjZZ0qQtdDXcoL8fRCsPNG0lzEBdeKyMib8VGfyU7n3MfUN
+	 uAUjUvk5ye5I4rSVtD2hDmuHEfnlHTOmFoS4PMVNk4jL6jSwaWyICE02W5uhVlOCLl
+	 h3T1+vMiEFtTB9eZvdrNklrMWdq62TiILaPI+6iNASJNl9YYlp3ahPiUShNr3zOiR2
+	 rX6iB25+ST5TKDL+mD5yCmCpJPimzHtLwi7nbH35Oicb8Xzs75nPjDDc5NPD2hLjZY
+	 yPUgXCbtZqJMA==
+Date: Mon, 2 Nov 2026 08:59:59 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Eric Biggers <ebiggers@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Lukas Wunner <lukas@wunner.de>, Ignat Korchagin <ignat@linux.win>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	"open list:ASYMMETRIC KEYS" <linux-crypto@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH v4 2/3] KEYS: Replace assoc_array with rhashtable
-Message-ID: <aufif6uG43-qMFM6@kernel.org>
-References: <20261029232437.2581640-1-jarkko@kernel.org>
- <20261029232437.2581640-3-jarkko@kernel.org>
- <20261101232149.GC2689@quark>
- <aufTcqW-DTB9Ofai@kernel.org>
- <aufheZ9mR0rWqicW@kernel.org>
+Cc: Cen Zhang <zzzccc427@gmail.com>, dhowells@redhat.com,
+	paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com,
+	keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org, baijiaju1990@gmail.com,
+	jjzuming@gmail.com
+Subject: Re: [PATCH v3] keys: Protect the update method check against type
+ removalg
+Message-ID: <aug072sNik47BXxQ@kernel.org>
+References: <pm-keys-update-type-removal-20261029-v8-a0dbc48c588bf2b6a278@gmail.com>
+ <20261101221519.GB2689@quark>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -70,13 +63,27 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <aufheZ9mR0rWqicW@kernel.org>
+In-Reply-To: <20261101221519.GB2689@quark>
 
-On Mon, Nov 02, 2026 at 03:03:57AM +0200, Jarkko Sakkinen wrote:
-> Hmm... and rhashtable_insert_fast() can cause transient -EBUSY, which
-> is probably acceptable.
+On Sun, Nov 01, 2026 at 02:15:19PM -0800, Eric Biggers wrote:
+> On Sat, Oct 31, 2026 at 05:26:36PM +0800, Cen Zhang wrote:
+> > Take key->sem before the first access to key->type and hold it until
+> > the preparsed payload has been freed. Once a key exists, only the GC
+> > changes key->type, and it does so with key->sem held for writing.
+> 
+> Reviewed-by: Eric Biggers <ebiggers@kernel.org>
+> 
+> But it seems broken that a key type can be removed while keys of that
+> type still exist.
 
-Or actually: is this acceptable or not? A small detail but I guess it
-makes sense to address this properly.
+It might sense add ->owner and use try_module_get(). That would lead
+into removal of key_type_dead.
 
-Br, Jarkkko
+I'd think that is doable but I would first consider applying
+https://lore.kernel.org/keyrings/20261030205412.3138975-1-jarkko@kernel.org/
+as that is more substantial multi-subsystem change.
+
+> 
+> - Eric
+
+Br, Jarkko
