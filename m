@@ -1,67 +1,60 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793708955;
-	b=guo9kNO3atxFE7v4oNFnww1sGLLgrIC9vX29zGa5LgKzlP00Wf23QVl64Vvocy00mZqy
-	 hWrbmS4EHOhTSMfCWzpOBQv92yBbCYLV/XNe8g9VTWskrHDgGksGcxwqgDgT80QuihKvM
-	 BC+HYyyjgOq1Jqb0zadtNmqGLSawpZURpTw52tYbnWn++fKHTvFUu2olM01udMCUy/sSs
-	 t93lw8kg/aA8o3oJOyPw+WsM+lzkxH0kd3JXuWv0DL1VDimYiNIF0LW3wZwbMqWJ1iVyd
-	 2Vtyua0P7DOLyBw4F1rorViTunKaQeMPjeqxRgwo/0N8yyzTAxIAJbtamj1rEpgNULA==
+	t=1793709126;
+	b=cqieUOTrWZV1lwetVDuLV/ELvTJHQNxQZzIIAk4AmxnJTSoYI58iC72snp0vrNMfhhHB
+	 kL99nfL1K6fMToZwpQ/UVyzNAqfEQTHzuhBwcVb13SVtYuX3gTUnfuP9I0eQhWOQlmX1p
+	 aXsI2k+8mlbcoi4571lfmNoe2peZgwXcTPCLO2K8tBIbJ4n7oOGQyeDwF/WnmK6Enoz1G
+	 mCqowUKbICaP4UOOs7Yhiyl3GE4QpoV8/7prJyC0tWuaT9bP/ZB/Q09IDLa63CGnGkiT1
+	 r6PAD2wxPOajMLn9BRGRARb4kLezcKPUC78boSt2xyBFmsXLsUjXpbxgwEnZBQWxZjA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793708955;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793709126;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=DUyYtY0/ODWml+wjlW+GZawiWsZztBIYKliIpArIvIM=;
-	b=bVUxp0nlhJnOUWVn0jFFcyMdeHd68gDUlYeBTJjdhH1Vp+ZS3mCD4M/3VGEza0N7c0fZ
-	 6fIYQrBhdxV1zImkZaY8BubjdlOe+nxcFiwPklcCAyeEzBXk8+dynpEHLiBOvHCh2XnpU
-	 fUh3ikTGY9DRG910xTd/hF4Q+8s+bsAF9rlLhdqy7fic14ObzeD5gVR0YrdHrFQVwfqpT
-	 uDghX6PSsJ7G3ARJEqTEdSrxQmzB6gta5GnOeJuhij9s6+h1NKlvtBHCK20a5T1/cB4f6
-	 GlNqFvIi2DFMFAIhSzuFss1bkKrx4RQApHjqEuHUKuvQImDc6W+vY+TMjWTLWzlhDYw==
+	bh=vNgtK7lGHCz9LwG+wPYlReYbeCzYfwEWPD3BP1IN4LE=;
+	b=m73Hrn5j1fvDJbZQFCpap52J2tWawyudwZhNyc6eHEw7EfR4N9BzllV6ZxvAVP1CHorn
+	 5TiArOHh9LqydUZIir+03DkMJ02VtyOV7shBb0mzS1aEKCUMCVQitDn149cyi+qXjH2k/
+	 ZL2Sz5ooipSy25qNSeP4eCQogrl2fhPWvQmuA0evEfdtvZt0wQNJij9L10tbR4KKvy8vP
+	 QIXYCvgibakLQJhi+g4D+Ueaerj4N/NKrPPGXSzNJN5XG01zXEh9Ly3yep/v2FP2agBOv
+	 SLBRfPZ9QfmNqfugqzTvpkKdpkCOgVf+/cuAOa1Jv0z47RoC4Zxit2OPbrjn2XjcpvA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=FuOZFi7g;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="mLPu/ku6";
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 7835E606A329;
-	Tue,  3 Nov 2026 12:29:15 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 23BBA606EE97;
+	Tue,  3 Nov 2026 12:32:06 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=FuOZFi7g
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id CB9EF1F00919;
-	Tue,  3 Nov 2026 12:29:14 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=mLPu/ku6
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 70D511F00A1D;
+	Tue,  3 Nov 2026 12:32:05 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793708955;
-	bh=DUyYtY0/ODWml+wjlW+GZawiWsZztBIYKliIpArIvIM=;
+	s=k20260515; t=1793709126;
+	bh=vNgtK7lGHCz9LwG+wPYlReYbeCzYfwEWPD3BP1IN4LE=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=FuOZFi7gvZM9i0KCFVY+MbFRT83CKlZXVW1c/zMGlL01IeFLhKm9ANExZwHgYnGjH
-	 lDzdtIeko4Y+RR89YJAlRc7qMht6BVg5czhNrji69ZV/F0S0bQWE5SUtPKF9R85N7/
-	 6yljfx0vSxi3pU4beygEoFcEPlG/XJkIJm5NpSbl/9qO8mIzB3hCQvJEssQ3MRL42m
-	 KSpfAm0oTxTEn9+oLbZbzpJYHiN1B0dapz8GJdlcK33EuWU1z1OO1kR+nzeHGllk4c
-	 4wGyl55Pdx/qkprc27S8bORd228J8HwQtRwdMkcFbPeG3mmY/HVQi4U4X6ZbzZ/Z58
-	 6zGmpJtfDd+yQ==
-Date: Tue, 3 Nov 2026 14:29:11 +0200
+	b=mLPu/ku6948/QTLgjw3vZx1vOlB6oQ72IwH4q93Gkq7etWdTAGPrRp06/Sc1dysqM
+	 6Apz0b9R5xo96kSkA7eZlFfjhQ/DZ7GxfWVVRLEkfCVIxJ8VWn+y8lJO+y6v8oWrSJ
+	 tG+UigoZ5V7DqLgO+eUBWd3N+pnyNgO8Lvh1J9Jn0hSDBGsxuL+VPvzl/mODJE/Xi2
+	 YnXMecwNjsbsZxlqe2Xzr6rSCdFvwaNw+COXp0jLtPmnIH0lCq/26e24ylNEqsk88T
+	 evBu87A5qAuhuGNHkQ0e5FNA8r200giX+gXJ5k4q0V+ZgNYNsuMYC4Vkf0QEez3GNS
+	 oRNTnpSg4xhbg==
+Date: Tue, 3 Nov 2026 14:32:02 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@kernel.org>,
-	linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>,
-	keyrings@vger.kernel.org, stable@vger.kernel.org,
-	Keith Busch <kbusch@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-	Sagi Grimberg <sagi@grimberg.me>,
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers@kernel.org>, linux-integrity@vger.kernel.org,
+	Mimi Zohar <zohar@linux.ibm.com>, keyrings@vger.kernel.org,
 	Roberto Sassu <roberto.sassu@huawei.com>,
 	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
 	Eric Snowberg <eric.snowberg@oracle.com>,
 	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	Hannes Reinecke <hare@kernel.org>,
-	"open list:NVM EXPRESS DRIVER" <linux-nvme@lists.infradead.org>,
-	open list <linux-kernel@vger.kernel.org>,
-	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 02/11] nvme-keyring: Add a missing key_put() call
- to nvme_tls_key_lookup()
-Message-ID: <aunTlxXbRJ6ZP63h@kernel.org>
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 00/11] KEYS: Sanitize the garbage collector
+Message-ID: <aunUQgG4CvDerMcu@kernel.org>
 References: <20261103030226.2685251-1-jarkko@kernel.org>
- <20261103030226.2685251-3-jarkko@kernel.org>
- <20261103053303.GA1382@lst.de>
+ <aulQiGvH_Ea8Q2-E@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -73,34 +66,29 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261103053303.GA1382@lst.de>
+In-Reply-To: <aulQiGvH_Ea8Q2-E@kernel.org>
 
-On Tue, Nov 03, 2026 at 06:33:03AM +0100, Christoph Hellwig wrote:
-> On Tue, Nov 03, 2026 at 05:02:07AM +0200, Jarkko Sakkinen wrote:
-> > Call key_put() before returning -EKEYREVOKED, as the reference count gets
-> > incremented by key_lookup().
+On Tue, Nov 03, 2026 at 05:10:04AM +0200, Jarkko Sakkinen wrote:
+> On Tue, Nov 03, 2026 at 05:02:05AM +0200, Jarkko Sakkinen wrote:
+> > CHANGES
+> > =======
+> > 
+> > v2:
+> > - Used v1 as a test probe for Sashiko to detect the corner cases instead of
+> >   trying to resolve even the known ones beforehand.
+> > - Converted the client subsystems to be compatible with the module pinning
+> >   semantics.
 > 
-> Looks good, but I only got this one patch out of a 11 patch series,
-> so without the full context it's hard to fully review it.
+> I spent hours poking dns_resolver. What I have now is I think somewhat
+> acceptable or at least any other angle I tried was complete failure :-)
 
-I can it is just I rather do it on request because some people complain
-when doing what you asked :-) Regardless, the bug is independent of any
-patch set changes.
+I have another approach that does not hit heavily on AF_RXRPC and DNS
+resolver. So probably better to hold and judge the next version when
+it comes out. Regardless, reviewing chunk processing independently
+would help and it is pretty well benchmarked change too (with a test
+that is publicly available).
 
-I'll summarize the context below (ignore or read).
-
-I tried to tackle: https://lore.kernel.org/lkml/20261101221519.GB2689@quark/
-
-And essentially what I would want is key_type_dead not to exist.
-
-This version is based on module pinning, and  thus not having that
-key_put() would keep key type module alive in that case. However, it
-turned out this approach will not fly as AF_RXRPC and DNS resolver will
-hit the wall given e.g., the remote pinnings.
-
-The approach I'm going for next is to have a type registry instead,
-which is independent of the module system (to put story really short).
-I think I'm doing this with right process as this really needs a few
-trials in order to find patterns that stick.
+It prevents workqueue lockups happening while not doing any significant
+hits on throughput.
 
 Br, Jarkko
