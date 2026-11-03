@@ -1,58 +1,63 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=113.46.200.219
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793673555;
-	b=q0Sy7ODfkgQCroFNoLsPOFieLI9RODdLCLqoBtQkbVZYpd7WURJdTekwZ23nd0SoZiTS
-	 0g5sySsaRpafhWcTcipFEGPSmfflydoo5y0h05WsbuJJuOMyZJMOkqQTWd9LCzV00z1fP
-	 PfNwGCy2m5OEPV/kz+kTv5rII6x4QtBOOLHy9d0jT5F/0GVCKM7hoBqWgs1rPEGx7ADkS
-	 0MicEPRQU4FFah+vHX5IEwweVpLdSw9uFtBcrM+4+0J7atooG/qoOpJFqix3q00UmqrH9
-	 t/CBrr4dmLPLCMvwXn9v//JqjS0AzVLSG0+EPV0h/wb8b1Nn2BMEZyDKNkRkPJH9EVA==
+	t=1793674965;
+	b=yUjl0nrsZBEVj2qJoWLEgQ8Fb/XN5CzmpUq1jxVEjOK9qAEFCIKbdUcRhdZ/hk2j5Ibv
+	 SgZZ6SvEYLR+2dcBkKQniUsd5df9TaaxLc6rbe6k8yju1rFEVZOetiIAHE22sEpc25eDC
+	 hZlF2EA2M8219VhA0Y6dZS4b5Ke5RUvnfMEiMMpvnC+LQ6ywxWjvc4MR5gfg5Ld6SMs/U
+	 Eev+ylgI54XParyBMa3IXIs2QI+7f9kj9qSD4JwTYKWlLxXZYAXDwCtfDKJpCM3UoYwIT
+	 hFqbitFC8RIc6+BYqp5n9Wte4d+DI4VzzDlrNn2iJuAYeFBEcSTtKcBEEHAE5yapFfg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793673555;
-	h=DMARC-Filter:dkim-signature:Received:Received:Received:Message-ID:
-	 Date:MIME-Version:User-Agent:Subject:To:CC:References:
-	 Content-Language:From:In-Reply-To:Content-Type:
-	 Content-Transfer-Encoding:X-Originating-IP:X-ClientProxiedBy;
-	bh=1obNmdeiGvgYu4SrZA7IW2/sLeP9/qhwDqzFhh7JYAU=;
-	b=hsJXYZDWC/k3H24l/qNX76ZUSblAsz/83khkaELvCjMBYF/7ejqd7+/L3gHYfwZ6mczV
-	 8bm/zVbEEgytqHNS8L4B6mS2kJ96lE2ZZi+NGIN4kpEnszW0dX+wpilZoK8ODt9VQKtXD
-	 J5KGTWYg+9ZTOZYvpFSTvBmEygZPIzKX8u0nvFvEei4e5ZJBVF/ex+tQPgnOje1ibX2Oc
-	 Dg8dqtkbHaaGSHi2cFaXjC39YjQ4Hy8odI/BquiQHYqKGcPpaSz4i8Zx7a+wl7OiQNeH3
-	 zT6RO/kqU3DJ3gDwkftb8coZHXtS1dYcFTG/zE1fUuyCHFcFTisYIrCDA5JJgqVVl2g==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793674965;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=HbeNZQv0ykKKYaZtsI32V97es7WUM1tUrBOIJGxvuu8=;
+	b=tL4BXApp41oeBhzHFhOVoSgirGzl7tZYCsiCq/dsZpybCc8ZQ5Ss3eCuuzgXxgW/qrcD
+	 1XPDpzpYGhdC90GfMO6LngWtoAHDvc2SE3XpGklfgVsp3baGtz+aq8alR6WpU679NUSma
+	 xijZnWsMC0CQO82NdZ/KmEXMkbry5zZZn8hIbPdJrrnG97z0dMHnK+wjZcktplfY/oKO/
+	 zajlRYEljnoBFS95iH9JJbZPK5VQmrfA7dp8k8CYXYDMNjDRK5kwKzLX9fq274SfczlPG
+	 QSlgTf6qGQ1V8L3U3dPUaPnn9xbOsv/FjZ7Jn6gnLtpZBlzOiTDMrzvvzfg6RnVhRjg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=huawei.com;
-	spf=pass smtp.mailfrom=huawei.com;
-	dkim=pass header.d=huawei.com header.i=@huawei.com header.a=rsa-sha256 header.s=dkim header.b=Vd+3z769;
-	arc=none smtp.remote-ip=113.46.200.219
-Received: from canpmsgout04.his.huawei.com (canpmsgout04.his.huawei.com [113.46.200.219])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=N1oSfw8w;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4F236606A324;
-	Tue,  3 Nov 2026 02:39:11 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 4F236606A324
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=huawei.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=huawei.com
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E0620606A32D;
+	Tue,  3 Nov 2026 03:02:44 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=huawei.com header.i=@huawei.com header.a=rsa-sha256 header.s=dkim header.b=Vd+3z769
-dkim-signature: v=1; a=rsa-sha256; d=huawei.com; s=dkim;
-	c=relaxed/relaxed; q=dns/txt;
-	h=From;
-	bh=1obNmdeiGvgYu4SrZA7IW2/sLeP9/qhwDqzFhh7JYAU=;
-	b=Vd+3z769FE2AdKqFFVuIOFI6gUYwT/dCQ9ZA6062sBZuqZKGctrvZW3aefJ7nHvSfYXaYcLxS
-	TkC710+MiEdJryQUzEyLuUH6qs/riSOHQKzwbe3plG0hcrYHQj3zkV7aygFUcWkE84Dh7JEljCz
-	9Dxow00Cls7ZuHhrX0N7aHU=
-Received: from mail.maildlp.com (unknown [172.19.162.197])
-	by canpmsgout04.his.huawei.com (SkyGuard) with ESMTPS id 4jJXp13TtHz1prKx;
-	Tue,  3 Nov 2026 10:39:05 +0800 (CST)
-Received: from whupemk300004.china.huawei.com (unknown [7.152.185.168])
-	by mail.maildlp.com (Postfix) with ESMTPS id 5049B40579;
-	Tue,  3 Nov 2026 10:39:09 +0800 (CST)
-Received: from [10.67.109.77] (10.67.109.77) by whupemk300004.china.huawei.com
- (7.152.185.168) with Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.2562.45; Tue, 3 Nov
- 2026 10:39:08 +0800
-Message-ID: <0ea46638-1d62-491c-8364-8a2d16837f88@huawei.com>
-Date: Tue, 3 Nov 2026 10:39:07 +0800
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=N1oSfw8w
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E38EB1F000C1;
+	Tue,  3 Nov 2026 03:02:43 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1793674964;
+	bh=HbeNZQv0ykKKYaZtsI32V97es7WUM1tUrBOIJGxvuu8=;
+	h=From:To:Cc:Subject:Date;
+	b=N1oSfw8wxKawnxXp6ZXVy0Ok0/LzqHHY/c8iu3lx4CFovyEZKRL9RPCjdIsTD43pe
+	 NEDxbAlUmlcDUkagL+veb0KbQM3ZQQ1CKPBpMLNN9Sdwbf9sUbmGkhXvjlBiVkMi4X
+	 TfJoMBAX28oHBdSHn4DjKIk8l+uec5ShFZ7QZITM7FWQ5EPVybD2g8apT63Wg4hfkQ
+	 elP3qc+8w5qqXd2TICEFc53o1iljD3w+c9mh8+vTRpKagpWPLvl/z+bUfY7FLH5uyA
+	 eJPk9cpFBZnIDHw6b6DTTXNfEJfojoIgDQo8C9u631MjTtTbtGpc5QB+ay8awhotBi
+	 7jRFwAbNT1UwA==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers@kernel.org>,
+	linux-integrity@vger.kernel.org,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	keyrings@vger.kernel.org,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Roberto Sassu <roberto.sassu@huawei.com>,
+	Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+	Eric Snowberg <eric.snowberg@oracle.com>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
+	linux-kernel@vger.kernel.org (open list)
+Subject: [RFC PATCH v2 00/11] KEYS: Sanitize the garbage collector
+Date: Tue,  3 Nov 2026 05:02:05 +0200
+Message-ID: <20261103030226.2685251-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -62,35 +67,67 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH -next] crypto: asymmetric_keys: verify_pefile: fix integer
- underflow in pefile_strip_sig_wrapper
-To: Ignat Korchagin <ignat@linux.win>
-CC: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
-	Herbert Xu <herbert@gondor.apana.org.au>, <keyrings@vger.kernel.org>,
-	<linux-crypto@vger.kernel.org>, <kexec@lists.infradead.org>,
-	<linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-	<lujialin4@huawei.com>
-References: <20261102074934.2925339-1-gubowen5@huawei.com>
- <CAOs+rJWjCTUwuYQMcBcbiUk8K_NQQtYGVFEBDEMZAKHWCLv98A@mail.gmail.com>
-Content-Language: en-US
-From: Gu Bowen <gubowen5@huawei.com>
-In-Reply-To: <CAOs+rJWjCTUwuYQMcBcbiUk8K_NQQtYGVFEBDEMZAKHWCLv98A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: kwepems200002.china.huawei.com (7.221.188.68) To
- whupemk300004.china.huawei.com (7.152.185.168)
+Content-Transfer-Encoding: 8bit
 
+1. Remove key_type_dead and replace it with the regular module semantics.
+2. Replace variable size workqueue items with fixed-size 64 key chunks.
 
-On 11/3/2026 4:49 AM, Ignat Korchagin wrote:
-> 
-> nit: the subject line looks malformed: weird "-next" suffix pointing
-> nowhere. Otherwise:
-> 
+The first change has user space visible effect: rmmod semantics will change
+from always succeeding into returning -EBUSY when keys or restrictions have
+the LKM pinned.
 
-Thanks for the review! You're right, the "-next" suffix was a mistake. 
-Will drop "-next" in the subject.
+CHANGES
+=======
 
-Best Regards,
-Guber
+v2:
+- Used v1 as a test probe for Sashiko to detect the corner cases instead of
+  trying to resolve even the known ones beforehand.
+- Converted the client subsystems to be compatible with the module pinning
+  semantics.
+
+VERSIONS
+========
+
+Jarkko Sakkinen (11):
+  KEYS: Add key_gc_flush() for draining RCU callbacks
+  nvme-keyring: Add a missing key_put() call to nvme_tls_key_lookup()
+  dns_resolver: Clear .dns_resolver cache when the last client unloads
+  NFSv4: Clear idmap keyring cache when the last client unloads
+  smb: client: Clear idmap/SPNEGO caches when the last session is
+    unloaded
+  s390/cert_store: Track subsystem keys instead of re-registering
+    key_type
+  KEYS: trusted: TEE: Disable sysfs bind attributes
+  KEYS: trusted: TEE: Synchronize session lifetime
+  KEYS: Pin the backing kernel module for a key type
+  KEYS: Remove key_type_dead
+  KEYS: key_garbage_collector(): process in chunks
+
+ arch/s390/kernel/cert_store.c             | 161 ++++++-------
+ drivers/nvme/common/keyring.c             |   1 +
+ fs/afs/main.c                             |   4 +
+ fs/nfs/dns_resolve.h                      |   7 +-
+ fs/nfs/nfs4idmap.c                        |  21 ++
+ fs/smb/client/cifs_debug.c                |   2 +-
+ fs/smb/client/cifs_spnego.c               |   8 +
+ fs/smb/client/cifsacl.c                   |   8 +
+ fs/smb/client/cifsfs.c                    |   8 +-
+ fs/smb/client/cifsglob.h                  |   2 +-
+ fs/smb/client/cifsproto.h                 |   8 +
+ fs/smb/client/misc.c                      |  19 +-
+ include/linux/dns_resolver.h              |  13 +-
+ include/linux/key-type.h                  |   6 +-
+ include/linux/key.h                       |   2 +
+ net/ceph/ceph_common.c                    |   7 +
+ net/dns_resolver/dns_key.c                |  28 +++
+ security/keys/gc.c                        | 266 +++++++++-------------
+ security/keys/internal.h                  |   7 +-
+ security/keys/key.c                       |  61 +++--
+ security/keys/keyring.c                   |  85 +++----
+ security/keys/trusted-keys/trusted_core.c |  15 +-
+ security/keys/trusted-keys/trusted_tee.c  |  87 +++++--
+ 23 files changed, 450 insertions(+), 376 deletions(-)
+
+--
+2.47.3
 
