@@ -1,44 +1,44 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793675002;
-	b=JH23PyH1SQGr74Tm5lWwdrHQWhdnj7yOLWw0laB711iTMziFUsgantkUVREq99sF6XMn
-	 EQM4IU5CkKeHnyERLIevLXF5YUpujoZYWeimbEpuDfbcFOA5kgsFXrmvo+Ic3ChXMqFUH
-	 uKYXLyIhYdHUT+UrjgIKJM6oVX9yurY5JrY9vNL4iSb2612x0y37QtQm2X1/YBWN6GkCo
-	 nGQaXdUyAEjBw7WynwAZo3tpsBlvh5RmX27dm+A+hrp/Dh6d7B5TUhK3fXH61RZmt4dcg
-	 nIzHmuiIT+W2gUmdT5eh89Ra5UaquQtiYvciy/N7/sTQ8YYdUT6hyEyOV8e3rXkRpEA==
+	t=1793675007;
+	b=asdG7Srv7q+z81hpaIaqKKq80mq8MBVB1TN0aB7miPe3jsU9Vk0XFhe5IqRf0Rli9LqC
+	 fWnGgeHYt8cmOAGSSHN1h+AlAMt+UDkBQuD4HRRiV/1Uc4bRsP0ERPEFJDng1UawfXAy9
+	 jZxFCwlZLBBpYx+n3R/YevgCM/0hw2kFFD7aNXB/+kMvmgciNbJZ5Ku0mwsS/y0ycKCKe
+	 V/Yq4oLmojFfibxug4O1dwV6mqHYe0U6/jCWo1vYpEH3PRDfoyp4GVS37VURHk+g3cXVB
+	 EDykfNh7qeZRmAqoJV6WCwxo6rrg8y6BsuPPUoFck2wO9W7LS7eO+E5oB72EH0lTD1Q==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793675002;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793675007;
 	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
 	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
-	bh=Sb2XMtjKsz+jI29azHxtIIZugzSbewTBfgbly0UTNlM=;
-	b=RsvukDG6X25F4W2HRntmYUjAbPtzYthkG+x5oRrvEBEQAMoR9Jt78CxUhlIJJzuT1x26
-	 BAPrYG+4bTNab4X7Agtlx/ld6yWFLULNn7ALztUrAgd8Yydhjd+PLY0l+64F3lcQWpVqd
-	 Xepmr/sVG5Jds/IY3Gz8HqBIGqNkOXlg4cxqU7abeoq3qrRrOtnFzwVvJYHbx5WoJY6uW
-	 fPTmKuu5E2JwxWUuXW34YcliNaNrRzd4zQMGO5w4kVUI2t/8T7iKAQgcNt8Vzx6M67sz9
-	 1XPvDXey7JqvO6thQJcvJoB/uyffQdd1TlvY8Egf3y1fTPWwwzsjnZtg/ML65T1XHjQ==
+	bh=Uqw+5mlwITbWQBp+QPEhRs9ar6zOfcGAmPDQLIQUXow=;
+	b=aZTnH5AZU7DJAPFKcHwCD5rXLYkLr5q9dQvNIPy+DTGGhsc+9p4FulogViShBHFk/qgC
+	 smM4707oXTIeGHSxYKhmiuzBwT42PMGsLjWoTeHicTXKuqbu82jLwDwyvwYW/Yu8O48w/
+	 cNBX3+pMLRH3yiAca9xDqtzfpN7UyAk3TzqwhFObcwPPIPuh+mmIiJxmOMzupRJAvPG21
+	 xG25aWgxP2O1G66WO1AFCUnNP1+fx3vSEL7A2HQ4KKHlIsW3UtAQVGC+27FIqnImXOhoL
+	 DAVMAvrFTZ6VSXneiOG/RODHb37bnwflkVNcHDa1N8n1pHn8/Xvd3aEmcAUUPE1Sw1A==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=B8ukt+bh;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=K7cX7w9m;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 4B265606A32D;
-	Tue,  3 Nov 2026 03:03:22 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id B36B4606D826;
+	Tue,  3 Nov 2026 03:03:26 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=B8ukt+bh
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5CB4E1F00A15;
-	Tue,  3 Nov 2026 03:03:21 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=K7cX7w9m
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id BBF3B1F00A1A;
+	Tue,  3 Nov 2026 03:03:25 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793675001;
-	bh=Sb2XMtjKsz+jI29azHxtIIZugzSbewTBfgbly0UTNlM=;
+	s=k20260515; t=1793675006;
+	bh=Uqw+5mlwITbWQBp+QPEhRs9ar6zOfcGAmPDQLIQUXow=;
 	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=B8ukt+bhl8JyK9XykNxTse88EYFzR6NjbR4YSc7f1QJUPo4SzvzQdTkdXUrct8958
-	 AE4RgEzzZMqAZesur7+M4PbSkcbHqpDap8BAYTYpYCD+Lg5+EMe3HpE5HmPTvkswRv
-	 JxHT6Q3tfKZO09Jhnx/3KuhoU8UFcHzpfF3J41JeWuBg784tMC389l2e47B33Mtw4t
-	 whMjeb9XSKayXCs5bEbgFZU5Je3/zEo6tvJsvzjLISBFP1+xpg8L678VbKqtOS6xFo
-	 JaY5E6tPzkgWjsym0P0/cpibY7KceHlELo7X4ZP2iPsUKwfojMQZqqlf9U6zl/MlcV
-	 p2tMBsieJK6bA==
+	b=K7cX7w9md7w4IY06caeSyAp8ndjv1JWxlzXMmM54qmdBYP0qh5GUkf3s15/v8tbUN
+	 bTiitpxKWkIrLn2Sde7EFjGqJ7FnxiwWdt2Fw+M5/K/1NaVRmgDWZq7+HBgbwR9roa
+	 88DRtwrjdQao7wqpVohWY4iHXluxE+X7FcGEpZgyrm1jGkrhbDykOh2q2l+BtFQ/WC
+	 MVGLAz3uoqdfECY+5OKB3doLKzMGfkdL0GoRHz608UvQ6trTNSwOooMjhFODstVz3C
+	 A2MS/LomsVfWaLEmkfS9Bz4/j436Cs6C5dMB++y67vQZ8GveVABKLSEohhrpgmJDr6
+	 nuh/Y3ZsNavWQ==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: Eric Biggers <ebiggers@kernel.org>,
@@ -52,13 +52,11 @@ Cc: Eric Biggers <ebiggers@kernel.org>,
 	Paul Moore <paul@paul-moore.com>,
 	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	James Bottomley <James.Bottomley@HansenPartnership.com>,
-	Sumit Garg <sumit.garg@kernel.org>,
-	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM),
-	linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH v2 08/11] KEYS: trusted: TEE: Synchronize session lifetime
-Date: Tue,  3 Nov 2026 05:02:13 +0200
-Message-ID: <20261103030226.2685251-9-jarkko@kernel.org>
+	linux-kernel@vger.kernel.org (open list),
+	linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
+Subject: [RFC PATCH v2 09/11] KEYS: Pin the backing kernel module for a key type
+Date: Tue,  3 Nov 2026 05:02:14 +0200
+Message-ID: <20261103030226.2685251-10-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
 In-Reply-To: <20261103030226.2685251-1-jarkko@kernel.org>
 References: <20261103030226.2685251-1-jarkko@kernel.org>
@@ -73,254 +71,285 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-Even with sysfs bind attributes suppressed on trusted_key_driver, the
-parent TEE device can still remove trusted_key_device while live trusted
-keys keep trusted.ko loaded, and init_trusted() updated static calls
-only after backend init() had already registered key_type_trusted.
+Add the owner field (populated with THIS_MODULE) to struct key_type.
 
-Update the static calls before invoking backend init() and reset them on
-failure. In the TEE backend, guard session context state with a mutex,
-publish pvt_data.dev before registering key_type_trusted, sanitize
-pvt_data on probe failure and remove, and reject seal/unseal/get_random
-with -ENODEV when no active TEE session is bound.
+Pin the module in key_alloc() and keyring_restrict(), and release it in
+key_gc_unused_keys() and keyring_destroy(), which are wires to the keys
+and restrictions.
+
+Reject module owners still in MODULE_STATE_COMING so that the failed
+module_init() paths cannot leave behind referenced keys.
 
 Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
- security/keys/trusted-keys/trusted_core.c | 15 ++--
- security/keys/trusted-keys/trusted_tee.c  | 86 +++++++++++++++++------
- 2 files changed, 75 insertions(+), 26 deletions(-)
+ include/linux/key-type.h |  6 ++++-
+ security/keys/gc.c       |  3 +++
+ security/keys/key.c      | 48 ++++++++++++++++++++++++++++++----------
+ security/keys/keyring.c  | 33 ++++++++++++++++++++++-----
+ 4 files changed, 71 insertions(+), 19 deletions(-)
 
-diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
-index 0509d9955f2a..11d7d296d063 100644
---- a/security/keys/trusted-keys/trusted_core.c
-+++ b/security/keys/trusted-keys/trusted_core.c
-@@ -373,14 +373,19 @@ static int __init init_trusted(void)
- 		if (!get_random)
- 			get_random = kernel_get_random;
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index c4f329b6ae3f..9ecec31ad571 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -10,9 +10,11 @@
  
-+		static_call_update(trusted_key_seal, trusted_key_sources[i].ops->seal);
-+		static_call_update(trusted_key_unseal, trusted_key_sources[i].ops->unseal);
-+		static_call_update(trusted_key_get_random, get_random);
-+		migratable = trusted_key_sources[i].ops->migratable;
+ #include <linux/key.h>
+ #include <linux/errno.h>
++#include <linux/init.h>
+ 
+ #ifdef CONFIG_KEYS
+ 
++struct module;
+ struct kernel_pkey_query;
+ struct kernel_pkey_params;
+ 
+@@ -161,6 +163,7 @@ struct key_type {
+ 				     const void *in, const void *in2);
+ 
+ 	/* internal fields */
++	struct module		*owner;
+ 	atomic64_t		index_id;	/* Opaque keyring index ID */
+ 	struct list_head	link;		/* link in types list */
+ 	struct lock_class_key	lock_class;	/* key->sem lock class */
+@@ -168,7 +171,8 @@ struct key_type {
+ 
+ extern struct key_type key_type_keyring;
+ 
+-extern int register_key_type(struct key_type *ktype);
++int __register_key_type(struct key_type *ktype, struct module *owner);
++#define register_key_type(ktype) __register_key_type(ktype, THIS_MODULE)
+ extern void unregister_key_type(struct key_type *ktype);
+ 
+ extern int key_payload_reserve(struct key *key, size_t datalen);
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index 3cfbf00085b3..f4ae3e57a4be 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/module.h>
+ #include <linux/security.h>
+ #include <keys/keyring-type.h>
+ #include "internal.h"
+@@ -151,6 +152,7 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
+ 	while (!list_empty(keys)) {
+ 		struct key *key =
+ 			list_entry(keys->next, struct key, graveyard_link);
++		struct module *owner = key->type->owner;
+ 		short state = key->state;
+ 
+ 		list_del(&key->graveyard_link);
+@@ -179,6 +181,7 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
+ 
+ 		memzero_explicit(key, sizeof(*key));
+ 		kmem_cache_free(key_jar, key);
++		module_put(owner);
+ 	}
+ }
+ 
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 3f1f0fc13710..0b2a03c511e5 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -7,6 +7,7 @@
+ 
+ #include <linux/export.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ #include <linux/poison.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+@@ -234,19 +235,34 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 
+ 	key = ERR_PTR(-EINVAL);
+ 	if (!desc || !*desc)
+-		goto error;
++		goto out;
 +
- 		ret = trusted_key_sources[i].ops->init();
- 		if (!ret) {
--			static_call_update(trusted_key_seal, trusted_key_sources[i].ops->seal);
--			static_call_update(trusted_key_unseal, trusted_key_sources[i].ops->unseal);
--			static_call_update(trusted_key_get_random, get_random);
++	/* Failed module initialization ignores outstanding module references. */
++	if ((type->owner && module_is_coming(type->owner)) ||
++	    !try_module_get(type->owner)) {
++		key = ERR_PTR(-ENOENT);
++		goto out;
++	}
++
++	if (restrict_link && restrict_link->keytype &&
++	    ((restrict_link->keytype->owner &&
++	      module_is_coming(restrict_link->keytype->owner)) ||
++	     !try_module_get(restrict_link->keytype->owner))) {
++		key = ERR_PTR(-ENOENT);
++		goto out_put_module;
++	}
+ 
+ 	if (type->vet_description) {
+ 		ret = type->vet_description(desc);
+ 		if (ret < 0) {
+ 			key = ERR_PTR(ret);
+-			goto error;
++			goto out_put_restrict_module;
+ 		}
+ 	}
+ 
+ 	desclen = strlen(desc);
+ 	if (desclen >= KEY_MAX_DESC_SIZE)
+-		goto error;
++		goto out_put_restrict_module;
+ 	quotalen = desclen + 1 + type->def_datalen;
+ 
+ 	/* get hold of the key tracking for this user */
+@@ -323,8 +339,6 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	refcount_inc(&key->domain_tag->usage);
+ 	atomic_inc(&user->nkeys);
+ 	key_alloc_serial(key);
 -
- 			trusted_key_exit = trusted_key_sources[i].ops->exit;
--			migratable = trusted_key_sources[i].ops->migratable;
-+		} else {
-+			static_call_update(trusted_key_seal, NULL);
-+			static_call_update(trusted_key_unseal, NULL);
-+			static_call_update(trusted_key_get_random, NULL);
-+			migratable = 0;
+-error:
+ 	return key;
+ 
+ security_error:
+@@ -338,7 +352,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	}
+ 	key_user_put(user);
+ 	key = ERR_PTR(ret);
+-	goto error;
++	goto out_put_restrict_module;
+ 
+ no_memory_3:
+ 	kmem_cache_free(key_jar, key);
+@@ -352,13 +366,22 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	key_user_put(user);
+ no_memory_1:
+ 	key = ERR_PTR(-ENOMEM);
+-	goto error;
++	goto out_put_restrict_module;
+ 
+ no_quota:
+ 	spin_unlock_irqrestore(&user->lock, irqflags);
+ 	key_user_put(user);
+ 	key = ERR_PTR(-EDQUOT);
+-	goto error;
++
++out_put_restrict_module:
++	if (restrict_link && restrict_link->keytype)
++		module_put(restrict_link->keytype->owner);
++
++out_put_module:
++	module_put(type->owner);
++
++out:
++	return key;
+ }
+ EXPORT_SYMBOL(key_alloc);
+ 
+@@ -1231,19 +1254,20 @@ int generic_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
+ EXPORT_SYMBOL(generic_key_instantiate);
+ 
+ /**
+- * register_key_type - Register a type of key.
++ * __register_key_type - Register a type of key.
+  * @ktype: The new key type.
++ * @owner: Module owning the key type.
+  *
+  * Register a new key type.
+  *
+  * Returns 0 on success or -EEXIST if a type of this name already exists.
+  */
+-int register_key_type(struct key_type *ktype)
++int __register_key_type(struct key_type *ktype, struct module *owner)
+ {
+ 	struct key_type *p;
+ 	int ret;
+ 
+-	memset(&ktype->lock_class, 0, sizeof(ktype->lock_class));
++	ktype->owner = owner;
+ 
+ 	ret = -EEXIST;
+ 	down_write(&key_types_sem);
+@@ -1264,7 +1288,7 @@ int register_key_type(struct key_type *ktype)
+ 	up_write(&key_types_sem);
+ 	return ret;
+ }
+-EXPORT_SYMBOL(register_key_type);
++EXPORT_SYMBOL(__register_key_type);
+ 
+ /**
+  * unregister_key_type - Unregister a type of key.
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 5281da9d5bf7..1561406b68fa 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -7,6 +7,7 @@
+ 
+ #include <linux/export.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/security.h>
+@@ -436,6 +437,9 @@ static void keyring_destroy(struct key *keyring)
+ 	if (keyring->restrict_link) {
+ 		struct key_restriction *keyres = keyring->restrict_link;
+ 
++		if (keyres->keytype)
++			module_put(keyres->keytype->owner);
++
+ 		key_put(keyres->key);
+ 		kfree(keyres);
+ 	}
+@@ -1062,7 +1066,7 @@ int keyring_restrict(key_ref_t keyring_ref, const char *type,
+ 
+ 		if (!restrict_type->lookup_restriction) {
+ 			ret = -ENOENT;
+-			goto error;
++			goto out;
  		}
  
- 		if (!ret || ret != -ENODEV)
-diff --git a/security/keys/trusted-keys/trusted_tee.c b/security/keys/trusted-keys/trusted_tee.c
-index 5d1288189e5c..a2ed16e0db3f 100644
---- a/security/keys/trusted-keys/trusted_tee.c
-+++ b/security/keys/trusted-keys/trusted_tee.c
-@@ -9,6 +9,7 @@
- #include <linux/err.h>
- #include <linux/key-type.h>
- #include <linux/module.h>
-+#include <linux/mutex.h>
- #include <linux/slab.h>
- #include <linux/string.h>
- #include <linux/tee_drv.h>
-@@ -56,6 +57,8 @@ struct trusted_key_tee_private {
- };
+ 		restrict_link = restrict_type->lookup_restriction(restriction);
+@@ -1070,7 +1074,15 @@ int keyring_restrict(key_ref_t keyring_ref, const char *type,
  
- static struct trusted_key_tee_private pvt_data;
-+/* Do not hold this mutex across key type registration or unregistration. */
-+static DEFINE_MUTEX(trusted_key_tee_mutex);
- 
- /*
-  * Have the TEE seal(encrypt) the symmetric key
-@@ -67,6 +70,12 @@ static int trusted_tee_seal(struct trusted_key_payload *p, char *datablob)
- 	struct tee_param param[4];
- 	struct tee_shm *reg_shm = NULL;
- 
-+	mutex_lock(&trusted_key_tee_mutex);
-+	if (!pvt_data.ctx) {
-+		ret = -ENODEV;
-+		goto out_unlock;
+ 	if (IS_ERR(restrict_link)) {
+ 		ret = PTR_ERR(restrict_link);
+-		goto error;
++		goto out;
 +	}
 +
- 	memset(&inv_arg, 0, sizeof(inv_arg));
- 	memset(&param, 0, sizeof(param));
- 
-@@ -74,7 +83,8 @@ static int trusted_tee_seal(struct trusted_key_payload *p, char *datablob)
- 					      sizeof(p->key) + sizeof(p->blob));
- 	if (IS_ERR(reg_shm)) {
- 		dev_err(pvt_data.dev, "shm register failed\n");
--		return PTR_ERR(reg_shm);
-+		ret = PTR_ERR(reg_shm);
-+		goto out_unlock;
++	if (restrict_link && restrict_link->keytype &&
++	    ((restrict_link->keytype->owner &&
++	      module_is_coming(restrict_link->keytype->owner)) ||
++	     !try_module_get(restrict_link->keytype->owner))) {
++		ret = -ENOENT;
++		goto out_free_restriction;
  	}
  
- 	inv_arg.func = TA_CMD_SEAL;
-@@ -100,7 +110,8 @@ static int trusted_tee_seal(struct trusted_key_payload *p, char *datablob)
- 	}
+ 	down_write(&keyring->sem);
+@@ -1088,12 +1100,21 @@ int keyring_restrict(key_ref_t keyring_ref, const char *type,
+ 	up_write(&keyring_serialise_restrict_sem);
+ 	up_write(&keyring->sem);
  
- 	tee_shm_free(reg_shm);
--
-+out_unlock:
-+	mutex_unlock(&trusted_key_tee_mutex);
- 	return ret;
- }
- 
-@@ -114,6 +125,12 @@ static int trusted_tee_unseal(struct trusted_key_payload *p, char *datablob)
- 	struct tee_param param[4];
- 	struct tee_shm *reg_shm = NULL;
- 
-+	mutex_lock(&trusted_key_tee_mutex);
-+	if (!pvt_data.ctx) {
-+		ret = -ENODEV;
-+		goto out_unlock;
-+	}
+-	if (ret < 0) {
++	if (ret < 0)
++		goto out_put_module;
 +
- 	memset(&inv_arg, 0, sizeof(inv_arg));
- 	memset(&param, 0, sizeof(param));
- 
-@@ -121,7 +138,8 @@ static int trusted_tee_unseal(struct trusted_key_payload *p, char *datablob)
- 					      sizeof(p->key) + sizeof(p->blob));
- 	if (IS_ERR(reg_shm)) {
- 		dev_err(pvt_data.dev, "shm register failed\n");
--		return PTR_ERR(reg_shm);
-+		ret = PTR_ERR(reg_shm);
-+		goto out_unlock;
- 	}
- 
- 	inv_arg.func = TA_CMD_UNSEAL;
-@@ -147,7 +165,8 @@ static int trusted_tee_unseal(struct trusted_key_payload *p, char *datablob)
- 	}
- 
- 	tee_shm_free(reg_shm);
--
-+out_unlock:
-+	mutex_unlock(&trusted_key_tee_mutex);
- 	return ret;
- }
- 
-@@ -161,13 +180,20 @@ static int trusted_tee_get_random(unsigned char *key, size_t key_len)
- 	struct tee_param param[4];
- 	struct tee_shm *reg_shm = NULL;
- 
-+	mutex_lock(&trusted_key_tee_mutex);
-+	if (!pvt_data.ctx) {
-+		ret = -ENODEV;
-+		goto out_unlock;
-+	}
++	goto out;
 +
- 	memset(&inv_arg, 0, sizeof(inv_arg));
- 	memset(&param, 0, sizeof(param));
- 
- 	reg_shm = tee_shm_register_kernel_buf(pvt_data.ctx, key, key_len);
- 	if (IS_ERR(reg_shm)) {
- 		dev_err(pvt_data.dev, "key shm register failed\n");
--		return PTR_ERR(reg_shm);
-+		ret = PTR_ERR(reg_shm);
-+		goto out_unlock;
- 	}
- 
- 	inv_arg.func = TA_CMD_GET_RANDOM;
-@@ -189,7 +215,8 @@ static int trusted_tee_get_random(unsigned char *key, size_t key_len)
- 	}
- 
- 	tee_shm_free(reg_shm);
--
-+out_unlock:
-+	mutex_unlock(&trusted_key_tee_mutex);
- 	return ret;
- }
- 
-@@ -205,50 +232,67 @@ static int optee_ctx_match(struct tee_ioctl_version_data *ver, const void *data)
- static int trusted_key_probe(struct tee_client_device *rng_device)
- {
- 	struct device *dev = &rng_device->dev;
-+	struct tee_context *ctx;
- 	int ret;
- 	struct tee_ioctl_open_session_arg sess_arg;
- 
-+	mutex_lock(&trusted_key_tee_mutex);
-+	if (pvt_data.ctx) {
-+		ret = -EBUSY;
-+		goto out_unlock;
-+	}
++out_put_module:
++	if (restrict_link && restrict_link->keytype)
++		module_put(restrict_link->keytype->owner);
 +
- 	memset(&sess_arg, 0, sizeof(sess_arg));
++out_free_restriction:
++	if (restrict_link)
+ 		key_put(restrict_link->key);
+-		kfree(restrict_link);
+-	}
++	kfree(restrict_link);
  
--	pvt_data.ctx = tee_client_open_context(NULL, optee_ctx_match, NULL,
--					       NULL);
--	if (IS_ERR(pvt_data.ctx))
--		return -ENODEV;
-+	ctx = tee_client_open_context(NULL, optee_ctx_match, NULL, NULL);
-+	if (IS_ERR(ctx)) {
-+		ret = -ENODEV;
-+		goto out_unlock;
-+	}
+-error:
++out:
+ 	if (restrict_type)
+ 		key_type_put(restrict_type);
  
- 	memcpy(sess_arg.uuid, rng_device->id.uuid.b, TEE_IOCTL_UUID_LEN);
- 	sess_arg.clnt_login = TEE_IOCTL_LOGIN_REE_KERNEL;
- 	sess_arg.num_params = 0;
- 
--	ret = tee_client_open_session(pvt_data.ctx, &sess_arg, NULL);
-+	ret = tee_client_open_session(ctx, &sess_arg, NULL);
- 	if ((ret < 0) || (sess_arg.ret != 0)) {
- 		dev_err(dev, "tee_client_open_session failed, err: %x\n",
- 			sess_arg.ret);
- 		ret = -EINVAL;
- 		goto out_ctx;
- 	}
-+	pvt_data.ctx = ctx;
- 	pvt_data.session_id = sess_arg.session;
--
--	ret = register_key_type(&key_type_trusted);
--	if (ret < 0)
--		goto out_sess;
--
- 	pvt_data.dev = dev;
-+	mutex_unlock(&trusted_key_tee_mutex);
- 
--	return 0;
-+	ret = register_key_type(&key_type_trusted);
-+	if (!ret)
-+		return 0;
- 
--out_sess:
--	tee_client_close_session(pvt_data.ctx, pvt_data.session_id);
-+	mutex_lock(&trusted_key_tee_mutex);
-+	tee_client_close_session(ctx, pvt_data.session_id);
- out_ctx:
--	tee_client_close_context(pvt_data.ctx);
--
-+	tee_client_close_context(ctx);
-+	pvt_data.ctx = NULL;
-+	pvt_data.dev = NULL;
-+	pvt_data.session_id = 0;
-+out_unlock:
-+	mutex_unlock(&trusted_key_tee_mutex);
- 	return ret;
- }
- 
- static void trusted_key_remove(struct tee_client_device *dev)
- {
- 	unregister_key_type(&key_type_trusted);
-+
-+	mutex_lock(&trusted_key_tee_mutex);
- 	tee_client_close_session(pvt_data.ctx, pvt_data.session_id);
- 	tee_client_close_context(pvt_data.ctx);
-+	pvt_data.ctx = NULL;
-+	pvt_data.dev = NULL;
-+	pvt_data.session_id = 0;
-+	mutex_unlock(&trusted_key_tee_mutex);
- }
- 
- static const struct tee_client_device_id trusted_key_id_table[] = {
 -- 
 2.47.3
 
