@@ -1,61 +1,66 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793761383;
-	b=FoDfnrXhKJJE36gOH7xEQcYqM2q7HCu3bBsv/IkMKirpD4pqxk/AfNx153JEuX0F4Ws4
-	 5E5tg0Me5P0x0W2Svzd/cxdnoV9/kWt1mChSTjXddx5+H8Xp9hTYUZUk8FyR5UMrmqOp0
-	 iJ5QkNZFS0SD9OfIgrEVrum9MVHsoY/CHrmvxHuugyV3WLABqSaKg0I7GCyB8zzW7BS+n
-	 MoH+GBlwDU0s/RhV3uHDXeeH1lfv6DIR5a5VZunZ23sfPtEAwLyGJ4iquqkCkx5UUa8DE
-	 nqiGKtGXm6acXp/SNlicF6MLSjCSMvrxBggM7p5YGtR+0jsbec3ZBoCcJ/1F58GYXlg==
+	t=1793761386;
+	b=Q3vH/OVv3WC1QT0DOL6TJYVHjMOqAK53UuQifX2sSIfXYAHsiGu8s8lUAq3LvwCp6Ah+
+	 ron8SXKJK1krysVpnoRIidTTTXfn2jKBay6ySXeYYMASafWUDT0X0UkyJ5L3Tl+9cP3kt
+	 nU3sCxrShadP4nAnZdLFNHnrk/PbdU4Xwp1+ahmn1L4EOmkhAwlJRMg5mjdbuvF3dRbeG
+	 XwmAeiB5mJRPjsYTK77DvXRYAMv9W+Pb5fV/d96ExtXU+W4RUpPXMp1tZd5M6335O6EZa
+	 /XreseCXc+enihPvYo3kMZYmzuxnqVkUm+J4Wi20834lQJNgKkHiVX5AxBq4rx8kY0A==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793761383;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793761386;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=wzYU+r3uXDCSd9JLoGVlj0wSnW9MxzPziNGy8n9n1BQ=;
-	b=IupXmJjsLBoQYYfDBwF7zYNR5Lve4lGjdGtnN0yZlBZKHHyaRV4vZl9oWR2Kp/rAD2Sv
-	 EpKJyXdspopu0wWZG8/4MgqlOQClx+w0zgQ47TWgwNCz8ueyC6F1C/UxQjwkwVuM3OrvR
-	 dvP7fIBUja4Hu44Su8DIndyiqnFNVazvrX04TKoYwPn1jju8BDy+Impw6PQWScC4a9WFD
-	 9O9U0F51SJ3ooi3nBbKuIYGuRvo70eJso0nffe5mNT2jjrjcdq6yBq7uRNMuRBvVVN+LM
-	 c1DhQ8pfDwKhlh7wfX1WMHbHrCLL/zH1S0cHT+8PwUmC96YXI+MBFseDxgQUObNu/zQ==
+	bh=7Jnmx7teJGQZMRfarYN+PGQR+XtvXbKJdYdbknuTFvI=;
+	b=Fj/e7mrtQIQvo3LcLQgmeyiMvR0oHSugVftIuZ9wj2Bi5NEv5naSmU1sphtd6aa4dAa1
+	 WTwB+Mn0crqCbJEov4J4Gmavyd02Gyufq/eWZLKRKEJzHgopfWuov1Zo1CrmDollqucfe
+	 093N/kcWODFZ0UOYwTMeIHjF+4s1LqImDWloF84y47GdDaiPs1UbhhnDlHdKQbFnCxxot
+	 KyFTtnMBAL+9+YeaANc5NcFGkE6QHkFXzblJHgMTty7SPulDq3og/G8O7Lt8+aezR/aMm
+	 OOYWlick9n+pwxk8mDI4PC4tSz6nfwKmmQu6kq1yBu7p7iDAxJg0K/alGyOCgIIy91A==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HPCMRMb9;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QT57FdzB;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 11347606A31B;
-	Wed,  4 Nov 2026 03:03:03 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9AB15606A332;
+	Wed,  4 Nov 2026 03:03:06 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HPCMRMb9
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 5856B1F000C1;
-	Wed,  4 Nov 2026 03:03:02 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QT57FdzB
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 5D6731F00A17;
+	Wed,  4 Nov 2026 03:03:05 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793761382;
-	bh=wzYU+r3uXDCSd9JLoGVlj0wSnW9MxzPziNGy8n9n1BQ=;
+	s=k20260515; t=1793761386;
+	bh=7Jnmx7teJGQZMRfarYN+PGQR+XtvXbKJdYdbknuTFvI=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=HPCMRMb94lkZhlGSSEtXKpBe6iujZuU5Zmp3Rwm3Wj5K1EWMK4JSFTs4tXJdngkgL
-	 QYP1vAd+IHROie1Dx+GqDhWxSuaG8B2KwnqgC0hR4C9Nxmp++VwtRRRHo1+euB7oiv
-	 uJtotO1cpNZVsFqrzHweCoQTjAYNAKhLHShFRdtBz/29LJ5V6cYsTp/neqxEimYoeH
-	 CNq4kC9XGZpTTPMh1d4fwqa6TB3gDeje2uzrE/kg5wyJU9jE9RTusEJR1r5xuwHtIv
-	 pS9rE9THX3HNdRmW2zq9yI3if4RFm+LQ1p0jIbWRHRmHPvJP8DUv7kN3+kvoTTeYU3
-	 RkImXJs+U36dA==
-Message-ID: <sashiko-outbox-196565@kernel.org>
+	b=QT57FdzBdnwtlTZhmUAO7dObknWiQgLcYbsgNRfbWSWTVx6I/bgFx1ccChS9C9Lkx
+	 MH26/og/UdSSjJdEiE+fiqiYCtJn+ENDKj/GtRH2BttjEn9FZIl9G69Ql2g1LCOJaM
+	 VV9gV6oxDA4dbBYNuWGC6VA0ao1PitQy07oAwfe5OwuNDlQVG6aO/WFSHUNMNiznrm
+	 rLVTU49gGoWE3v5OvhlTiOnKIyFC6vszGnMrMqQwB7dCnOptAlyw+N+m2JXn1B3B4Z
+	 YRrrYrAGNj0A68RqrO8ueTWNTPna5fNSn1UNA0JKCAOjUayBggniTu4niE/KEUVRJB
+	 pUQOmu3X1lRQw==
+Message-ID: <sashiko-outbox-196569@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [RFC PATCH v2 01/11] KEYS: Add key_gc_flush() for draining RCU
- callbacks
+Subject: Re: [RFC PATCH v2 05/11] smb: client: Clear idmap/SPNEGO caches
+ when the last session is unloaded
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
-Cc: "Eric Biggers" <ebiggers@kernel.org>, "Mimi Zohar" <zohar@linux.ibm.com>, keyrings@vger.kernel.org, "Roberto
+Cc: "Eric Biggers" <ebiggers@kernel.org>, "Mimi Zohar" <zohar@linux.ibm.com>, keyrings@vger.kernel.org, "Paulo
+ Alcantara" <pc@manguebit.org>, "Namjae Jeon" <linkinjeon@kernel.org>, "Ronnie
+ Sahlberg" <ronniesahlberg@gmail.com>, "Shyam Prasad N" <sprasad@microsoft.com>, "Tom
+ Talpey" <tom@talpey.com>, "Bharath SM" <bharathsm@microsoft.com>, "Roberto
  Sassu" <roberto.sassu@huawei.com>, "Dmitry Kasatkin" <dmitry.kasatkin@gmail.com>, "Eric
  Snowberg" <eric.snowberg@oracle.com>, "Paul Moore" <paul@paul-moore.com>, "James
  Morris" <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+ =?utf-8?b?bW9kZXJhdGVkIGxpc3Q6Q09NTU9OIElOVEVSTkVUIEZJTEUgU1lTVEVNIENM?=
+ =?utf-8?b?SUVOVCAoQ0lGUyBhbmQgU01CMyk=?= <samba-technical@lists.samba.org>,
  =?utf-8?b?b3BlbiBsaXN0OlNFQ1VSSVRZIFNVQlNZU1RFTQ==?= <linux-security-module@vger.kernel.org>
-In-Reply-To: <20261103030226.2685251-2-jarkko@kernel.org>
+In-Reply-To: <20261103030226.2685251-6-jarkko@kernel.org>
 References: <20261103030226.2685251-1-jarkko@kernel.org>
- <20261103030226.2685251-2-jarkko@kernel.org>
+ <20261103030226.2685251-6-jarkko@kernel.org>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Wed, 04 Nov 2026 03:03:01 +0000
+Date: Wed, 04 Nov 2026 03:03:04 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,99 +70,174 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 1 potential issue(=
+Thank you for your contribution! Sashiko AI review found 3 potential issue(=
 s) to consider:
-- [Medium] KEYS: premature return in key_gc_flush() when key_gc_work queues=
- RCU
+- [High] smb: client: key_gc_flush() in sesInfoFree() on WQ_MEM_RECLAIM wor=
+kqueues
+- [Medium] smb: client: WARN_ON() on keyring_clear() failure in cache clear=
+ helpers
+- [Medium] smb: client: premature SPNEGO cache clear in dfs_mount_share()
 --
 
-commit e02fb1ccece5874817985c8b64ba41bf90bc5796
+commit 1af6c60c9338c6ee58b722558872d2fff3e07106
 Author: Jarkko Sakkinen <jarkko@kernel.org>
 
-KEYS: Add key_gc_flush() for draining RCU callbacks
+smb: client: Clear idmap/SPNEGO caches when the last session is unloaded
 
-This commit introduces key_gc_flush() to drain RCU callbacks and flush
-key_gc_work until no further garbage collection passes remain queued. This
-provides callers clearing an internal key cache before module unload with a
-synchronous barrier for key destruction.
+This commit serializes CIFS session count transitions with a mutex and clea=
+rs
+the idmap and SPNEGO cache keyrings, flushing key garbage collection when t=
+he
+last SMB session is freed.
 
-> diff --git a/security/keys/gc.c b/security/keys/gc.c
-> index eda445f815d47..3cfbf00085b3d 100644
-> --- a/security/keys/gc.c
-> +++ b/security/keys/gc.c
-> @@ -21,6 +21,20 @@ unsigned key_gc_delay =3D 5 * 60;
->  static void key_garbage_collector(struct work_struct *work);
->  DECLARE_WORK(key_gc_work, key_garbage_collector);
+> diff --git a/fs/smb/client/cifs_spnego.c b/fs/smb/client/cifs_spnego.c
+> index 44c4072756804..3bd272c7d9fe6 100644
+> --- a/fs/smb/client/cifs_spnego.c
+> +++ b/fs/smb/client/cifs_spnego.c
+> @@ -242,6 +242,14 @@ init_cifs_spnego(void)
+>  	return ret;
+>  }
 > =20
-> +/**
-> + * key_gc_flush - Wait for pending key unlinks and garbage collection.
-> + *
-> + * Drain RCU callbacks from keyring edits and wait for the key garbage
-> + * collector work item to finish reaping unreferenced keys.
-> + */
-> +void key_gc_flush(void)
+> +void cifs_spnego_clear_cache(void)
 > +{
-> +	do {
-> +		rcu_barrier();
-> +	} while (flush_work(&key_gc_work));
+> +	int ret;
+> +
+> +	ret =3D keyring_clear(spnego_cred->thread_keyring);
+> +	WARN_ON(ret);
 > +}
-> +EXPORT_SYMBOL_GPL(key_gc_flush);
+> +
+>  void
+>  exit_cifs_spnego(void)
+>  {
+> diff --git a/fs/smb/client/cifsacl.c b/fs/smb/client/cifsacl.c
+> index 346899da91eb2..7504cedf64177 100644
+> --- a/fs/smb/client/cifsacl.c
+> +++ b/fs/smb/client/cifsacl.c
+> @@ -590,6 +590,14 @@ init_cifs_idmap(void)
+>  	return ret;
+>  }
+> =20
+> +void cifs_idmap_clear_cache(void)
+> +{
+> +	int ret;
+> +
+> +	ret =3D keyring_clear(root_cred->thread_keyring);
+> +	WARN_ON(ret);
+> +}
 
 [Severity: Medium]
-Can key_gc_flush() return prematurely before keys invalidated by
-key_invalidate() or key_remove_domain() are unlinked and reaped?
-
-Unlike keyring_clear(), which queues assoc_array_rcu_cleanup() via call_rcu=
+Can keyring_clear() in cifs_spnego_clear_cache() and cifs_idmap_clear_cache=
 ()
-synchronously before returning, key_invalidate() schedules key_gc_work to
-reap links first:
+trigger a WARN_ON() on a normal memory allocation failure?
 
-security/keys/key.c:key_invalidate() {
-	if (!test_bit(KEY_FLAG_INVALIDATED, &key->flags)) {
-		down_write_nested(&key->sem, 1);
-		if (!test_and_set_bit(KEY_FLAG_INVALIDATED, &key->flags)) {
-			notify_key(key, NOTIFY_KEY_INVALIDATED, 0);
-			key_schedule_gc_links();
-		}
-		up_write(&key->sem);
-	}
-}
+When sesInfoFree() frees the last SMB session while keys are cached in
+spnego_cred->thread_keyring or root_cred->thread_keyring, keyring_clear()
+calls assoc_array_clear():
 
-When key_garbage_collector() runs the link-reaping pass at found_keyring, it
-calls keyring_gc() -> assoc_array_gc() -> assoc_array_apply_edit(), which
-queues assoc_array_rcu_cleanup() via call_rcu() without setting
-KEY_GC_REAP_AGAIN:
+security/keys/keyring.c:keyring_clear()
+  assoc_array_clear(&keyring->keys, &keyring_assoc_array_ops)
+    kzalloc_obj(struct assoc_array_edit)
 
-security/keys/gc.c:key_garbage_collector() {
-	/* We found a keyring and we need to check the payload for links to
-	 * dead or expired keys.  We don't flag another reap immediately as we
-	 * have to wait for the old payload to be destroyed by RCU before we
-	 * can reap the keys to which it refers.
-	 */
-found_keyring:
-	spin_unlock(&key_serial_lock);
-	keyring_gc(key, limit);
-	goto maybe_resched;
-}
+If that GFP_KERNEL allocation fails under memory pressure, memcg limits, or
+fault injection, assoc_array_clear() returns ERR_PTR(-ENOMEM) and
+keyring_clear() returns -ENOMEM, causing WARN_ON(ret) to fire (and panicking
+systems with panic_on_warn enabled).
 
-Because key_gc_flush() calls rcu_barrier() before flush_work(&key_gc_work),
-if key_invalidate() is followed by key_gc_flush(), the RCU callback is not
-queued yet when the first rcu_barrier() starts. If key_gc_work runs
-keyring_gc(), queues edit->rcu via call_rcu() after rcu_barrier() has alrea=
-dy
-passed that CPU (or returned), and finishes before flush_work(&key_gc_work)
-is reached, flush_work(&key_gc_work) sees the work item is already idle and
-returns false.
+Other commits in this series (such as nfs_idmap_delete() in
+fs/nfs/nfs4idmap.c and dns_resolver_cache_put() in net/dns_resolver/dns_key=
+.c)
+log a ratelimited warning with pr_warn_ratelimited() and skip key_gc_flush()
+when keyring_clear() fails. Should cifs_spnego_clear_cache() and
+cifs_idmap_clear_cache() handle errors the same way instead of using
+WARN_ON()?
 
-At that point the loop exits while assoc_array_rcu_cleanup() is still pendi=
+> diff --git a/fs/smb/client/misc.c b/fs/smb/client/misc.c
+> index ec28f102ea08a..4503434942f97 100644
+> --- a/fs/smb/client/misc.c
+> +++ b/fs/smb/client/misc.c
+
+[ ... ]
+
+> @@ -115,6 +122,14 @@ sesInfoFree(struct cifs_ses *buf_to_free)
+>  		kref_put(&iface->refcount, release_iface);
+>  	spin_unlock(&buf_to_free->iface_lock);
+>  	kfree_sensitive(buf_to_free);
+> +
+> +	mutex_lock(&cifs_session_mutex);
+> +	if (atomic_dec_and_test(&cifs_ses_alloc_count)) {
+> +		cifs_idmap_clear_cache();
+> +		cifs_spnego_clear_cache();
+
+[Severity: Medium]
+When mounting a DFS share with no existing SMB sessions active, does cleari=
 ng
-in RCU, key_put() has not been called on the unlinked key, and
-key_gc_unused_keys() has not reaped it.
+the caches whenever cifs_ses_alloc_count drops to zero prematurely evict the
+SPNEGO key just obtained during the mount?
 
-Should flush_work(&key_gc_work) be called before rcu_barrier() in the loop
-so that any pending link-reaping pass queues its RCU callbacks before
-rcu_barrier() waits for them?
+In fs/smb/client/dfs.c:dfs_mount_share(), when !ctx->dfs_conn initially, the
+mount path sets up a session (populating spnego_cred->thread_keyring via an
+upcall), queries the DFS referral, and then tears down that initial connect=
+ion
+before allocating the new DFS session:
+
+dfs_mount_share()
+  get_session(mnt_ctx, NULL)        /* cifs_ses_alloc_count: 0 -> 1 */
+  dfs_get_referral(...)
+  if (!ctx->dfs_conn) {
+      ctx->dfs_conn =3D true;
+      cifs_mount_put_conns(mnt_ctx) /* cifs_ses_alloc_count: 1 -> 0 */
+      rc =3D get_session(mnt_ctx, NULL);
+  }
+
+Because cifs_mount_put_conns() calls cifs_put_smb_ses() ->
+__cifs_put_smb_ses() -> sesInfoFree() before the replacement session is
+allocated, cifs_ses_alloc_count transiently reaches 0. This wipes the SPNEGO
+keyring and stalls in key_gc_flush(), forcing the immediately following
+get_session() call to perform a redundant userspace SPNEGO upcall.
+
+> +		key_gc_flush();
+> +	}
+> +	mutex_unlock(&cifs_session_mutex);
+>  }
+
+[Severity: High]
+What happens if the last reference to struct cifs_ses is dropped from a
+workqueue created with WQ_MEM_RECLAIM, such as cifsiod_wq?
+
+In init_cifs(), cifsiod_wq is allocated with WQ_MEM_RECLAIM, and
+cifs_kill_sb() does not flush cifsiod_wq before calling cifs_umount().
+Background work items running on cifsiod_wq can hold session or tcon
+references and drop the final session reference if unmount completes
+concurrently:
+
+fs/smb/client/connect.c:mchan_mount_work_fn() [on cifsiod_wq]
+  mchan_mount_free()
+    cifs_put_smb_ses()
+      __cifs_put_smb_ses()
+        sesInfoFree()
+
+or:
+
+fs/smb/client/smb2pdu.c:smb2_reconnect_server() [on cifsiod_wq]
+  cifs_put_smb_ses() / cifs_put_tcon()
+    __cifs_put_smb_ses()
+      sesInfoFree()
+
+When sesInfoFree() clears non-empty keyrings and calls key_gc_flush():
+
+security/keys/gc.c:key_gc_flush() {
+	do {
+		rcu_barrier();
+	} while (flush_work(&key_gc_work));
+}
+
+rcu_barrier() runs assoc_array_rcu_cleanup() -> keyring_free_object() ->
+key_put(), which schedules key_gc_work on system_dfl_wq (a workqueue without
+WQ_MEM_RECLAIM). Calling flush_work(&key_gc_work) from a WQ_MEM_RECLAIM wor=
+ker
+on cifsiod_wq will then trigger the WARN_ONCE() in check_flush_dependency()
+for flushing a !WQ_MEM_RECLAIM workqueue from a memory-reclaim worker.
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261103030226.2685=
-251-1-jarkko@kernel.org?part=3D1
+251-1-jarkko@kernel.org?part=3D5
