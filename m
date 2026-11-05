@@ -1,99 +1,90 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.215.170
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=148.163.156.1
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793853508;
-	b=aZNl93UE3EGBkiZhD8Saj8nGKFxoqLI1haoNd6uAutpozNOBKyRYNOcyZ7LCCfmtPoaJ
-	 OBu9IchSeLlGU6Kc0q3ds7MUnA0dKOhJ7+zBjT2TH8cHUwb9BgQUH5x5fr71CseW9mazr
-	 tlcU9zZlT0sz7xHkGIe0Cat7seSi/eFRh8qG+YMawqH5nvLrj+Ocx7Al9uS3ju6TPKTq2
-	 5adwZ/yN3oH5mzY5Rq8vllh5g7AYX23tuzecemTxDzuobg0zDofim2PnSkmqOA0YOz3Gt
-	 RtxBFVQEZJJftXKNAJK6ILM2U7F4I72mYjVsdS3TkRudgkCP4366rB4PExpbYch9rFg==
+	t=1793880770;
+	b=YzIqq1R9e+X36XHpGZ4m3r8A6OhRXeTmLs5+gjr+vX0pC2CFDWgnAopJ1vuJ25VEJThn
+	 RSl4LjO3jB5wRTMkuUhIoBloRBhe2uox+G70UmO7EUIZOgh3olM7rSUuSl0J7lCzdC8lM
+	 Met/eKbw1/mb86Wewo915yTFNu0sSLX8ysOChfVQecCnhdFxo8ptOscSOeS3Up6mzArja
+	 DNfviXK6cUi52MYRLgRsHZ2PTyTANoX6+63tlFiH0+AmjNdskhnCgUq/2KMpBJQ06ADPO
+	 Dt1NruZa1WrnYjG54Ex91pHs2ZYjnbP+yo6tH1Z22sxwrD2D8E2FP+scD5rSlz+YRag==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793853508;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
-	 From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:References:
-	 MIME-Version:Content-Transfer-Encoding;
-	bh=48V+VsvijFUjy1EizLIiYaKYQ847uo8vE4JKf+yBXAY=;
-	b=vKM7dn+hc5QEGNC/bWYkmQ/vHyIALhLrOufXBXNyY/javaZvtcs4IGOVxP/hgQa4ZreS
-	 LCdxavx1K9cJJuz9GT2de080WP6+9WJdrc7flDkFWg47jZujUcSeRU5UqT1/CyqNsR/j3
-	 HFjaym9veuzqICc+Qh9s6YXTHc2iXExBaTv68m4yzyCQO60R9ABPw11evVnbWjDEfHKSh
-	 DfFKCetDdUlMDB96Mm972l89PRGg/ZBLck6Vjepz1gjtR5B4OK0AGP/33asHreyv2tEo4
-	 hkF6gDJyiPKEnbMhOeKg6g7rD6Y/agDB+dNqwHwBuDX/9Ak5BUjyR7fJ9PGJgCByTgQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793880770;
+	h=DMARC-Filter:Received:DKIM-Signature:Received:Received:Received:
+	 Received:Received:Received:Received:From:To:Cc:Subject:Date:
+	 Message-ID:X-Mailer:In-Reply-To:References:MIME-Version:
+	 Content-Transfer-Encoding:X-TM-AS-GCONF:X-Authority-Analysis:
+	 X-Proofpoint-ORIG-GUID:X-Proofpoint-GUID:
+	 X-Proofpoint-Spam-Details-Enc:X-Proofpoint-Spam-Info:
+	 X-Proofpoint-Virus-Version:X-Proofpoint-Spam-Details;
+	bh=4LjsDDL7CSEil3Vbq1SCJ9NcZ77XkMeSExPsXRGmIaM=;
+	b=q1VEN81pyHfTP3+ncyYelPaou0WUPP99cVoUq/8wj9ZIcKDw3zDvGDMQ7UE658Tw0Z77
+	 l6tF+79FZ+9pHoyAZqDylC+OvtLoEBl4nOBQh5EqOqsB+kEJuH8al1bvahYm63O5D8asq
+	 MyW2sNYIZcOT0zfYOPAVUy2PQ15vo6SSBq+WGPYGmH6hmr5F8JJh+gX8LEjilz81xIhQc
+	 ysrZPdxL+dg88cI+D3B9HQM54vm7TNVF4+Yv4U6xiWzAunAkcDhCM8IAvqa5yjxu+Mkx1
+	 Z8vP25yjjhmlqIDeRl37y3ofstgnvOefw3tt9s9Ba6VolnCFAPOYWq4F6+6VSkLmHcA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gmail.com;
-	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=xzTtXARL;
-	arc=none smtp.remote-ip=209.85.215.170
-Received: from mail-pg1-f170.google.com (mail-pg1-f170.google.com [209.85.215.170])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	dmarc=pass header.from=linux.ibm.com;
+	spf=pass smtp.mailfrom=linux.ibm.com;
+	dkim=pass header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=VIvtOaSZ;
+	arc=none smtp.remote-ip=148.163.156.1
+Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 10CBF606A32D
-	for <keyrings@vger.kernel.org>; Thu,  5 Nov 2026 04:38:27 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 10CBF606A32D
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F0E60606A31B;
+	Thu,  5 Nov 2026 12:12:49 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org F0E60606A31B
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=xzTtXARL
-Received: by mail-pg1-f170.google.com with SMTP id 41be03b00d2f7-cdb2dfcca94so648791a12.1
-        for <keyrings@vger.kernel.org>; Wed, 04 Nov 2026 20:38:27 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20260707; t=1793853507; x=1794458307; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=48V+VsvijFUjy1EizLIiYaKYQ847uo8vE4JKf+yBXAY=;
-        b=xzTtXARLYN2RESb9u7JaWRcCOM9339Cll6gqB99I1UayC7NyCgiTKuUW6GDmIAHgIZ
-         b6+fS+ZVhOYVrbQ3NeDTwCyKGGRvQhCILna9fWmgbYCFSwoTPEwlm6Wiqx36ieXo45yX
-         N9Ng7JDJ4qTizFRVnDg8+iSMuL+HfGBifN3F5RTplq/Y8XuXNl7vNHkQamYdiDVqUvfA
-         Ds4cos1dhugMquQGnqYY96Czi3UXL+FFaS67DA5bkNppMCgQmlacH+VrAk64Qqk8S3Dv
-         d6OwVYGaRiouE19l+vWv2kPfHUe7ykXVpe9OelXFuLwTQqHq9/rVCZ4lqYAKhzRsTauc
-         lQYA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1793853507; x=1794458307;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=48V+VsvijFUjy1EizLIiYaKYQ847uo8vE4JKf+yBXAY=;
-        b=QejkYVnGAB92bYWHffN+7iU4nhH27uL9UsfUEuurjGnVngtS7+NPwdIiZPtvQhbL4f
-         B4dLfPLiKjWFVWTZ1vHUNyg+ox/2p4gCpyhqQxXtLQznOUd+/L5w0mYzA+rbGrhGZ/he
-         CHiOWt2IeOumd3CDlpclZLOMqr6WA71ePg/egA7OKjAmFIifPAmucINMxfQjzpW333IZ
-         BPwXWhtSSV2WepWsXOOm3t6tnc+l0gSDR4Co5Msm1k/jt62kebsc5QAHwJKN1rJzY1Ri
-         2KQjGKC+p30B/HPHbFrWccK7roZNp4psGJ3PIZF633YVeBKUGyDeL4Ob4HefnGw2eidB
-         /ojg==
-X-Forwarded-Encrypted: i=1; AKwUvBwkrqJLiJPF8GTVe7LOA4SODQ5oxONuw4jXkIbMSfwkCtzcSGX/7tHiGfBiONseWQc0FntTnA5mxg==@vger.kernel.org
-X-Gm-Message-State: APuU4Z961HDbwWSNENmJxbUnxzBcr8fZGALpWVwQ8egJDDcUKNlHgZw/
-	vMXwGo78mitLuYLp/gtU+jihQlu52wvKkzxR5SiInuA9cPC+QQ6A2bhy
-X-Gm-Gg: AYBFou1uwIs2OwMQ5C0ayZmlgUQLPzvtYx94F1gWJ/VbnUr1tEOBiMqGjNecBIE2ql3
-	YFCBC+ZlAgy2sSBtOkl5Rm/uICAP899yVNZ6/xhmV61Kj+mXfHwDu6bukmSYBfw2GGXFgrD0dDt
-	qQbV+DqAV17JlCcalhIWbxWepaW9cXK4CpqWLgZOn0oE53KdkBeez0rqw9t+Q34tQCU3SI0olcj
-	tQd57g9+Z7ioDu1qjkUppptpwqXB8EixQoRbxkMLlKeHHrM1dYiGZ54Nh8VP0LpOdk6gzutpNdQ
-	IUp/DY6lmOv8OFJEUFYgPJ+bJ82VHQbAjvF85XbUuwWSjhbJoebiRPZBPDrj1/AFLG0LcmdX/u3
-	TuqQFeikKds0DA67JY4N28YpvWnc/JbmPXV0Sb0U+/dfXxBNwrfelTlosmR/Xv81z8ADqbxFA1f
-	1mZJ25Ff1mVw968sHUHwyQod0320h43pe5fd6Y+Iv864NV2wsk8PmOILYMHPtvPvgBRKKdbXCdp
-	SL3fi1beBYDbAqfxDotZLJ9c28ElhegnELCDHyGs2GKh0jSV9ONpG2+AH4YGhaKkxZ0yIVNX5gg
-	WrlK6FvKMzzMWoAx4A3r5u8WEyZmkM47n2VoMaGjiOche1E=
-X-Received: by 2002:a17:90b:4c08:b0:3a8:de1:db07 with SMTP id 98e67ed59e1d1-3ae8957d253mr16261437a91.5.1793853507248;
-        Wed, 04 Nov 2026 20:38:27 -0800 (PST)
-Received: from ubuntu24.vpn.host.chaitin.net ([124.77.157.93])
-        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3b0b3280378sm1635751a91.12.2026.11.04.20.38.23
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 04 Nov 2026 20:38:26 -0800 (PST)
-From: Yuansheng Yang <0xbeac@gmail.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-Subject: [PATCH v3] KEYS: Protect pkey method checks against type removal
-Date: Thu,  5 Nov 2026 12:38:21 +0800
-Message-ID: <9d47e202bd11857b3555e6b95694b3c3a4f2460b.1793852399.git.0xbeac@gmail.com>
-X-Mailer: git-send-email 2.43.0
-In-Reply-To: <auv35Ljgz1OA1zUZ@kernel.org>
-References: <auv35Ljgz1OA1zUZ@kernel.org>
+	dkim=pass (2048-bit key, unprotected) header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=VIvtOaSZ
+Received: from pps.filterd (m0360083.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 6A5AE9g33449860;
+	Thu, 5 Nov 2026 12:12:38 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:date:from:in-reply-to:message-id
+	:mime-version:references:subject:to; s=pp1; bh=4LjsDDL7CSEil3Vbq
+	1SCJ9NcZ77XkMeSExPsXRGmIaM=; b=VIvtOaSZTirX9/H/ea5nwjutJWZAgxEUt
+	W4Kv0HnS+W7ZjlD6Gm+bp0F2tOYjRxpyy2Mc5RmZNNunGv1bBMAbLoZ49w11KDp8
+	deA0Ts0XyuXVamM+q1DPvwT3CyFoNpE3SdRMjqVJhsg3ZPGH+WlRzRIBRt/lYjEU
+	Gv3jsQ8pSuSqdTqNFz9lWAm4IA3R3ADgGhDDx7uaWnr7rD+uQA4FokiiQUMScGFt
+	P5KzYyYRAQ565uKyQY7Xyea6jY22H5YpzQ8d9XRRjENchFka23yVRxwX3EJS1JcM
+	IEjawP2K//A++Ng4mW3zdZ3pKPTAPBI6EMd4w2PQnk4d2qyjgwI3w==
+Received: from ppma13.dal12v.mail.ibm.com (dd.9e.1632.ip4.static.sl-reverse.com [50.22.158.221])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4hn7u3t2f1-1
+	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
+	Thu, 05 Nov 2026 12:12:37 +0000 (GMT)
+Received: from pps.filterd (ppma13.dal12v.mail.ibm.com [127.0.0.1])
+	by ppma13.dal12v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 6A5A4xsu271727;
+	Thu, 5 Nov 2026 12:12:37 GMT
+Received: from smtprelay01.fra02v.mail.ibm.com ([9.218.2.227])
+	by ppma13.dal12v.mail.ibm.com (PPS) with ESMTPS id 4hqsf5gb5b-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Thu, 05 Nov 2026 12:12:37 +0000 (GMT)
+Received: from smtpav05.fra02v.mail.ibm.com (smtpav05.fra02v.mail.ibm.com [10.20.54.104])
+	by smtprelay01.fra02v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6A5CCZKA43909584
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Thu, 5 Nov 2026 12:12:35 GMT
+Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 5AB272004E;
+	Thu,  5 Nov 2026 12:12:35 +0000 (GMT)
+Received: from smtpav05.fra02v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 5E1F220040;
+	Thu,  5 Nov 2026 12:12:33 +0000 (GMT)
+Received: from li-43857255-d5e6-4659-90f1-fc5cee4750ad.ibm.com.com (unknown [9.61.54.214])
+	by smtpav05.fra02v.mail.ibm.com (Postfix) with ESMTP;
+	Thu,  5 Nov 2026 12:12:33 +0000 (GMT)
+From: Mimi Zohar <zohar@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Roberto Sassu <roberto.sassu@huawei.com>, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/3] certs: blacklist: define skid: entries and add is_key_blacklisted()
+Date: Thu,  5 Nov 2026 07:12:25 -0500
+Message-ID: <20261105121227.4089147-2-zohar@linux.ibm.com>
+X-Mailer: git-send-email 2.56.0
+In-Reply-To: <20261105121227.4089147-1-zohar@linux.ibm.com>
+References: <20261105121227.4089147-1-zohar@linux.ibm.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -104,159 +95,242 @@ List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Authority-Analysis: v=2.4 cv=Zsp4uN7G c=1 sm=1 tr=0 ts=6aec72b6 cx=c_pps
+ a=AfN7/Ok6k8XGzOShvHwTGQ==:117 a=AfN7/Ok6k8XGzOShvHwTGQ==:17
+ a=zJRp6_cAMcgA:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
+ a=iQ6ETzBq9ecOQQE5vZCe:22 a=VnNF1IyMAAAA:8 a=hWF8r1hdgRcWVEwHOtUA:9
+X-Proofpoint-ORIG-GUID: TSWUfyDjPY5Q3Kg__W4Je-r2G1l9aGVz
+X-Proofpoint-GUID: TSWUfyDjPY5Q3Kg__W4Je-r2G1l9aGVz
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMTA1MDA0NiBTYWx0ZWRfXzNLe25zhA47E
+ a1oFWxCTBcd/TP0lD5aO3NDsA95pzpYBUrkhGbdyx4hKvHGg08bSUHygkg41cC6CQ/iLJp1mNCV
+ iyIahG7V1y5zqbJzpBXfloXncpa2jsDC8dRTptJfNxLQYATxra15h6ujq0yklyFS9TmcTGS968P
+ e/83TEj2OTD5B6ev7Ys0SvMMkVt9EhxVYRzFUrLiUFkNeHT2zO4TE79EkafjotoELkL+rU9mB38
+ T0p04EFiMKXDKgr/s87VbdYr8CYXM55J52kY9vkTC9gaKMNpRZVpMPGBpcV1GkiJTtvjJCPuvFj
+ mCIpIblRBbajgNTat2TfR9tLXbg8INzREO5+RcU8D08l+fUTqLFffW7dl6QrcroiVEW/6qKyMH6
+ 8lcWmX8+vo+RdPHE7xQM/3/a7zDEzuoBVF5L8ZIN4fz7zybmijK6S3sCTAQFuQ/SNHRtiF0VJuo
+ YnEKU9CW1slzkjHnwEg==
+X-Proofpoint-Spam-Info: AW1haW4tMjYxMTA1MDA0NiBTYWx0ZWRfX/gKFzia2aNdN
+ +Q5n1dYhFwlCP69YfhtkhGp18WMFyxzf8nOzm5yXocjs1V+tmABcP3UcjX3IAo/UMZqJUlpglpZ
+ YY2wgOaFGD57viOU6GdeSRdw8mE1DTs=
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.138,FMLib:17.12.100.49
+ definitions=2026-11-05_03,2026-11-04_01,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ lowpriorityscore=0 adultscore=0 priorityscore=1501 bulkscore=0 clxscore=1011
+ impostorscore=0 spamscore=0 malwarescore=0 suspectscore=0 phishscore=0
+ classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
+ reason=mlx scancount=1 engine=8.22.0-2610300000 definitions=main-2611050046
 
-keyctl_pkey_params_get() looks up the key, and keyctl_pkey_query(),
-keyctl_pkey_e_d_s() and keyctl_pkey_verify() then dereference
-key->type->asym_* outside key->sem.  A reference keeps the key alive, but
-does not pin the module providing its type.
+A "tbs:" blacklist entry is only compared against certificates being
+added to a keyring or presented in a signature chain, so it does not
+stop a key that is already loaded from being used as a trust anchor.
 
-unregister_key_type() calls key_gc_keytype(), which retypes every
-remaining key of the type to key_type_dead under key->sem for writing.
-The pkey paths read key->type again after their checks, so a concurrent
-module unload can turn the checked callback into the NULL key_type_dead
-member and call through a NULL function pointer, e.g.:
+Define a new "skid:<hex>" blacklist entry, holding a Subject Key
+Identifier, and add is_key_blacklisted(), which looks up the SKID of an
+asymmetric key in the system blacklist.  Entries are added like "tbs:"
+and "bin:" entries and are subject to CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE.
 
-  KEYCTL_PKEY_SIGN task              Module unload and key GC
-  ------------------------           ------------------------
-  keyctl_pkey_e_d_s()
-    if (!key->type->asym_eds_op)     unregister_key_type()
-                                       GC: down_write(&key->sem)
-                                       GC: retype to key_type_dead
-                                       GC: up_write(&key->sem)
-                                     free_module()
-    in = memdup_user(...)
-    key->type->asym_eds_op(...)      -> NULL call
+blacklist_vet_description() now uses a prefix table, since the prefixes
+no longer all have the same length.  "tbs:" and "bin:" entries behave
+as before.
 
-In-tree, turris-signing-key provides such methods.
+For example, to add an entry for a certificate (the signed string must
+not include a trailing newline):
 
-Hold key->sem for reading around the method check and the matching call,
-so that the type cannot be retired in between.  Each keyctl handler takes
-and releases the lock itself; the semaphore is not passed out through the
-parameter block.  User buffers are copied outside the critical section.
+  skid=$(openssl x509 -in cert.pem -noout -ext subjectKeyIdentifier |
+         sed -n '2s/[ :]//gp' | tr A-F a-f)
+  printf 'skid:%s' "$skid" > skid.txt
+  openssl smime -sign -binary -noattr -in skid.txt -signer signer.crt \
+          -inkey signer.key -outform DER -out skid.p7s
+  keyctl padd blacklist "skid:$skid" %:.blacklist < skid.p7s
 
-This is the same type-removal problem recently fixed for the read
-(925c84e3cc21) and update (aef3a8a4f988) methods.
+The SKID is also the hex string in the description of the key on a
+keyring, and its last four bytes are the key ID in the security.ima
+xattr, so an entry is easy to correlate with the key it revokes:
 
-Fixes: 00d60fd3b932 ("KEYS: Provide keyctls to drive the new key type ops for asymmetric keys [ver #2]")
-Cc: stable@vger.kernel.org
-Signed-off-by: Yuansheng Yang <0xbeac@gmail.com>
+  # keyctl show %:.ima | grep 073d
+  927946571 --als--v  0  0   \_ asymmetric: test signing key: b7809c3372a07fe87248dcec7ff047a40fb3073d
+  # keyctl show %:.blacklist | grep skid
+  1014808518 ----s--v 0  0   \_ blacklist: skid:b7809c3372a07fe87248dcec7ff047a40fb3073d
+
+Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
-Changes in v3:
-- Keep the switch, allocations and existing error handling in place.
-- Use one unlock point per method check/call pair.
-- Set -EOPNOTSUPP inside the failed checks; add blank lines before labels.
-- Use my real name in the author and sign-off fields.
+ certs/Kconfig                 |  7 +--
+ certs/blacklist.c             | 81 ++++++++++++++++++++++++-----------
+ include/keys/system_keyring.h |  8 ++++
+ 3 files changed, 68 insertions(+), 28 deletions(-)
 
-v2: https://lore.kernel.org/all/20261104021414.50696-1-0xbeac@gmail.com/
-
- security/keys/keyctl_pkey.c | 47 ++++++++++++++++++++++++++++---------
- 1 file changed, 36 insertions(+), 11 deletions(-)
-
-diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
-index 15b6bf6399..40475817dd 100644
---- a/security/keys/keyctl_pkey.c
-+++ b/security/keys/keyctl_pkey.c
-@@ -100,9 +100,6 @@ static int keyctl_pkey_params_get(key_serial_t id,
- 		return PTR_ERR(key_ref);
- 	params->key = key_ref_to_ptr(key_ref);
+diff --git a/certs/Kconfig b/certs/Kconfig
+index 9d2bf7fb5b9e..9e51f988ba3b 100644
+--- a/certs/Kconfig
++++ b/certs/Kconfig
+@@ -155,10 +155,11 @@ config SYSTEM_BLACKLIST_HASH_LIST
+ 	  If set, this option should be the filename of a list of hashes in the
+ 	  form "<hash>", "<hash>", ... .  This will be included into a C
+ 	  wrapper to incorporate the list into the kernel.  Each <hash> must be a
+-	  string starting with a prefix ("tbs" or "bin"), then a colon (":"), and
+-	  finally an even number of hexadecimal lowercase characters (up to 128).
++	  string starting with a prefix ("tbs", "bin" or "skid"), then a colon
++	  (":"), and finally an even number of hexadecimal lowercase characters
++	  (up to 128).
+ 	  Certificate hashes can be generated with
+-	  tools/certs/print-cert-tbs-hash.sh .
++	  tools/certs/print-cert-tbs-hash.sh.
  
--	if (!params->key->type->asym_query)
--		return -EOPNOTSUPP;
+ config SYSTEM_REVOCATION_LIST
+ 	bool "Provide system-wide ring of revocation certificates"
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index fa561c12eabf..b1e2c178d378 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -32,6 +32,7 @@
+ 
+ static const char tbs_prefix[] = "tbs";
+ static const char bin_prefix[] = "bin";
++static const char skid_prefix[] = "skid";
+ 
+ static struct key *blacklist_keyring;
+ 
+@@ -40,36 +41,30 @@ extern __initconst const u8 revocation_certificate_list[];
+ extern __initconst const unsigned long revocation_certificate_list_size;
+ #endif
+ 
++static bool blacklist_prefix_valid(const char *desc, size_t len)
++{
++	return (len == sizeof(tbs_prefix) - 1 &&
++		!strncmp(desc, tbs_prefix, len)) ||
++	       (len == sizeof(bin_prefix) - 1 &&
++		!strncmp(desc, bin_prefix, len)) ||
++	       (len == sizeof(skid_prefix) - 1 &&
++		!strncmp(desc, skid_prefix, len));
++}
++
+ /*
+- * The description must be a type prefix, a colon and then an even number of
+- * hex digits.  The hash is kept in the description.
++ * The description must be a type prefix ("tbs", "bin" or "skid"), a colon and
++ * then an even number of lower-case hex digits.  The hash (or, for "skid", the
++ * Subject Key Identifier) is kept in the description.
+  */
+ static int blacklist_vet_description(const char *desc)
+ {
+-	int i, prefix_len, tbs_step = 0, bin_step = 0;
 -
+-	/* The following algorithm only works if prefix lengths match. */
+-	BUILD_BUG_ON(sizeof(tbs_prefix) != sizeof(bin_prefix));
+-	prefix_len = sizeof(tbs_prefix) - 1;
+-	for (i = 0; *desc; desc++, i++) {
+-		if (*desc == ':') {
+-			if (tbs_step == prefix_len)
+-				goto found_colon;
+-			if (bin_step == prefix_len)
+-				goto found_colon;
+-			return -EINVAL;
+-		}
+-		if (i >= prefix_len)
+-			return -EINVAL;
+-		if (*desc == tbs_prefix[i])
+-			tbs_step++;
+-		if (*desc == bin_prefix[i])
+-			bin_step++;
+-	}
+-	return -EINVAL;
++	const char *colon = strchr(desc, ':');
++	int i;
+ 
+-found_colon:
+-	desc++;
++	if (!colon || !blacklist_prefix_valid(desc, colon - desc))
++		return -EINVAL;
++
++	desc = colon + 1;
+ 	for (i = 0; *desc && i < MAX_HASH_LEN; desc++, i++) {
+ 		if (!isxdigit(*desc) || isupper(*desc))
+ 			return -EINVAL;
+@@ -160,6 +155,10 @@ static char *get_raw_hash(const u8 *hash, size_t hash_len,
+ 		type_len = sizeof(bin_prefix) - 1;
+ 		type_prefix = bin_prefix;
+ 		break;
++	case BLACKLIST_HASH_SKID:
++		type_len = sizeof(skid_prefix) - 1;
++		type_prefix = skid_prefix;
++		break;
+ 	default:
+ 		WARN_ON_ONCE(1);
+ 		return ERR_PTR(-EINVAL);
+@@ -244,6 +243,38 @@ int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+ }
+ EXPORT_SYMBOL_GPL(is_hash_blacklisted);
+ 
++/**
++ * is_key_blacklisted - Determine if a key is blacklisted by its SKID
++ * @key: The key to be checked, e.g. a trust anchor found in a keyring
++ *
++ * Unlike a "tbs:" entry, which is only compared against certificates being
++ * added or presented in a chain, this checks a key that is already loaded, so
++ * that keys that cannot be unlinked from their keyring can still be revoked.
++ * The identifier is taken from the key itself, not from the caller.
++ *
++ * Returns -EKEYREJECTED if the key's Subject Key Identifier is blacklisted,
++ * 0 if it is not (or the key has no SKID), or another negative error.
++ */
++int is_key_blacklisted(const struct key *key)
++{
++	const struct asymmetric_key_ids *kids;
++	const struct asymmetric_key_id *skid;
++
++	if (!key || key->type != &key_type_asymmetric)
++		return 0;
++
++	kids = asymmetric_key_ids(key);
++	if (!kids)
++		return 0;
++
++	skid = kids->id[1];
++	if (!skid || !skid->len)
++		return 0;
++
++	return is_hash_blacklisted(skid->data, skid->len, BLACKLIST_HASH_SKID);
++}
++EXPORT_SYMBOL_GPL(is_key_blacklisted);
++
+ int is_binary_blacklisted(const u8 *hash, size_t hash_len)
+ {
+ 	if (is_hash_blacklisted(hash, hash_len, BLACKLIST_HASH_BINARY) ==
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index a6c2897bcc63..48c830850b70 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -15,6 +15,8 @@ enum blacklist_hash_type {
+ 	BLACKLIST_HASH_X509_TBS = 1,
+ 	/* Raw data hash */
+ 	BLACKLIST_HASH_BINARY = 2,
++	/* Subject Key Identifier of a key (not a hash) */
++	BLACKLIST_HASH_SKID = 3,
+ };
+ 
+ #ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
+@@ -79,6 +81,7 @@ extern int mark_hash_blacklisted(const u8 *hash, size_t hash_len,
+ extern int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+ 			       enum blacklist_hash_type hash_type);
+ extern int is_binary_blacklisted(const u8 *hash, size_t hash_len);
++extern int is_key_blacklisted(const struct key *key);
+ #else
+ static inline int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+ 				      enum blacklist_hash_type hash_type)
+@@ -90,6 +93,11 @@ static inline int is_binary_blacklisted(const u8 *hash, size_t hash_len)
+ {
  	return 0;
  }
- 
-@@ -129,7 +126,16 @@ static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_par
- 	if (ret < 0)
- 		return ret;
- 
-+	down_read(&params->key->sem);
-+	if (!params->key->type->asym_query) {
-+		ret = -EOPNOTSUPP;
-+		goto out_unlock;
-+	}
 +
- 	ret = params->key->type->asym_query(params, &info);
-+
-+out_unlock:
-+	up_read(&params->key->sem);
- 	if (ret < 0)
- 		return ret;
++static inline int is_key_blacklisted(const struct key *key)
++{
++	return 0;
++}
+ #endif
  
-@@ -185,7 +191,16 @@ long keyctl_pkey_query(key_serial_t id,
- 	if (ret < 0)
- 		goto error;
- 
-+	down_read(&params.key->sem);
-+	if (!params.key->type->asym_query) {
-+		ret = -EOPNOTSUPP;
-+		goto out_unlock;
-+	}
-+
- 	ret = params.key->type->asym_query(&params, &res);
-+
-+out_unlock:
-+	up_read(&params.key->sem);
- 	if (ret < 0)
- 		goto error;
- 
-@@ -230,10 +245,6 @@ long keyctl_pkey_e_d_s(int op,
- 	if (ret < 0)
- 		goto error_params;
- 
--	ret = -EOPNOTSUPP;
--	if (!params.key->type->asym_eds_op)
--		goto error_params;
--
- 	switch (op) {
- 	case KEYCTL_PKEY_ENCRYPT:
- 		params.op = kernel_pkey_encrypt;
-@@ -260,7 +271,16 @@ long keyctl_pkey_e_d_s(int op,
- 	if (!out)
- 		goto error_in;
- 
-+	down_read(&params.key->sem);
-+	if (!params.key->type->asym_eds_op) {
-+		ret = -EOPNOTSUPP;
-+		goto out_unlock;
-+	}
-+
- 	ret = params.key->type->asym_eds_op(&params, in, out);
-+
-+out_unlock:
-+	up_read(&params.key->sem);
- 	if (ret < 0)
- 		goto error_out;
- 
-@@ -307,10 +327,6 @@ long keyctl_pkey_verify(const struct keyctl_pkey_params __user *_params,
- 	if (ret < 0)
- 		goto error_params;
- 
--	ret = -EOPNOTSUPP;
--	if (!params.key->type->asym_verify_signature)
--		goto error_params;
--
- 	in = memdup_user(_in, params.in_len);
- 	if (IS_ERR(in)) {
- 		ret = PTR_ERR(in);
-@@ -324,8 +340,17 @@ long keyctl_pkey_verify(const struct keyctl_pkey_params __user *_params,
- 	}
- 
- 	params.op = kernel_pkey_verify;
-+	down_read(&params.key->sem);
-+	if (!params.key->type->asym_verify_signature) {
-+		ret = -EOPNOTSUPP;
-+		goto out_unlock;
-+	}
-+
- 	ret = params.key->type->asym_verify_signature(&params, in, in2);
- 
-+out_unlock:
-+	up_read(&params.key->sem);
-+
- 	kfree(in2);
- error_in:
- 	kfree(in);
+ struct pkcs7_message;
 -- 
-2.43.0
+2.56.0
 
