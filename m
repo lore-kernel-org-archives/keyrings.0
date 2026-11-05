@@ -1,99 +1,60 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.210.176
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793907398;
-	b=zXec9mZ3/+9II41cCZcDoQoYfUC1BtyvGPitGGGY9F8B9YL9+arc2oHflHkB+KLcux4i
-	 2YMulW6rEmMB7f2M7f6JcBUhzeA6V2k9BX1gk2W+ON05vjbLoqol0E03saxJAS6WThaOL
-	 b2tsGI7S1Amb+DFqetB8giKyFfR7nuuMK67+0Eyr+eaIimc+lRWAOlhM9t9QaNYeJVjcg
-	 5Fj61x2nbz0iOnJJnfreo+PDH+/no5kyUvUGqoujqqkStwsxgDGCr9rY0eqTRmtpj6CEr
-	 HfqpnG/fpC82RfeCxabBCEPbYkMLzK1w/oPkMzfOZ7shu8GYJlYq5hgb/vT7mHCu1ew==
+	t=1793916078;
+	b=pZsckyvnyj4LT0nqaW1v/Yk39u05cx/D3OZIKuJwPPKUESyYa3u90c6gqWTYwLnGQsiz
+	 1KfMBngEmSk/Ai0BrUGRmOoplBfgDy3KUczVZhsQjJ5htPTlGjPlShMp/QyBwt6f7R3rN
+	 Mwt2Ne3bPSvYcdEN+VF+VCIpYQ8Be31+lanujudMslkNfMpH3c/mrc8Kyjm/xF0kGVtpn
+	 KseM5X0uxhlOhYb4jQ3fzVxBD3QFbRvT83PJbEq2bRFpCOdSMJdz2J7rCY3pany4q1KKo
+	 N8mSVrBUEX7aOE2Gk4Xd8wzuqzry3uK2NBb3q7701XdKdJ7Fiy4FvBJOExlFX+vncOw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793907398;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
-	 From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:References:
+	a=rsa-sha256; c=relaxed/relaxed; t=1793916078;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
 	 MIME-Version:Content-Transfer-Encoding;
-	bh=Varby6vTTgGosmDxdkbVVCPGhFaIy/1zgNtje3gNyzM=;
-	b=lN7G6LWiO7WjvQ3sMoW5sIcDgmS9tmtKSYteLSRpM9A1R5PBczl9VyILL1+J36GgNcbK
-	 FfX7Bff1pm0qQWUVu2FLBLdCN7j0Tpc1r93QCqcasr93UladYiHx0SgzpnSf2xwI1dg0u
-	 3pxtWzK8Dhka9b8m3AJQJQJajafiKeZvnCf1nhTV7dGJtVZ/g43QFsGxCZyK07rvqn0Hl
-	 tW2a+DeeZMr/eqHzWFqsXPCI+xqigYQPZiqFqWK9CbwJgcwLXZIOD0yrMErGgkht957g3
-	 K2Zq2SRVASfwma6Vq7O+arTG70vB2InlL3i3fj35ZDk3WF10bxLF4Gf1hoiAP51M6aA==
+	bh=Cgy5DVilFM6CzFnBGEzM5eRHWtTZeelbHEfIqvrPH2w=;
+	b=5pdWY0xVqjG+oO66zGeKk2i98di1ye3ThlhehIIIXr+9X2X5YUQICsiHKrNl6e+MKsT+
+	 7LGidzIx18POUaFzkDpFdJwJvYjMODjJUCw6hd0kAIO0rRr0tU27TBL4kXwkBGGg2yqTH
+	 0+6gLI3uAKpDnWFG4wygm6MzfNLFqjNVVLKX0EX41F9vjpYjpy0iTBZti9UDWVDM4cI/J
+	 TNGrV3O5b4uAAPUYxMC/LeW59nls8q1ZSpMc7vy/riEK96pK4cBo/VB0WmfULNDz/Ezdq
+	 nv+99d+nIksn/zUGRhxsd8Wf+M/rmP8dfENVGXS7imZdc+pUUrD0hRp56b0S+/L9D4w==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gmail.com;
-	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b="MrvVq/pA";
-	arc=none smtp.remote-ip=209.85.210.176
-Received: from mail-pf1-f176.google.com (mail-pf1-f176.google.com [209.85.210.176])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=WieLlrYp;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 387EE606A6F8
-	for <keyrings@vger.kernel.org>; Thu,  5 Nov 2026 19:36:38 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 387EE606A6F8
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 9D56C606A328;
+	Thu,  5 Nov 2026 22:01:17 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=MrvVq/pA
-Received: by mail-pf1-f176.google.com with SMTP id d2e1a72fcca58-8a06210b29fso1252604b3a.1
-        for <keyrings@vger.kernel.org>; Thu, 05 Nov 2026 11:36:38 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20260707; t=1793907397; x=1794512197; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=Varby6vTTgGosmDxdkbVVCPGhFaIy/1zgNtje3gNyzM=;
-        b=MrvVq/pAxeEpkWXJvxeD7gcR/Qrh87bKPPTXZNEO0tG57lXCu9eFrtFxefXkdMbQ+t
-         +FiL/k3Ptej86tBsPDeoLoizkVTIBwROn8QWbNusVRS8R/bCWm9dd6AGcGB7ub/WtPGR
-         UWy3DCVzTTXRt+1WOzTVq60M6NKtxfs+3JKFNAt/gZKsEsjG8TdLG+xv5InLaxogx2T5
-         OmYwab8IEf/IYxJ3jC3/1u/celUFJj8e96sXYWLdq5SO7gk63YV8hC7JdeKci8xMXjEq
-         4nI7GwwwC1aOwO/Mk+UIING/PbLJezKjiIG/tMhS17HnfXM8TKGnyuXPcUMKDSksixfU
-         SLNQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1793907397; x=1794512197;
-        h=content-transfer-encoding:mime-version:references:in-reply-to
-         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
-         :to:cc:subject:date:message-id:reply-to:content-type;
-        bh=Varby6vTTgGosmDxdkbVVCPGhFaIy/1zgNtje3gNyzM=;
-        b=v6ahDsLt9jo1LUnc7PuyNlPfSIlMgS7vpUv9SmOL/jV5o7+sDUsvos2/0b5fvb7nzo
-         m0CrMTO8Q6A0KvVn5K2zogIUn6mdOZO6ovt8Ndz6xCKC+bdHmP1ZeCiuUt9bc9Z0xlaZ
-         fmGcgQT/EmDlPEvgezEUrcW2+BA6MbxXr9UCHqqAQZC3sYUBRNZ1f3OoX+2n9XlqXtJY
-         DnAMmddAe0E5COkVmOCMarEoFpN642DhIMKtzvH1Rq0qYp1puKkCcykJ9ppXHeidEr6n
-         Kjp+y5PprdyyBp6TsBlrCZUhCQRxyqyN4UVc+AyWT9Hgf2UwdTwyEVeqF8fCnDnlDIs1
-         x8ZA==
-X-Forwarded-Encrypted: i=1; AKwUvBwkq+Z3uugRMqNpDwUXJ/jT4RHsxJKzWZ3fGP28hEX+KOHdcUG6RR8o70rRBHhZCwh0/ku6GnQaMg==@vger.kernel.org
-X-Gm-Message-State: APuU4Z9PnN2FUofCf9jGuVrsddYiF04WmnXVEuu4ojDqtPV8knbxjgSP
-	5jC/Z1PzrgBHHOVVzynzv0tfm5xZYaunCPTuLI0DDdJ820Pz9M+KUpB8
-X-Gm-Gg: AYBFou0xqCVMLxuJ2FW9z8UoeFf0cYc78qibzG/UlhBo19K6jiXPDdl2TGYLFgM8GqF
-	3LEe847VV4EJPD1o5FMBAMVW3FWx+LI045yobZzm7Ln16bVnP8EkTkLibrXEivPcWDmW6aLMofh
-	NIFRXNg/Q9a1wHGP57Vw4vdQjwExPS2/7f5TL8mJT2pLTjG7PZtnaNSrwZOPlMPHQVB5WfzH2nP
-	YZBqrpoSxwdasjYqC0wzfPqInU31uVWidbpUzxtfemr6OZ8XPp7VL/4wvkb2zin/Vzvwtgqy+bK
-	RP5HY97BNBTOOsQtEVrUl7cyv/C3HTM4B04TqRzkiYa0Vr/jXulxUiANWTgwnS3uTGlOoyRjrwm
-	Cc638HFSvY5nxqkz+NYyR3F+dNn3njGATLjXois0oRKlXy4SspcWCK3L7Lxb63XJONMUDkg+oHs
-	dXOWSXaSNx88/XH0KVzX443wB4b3K7RwMCOuoFn1dbEGXjoyFhwuV7mQQYYXXo2krshBXXmolGu
-	Cdn2cWLSCNwSDsYZLu9b4Yqb8B5l7Ni2sRjN+ffOtT5samqtCb4mm2vxdAkSdMl3Dp7i7d6Uwby
-	KAfhdXMTXsjZuM2D14VxDClK1f1hDRMYzi1sNYZa8PcuD1JQ
-X-Received: by 2002:a17:90b:448f:b0:3ab:9c73:147 with SMTP id 98e67ed59e1d1-3b0db69ee38mr32308a91.14.1793907397392;
-        Thu, 05 Nov 2026 11:36:37 -0800 (PST)
-Received: from ubuntu24.vpn.host.chaitin.net ([124.77.124.225])
-        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3b0d7c42932sm499331a91.6.2026.11.05.11.36.34
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 05 Nov 2026 11:36:37 -0800 (PST)
-From: Yuansheng Yang <0xbeac@gmail.com>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: David Howells <dhowells@redhat.com>,
-	Paul Moore <paul@paul-moore.com>,
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=WieLlrYp
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B60B61F0089F;
+	Thu,  5 Nov 2026 22:01:16 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1793916077;
+	bh=Cgy5DVilFM6CzFnBGEzM5eRHWtTZeelbHEfIqvrPH2w=;
+	h=From:To:Cc:Subject:Date;
+	b=WieLlrYpj6+/bEFJYfS1yZhcO+5c9zQePcf6xFYXBujXL9SxObOqW8ynbGFIvLrh7
+	 kwumTlytIdkTabqBjsvGiu/LjEqze+sE9/NX5dWotEcEgaLWM5r7IuRWrnQwFr6dLU
+	 Uq8KW6FntZ+xYDHg6TflPiA1ycHdmaAnRuCfcI2zfZJR7mR/0Kf22FXX27PwUPbNVv
+	 YrP5u9NbVfivcdkJzenMEe2e20T4In/SJJqfsMUM8WGn74tu6WSWuPJTZlpIVpZGn9
+	 oFm/vhwTWqjJfSg0vPSDfPESFaJDZGippf3IhTrpTv4aIFhYU1Zap3I4h5cPIQ8zez
+	 NMfAjS1SZRU1w==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>,
+	keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	Eric Biggers <ebiggers@kernel.org>,
 	James Morris <jmorris@namei.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-Subject: [PATCH v4] KEYS: Protect pkey method checks against type removal
-Date: Fri,  6 Nov 2026 03:36:31 +0800
-Message-ID: <20261105193632.34363-1-0xbeac@gmail.com>
-X-Mailer: git-send-email 2.43.0
-In-Reply-To: <auy1ANMSKTXZb8GE@kernel.org>
-References: <auy1ANMSKTXZb8GE@kernel.org>
+	stable@vger.kernel.org,
+	Jann Horn <jannh@google.com>
+Subject: [PATCH v3 1/2] KEYS: Return user session keyring on lookup
+Date: Fri,  6 Nov 2026 00:00:49 +0200
+Message-ID: <20261105220050.1421842-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -105,190 +66,150 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-keyctl_pkey_params_get() looks up the key, and keyctl_pkey_query(),
-keyctl_pkey_e_d_s() and keyctl_pkey_verify() then dereference
-key->type->asym_* outside key->sem.  A reference keeps the key alive, but
-does not pin the module providing its type.
+A process without a session keyring looking up KEY_SPEC_SESSION_KEYRING
+without KEY_LOOKUP_CREATE mutates the credentials. This causes struct creds
+instances shared with other subsystems to become stale.
 
-unregister_key_type() calls key_gc_keytype(), which retypes every
-remaining key of the type to key_type_dead under key->sem for writing.
-The pkey paths read key->type again after their checks, so a concurrent
-module unload can turn the checked callback into the NULL key_type_dead
-member and call through a NULL function pointer, e.g.:
+Address this by returning the resolved user session keyring directly
+without installing it into credentials.
 
-  KEYCTL_PKEY_SIGN task              Module unload and key GC
-  ------------------------           ------------------------
-  keyctl_pkey_e_d_s()
-    if (!key->type->asym_eds_op)     unregister_key_type()
-                                       GC: down_write(&key->sem)
-                                       GC: retype to key_type_dead
-                                       GC: up_write(&key->sem)
-                                     free_module()
-    in = memdup_user(...)
-    key->type->asym_eds_op(...)      -> NULL call
-
-In-tree, turris-signing-key provides such methods.
-
-Remove the key->type->asym_query check from keyctl_pkey_params_get(): it
-runs without key->sem, so key_gc_keytype() can retype the key right after
-it.  Instead, make keyctl_pkey_params_get_2(), keyctl_pkey_query(),
-keyctl_pkey_e_d_s() and keyctl_pkey_verify() each take key->sem for
-reading, check the key->type->asym_* method they are about to call, call
-it and release key->sem.  As key_gc_keytype() takes key->sem for writing
-before it retypes the key, key->type cannot change between the check and
-the call.  Drop the asym_eds_op and asym_verify_signature checks that
-keyctl_pkey_e_d_s() and keyctl_pkey_verify() did before memdup_user() for
-the same reason; -EOPNOTSUPP is now returned from under key->sem.
-memdup_user(), kmalloc() and copy_to_user() stay outside key->sem, as in
-__keyctl_read_key().
-
-This problem was recently fixed for keyctl_read_key() by 925c84e3cc21
-("keys: Protect the read method check against type removal") and for
-key_update() by aef3a8a4f988 ("KEYS: Protect the update method check
-against type removal").
-
-Fixes: 00d60fd3b932 ("KEYS: Provide keyctls to drive the new key type ops for asymmetric keys [ver #2]")
-Cc: stable@vger.kernel.org
-Signed-off-by: Yuansheng Yang <0xbeac@gmail.com>
+Cc: keyrings@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Cc: Eric Biggers <ebiggers@kernel.org>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: stable@vger.kernel.org # v5.10+
+Fixes: d84f4f992cbd ("CRED: Inaugurate COW credentials")
+Suggested-by: Jann Horn <jannh@google.com>
+Closes: https://lore.kernel.org/keyrings/CAG48ez0XjVSR=M--UBauTm8sJuc+ZbhKzaPa3a6wrSVHyoKevw@mail.gmail.com/
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
-Changes in v4:
-- Rewrite the commit message: describe what changes in
-  keyctl_pkey_params_get(), keyctl_pkey_params_get_2() and the three
-  keyctl handlers and why, and cite the read/update fixes by subject.
-- Rename the out_unlock labels to out_up_key_sem.
-- Use out_up_key_sem / out_free_in / out_free_params in
-  keyctl_pkey_verify(); leave the other functions' existing labels alone.
-- No functional change relative to v3.
+v3:
+In keyctl_session_to_parent(), check the resolved cred->session_keyring
+instead of mycred->session_keyring.
+v2:
+- Added mandatory tags.
+- No code changes.
+- Link: https://lore.kernel.org/keyrings/20261019145624.309790-1-jarkko@kernel.org/
+ Documentation/security/keys/core.rst |  6 ++--
+ security/keys/keyctl.c               |  5 ++--
+ security/keys/process_keys.c         | 44 +++++++---------------------
+ 3 files changed, 16 insertions(+), 39 deletions(-)
+---
+ Documentation/security/keys/core.rst |  6 ++--
+ security/keys/keyctl.c               |  5 ++--
+ security/keys/process_keys.c         | 44 +++++++---------------------
+ 3 files changed, 16 insertions(+), 39 deletions(-)
 
-v3: https://lore.kernel.org/all/9d47e202bd11857b3555e6b95694b3c3a4f2460b.1793852399.git.0xbeac@gmail.com/
-v2: https://lore.kernel.org/all/20261104021414.50696-1-0xbeac@gmail.com/
-
- security/keys/keyctl_pkey.c | 58 +++++++++++++++++++++++++++----------
- 1 file changed, 42 insertions(+), 16 deletions(-)
-
-diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
-index 15b6bf6399..3e3253330c 100644
---- a/security/keys/keyctl_pkey.c
-+++ b/security/keys/keyctl_pkey.c
-@@ -100,9 +100,6 @@ static int keyctl_pkey_params_get(key_serial_t id,
- 		return PTR_ERR(key_ref);
- 	params->key = key_ref_to_ptr(key_ref);
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 37ed42382f16..e3a215e55f81 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -165,8 +165,10 @@ The key service provides a number of features besides keys:
+      When a process changes its real UID, if it used to have no session key, it
+      will be subscribed to the default session key for the new UID.
  
--	if (!params->key->type->asym_query)
--		return -EOPNOTSUPP;
--
+-     If a process attempts to access its session key when it doesn't have one,
+-     it will be subscribed to the default for its current UID.
++     If a process attempts to access its session keyring when it doesn't have
++     one, the default user session keyring for its current UID is returned
++     without being installed into its credentials.  If creation is requested,
++     an anonymous session keyring is installed.
+ 
+   *  Each user has two quotas against which the keys they own are tracked. One
+      limits the total number of keys and keyrings, the other limits the total
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index d6b10fd67627..b11716f88ded 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1682,8 +1682,7 @@ long keyctl_session_to_parent(void)
+ 	 * there's no point */
+ 	mycred = current_cred();
+ 	pcred = __task_cred(parent);
+-	if (mycred == pcred ||
+-	    mycred->session_keyring == pcred->session_keyring) {
++	if (cred->session_keyring == pcred->session_keyring) {
+ 		ret = 0;
+ 		goto unlock;
+ 	}
+@@ -1701,7 +1700,7 @@ long keyctl_session_to_parent(void)
+ 	/* the keyrings must have the same UID */
+ 	if ((pcred->session_keyring &&
+ 	     !uid_eq(pcred->session_keyring->uid, mycred->euid)) ||
+-	    !uid_eq(mycred->session_keyring->uid, mycred->euid))
++	    !uid_eq(cred->session_keyring->uid, mycred->euid))
+ 		goto unlock;
+ 
+ 	/* cancel an already pending keyring replacement */
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 3af71c6322af..cdf03b8124d0 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -356,31 +356,6 @@ int install_session_keyring_to_cred(struct cred *cred, struct key *keyring)
  	return 0;
  }
  
-@@ -129,7 +126,16 @@ static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_par
- 	if (ret < 0)
- 		return ret;
- 
-+	down_read(&params->key->sem);
-+	if (!params->key->type->asym_query) {
-+		ret = -EOPNOTSUPP;
-+		goto out_up_key_sem;
-+	}
-+
- 	ret = params->key->type->asym_query(params, &info);
-+
-+out_up_key_sem:
-+	up_read(&params->key->sem);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -185,7 +191,16 @@ long keyctl_pkey_query(key_serial_t id,
- 	if (ret < 0)
- 		goto error;
- 
-+	down_read(&params.key->sem);
-+	if (!params.key->type->asym_query) {
-+		ret = -EOPNOTSUPP;
-+		goto out_up_key_sem;
-+	}
-+
- 	ret = params.key->type->asym_query(&params, &res);
-+
-+out_up_key_sem:
-+	up_read(&params.key->sem);
- 	if (ret < 0)
- 		goto error;
- 
-@@ -230,10 +245,6 @@ long keyctl_pkey_e_d_s(int op,
- 	if (ret < 0)
- 		goto error_params;
- 
--	ret = -EOPNOTSUPP;
--	if (!params.key->type->asym_eds_op)
--		goto error_params;
+-/*
+- * Install the given keyring as the session keyring of the current task,
+- * replacing the existing one if any.  If the given keyring is NULL, then
+- * install a new anonymous session keyring.
+- *
+- * Return: 0 on success; -errno on failure.
+- */
+-static int install_session_keyring(struct key *keyring)
+-{
+-	struct cred *new;
+-	int ret;
 -
- 	switch (op) {
- 	case KEYCTL_PKEY_ENCRYPT:
- 		params.op = kernel_pkey_encrypt;
-@@ -260,7 +271,16 @@ long keyctl_pkey_e_d_s(int op,
- 	if (!out)
- 		goto error_in;
- 
-+	down_read(&params.key->sem);
-+	if (!params.key->type->asym_eds_op) {
-+		ret = -EOPNOTSUPP;
-+		goto out_up_key_sem;
-+	}
-+
- 	ret = params.key->type->asym_eds_op(&params, in, out);
-+
-+out_up_key_sem:
-+	up_read(&params.key->sem);
- 	if (ret < 0)
- 		goto error_out;
- 
-@@ -305,31 +325,37 @@ long keyctl_pkey_verify(const struct keyctl_pkey_params __user *_params,
- 	ret = keyctl_pkey_params_get_2(_params, _info, KEYCTL_PKEY_VERIFY,
- 				       &params);
- 	if (ret < 0)
--		goto error_params;
+-	new = prepare_creds();
+-	if (!new)
+-		return -ENOMEM;
 -
--	ret = -EOPNOTSUPP;
--	if (!params.key->type->asym_verify_signature)
--		goto error_params;
-+		goto out_free_params;
+-	ret = install_session_keyring_to_cred(new, keyring);
+-	if (ret < 0) {
+-		abort_creds(new);
+-		return ret;
+-	}
+-
+-	return commit_creds(new);
+-}
+-
+ /*
+  * Handle the fsuid changing.
+  */
+@@ -720,20 +695,21 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
  
- 	in = memdup_user(_in, params.in_len);
- 	if (IS_ERR(in)) {
- 		ret = PTR_ERR(in);
--		goto error_params;
-+		goto out_free_params;
- 	}
- 
- 	in2 = memdup_user(_in2, params.in2_len);
- 	if (IS_ERR(in2)) {
- 		ret = PTR_ERR(in2);
--		goto error_in;
-+		goto out_free_in;
- 	}
- 
- 	params.op = kernel_pkey_verify;
-+	down_read(&params.key->sem);
-+	if (!params.key->type->asym_verify_signature) {
-+		ret = -EOPNOTSUPP;
-+		goto out_up_key_sem;
-+	}
+ 	case KEY_SPEC_SESSION_KEYRING:
+ 		if (!ctx.cred->session_keyring) {
+-			/* always install a session keyring upon access if one
+-			 * doesn't exist yet */
+ 			ret = look_up_user_keyrings(NULL, &user_session);
+ 			if (ret < 0)
+ 				goto error;
+-			if (lflags & KEY_LOOKUP_CREATE)
 +
- 	ret = params.key->type->asym_verify_signature(&params, in, in2);
++			if (lflags & KEY_LOOKUP_CREATE) {
++				key_put(user_session);
+ 				ret = join_session_keyring(NULL);
+-			else
+-				ret = install_session_keyring(user_session);
++				if (ret < 0)
++					goto error;
++				goto reget_creds;
++			}
  
-+out_up_key_sem:
-+	up_read(&params.key->sem);
- 	kfree(in2);
--error_in:
-+
-+out_free_in:
- 	kfree(in);
--error_params:
-+
-+out_free_params:
- 	keyctl_pkey_params_free(&params);
- 	return ret;
- }
+-			key_put(user_session);
+-			if (ret < 0)
+-				goto error;
+-			goto reget_creds;
++			key = user_session;
++			key_ref = make_key_ref(key, 1);
++			break;
+ 		} else if (test_bit(KEY_FLAG_UID_KEYRING,
+ 				    &ctx.cred->session_keyring->flags) &&
+ 			   lflags & KEY_LOOKUP_CREATE) {
 -- 
-2.43.0
+2.47.3
 
