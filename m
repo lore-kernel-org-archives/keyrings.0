@@ -1,57 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793890588;
-	b=gdf8ggcBehJfOCz71mdrVjF/dgloq+QmMkaj/0zMwDMqe/PMjzhhDD0fPskZLKPxG2iW
-	 rej8oobtwWAMdTD60OKVLa9SXTV1xgnb1BZgiEE6YZb8ulJavoJ0Zm5QGHZyem3f3ggpT
-	 Y0ba8EP538g3q+dbptPhV29C0WnXy3yuQ4t8MGRjgWIcv/1efcdR1gXQy4Rwhn9cXElbh
-	 97vdBWiG25S7SylfR2LiJjVg3+fyZ5M5SdLiyPbkdBPI/PN9dhW1t/CCfOUhuz9oXTilT
-	 nMcWhIT/r8QH01Z9oIwm0ZQnxz0Dre8bNl5011DrfPJrchExpTtKKsmX2ZpMvnHxjbg==
+	t=1793890955;
+	b=m34+gGafBnqEouAVTquIgYeXi8Io8i1iFmxSooBm6tOgXou+URyJ77etBmQK52FU3428
+	 z+VEj891NP4h/UOtuu4J8XfHOe44NfRwLwpUbL46dKxt4ebhZjbBRe16WAzSbc8Ya73Is
+	 +VgLZuldM1aNQ3ap6kn/DfRgckqGbZvwvgT0QYidM3ngXt4B943szfP0KQBCuNrFpsfud
+	 1DbyBWcenJU03ZNaqo5eV0FjuPXslLKVnVOau/Rinlab1dWnLFAT1pF/erwESqKEwGQY1
+	 ZY+VHa0y4POpEqrevONeLGlZDqvkHoa4/pGWCaNY43BXzyZrVaq/1aB3rtnpUfYnQyQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793890588;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793890955;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=aiuSAbASG4forzRExt2HK5A5gO/fgfmnmE3dC5sNQWw=;
-	b=3sR/36fvR5+fZTS55eQz+LqNa7tUV0/+Asjrto8kqurnRPkLJzHavYnZrq3QT6syJvyq
-	 2YTUJ538J+qYAQj9NTN6gBE6iwVmzzX8QPLRZSyAlGvQH0k+qyg3tf85y1iR/bfx1mxuz
-	 bwm2ju0MSWMdQ135XIhtlfaW6Y4e9r6P6Vhd1DOm5P9QHG2W6Hk3mrLiM66uPz3tU/PiA
-	 E4cN2AgBOrSWQxtwNndnoRHkQG3kTceJCSIsxIU5iRFmIwxgrqeSoYkbvFLoRRpXS+jnA
-	 p96hYX+0S9cVEOJSK37FnLOn+MCWN6tqXycLP/h8Du52kE5dscOm+zJWw7Quvt5PbvA==
+	bh=BijGUrhWAz7YeOSjm07Qc0dkFEPjuiY9ZeSrOc4vdSw=;
+	b=ruz+uBH/nSddo74tltmPZ14pOXMz+KFBEbxbKaVR3+IX9Z1Jr4gUVyczJo9ngeQYYCjD
+	 rqylIrWCK1a0Q6K2QSJOYAOKe7YwfmOtzCEe7YkXwL5YhBsdu8zu4PM6TU2pgE8I+XZa4
+	 bUPura7uNCSNMHejMJ9h3q7XEoa6XIZUpLgVcEoP8nVYZM8loYDXACaL1Cnf0EH9eUQNb
+	 G79BgTwsMXa7AsMZhDz0s+OcZPskv4PSNj3v9HyOit91i6lBVuYWMjQhFl1HPQWSsswCh
+	 z6Xz80YP8otiW17pt+L1YNhzVxitsVxLrewZU0RDKW2yXD8agJFP/Q/KPtujdSkTRfw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QQEAb1+v;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=bJaFWfJe;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0E35A606A31B;
-	Thu,  5 Nov 2026 14:56:28 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D894B606EEAB;
+	Thu,  5 Nov 2026 15:02:34 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QQEAb1+v
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 4DD851F000C1;
-	Thu,  5 Nov 2026 14:56:27 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=bJaFWfJe
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 245931F0093A;
+	Thu,  5 Nov 2026 15:02:34 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793890587;
-	bh=aiuSAbASG4forzRExt2HK5A5gO/fgfmnmE3dC5sNQWw=;
+	s=k20260515; t=1793890954;
+	bh=BijGUrhWAz7YeOSjm07Qc0dkFEPjuiY9ZeSrOc4vdSw=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=QQEAb1+v874Lp8j55M+h2VaolUqm0Q/LYaYwV8hhmChKAZa28jMZf4S9JPEra8Za+
-	 +ISHk+3LsKdwhsPfMFf37i2ZLUtTC90MTgrZ8ZZBLzB1nUmu06sGBv36uf2M6YRDui
-	 80A6KY2YAuJ0nALH9OO7aJMStFl20GWfkmOWtcAuUhljNiLcVJcGxbbQ1d0w7uVpy4
-	 T/7DFvWRoD4pdJoWtjRbsizS3i4GPyyOc3DN2rY/We6iP52U7RKYuXFwOPyz6qG55U
-	 ovdE9E4I8CKqLonyOiZg81AmoY06sctpzfM/ICazbEcKlvhloZnWn3LZ51efrtwnkI
-	 Zt8UF5AjuNlXw==
-Message-ID: <sashiko-outbox-199277@kernel.org>
+	b=bJaFWfJe0YZf/ylFd2INgrxQ1VlPcWuEAmBYKGy4MQ6ADNgOLrjRBeg3oVn9sfYNZ
+	 k1EaHLQN6NBjfmagWl/EO4nZyjr447HIFZpw9Md/wOaehgvUBS1ORl9bI9NV+obgB6
+	 g+FhwieCJB8p+dqVsw9hbJ7vh0LttQN+/CPGkuYEhkPeNc80tTrIxbIp+wKFRv/qLN
+	 pcICvws3PXO1rEmCwDENS12qL2MCU9mGA/PBdPkjfe9V04qMw7FjCtDrBXJDv+6z8h
+	 GiBxrVTqnqleBulXpgM40eRna6y2H7Oyi7dtWft+LUAodM+dGYG5IgS6xn4099kqgs
+	 8M/XBerqTx4yQ==
+Message-ID: <sashiko-outbox-199284@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v6 7/9] pseries/plpks: add HCALLs for PKWM wrapping key
- life cycle management
+Subject: Re: [PATCH v6 9/9] pseries/plpks/wrapkey: expose PKWM wrapping key
+ management to userspace via sysfs
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Srish Srinivasan" <ssrish@linux.ibm.com>, keyrings@vger.kernel.org
 Cc: maddy@linux.ibm.com, ritesh.list@gmail.com, sshegde@linux.ibm.com, mpe@ellerman.id.au, npiggin@gmail.com, christophe.leroy@csgroup.eu, James.Bottomley@HansenPartnership.com, jarkko@kernel.org, zohar@linux.ibm.com, linux-security-module@vger.kernel.org, nayna@linux.ibm.com, rnsastry@linux.ibm.com
-In-Reply-To: <20261105144320.357260-8-ssrish@linux.ibm.com>
+In-Reply-To: <20261105144320.357260-10-ssrish@linux.ibm.com>
 References: <20261105144320.357260-1-ssrish@linux.ibm.com>
- <20261105144320.357260-8-ssrish@linux.ibm.com>
+ <20261105144320.357260-10-ssrish@linux.ibm.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 05 Nov 2026 14:56:26 +0000
+Date: Thu, 05 Nov 2026 15:02:33 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -61,202 +61,247 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 1 potential issue(=
+Thank you for your contribution! Sashiko AI review found 3 potential issue(=
 s) to consider:
-- [Medium] pseries/plpks: output_buf leak and -EAGAIN return in plpks_get_o=
-bject_labels()
+- [Medium] pseries/plpks: label truncation and undocumented format in list_=
+key_labels()
+- [Medium] pseries/plpks: TOCTOU race between delete_store() and unrevoke_s=
+tore()
+- [Low] pseries/plpks: duplicated sysfs store/show logic in plpks-wrapkey-s=
+ysfs.c
 --
 
-commit 41ef08b282e00765eba284dad461f1985057d371
+commit 58203a02dbc210e21378df2545831a7ea49bbca4
 Author: Srish Srinivasan <ssrish@linux.ibm.com>
 
-pseries/plpks: add HCALLs for PKWM wrapping key life cycle management
+pseries/plpks/wrapkey: expose PKWM wrapping key management to userspace via=
+ sysfs
 
-This commit adds support for the H_PKS_REVOKE_OBJECT, H_PKS_UNREVOKE_OBJECT,
-and H_PKS_GET_OBJECTLABELS hypercalls to manage the life cycle of PKWM
-wrapping keys and retrieve wrapping key labels in the Platform Keystore.
+This commit adds a sysfs interface under /sys/firmware/plpks/wrapkey to all=
+ow
+userspace to create, revoke, unrevoke, delete, and list PKWM wrapping keys.
 
-> diff --git a/arch/powerpc/platforms/pseries/plpks.c b/arch/powerpc/platfo=
-rms/pseries/plpks.c
-> index d5adc563f71f0..6e10bd6a9a481 100644
-> --- a/arch/powerpc/platforms/pseries/plpks.c
-> +++ b/arch/powerpc/platforms/pseries/plpks.c
+> diff --git a/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c b/arch/=
+powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
+> new file mode 100644
+> index 0000000000000..c293196cc9adf
+> --- /dev/null
+> +++ b/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
 [ ... ]
-> @@ -1205,6 +1237,457 @@ int plpks_unwrap_object(u8 **input_buf, u64 input=
-_len, u8 **output_buf,
-[ ... ]
-> +int plpks_get_object_labels(u8 **output_buf, u64 *output_len,
-> +			    char *comp_prefix)
+> +static ssize_t list_key_labels(char *buf, u8 *obj_labels_buf,
+> +			       u64 obj_labels_count, int revoked)
 > +{
-> +	unsigned long retbuf[PLPAR_HCALL_BUFSIZE] =3D { 0 };
-> +	u8 *labels_buf =3D NULL;
-> +	u8 *tmp_buf =3D NULL;
-> +	struct plpks_auth *auth;
-> +	struct label_attr *metadata =3D NULL;
-> +	u8 prefix[PLPKS_OBJLABEL_PREFIX_LEN];
-> +	u16 label_len;
-> +	u64 labels_count;
-> +	u64 continuetoken =3D 0, output_buf_len =3D 0;
-> +	int rc, pseries_status;
-> +	size_t labels_buf_offset =3D 0, output_buf_offset =3D 0;
-> +	size_t obj_label_entry_size, i;
+> +	struct plpks_var var =3D { 0 };
+> +	u8 *obj_labels_buf_ptr, *comp_prefix;
+> +	u8 *key_label_ptr;
+> +	u16 obj_label_len;
+> +	int len =3D 0;
+> +	int is_revoked;
+> +	u64 i;
 > +
-> +	if (!output_buf || !output_len || !comp_prefix)
-> +		return -EINVAL;
+> +	var.os =3D PLPKS_VAR_LINUX;
+> +	var.component =3D PLPKS_WRAPKEY_COMPONENT;
+> +	obj_labels_buf_ptr =3D obj_labels_buf;
 > +
-> +	*output_buf =3D NULL;
-> +	*output_len =3D 0;
+> +	for (i =3D 0; i < obj_labels_count; ++i) {
+> +		obj_label_len =3D get_unaligned_be16(obj_labels_buf_ptr);
+> +		comp_prefix =3D obj_labels_buf_ptr +
+> +			      PLPKS_OBJLABEL_LEN_FIELD_SIZE;
 > +
-> +	memset(prefix, 0, sizeof(prefix));
-> +	memcpy(prefix, comp_prefix, strnlen(comp_prefix, sizeof(prefix)));
+> +		var.namelen =3D obj_label_len - PLPKS_MAX_LABEL_ATTR_SIZE;
+> +		var.name =3D kzalloc(var.namelen + 1, GFP_KERNEL);
 > +
-> +	auth =3D construct_auth(PLPKS_OS_OWNER);
-> +	if (IS_ERR(auth))
-> +		return PTR_ERR(auth);
+> +		if (!var.name)
+> +			return -ENOMEM;
 > +
-> +	do {
-> +		labels_buf =3D
-> +			kzalloc(PLPKS_OBJLABEL_BUF_SIZE, GFP_KERNEL);
+> +		key_label_ptr =3D comp_prefix + PLPKS_MAX_LABEL_ATTR_SIZE;
+> +		memcpy(var.name, key_label_ptr, var.namelen);
 > +
-> +		if (!labels_buf) {
-> +			rc =3D -ENOMEM;
-> +			goto out_free_output_buf;
-> +		}
+> +		is_revoked =3D plpks_is_wrapping_key_revoked(&var);
+> +		if (is_revoked =3D=3D revoked)
+> +			len +=3D sysfs_emit_at(buf, len, "<%s>\n",
+> +					     (char *)var.name);
+
+[Severity: Medium]
+Can list_key_labels() silently truncate wrapping key labels when reading
+/sys/firmware/plpks/wrapkey/list_active or list_revoked?
+
+plpks_get_object_labels() can retrieve labels across multiple 4KB buffers v=
+ia
+H_CONTINUE, and each label can be up to PLPKS_MAX_NAME_SIZE (239) bytes.
+However, a standard kobj_attribute show buffer is limited to PAGE_SIZE - 1
+bytes. Once len reaches PAGE_SIZE - 1, sysfs_emit_at() returns 0 and any
+remaining wrapping key labels are silently omitted without any error or
+indication to userspace.
+
+Also, list_key_labels() formats each label wrapped in angle brackets
+("<%s>\n"), whereas Documentation/ABI/testing/sysfs-firmware-plpks does not
+mention the angle-bracket format for list_active and list_revoked. Should t=
+he
+output format and buffer limit be addressed or documented?
+
+> +		else if (is_revoked < 0)
+> +			pr_warn("Failed to get revocation status for <%s>\n",
+> +				(char *)var.name);
 > +
-> +		rc =3D plpar_hcall(H_PKS_GET_OBJECTLABELS, retbuf,
-> +				 virt_to_phys(auth), continuetoken,
-> +				 virt_to_phys(labels_buf),
-> +				 PLPKS_OBJLABEL_BUF_SIZE);
+> +		kfree(var.name);
+> +		obj_labels_buf_ptr =3D key_label_ptr + var.namelen;
+> +	}
 > +
-> +		pseries_status =3D rc;
-> +		rc =3D pseries_status_to_err(rc);
+> +	return len;
+> +}
 > +
-> +		if (rc && rc !=3D -EAGAIN) {
-> +			pr_err("H_PKS_GET_OBJECTLABELS failed. pseries_status=3D%d rc=3D%d\n",
-> +			       pseries_status, rc);
-> +			goto out_free_labels_buf;
-> +		} else {
-> +			/*
-> +			 * Setting an incorrect countinuetoken upon
-> +			 * receiving H_CONTINUE would result in H_P2. Since
-> +			 * the continuetoken is being set to the expected
-> +			 * value from the previous call, H_P2 must not be
-> +			 * returned.
-> +			 */
-> +			continuetoken =3D retbuf[1];
+> +static ssize_t list_active_show(struct kobject *kobj,
+> +				struct kobj_attribute *attr, char *buf)
+> +{
+> +	u8 *obj_labels_buf =3D NULL;
+> +	u64 obj_labels_count =3D 0;
+> +	int rc;
 > +
-> +			labels_count =3D retbuf[0];
-> +			if (!labels_count) {
-> +				kfree(labels_buf);
-> +				labels_buf =3D NULL;
-> +				goto out;
-> +			}
+> +	rc =3D plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
+> +				     PLPKS_WRAPKEY_COMPONENT);
+> +	if (rc) {
+> +		pr_err("Retrieving object labels failed. rc=3D%d\n", rc);
+> +		goto out;
+> +	}
 > +
-> +			/*
-> +			 * Filter out object labels that don't have the provided
-> +			 * component prefix.
-> +			 */
+> +	rc =3D list_key_labels(buf, obj_labels_buf, obj_labels_count,
+> +			     PLPKS_WRAPKEY_UNREVOKED);
 > +
-> +			output_buf_len +=3D PLPKS_OBJLABEL_BUF_SIZE;
-> +
-> +			tmp_buf =3D krealloc(*output_buf, output_buf_len,
-> +					   GFP_KERNEL);
-> +
-> +			if (!tmp_buf) {
-> +				rc =3D -ENOMEM;
-> +				goto out_free_labels_buf;
-> +			}
-> +
-> +			*output_buf =3D tmp_buf;
-> +
-> +			for (i =3D 0; i < labels_count; ++i) {
-> +				if (labels_buf_offset +
-> +				    PLPKS_OBJLABEL_LEN_FIELD_SIZE >
-> +				    PLPKS_OBJLABEL_BUF_SIZE) {
-> +					rc =3D -EIO;
-> +					goto out_free_labels_buf;
-> +				}
-> +
-> +				label_len =3D
-> +					get_unaligned_be16(labels_buf +
-> +							   labels_buf_offset);
-> +
-> +				obj_label_entry_size =3D
-> +					PLPKS_OBJLABEL_LEN_FIELD_SIZE +
-> +					label_len;
-> +
-> +				if (label_len < sizeof(struct label_attr) ||
-> +				    labels_buf_offset + obj_label_entry_size >
-> +				    PLPKS_OBJLABEL_BUF_SIZE) {
-> +					rc =3D -EIO;
-> +					goto out_free_labels_buf;
-> +				}
-> +
-> +				metadata =3D
-> +					(struct label_attr *)(labels_buf +
-> +					labels_buf_offset +
-> +					PLPKS_OBJLABEL_LEN_FIELD_SIZE);
-> +
-> +				if (!memcmp(metadata->prefix, prefix,
-> +					    PLPKS_OBJLABEL_PREFIX_LEN)) {
-> +					memcpy(*output_buf + output_buf_offset,
-> +					       labels_buf + labels_buf_offset,
-> +					       obj_label_entry_size);
-> +
-> +					output_buf_offset +=3D
-> +						obj_label_entry_size;
-> +					(*output_len) +=3D 1;
-> +				}
-> +				labels_buf_offset +=3D obj_label_entry_size;
-> +			}
-> +			kfree(labels_buf);
-> +			labels_buf =3D NULL;
-> +			labels_buf_offset =3D 0;
-> +		}
-> +	} while (rc =3D=3D -EAGAIN);
-> +
-> +	goto out;
-> +
-> +out_free_labels_buf:
-> +	kfree(labels_buf);
-> +	labels_buf =3D NULL;
-> +out_free_output_buf:
-> +	kfree(*output_buf);
-> +	*output_buf =3D NULL;
-> +	*output_len =3D 0;
 > +out:
-> +	kfree_sensitive(auth);
+> +	kfree(obj_labels_buf);
+> +	return rc;
+> +}
+> +
+> +static ssize_t list_revoked_show(struct kobject *kobj,
+> +				 struct kobj_attribute *attr, char *buf)
+> +{
+> +	u8 *obj_labels_buf =3D NULL;
+> +	u64 obj_labels_count =3D 0;
+> +	int rc;
+> +
+> +	rc =3D plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
+> +				     PLPKS_WRAPKEY_COMPONENT);
+> +	if (rc) {
+> +		pr_err("Retrieving object labels failed. rc=3D%d\n", rc);
+> +		goto out;
+> +	}
+> +
+> +	rc =3D list_key_labels(buf, obj_labels_buf, obj_labels_count,
+> +			     PLPKS_WRAPKEY_REVOKED);
+> +
+> +out:
+> +	kfree(obj_labels_buf);
+> +	return rc;
+> +}
+> +
+> +static ssize_t create_store(struct kobject *kobj, struct kobj_attribute =
+*attr,
+> +			    const char *buf, size_t count)
+> +{
+[ ... ]
+> +static ssize_t unrevoke_store(struct kobject *kobj, struct kobj_attribut=
+e *attr,
+> +			      const char *buf, size_t count)
+> +{
+> +	struct plpks_var var =3D { 0 };
+> +	int rc;
+> +
+> +	if (!capable(CAP_SYS_ADMIN)) {
+> +		rc =3D -EPERM;
+> +		goto out;
+> +	}
+> +
+> +	if (!count) {
+> +		rc =3D -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	if (count > PLPKS_MAX_NAME_SIZE) {
+> +		rc =3D -ENAMETOOLONG;
+> +		goto out;
+> +	}
+> +
+> +	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
+> +		rc =3D -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	if (!is_wrapkey_label_alnum(buf, count)) {
+> +		rc =3D -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	var.name =3D kstrndup(buf, count, GFP_KERNEL);
+> +	if (!var.name) {
+> +		rc =3D -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	var.namelen =3D count;
+> +	var.os =3D PLPKS_VAR_LINUX;
+> +	var.component =3D PLPKS_WRAPKEY_COMPONENT;
+> +
+> +	rc =3D plpks_unrevoke_wrapping_key(&var);
+> +
+> +	if (rc) {
+> +		pr_err("un-revocation of wrapping key <%s> failed. rc =3D %d\n",
+> +		       (char *)var.name, rc);
+> +		goto out;
+> +	}
+> +
+> +	rc =3D count;
+> +out:
+> +	kfree(var.name);
 > +	return rc;
 > +}
 
+[Severity: Low]
+This isn't a bug, but create_store(), revoke_store(), unrevoke_store(), and
+delete_store() all duplicate the same CAP_SYS_ADMIN check, count validation,
+PLPKS_DEFAULT_WRAPKEY_LABEL check, is_wrapkey_label_alnum() validation,
+kstrndup() allocation, and struct plpks_var initialization (with
+unrevoke_store() returning -EINVAL instead of -EPERM for
+PLPKS_DEFAULT_WRAPKEY_LABEL).
+
+Similarly, list_active_show() and list_revoked_show() duplicate the
+plpks_get_object_labels() call and cleanup, differing only in passing
+PLPKS_WRAPKEY_UNREVOKED vs PLPKS_WRAPKEY_REVOKED to list_key_labels().
+
+Could the shared store validation/setup and show label retrieval logic be
+factored into common helpers?
+
+> +
+> +static ssize_t delete_store(struct kobject *kobj, struct kobj_attribute =
+*attr,
+> +			    const char *buf, size_t count)
+> +{
+[ ... ]
+> +	rc =3D plpks_del_wrapping_key(&var);
+
 [Severity: Medium]
-Can plpks_get_object_labels() leak *output_buf or return -EAGAIN to the
-caller?
-
-First, inside the do-while loop, when labels_count > 0, *output_buf is
-allocated or grown via krealloc() before checking whether any of the return=
+What prevents a TOCTOU race if delete_store() and unrevoke_store() are call=
 ed
-labels match comp_prefix. If PLPKS contains objects for other components so
-labels_count > 0, but none of those labels match comp_prefix, the loop
-completes with rc =3D=3D 0 and *output_len =3D=3D 0 and jumps to out withou=
-t freeing
-*output_buf. Unlike the case where PLPKS has 0 total objects on the first
-call (which returns 0 with *output_len =3D=3D 0 and *output_buf =3D=3D NULL=
-), this
-returns 0 with *output_len =3D=3D 0 while *output_buf points to an allocated
-buffer of uninitialized heap memory. Callers checking *output_len =3D=3D 0 =
-will
-leak *output_buf, while callers checking *output_buf !=3D NULL will read
-uninitialized memory.
+concurrently on the same revoked wrapping key?
 
-Second, if !labels_count (retbuf[0] =3D=3D 0) is encountered when
-H_PKS_GET_OBJECTLABELS returns H_CONTINUE (converted by
-pseries_status_to_err() to rc =3D -EAGAIN) or on a subsequent continuation
-iteration after *output_buf was already allocated, jumping directly to out
-bypasses the loop condition and out_free_output_buf. Could that return the
-internal continuation code -EAGAIN to the caller and leak any *output_buf
-allocated in prior iterations?
+In arch/powerpc/platforms/pseries/plpks.c, plpks_del_wrapping_key() enforces
+that a key is revoked before deletion across two separate hypercalls without
+any lock:
+
+plpks_del_wrapping_key()
+    rc =3D plpks_is_wrapping_key_revoked(var);
+    if (rc =3D=3D 1) {
+        ...
+        rc =3D plpks_remove_var(PLPKS_WRAPKEY_COMPONENT, var->os, vname);
+
+Because delete and unrevoke are separate sysfs attributes, kernfs only holds
+its per-open-file mutex separately for each attribute. If CPU 0 enters
+delete_store() -> plpks_del_wrapping_key() and sees
+plpks_is_wrapping_key_revoked() =3D=3D 1, and CPU 1 concurrently runs
+unrevoke_store() -> plpks_unrevoke_wrapping_key() (H_PKS_UNREVOKE_OBJECT)
+before CPU 0 calls plpks_remove_var() (H_PKS_REMOVE_OBJECT), won't CPU 0
+delete the now-active wrapping key?
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261105144320.3572=
-60-1-ssrish@linux.ibm.com?part=3D7
+60-1-ssrish@linux.ibm.com?part=3D9
