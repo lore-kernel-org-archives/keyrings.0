@@ -1,77 +1,77 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.218.44
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.218.53
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793989423;
-	b=KZG0cs2ZSjXhLuKlgOcIe0+x65ve7SMZ4kfzNRVZ8zdgIuTnxEZES1Gl356ts78msGqk
-	 krWagJJMVaiSDXz5GQk34Vx0IZvDXBz1sy6RInAhWFIUnTS2TCoWd/euDScNW1CGMQoj3
-	 xKI0APFDNZ5yfEKU0o1dWgYcKsCG1rC5+CfTSU8vqEYRXakXYUs5uezRav5jwOYP1Wg+C
-	 wLxa73pRMUaDAfGLcmeZp0G5FjCcMWlRNUuXlNTqA5/YHAxgXfE4VHwVa6v47AbIPPWvZ
-	 6hhQ7mvxrrnxStwcMb538o1qYZb4Y1c980fyshAg/Ew5gwLtzHUV+MhTPndyv2CRaiw==
+	t=1793990200;
+	b=euVx1AKtf/gH8DLmD8G9j3PseqcOb6Fw5LbPjc0n326mbd0DbFBJxNGfM3nMGhfDS9bR
+	 X9kai0L8oleEH9k3rJOJJjCExD2DjDcl4YMEANFLeu57J8ax3y+L8nJ28ykbZeMpdeWlW
+	 BRmk2c8VTnN2bWMDM6pVtlR3LmCBRVEb9LZUc27NOadZPAh7Zupaxu1Bahxg3ExlUlEpG
+	 9lpvELUxx27fAHH5VPeslykFOyS2GaCkW+kybsSEGAsGUoI3OaN9YtICLtFI26iO4ERbP
+	 WVmt4YqTIaNRIM6aDSmcZAeeNedHd6bv0u0S8WRATBLSpWcE00943AJvonu7xoR4NZw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793989423;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793990200;
 	h=DMARC-Filter:Received:X-Google-DKIM-Signature:X-Forwarded-Encrypted:
 	 X-Gm-Message-State:X-Gm-Gg:X-Received:Received:Received:
 	 X-Forwarded-Encrypted:X-Received:MIME-Version:References:In-Reply-To:
 	 From:Date:X-Gmail-Original-Message-ID:X-Gm-Features:Message-ID:
 	 Subject:To:Cc:Content-Type:Content-Transfer-Encoding;
-	bh=aNrxcQ3EqzspHqBIrIiO9tnG/RBY6rmNXDWaz9X6PEg=;
-	b=NUvLdhGXLSZn8pS6KZCFU4LPA5kzoCP1Epk1lolbgeTQ1upjyy92U83tkXHbaQ6L39Ih
-	 bRUIiYSNtRzy0eI4zafYY2uojSJ6voXU1bp7Gpkx8KZ1pGgIF3TOSUP8MGNzPSfS6vkMn
-	 SsEpywUJpnSddOXdFEpopPJ+mOlu0AvtGKLcnFmbn8USzMgg+xgF+ewckY3uhXT1aggO1
-	 xVDFvcpEHgzNqxJG0LYHfA2c2pMoyIsQ3VFMH47xFd2UN1Xo8zsi1QA8WVsyOlllj7+0+
-	 XO6qt0eaCgKkUC7NMjuep23sfx6aZR/AcMGqecNdxLBHDWLXuisC39crrn/ZU1zqmJw==
+	bh=UliTkuKSwijkprFnPvplR6mcOQUjgocutB6yCvWNZyo=;
+	b=Bld+yNI3aVsCt3OBDR8V1lcQp7vI9Jlwt9N5hkm0fKe+OvNRGnWCHI9kLmouqQ5kI8ZA
+	 4ew/wnUTZi/FkcTGmZcwO9YB3wc8Y5AsfbsOsAnhcOPqqCVOJcLohI6qgv9u8QeJlBRIG
+	 QskJpPA0RYG58k52ReBLa/LgotNntJblZjIgk8fi7BMZacXrsniTTwf5xwqQewFyN+yTs
+	 WZ8/6Em40tp2vtMGZfiE5O/X6mk7RbKNlcnspRKIZN2m81Q0TdNVGCfb6YjACSv18XISY
+	 ba+0r/fMimxh79ZsQ39FwHEVhSTpz0Cboc5ZgXL64v/F8mOFArX/RyRRJScG3mOFpkw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=none header.from=linux.win;
 	spf=pass smtp.mailfrom=gmail.com;
-	arc=none smtp.remote-ip=209.85.218.44
-Received: from mail-ej1-f44.google.com (mail-ej1-f44.google.com [209.85.218.44])
+	arc=none smtp.remote-ip=209.85.218.53
+Received: from mail-ej1-f53.google.com (mail-ej1-f53.google.com [209.85.218.53])
 	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 00613606A326
-	for <keyrings@vger.kernel.org>; Fri,  6 Nov 2026 18:23:42 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 00613606A326
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 159BF606D811
+	for <keyrings@vger.kernel.org>; Fri,  6 Nov 2026 18:36:39 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 159BF606D811
 Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux.win
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
-Received: by mail-ej1-f44.google.com with SMTP id a640c23a62f3a-c40e02b2ebaso150405666b.1
-        for <keyrings@vger.kernel.org>; Fri, 06 Nov 2026 10:23:42 -0800 (PST)
+Received: by mail-ej1-f53.google.com with SMTP id a640c23a62f3a-c450ab1483cso149149966b.3
+        for <keyrings@vger.kernel.org>; Fri, 06 Nov 2026 10:36:39 -0800 (PST)
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1793989421; x=1794594221;
+        d=1e100.net; s=20260707; t=1793990198; x=1794594998;
         h=content-transfer-encoding:content-type:cc:to:subject:message-id
          :date:from:in-reply-to:references:mime-version:x-gm-gg
          :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
          :content-type;
-        bh=aNrxcQ3EqzspHqBIrIiO9tnG/RBY6rmNXDWaz9X6PEg=;
-        b=s7QOE/gDfkeozryyiYmtDCtdLmsb8kv9tSR8Z3MZTMVfz/kNeodVPE/2TWF3pNAUer
-         +OgBxBQaPHDsfPJlO9AgrxlM84AG+5MLTuSleF5AG471QfAQWaTtK6br3cL/8a1zTeX3
-         6FP0gageVMnUJYgvs2KdhENja3T5yRRujbpKDjrDYYGsM0T2qLYEHgNlUOKQ8FVy6XEc
-         2x5FiIvIiF/YlRjtRImaB0+WOmnu3jZMMJdn+jRkSonXpsnhuVcup+Z/t5BHokYrsz8g
-         ljXp9MrvZxaYuPDGZ+zpTjPM8S4YI/HwLrNr8RmI9AaqRnN2czlIBknrQNnZBd/Z8ZpL
-         2IrA==
-X-Forwarded-Encrypted: i=1; AKwUvBym2zxs+4OlyP4Iv5y6DkfcTI7/HTbFJwnC3XbIYnHf1f4b63qQqN0R8xmharUL1cKIi+endvfdtw==@vger.kernel.org
-X-Gm-Message-State: APuU4Z/nBdd+oRiHtS2tAj+cWpUXDx8Sro42H/tsvLFypFIUU8eEQM4z
-	q2I8zZAmzntbKIzMePlo+TO2QLOTU0hKjcwJgVw6HvlJqu+qThABT5IodwegMe7YZIw=
-X-Gm-Gg: AYBFou3BOYm4ZvPc6xuek3ap6ZzCjtCuuy2FWjgcBFdGJnFW6fFm2DnnLjLr4m2jGDP
-	UNzmKhxw5nPn8/+xQqWcxJXFYtU7Cic9XKm/U82P5mlc9Gu8Bc+IW8ELdsBXAniJceDpNQmTGn/
-	2ihkl0zm5yxlyurlLOkJb0JQ/te8ahS2k5dyJSxyGV6ROJydjqp1SOOT+msDfNREm8fz+tFEgpm
-	ZbipYPJtdf1hbzi9NuBVoLHCZARm6p8PypopMKppf4je1AajIu0KwMr+VX/f17/QO2g9D8rDI0A
-	vLWp0PIDIsU/hI7bzHKi0WaQTwofHf0bYztiNBqq551+++acl+4Rxkl9pVIXYgocWdAUomJNRws
-	bIQvTW2mXZldkr6P4cDIEF8BEn3qAz+hmpxsoWImPj5qRjxz5sC9A06UDBwlaiHhoPzKgHUleBk
-	VWhyvFLUnjlBHrbEyT4pXJ2PTPUnlaRvj/9B7DTbSdoW/9SIwXHZZMqIwtohQtmDw6vljb3oSLR
-	dnru2iv17/JL6+s3DWkEsYSVjVL05MyrBQRBLiqMhS+aCuc6gCV62ZnUb4Y/c7JkDc4XWuBscbE
-	BZJsQugfkxqiVAoGwzurh1m09PxxAMkKFLqelSiTwf/S3271wSONs6IIgfM=
-X-Received: by 2002:a17:907:990c:b0:c49:df95:fd0 with SMTP id a640c23a62f3a-c4d356494a4mr184834566b.48.1793989421209;
-        Fri, 06 Nov 2026 10:23:41 -0800 (PST)
-Received: from mail-ej1-f45.google.com (mail-ej1-f45.google.com. [209.85.218.45])
-        by smtp.gmail.com with ESMTPSA id a640c23a62f3a-c4d356eb407sm96595366b.86.2026.11.06.10.23.40
+        bh=UliTkuKSwijkprFnPvplR6mcOQUjgocutB6yCvWNZyo=;
+        b=WeECOL2UOfXmzObaijYlG3kA4xxOoH9f+G/mYoU2sMi7gBngqbcc5iTSbEjYL2U/jF
+         AG/6uqYQwuGvf14cPVGCbvJVVoSZdqtOXfi65q3KWpvFwfh2oAs+F+IAYQR0U981wABu
+         WbrMToDAJin+G2vFBWThRc7aq53SW1dfjk6F1Xflz0t8ejm/9lRu8mUWKAuB1J5oy6yX
+         j8FxXT1YcWcSt/r9Hsb9e/LPzsXQFvi5+Se0GHGNnFFkeBjp1IsEEKUnTWk4JE/K36hJ
+         6RPHzEV2/XytHMflvEfEo04HvbllJsxtCYYXntjgYvTB1trAo/hyWAyLtbF30I3jl53w
+         Np0w==
+X-Forwarded-Encrypted: i=1; AKwUvBx4ftundik1tzJXBUSldCK28wueSFJ15Vuw+chRVGAy4xPSD3ylOk03CeNTKt0MOUFonZocCGxEuw==@vger.kernel.org
+X-Gm-Message-State: APuU4Z8MyJrK5VfvKHxMSpReatSoJsOF4VKa1dW63rfLHhBRqBGcPWq/
+	xr43LTzDhNMZekQV/odP/+/W6RVsWeNBuh4jRbAgRDY7kgqYMByRpDM9sjVwvz6MWOI=
+X-Gm-Gg: AYBFou222ax/JCEsOUcvNkYCA6GaFgY8njINidVPqsneyf+pxaDZnK/y51dVHIsqN7M
+	cPtXzrpGkeESH9mELUbTTWorw7pF1CECucYYqz1bLCtzwAtBmm8CEfpBCmA+KJMXbG2YXQ/Vg1a
+	HoacDbRNe3golsbcS/rkfcxSucp7Chy6m8Wg+e85ig+rTMFqbCxj8bbbiDXgqMbsS8XT/1UWTtv
+	T24mu/EKiklVtLU/Q/tN0LI8jx1s2KBaUot6WPO0AOTHvDSDKME9fhHAA7z/xvxAyswOy9+YSQv
+	p0bzix8HDHBkjFCGAUamdKEI/KaM8vod6PKIY45raSLBKgcsYUUyUlP3khwVq8zTqO1Uis8rLLp
+	+GDEFbP+ehb90wuE7XM771NXBl0nu3XBkyJ/A5AR3yPxzkuoCO+Yq1KvvfX3/JmNLk/UzzCq9rb
+	xQ1J4to3p6im3yQeO3tngZJ4uno8KsFz1MmA424tQUct4CuK73X9RTlWI+2+Hwxx4fRHMu+WR6+
+	gWPUIl0Oyf37g13O+Zh9DH9KmNXUJV3cdjGItEIVdq/aHO6iWYSYWPDMVLecLWLOyVwYuOSW5XG
+	ias0WRsEFrtr59EoZrE6bcgNgImXAOL8ux7zQu4S40LjGy0pXyydJMOiqhE=
+X-Received: by 2002:a17:906:ef0a:b0:c4d:167d:dcee with SMTP id a640c23a62f3a-c4d353d0210mr282056866b.40.1793990198273;
+        Fri, 06 Nov 2026 10:36:38 -0800 (PST)
+Received: from mail-ej1-f46.google.com (mail-ej1-f46.google.com. [209.85.218.46])
+        by smtp.gmail.com with ESMTPSA id a640c23a62f3a-c4d354ac21dsm98366666b.12.2026.11.06.10.36.38
         for <keyrings@vger.kernel.org>
         (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Fri, 06 Nov 2026 10:23:40 -0800 (PST)
-Received: by mail-ej1-f45.google.com with SMTP id a640c23a62f3a-c4cb6834eaaso138729066b.2
-        for <keyrings@vger.kernel.org>; Fri, 06 Nov 2026 10:23:40 -0800 (PST)
-X-Forwarded-Encrypted: i=1; AKwUvBwSQ259LzL3YzIYjrRg1t9om+Zmb50T1zLNTDQE1MS/NfKLNmSakrEPV57qGdGpJ8vpEpPLyjGQsA==@vger.kernel.org
-X-Received: by 2002:a17:907:6ea1:b0:c49:903e:1e19 with SMTP id
- a640c23a62f3a-c4d354e89acmr271729566b.26.1793989420455; Fri, 06 Nov 2026
- 10:23:40 -0800 (PST)
+        Fri, 06 Nov 2026 10:36:38 -0800 (PST)
+Received: by mail-ej1-f46.google.com with SMTP id a640c23a62f3a-c450ab1483cso149148466b.3
+        for <keyrings@vger.kernel.org>; Fri, 06 Nov 2026 10:36:38 -0800 (PST)
+X-Forwarded-Encrypted: i=1; AL+hErGpidbDORG3+IS4JPv+jCsxRWJnVGNkEbSeJvQfFvE8TEG/Eu14MzS8EodnOeeI6/r9n1Gve/+sDQ==@vger.kernel.org
+X-Received: by 2002:a17:907:ea89:b0:c4c:bff4:200c with SMTP id
+ a640c23a62f3a-c4d3531f031mr283547466b.32.1793989808075; Fri, 06 Nov 2026
+ 10:30:08 -0800 (PST)
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -81,241 +81,151 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-References: <20261026024840.23482-1-xuyuqiabc@gmail.com>
-In-Reply-To: <20261026024840.23482-1-xuyuqiabc@gmail.com>
+References: <20261029232437.2581640-1-jarkko@kernel.org> <20261029232437.2581640-2-jarkko@kernel.org>
+In-Reply-To: <20261029232437.2581640-2-jarkko@kernel.org>
 From: Ignat Korchagin <ignat@linux.win>
-Date: Fri, 6 Nov 2026 18:23:27 +0000
-X-Gmail-Original-Message-ID: <CAOs+rJWf5JEMD7UC-4YS2ayAX5f2SUgr5s9DCwmWXExBhqaEJA@mail.gmail.com>
-X-Gm-Features: AclHuK-C3Nt3Bae-E0GNpd5wrE9zs0X4WIFo37tTe1DY5jHnZaQm4KTY5Zirqa8
-Message-ID: <CAOs+rJWf5JEMD7UC-4YS2ayAX5f2SUgr5s9DCwmWXExBhqaEJA@mail.gmail.com>
-Subject: Re: [PATCH v4] KEYS: Account for asymmetric key payload data in the quota
-To: Yuqi Xu <xuyuqiabc@gmail.com>
-Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, 
-	David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>, 
+Date: Fri, 6 Nov 2026 18:29:56 +0000
+X-Gmail-Original-Message-ID: <CAOs+rJVNyJwqp4CR-d_T4GVjNMjgbaDL78_mZCVGGvN1xpd33w@mail.gmail.com>
+X-Gm-Features: AclHuK8TGNjpH-aL7rdb3WJ8RwrdjoKcrJ52VddwbSIE-hld3YHoMNkMBO-NFbA
+Message-ID: <CAOs+rJVNyJwqp4CR-d_T4GVjNMjgbaDL78_mZCVGGvN1xpd33w@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] KEYS: Introduce keyring_is_empty()
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, 
+	Eric Biggers <ebiggers@kernel.org>, Lukas Wunner <lukas@wunner.de>, 
 	Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, 
-	Rusty Russell <rusty@rustcorp.com.au>, stable@vger.kernel.org, Vega <vega@nebusec.ai>, 
-	Ren Wei <weir@nebusec.ai>, xuyq21@lenovo.com
+	Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@kernel.org>, 
+	Mikulas Patocka <mpatocka@redhat.com>, Benjamin Marzinski <bmarzins@redhat.com>, 
+	"Theodore Y. Ts'o" <tytso@mit.edu>, Alexei Starovoitov <ast@kernel.org>, Daniel Borkmann <daniel@iogearbox.net>, 
+	Andrii Nakryiko <andrii@kernel.org>, Eduard Zingerman <eddyz87@gmail.com>, 
+	Kumar Kartikeya Dwivedi <memxor@gmail.com>, Martin KaFai Lau <martin.lau@linux.dev>, Song Liu <song@kernel.org>, 
+	Yonghong Song <yonghong.song@linux.dev>, Jiri Olsa <jolsa@kernel.org>, 
+	Emil Tsalapatis <emil@etsalapatis.com>, Ihor Solodrai <ihor.solodrai@linux.dev>, 
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, 
+	"Serge E. Hallyn" <serge@hallyn.com>, Shuah Khan <shuah@kernel.org>, 
+	Christian Brauner <brauner@kernel.org>, 
+	"open list:ASYMMETRIC KEYS" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, 
+	"open list:DEVICE-MAPPER (LVM)" <dm-devel@lists.linux.dev>, 
+	"open list:FSVERITY: READ-ONLY FILE-BASED AUTHENTICITY PRO..." <fsverity@lists.linux.dev>, 
+	"open list:BPF [GENERAL] (Safe Dynamic Programs and Tools)" <bpf@vger.kernel.org>, 
+	"open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, 
+	"open list:KERNEL SELFTEST FRAMEWORK" <linux-kselftest@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Oct 26, 2026 at 2:50=E2=80=AFAM Yuqi Xu <xuyuqiabc@gmail.com> wrote=
-:
+On Thu, Oct 29, 2026 at 11:25=E2=80=AFPM Jarkko Sakkinen <jarkko@kernel.org=
+> wrote:
 >
-> add_key("asymmetric", ...) preparses the supplied blob and then
-> instantiates the key with generic_key_instantiate(), which charges
-> prep->quotalen to the owning user's key quota through
-> key_payload_reserve().
+> Introduce keyring_is_empty() in order to decouple for BPF, dm-verity and
+> fs-verity how keyring internally manages the keys.
 >
-> pkcs8_parse() duplicates the attacker-controlled PrivateKey OCTET
-> STRING with kmemdup() into pub->key. pkcs8_key_preparse() stores that
-> object in the asymmetric-key payload but hard-codes prep->quotalen to
-> 100, so the quota records 100 bytes regardless of the retained private
-> key size. The ASN.1 decoder accepts blobs up to 65535 bytes, so one
-> key can pin about 64 KiB while consuming 100 quota bytes. With the
-> default non-root limits (200 keys / 20000 bytes) a user can retain
-> roughly 12 MiB instead of the 20 KiB the limit is meant to allow.
->
-> x509_key_preparse() keeps the parsed public key, its parameters, the
-> signature and the authority key IDs, but also charges a fixed 100
-> bytes. PKCS#8 later repeated the same fixed-100 accounting. The same
-> add_key() call reaches the X.509 parser, so fixing only PKCS#8 would
-> leave the bypass reachable.
->
-> Charge the size of the retained payload instead. An oversized PKCS#8
-> key now fails with -EDQUOT instead of being accepted for 100 bytes,
-> and the same applies to an X.509 certificate that retains an oversized
-> public key or set of authority key IDs. A charge which does not fit
-> in unsigned short is rejected with -EINVAL before the payload is
-> installed, because key_payload_reserve() keeps the full delta in the
-> user counter and refunds only the truncated key->quotalen. key_alloc()
-> also charges the key description to the same field, so include the
-> effective description length in that limit as well.
->
-> Measured on v7.3-rc1 (10396a2d6d41), 2 vCPU / 2 GiB QEMU guest, as uid
-> 1000, adding PKCS#8 keys with a 65000-byte PrivateKey field. Before
-> the patch, 176 keys were retained (about 11.4 MiB) while
-> /proc/key-users charged only 19712 bytes. After the patch the
-> oversized key is rejected immediately, and a 200-byte PrivateKey still
-> loads and is charged 264 bytes. A small X.509 certificate whose only
-> large object is a 26000-byte authorityKeyIdentifier is likewise
-> rejected, while the unpatched kernel accepted it and charged 109
-> bytes.
->
-> Fixes: c26fd69fa009 ("X.509: Add a crypto key parser for binary (DER) X.5=
-09 certificates")
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-SInce we touch PKCS8 as well, missing a relevant "Fixes:"
+Reviewed-by: Ignat Korchagin <ignat@linux.win>
 
-> Cc: stable@vger.kernel.org
-> Reported-by: Vega <vega@nebusec.ai>
-> Assisted-by: LLM
-> Signed-off-by: Yuqi Xu <xuyuqiabc@gmail.com>
-> Reviewed-by: Ren Wei <weir@nebusec.ai>
 > ---
-> Changes in v4:
->  - Sashiko (High): "keys: integer truncation of key->quotalen causes
->    permanent quota leak" on key_alloc() and key_payload_reserve().
->    Include the effective key description length in the USHRT_MAX
->    limit. key_alloc() and key_payload_reserve() add the description
->    and the payload to the same unsigned short field, so checking the
->    payload alone was not enough.
->  - v3 Link: https://lore.kernel.org/all/20261019041314.48569-1-xuyuqiabc@=
-gmail.com/
+>  drivers/md/dm-verity-verify-sig.c                      |  2 +-
+>  fs/verity/signature.c                                  |  2 +-
+>  include/linux/key.h                                    |  1 +
+>  kernel/bpf/keys.c                                      |  2 +-
+>  security/keys/keyring.c                                | 10 ++++++++++
+>  .../selftests/dm-verity/test-dm-verity-keyring.sh      |  2 +-
+>  6 files changed, 15 insertions(+), 4 deletions(-)
 >
-> Changes in v3:
->  - Sashiko (High): "keys: integer truncation of key->quotalen causes
->    permanent quota leak" on pkcs8_key_preparse() and
->    x509_key_preparse(). A payload charge above USHRT_MAX is rejected
->    with -EINVAL before the payload is installed. key_payload_reserve()
->    keeps the full delta in the user quota and refunds only the
->    truncated key->quotalen, so that charge would leak quota.
->  - Reposted so Sashiko records a review against this Message-ID, as
->    requested by Herbert Xu. v2 was posted and Ignat Korchagin replied.
->  - v2 Link: https://lore.kernel.org/all/4a0b2e00f5cc62c173a01fec2f56eab1b=
-04d70bb.1790568982.git.xuyuqiabc@gmail.com/
+> diff --git a/drivers/md/dm-verity-verify-sig.c b/drivers/md/dm-verity-ver=
+ify-sig.c
+> index aadcf5e4a47c..cad21e9144ed 100644
+> --- a/drivers/md/dm-verity-verify-sig.c
+> +++ b/drivers/md/dm-verity-verify-sig.c
+> @@ -153,7 +153,7 @@ int verity_verify_root_hash(const void *root_hash, si=
+ze_t root_hash_len,
+>         if (ret !=3D -ENOKEY && ret !=3D -EKEYREJECTED)
+>                 return ret;
 >
-> Changes in v2:
->  - Move the bug details and the measured quota numbers into this
->    commit message, as requested by Ignat Korchagin.
->  - Sashiko (High): "keys: integer truncation in key->quotalen causes
->    permanent quota leak" on pkcs8_key_preparse() and
->    x509_key_preparse(). Not changed in v2. The same finding is
->    addressed in v3 and v4.
->  - v1 Link: https://lore.kernel.org/all/cover.1789801335.git.xuyuqiabc@gm=
-ail.com/
+> -       if (dm_verity_keyring->keys.nr_leaves_on_tree &&
+> +       if (!keyring_is_empty(dm_verity_keyring) &&
+>             dm_verity_keyring->restrict_link)
+>                 ret =3D verify_pkcs7_signature(root_hash, root_hash_len,
+>                                              sig_data, sig_len,
+> diff --git a/fs/verity/signature.c b/fs/verity/signature.c
+> index 0302a4e506ec..890d33b9d812 100644
+> --- a/fs/verity/signature.c
+> +++ b/fs/verity/signature.c
+> @@ -67,7 +67,7 @@ int fsverity_verify_signature(const struct fsverity_inf=
+o *vi,
+>                 return 0;
+>         }
 >
-> diff --git a/crypto/asymmetric_keys/pkcs8_parser.c b/crypto/asymmetric_ke=
-ys/pkcs8_parser.c
-> index 9dd1c181789a..db2d57489d96 100644
-> --- a/crypto/asymmetric_keys/pkcs8_parser.c
-> +++ b/crypto/asymmetric_keys/pkcs8_parser.c
-> @@ -10,6 +10,7 @@
->  #include <linux/kernel.h>
->  #include <linux/export.h>
->  #include <linux/slab.h>
-> +#include <linux/string.h>
->  #include <linux/err.h>
->  #include <linux/oid_registry.h>
->  #include <keys/asymmetric-subtype.h>
-> @@ -136,6 +137,8 @@ static struct public_key *pkcs8_parse(const void *dat=
-a, size_t datalen)
->  static int pkcs8_key_preparse(struct key_preparsed_payload *prep)
->  {
->         struct public_key *pub;
-> +       const char *description;
-> +       size_t desclen, quotalen;
+> -       if (fsverity_keyring->keys.nr_leaves_on_tree =3D=3D 0) {
+> +       if (keyring_is_empty(fsverity_keyring)) {
+>                 /*
+>                  * The ".fs-verity" keyring is empty, due to builtin sign=
+atures
+>                  * being supported by the kernel but not actually being u=
+sed.
+> diff --git a/include/linux/key.h b/include/linux/key.h
+> index c4486e938a06..20ca43f5eab1 100644
+> --- a/include/linux/key.h
+> +++ b/include/linux/key.h
+> @@ -439,6 +439,7 @@ extern int restrict_link_reject(struct key *keyring,
+>                                 struct key *restriction_key);
 >
->         pub =3D pkcs8_parse(prep->data, prep->datalen);
->         if (IS_ERR(pub))
-> @@ -144,13 +147,26 @@ static int pkcs8_key_preparse(struct key_preparsed_=
-payload *prep)
->         pr_devel("Cert Key Algo: %s\n", pub->pkey_algo);
->         pub->id_type =3D "PKCS8";
+>  extern int keyring_clear(struct key *keyring);
+> +bool keyring_is_empty(const struct key *keyring);
 >
-> +       /*
-> +        * key_alloc() charges the description to the same unsigned short
-> +        * field that key_payload_reserve() later adds the payload to.
-
-While today indeed only the asymmetric keys hit this I wonder if the
-fix is better to be in key_payload_reserve(). Something like a fail if
-key->quotelen + delta > USHRT_MAX. That fixes all current and future
-key types.
-
-> +        */
-> +       description =3D prep->orig_description ?: prep->description;
-> +       desclen =3D description ? strlen(description) + 1 : 0;
-> +
-> +       quotalen =3D sizeof(*pub) + pub->keylen;
-> +       if (desclen > USHRT_MAX || quotalen > USHRT_MAX - desclen) {
-> +               public_key_free(pub);
-> +               return -EINVAL;
-> +       }
-> +
->         /* We're pinning the module by being linked against it */
->         __module_get(public_key_subtype.owner);
->         prep->payload.data[asym_subtype] =3D &public_key_subtype;
->         prep->payload.data[asym_key_ids] =3D NULL;
->         prep->payload.data[asym_crypto] =3D pub;
->         prep->payload.data[asym_auth] =3D NULL;
-> -       prep->quotalen =3D 100;
-> +       prep->quotalen =3D quotalen;
->         return 0;
+>  extern key_ref_t keyring_search(key_ref_t keyring,
+>                                 struct key_type *type,
+> diff --git a/kernel/bpf/keys.c b/kernel/bpf/keys.c
+> index bffc356839ac..24e0416abc99 100644
+> --- a/kernel/bpf/keys.c
+> +++ b/kernel/bpf/keys.c
+> @@ -29,7 +29,7 @@ struct bpf_key *bpf_lookup_keyring(void)
+>
+>         if (!bpf_keyring)
+>                 return NULL;
+> -       if (!READ_ONCE(bpf_keyring->keys.nr_leaves_on_tree) ||
+> +       if (keyring_is_empty(bpf_keyring) ||
+>             !READ_ONCE(bpf_keyring->restrict_link))
+>                 return NULL;
+>
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index 5281da9d5bf7..ac48d6204915 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -443,6 +443,16 @@ static void keyring_destroy(struct key *keyring)
+>         assoc_array_destroy(&keyring->keys, &keyring_assoc_array_ops);
 >  }
 >
-> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric=
-_keys/x509_public_key.c
-> index 25cf8ac7f257..4a9c85277ce0 100644
-> --- a/crypto/asymmetric_keys/x509_public_key.c
-> +++ b/crypto/asymmetric_keys/x509_public_key.c
-> @@ -163,9 +163,11 @@ static int x509_key_preparse(struct key_preparsed_pa=
-yload *prep)
->  {
->         struct x509_certificate *cert __free(x509_free_certificate) =3D N=
-ULL;
->         struct asymmetric_key_ids *kids __free(kfree) =3D NULL;
-> +       struct asymmetric_key_id *id;
->         char *p, *desc __free(kfree) =3D NULL;
-> -       const char *q;
-> -       size_t srlen, sulen;
-> +       const char *description, *q;
-> +       size_t desclen, srlen, sulen, quotalen;
-> +       int i;
->
->         cert =3D x509_cert_parse(prep->data, prep->datalen);
->         if (IS_ERR(cert))
-> @@ -221,6 +223,36 @@ static int x509_key_preparse(struct key_preparsed_pa=
-yload *prep)
->         if (IS_ERR(kids->id[2]))
->                 return PTR_ERR(kids->id[2]);
->
-> +       /* Charge the memory retained in the payload, not a fixed estimat=
-e */
-> +       quotalen =3D sizeof(*cert->pub) + cert->pub->keylen +
-> +                  cert->pub->paramlen;
-> +       if (cert->sig) {
-> +               quotalen +=3D sizeof(*cert->sig) + cert->sig->s_size;
-> +               if (cert->sig->m_free)
-> +                       quotalen +=3D cert->sig->m_size;
-> +               for (i =3D 0; i < ARRAY_SIZE(cert->sig->auth_ids); i++) {
-> +                       id =3D cert->sig->auth_ids[i];
-> +                       if (id)
-> +                               quotalen +=3D sizeof(*id) + id->len;
-> +               }
-> +       }
-> +       quotalen +=3D sizeof(*kids);
-> +       for (i =3D 0; i < ARRAY_SIZE(kids->id); i++) {
-> +               id =3D kids->id[i];
-> +               if (id)
-> +                       quotalen +=3D sizeof(*id) + id->len;
-> +       }
-> +       /*
-> +        * key_alloc() charges the description to the same unsigned short
-> +        * field that key_payload_reserve() later adds the payload to.
-> +        */
-> +       description =3D prep->orig_description ?: desc;
-> +       desclen =3D strlen(description) + 1;
-> +       if (desclen > USHRT_MAX || quotalen > USHRT_MAX - desclen) {
-> +               kfree(kids->id[2]);
-> +               return -EINVAL;
-> +       }
+> +/**
+> + * keyring_is_empty - Check whether a keyring is empty
+> + * @keyring: The keyring to check.
+> + */
+> +bool keyring_is_empty(const struct key *keyring)
+> +{
+> +       return READ_ONCE(keyring->keys.nr_leaves_on_tree) =3D=3D 0;
+> +}
+> +EXPORT_SYMBOL(keyring_is_empty);
 > +
->         /* We're pinning the module by being linked against it */
->         __module_get(public_key_subtype.owner);
->         prep->payload.data[asym_subtype] =3D &public_key_subtype;
-> @@ -228,7 +260,7 @@ static int x509_key_preparse(struct key_preparsed_pay=
-load *prep)
->         prep->payload.data[asym_crypto] =3D cert->pub;
->         prep->payload.data[asym_auth] =3D cert->sig;
->         prep->description =3D desc;
-> -       prep->quotalen =3D 100;
-> +       prep->quotalen =3D quotalen;
+>  /*
+>   * Describe a keyring for /proc.
+>   */
+> diff --git a/tools/testing/selftests/dm-verity/test-dm-verity-keyring.sh =
+b/tools/testing/selftests/dm-verity/test-dm-verity-keyring.sh
+> index 1f9601ef22f8..792449d356cf 100755
+> --- a/tools/testing/selftests/dm-verity/test-dm-verity-keyring.sh
+> +++ b/tools/testing/selftests/dm-verity/test-dm-verity-keyring.sh
+> @@ -746,7 +746,7 @@ test_keyring_inactive_when_empty() {
+>      log_info "TEST: Verify dm-verity keyring is inactive when sealed emp=
+ty"
 >
->         /* We've finished with the certificate */
->         cert->pub =3D NULL;
+>      # When keyring_unsealed=3D0, the keyring is sealed immediately while=
+ empty
+> -    # This means it should NOT be used for verification (nr_leaves_on_tr=
+ee=3D0)
+> +    # An empty keyring should NOT be used for verification.
+>
+>      log_info "Keyring state (should be empty and sealed):"
+>      list_keyring_keys
 > --
-> 2.56.0
+> 2.47.3
 >
 >
->
-
-Ignat
