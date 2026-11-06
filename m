@@ -1,62 +1,71 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793916086;
-	b=ujS4DcaG6DldgIxD6xcpwwL2w+YW9ug12F0JRQYrnawy2z45e02hUjJQz+lK9gxO12O5
-	 sgR+qXiq5NF7Gy69luEEYVck/BqaqKVhWMJAbDjAOSbFssSnJU6aJtTIkj5z27wY5jcnx
-	 7SqfKumK+WdwlxfnUUZlrIIWLbTrRPAmz8RuOAbRBaAxKE7C2HvxNwOIw+EqqTQRPXpAr
-	 rzGNEOLn1uFnZ4U1ukt54/JxC+tBvrNSmKnOv6xnsRRJi8SuxqsRMc/Vj9bXaUzGJDk+j
-	 KkGTcuEVltzi+wMAEexeMgpEyp6VMUgeaILvo/S8XUGzwGXY28TGo+d3vHolpdZZKQg==
+	t=1793926446;
+	b=q74LygQhatqD71IOF7yD1ViD1i276QzID8r4RgDunu+TmGvPLYsb+qiN1Q7mPK+/rfYo
+	 1DH5nmv8jm1lPHv+1q0ennTLm04i4RmfqJKJ3VMXIvUkR8tWi8rscktekkuMMzLwCg561
+	 MzQY4l0f93KzbWNmyALGXydzwBtmCjYVqA4Zb515FCz7L01dkbBR/1pUH11xc4wBIhwRm
+	 nmT0uz7qGoTLEE4EWShrqXpd2HckBI6xI4312oN4VwUFvfV+6J7HqJ2JI+6T2fUMVlHQ3
+	 3prUXwPUBg+pI9UQoQMnmbyyYHZKQGHtoZ3qQ7JDdKYfZNn7myIPZ02bz+/DGZwe5rQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793916086;
-	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
-	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
-	bh=desrRdbrEuvuMPsaXsP5lb59aPa4lj2l+ZBPPXTms64=;
-	b=L9AVkJAooifz+2YyninHG0k958Q34R9sDpTYT/fRmUs6Zed5nGIQ+zuMEs3uVAuT6AUW
-	 x6pxdmLvazRNGJbbqgq8TTcGYKgnGUdNKkOQR3EsQTeOP2xBgOCzk9Nr7PU+Ix3tuI1en
-	 zwNOB8SipE9fUWvqhRdTzRSQHGq57wElt/QmV5sLtYSPlSuEWcjOh+kC6xsebX2sN5gJT
-	 jA+2yRBhJXB+Dh7/wxJhWxsKKPF/cPWxiFGfkCM+rKxoiqaNI2NybVz9U9sm2CumpX27a
-	 EdH1b08Plb46Vj862R3hG+IizqqSrRH/1l+KZOQKu6msYr+ng1DZj2lluVP35gY1xXA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793926446;
+	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
+	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
+	bh=sFdRb1ZcezZvg9sinKms+DcyU8fQawoewDHaZdVLz+U=;
+	b=wPIEvDQP4qQcz58G/H5zXbdlih5HqjW9lFkCJUPj5iTnN2f4mwlzcu9rUtHxxTg51XMK
+	 c/HOR7JpXnsBPpfz7yqTG0HoxbguthTJQVBU7X24NgxqeK3ew896/6yKtThJplLZOKf05
+	 muvjR00Uw4VHsMMOWw7lvMqv1YBz5jHD3EJ2RRxN3TcooxtmW8hpFZ4XL0EPMca7i/6Qk
+	 dC7bJ/GVq3dWINPabtCTY3uavXUG+dzTFp50+lZu2kSnaZk7D4eQhQHJuKjm4RdXTalrW
+	 oaMapjZfeqHJylEwEYXSEYTOS5BcV6ET0tqeFxzYe0HdLvFaLoG9K3ysm0x3Wn0zTsg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=c9Oi0hFp;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=OcpFfZe8;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 7306C606A326;
-	Thu,  5 Nov 2026 22:01:26 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 26605606A326;
+	Fri,  6 Nov 2026 00:54:05 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=c9Oi0hFp
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 80DA31F008A3;
-	Thu,  5 Nov 2026 22:01:25 +0000 (UTC)
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=OcpFfZe8
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 634351F0089F;
+	Fri,  6 Nov 2026 00:54:04 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1793916086;
-	bh=desrRdbrEuvuMPsaXsP5lb59aPa4lj2l+ZBPPXTms64=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=c9Oi0hFp9dhOsoeqmM1O0KhdWXGjSnMcBgGNjYegIyco3DVIiz/MIMgyKt8Gt334t
-	 mULChLvxPNq9rqhj9bIDPMVQHA8kUfAzLK9BJOkLNpUXFjgBfzCrosv60DaZcvJ5ou
-	 I5ueVyON/4UQXctgY+5L4e9rvwLvbZan2q/D/lEWickax0dmYewsxN+oHMLbBQvN84
-	 ucKsqpOnARXuBMa5m/A2CQZrmNazaTzfuhsx0hJPOasfwfMBmxZAh3l9Z2eMx22oo/
-	 qxozs1iUqLuMgR2+rseUpQT27B9K2VQJ4+xPwB0tk2Ks4ed15rAYcaPph12MlmmP8B
-	 58Of10m3pK6rw==
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Jarkko Sakkinen <jarkko@kernel.org>,
-	keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	Eric Biggers <ebiggers@kernel.org>,
-	James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	stable@vger.kernel.org,
-	Jann Horn <jannh@google.com>
-Subject: [PATCH v3 2/2] KEYS: Reject keyring creation with overridden credentials
-Date: Fri,  6 Nov 2026 00:00:50 +0200
-Message-ID: <20261105220050.1421842-2-jarkko@kernel.org>
-X-Mailer: git-send-email 2.47.3
-In-Reply-To: <20261105220050.1421842-1-jarkko@kernel.org>
-References: <20261105220050.1421842-1-jarkko@kernel.org>
+	s=k20260515; t=1793926445;
+	bh=sFdRb1ZcezZvg9sinKms+DcyU8fQawoewDHaZdVLz+U=;
+	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
+	b=OcpFfZe8BuS8KcP8XIbb0Ipdxh8erDi3AnixhqbmKQrLyxYquJ4bnfk/z3AcWN6ds
+	 47DjlLoSyagQfhyt1NRu1Lv3tPmZAGna9GLLzExVX0ASVXIThbI9CbiHfnOm0TFbvi
+	 Wzi7Dh8zLhv5pxmxm3E39wENk3aBujUemuzZpFe6hFhYE6amDNC0Jg1vVhK+J5WvyL
+	 C5RVu1n7YoesWmQMYkcb7hktcG4Z6AxMcmWbv2ZY9zebPPN+ulOInIBSxEWuL7v2Mt
+	 7ObTfCsZd0zTlXNquShKIo6Skkcs/Pllpmle9GMgJUqYdhgf8gP9bI0d6u9EejpX9x
+	 HUbs6aV87ZLpw==
+Message-ID: <sashiko-outbox-200458@kernel.org>
+From: sashiko-bot@kernel.org
+Subject: Re: [RFC PATCH v3 03/11] NFSv4: Clear idmap keyring cache when the
+ last client unloads
+Reply-To: sashiko-reviews@lists.linux.dev
+To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, linux-s390@vger.kernel.org, linux-security-module@vger.kernel.org, samba-technical@lists.samba.org, "Alexander
+ Gordeev" <agordeev@linux.ibm.com>, "Anna Schumaker" <anna@kernel.org>, "Bharath
+ SM" <bharathsm@microsoft.com>, "Christian Borntraeger" <borntraeger@linux.ibm.com>, "David
+ S. Miller" <davem@davemloft.net>, "Eric Biggers" <ebiggers@kernel.org>, "Eric
+ Dumazet" <edumazet@kernel.org>, "Heiko Carstens" <hca@linux.ibm.com>, "Jakub
+ Kicinski" <kuba@kernel.org>, "James Bottomley" <James.Bottomley@HansenPartnership.com>, "James
+ Morris" <jmorris@namei.org>, "Marc Dionne" <marc.dionne@auristor.com>, "Mimi
+ Zohar" <zohar@linux.ibm.com>, "Namjae Jeon" <linkinjeon@kernel.org>, "Paolo
+ Abeni" <pabeni@redhat.com>, "Paul Moore" <paul@paul-moore.com>, "Paulo
+ Alcantara" <pc@manguebit.org>, "Ronnie Sahlberg" <ronniesahlberg@gmail.com>, "Serge
+ E. Hallyn" <serge@hallyn.com>, "Shyam Prasad N" <sprasad@microsoft.com>, "Simon
+ Horman" <horms@kernel.org>, "Sumit Garg" <sumit.garg@kernel.org>, "Sven
+ Schnelle" <svens@linux.ibm.com>, "Tom Talpey" <tom@talpey.com>, "Trond
+ Myklebust" <trondmy@kernel.org>, "Vasily Gorbik" <gor@linux.ibm.com>, "Chuck
+ Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>
+In-Reply-To: <20261105005311.804098-4-jarkko@kernel.org>
+References: <20261105005311.804098-1-jarkko@kernel.org>
+ <20261105005311.804098-4-jarkko@kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date: Fri, 06 Nov 2026 00:54:04 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,80 +74,90 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 
-If the current task is running with overridden credentials calling
-commit_creds() is forbidden and triggers a BUG_ON().
-
-Reject keyring creation with -EPERM when credentials are overridden.
-
-Cc: keyrings@vger.kernel.org
-Cc: linux-integrity@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
-Cc: Eric Biggers <ebiggers@kernel.org>
-Cc: James Morris <jmorris@namei.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: stable@vger.kernel.org # v5.10+
-Cc: stable@vger.kernel.org # v5.10+
-Fixes: 3b11a1decef0 ("CRED: Differentiate objective and effective subjective credentials on a task")
-Suggested-by: Jann Horn <jannh@google.com>
-Closes: https://lore.kernel.org/keyrings/CAG48ez0XjVSR=M--UBauTm8sJuc+ZbhKzaPa3a6wrSVHyoKevw@mail.gmail.com/
-Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
----
-v3:
-Collapse and open-code cred_overridden() to the entry point of lookup_user_key() (David).
-v2:
-- Added mandatory tags.
-- No code changes.
-- Link: https://lore.kernel.org/keyrings/20261019145624.309790-2-jarkko@kernel.org/
- Documentation/security/keys/core.rst | 3 ++-
- security/keys/process_keys.c         | 6 +++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
----
- Documentation/security/keys/core.rst | 3 ++-
- security/keys/process_keys.c         | 6 +++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index e3a215e55f81..a60b2f725a0b 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -168,7 +168,8 @@ The key service provides a number of features besides keys:
-      If a process attempts to access its session keyring when it doesn't have
-      one, the default user session keyring for its current UID is returned
-      without being installed into its credentials.  If creation is requested,
--     an anonymous session keyring is installed.
-+     an anonymous session keyring is installed, failing with -EPERM if
-+     credentials are overridden.
-
-   *  Each user has two quotas against which the keys they own are tracked. One
-      limits the total number of keys and keyrings, the other limits the total
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index cdf03b8124d0..c878a5f8d47c 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -633,7 +633,8 @@ void key_register_fs_verity_keyring(struct key *keyring)
-  * to a key or the best found key was a negative key; -EKEYREVOKED or
-  * -EKEYEXPIRED if the best found key was revoked or expired; -EACCES if the
-  * found key doesn't grant the requested permit or the LSM denied access to it;
-- * or -ENOMEM if a special keyring couldn't be created.
-+ * -ENOMEM if a special keyring couldn't be created; or -EPERM if KEY_LOOKUP_CREATE
-+ * is requested while credentials are overridden.
-  *
-  * In the case of a successful return, the possession attribute is set on the
-  * returned key reference.
-@@ -652,6 +653,9 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 	key_ref_t key_ref, skey_ref;
- 	int ret;
-
-+	if ((lflags & KEY_LOOKUP_CREATE) && current_cred() != current_real_cred())
-+		return ERR_PTR(-EPERM);
-+
- try_again:
- 	ctx.cred = get_current_cred();
- 	key_ref = ERR_PTR(-ENOKEY);
+Thank you for your contribution! Sashiko AI review found 1 potential issue(=
+s) to consider:
+- [High] NFSv4: nfs_idmap_delete() flushes !WQ_MEM_RECLAIM work from reclai=
+m context
 --
-2.47.3
 
+commit 4e575974579117eaf53b52bd9cc0b5c049e02d3d
+Author: Jarkko Sakkinen <jarkko@kernel.org>
+
+NFSv4: Clear idmap keyring cache when the last client unloads
+
+This commit tracks active NFSv4 idmap instances and clears the
+id_resolver_cache thread keyring (followed by flushing key garbage
+collection) when the last NFS client is destroyed.
+
+> diff --git a/fs/nfs/nfs4idmap.c b/fs/nfs/nfs4idmap.c
+> index bc397110d977f..c88444cc6bf68 100644
+> --- a/fs/nfs/nfs4idmap.c
+> +++ b/fs/nfs/nfs4idmap.c
+
+[ ... ]
+
+> @@ -483,6 +492,7 @@ void
+>  nfs_idmap_delete(struct nfs_client *clp)
+>  {
+>  	struct idmap *idmap =3D clp->cl_idmap;
+> +	int ret;
+> =20
+>  	if (!idmap)
+>  		return;
+> @@ -493,6 +503,17 @@ nfs_idmap_delete(struct nfs_client *clp)
+>  	rpc_destroy_pipe_data(idmap->idmap_pipe);
+>  	put_user_ns(idmap->user_ns);
+>  	kfree(idmap);
+> +
+> +	mutex_lock(&nfs_idmap_cache_mutex);
+> +	if (--nfs_idmap_users =3D=3D 0) {
+> +		ret =3D keyring_clear(id_resolver_cache->thread_keyring);
+> +		if (ret)
+> +			pr_warn_ratelimited("NFS: Failed to clear idmap cache: %d; cache pins=
+ remain\n",
+> +					    ret);
+> +		else
+> +			key_gc_flush();
+> +	}
+> +	mutex_unlock(&nfs_idmap_cache_mutex);
+>  }
+
+[Severity: High]
+Can calling key_gc_flush() from nfs_idmap_delete() trigger a workqueue
+check_flush_dependency() warning and risk a memory-reclaim deadlock?
+
+In security/keys/gc.c, key_gc_flush() flushes key_gc_work, which is queued
+via schedule_work() onto system_percpu_wq (a workqueue without
+WQ_MEM_RECLAIM):
+
+security/keys/gc.c:key_gc_flush() {
+	do {
+		rcu_barrier();
+	} while (flush_work(&key_gc_work));
+}
+
+However, the final reference on clp->cl_count can be dropped from
+workqueues allocated with WQ_MEM_RECLAIM or from tasks running with
+PF_MEMALLOC set:
+
+  nfs41_free_stateid_release() / nfs41_sequence_release() [on rpciod_workqu=
+eue, WQ_MEM_RECLAIM, and potentially PF_MEMALLOC via __rpc_execute()]
+  or nfs_local_probe_async_work() / pnfs_generic_rw_release() [on nfsiod_wo=
+rkqueue, WQ_MEM_RECLAIM]
+    -> nfs_put_client()
+      -> nfs4_free_client()
+        -> nfs4_shutdown_client()
+          -> nfs_idmap_delete()
+            -> key_gc_flush()
+              -> flush_work(&key_gc_work)
+
+When the last NFSv4 client is freed through one of these asynchronous paths
+after id_resolver_cache->thread_keyring has been populated, flushing
+key_gc_work on system_percpu_wq from a WQ_MEM_RECLAIM worker or PF_MEMALLOC
+context will trip the WARN_ONCE() in kernel/workqueue.c:
+check_flush_dependency() and could deadlock under memory pressure.
+
+--=20
+Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261105005311.8040=
+98-1-jarkko@kernel.org?part=3D3
