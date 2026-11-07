@@ -1,81 +1,86 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794055457;
-	b=AbnIDA58KFwxpR2O7rbp+q6JGQfh86T58qC+iCWj0D7FwX5UPYBU1YJEUhHLRHNETSnx
-	 RejsgBStFOfLFq8v6eMynwCs+eQ6wM6cRC9T6S9hF0C6u6Qzc+oHgP3w3VF5Ze4mq/xtx
-	 0gMotb79vJVo9BXy5GjjJsJgQ9AV5HuzuGlQIrS7SsGKeILpP5fFWg3HYH83Y03BfIU+H
-	 s9w6XwxrOCa3fCI3hwXnJ/ui/WC1y5FVV+JAK6VzPYSq0kGmew6aafLgckif6+ssjg5uL
-	 TeVjH9UidYcH4F67yVM1ARu8t5Zhf7BJLQ0gT6gU7VrdckSIpPw1JWEsaFC0GtSRdug==
+	t=1794057321;
+	b=aS4tueh+1y0V4v5z291yRBTrZLqEc0puys2bivdXRpewQTXokunV+ZkFd645KRfo9ToC
+	 O2KRqb44pTmMxziM/Ajtt3HBagUXQE5eGakIS3P0mqdi39MvzySUA/K7Js1C/pfWwBtbD
+	 YYia7uu6M0n2EhktW/YzbNJypFbZ89d4BI2syXq+BZ/GJxQqwS0Jq3I+P6iWQOHuF4V8D
+	 LteXTVHUI9oFSAfCRzvsNwBu/f/+p9zX/42lRbh65gaIlfo+uTcXrrtEI0DX2XMIMQEQ4
+	 9ohTv9+26fCouk/kd9RaGuQgjP1epyjVUUaI01sbF/W8/RTVUdC7aJcFx9e5R35Y3oQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794055457;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=dzBwFs2TljpOP5elYmUhvLnbOuXM3QGLPguMHu8Knu4=;
-	b=G0YdbdlyaxA2aKdszaI1WsBtao1QelFu9QxsAUm+ai9es+iXtjzkD1Vtd2f4lz+z8HKt
-	 N75f7OU6EYiIUSoAjiSa0M7QbmrQObkVniLDKvNP4ohMH6gY8jyCAToXDtMnrvVqJrznS
-	 ReUR58xvrXOnYFPmu5hAk2BmsmkepgDUaf9kaO9xOANBL7au8gkB7uL/zbQJ10Z/sAoSb
-	 VLfEd3GZkivRxURstoZcNoq+KDwQBPhaKVNlJgNbDqLd+97uWNFZpm76zGoo2GflbyAG2
-	 VaMEAsSpzJyQ0D9MMfdBRNq2/MM78A8Ju3Xp5+t5/bhRw9XLaQlWd65trugMxmz4uRw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794057321;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=NqdnM0cjAIjEzMS++qHY9EMeqK11nPOA5sk99DCFMSM=;
+	b=s1r4VKf7WpCsEF257YE3jk1h5NqQEy7syEYJWlGa6vRg4ov+Yhhone5Bnz6rwrbohiqI
+	 nicVYGttBHxH99K+2NC8mK1pvM4Zxz+1zwcDkt1MCCXEdV0mzDPUzwueC2E2Qjq8fsdBl
+	 qSxCaYCkzqFuuLE1CHzPaooW0Ahjs0GqlJ/9W+KdBd1pj5Rh3H1rYrWZ1skQxtEfhvcaA
+	 5gB/ja+F9X+lflAlT24pSJzjEvZc4u9jmdKVrlvIRecg8Nw3+5I0tSMqd5x7IzARa90O7
+	 3ldeFRnaQELQs8k6D0WAQTtX9znFq8zUtfcjVx5OnBPhO9XVjqVUWCGrUbj89gcbM+w==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=egCKZgvR;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=oZWmtm2s;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 2E64D606A32C;
-	Sat,  7 Nov 2026 12:44:16 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 2F262606A326;
+	Sat,  7 Nov 2026 13:15:20 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=egCKZgvR
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 076321F0089F;
-	Sat,  7 Nov 2026 12:44:16 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=oZWmtm2s
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 1AD1D1F0089F;
+	Sat,  7 Nov 2026 13:15:20 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794055456;
-	bh=dzBwFs2TljpOP5elYmUhvLnbOuXM3QGLPguMHu8Knu4=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=egCKZgvR+uM5AdIYnxZkn5qTtOFRr/D3N+7/N7RqicbOfSHrHL2dAv65ZHdA46cvx
-	 H8Aju+BdzWVMfOnqof3bfkSW/intUk7fd7I5A+IhhLXuhZM296Pxee0SYLQ13Ljivm
-	 K4B2f7/mN5ZO7OdxLMTCLSdZHpB9AiwG02mU5KZUvzE21CFWbQ5GYBn2SQCTfKJA/z
-	 Ykpgc4X8/HTtlJ8M3qUB4wDiITeiFk2tMFC2NSwRpGI5uzZOb9Ws0T0UgPYBdAoJWh
-	 0zfw15CJ8okfY7ZIxpgcJ4vg46Zh0SNJrTZdSWnmXTnp9TXAFLf08v4ziCE1Ykqwmi
-	 R7jztThEgO3YA==
-Date: Sat, 7 Nov 2026 14:44:12 +0200
+	s=k20260515; t=1794057320;
+	bh=NqdnM0cjAIjEzMS++qHY9EMeqK11nPOA5sk99DCFMSM=;
+	h=From:To:Cc:Subject:Date;
+	b=oZWmtm2sJGS5BqQlbb1d+rs53AIQFtiLVYRfPnY69UFdFrPUyI6axVSCLHqfKfg70
+	 6BnKFNfRVFb9c214fZzydXsCQuVugdOIhTgNcxtEqIiMjH/qbNQImGfBRwY1ewGZBl
+	 ld1NALuMs8bwzPAVV70tqOo5OFA46BZAX9rTkMDZnp6XSvGyWOQx2PUsPn1xX1B8Bs
+	 UgPJ3SthJGMLEJ+0YVgbkTEFj7hBImZad8Qgyj3NhYSM9WO/70z3819d6xBxT/hW+R
+	 oNmPt+tSYH848DwJ/qLNJ+GMi0opDd+d4uMv7HiycNM1SU/ZmECK2NBq9uyjmzXXE3
+	 RSs1QcJ3GUL/Q==
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, bpf@vger.kernel.org,
-	dm-devel@lists.linux.dev, fsverity@lists.linux.dev,
-	keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-kselftest@vger.kernel.org,
+To: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>,
+	keyrings@vger.kernel.org,
+	linux-afs@lists.infradead.org,
+	linux-cifs@vger.kernel.org,
+	linux-integrity@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-nfs@vger.kernel.org,
+	linux-s390@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
-	Alasdair Kergon <agk@redhat.com>,
-	Alexei Starovoitov <ast@kernel.org>, Alex Shi <alexs@kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Andrii Nakryiko <andrii@kernel.org>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	Daniel Borkmann <daniel@iogearbox.net>,
-	Dongliang Mu <dzm91@hust.edu.cn>,
-	Eduard Zingerman <eddyz87@gmail.com>,
-	Emil Tsalapatis <emil@etsalapatis.com>,
-	Ihor Solodrai <ihor.solodrai@linux.dev>,
-	James Morris <jmorris@namei.org>, Jiri Olsa <jolsa@kernel.org>,
-	Jonathan Corbet <corbet@lwn.net>,
-	Kumar Kartikeya Dwivedi <memxor@gmail.com>,
-	Martin KaFai Lau <martin.lau@linux.dev>,
-	Mike Snitzer <snitzer@kernel.org>,
-	Mikulas Patocka <mpatocka@redhat.com>,
+	netdev@vger.kernel.org,
+	Alexander Gordeev <agordeev@linux.ibm.com>,
+	Anna Schumaker <anna@kernel.org>,
+	Bharath SM <bharathsm@microsoft.com>,
+	Christian Borntraeger <borntraeger@linux.ibm.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Eric Biggers <ebiggers@kernel.org>,
+	Eric Dumazet <edumazet@kernel.org>,
+	Heiko Carstens <hca@linux.ibm.com>,
+	Jakub Kicinski <kuba@kernel.org>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	James Morris <jmorris@namei.org>,
+	Marc Dionne <marc.dionne@auristor.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Namjae Jeon <linkinjeon@kernel.org>,
+	Paolo Abeni <pabeni@redhat.com>,
 	Paul Moore <paul@paul-moore.com>,
-	Randy Dunlap <rdunlap@infradead.org>,
+	Paulo Alcantara <pc@manguebit.org>,
+	Ronnie Sahlberg <ronniesahlberg@gmail.com>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
-	Shuah Khan <skhan@linuxfoundation.org>, Song Liu <song@kernel.org>,
-	"Theodore Y. Ts'o" <tytso@mit.edu>,
-	Yanteng Si <si.yanteng@linux.dev>,
-	Yonghong Song <yonghong.song@linux.dev>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v5 2/3] KEYS: Replace assoc_array with rhashtable
-Message-ID: <au8dHKGIv2tr_Xom@kernel.org>
-References: <20261105031401.956609-1-jarkko@kernel.org>
- <20261105031401.956609-3-jarkko@kernel.org>
- <20261107032551.GA1990@sol>
+	Shyam Prasad N <sprasad@microsoft.com>,
+	Simon Horman <horms@kernel.org>,
+	Sumit Garg <sumit.garg@kernel.org>,
+	Sven Schnelle <svens@linux.ibm.com>,
+	Tom Talpey <tom@talpey.com>,
+	Trond Myklebust <trondmy@kernel.org>,
+	Vasily Gorbik <gor@linux.ibm.com>
+Subject: [PATCH v4 00/11] KEYS: Sanitize the garbage collector
+Date: Sat,  7 Nov 2026 15:15:01 +0200
+Message-ID: <20261107131512.3603168-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -85,38 +90,139 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261107032551.GA1990@sol>
+Content-Transfer-Encoding: 8bit
 
-On Fri, Nov 06, 2026 at 07:25:51PM -0800, Eric Biggers wrote:
-> I don't think the retry loop is actually sufficient or desirable here
-> (though it would be very rare for it to be reached).  It gets reached
-> when there are too many elements in one rhashtable chain.  However,
-> we're already pre-hashing with SipHash, and the rhashtable level hash is
-> passed only the 32-bit SipHash.  Suppose we reach this case because the
-> SipHash values collided: then rhashtable's rehashing would never reduce
-> the chain length, and the -EBUSY would last forever.
-> 
-> I think the right solution is to just set '.insecure_elasticity = true'
-> in the rhashtable_params, to disable the chain length checks.  Those
-> checks make no sense when we're using SipHash anyway.
+1. Replace key_type_dead retyping with module reference pinning so live
+   keys and restrictions keep their backing key_type module loaded until
+   key_gc_unused_keys() or keyring_destroy() completes.
+2. Process serial-tree scans and graveyard destruction in fixed 64-key
+   chunks to a bound workqueue execution latency without hurting overall
+   throughput for a significant amount.
 
-Thanks, this is a valid suggestion. I  was thinking about having maximum
-retries but this is much better idea. I'll address this as you proposed.
+The first part has a user-space visible effect: rmmod returns -EBUSY while
+keys or keyring restrictions still pin the backing module.
 
+Internal key caches or transport state bottlenecks are addressed by either
+clearing their private caches on last-client teardown or splitting key
+types into dedicated provider modules.
 
-> 
-> Then the retry loop would not be needed.
-> 
-> (And even for rhashtable users who aren't using SipHash, like
-> fs/verity/, hard-failing insertions if the hash chains gets too long
-> seems wrong.  I mean, imagine if the kernel started refusing to do file
-> operations if one of the hash chains in the VFS hash tables happened to
-> get too long...  But I guess rhashtable was designed for towards
-> networking users who are able to just drop the data without much issue.
-> Plus it predates SipHash existing.)
-> 
-> - Eric
+CHANGES
+=======
 
-Br, Jarkko
+v4:
+- Replaced WARN_ON() around fallible keyring_clear() in CIFS idmap and
+  SPNEGO cache-clearing helpers with pr_warn_ratelimited().
+- Moved key garbage collection from the shared events workqueue onto a
+  dedicated WQ_MEM_RECLAIM | WQ_PERCPU workqueue (key_gc), allocated in
+  key_init(), so WQ_MEM_RECLAIM workers (nfsiod/cifsiod) and reclaim paths
+  can flush key GC safely.
+
+v3:
+- Split dns_resolver and rxrpc key types into dedicated provider modules
+  (dns_resolver_key.ko and rxrpc_keys.ko) instead of client refcounting,
+  so cached or retained keys do not pin dns_resolver.ko or rxrpc.ko.
+- Dropped the standalone nvme-keyring fix as it was picked up by the
+  subsystem maintainers.
+- Hardened key_gc_flush() to serialize against chunked key_gc_work
+  continuations, and fixed a restriction module reference leak on failed
+  keyring instantiation.
+
+v2:
+- Used v1 as a test probe for Sashiko to detect the corner cases instead
+  of trying to resolve even the known ones beforehand.
+- Converted the client subsystems to be compatible with the module
+  pinning semantics.
+
+VERSIONS
+========
+
+- v3:
+  https://lore.kernel.org/keyrings/20261105005311.804098-1-jarkko@kernel.org/
+- v2:
+  https://lore.kernel.org/linux-integrity/20261103030226.2685251-1-jarkko@kernel.org/
+
+Cc: keyrings@vger.kernel.org
+Cc: linux-afs@lists.infradead.org
+Cc: linux-cifs@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-nfs@vger.kernel.org
+Cc: linux-s390@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@linux.ibm.com>
+Cc: Anna Schumaker <anna@kernel.org>
+Cc: Bharath SM <bharathsm@microsoft.com>
+Cc: Christian Borntraeger <borntraeger@linux.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Biggers <ebiggers@kernel.org>
+Cc: Eric Dumazet <edumazet@kernel.org>
+Cc: Heiko Carstens <hca@linux.ibm.com>
+Cc: Jakub Kicinski <kuba@kernel.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Marc Dionne <marc.dionne@auristor.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Namjae Jeon <linkinjeon@kernel.org>
+Cc: Paolo Abeni <pabeni@redhat.com>
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: Paulo Alcantara <pc@manguebit.org>
+Cc: Ronnie Sahlberg <ronniesahlberg@gmail.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Shyam Prasad N <sprasad@microsoft.com>
+Cc: Simon Horman <horms@kernel.org>
+Cc: Sumit Garg <sumit.garg@kernel.org>
+Cc: Sven Schnelle <svens@linux.ibm.com>
+Cc: Tom Talpey <tom@talpey.com>
+Cc: Trond Myklebust <trondmy@kernel.org>
+Cc: Vasily Gorbik <gor@linux.ibm.com>
+
+Jarkko Sakkinen (11):
+  KEYS: Add key_gc_flush() for draining RCU callbacks
+  dns_resolver: Move the key type into a separate module
+  NFSv4: Clear idmap keyring cache when the last client unloads
+  smb: client: Clear idmap/SPNEGO caches when the last session is
+    unloaded
+  s390/cert_store: Start tracking subsystem keys
+  KEYS: trusted: TEE: Disable sysfs bind attributes
+  KEYS: trusted: TEE: Synchronize session lifetime
+  rxrpc: Move key types to their own module
+  KEYS: Pin the backing kernel module for a key type
+  KEYS: Remove key_type_dead
+  KEYS: key_garbage_collector(): process in chunks
+
+ arch/s390/kernel/cert_store.c             | 161 +++++-------
+ fs/nfs/nfs4idmap.c                        |  21 ++
+ fs/smb/client/cifs_spnego.c               |  12 +
+ fs/smb/client/cifsacl.c                   |  12 +
+ fs/smb/client/cifsproto.h                 |   8 +
+ fs/smb/client/misc.c                      |  19 +-
+ include/linux/key-type.h                  |   6 +-
+ include/linux/key.h                       |   2 +
+ net/Makefile                              |   4 +-
+ net/dns_resolver/Kconfig                  |  15 ++
+ net/dns_resolver/Makefile                 |   4 +-
+ net/dns_resolver/dns_key.c                |  65 +----
+ net/dns_resolver/dns_query.c              |  64 +++++
+ net/dns_resolver/internal.h               |   5 -
+ net/rxrpc/Kconfig                         |  20 ++
+ net/rxrpc/Makefile                        |   7 +-
+ net/rxrpc/af_rxrpc.c                      |  19 +-
+ net/rxrpc/ar-internal.h                   |  25 +-
+ net/rxrpc/key.c                           | 122 +++------
+ net/rxrpc/rxgk.c                          |  66 -----
+ net/rxrpc/rxkad.c                         |  47 ----
+ net/rxrpc/security.c                      | 184 ++++++++++++++
+ net/rxrpc/server_key.c                    | 260 +++++++++++--------
+ security/keys/gc.c                        | 289 ++++++++++------------
+ security/keys/internal.h                  |   8 +-
+ security/keys/key.c                       |  65 +++--
+ security/keys/keyring.c                   |  88 +++----
+ security/keys/trusted-keys/trusted_core.c |  15 +-
+ security/keys/trusted-keys/trusted_tee.c  |  89 +++++--
+ 29 files changed, 925 insertions(+), 777 deletions(-)
+
+--
+2.47.3
+
