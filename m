@@ -1,70 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794143787;
-	b=TmOFrWWs+1rUGVWNVsvBpU9NCXhLKvWYLxJxB1WQAISfNwcsScdxxDLnNCHFm5V4Epq6
-	 U9JkI8DuW77o1axdim9LMObdv5Ql/SRfTci7FNitHB1CicFUZUiuKq5Ii9fdLXJ43DKiV
-	 XXBJwhqep1LMznzHzM8V1VIAvu1rhWCS65X9mOWy+q7CMrxMV1Vs/rAfZoaf6lG00vuTP
-	 5UblCZrbJwalDPGRBDyH7v3HCQCZtEJsAnY0I6ZAm+nDHrs/cGI14aNuuEXK2LFH4/Lae
-	 LBUEDzoqnBUBqVw79wuRINC70Y7M7HsMeaPwIz8wb5+NDwdFFCIurapea32bd9sWzaw==
+	t=1794144756;
+	b=i3dl7CcxmZ8tyNHiCYthVFoBE6TFw4/eUUF4GwtC8+54Lwj/GW5UODgArvfSqkoWELbU
+	 uNaIsSe3riyWv50af1UW/BgHVrZcv7jsIWTw1GPGOxpBQvk1bycxYZdEzbFxhNYSqLykW
+	 yIOdwWgYezSvEKKJmDb03wuKVoQTD3I194egKJj9qbBZaB+KubZ0fQKHtgpNCpisfne+0
+	 cmpuQyRNfMBhTIMKs0iuI/oIbf/UNx9aZHH7a7rc0wRnKo7CSdINDa0Jeq2M9+P8pg/V3
+	 4DECXgG949MJjwPUsSvdjRS+CTZzC8+5JJ90ZyadFJeeZVYaQRL/Slo7hhABrSdqT/w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794143787;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794144756;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=v1GzT4Jwv27YBmtTQ/6R06I4yHOVV17RiLfotxX0g3Q=;
-	b=uGpNl0oCk3UnVYrdn7RJ/f3RZTuGS1b8FOKLMuGrzEKsx4G650T97tI1qib61VsjUkpM
-	 K7sOaDoMGFrgM4wFEC0ESVBqSQWcYzacgIhh4XxDRK4BAJR3+S1R+vJXz4C9DJds5P0Xn
-	 THaTuk91gT88ryBn9EL90bN/E2jSXpk5pJCQLTyVRv7ZIg+ogyqpNgRnsoC1h4Tqbeahm
-	 nCnhx31sUoAgMdfgX4ZGsxSEJzd8u6XxViJGMw4mBbw7GUcCglQld2XpBB2J2Au38mHhY
-	 pkEi6ZNNkbgKWUi3MAOsByjuCGt+hOrCbH9kgbPEv2IckS/szeqlQ7jb4l19BgXu3Bg==
+	bh=AzWaOvxASjZ2VbLng5CfdtXccCCf/vmBBS0ZjxIzoHU=;
+	b=2H4QUr41n7scI+wTL7k6Hmk/HnGLwkd20y4mC9DskMhSDyaM4CGrSskeYQaRjV6f6RzY
+	 iI3XVG/d3qbgAfxzNs3a+eqya6uVwqyNFCMFqC+B1k6lVvPNSK47+u84upjbp+EFY7ctL
+	 A1IdsXEdXoA8BNtA1yPq/DpvKbKWbeTGVNbAMBZUc16evr+uR/mD1Ksk+Mtpc1WNlZyVu
+	 VUHsIx8SNP8xJcFTB/TuO84iQoi3ccP71Brc3JuIN5Yvq1eNdWJsplLOofcefb4LCenUp
+	 ig9C7MzVG6kHJ1rqG7+uKqGbpyVeqYwW5r7Jm/qyeYWBTG4Imcocw0jSH/0L7gzwpZA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AyQXwssZ;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YYUfnHrQ;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 17C55606A322;
-	Sun,  8 Nov 2026 13:16:27 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7C136606A31C;
+	Sun,  8 Nov 2026 13:32:36 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AyQXwssZ
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 9635C1F008A4;
-	Sun,  8 Nov 2026 13:16:25 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YYUfnHrQ
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id DAA8C1F0089F;
+	Sun,  8 Nov 2026 13:32:35 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794143786;
-	bh=v1GzT4Jwv27YBmtTQ/6R06I4yHOVV17RiLfotxX0g3Q=;
+	s=k20260515; t=1794144756;
+	bh=AzWaOvxASjZ2VbLng5CfdtXccCCf/vmBBS0ZjxIzoHU=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=AyQXwssZhAzvryQ9jTUVd+TlrywvhNcT5oSRt29xJTbssQtMtHwywYHq4mpNezELA
-	 oZDFYunezpPQeYlVn6yBKBU8wG5gbQ/R0Qma2pglquRERzAe/bz3gRIJWxGYG21io5
-	 QvC9DaU8QUGboWTgzVJbu8rbmrCF4lrq5iErfyZA+rJA/2lp4Fnh4m0aETOQyrrlgd
-	 9wLa8kt992gNUZkQJm7QpOgZBCWUVMLVPSXhtcmRtfV5Ee9AXlSn8HkDJpeXhIUdF0
-	 zkbGkDNk1fgfU/t9mJ3ooLr4YHRQE3y3DOHzNGT0tAV03YMjyXP06Td271UIycMjJH
-	 IhmQAg+7h3BuQ==
-Message-ID: <sashiko-outbox-203769@kernel.org>
+	b=YYUfnHrQ0XltOD+RniCM/6QiHkpkbsRRaezIp4SR8LG9kFeqBJAoqrgH/aEAMmymK
+	 OXB5enheo2zSvRZvRisPZLMtLThCt0k5k4toHZblS3GXTJnEyO8TEfOtGAWjszWNuV
+	 5v67n334yoRp4z2Rii0u1XffqBozU3cHQr3xcXvpEQ6w05S2DGo//G4AiCf7VbS+Oc
+	 YRe71VRcpHfHeCBEv8IXaMXN2UN1nkpxF9k+AVCEkQ1FMXw0Mje/0XOaL4MdDOJaTN
+	 vWivwvv1WGkwpDHS1bZKdkbyqftLQvTKr32mrJci6wyrGdBq8fpQ1g8wKq0XM/OXRL
+	 cwnNwbvRsgM8Q==
+Message-ID: <sashiko-outbox-203780@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v4 10/11] KEYS: Remove key_type_dead
+Subject: Re: [PATCH v5] KEYS: Protect pkey method checks against type
+ removal
 Reply-To: sashiko-reviews@lists.linux.dev
-To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-s390@vger.kernel.org, linux-security-module@vger.kernel.org, "Alexander
- Gordeev" <agordeev@linux.ibm.com>, "Anna Schumaker" <anna@kernel.org>, "Bharath
- SM" <bharathsm@microsoft.com>, "Christian Borntraeger" <borntraeger@linux.ibm.com>, "David
- S. Miller" <davem@davemloft.net>, "Eric Biggers" <ebiggers@kernel.org>, "Eric
- Dumazet" <edumazet@kernel.org>, "Heiko Carstens" <hca@linux.ibm.com>, "Jakub
- Kicinski" <kuba@kernel.org>, "James Bottomley" <James.Bottomley@HansenPartnership.com>, "James
- Morris" <jmorris@namei.org>, "Marc Dionne" <marc.dionne@auristor.com>, "Mimi
- Zohar" <zohar@linux.ibm.com>, "Namjae Jeon" <linkinjeon@kernel.org>, "Paolo
- Abeni" <pabeni@redhat.com>, "Paul Moore" <paul@paul-moore.com>, "Paulo
- Alcantara" <pc@manguebit.org>, "Ronnie Sahlberg" <ronniesahlberg@gmail.com>, "Serge
- E. Hallyn" <serge@hallyn.com>, "Shyam Prasad N" <sprasad@microsoft.com>, "Simon
- Horman" <horms@kernel.org>, "Sumit Garg" <sumit.garg@kernel.org>, "Sven
- Schnelle" <svens@linux.ibm.com>, "Tom Talpey" <tom@talpey.com>, "Trond
- Myklebust" <trondmy@kernel.org>, "Vasily Gorbik" <gor@linux.ibm.com>, "Chuck
- Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>
-In-Reply-To: <20261107131512.3603168-11-jarkko@kernel.org>
-References: <20261107131512.3603168-1-jarkko@kernel.org>
- <20261107131512.3603168-11-jarkko@kernel.org>
+To: "Yuansheng Yang" <0xbeac@gmail.com>, "Jarkko Sakkinen" <jarkko@kernel.org>
+Cc: "David Howells" <dhowells@redhat.com>, "Paul Moore" <paul@paul-moore.com>, "James
+ Morris" <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+In-Reply-To: <20261108131417.77287-1-0xbeac@gmail.com>
+References: <au3fT5HMq7IF-M3e@kernel.org>
+ <20261108131417.77287-1-0xbeac@gmail.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Sun, 08 Nov 2026 13:16:25 +0000
+Date: Sun, 08 Nov 2026 13:32:35 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -74,85 +62,82 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found no new issues
-in this patch, but noticed 1 related pre-existing issue it does not
-introduce:
-- [Medium] keys: broken garbage collection timer calculation in
-  key_garbage_collector() [1]
+Thank you for your contribution! Sashiko AI review found 1 potential
+issue to consider:
+- [Medium] KEYS: unlocked key->type dereferences in keyctl_pkey method
+  checks
 --
 
-commit 685cce051d4099c4b86015bc6b82bcd593f0652f
-Author: Jarkko Sakkinen <jarkko@kernel.org>
+commit 0ed416869e71a7b6cc7a35c0985435f3666b373b
+Author: Yuansheng Yang <0xbeac@gmail.com>
 
-KEYS: Remove key_type_dead
+KEYS: Protect pkey method checks against type removal
 
-This commit removes key_type_dead and its three-phase keytype reaping logic
-from the key garbage collector and unregister_key_type().
+This commit takes key->sem for reading around the four asymmetric key
+method calls in security/keys/keyctl_pkey.c and re-checks the method
+pointer under the lock to prevent races with key type unregistration.
 
-> diff --git a/security/keys/gc.c b/security/keys/gc.c
-> index 7b2f32998f58b..859f331549cef 100644
-> --- a/security/keys/gc.c
-> +++ b/security/keys/gc.c
+> diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+> index 15b6bf6399b59..0ea6f2790e9de 100644
+> --- a/security/keys/keyctl_pkey.c
+> +++ b/security/keys/keyctl_pkey.c
 
 [ ... ]
 
-> @@ -246,18 +192,6 @@ static void key_garbage_collector(struct work_struct=
- *work)
->  			goto found_unreferenced_key;
->  		}
+> @@ -305,31 +332,41 @@ long keyctl_pkey_verify(const struct keyctl_pkey_pa=
+rams __user *_params,
+>  	ret =3D keyctl_pkey_params_get_2(_params, _info, KEYCTL_PKEY_VERIFY,
+>  				       &params);
+>  	if (ret < 0)
+> -		goto error_params;
+> +		goto out_free_params;
 > =20
-> -		if (unlikely(gc_state & KEY_GC_REAPING_DEAD_1)) {
-> -			if (key->type =3D=3D key_gc_dead_keytype) {
-> -				gc_state |=3D KEY_GC_FOUND_DEAD_KEY;
-> -				set_bit(KEY_FLAG_DEAD, &key->flags);
-> -				key->perm =3D 0;
-> -				goto skip_dead_key;
-> -			} else if (key->type =3D=3D &key_type_keyring &&
-> -				   key->restrict_link) {
-> -				goto found_restricted_keyring;
-> -			}
-> -		}
-> -
->  		expiry =3D key->expiry;
->  		if (expiry !=3D TIME64_MAX) {
->  			if (!(key->type->flags & KEY_TYPE_INSTANT_REAP))
+>  	ret =3D -EOPNOTSUPP;
+>  	if (!params.key->type->asym_verify_signature)
+> -		goto error_params;
+> +		goto out_free_params;
 
 [Severity: Medium]
-This problem wasn't introduced by this patch, but does the timer calculation
-in key_garbage_collector() mix delay-adjusted and unadjusted expiration
-timestamps [1]?
+Can the remaining unlocked checks of key->type still fault on freed module
+memory when a key type module is unloaded?
 
-security/keys/gc.c:key_garbage_collector() {
+Checking key->type->asym_verify_signature here (and the corresponding
+unlocked checks of key->type->asym_eds_op in keyctl_pkey_e_d_s() and
+key->type->asym_query in keyctl_pkey_params_get()) reads key->type and
+then dereferences the struct key_type in module memory without holding
+key->sem:
+
+CPU0                                  CPU1
+keyctl_pkey_verify()
+  reg =3D params.key->type
+                                      unregister_key_type()
+                                        ...
+                                        down_write(&key->sem)
+                                        key->type =3D &key_type_dead
+                                        up_write(&key->sem)
+                                      free_module()
+  if (!reg->asym_verify_signature)  <-- use-after-free
+
+security/keys/keyctl_pkey.c:keyctl_pkey_params_get() {
 	...
-		expiry =3D key->expiry;
-		if (expiry !=3D TIME64_MAX) {
-			if (!(key->type->flags & KEY_TYPE_INSTANT_REAP))
-				expiry +=3D key_gc_delay;
-			if (expiry > limit && expiry < new_timer) {
-				kdebug("will expire %x in %lld",
-				       key_serial(key), key->expiry - limit);
-				new_timer =3D key->expiry;
-			}
-		}
-	...
-	if (new_timer !=3D TIME64_MAX) {
-		new_timer +=3D key_gc_delay;
-		key_schedule_gc(new_timer);
-	}
+	key_ref =3D lookup_user_key(id, 0, KEY_NEED_SEARCH);
+	if (IS_ERR(key_ref))
+		return PTR_ERR(key_ref);
+	params->key =3D key_ref_to_ptr(key_ref);
+
+	if (!params->key->type->asym_query)
+		return -EOPNOTSUPP;
+
+	return 0;
 }
 
-When KEY_TYPE_INSTANT_REAP is not set, expiry has key_gc_delay added before
-it is compared against new_timer, but new_timer is then assigned the
-unadjusted key->expiry.  Subsequent keys whose adjusted expiry falls at or
-after a previously recorded unadjusted key->expiry fail the
-expiry < new_timer check even when their actual reap time is earlier.  After
-the tree scan finishes, key_gc_delay is also added unconditionally to
-new_timer even if new_timer came from a key with KEY_TYPE_INSTANT_REAP set,
-delaying background reaping of expired keys and dead keyring links by up to
-key_gc_delay.
-
-[1] https://sashiko.dev/#/bug/linux-327c9a06-109f-4001-9a3e-a6092c989462
+Both callers of keyctl_pkey_params_get() immediately take key->sem and
+re-check asym_query before doing anything else, so the unlocked check in
+keyctl_pkey_params_get() can be dropped, and the early asym_eds_op and
+asym_verify_signature checks can be performed under key->sem inside
+keyctl_pkey_params_get_2() while still returning -EOPNOTSUPP before
+memdup_user().
 
 --=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261107131512.3603=
-168-1-jarkko@kernel.org?part=3D10
+Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261108131417.7728=
+7-1-0xbeac@gmail.com?part=3D1
