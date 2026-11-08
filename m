@@ -1,48 +1,47 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794143782;
-	b=fpykZt6Ifzbsd4thQADy6aGsE+TmGidAFdwl8gyQYI9YSIziVf+6ed30q3HTcJTbN5tk
-	 tEgj80LCU8yR1Mej3XYQxnVwGczBMCAAb2Pzk/UnZCFBpn6D/IlDLCdA9OfeSF8Ym2dSD
-	 o941lSHLCqmIXpuqNLFb9VV+7gdRVEEFOreoyMQPyDI/frMlx4frNL/33Nh/b8egtDJwA
-	 V1OuxtYx1UVVfj6ojY0nQkXto/vInDS3EQVPUYv8zkdpOafkVcFrxvHbhTbM6cGxnYNiK
-	 n/hBtFFQu2KPPRDvNs+mNvlPyrP1Yoedy2k+ryH/VA/vd6H9GgQ8/zdJXE8sUJlKK5A==
+	t=1794143784;
+	b=1p1+6mjkoXeVzcV43/M7gLE413QT918nUgn62Op1Uck+B91g9OEv8fu58mDno+8WQvcS
+	 aaEadsHIrcn3dBRhu/aKebcI/LX99uMzjuYAd6ppfbTua9ICeGhRZy5uAMu71h1l8dAg0
+	 cmoLQtf30XB1uoNHwjypsuwMVOofcu24Efb2sYJW9ZEDr3luhEZVp8WYteEhyjRW2SAVu
+	 /1iXGcaH1FCwHCx1pBNTRWEBYzAVQxpfJfwbWZOThISZkx5oUptG8GKjptA14xi4vgIWP
+	 fXpgvSoNZgLZSZHo++jrneIa5sePgNXdNNrT47JRv/X/tfA6b+YWdHzQrkZSBHFSD6Q==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794143782;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794143784;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=YTRq5fqYeacVIBi0kToxui7tcm91SiUZ6dPnT9SacLQ=;
-	b=Kpz6kmDW2XAu2uMJyXazxkRcYPv08hJr3qV6twcsU2KQ8t3zC5GT6y9Y4d6OqcuNzJZA
-	 C9G4UHSKdEa0gHcrnGpTOcwpkD4Fcp89V320pFYvBLKRt0DC4gMNtODZ3hCAuZ5yDQdAP
-	 pc3paNlWelV+W6KkQHbp6+B9FLgSr96lwqGFMqZtbDa4LF6boAssgjA6NM93tQcsjMCtQ
-	 QdEifQiMIEgBI8RmxDBfJUR8iaHfIBqBqSWRWGW9tSwIwKt6RyFjdPRKTnDHvx5Iy9PwE
-	 dj1PhdiV6Lh6PnNt+bP2+D+Rc8Jywz/GImUooMmrC3aknQELZNznlb9UPxxSCIsdaDw==
+	bh=XVUOW6BOzWiFpos3QddCcYSf9omcPbHzIw8nadBPHoM=;
+	b=46TBJD9O2YVRObRTlSSjc2hAllvoI1hHXvYgxAcNTU/MIB0dGjNKdQ4Rk66kpFFAN5to
+	 yEBISveuV6zqwF+IWGAegVnqjL6hglGtGDJKqBPVBkSKHRcUJD1lvKA/BWbB0TZZtRmPw
+	 Aj+9z3HvOmqaotRkemc6NgSEojfpQEFiO1UNLdNoUrLsiEyNJXeJdP0P4lSGjV8Qf4nu/
+	 tHHxa37TjIUeV0ct1jh8FwGu3MBJUXPtKC9aq9uMnZ+i2XEvaxoXCbGDyiRlZCvh87rNq
+	 4RSbL1dWDAx9Pfu8+eF/84ugAz62RcLX3xbmHgPtcZdzyM0ibxjVZwmNSBWTRiHbfOQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Pam355H1;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gnxjxc8y;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DC7E9606A31C;
-	Sun,  8 Nov 2026 13:16:21 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 836A4606A321;
+	Sun,  8 Nov 2026 13:16:24 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Pam355H1
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 6258A1F0089F;
-	Sun,  8 Nov 2026 13:16:19 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gnxjxc8y
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id F03981F0089F;
+	Sun,  8 Nov 2026 13:16:22 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794143781;
-	bh=YTRq5fqYeacVIBi0kToxui7tcm91SiUZ6dPnT9SacLQ=;
+	s=k20260515; t=1794143784;
+	bh=XVUOW6BOzWiFpos3QddCcYSf9omcPbHzIw8nadBPHoM=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=Pam355H1NU8ZihN3YmWMW7RkXUgvUsVpz8gNzCIpqCbKyr8vMOXXgq16paO2PGpbl
-	 xi5E58IoLv6ExymcvKp1ywsS6hMmFNH21ClcOUQYtNyXhgsH4lQE19l7Fq3Q47fgYx
-	 x4f6EKU4NmshTvp6fiulIpH13GbSOY1CEwj5kL8KToycPRARaM5MNyg5poQJzF856Y
-	 9HI4XJcULNmePmXdDKgolipku93guPEbQ/nCkPbULFcfAibhvncegpx42f39un4D85
-	 nkHxAU9vHSEUr8yPV1+ITibYpxSGRjxTxRS1yYNQ1eWNicXuT1/e/bfenYQhTwTol9
-	 BTEDvArGadlbA==
-Message-ID: <sashiko-outbox-203765@kernel.org>
+	b=gnxjxc8yt6ns+DUYYHwQ/38iNk2Vq6zbFeb4zKpN57mNXmBsz/JBPRpkrmjHES0+n
+	 nUQLkU8IZl50Bxfx6hq7tmdQ7wkwiEy05XZz3pHzbzi+rLchoptyr054Wq5YZWMXao
+	 IBes2mccwDOAFeesInJk0oNrWza7TWzsXzZ5UnSZgeLIozRHdeBkeB+ArgdTcC0rKk
+	 dLfbyVE6tgs682BBtFh7TePDls5/2rgkhaEvSCw9dKGOm+4AaZ4Yd8spypnTGQQ+om
+	 4iY+dOMs3D73AOh1+1Nimn1jGEoPCotCquvGr6uQ9r7rFIzNKoYRbHRDv2dv1nHw2/
+	 k6rbeoJlvspbA==
+Message-ID: <sashiko-outbox-203767@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v4 06/11] KEYS: trusted: TEE: Disable sysfs bind
- attributes
+Subject: Re: [PATCH v4 08/11] rxrpc: Move key types to their own module
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org, linux-s390@vger.kernel.org, linux-security-module@vger.kernel.org, "Alexander
@@ -60,12 +59,12 @@ Cc: keyrings@vger.kernel.org, linux-s390@vger.kernel.org, linux-security-module@
  Schnelle" <svens@linux.ibm.com>, "Tom Talpey" <tom@talpey.com>, "Trond
  Myklebust" <trondmy@kernel.org>, "Vasily Gorbik" <gor@linux.ibm.com>, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>
-In-Reply-To: <20261107131512.3603168-7-jarkko@kernel.org>
+In-Reply-To: <20261107131512.3603168-9-jarkko@kernel.org>
 References: <20261107131512.3603168-1-jarkko@kernel.org>
- <20261107131512.3603168-7-jarkko@kernel.org>
+ <20261107131512.3603168-9-jarkko@kernel.org>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Sun, 08 Nov 2026 13:16:18 +0000
+Date: Sun, 08 Nov 2026 13:16:22 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -75,71 +74,147 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found no new issues
-in this patch, but noticed 1 related pre-existing issue it does not
+Thank you for your contribution! Sashiko AI review found 1 potential
+issue to consider:
+- [Low] rxrpc: update kernel-doc path from server_key.c to security.c in
+  rxrpc.rst
+It also noticed 1 related pre-existing issue this patch does not
 introduce:
-- [High] KEYS: trusted: premature register_key_type() before
-  init_trusted() setup [1]
+- [High] rxrpc: memory leak of conn->key in rxrpc_process_event() [1]
 --
 
-commit 3bd98fb38b1322342ed23c63a9f83d8e5a79dd02
+commit 16a0f09dc6df360865624dc81f7bfb1b9505bec6
 Author: Jarkko Sakkinen <jarkko@kernel.org>
 
-KEYS: trusted: TEE: Disable sysfs bind attributes
+rxrpc: Move key types to their own module
 
-This commit sets suppress_bind_attrs on trusted_key_driver to prevent
-userspace from unbinding the driver via sysfs and unregistering
-key_type_trusted while the module is loaded.
+This commit splits the rxrpc and rxrpc_s key types and their preparse
+logic into a separate rxrpc_keys.ko module and moves socket and
+connection key helper functions into net/rxrpc/security.c so rxrpc.ko
+can be unloaded while persistent keys remain in keyrings.
 
-> diff --git a/security/keys/trusted-keys/trusted_tee.c b/security/keys/tru=
-sted-keys/trusted_tee.c
-> index 6e465c8bef5e5..227efb668aa95 100644
-> --- a/security/keys/trusted-keys/trusted_tee.c
-> +++ b/security/keys/trusted-keys/trusted_tee.c
-> @@ -263,7 +263,8 @@ static struct tee_client_driver trusted_key_driver =
-=3D {
->  	.remove		=3D trusted_key_remove,
->  	.id_table	=3D trusted_key_id_table,
->  	.driver		=3D {
-> -		.name		=3D DRIVER_NAME,
-> +		.name			=3D DRIVER_NAME,
-> +		.suppress_bind_attrs	=3D true,
->  	},
->  };
+> diff --git a/net/rxrpc/security.c b/net/rxrpc/security.c
+> index 2bfbf2b2bb37a..28883a70c9e85 100644
+> --- a/net/rxrpc/security.c
+> +++ b/net/rxrpc/security.c
+
+[ ... ]
+
+> +/*
+> + * generate a server data key
+> + */
+> +int rxrpc_get_server_data_key(struct rxrpc_connection *conn,
+> +			      const void *session_key,
+> +			      time64_t expiry,
+> +			      u32 kvno)
+> +{
+> +	const struct cred *cred =3D current_cred();
+> +	struct {
+> +		u32 kver;
+> +		struct rxrpc_key_data_v1 v1;
+> +	} data;
+> +	struct key *key;
+> +	int ret;
+> +
+> +	_enter("");
+> +
+> +	key =3D key_alloc(&key_type_rxrpc, "x",
+> +			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred, 0,
+> +			KEY_ALLOC_NOT_IN_QUOTA, NULL);
+> +	if (IS_ERR(key)) {
+> +		_leave(" =3D -ENOMEM [alloc %ld]", PTR_ERR(key));
+> +		return -ENOMEM;
+> +	}
+> +
+> +	_debug("key %d", key_serial(key));
+> +
+> +	data.kver =3D 1;
+> +	data.v1.security_index =3D RXRPC_SECURITY_RXKAD;
+> +	data.v1.ticket_length =3D 0;
+> +	data.v1.expiry =3D rxrpc_time64_to_u32(expiry);
+> +	data.v1.kvno =3D 0;
+> +
+> +	memcpy(&data.v1.session_key, session_key, sizeof(data.v1.session_key));
+> +
+> +	ret =3D key_instantiate_and_link(key, &data, sizeof(data), NULL, NULL);
+> +	if (ret < 0)
+> +		goto error;
+> +
+> +	conn->key =3D key;
 
 [Severity: High]
-This problem wasn't introduced by this patch, but can a concurrent
-add_key() syscall invoke trusted_instantiate() before the backend is fully
-initialized [1]?
+This problem wasn't introduced by this patch, but can assigning conn->key
+here leak an existing key [1] if a RESPONSE packet is replayed?
 
-Each backend's ->init() callback (including trusted_key_probe() for
-trusted_key_driver) calls register_key_type(&key_type_trusted) before
-returning to init_trusted(), which only then populates the static calls
-and backend state:
+In rxrpc_process_event(), if rxrpc_verify_response() succeeds (allocating
+and assigning conn->key via rxrpc_get_server_data_key()) but the subsequent
+conn->security->init_connection_security() call fails, the function returns
+early while conn->state remains RXRPC_CONN_SERVICE_CHALLENGING:
 
-CPU0                              CPU1
-init_trusted()                    sys_add_key()
-  ops->init()
-    register_key_type(&key_type_trusted)
-                                    key_type_lookup("trusted")
-                                    ...
-                                      trusted_instantiate()
-                                        static_call(trusted_key_unseal)()
-  static_call_update(trusted_key_seal, ...)
-  static_call_update(trusted_key_unseal, ...)
-  static_call_update(trusted_key_get_random, ...)
-  migratable =3D ...
+net/rxrpc/conn_event.c:rxrpc_process_event() {
+    ...
+	case RXRPC_PACKET_TYPE_RESPONSE:
+		spin_lock_irq(&conn->state_lock);
+		if (conn->state !=3D RXRPC_CONN_SERVICE_CHALLENGING) {
+			spin_unlock_irq(&conn->state_lock);
+			return 0;
+		}
+		spin_unlock_irq(&conn->state_lock);
 
-Calling an uninitialized DEFINE_STATIC_CALL_NULL target dereferences a
-NULL function pointer when CONFIG_HAVE_STATIC_CALL is disabled, or runs
-__static_call_nop() and leaves the return value uninitialized when it is
-enabled.  In addition, trusted_key_probe() calls register_key_type()
-before setting pvt_data.dev, and if TEE probing is deferred until after
-init_trusted() returns, the static_call_update() calls in init_trusted()
-never run at all.
+		ret =3D rxrpc_verify_response(conn, skb);
+		if (ret < 0)
+			return ret;
 
-[1] https://sashiko.dev/#/bug/linux-384065c3-cac2-4397-8b30-74edea3d1ff3
+		ret =3D conn->security->init_connection_security(
+			conn, conn->key->payload.data[0]);
+		if (ret < 0)
+			return ret;
+    ...
+}
+
+A replayed RESPONSE packet will then run rxrpc_verify_response() again and
+overwrite conn->key without calling key_put() on the previous key.
+
+[ ... ]
+
+> +/**
+> + * rxrpc_sock_set_security_keyring - Set the security keyring for a kern=
+el service
+> + * @sk: The socket to set the keyring on
+> + * @keyring: The keyring to set
+> + *
+> + * Set the server security keyring on an rxrpc socket.  This is used to =
+provide
+> + * the encryption keys for a kernel service.
+> + *
+> + * Return: %0 if successful and a negative error code otherwise.
+> + */
+> +int rxrpc_sock_set_security_keyring(struct sock *sk, struct key *keyring)
+> +{
+
+[ ... ]
+
+> +/**
+> + * rxrpc_sock_set_manage_response - Set the manage-response flag for a k=
+ernel service
+
+[Severity: Low]
+Moving rxrpc_sock_set_security_keyring() and rxrpc_sock_set_manage_response=
+()
+from net/rxrpc/server_key.c to net/rxrpc/security.c leaves no kernel-doc
+comments in net/rxrpc/server_key.c, while Documentation/networking/rxrpc.rst
+still has:
+
+  .. kernel-doc:: net/rxrpc/server_key.c
+     :internal:
+
+Should that directive in Documentation/networking/rxrpc.rst be updated to
+reference net/rxrpc/security.c so these functions remain in the generated A=
+PI
+documentation?
+
+[1] https://sashiko.dev/#/bug/linux-93795e42-6eae-42ec-9f00-b78f9b947f35
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261107131512.3603=
-168-1-jarkko@kernel.org?part=3D6
+168-1-jarkko@kernel.org?part=3D8
