@@ -1,44 +1,44 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794176863;
-	b=Sy+zidOI1YABshX4nTFYX9PU3DH7I4v8GkGxDkWaWbgMYMdS8Dga1sSLIQa007mNVPB0
-	 lNWBqWz3KS3V4G2694Ty3v8Gvd1AQLEGt/qVZxDpuRt0NE1nJC0YcaFMxwNRvWNxr1p/K
-	 zUKEX4hrTUNz8KtmKxcs9WS2YGVKJHiDXkA9OtN0FgNYENFGgcsXz1rUApQfyI7TtaFYj
-	 JiPt1ulV7NGqIVNdWh7Xx5rF4jLUryS7WUIhlvxH3byHZZ/yvQBqEgi3szWWovtFADc7v
-	 /4+uY+web/8fNMnXLwIavT6MwmnSCDu9JDAMut7P437mHTz1W+5n98P2SdXdO7QGz3w==
+	t=1794176864;
+	b=Od7VAoJ+D8g414MQEQ7xBj2foiLnL/pHvBHfFtA8pP1T3epLQH2OWlM9VzIDh1Bs5vmy
+	 VZX0f5zY9V30wzd30+qwUKgRAe9qA4U4H/0hhbarFMAtqD/2p3roXgE4mpsMtWOZAO37P
+	 AMXX4aEb5eQYxL+YI/q83wJpaw4ujyzUhmyJrvf+STO0nSZh8L+rIfbMdxCnJhCX8mqkQ
+	 WO9ADNUsEmbRZT6n6DRlsYc5ASVxlHL1vv/ixK8GBCrykqoot7JL0IYYxz0NTKCo8/xL5
+	 D5tYli23OxgtTkXwpPZPnXxQSqJYriI/7vi8Xiz7/rfHVXGx17aaeVCquy60HDJp3tA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794176863;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794176864;
 	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
 	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
-	bh=0drM0M3oPrheYDlOFbCeBdCWAIsAz86/BkD133KazZQ=;
-	b=yC+ladE8cWbbiVE6JndoVV62//pgfK6lUgWUmL14VzWQXCeLyqD2SacqqXrv/Vpe+Uro
-	 yYa19VmlUMpmdJyZ69R/E0mFWd9U44EA3HPiuFgg/VuIRATT3++yIC6ZGyM09X6D2A9T/
-	 4gVwBctTQuaVS9ABInkUfv/1YmIpF9dx4uoEMh2sJIC2naPydxZMYbJsyO2KX5JB7gxlA
-	 tQuLQwBuREH/7Kf67iTrp/Rm7gxRtNDDFGyP5pDQYBuRgHDTvbeTSjxhe8GFHe5HtlxNH
-	 k+O/WAtVVPS6FhaDFNO6fble8wDmo02Zf7OY/q1AEHuYl3qP7nEI/RXRVv+4p2bjkhg==
+	bh=QVH4HUhUjAGbn//KdcTKvYYK0jkAf27rpg6dT7GZY+M=;
+	b=zuB8rWQxthQr2yqBS3aJF8OgUqAqwr+G/u1Jq6k7wqWi0zUHokv3KgTw5sIx8n4QlcrS
+	 D5L7sDFCFz7jp6Lb/aVqO2J5qjs3myBYvCxF+XxcBsp80H+BZeqp2lzCNXR+nsh2XuDTd
+	 TURbeeV12JNYdv7Dr/r6CZSgZHdW6zTucbiHdskmGgYoWSR/k8sDB4nI5pPkE4csX8hxi
+	 t4NkpINs1CZEsqWTPB0Aq+1I4JSsAK7jJPZ2AIA1SCFKg7c6ZkVrRN2DhfLzE+EUR3I+A
+	 CqPoySMAzynQT10CmalzrXO1NjaALvY86RucaINb503G6c84pTOSrTM5pMsFNvs3lYg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=diNjKykQ;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=oceCXOQY;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id B713B606A323;
-	Sun,  8 Nov 2026 22:27:42 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 2090F606D80E;
+	Sun,  8 Nov 2026 22:27:38 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=diNjKykQ
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id DD1801F008A3;
-	Sun,  8 Nov 2026 22:27:41 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=oceCXOQY
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 17E9D1F0089F;
+	Sun,  8 Nov 2026 22:27:38 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794176862;
-	bh=0drM0M3oPrheYDlOFbCeBdCWAIsAz86/BkD133KazZQ=;
+	s=k20260515; t=1794176858;
+	bh=QVH4HUhUjAGbn//KdcTKvYYK0jkAf27rpg6dT7GZY+M=;
 	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=diNjKykQ0OWyBkItsEkGxnSTBT/OUe4lN7QnjIdkvXBjph2alyyrP/xERUltG5ikw
-	 I5qirRtCU7csKf3akOyXPr3fdAt9mPXOdqwd+b7+2uW27EyYkm1HoznfKo45l84ua6
-	 +LqAYOvvF1w6Mw0IJ+7YcTXhgDFzD7lbbVRAYqXrLdhaV032XfDwiuAuuu1SCHXXyL
-	 VNyyxsReXRZvkpjM1IxMXLTkY/XVl3RxZYkgw1g1Q5ahp8XcbdrTIMB2HxHN/SygQI
-	 YBJr6JrOdk8IiLMRFF7LcW+PUmdasnEuvjgzD44rJM0v7DbL55FRFheZyT6YoNxYkG
-	 9ayuMQEeZdHlA==
+	b=oceCXOQYa8RnOYFv7iKGZaaidjgrR7xA6olTQKux+I9fPkN//QtFKi5e/BdVP4tYC
+	 OnvfcXo+5mm8tTKdSA/swcQ+EKOltg5N8rTaUwXx98EbeEUX04q3lrGqlyEHcnLHoT
+	 HKYP6hgqNBMzaVnsFKQyPL7OIDW7Kb662arSn4f6MR1XSeL9py0rbLLfA30gfUJ9j4
+	 TWFOLX97sHaHK+aFXPVBqv5/0DmFjOUMWmGdoZvSrVT2jXw7Cw5y4NYHmfsga0oJy4
+	 RFsmfo6oylTRexxNiE8bXJUvFNydilmGEuLQt5hcBbtNpxCB6XcYL40iUNSlnZDQZs
+	 nLv7O+fCTkbEw==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: Jarkko Sakkinen <jarkko@kernel.org>,
@@ -77,9 +77,9 @@ Cc: Jarkko Sakkinen <jarkko@kernel.org>,
 	Tom Talpey <tom@talpey.com>,
 	Trond Myklebust <trondmy@kernel.org>,
 	Vasily Gorbik <gor@linux.ibm.com>
-Subject: [PATCH v5 04/12] smb: client: Clear idmap/SPNEGO caches when the last session is unloaded
-Date: Mon,  9 Nov 2026 00:27:10 +0200
-Message-ID: <20261108222719.304712-5-jarkko@kernel.org>
+Subject: [PATCH v5 03/12] NFSv4: Clear idmap keyring cache when the last client unloads
+Date: Mon,  9 Nov 2026 00:27:09 +0200
+Message-ID: <20261108222719.304712-4-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
 In-Reply-To: <20261108222719.304712-1-jarkko@kernel.org>
 References: <20261108222719.304712-1-jarkko@kernel.org>
@@ -94,169 +94,81 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-CIFS caches cifs.idmap and cifs.spnego keys in the module-owned keyrings
-that are only destroyed in module_exit().
+id_resolver_cache->thread_keyring caches id_resolver_legacy keys up until
+nfs_idmap_quit() tears down the keyring.
 
-Once keys pin the kernel module of the key type, the cached entries will
-retain CIFS pinned after the last SMB session has been torned down.
+Once keys pin to the kernel module of their key type, the cached keys
+prevent module_exit() from ever happening.
 
-Serialize the session count transitions with a mutex and clear the idmap
-and SPNEGO cache keyrings when the last session is freed.
+Track the active idmap instances under a mutex and clear the idmap cache
+keyring once the last client has been destroyed.
 
 Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
- fs/smb/client/cifs_spnego.c | 12 ++++++++++++
- fs/smb/client/cifsacl.c     | 12 ++++++++++++
- fs/smb/client/cifsproto.h   |  8 ++++++++
- fs/smb/client/misc.c        | 19 +++++++++++++++++--
- 4 files changed, 49 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4idmap.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/fs/smb/client/cifs_spnego.c b/fs/smb/client/cifs_spnego.c
-index 44c407275680..e974f396e07f 100644
---- a/fs/smb/client/cifs_spnego.c
-+++ b/fs/smb/client/cifs_spnego.c
-@@ -15,6 +15,7 @@
- #include <linux/key-type.h>
- #include <linux/keyctl.h>
- #include <linux/inet.h>
-+#include <linux/ratelimit.h>
- #include "cifsglob.h"
- #include "cifs_spnego.h"
- #include "cifs_debug.h"
-@@ -190,6 +191,17 @@ cifs_get_spnego_key(struct cifs_ses *sesInfo,
- 	return spnego_key;
- }
- 
-+void
-+cifs_spnego_clear_cache(void)
-+{
-+	int ret;
-+
-+	ret = keyring_clear(spnego_cred->thread_keyring);
-+	if (ret)
-+		pr_warn_ratelimited("Failed to clear SPNEGO cache: %d; cache pins remain\n",
-+				    ret);
-+}
-+
- int
- init_cifs_spnego(void)
- {
-diff --git a/fs/smb/client/cifsacl.c b/fs/smb/client/cifsacl.c
-index 346899da91eb..60c60c23dd34 100644
---- a/fs/smb/client/cifsacl.c
-+++ b/fs/smb/client/cifsacl.c
-@@ -13,6 +13,7 @@
- #include <linux/string.h>
- #include <linux/keyctl.h>
- #include <linux/key-type.h>
-+#include <linux/ratelimit.h>
- #include <uapi/linux/posix_acl.h>
- #include <linux/posix_acl.h>
- #include <linux/posix_acl_xattr.h>
-@@ -539,6 +540,17 @@ sid_to_id(struct cifs_sb_info *cifs_sb, struct smb_sid *psid,
- 	return 0;
- }
- 
-+void
-+cifs_idmap_clear_cache(void)
-+{
-+	int ret;
-+
-+	ret = keyring_clear(root_cred->thread_keyring);
-+	if (ret)
-+		pr_warn_ratelimited("Failed to clear idmap cache: %d; cache pins remain\n",
-+				    ret);
-+}
-+
- int
- init_cifs_idmap(void)
- {
-diff --git a/fs/smb/client/cifsproto.h b/fs/smb/client/cifsproto.h
-index f9ea35597bc2..2930a40d1b67 100644
---- a/fs/smb/client/cifsproto.h
-+++ b/fs/smb/client/cifsproto.h
-@@ -58,8 +58,16 @@ do {									\
- } while (0)
- int init_cifs_idmap(void);
- void exit_cifs_idmap(void);
-+void cifs_idmap_clear_cache(void);
- int init_cifs_spnego(void);
- void exit_cifs_spnego(void);
-+#ifdef CONFIG_CIFS_UPCALL
-+void cifs_spnego_clear_cache(void);
-+#else
-+static inline void cifs_spnego_clear_cache(void)
-+{
-+}
-+#endif
- const char *build_path_from_dentry(struct dentry *direntry, void *page);
- char *__build_path_from_dentry_optional_prefix(struct dentry *direntry,
- 					       void *page, const char *tree,
-diff --git a/fs/smb/client/misc.c b/fs/smb/client/misc.c
-index ec28f102ea08..11c0330be489 100644
---- a/fs/smb/client/misc.c
-+++ b/fs/smb/client/misc.c
-@@ -9,6 +9,8 @@
- #include <linux/slab.h>
- #include <linux/ctype.h>
- #include <linux/mempool.h>
-+#include <linux/key.h>
+diff --git a/fs/nfs/nfs4idmap.c b/fs/nfs/nfs4idmap.c
+index bc397110d977..c88444cc6bf6 100644
+--- a/fs/nfs/nfs4idmap.c
++++ b/fs/nfs/nfs4idmap.c
+@@ -47,6 +47,8 @@
+ #include <keys/request_key_auth-type.h>
+ #include <linux/module.h>
+ #include <linux/user_namespace.h>
 +#include <linux/mutex.h>
- #include <linux/vmalloc.h>
- #include "cifsglob.h"
- #include "cifsproto.h"
-@@ -33,6 +35,9 @@ struct tcon_list {
- 	struct cifs_tcon *tcon;
- };
++#include <linux/ratelimit.h>
  
-+/* Serialize session admission with the last session's cache clear. */
-+static DEFINE_MUTEX(cifs_session_mutex);
-+
- /* The xid serves as a useful identifier for each incoming vfs request,
-    in a similar way to the mid which is useful to track each sent smb,
-    and CurrentXid can also provide a running counter (although it
-@@ -74,7 +79,6 @@ sesInfoAlloc(void)
+ #include "internal.h"
+ #include "netns.h"
+@@ -58,6 +60,10 @@
+ static const struct cred *id_resolver_cache;
+ static struct key_type key_type_id_resolver_legacy;
  
- 	ret_buf = kzalloc_obj(struct cifs_ses);
- 	if (ret_buf) {
--		atomic_inc(&sesInfoAllocCount);
- 		spin_lock_init(&ret_buf->ses_lock);
- 		ret_buf->ses_status = SES_NEW;
- 		++ret_buf->ses_count;
-@@ -84,6 +88,10 @@ sesInfoAlloc(void)
- 		spin_lock_init(&ret_buf->iface_lock);
- 		INIT_LIST_HEAD(&ret_buf->iface_list);
- 		spin_lock_init(&ret_buf->chan_lock);
++/* Serializes the idmap cache. */
++static DEFINE_MUTEX(nfs_idmap_cache_mutex);
++static unsigned int nfs_idmap_users;
 +
-+		mutex_lock(&cifs_session_mutex);
-+		atomic_inc(&sesInfoAllocCount);
-+		mutex_unlock(&cifs_session_mutex);
- 	}
- 	return ret_buf;
- }
-@@ -99,7 +107,6 @@ sesInfoFree(struct cifs_ses *buf_to_free)
- 	}
+ struct idmap_legacy_upcalldata {
+ 	struct rpc_pipe_msg pipe_msg;
+ 	struct idmap_msg idmap_msg;
+@@ -469,7 +475,10 @@ nfs_idmap_new(struct nfs_client *clp)
+ 	if (error)
+ 		goto err_destroy_pipe;
  
- 	unload_nls(buf_to_free->local_nls);
--	atomic_dec(&sesInfoAllocCount);
- 	kfree(buf_to_free->serverOS);
- 	kfree(buf_to_free->serverDomain);
- 	kfree(buf_to_free->serverNOS);
-@@ -115,6 +122,14 @@ sesInfoFree(struct cifs_ses *buf_to_free)
- 		kref_put(&iface->refcount, release_iface);
- 	spin_unlock(&buf_to_free->iface_lock);
- 	kfree_sensitive(buf_to_free);
++	mutex_lock(&nfs_idmap_cache_mutex);
++	nfs_idmap_users++;
+ 	clp->cl_idmap = idmap;
++	mutex_unlock(&nfs_idmap_cache_mutex);
+ 	return 0;
+ err_destroy_pipe:
+ 	rpc_destroy_pipe_data(idmap->idmap_pipe);
+@@ -483,6 +492,7 @@ void
+ nfs_idmap_delete(struct nfs_client *clp)
+ {
+ 	struct idmap *idmap = clp->cl_idmap;
++	int ret;
+ 
+ 	if (!idmap)
+ 		return;
+@@ -493,6 +503,17 @@ nfs_idmap_delete(struct nfs_client *clp)
+ 	rpc_destroy_pipe_data(idmap->idmap_pipe);
+ 	put_user_ns(idmap->user_ns);
+ 	kfree(idmap);
 +
-+	mutex_lock(&cifs_session_mutex);
-+	if (atomic_dec_and_test(&sesInfoAllocCount)) {
-+		cifs_idmap_clear_cache();
-+		cifs_spnego_clear_cache();
-+		key_gc_flush();
++	mutex_lock(&nfs_idmap_cache_mutex);
++	if (--nfs_idmap_users == 0) {
++		ret = keyring_clear(id_resolver_cache->thread_keyring);
++		if (ret)
++			pr_warn_ratelimited("NFS: Failed to clear idmap cache: %d; cache pins remain\n",
++					    ret);
++		else
++			key_gc_flush();
 +	}
-+	mutex_unlock(&cifs_session_mutex);
++	mutex_unlock(&nfs_idmap_cache_mutex);
  }
  
- struct cifs_tcon *
+ static int nfs_idmap_prepare_message(char *desc, struct idmap *idmap,
 -- 
 2.47.3
 
