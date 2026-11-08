@@ -1,47 +1,47 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794143784;
-	b=1p1+6mjkoXeVzcV43/M7gLE413QT918nUgn62Op1Uck+B91g9OEv8fu58mDno+8WQvcS
-	 aaEadsHIrcn3dBRhu/aKebcI/LX99uMzjuYAd6ppfbTua9ICeGhRZy5uAMu71h1l8dAg0
-	 cmoLQtf30XB1uoNHwjypsuwMVOofcu24Efb2sYJW9ZEDr3luhEZVp8WYteEhyjRW2SAVu
-	 /1iXGcaH1FCwHCx1pBNTRWEBYzAVQxpfJfwbWZOThISZkx5oUptG8GKjptA14xi4vgIWP
-	 fXpgvSoNZgLZSZHo++jrneIa5sePgNXdNNrT47JRv/X/tfA6b+YWdHzQrkZSBHFSD6Q==
+	t=1794143787;
+	b=TmOFrWWs+1rUGVWNVsvBpU9NCXhLKvWYLxJxB1WQAISfNwcsScdxxDLnNCHFm5V4Epq6
+	 U9JkI8DuW77o1axdim9LMObdv5Ql/SRfTci7FNitHB1CicFUZUiuKq5Ii9fdLXJ43DKiV
+	 XXBJwhqep1LMznzHzM8V1VIAvu1rhWCS65X9mOWy+q7CMrxMV1Vs/rAfZoaf6lG00vuTP
+	 5UblCZrbJwalDPGRBDyH7v3HCQCZtEJsAnY0I6ZAm+nDHrs/cGI14aNuuEXK2LFH4/Lae
+	 LBUEDzoqnBUBqVw79wuRINC70Y7M7HsMeaPwIz8wb5+NDwdFFCIurapea32bd9sWzaw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794143784;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794143787;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=XVUOW6BOzWiFpos3QddCcYSf9omcPbHzIw8nadBPHoM=;
-	b=46TBJD9O2YVRObRTlSSjc2hAllvoI1hHXvYgxAcNTU/MIB0dGjNKdQ4Rk66kpFFAN5to
-	 yEBISveuV6zqwF+IWGAegVnqjL6hglGtGDJKqBPVBkSKHRcUJD1lvKA/BWbB0TZZtRmPw
-	 Aj+9z3HvOmqaotRkemc6NgSEojfpQEFiO1UNLdNoUrLsiEyNJXeJdP0P4lSGjV8Qf4nu/
-	 tHHxa37TjIUeV0ct1jh8FwGu3MBJUXPtKC9aq9uMnZ+i2XEvaxoXCbGDyiRlZCvh87rNq
-	 4RSbL1dWDAx9Pfu8+eF/84ugAz62RcLX3xbmHgPtcZdzyM0ibxjVZwmNSBWTRiHbfOQ==
+	bh=v1GzT4Jwv27YBmtTQ/6R06I4yHOVV17RiLfotxX0g3Q=;
+	b=uGpNl0oCk3UnVYrdn7RJ/f3RZTuGS1b8FOKLMuGrzEKsx4G650T97tI1qib61VsjUkpM
+	 K7sOaDoMGFrgM4wFEC0ESVBqSQWcYzacgIhh4XxDRK4BAJR3+S1R+vJXz4C9DJds5P0Xn
+	 THaTuk91gT88ryBn9EL90bN/E2jSXpk5pJCQLTyVRv7ZIg+ogyqpNgRnsoC1h4Tqbeahm
+	 nCnhx31sUoAgMdfgX4ZGsxSEJzd8u6XxViJGMw4mBbw7GUcCglQld2XpBB2J2Au38mHhY
+	 pkEi6ZNNkbgKWUi3MAOsByjuCGt+hOrCbH9kgbPEv2IckS/szeqlQ7jb4l19BgXu3Bg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gnxjxc8y;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AyQXwssZ;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 836A4606A321;
-	Sun,  8 Nov 2026 13:16:24 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 17C55606A322;
+	Sun,  8 Nov 2026 13:16:27 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=gnxjxc8y
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id F03981F0089F;
-	Sun,  8 Nov 2026 13:16:22 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AyQXwssZ
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 9635C1F008A4;
+	Sun,  8 Nov 2026 13:16:25 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794143784;
-	bh=XVUOW6BOzWiFpos3QddCcYSf9omcPbHzIw8nadBPHoM=;
+	s=k20260515; t=1794143786;
+	bh=v1GzT4Jwv27YBmtTQ/6R06I4yHOVV17RiLfotxX0g3Q=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=gnxjxc8yt6ns+DUYYHwQ/38iNk2Vq6zbFeb4zKpN57mNXmBsz/JBPRpkrmjHES0+n
-	 nUQLkU8IZl50Bxfx6hq7tmdQ7wkwiEy05XZz3pHzbzi+rLchoptyr054Wq5YZWMXao
-	 IBes2mccwDOAFeesInJk0oNrWza7TWzsXzZ5UnSZgeLIozRHdeBkeB+ArgdTcC0rKk
-	 dLfbyVE6tgs682BBtFh7TePDls5/2rgkhaEvSCw9dKGOm+4AaZ4Yd8spypnTGQQ+om
-	 4iY+dOMs3D73AOh1+1Nimn1jGEoPCotCquvGr6uQ9r7rFIzNKoYRbHRDv2dv1nHw2/
-	 k6rbeoJlvspbA==
-Message-ID: <sashiko-outbox-203767@kernel.org>
+	b=AyQXwssZhAzvryQ9jTUVd+TlrywvhNcT5oSRt29xJTbssQtMtHwywYHq4mpNezELA
+	 oZDFYunezpPQeYlVn6yBKBU8wG5gbQ/R0Qma2pglquRERzAe/bz3gRIJWxGYG21io5
+	 QvC9DaU8QUGboWTgzVJbu8rbmrCF4lrq5iErfyZA+rJA/2lp4Fnh4m0aETOQyrrlgd
+	 9wLa8kt992gNUZkQJm7QpOgZBCWUVMLVPSXhtcmRtfV5Ee9AXlSn8HkDJpeXhIUdF0
+	 zkbGkDNk1fgfU/t9mJ3ooLr4YHRQE3y3DOHzNGT0tAV03YMjyXP06Td271UIycMjJH
+	 IhmQAg+7h3BuQ==
+Message-ID: <sashiko-outbox-203769@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v4 08/11] rxrpc: Move key types to their own module
+Subject: Re: [PATCH v4 10/11] KEYS: Remove key_type_dead
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org, linux-s390@vger.kernel.org, linux-security-module@vger.kernel.org, "Alexander
@@ -59,12 +59,12 @@ Cc: keyrings@vger.kernel.org, linux-s390@vger.kernel.org, linux-security-module@
  Schnelle" <svens@linux.ibm.com>, "Tom Talpey" <tom@talpey.com>, "Trond
  Myklebust" <trondmy@kernel.org>, "Vasily Gorbik" <gor@linux.ibm.com>, "Chuck
  Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>
-In-Reply-To: <20261107131512.3603168-9-jarkko@kernel.org>
+In-Reply-To: <20261107131512.3603168-11-jarkko@kernel.org>
 References: <20261107131512.3603168-1-jarkko@kernel.org>
- <20261107131512.3603168-9-jarkko@kernel.org>
+ <20261107131512.3603168-11-jarkko@kernel.org>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Sun, 08 Nov 2026 13:16:22 +0000
+Date: Sun, 08 Nov 2026 13:16:25 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -74,147 +74,85 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 1 potential
-issue to consider:
-- [Low] rxrpc: update kernel-doc path from server_key.c to security.c in
-  rxrpc.rst
-It also noticed 1 related pre-existing issue this patch does not
+Thank you for your contribution! Sashiko AI review found no new issues
+in this patch, but noticed 1 related pre-existing issue it does not
 introduce:
-- [High] rxrpc: memory leak of conn->key in rxrpc_process_event() [1]
+- [Medium] keys: broken garbage collection timer calculation in
+  key_garbage_collector() [1]
 --
 
-commit 16a0f09dc6df360865624dc81f7bfb1b9505bec6
+commit 685cce051d4099c4b86015bc6b82bcd593f0652f
 Author: Jarkko Sakkinen <jarkko@kernel.org>
 
-rxrpc: Move key types to their own module
+KEYS: Remove key_type_dead
 
-This commit splits the rxrpc and rxrpc_s key types and their preparse
-logic into a separate rxrpc_keys.ko module and moves socket and
-connection key helper functions into net/rxrpc/security.c so rxrpc.ko
-can be unloaded while persistent keys remain in keyrings.
+This commit removes key_type_dead and its three-phase keytype reaping logic
+from the key garbage collector and unregister_key_type().
 
-> diff --git a/net/rxrpc/security.c b/net/rxrpc/security.c
-> index 2bfbf2b2bb37a..28883a70c9e85 100644
-> --- a/net/rxrpc/security.c
-> +++ b/net/rxrpc/security.c
+> diff --git a/security/keys/gc.c b/security/keys/gc.c
+> index 7b2f32998f58b..859f331549cef 100644
+> --- a/security/keys/gc.c
+> +++ b/security/keys/gc.c
 
 [ ... ]
 
-> +/*
-> + * generate a server data key
-> + */
-> +int rxrpc_get_server_data_key(struct rxrpc_connection *conn,
-> +			      const void *session_key,
-> +			      time64_t expiry,
-> +			      u32 kvno)
-> +{
-> +	const struct cred *cred =3D current_cred();
-> +	struct {
-> +		u32 kver;
-> +		struct rxrpc_key_data_v1 v1;
-> +	} data;
-> +	struct key *key;
-> +	int ret;
-> +
-> +	_enter("");
-> +
-> +	key =3D key_alloc(&key_type_rxrpc, "x",
-> +			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred, 0,
-> +			KEY_ALLOC_NOT_IN_QUOTA, NULL);
-> +	if (IS_ERR(key)) {
-> +		_leave(" =3D -ENOMEM [alloc %ld]", PTR_ERR(key));
-> +		return -ENOMEM;
-> +	}
-> +
-> +	_debug("key %d", key_serial(key));
-> +
-> +	data.kver =3D 1;
-> +	data.v1.security_index =3D RXRPC_SECURITY_RXKAD;
-> +	data.v1.ticket_length =3D 0;
-> +	data.v1.expiry =3D rxrpc_time64_to_u32(expiry);
-> +	data.v1.kvno =3D 0;
-> +
-> +	memcpy(&data.v1.session_key, session_key, sizeof(data.v1.session_key));
-> +
-> +	ret =3D key_instantiate_and_link(key, &data, sizeof(data), NULL, NULL);
-> +	if (ret < 0)
-> +		goto error;
-> +
-> +	conn->key =3D key;
+> @@ -246,18 +192,6 @@ static void key_garbage_collector(struct work_struct=
+ *work)
+>  			goto found_unreferenced_key;
+>  		}
+> =20
+> -		if (unlikely(gc_state & KEY_GC_REAPING_DEAD_1)) {
+> -			if (key->type =3D=3D key_gc_dead_keytype) {
+> -				gc_state |=3D KEY_GC_FOUND_DEAD_KEY;
+> -				set_bit(KEY_FLAG_DEAD, &key->flags);
+> -				key->perm =3D 0;
+> -				goto skip_dead_key;
+> -			} else if (key->type =3D=3D &key_type_keyring &&
+> -				   key->restrict_link) {
+> -				goto found_restricted_keyring;
+> -			}
+> -		}
+> -
+>  		expiry =3D key->expiry;
+>  		if (expiry !=3D TIME64_MAX) {
+>  			if (!(key->type->flags & KEY_TYPE_INSTANT_REAP))
 
-[Severity: High]
-This problem wasn't introduced by this patch, but can assigning conn->key
-here leak an existing key [1] if a RESPONSE packet is replayed?
+[Severity: Medium]
+This problem wasn't introduced by this patch, but does the timer calculation
+in key_garbage_collector() mix delay-adjusted and unadjusted expiration
+timestamps [1]?
 
-In rxrpc_process_event(), if rxrpc_verify_response() succeeds (allocating
-and assigning conn->key via rxrpc_get_server_data_key()) but the subsequent
-conn->security->init_connection_security() call fails, the function returns
-early while conn->state remains RXRPC_CONN_SERVICE_CHALLENGING:
-
-net/rxrpc/conn_event.c:rxrpc_process_event() {
-    ...
-	case RXRPC_PACKET_TYPE_RESPONSE:
-		spin_lock_irq(&conn->state_lock);
-		if (conn->state !=3D RXRPC_CONN_SERVICE_CHALLENGING) {
-			spin_unlock_irq(&conn->state_lock);
-			return 0;
+security/keys/gc.c:key_garbage_collector() {
+	...
+		expiry =3D key->expiry;
+		if (expiry !=3D TIME64_MAX) {
+			if (!(key->type->flags & KEY_TYPE_INSTANT_REAP))
+				expiry +=3D key_gc_delay;
+			if (expiry > limit && expiry < new_timer) {
+				kdebug("will expire %x in %lld",
+				       key_serial(key), key->expiry - limit);
+				new_timer =3D key->expiry;
+			}
 		}
-		spin_unlock_irq(&conn->state_lock);
-
-		ret =3D rxrpc_verify_response(conn, skb);
-		if (ret < 0)
-			return ret;
-
-		ret =3D conn->security->init_connection_security(
-			conn, conn->key->payload.data[0]);
-		if (ret < 0)
-			return ret;
-    ...
+	...
+	if (new_timer !=3D TIME64_MAX) {
+		new_timer +=3D key_gc_delay;
+		key_schedule_gc(new_timer);
+	}
 }
 
-A replayed RESPONSE packet will then run rxrpc_verify_response() again and
-overwrite conn->key without calling key_put() on the previous key.
+When KEY_TYPE_INSTANT_REAP is not set, expiry has key_gc_delay added before
+it is compared against new_timer, but new_timer is then assigned the
+unadjusted key->expiry.  Subsequent keys whose adjusted expiry falls at or
+after a previously recorded unadjusted key->expiry fail the
+expiry < new_timer check even when their actual reap time is earlier.  After
+the tree scan finishes, key_gc_delay is also added unconditionally to
+new_timer even if new_timer came from a key with KEY_TYPE_INSTANT_REAP set,
+delaying background reaping of expired keys and dead keyring links by up to
+key_gc_delay.
 
-[ ... ]
-
-> +/**
-> + * rxrpc_sock_set_security_keyring - Set the security keyring for a kern=
-el service
-> + * @sk: The socket to set the keyring on
-> + * @keyring: The keyring to set
-> + *
-> + * Set the server security keyring on an rxrpc socket.  This is used to =
-provide
-> + * the encryption keys for a kernel service.
-> + *
-> + * Return: %0 if successful and a negative error code otherwise.
-> + */
-> +int rxrpc_sock_set_security_keyring(struct sock *sk, struct key *keyring)
-> +{
-
-[ ... ]
-
-> +/**
-> + * rxrpc_sock_set_manage_response - Set the manage-response flag for a k=
-ernel service
-
-[Severity: Low]
-Moving rxrpc_sock_set_security_keyring() and rxrpc_sock_set_manage_response=
-()
-from net/rxrpc/server_key.c to net/rxrpc/security.c leaves no kernel-doc
-comments in net/rxrpc/server_key.c, while Documentation/networking/rxrpc.rst
-still has:
-
-  .. kernel-doc:: net/rxrpc/server_key.c
-     :internal:
-
-Should that directive in Documentation/networking/rxrpc.rst be updated to
-reference net/rxrpc/security.c so these functions remain in the generated A=
-PI
-documentation?
-
-[1] https://sashiko.dev/#/bug/linux-93795e42-6eae-42ec-9f00-b78f9b947f35
+[1] https://sashiko.dev/#/bug/linux-327c9a06-109f-4001-9a3e-a6092c989462
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261107131512.3603=
-168-1-jarkko@kernel.org?part=3D8
+168-1-jarkko@kernel.org?part=3D10
