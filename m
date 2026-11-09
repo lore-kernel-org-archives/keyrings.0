@@ -1,58 +1,55 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794236057;
-	b=oWYRg8UUkac9Pg6yh2u5kRfyHGS5g5usNohl60THlyVPgPJPL/cLnN90FwdhbeaDOILm
-	 e7/fNkexzttqgNPK4bK9nYfRfnmk0n+afCNWGL2y4gmfsX2Fm13esvkRiK6TKjksULR2i
-	 atwy1w0AmA5MEVo361YOYQSqQlVtTuGOFIRkwirv9N/4isPY8tvbYR21GMCET/glgCosI
-	 a8lHtgvw+g83nw00OeraA7ECf5H+PT46pPOikcT+m5O5Kmxarwmjeh7nKUdzhJwR+YYao
-	 oWlllHQu1r6VtPp9Dq1QARKhdFLy74KUy7vXvwzrxkvUQi+xzfQx22zSE1tU6RqXsMg==
+	t=1794236569;
+	b=wjA4HfFMZdnRyxPMGuh4NvYVoepJNrhoi3Avn6dO/yhltuDKmIb0y8b4ahwRo6beQ0mm
+	 eOAgvkace8gjWkTN+wJHpDBfIO0pW297k9LFbQFk0WQ5d0GTAerLPz91HZuMoW141TTda
+	 zjNgd8FS5eOGzY9hAdVjFG2lG9EyQHS4ri0gRLd4lWpz8aKIYpxjYHYO+98ADFyXKyh8u
+	 Yot2c7N4bimTIMdDrxzFX5uA8DCF1UhUeskQuj8Mm1ybchmOr5LdITP/02ner1rvG8Ge7
+	 7EpK8bNrEnWyfb287DDsoGZjcf9SGb9PGhCc0aBPiLjgFTYNmBqVMqdqs7Mi50GDIRA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794236057;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794236569;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=XmnGczbXYjhMau5pClTNznbB6TrB8qkoC+tW5+pwPRU=;
-	b=hN7/cDWoUkz3pGRgPRLHNZG0zgqvzAY+FpT6aYW4PbLl4OOgombCnZWS24mB5iBKJwEQ
-	 d/j4lKcm8nSWkNMnGf05lSTMoMnJm57QYi/dZZBTUglQLnqHEy8JiSdffZ4jR3Avj4OD9
-	 VHn0Z0EXj9nPxjF9VbcTQQvLLBRS6oeSkIytC1/Q3kkxd5qMHagsdFPgIkdYKkmlUs916
-	 MZSbpiHr37ELzQPagpMaHo3jRhdBfvo9eD5VtA2Nmt2showpXIU+CbIF48pk6I6lLeDBx
-	 0nr5+jT1ysX6hA3ck5hEmYUy5BFhq7cJaK9kT4xd/w0lL3v2XOGFp89zmodNetB1VdA==
+	bh=IY9ZqLLHjvsP1ZjH5nJNxhSYcZIDkYWCPHqk+wR0lys=;
+	b=Qh5ahhF4CkDzUEm20OLsIKiaxzCjndB2+eeLAwcr+z0AB61wztozQJTCJsmwVRLa8Rka
+	 1gPvtZHwQKdjgS1nKeiTJB11L5X+e5klxOiYy9uJxKKxBIDbjSnsPxOgf2q/o3lQyzDA5
+	 34dvKsRkPxq/my4gqoMaIKnE0eXtpKvrCzskqaoDtcFzPp4W+/k942VkH/CoP6qkDUccK
+	 MDCcv5IEd3gW2jtk6Gk/pGBVJIbSVLV/p0G3XvdhMFIDwuyTz9x9xApMaXELkOEAK3bDm
+	 V22OI7R4429rh0csPlFfINPRp8A8uJOI4jSwqVkqw0kP8e0pybrJPCs9F0zkTDYV9jQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="e/G+5l+c";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=CwhLvKwI;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 776AD606A31C;
-	Mon,  9 Nov 2026 14:54:17 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 816FC606A31C;
+	Mon,  9 Nov 2026 15:02:49 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=e/G+5l+c
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 81CCA1F008A1;
-	Mon,  9 Nov 2026 14:54:16 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=CwhLvKwI
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9BB101F0089F;
+	Mon,  9 Nov 2026 15:02:48 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794236057;
-	bh=XmnGczbXYjhMau5pClTNznbB6TrB8qkoC+tW5+pwPRU=;
+	s=k20260515; t=1794236569;
+	bh=IY9ZqLLHjvsP1ZjH5nJNxhSYcZIDkYWCPHqk+wR0lys=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=e/G+5l+ctv3J4J0FYrueBwuIfte2OJnEDjqerU6oHlHphbKsGleKpF5f2yCGRMLCJ
-	 EZmGlYwMicZdysQOLmP1xdGaIJ/ZBUYvS4P/UnhJJl/HHPTyXrXvhj4bCIjuDPYHQy
-	 hgyBRWR2T5Ms/cCS02V9zHPZF5kUyTEhXSZBZNY+DQCfIp/lHfkWJAGx9GcBtT1OC9
-	 +UqwoHW6MAObHfPNtuA2PqOSarpRfsuepvFba9LTL1pZykIYfx1C9BR9aEPVMYKenZ
-	 g0461zjxGf7VXLRduVUY1OdqLqht0w1pA3k/u6P+pSPNoM+SycpkGMGG5sTKCZHXlR
-	 GXFRDyFNbFBJQ==
-Date: Mon, 9 Nov 2026 16:54:13 +0200
+	b=CwhLvKwI7BRoFKFMhVvXEnwREVqDNNJffagevGZOIaEPVAMvv9Opkbkzgcmy6qzhk
+	 /vNr8v942nn45HgpED4mMxRAwUZt/xB6afT3N/K9SP8B7ahCX1BY2hRUTfFgQm48oR
+	 aIijhjG13i7HL7Q2zn3JAQ+zSrHfKaHew3kQOzzvM14z6PtVguuzOxsx9WSDUsLwKN
+	 yrZ/HBErn/kqMLY8s4/AhIH+Hq0Gm7ngb1W4/CdQoP2TdSKFEK+kPwqDtuS0+JJuOK
+	 Kwm8Ifh9QrG0GOSMngWctPKRcKcghUkWLCnIV4TFDq33LeXXaEZbQW8KFVt3qjmy5T
+	 g9ZquNW1p2QTg==
+Date: Mon, 9 Nov 2026 17:02:45 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Dan Carpenter <error27@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	David Howells <dhowells@redhat.com>,
+To: Guixiong Wei <weiguixiong@bytedance.com>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
 	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] keys/trusted/tpm2: rename "bool" to "boolean"
-Message-ID: <avHelQ1nxsDVcQkZ@kernel.org>
-References: <avFcjHwnh9mrOEnz@stanley.mountain>
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KEYS: do not let an unmatched key decide the search
+ result
+Message-ID: <avHglR4H-YNwCTpO@kernel.org>
+References: <20261109032931.80406-2-weiguixiong@bytedance.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,42 +61,49 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <avFcjHwnh9mrOEnz@stanley.mountain>
+In-Reply-To: <20261109032931.80406-2-weiguixiong@bytedance.com>
 
-On Mon, Nov 09, 2026 at 08:39:24AM +0300, Dan Carpenter wrote:
-> In C23, "bool" is a keyword so rename this array from bool[] to boolean[]
-> to avoid a conflict.
+On Mon, Nov 09, 2026 at 11:29:20AM +0800, Guixiong Wei wrote:
+> With the dns_resolver key type available, put a key named "foo" in a
+> fresh session keyring, revoke it, and search for "bar":
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> ---
->  security/keys/trusted-keys/trusted_tpm2.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+>   keyctl new_session >/dev/null
+>   A=$(printf '127.0.0.1\0' | keyctl padd dns_resolver foo @s)
+>   keyctl revoke "$A"
+>   keyctl search @s dns_resolver bar
 > 
-> diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-> index 30188a0ec676..2d6cc53539c8 100644
-> --- a/security/keys/trusted-keys/trusted_tpm2.c
-> +++ b/security/keys/trusted-keys/trusted_tpm2.c
-> @@ -59,13 +59,13 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
->  			       asn1_oid_len(tpm2key_oid));
->  
->  	if (private->blobauth_len == 0) {
-> -		unsigned char bool[3], *w = bool;
-> +		unsigned char boolean[3], *w = boolean;
->  		/* tag 0 is emptyAuth */
-> -		w = asn1_encode_boolean(w, w + sizeof(bool), true);
-> +		w = asn1_encode_boolean(w, w + sizeof(boolean), true);
->  		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode"))
->  			return PTR_ERR(w);
->  
-> -		work = asn1_encode_tag(work, end_work, 0, bool, w - bool);
-> +		work = asn1_encode_tag(work, end_work, 0, boolean, w - boolean);
->  	}
->  
->  	/*
-> -- 
-> 2.53.0
+> Results:
 > 
+>   keyctl_search: Key has been revoked
+> 
+> The search returns -EKEYREVOKED even though there is no key named "bar".
+> It should return -ENOKEY.
+> 
+> A dns_resolver search walks the keys in the keyring and uses
+> dns_resolver_cmp() to compare their descriptions with the requested
+> name. When keyring_search_iterator() sees the revoked "foo" key, it
+> records -EKEYREVOKED in ctx->result and skips the key before comparing
+> its description. The search continues, but without a match it returns
+> the error recorded for "foo".
+> 
+> Call the match callback before checking for invalidated, revoked or
+> expired keys. A nonmatching key then leaves ctx->result alone.
+> 
+> Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
+> Reported-by: Jarkko Sakkinen <jarkko@kernel.org>
+> Closes: https://lore.kernel.org/lkml/avDG8G-Jl1YsmfCs@kernel.org/
+> Signed-off-by: Guixiong Wei <weiguixiong@bytedance.com>
 
-Are we migrating to C23? I've not followed this too closely.
+Sorry, I could not help complaining about reproducer last time because
+it was at the surface :-) It's a great sanity check to do if it is
+possible without huge effort (i.e. mainly with shell scripting and
+keyutils)>
+
+And since the bug is already out in the public there's nothing
+secretive showing "how it is done".
+
+Thank you!
+
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
 Br, Jarkko
