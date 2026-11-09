@@ -1,93 +1,71 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=74.125.82.53
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794259600;
-	b=w60amQwAFG6ddiby2sn9v72bAJWY8jMSdZGTQ0vGa4RJleBWdPIk/KTwGmSzNMQyAI3L
-	 Pf0dRDP71/eoGCefqzJ58AjuxGGGk5TomOmP2ebv7YCuITlI6Ev5Q3POxcpVDkAEJLSWR
-	 mbCvt8/xWFvUDaSTb8IjXUWEZhl4YTD0lXXgOF6bD0J3GhWrJVz+xL85WWxBSqUvt66dA
-	 6kBMU67yYFZXohOsLfHS6kSIr0Eb+WhDvt5trw6C3JWCf8mCqS4yZTEdhc1T/A2xVl2Oi
-	 UWwtOPceQNlR5FuZa7gIU2tjYtp2IY268oBuSR3BAWVoQ0Y7cDDqGmo3rRPuUUx8bOg==
+	t=1794263310;
+	b=WL1+Ms8HI+7jFqNRZp0mtFBGs5ODRgDtZn5V302OsvJQl/JkTRa2lFR8RSaiTLEBh3AS
+	 ouQoLv+Dpc1/w6qyeBEYYYjuZOhTyg2KNUGR0Stu7oH4YajUi4dzG2CfWJUBlZu9tVDIi
+	 YQZUgpvwWPljpjvTfT8f8JsnYCqyscYl0AFeEAqWxBUZeZoHvw6wsQaZcZBhZzSU+0Ntq
+	 XOEYUuTeAtdJlqj2imrUFw8WQJ9ylhSts+WW38/iAIVteA0+e/etX1yvEu13FwBrkuspc
+	 lRj1Ft3lyo1Lrh2XFEiIt7M7S0I72HRXJB1LlbTBzRMw/l0Q2D77LrL3YSHoP6ZiZOw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794259600;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
-	 From:To:Cc:Subject:Date:Message-ID:X-Mailer:MIME-Version:
-	 Content-Transfer-Encoding;
-	bh=lQqydnWRoSGt2ahvObnzZZPU4tywkZQM18aaUe/DYek=;
-	b=bq0RrHfRWE71J/KYn4B53tnIKgyBTo3c3I7DZLpJgvE1WHxhOFJtoFSn9Ta9zPs0K/i6
-	 NeAOlOOYw4SZwpoyMT3QuyYkWSPSClqL3BoFQKJV/TXl+3ojANepR+iCKprem4Lj8oHRD
-	 ZbHE+TMGmAYQA4mqry7diWuk2Sf2QRxaHHvA6B7b2ct3xsC3nsd+ds38WzifVw9BoGx27
-	 utqpfnHyIbDG6A+JtGhgwrw09mqz++iLXSXYvilbbAmOeiGbUBnNuG6GBX3k2UH/TqOng
-	 ySmIksuWfhrPBrJbZjmKN5kpPtwzN8iu0HVQ/RETe5weFJSDPsC5ElJ0oZvnZ4UNnHA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794263310;
+	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
+	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
+	bh=pxoH6UjLaaaWaTL/eaygp+/kk97XzslCjCIgMA5Icwg=;
+	b=MQuW2/FmVI3lgZS7LpNiWzqksF6E+Ym/1NxV/ayxLDYYgxzesckQ1jdsI48FlbANuTE6
+	 BkE7QCkeMhlOMtSSPIBDfZiJzr80avrtBe/dTez/K4cxWgVBCO/GHRDqlFdo31yuVNZG/
+	 XFKVifibQIliiO+hs3pEkY1Xitj2f46L5uUJufQQd0hKu0x15YvTVu01/aeh9E9BW4MvT
+	 uGz7TY8Hl/tVWopm8xkbY5Ax/rXH72Uu8N/F1YrYizkry9HPHxAG9rx7GcMgM82ynSU0l
+	 o8r7uhR+r9Dn1hc4Fmn2FYTG57Zc251RbHUTo7OcgkNlvBLwDjHK9eDthKx6I6PJlDg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gmail.com;
-	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=pG7PlDNf;
-	arc=none smtp.remote-ip=74.125.82.53
-Received: from mail-dl1-f53.google.com (mail-dl1-f53.google.com [74.125.82.53])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=VNOeVnvZ;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F04E960A2608
-	for <keyrings@vger.kernel.org>; Mon,  9 Nov 2026 21:26:39 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org F04E960A2608
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B5BEE606A31C;
+	Mon,  9 Nov 2026 22:28:29 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=pG7PlDNf
-Received: by mail-dl1-f53.google.com with SMTP id a92af1059eb24-1a3c08d6928so2405736c88.0
-        for <keyrings@vger.kernel.org>; Mon, 09 Nov 2026 13:26:39 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20260707; t=1794259599; x=1794864399; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=lQqydnWRoSGt2ahvObnzZZPU4tywkZQM18aaUe/DYek=;
-        b=pG7PlDNf/Zvt2sa85ke4K57XJQ/yyBxVpe7Ofv2AlSKbc7PZO/kiL6FNWJrv5QdJrg
-         lSxE//mvtyYJ/kzQrTLNF9y5mu1hcGKcTGV8FMz9OcFEYtCbWV2OtZxyDWmYZqP0yJ/T
-         E194IQPoqnsBjWODZrydOB7wjr/Kkp18QiRoea3ZqZkHD8GpHJra4nhyf/xcaKL8gxNA
-         LOnjdqU6JekscEoIvToG4L5dZBnRNPHZFriq6OjNDVz1QbjOZXWvPtNnFewv6oPdLUwC
-         trOTFmMe2+g274LAYUyq+0/LmDULXStFFWwS2LpC6xlzKZAvqrTvn1nlup1LPVjNSIXm
-         r58w==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1794259599; x=1794864399;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=lQqydnWRoSGt2ahvObnzZZPU4tywkZQM18aaUe/DYek=;
-        b=nh+t2PqFP7WpnURA5wH4mgIjjuUbebae00Bq/Cs/UR9H65j4SxtAgZeUAHPdgIKZiO
-         vJ5A3MRyE7jBZAoVH0CGTbtjWdpp1a9DhkP6/+XZhO+lBhPouTwytIE53SVLJ3TOdzVO
-         z4KtuESlUABnZBUUJol2Q6MqPFjXzicMh64CZwd4/0Se//myW1SXZ+ypM/sO5YhVSpVc
-         rjcVkc/m9Fj//Pgs89v9e78tdps8l9Av62HXIeAsaIIPRLmB61AFotexnGuivdL1i/lV
-         8/R290kr+kBdrf5ie0ZxzOHJRgPVwmhDYNqIBg+7wn3p5HcnjeA95E/wJzkx4mQZ7Xc1
-         ZaBw==
-X-Forwarded-Encrypted: i=1; AL+hErHf9adOOtSGctiNlO0hCcZ6PcP/aDvwhV0iYWiDwLQkBm1K89dTyVTLh7CdqT8mf0k6SsxVzpfpTw==@vger.kernel.org
-X-Gm-Message-State: APuU4Z9GrSD9ab4ER+zoys9EaxPqJlnlKf+rbdCElcqjIH8FJrQdHPik
-	vYe8SfFR06C+SltAMpRE/kBMXdWh1QQoiivRmBr476rHvwExm7i9eUwN
-X-Gm-Gg: AYBFou25egg40j8IpejpNvf59/m3beWY+hVKO8jFEqFQY66Okq9LL5TmRR/hu0tnYJr
-	a8mD3jZ44H4melN9Zu7RCpMTrunDMLy7SwDTQWJvVuD4JV16oWv0M72o90BdRhiSl425fZUr8WU
-	qq0txGiR/AODTEkzkMXzZoK4sXhrth9Q2m9qLRbweuOdPVKpWQ23boLz7F0LW05/hLPTvsMxol3
-	ytrCdrRINCHWVOpQ2FNRPFPj/Dt/7JRhYcJ9Y1H63Li7v6Ea3Uop2ajzGiJ1dJKH6ZrNtl/Dw6C
-	f0ey/o3hZONYOFdGYHHYoQpxaQ77dyxQ7vnhluMDSrIYW0eWQ+o0DUqSo0Ibv1Len1eqSUxUJy2
-	UffokOdOOsQ1pOmDfr/HiCjO/A1I6c8zkGjBr3qSE5BSey3tMy2FC9ve6MYC0mvKtMXdPevMxs0
-	nwRXM0ogYDnJrxoo+0ASFSYWyTA147x77UC73BNbUGEF7/E4ai3qNOK1vhWtFIeRbmL8v5e8hkC
-	e+MZ6Piu8DK19jFDTSXWxg2e5/23y4/WmgtdtnAMiCk7IP0wnnqOBwiVbJi/x8LFp56DoKJ/Rgn
-	flv0WjoyYHtya6hHB++VaxLnqBh/9vuZHF1cxzWe1D7/k9UjAw==
-X-Received: by 2002:a05:7022:4388:b0:151:2e62:fe4b with SMTP id a92af1059eb24-1b3b5ff2595mr1169686c88.23.1794259598485;
-        Mon, 09 Nov 2026 13:26:38 -0800 (PST)
-Received: from localhost.localdomain ([112.170.44.210])
-        by smtp.gmail.com with ESMTPSA id a92af1059eb24-1b3b5890584sm1882794c88.3.2026.11.09.13.26.36
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 09 Nov 2026 13:26:37 -0800 (PST)
-From: Junyoung Jang <graypanda.inzag@gmail.com>
-To: =?UTF-8?q?Marek=20Beh=C3=BAn?= <kabel@kernel.org>
-Cc: Junyoung Jang <graypanda.inzag@gmail.com>,
-	David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: [PATCH] platform: cznic: avoid slab-out-of-bounds write on short Turris key reads
-Date: Tue, 10 Nov 2026 06:26:31 +0900
-Message-ID: <20261109212632.2437881-1-graypanda.inzag@gmail.com>
-X-Mailer: git-send-email 2.43.0
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=VNOeVnvZ
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 13DF91F008A1;
+	Mon,  9 Nov 2026 22:28:28 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1794263309;
+	bh=pxoH6UjLaaaWaTL/eaygp+/kk97XzslCjCIgMA5Icwg=;
+	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
+	b=VNOeVnvZTF6uY22FKJKjbXfeTCvmLrtIJjRHmnfvXe/Mll0dMd9lcZTG1Nohrm5lv
+	 A10328b1w5bTwInnBw04f1S3dh2trZa1hONYgUBbCzEz+rl7s+PqGIsiBqFto2borY
+	 pYoT6ZGaU9zctNrXhhXK3r9H2aAKXwjLCOj/o05EFgR1TiWZXZQ0/tvUQRvR1hVizJ
+	 QboPLz6NaODn3UbFFK6QpBebujzCL8H+Y1iqe18zcjuVaovLcb4Nn7wmOaLI3FzKpZ
+	 ZDkCKzCsYNOs1yjZiTO0w7ZyMLhfLzSBsS8m9Ngl6TyPeRDhJi+ZXB1D+UcCsCE2fo
+	 X8clFzLSWfoNQ==
+Message-ID: <sashiko-outbox-205732@kernel.org>
+From: sashiko-bot@kernel.org
+Subject: Re: [PATCH v5 06/12] KEYS: trusted: TEE: Synchronize session
+ lifetime
+Reply-To: sashiko-reviews@lists.linux.dev
+To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, linux-s390@vger.kernel.org, linux-security-module@vger.kernel.org, "Alexander
+ Gordeev" <agordeev@linux.ibm.com>, "Anna Schumaker" <anna@kernel.org>, "Bharath
+ SM" <bharathsm@microsoft.com>, "Christian Borntraeger" <borntraeger@linux.ibm.com>, "David
+ S. Miller" <davem@davemloft.net>, "Eric Biggers" <ebiggers@kernel.org>, "Eric
+ Dumazet" <edumazet@kernel.org>, "Heiko Carstens" <hca@linux.ibm.com>, "Jakub
+ Kicinski" <kuba@kernel.org>, "James Bottomley" <James.Bottomley@HansenPartnership.com>, "James
+ Morris" <jmorris@namei.org>, "Marc Dionne" <marc.dionne@auristor.com>, "Mimi
+ Zohar" <zohar@linux.ibm.com>, "Namjae Jeon" <linkinjeon@kernel.org>, "Paolo
+ Abeni" <pabeni@redhat.com>, "Paul Moore" <paul@paul-moore.com>, "Paulo
+ Alcantara" <pc@manguebit.org>, "Ronnie Sahlberg" <ronniesahlberg@gmail.com>, "Serge
+ E. Hallyn" <serge@hallyn.com>, "Shyam Prasad N" <sprasad@microsoft.com>, "Simon
+ Horman" <horms@kernel.org>, "Sumit Garg" <sumit.garg@kernel.org>, "Sven
+ Schnelle" <svens@linux.ibm.com>, "Tom Talpey" <tom@talpey.com>, "Trond
+ Myklebust" <trondmy@kernel.org>, "Vasily Gorbik" <gor@linux.ibm.com>, "Chuck
+ Lever" <cel@kernel.org>, "Jeff Layton" <jlayton@kernel.org>
+In-Reply-To: <20261108222719.304712-7-jarkko@kernel.org>
+References: <20261108222719.304712-1-jarkko@kernel.org>
+ <20261108222719.304712-7-jarkko@kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date: Mon, 09 Nov 2026 22:28:27 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -96,48 +74,41 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 
-For 0 < buflen <= PAGE_SIZE, keyctl_read_key() allocates a temporary
-kernel buffer of size buflen via kvmalloc() and passes it to the key
-type's .read() callback. Only after the callback returns does it check
-whether the returned required length exceeds buflen.
+Thank you for your contribution! Sashiko AI review found 1 potential
+issue to consider:
+- [Low] KEYS: trusted: missing Fixes trailers for TEE lifetime and
+  init_trusted() fixes
+--
 
-turris_signing_key_read() clamps buflen when it exceeds
-subtype->public_key_size, but ignores the clamped value and
-unconditionally passes subtype->public_key_size (33 or 67 bytes) to
-memcpy(). As a result, calling KEYCTL_READ with a smaller non-zero
-buffer (e.g., buflen=1) writes past the end of the temporary buffer,
-triggering a kernel heap slab-out-of-bounds write.
+commit 081b81fce481c8193427ac02abce847085159640
+Author: Jarkko Sakkinen <jarkko@kernel.org>
 
-Per the key_type .read() contract, only copy the public key when the
-supplied buffer is large enough to hold it, and always return the
-required size.
+> KEYS: trusted: TEE: Synchronize session lifetime
+>
+> The parent TEE device can remove the client device while live instances
+> keep trusted.ko loaded.
+>
+> Update the static calls before invoking backend init() and reset them in
+> the case of a failure.
+>
+> In the TEE backend, guard session context state with a mutex, publish
+> pvt_data.dev before registering key_type_trusted and sanitize pvt_data on
+> probe failure and removal.
+>
+> When an active TEE has not been bound, reject seal, unseal and get_random
+> with -ENODEV.
+>
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-Fixes: 0b28b7080ef5 ("platform: cznic: Add keyctl helpers for Turris platform")
-Signed-off-by: Junyoung Jang <graypanda.inzag@gmail.com>
----
- drivers/platform/cznic/turris-signing-key.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+[Severity: Low]
+Should this include Fixes: tags for the TEE session lifetime handling and
+the static call ordering in init_trusted()?
 
-diff --git a/drivers/platform/cznic/turris-signing-key.c b/drivers/platform/cznic/turris-signing-key.c
-index 3827178565e2..af414e236de2 100644
---- a/drivers/platform/cznic/turris-signing-key.c
-+++ b/drivers/platform/cznic/turris-signing-key.c
-@@ -46,12 +46,8 @@ static long turris_signing_key_read(const struct key *key, char *buffer, size_t
- 	if (!subtype)
- 		return -EIO;
- 
--	if (buffer) {
--		if (buflen > subtype->public_key_size)
--			buflen = subtype->public_key_size;
--
-+	if (buffer && buflen >= subtype->public_key_size)
- 		memcpy(buffer, subtype->get_public_key(key), subtype->public_key_size);
--	}
- 
- 	return subtype->public_key_size;
- }
--- 
-2.43.0
+  Fixes: 0a95ebc91305 ("KEYS: trusted: Introduce TEE based Trusted Keys")
+  Fixes: 31de287345f4 ("KEYS: trusted: Rollback init_trusted() consistently=
+")
+
+--=20
+Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261108222719.3047=
+12-1-jarkko@kernel.org?part=3D6
