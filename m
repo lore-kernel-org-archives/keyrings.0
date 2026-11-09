@@ -1,78 +1,56 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794266038;
-	b=TGVCwQiRqf9GwIpPHOifcJsA1Pqxp2Fo6L8O6VRVZLiS8Xiu1MMkPbrfEGpkodlQaCpX
-	 Ae1sihLUvIv095SxA+nEu0mI0b3uNHL2ZeYEmYKN/JYiDjmj6Ciztp7VhgkAT4NMHy2ZK
-	 q4A6IPwWMCBBSH5ojCA7PW0UMEyUQfFPALgN4t/dbLFLlw+UZA2p1YYWH0IXFaMXNAQw1
-	 u2F50OZ5RBmKxlYSb54vKr6HlqPQxXFeQZrh55v1Y6Z0XWm7dcYfdIkyUwJRYulmTyqE8
-	 6ThlVAK56k1447/P1e9anWTPHs2iRGkoimGvHIxyaKYhfA+AjKIAJpcTsLN1A6NxaWA==
+	t=1794268504;
+	b=YBl3BBkaJvAvzQdeRzmTG9+BaFpznyJdOXk4li9NBqvPbiN21a+pbWKx6B3oh2vGTnLS
+	 pxwB1wetsumTP/SvbWXU8UI340XMUf9oRx+XTclk5SB12LoyyxUUM6OW4bwAoDBhEA7MM
+	 tR3foFvRD0MWUJc0OdR39NXLLP5peilS0NhrLHYRuH+o66hbnOBs74OMxTbu99Xwim4ga
+	 WG5/qJc4Dxu//zog8nQmJzO9EYWNf6n3iAps76BtNwsDiEQXE/83OiAkLZFx+1S0jB9kr
+	 osMfFa/k1lDOb7SI0SIFvOULDoiSFZyndB3sDrtj6DsQB2pmkMgiROpwP3Y7+6vmc3w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794266038;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794268504;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=IC6PJ/RZVkQgMpY8cIohbFHuIH5eqvjrcXnHJ1rI6uY=;
-	b=dVx1Mde254U6AEyTJp8jzrvB1hxoZkq56bzGsIn8HS5tE2xuC3SP7uC9t19lCAL/kFz1
-	 njCopDpWST6SxjdFU5W8mh4sdfnRTfQLDRV9lyeYJ3wsgoQ8IiE8Gaflq8Sk2oXx7sLf+
-	 A+mNC8X1xFr9Pqqa9x+8ECtLB0C+RM9vrVGZJ5ilmAhqRbPNdZ0VzyLygMNvFvM0+53gO
-	 CLr1UVnpQ14H5YX5R5dvye7huK6spJMslc4PW411KcR1CjUMjDUZekLDWrgCMA2MYAcaN
-	 gAy0dyPNVuNI/HIBDbHbaskSPEK0PurFy8g9m/kFeNEsvDURlrWC1e9GDbba6EARqMg==
+	bh=kIJ01WjKF4qVqwq81p6btzLmnCuxRCA/5psrgXlQwZA=;
+	b=dlD9BMayOuVxt7XR9Z1oN1lrfVB6kA+UEL8lak3TOiiUI/5Nx+psnjHqVP8gd4CEDvWR
+	 +TMfMImXWjTm24i+k3beSz7yYDRkUT2jOcs6SjkKkI5jRxz+G+3PhUyTrWar8k4Z3No5R
+	 ynk3tF0E7bGCUrjgS5Nh85sbFZQd3xINYi+13jY5yUcKgvYtzvKo/CZSHpBKaqFWr0RaQ
+	 I+twlCLcuNwCLHf1W6lxtnpn6q8knR3WX6DiR/DajRhZPOFrwcVxj3wrqfDNMixuEskjv
+	 bFYUdlF86Jf+d63w1hUMEWcUwdftK49xBwdNZk7ni2IKGSeAQWhvHgkaY3HWeQpG03w==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=hlRoaz+F;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=SqCRTBdd;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 28822606A31C;
-	Mon,  9 Nov 2026 23:13:57 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 13C02606A31C;
+	Mon,  9 Nov 2026 23:55:03 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=hlRoaz+F
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 4C1421F0089F;
-	Mon,  9 Nov 2026 23:13:57 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=SqCRTBdd
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 82E5B1F0089F;
+	Mon,  9 Nov 2026 23:55:02 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794266037;
-	bh=IC6PJ/RZVkQgMpY8cIohbFHuIH5eqvjrcXnHJ1rI6uY=;
+	s=k20260515; t=1794268503;
+	bh=kIJ01WjKF4qVqwq81p6btzLmnCuxRCA/5psrgXlQwZA=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=hlRoaz+FYhaKeQrUUn6debqh1nygeJvK3YQfYYgaklSvf1hUgfCsE8iQjuggGwFcc
-	 KYVURUH0yM9BsgmDIqW3uU0UzCdMvV18zlqfWlkOHnuDW0Pc2XK/DmiG7YrXN1ZQSp
-	 bhCRyX86WYQy/XhnBu0TJBVniqL+6QmmcyJmLpB3D0NtUv0zLxbIvBGst50YoqdNPZ
-	 /JqY7UyAxhuYuIlIYOcKPEacHnUkpuj2MvLj+NSIxgclM23cy1tNfhxpsFWgvqOYZN
-	 RLeMSKshTMTS1ktK8EFJCXJypWBcg6k1O0fWUIyrqgUCOb2unBxZjvV5K+mIMjLBPq
-	 1wm79nHvLy0mQ==
-Date: Tue, 10 Nov 2026 01:13:53 +0200
+	b=SqCRTBddb/UNEkzoxynPKJ31PXuMZduv8yRRXREk+VFf7TTQVucKZw4WFjse+MDYZ
+	 BdteeU0mRcIvXYFVw2NUDAwjZmvpEqYL4LJAdPGusZFQNj6fNgPmx9P/B/n9Lh5edl
+	 8dVy6csb5Rz7dkYJ5/BHn5sRMg+QD8gLrHX3VjWHHU6Ag1jqbrhDHjfaXGH+3VQRGR
+	 pojBAxjM4P1F6o+1/1Lhy2AM4k+e919w0Cy8Enj43sNfRDk0LQm1eYMxSLuHSYURwP
+	 CK6StWxgWtcsuABufaKYxlUUNF7w6K9/2rphILfhFPPUR/fZaiQBfoir6M0Z6MUe7m
+	 tfl9o1SPuvsIA==
+Date: Tue, 10 Nov 2026 01:54:59 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: sashiko-reviews@lists.linux.dev
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	linux-s390@vger.kernel.org, linux-security-module@vger.kernel.org,
-	Alexander Gordeev <agordeev@linux.ibm.com>,
-	Anna Schumaker <anna@kernel.org>,
-	Bharath SM <bharathsm@microsoft.com>,
-	Christian Borntraeger <borntraeger@linux.ibm.com>,
-	"David S. Miller" <davem@davemloft.net>,
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
 	Eric Biggers <ebiggers@kernel.org>,
-	Eric Dumazet <edumazet@kernel.org>,
-	Heiko Carstens <hca@linux.ibm.com>,
-	Jakub Kicinski <kuba@kernel.org>,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
 	James Morris <jmorris@namei.org>,
-	Marc Dionne <marc.dionne@auristor.com>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	Namjae Jeon <linkinjeon@kernel.org>,
-	Paolo Abeni <pabeni@redhat.com>, Paul Moore <paul@paul-moore.com>,
-	Paulo Alcantara <pc@manguebit.org>,
-	Ronnie Sahlberg <ronniesahlberg@gmail.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Shyam Prasad N <sprasad@microsoft.com>,
-	Simon Horman <horms@kernel.org>, Sumit Garg <sumit.garg@kernel.org>,
-	Sven Schnelle <svens@linux.ibm.com>, Tom Talpey <tom@talpey.com>,
-	Trond Myklebust <trondmy@kernel.org>,
-	Vasily Gorbik <gor@linux.ibm.com>, Chuck Lever <cel@kernel.org>,
-	Jeff Layton <jlayton@kernel.org>
-Subject: Re: [PATCH v5 06/12] KEYS: trusted: TEE: Synchronize session lifetime
-Message-ID: <avJTsUib2ss8rzOG@kernel.org>
-References: <20261108222719.304712-1-jarkko@kernel.org>
- <20261108222719.304712-7-jarkko@kernel.org>
- <sashiko-outbox-205732@kernel.org>
+	"Serge E. Hallyn" <serge@hallyn.com>, stable@vger.kernel.org,
+	Jann Horn <jannh@google.com>
+Subject: Re: [PATCH v3 1/2] KEYS: Return user session keyring on lookup
+Message-ID: <avJdUy2fYGv1QwDM@kernel.org>
+References: <20261105220050.1421842-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -84,21 +62,162 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <sashiko-outbox-205732@kernel.org>
+In-Reply-To: <20261105220050.1421842-1-jarkko@kernel.org>
 
-On Mon, Nov 09, 2026 at 10:28:27PM +0000, sashiko-bot@kernel.org wrote:
-> Thank you for your contribution! Sashiko AI review found 1 potential
-> issue to consider:
-> - [Low] KEYS: trusted: missing Fixes trailers for TEE lifetime and
->   init_trusted() fixes
+On Fri, Nov 06, 2026 at 12:00:49AM +0200, Jarkko Sakkinen wrote:
+> A process without a session keyring looking up KEY_SPEC_SESSION_KEYRING
+> without KEY_LOOKUP_CREATE mutates the credentials. This causes struct creds
+> instances shared with other subsystems to become stale.
+> 
+> Address this by returning the resolved user session keyring directly
+> without installing it into credentials.
+> 
+> Cc: keyrings@vger.kernel.org
+> Cc: linux-integrity@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-security-module@vger.kernel.org
+> Cc: Eric Biggers <ebiggers@kernel.org>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+> Cc: stable@vger.kernel.org # v5.10+
+> Fixes: d84f4f992cbd ("CRED: Inaugurate COW credentials")
+> Suggested-by: Jann Horn <jannh@google.com>
+> Closes: https://lore.kernel.org/keyrings/CAG48ez0XjVSR=M--UBauTm8sJuc+ZbhKzaPa3a6wrSVHyoKevw@mail.gmail.com/
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-It's kind of weird that this was the only relevant Sashiko response.
+These patches have zero Sashiko remarks and are looking pretty good
+overall.
 
-I went through all the others and they are "no issues" responses. Just
-wanted to address this so that there is no misimpression that the patch
-set would need another "Sashiko spin".
+Is there any reason not to apply them?
 
-The issue above should not be considered a blocker for a review, and
-is trivial to address.
+> ---
+> v3:
+> In keyctl_session_to_parent(), check the resolved cred->session_keyring
+> instead of mycred->session_keyring.
+> v2:
+> - Added mandatory tags.
+> - No code changes.
+> - Link: https://lore.kernel.org/keyrings/20261019145624.309790-1-jarkko@kernel.org/
+>  Documentation/security/keys/core.rst |  6 ++--
+>  security/keys/keyctl.c               |  5 ++--
+>  security/keys/process_keys.c         | 44 +++++++---------------------
+>  3 files changed, 16 insertions(+), 39 deletions(-)
+> ---
+>  Documentation/security/keys/core.rst |  6 ++--
+>  security/keys/keyctl.c               |  5 ++--
+>  security/keys/process_keys.c         | 44 +++++++---------------------
+>  3 files changed, 16 insertions(+), 39 deletions(-)
+> 
+> diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+> index 37ed42382f16..e3a215e55f81 100644
+> --- a/Documentation/security/keys/core.rst
+> +++ b/Documentation/security/keys/core.rst
+> @@ -165,8 +165,10 @@ The key service provides a number of features besides keys:
+>       When a process changes its real UID, if it used to have no session key, it
+>       will be subscribed to the default session key for the new UID.
+>  
+> -     If a process attempts to access its session key when it doesn't have one,
+> -     it will be subscribed to the default for its current UID.
+> +     If a process attempts to access its session keyring when it doesn't have
+> +     one, the default user session keyring for its current UID is returned
+> +     without being installed into its credentials.  If creation is requested,
+> +     an anonymous session keyring is installed.
+>  
+>    *  Each user has two quotas against which the keys they own are tracked. One
+>       limits the total number of keys and keyrings, the other limits the total
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index d6b10fd67627..b11716f88ded 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -1682,8 +1682,7 @@ long keyctl_session_to_parent(void)
+>  	 * there's no point */
+>  	mycred = current_cred();
+>  	pcred = __task_cred(parent);
+> -	if (mycred == pcred ||
+> -	    mycred->session_keyring == pcred->session_keyring) {
+> +	if (cred->session_keyring == pcred->session_keyring) {
+>  		ret = 0;
+>  		goto unlock;
+>  	}
+> @@ -1701,7 +1700,7 @@ long keyctl_session_to_parent(void)
+>  	/* the keyrings must have the same UID */
+>  	if ((pcred->session_keyring &&
+>  	     !uid_eq(pcred->session_keyring->uid, mycred->euid)) ||
+> -	    !uid_eq(mycred->session_keyring->uid, mycred->euid))
+> +	    !uid_eq(cred->session_keyring->uid, mycred->euid))
+>  		goto unlock;
+>  
+>  	/* cancel an already pending keyring replacement */
+> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+> index 3af71c6322af..cdf03b8124d0 100644
+> --- a/security/keys/process_keys.c
+> +++ b/security/keys/process_keys.c
+> @@ -356,31 +356,6 @@ int install_session_keyring_to_cred(struct cred *cred, struct key *keyring)
+>  	return 0;
+>  }
+>  
+> -/*
+> - * Install the given keyring as the session keyring of the current task,
+> - * replacing the existing one if any.  If the given keyring is NULL, then
+> - * install a new anonymous session keyring.
+> - *
+> - * Return: 0 on success; -errno on failure.
+> - */
+> -static int install_session_keyring(struct key *keyring)
+> -{
+> -	struct cred *new;
+> -	int ret;
+> -
+> -	new = prepare_creds();
+> -	if (!new)
+> -		return -ENOMEM;
+> -
+> -	ret = install_session_keyring_to_cred(new, keyring);
+> -	if (ret < 0) {
+> -		abort_creds(new);
+> -		return ret;
+> -	}
+> -
+> -	return commit_creds(new);
+> -}
+> -
+>  /*
+>   * Handle the fsuid changing.
+>   */
+> @@ -720,20 +695,21 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+>  
+>  	case KEY_SPEC_SESSION_KEYRING:
+>  		if (!ctx.cred->session_keyring) {
+> -			/* always install a session keyring upon access if one
+> -			 * doesn't exist yet */
+>  			ret = look_up_user_keyrings(NULL, &user_session);
+>  			if (ret < 0)
+>  				goto error;
+> -			if (lflags & KEY_LOOKUP_CREATE)
+> +
+> +			if (lflags & KEY_LOOKUP_CREATE) {
+> +				key_put(user_session);
+>  				ret = join_session_keyring(NULL);
+> -			else
+> -				ret = install_session_keyring(user_session);
+> +				if (ret < 0)
+> +					goto error;
+> +				goto reget_creds;
+> +			}
+>  
+> -			key_put(user_session);
+> -			if (ret < 0)
+> -				goto error;
+> -			goto reget_creds;
+> +			key = user_session;
+> +			key_ref = make_key_ref(key, 1);
+> +			break;
+>  		} else if (test_bit(KEY_FLAG_UID_KEYRING,
+>  				    &ctx.cred->session_keyring->flags) &&
+>  			   lflags & KEY_LOOKUP_CREATE) {
+> -- 
+> 2.47.3
+> 
+
 
 Br, Jarkko
