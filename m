@@ -1,48 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794353736;
-	b=VtobI+PwkuolVHJ9zUItd6zaupRcqQ9/xHhA1TwQKtFBDPZqRdlf4+CJup4lvDHGuwQn
-	 88yaRL2buR8iTXAXB9X/qRdr7ir+TniOneDJ5KLEhcghQWSjMF02tldGQZ3yuPhLZbmSr
-	 eK7J69OwxV4BKhlnRIgdcFXlFF5BDptBCzGWgGxSVSHgRnHqZjjPkHUbH2KKCqDvOz7mD
-	 I8DYDH8pUg/jOTdDOGnGeVWRshrvDAQWti8mTXEE7aBueJOtcV4AEvA4gOkpbU4ETHwd5
-	 DTYMnLJZt5XcYyzVWwqMCgSyo91i6gNIy20mFwdYr9QZAYz145U2/eDM525RDM5vdJA==
+	t=1794354778;
+	b=MQL5yGnmUjoCPN2BTAFFoacvpXOcVEMUnBODeLvquqTP1OHnS6zDfBHeFc9Nle+QqVGn
+	 lxVcXl8T7RrA8B6BcdSvoUUdUEdsDpjjPJ1UDJ1ceQiKxC2cCd0vaVRKiAlTjykyDRNRA
+	 XSPlHN3h22dpU007fqSZHJ+qHIVqu+jYlZtHqbPaUWKUrunhOBu3eWHZwNYvCTUD+XGU/
+	 L+9m6bCEeTzjbvaclDB7uemL8y+J1liabpZDI9kGCkwH2nxNksrt4Ryn8AiA8S7F0l49H
+	 evmUeYFfQ4RfCJQb/2nkN4wLm0xHihAnDbfraTNYwxWo7WY4xAp5E85VsHakZMgSRQA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794353736;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794354778;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=HqgtO8wh9AydBisW0XsX+FuFfiDMnuAaKUkPHp6YJMQ=;
-	b=pyd9Cg7xalOt1OX+/+1tg8NJmpZZ+QoNFA0ZC7NC0jdsCT8CcBveqQuaa7ebU/ntIp08
-	 LdvzkY3xz8DwRpiUilxbyRN6Xj3Bg20ZiK3Fe5brlMKDAVLr9xxrcCi+YcqSYzT+BgeTb
-	 FJpchpyWFOZ1uYteikj1KZzSf9/eg/lqEODNrEZgVLunLwCCnwrd7vyKkf3nlR3kNLwtb
-	 7h/2GUSn901lFIhXegh7JkfeWDOXZOQWcEBV57XR0pf56erBQs0wONcMAYmxy3NHb3hXX
-	 TgMma2+8YZP/HD85ZCJoe9Mb2mjQNs/LZdnLi5Gw5ZOXEv4cE2l/rHznCV4s1D2EHjw==
+	bh=HoG9is9sVaNrexmB6oJ68fL5RKwI/mjHmSlJNyQJLe4=;
+	b=sFD6AF320GK+5eDm6yBw6LQHAUd8LOK7K+jQdpofsMdKvPHWy7wgRWg6eYAlTqQJCOHX
+	 HiF/EKuchgallPGjgfcicZHqyWPTa4jcS6wyuPH+FEZhJlBy+F+U3EHvacIvXfFJxJFmg
+	 OsEYTED4g3jmjlK3wo5JDg80gjBra0IXZCsNFRXIbiZQsqVM4Oy9Juo5jIJKwU9amf+k5
+	 Rn+qpKazXUgRiE1WTczoXic2VlcRBYjnTP1zr23SeiBv3AegY3yJu3WEXrLLA4C/R4zga
+	 dQtvcyw2kNjd+taXflTn2Uld8OZl0DJdrHOZ/gQGwJy9TDG70mOXMxY8m6OvGb7aJ9A==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EGX+ek3Z;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=D0VNsPS+;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E7320606A325;
-	Tue, 10 Nov 2026 23:35:35 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C6BAD606A320;
+	Tue, 10 Nov 2026 23:52:58 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EGX+ek3Z
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 2247A1F0093C;
-	Tue, 10 Nov 2026 23:35:35 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=D0VNsPS+
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id C27A91F0093C;
+	Tue, 10 Nov 2026 23:52:57 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794353735;
-	bh=HqgtO8wh9AydBisW0XsX+FuFfiDMnuAaKUkPHp6YJMQ=;
+	s=k20260515; t=1794354778;
+	bh=HoG9is9sVaNrexmB6oJ68fL5RKwI/mjHmSlJNyQJLe4=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=EGX+ek3Z69BZS8M39BO42a70dFGLLoYGIwOeyyz+N+MUM9WBBhgMjYVY36JhENP35
-	 5d5RoPXwFTYoDEqh0ip4XlUy8uThetwEd34WT0aiYzz/d1rNnnnCsSy7K9DeC4/1KW
-	 0TCii9JIQtuIDSwTM/8LnrB3Xex0cSou0cwjYaaI1JXiyfCM2Sbu8qPPvV1WsHZ7Uu
-	 Ea9ByepgUEw3Z88ngogMlkT0hY82ibO8nbpNTRv1VB1gzN56Gy/kmeYItcBxn4oHkG
-	 BYgv012s5ly5+2MhgRhfWIxiVIafXbbtJndisDqzF4xkJ4yCNN5pqcYmgCP9Iyh2ws
-	 A87/lctqW+krw==
-Message-ID: <sashiko-outbox-207942@kernel.org>
+	b=D0VNsPS+ZhcGGjSFNMxdyGE9pqCUBXXHhAXY7FpMXDNq95vJF7NsIvt/cTxSnl5gS
+	 7QXh07K/D3Y8JMm2YMP/lksTqAul598mdAqjtHeVo6z57pTnOkEi/l8TsCG/VacxDM
+	 7dJ3cTjnX8xI+CGOH6gVBWvocKFwE3JV4zHQN6DAydv1xzHTTxgfWDoNMIdarY2nCE
+	 UErEI+0dhh2ljCKZcxjOTctFxbh3aDOBbJgmM5h9pTUOaYAs1p8khnDjkeXi5Q5uN1
+	 wcq1j0MjrdaWZTAU7T9t3g4Wx3QA/Z/FX72R3AsuveIuJjv6rnAsTHWw0BP6bxo690
+	 NkLxtoPTtk9sQ==
+Message-ID: <sashiko-outbox-207958@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v9 2/3] capabilities: don't let ptrace borrow
- CAP_SETFCAP
+Subject: Re: [PATCH v9 3/3] selftests/namespaces: test the CAP_SETFCAP rule
+ for user namespaces
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Josef Bacik" <josef@toxicpanda.com>, "Serge Hallyn" <serge@hallyn.com>, "Paul
  Moore" <paul@paul-moore.com>, "Christian Brauner" <brauner@kernel.org>
@@ -50,12 +50,12 @@ Cc: "James Morris" <jmorris@namei.org>, "David Howells" <dhowells@redhat.com>, "
  Sakkinen" <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, "Serge
  Hallyn" <sergeh@kernel.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, "Shuah
  Khan" <shuah@kernel.org>, "Bradley Morgan" <brads@mainlining.org>
-In-Reply-To: <20261109-b4-setfcap-userns-v9-2-0d3f00976ce2@toxicpanda.com>
+In-Reply-To: <20261109-b4-setfcap-userns-v9-3-0d3f00976ce2@toxicpanda.com>
 References: <20261109-b4-setfcap-userns-v9-0-0d3f00976ce2@toxicpanda.com>
- <20261109-b4-setfcap-userns-v9-2-0d3f00976ce2@toxicpanda.com>
+ <20261109-b4-setfcap-userns-v9-3-0d3f00976ce2@toxicpanda.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Tue, 10 Nov 2026 23:35:34 +0000
+Date: Tue, 10 Nov 2026 23:52:57 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -65,79 +65,126 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 1 potential
-issue to consider:
-- [High] capabilities: bypass of cap_ptrace_borrows_setfcap() via target
-  task
+Thank you for your contribution! Sashiko AI review found 2 potential
+issues to consider:
+- [Medium] selftests/namespaces: host /mnt creation and false skip in
+  idmap_tmp()
+- [Low] selftests/namespaces: add setfcap_test to .gitignore
 --
 
-commit 13b53bed949001ddba3ad97bb6d9dfe1459dfe6f
+commit 38eae5440ed3d06c4f6383c08c8a0e11e61d724f
 Author: Josef Bacik <josef@toxicpanda.com>
 
-capabilities: don't let ptrace borrow CAP_SETFCAP
+selftests/namespaces: test the CAP_SETFCAP rule for user namespaces
 
-This commit denies cross-namespace PTRACE_MODE_ATTACH and PTRACE_TRACEME
-when a tracer lacking CAP_SETFCAP and CAP_SYS_PTRACE attempts to trace a
-target task that holds CAP_SETFCAP or can regain it from its bounding set
-in a user namespace where setns() would refuse the tracer.
+This commit adds kselftests verifying that a uid 0 task without CAP_SETFCAP
+cannot regain the ability to set root file capabilities via setns() or
+ptrace into a user namespace, while preserving valid namespace mappings,
+idmapped mounts, and file capability operations.
 
-Link: https://lore.kernel.org/all/fd159e68-c613-4c7d-bfba-8af0a3f3a96e@hall=
-yn.com/
-
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index 0ece141c68a69..d550a4e5d36a3 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -176,14 +176,35 @@ int cap_settime(const struct timespec64 *ts, const =
-struct timezone *tz)
->  	return 0;
->  }
+> diff --git a/tools/testing/selftests/namespaces/Makefile b/tools/testing/=
+selftests/namespaces/Makefile
+> index 9b22d12708e1a..0455b6544869d 100644
+> --- a/tools/testing/selftests/namespaces/Makefile
+> +++ b/tools/testing/selftests/namespaces/Makefile
+> @@ -14,7 +14,8 @@ TEST_GEN_PROGS :=3D nsid_test \
+>  		  stress_test \
+>  		  listns_pagination_bug \
+>  		  regression_pidfd_setns_test \
+> -		  uid_map_range_test
+> +		  uid_map_range_test \
+> +		  setfcap_test
 > =20
-> +/*
-> + * See cred_borrows_setfcap().  Within one namespace the usual rules app=
-ly: a
-> + * tracer with CAP_SYS_PTRACE can take control of tasks with CAP_SETFCAP
-> + * anyway.  A target that still has CAP_SETFCAP in its bounding set gets=
- it
-> + * back from an execve() the tracer can make it do.
-> + */
-> +static bool cap_ptrace_borrows_setfcap(const struct cred *cred,
-> +				       const struct cred *child_cred)
+>  include ../lib.mk
+> =20
+
+[Severity: Low]
+Should setfcap_test also be added to
+tools/testing/selftests/namespaces/.gitignore so in-tree builds do not leave
+an untracked binary?
+
+> diff --git a/tools/testing/selftests/namespaces/setfcap_test.c b/tools/te=
+sting/selftests/namespaces/setfcap_test.c
+> new file mode 100644
+> index 0000000000000..aee0b1d6f329a
+> --- /dev/null
+> +++ b/tools/testing/selftests/namespaces/setfcap_test.c
+
+[ ... ]
+
+> +/* /tmp idmapped with the user namespace of pid, at /mnt */
+> +static int idmap_tmp(int pid)
 > +{
-> +	if (cred->user_ns =3D=3D child_cred->user_ns)
-> +		return false;
-> +	if (!cap_raised(child_cred->cap_permitted, CAP_SETFCAP) &&
-> +	    !cap_raised(child_cred->cap_bset, CAP_SETFCAP))
-> +		return false;
-> +	return !cap_raised(cred->cap_permitted, CAP_SYS_PTRACE) &&
-> +	       cred_borrows_setfcap(cred, child_cred->user_ns);
+> +	struct mount_attr attr =3D { .attr_set =3D MOUNT_ATTR_IDMAP };
+> +	char path[64];
+> +	int tfd, nsfd;
+> +
+> +	mkdir("/mnt", 0755);
+> +	snprintf(path, sizeof(path), "/proc/%d/ns/user", pid);
+> +	nsfd =3D open(path, O_RDONLY);
+> +	tfd =3D syscall(__NR_open_tree, AT_FDCWD, "/tmp",
+> +		      OPEN_TREE_CLONE | OPEN_TREE_CLOEXEC);
+> +	if (nsfd < 0 || tfd < 0)
+> +		return -1;
+> +	attr.userns_fd =3D nsfd;
+> +	if (syscall(__NR_mount_setattr, tfd, "", AT_EMPTY_PATH, &attr,
+> +		    sizeof(attr)))
+> +		return -1;
+> +	if (syscall(__NR_move_mount, tfd, "", AT_FDCWD, "/mnt",
+> +		    MOVE_MOUNT_F_EMPTY_PATH))
+> +		return -1;
+> +	close(tfd);
+> +	close(nsfd);
+> +	return 0;
+> +}
+> +
+> +/* Each test: private mounts, a tmpfs on /tmp with copies of this progra=
+m */
+> +static void prepare(struct __test_metadata *_metadata)
+> +{
+> +	ASSERT_EQ(unshare(CLONE_NEWNS), 0);
+> +	ASSERT_EQ(mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL), 0);
+> +	ASSERT_EQ(mount("tmpfs", "/tmp", "tmpfs", 0, "mode=3D1777"), 0);
+> +	ASSERT_EQ(new_file("/tmp/x", 0), 0);
+> +	ASSERT_EQ(new_file("/tmp/u", 1000), 0);
+> +	mkdir("/mnt", 0755);
 > +}
 
-[Severity: High]
-Can a tracer still make the target task obtain or exercise CAP_SETFCAP
-over the tracer's root user when CAP_SETFCAP is cleared in both
-child_cred->cap_permitted and child_cred->cap_bset?
+[ ... ]
 
-If CAP_SETFCAP remains raised in child_cred->cap_inheritable, making a
-root target task in child_cred->user_ns call execve() restores CAP_SETFCAP
-in new->cap_permitted via handle_privileged_root(), which sets
-new->cap_permitted =3D cap_combine(old->cap_bset, old->cap_inheritable).
+> +/* returns 1 to skip: no idmapped mounts on tmpfs */
+> +static int idmap_case(const struct idmap_case *c, long *r)
+> +{
+> +	struct holder ns, im =3D { -1, -1 };
+> +	struct idmap_join j;
+> +	int ret =3D -1;
+> +
+> +	ns =3D spawn_mapped(HOLDER_ROOT, c->ns_map);
+> +	if (ns.pid <=3D 0)
+> +		return -1;
+> +	if (c->idmap_map) {
+> +		im =3D spawn_mapped(HOLDER_ROOT, c->idmap_map);
+> +		if (im.pid <=3D 0)
+> +			goto out;
+> +	}
+> +	if (new_file("/tmp/x", c->file_uid))
+> +		goto out;
+> +	if (idmap_tmp(c->idmap_map ? im.pid : ns.pid)) {
+> +		ret =3D 1;
+> +		goto out;
+> +	}
 
-Even if child_cred->cap_inheritable is empty, the tracer can make the
-target task:
-- call unshare(CLONE_NEWUSER), where set_cred_user_ns() resets
-  cap_permitted, cap_effective and cap_bset to CAP_FULL_SET (and map a
-  non-zero UID mapped to the tracer's root kuid to 0 in the new
-  namespace),
-- write "0 0 1" to /proc/self/uid_map using CAP_SYS_ADMIN if
-  child_cred->user_ns is still unmapped and parent_could_setfcap is true,
-  or
-- ptrace another task in child_cred->user_ns that still holds CAP_SETFCAP,
-  since cap_ptrace_borrows_setfcap() allows same-namespace ptrace.
+[Severity: Medium]
+Should prepare() and idmap_tmp() place the mountpoint inside the private
+/tmp tmpfs instead of at /mnt, and should idmap_tmp() distinguish
+mount_setattr() failures from other setup errors?
 
-In each case, the tracer can still write file capabilities valid for its
-root user.
+prepare() only mounts a tmpfs on /tmp, so mkdir("/mnt", 0755) creates /mnt
+on the host root filesystem, or fails on a read-only root filesystem where
+/mnt does not exist.  In addition, idmap_case() treats any error from
+idmap_tmp() as ret =3D 1, causing TEST_F(idmap, fcap) to report a skip ("no
+idmapped mounts on tmpfs") when open(), open_tree(), or move_mount() fails.
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261109-b4-setfcap=
--userns-v9-0-0d3f00976ce2@toxicpanda.com?part=3D2
+-userns-v9-0-0d3f00976ce2@toxicpanda.com?part=3D3
