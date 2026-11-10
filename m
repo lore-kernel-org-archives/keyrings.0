@@ -1,66 +1,56 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=113.46.200.222
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794274810;
-	b=K+ZowGSK9/Hvgh04tFfKzXFVCN1b1Lfv+eSsbuIRk8LYZELTojeDzvJ1X7Y1CG+XlspE
-	 +vkTatxWqAC/Ddtvbt/FtlTb+tGOP81x67YO5cGqQxL3OMtPKrJ8iT9vzSZ2oiQ32opEj
-	 9kKGWRD+5OuLWmwHEQyBxTO6ALHsR9iY3mAyugC6Q9ji/DCoe/CewvOYexGcipk5q+AjP
-	 oSe6DfhjPj+dfaBKNRZl/oh/m7x7p0YztNdauJIaIBPyxi0izle6zS1Dmu3gBERCP556J
-	 CKtIhq7nFKhUPyphSl3943inwpQ+f4q8tTrreR/R1Tw23HjUQ3XFM22RRYLzF6E9K9w==
+	t=1794275373;
+	b=QZVWTFqEDuSsUYU7z241AeQS/m0QNWmPS6W6LagtRhYhAnlWlwrCIDY84anc+Q/HX8wV
+	 XZUj/hnbtHOrUmWmRhYJhOJWvT/kcklz/ppDNtpFreAXXaH62Mz7oVlJwKYDZU4BT/pyo
+	 1DY2Xs97bIw2tvv9XxH23RD9V/nYE7zVxPF1qE1YSvWg5wpwrJpEuxZ2ryj1SIB9Tu+Lw
+	 4ss6pMsH0W3DV6ZIJ4CzoRVsjRHlUs3cpPEXg/BR1DkzbREo3VGqFEbOSSWmfdqCYvlbh
+	 YuJeIo6xwVGArryaCTKiF2LRvHRdoShkcrcwKm/7bZk+gN6PbMeZxel0bVSZUhVLewQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794274810;
-	h=DMARC-Filter:dkim-signature:Received:Received:Received:From:To:CC:
-	 Subject:Date:Message-ID:X-Mailer:MIME-Version:
-	 Content-Transfer-Encoding:Content-Type:X-Originating-IP:
-	 X-ClientProxiedBy;
-	bh=AK/SgB0NJhyyMo/+uhJJDQ0snfVmLXzbzA7HTWtNTBs=;
-	b=B0K89GrFWo6kCoraBYMNbUpYNa5HfuQpDJoITZXJtizT+BXdxs9HD7YNmciC1zy9DTg1
-	 X0NqFSDRbm19FXSprbA2Zu+aEeM2nvvcm91xJKoPb7IFA2TfXm7jt0o3PnRfWCbL+CYHY
-	 4yZ2qN4h01sCIPMcEk4HIPZerQYrJX2SUD8FHVFihm+DzcGHbEV6v0GxIpvadprZekSqv
-	 GgCeb4q3muvC136ZJu/+rPhIQGNn4wEQH770NQO87HJtHu6T19kycRHuxb6PXArBzs0m9
-	 MzvehsX7+kBwg+UIZ1/ihshsaqHrQ3OqaNKSP7vz2bVQOqCUyq9vW4RJe2rTaeOmhkQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794275373;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=eE5gb7EtrWTfyx7BevUO+hpzMrO9f1d0/5w09FWhSbc=;
+	b=rVdlxL8JzTH6mCRgkr9/V6rm+zVHVdO9LxfptDHxkgMZT9Aupbw2lo6y7xa4CkkCBk0m
+	 dt5hWuBXOgfILadNvCritUSiEQO5C8/WM7j4/vL4YmDwhMjFRCySquiCTFdDFFCqdJtn3
+	 0+8mCI24KIVQL+k5g8fcBkH197kurm54ajju+75VLDoitcnyPd2je7SR7hkE2mtdUHy7F
+	 FktsemUkVsb41h8ImHHfifBJRmJJnalN83MbGEl7jqvOA/g6C+34ceM//UZf4ypgPg8ZM
+	 fjayPJD83m/5A7iZOxXGiHw/eEXwmAzsgSCZpv26kFdO4itYw3cUWxqEeC2wx5Bz+XA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=huawei.com;
-	spf=pass smtp.mailfrom=huawei.com;
-	dkim=pass header.d=huawei.com header.i=@huawei.com header.a=rsa-sha256 header.s=dkim header.b="z/pehWdh";
-	arc=none smtp.remote-ip=113.46.200.222
-Received: from canpmsgout07.his.huawei.com (canpmsgout07.his.huawei.com [113.46.200.222])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=BT9s6ZE4;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 30718606A325;
-	Tue, 10 Nov 2026 01:40:06 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 30718606A325
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=huawei.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=huawei.com
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A391E606A33B;
+	Tue, 10 Nov 2026 01:49:32 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=huawei.com header.i=@huawei.com header.a=rsa-sha256 header.s=dkim header.b=z/pehWdh
-dkim-signature: v=1; a=rsa-sha256; d=huawei.com; s=dkim;
-	c=relaxed/relaxed; q=dns/txt;
-	h=From;
-	bh=AK/SgB0NJhyyMo/+uhJJDQ0snfVmLXzbzA7HTWtNTBs=;
-	b=z/pehWdhVRd/ELfMH/gt5hqXy00rS0mSKpMJfKKpoUb95Kz3+hvKZOcvSGcXpUCFCOFyeTo6I
-	O44kGYOmFW4yb8HA+sfsJmWg8arK1dkAdareBWdQ3WJGeKw2j35GImzfqDptOFrUXROU/JdNmN3
-	XSi3f3715y4lEoE7y1XpwCk=
-Received: from mail.maildlp.com (unknown [172.19.162.92])
-	by canpmsgout07.his.huawei.com (SkyGuard) with ESMTPS id 4jNq8P4HRgzLlvw;
-	Tue, 10 Nov 2026 09:39:49 +0800 (CST)
-Received: from whupemk300004.china.huawei.com (unknown [7.152.185.168])
-	by mail.maildlp.com (Postfix) with ESMTPS id EFD2940586;
-	Tue, 10 Nov 2026 09:40:03 +0800 (CST)
-Received: from huawei.com (10.67.174.33) by whupemk300004.china.huawei.com
- (7.152.185.168) with Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.2562.45; Tue, 10 Nov
- 2026 09:40:02 +0800
-From: Gu Bowen <gubowen5@huawei.com>
-To: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>, Ignat
- Korchagin <ignat@linux.win>, Herbert Xu <herbert@gondor.apana.org.au>
-CC: <keyrings@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
-	<kexec@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-	<stable@vger.kernel.org>, <lujialin4@huawei.com>
-Subject: [PATCH] crypto: asymmetric_keys: verify_pefile: fix integer underflow in pefile_strip_sig_wrapper
-Date: Tue, 10 Nov 2026 09:56:57 +0800
-Message-ID: <20261110015657.528337-1-gubowen5@huawei.com>
-X-Mailer: git-send-email 2.43.0
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=BT9s6ZE4
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id BFD161F0089F;
+	Tue, 10 Nov 2026 01:49:31 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1794275372;
+	bh=eE5gb7EtrWTfyx7BevUO+hpzMrO9f1d0/5w09FWhSbc=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=BT9s6ZE4nswEn6Gaj7D/T7SvhmRuIOS4NxeJ9MePy74ai3F2l+h68YjMGvJeP2tjE
+	 gpGAMydL641f9InsoQ9kabxRfbE2Y36puRUEC1lWfA25/c8Z7Gzawgdyu9lIk3msTe
+	 V9Uyh2YmU2EpPn9RzY3mp/yk1LmSkbFF8eUkFbwcQ6cnf/0rrsXt9DMFQ9UT8NbEKA
+	 AqBbQdhjwTRs4RbdYRZu1NXLpcQCAg3YncyeyJy+hrkdqcu2oeFuVhmurFpD50V3cB
+	 sqzJigQhDiFKpEnUjYtMbusj5Pz3Nz4d3CWYCn6xecf32bVKQBvAnHKGDECPMwO0RO
+	 gA4nFwXSf21qg==
+Date: Tue, 10 Nov 2026 03:49:28 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Yuansheng Yang <0xbeac@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org
+Subject: Re: [PATCH v6] KEYS: Protect pkey method checks against type removal
+Message-ID: <avJ4KM-Erci0FkgZ@kernel.org>
+References: <avCZIMCsZ4um18e-@kernel.org>
+ <20261109055204.31673-1-0xbeac@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -70,83 +60,33 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain
-X-ClientProxiedBy: kwepems200001.china.huawei.com (7.221.188.67) To
- whupemk300004.china.huawei.com (7.152.185.168)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261109055204.31673-1-0xbeac@gmail.com>
 
-The pefile_strip_sig_wrapper() function validates the win_certificate
-wrapper that precedes the PKCS#7 signature in a PE binary.  It checks
-that the wrapper length does not exceed the certificate table size
-(``wrapper.length > ctx->sig_len``) but fails to verify that the
-wrapper length is at least ``sizeof(struct win_certificate)`` (8 bytes).
+On Mon, Nov 09, 2026 at 01:52:04PM +0800, Yuansheng Yang wrote:
+> diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+> index 15b6bf6399..5ac049b71a 100644
+> --- a/security/keys/keyctl_pkey.c
+> +++ b/security/keys/keyctl_pkey.c
+> @@ -100,9 +100,6 @@ static int keyctl_pkey_params_get(key_serial_t id,
+>  		return PTR_ERR(key_ref);
+>  	params->key = key_ref_to_ptr(key_ref);
+>  
+> -	if (!params->key->type->asym_query)
+> -		return -EOPNOTSUPP;
+> -
+>  	return 0;
+>  }
 
-When a crafted PE image supplies a wrapper with ``length`` in the range
-[1, 7], the subsequent arithmetic::
+I think I asked to remove this. I need to revoke my reviewed-by from
+this version.
 
-    ctx->sig_len = wrapper.length;      /* e.g. 1 */
-    ctx->sig_offset += sizeof(wrapper);
-    ctx->sig_len -= sizeof(wrapper);    /* 1 - 8 = 0xFFFFFFF9 (unsigned) */
+It's not relevant for the bug fix.
 
-underflows the unsigned ``ctx->sig_len`` to a value near UINT_MAX.  The
-following ``sig_len < 4`` sanity check is bypassed because 0xFFFFFFF9 is
-greater than 4.
+Also if possible try to make a bit more compact description of the
+fix. I did not ask this for reviewed patch because did not see it
+relevant enough but now that this needs a new round, you could
+address this part too.
 
-The underflowed ``sig_len`` is then passed to verify_pkcs7_signature()
-and onwards to asn1_ber_decoder().  The ASN.1 decoder's own
-``datalen > 65535`` entry guard can be satisfied by constructing a
-PKCS#7 length field of exactly 65535 (e.g. ``30 82 ff fb``), allowing
-the decoder to proceed and attempt to read OID octets beyond the
-allocated vmalloc buffer, triggering a page fault in look_up_OID()::
-
-  BUG: unable to handle page fault for address: ffffd1e986cb2000
-  #PF: supervisor read access in kernel mode
-  RIP: 0010:look_up_OID+0x14/0x100
-  Call Trace:
-   pkcs7_note_OID+0x33/0xa0
-   asn1_ber_decoder+0x363/0xbd0
-   pkcs7_parse_message+0xd9/0x1b0
-   verify_pkcs7_signature+0x24/0x80
-   verify_pefile_signature+0x7b/0xf0
-   kexec_kernel_verify_pe_sig+0x1b/0x40
-   kimage_file_alloc_init+0x1d8/0x3f0
-   __se_sys_kexec_file_load+0xc6/0x270
-
-This is reachable through the kexec_file_load syscall on architectures
-that verify PE signatures (x86 bzImage with
-CONFIG_KEXEC_BZIMAGE_VERIFY_SIG, arm64 Image with
-CONFIG_KEXEC_IMAGE_VERIFY_SIG), requiring CAP_SYS_BOOT.
-
-The oops occurs while the caller holds kexec_lock; if the faulting task
-is killed, the lock is never released, leaving all subsequent kexec and
-kdump operations permanently returning -EBUSY until reboot.
-
-Add a lower-bound check on wrapper.length before the subtraction to
-prevent the underflow.
-
-Fixes: 09dacbbda935 ("pefile: Strip the wrapper off of the cert data block")
-Cc: stable@vger.kernel.org
-Signed-off-by: Gu Bowen <gubowen5@huawei.com>
----
- crypto/asymmetric_keys/verify_pefile.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/verify_pefile.c b/crypto/asymmetric_keys/verify_pefile.c
-index cec99db14129..cfa85ccb1cf7 100644
---- a/crypto/asymmetric_keys/verify_pefile.c
-+++ b/crypto/asymmetric_keys/verify_pefile.c
-@@ -146,6 +146,11 @@ static int pefile_strip_sig_wrapper(const void *pebuf,
- 			ctx->sig_len, wrapper.length);
- 		return -ELIBBAD;
- 	}
-+	if (wrapper.length < sizeof(wrapper)) {
-+		pr_warn("Signature wrapper too small (%x < %zx)\n",
-+			wrapper.length, sizeof(wrapper));
-+		return -ELIBBAD;
-+	}
- 	if (wrapper.revision != WIN_CERT_REVISION_2_0) {
- 		pr_warn("Signature is not revision 2.0\n");
- 		return -ENOTSUPP;
--- 
-2.43.0
-
+Br, Jarkko
