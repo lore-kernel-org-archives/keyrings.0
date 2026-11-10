@@ -1,82 +1,70 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=148.163.156.1
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794282288;
-	b=eb7VFs2tlTgkY9XRshddMoclzSiAGJ4wqJTMZvUGSzcUeuVhIylIpbs194MwVk5TG5Bg
-	 iQdE2vKZsJGbeDjOSMrlAtw1J4PGPj0GuATNTaW3lHHt5hPu6wgnJfbuPbnSBiCnVkY4J
-	 lA5imIQczpZjE1gQv6gGsHJmlJGi58SATBloUhelCo6jYIL1e0nOtvFhZhU16OqU7pkOv
-	 UxagiaI6BSsvswwPf50J+zmWgs1QsjPjOcN5h7fJxJuJjwTbX9iUR19Mu6qNv/i4kDqkm
-	 Gfr7cYGP7pFDNCfvSj0pspXlqn2ySXZAsgck1MlvWv0vXnuaFR07Y7VdThiGKscOzWA==
+	t=1794282966;
+	b=nJ5c5SbnqARlbXeM2yS5CGRJmlUsB1D8sCOEgYun/Kdq6yvwKt76J+eGiBakXINr9wGk
+	 R0VWjF6tkX6yNlqD8uehivvi7ehRv0MdLX57VxZg/fedzqzFGG0PGAElrhtoMWemREHIj
+	 dLzvnf2igEiTqT9C219OOLsNvGLuZvbT9t+7uLl9XwR45Gv3Nr4RLfcgtRsJxYrfzpasJ
+	 NFNec/dnSeIU7hU0tcZZwxKiezoZQoebrYVux5Jym56JQXu8F9y9ZV+D9Mkb0bD2BS3f9
+	 FRi/ZE/ucbtUNy/PPdjT25eysm+0cX1gcwzd4QbAPV1mBrYWoDDT3+7iLtfO+b+Pt6g==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794282288;
-	h=DMARC-Filter:Received:DKIM-Signature:Received:Received:Received:
-	 Received:Received:Received:Received:Message-ID:Date:MIME-Version:
-	 User-Agent:Subject:To:Cc:References:Content-Language:From:In-Reply-To:
-	 Content-Type:Content-Transfer-Encoding:X-TM-AS-GCONF:
-	 X-Proofpoint-Reinject:X-Proofpoint-Spam-Details-Enc:
-	 X-Proofpoint-ORIG-GUID:X-Proofpoint-Spam-Info:X-Authority-Analysis:
-	 X-Proofpoint-GUID:X-Proofpoint-Virus-Version:
-	 X-Proofpoint-Spam-Details;
-	bh=uhwaCPa5JRqgUjXCODgcbcqwFsDag4JYrxFt3GwiJ78=;
-	b=mDBy9TFK8LyPH+eQnMJoomLqfGci0A6iAytfu3VfVKWQAIJgs1XsyOCzlpVczB/gqaAQ
-	 hutEWQtKnIWh6P+Ls0Enzk7H5p992m2yrCpfsJFd/crelXOfAYPX39BgAKkaKgqh5Chg0
-	 FwP1AGCujvJPD6LEzG9uADfJKHZwCK2mK0qw8uRTODKKybrUx+JFHiZ4ph7U+oImiLaaT
-	 q9d7L1Ysj/SnV3MuY+YFZN/46A/hV8NKfcUssDSEU/1goRB0Ea6nWE+IFTOg2kkCKVnLl
-	 xR2snwpjP7WJpDr0QWRel40VAQ+dBeyLUdPGwa+2xgtaAxJWqmaToIic37vXOXkk+SA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794282966;
+	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
+	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
+	bh=ySFTRwQkHFGZeTgCE/dxbzfLMGvRiDMXvrnQKuznBws=;
+	b=UAz0gOCNii43FKbExGW2uKBnwjykUfRP5ofEH6gKrTj7EgNm+5bQZkD6a4lLdOtDAbA5
+	 wYDQJl3fj/Ag22fyAqJlaPtDG9vKK6mVHAT8I7kZMFxRZ1kJZSInfxfNc1HCHjtXYQQLl
+	 uAj4OlB4i0t8CQ24PdTbIXVj58UiNvRo6fscnLwrscAodEnRkxkTFaym3b8acLLkyA23F
+	 y49OrxfcxJEx3ScKSyFPifg0ILQtI2VO4We0J85Gg19MuJsLWyrlRQIu2onn/TvzuCWlJ
+	 9QYiQFdSajwyFgGQKs0o1raRdPVlQE9Z/bALmc18NttXnZBkhxBOIbbGqYRYUx3pt1A==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=linux.ibm.com;
-	spf=pass smtp.mailfrom=linux.ibm.com;
-	dkim=pass header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=OM8uwNaZ;
-	arc=none smtp.remote-ip=148.163.156.1
-Received: from mx0a-001b2d01.pphosted.com (mx0a-001b2d01.pphosted.com [148.163.156.1])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TgEvl0+M;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BAD40606A31C;
-	Tue, 10 Nov 2026 03:44:47 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org BAD40606A31C
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 802E860A2601;
+	Tue, 10 Nov 2026 03:56:06 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=OM8uwNaZ
-Received: from pps.filterd (m0353729.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 6AA0i9K93480173;
-	Tue, 10 Nov 2026 03:44:37 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=uhwaCP
-	a5JRqgUjXCODgcbcqwFsDag4JYrxFt3GwiJ78=; b=OM8uwNaZkSKKkVsZu25oM/
-	eUncYj+TeGLvWGTnJKh/tzMvs6CYAnP8kt99eDfjKnsk7PowxuX1+3g8OkztNHTu
-	Z/VBFYFs18kvEdeHyxhVdpPLuDnXVblZosyyvLTghLQ/Dz3Puxta+yo+oXZvJpt0
-	5/1n0PTeYulZ6+BvSFqUVy9OkX/knsLsKl59//vTcE1xVRZUYnTFfALWDeqdC+7r
-	uRRB7L1Rvwu72Z89YnUobRj1Fn8zgyw5TlRDOIx1W75p3hqPir873EPP7N+oSZxU
-	WnZjVKBxq2iRD/qNaovFGGrozr6EmerKu+Nzh+v+2ndMbDC1JPmC8pXC0G7Uw9cA
-	==
-Received: from ppma21.wdc07v.mail.ibm.com (5b.69.3da9.ip4.static.sl-reverse.com [169.61.105.91])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4hsunt303y-1
-	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
-	Tue, 10 Nov 2026 03:44:36 +0000 (GMT)
-Received: from pps.filterd (ppma21.wdc07v.mail.ibm.com [127.0.0.1])
-	by ppma21.wdc07v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 6AA0o1eb954794;
-	Tue, 10 Nov 2026 03:44:35 GMT
-Received: from smtprelay07.dal12v.mail.ibm.com ([172.16.1.9])
-	by ppma21.wdc07v.mail.ibm.com (PPS) with ESMTPS id 4htfak4xvs-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Tue, 10 Nov 2026 03:44:35 +0000 (GMT)
-Received: from smtpav03.dal12v.mail.ibm.com (smtpav03.dal12v.mail.ibm.com [10.241.53.102])
-	by smtprelay07.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6AA3iYW832047646
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Tue, 10 Nov 2026 03:44:34 GMT
-Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 1FE4E58056;
-	Tue, 10 Nov 2026 03:44:34 +0000 (GMT)
-Received: from smtpav03.dal12v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id A82CD5803F;
-	Tue, 10 Nov 2026 03:44:29 +0000 (GMT)
-Received: from [9.123.14.23] (unknown [9.123.14.23])
-	by smtpav03.dal12v.mail.ibm.com (Postfix) with ESMTP;
-	Tue, 10 Nov 2026 03:44:29 +0000 (GMT)
-Message-ID: <d0b84ceb-8926-4e7b-bca6-9cc8b837658e@linux.ibm.com>
-Date: Tue, 10 Nov 2026 09:14:28 +0530
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TgEvl0+M
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 407C91F0089F;
+	Tue, 10 Nov 2026 03:56:04 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1794282966;
+	bh=ySFTRwQkHFGZeTgCE/dxbzfLMGvRiDMXvrnQKuznBws=;
+	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
+	b=TgEvl0+MjLfSmtJNlwoZw16t6z4bqYXcwrqk6WyDApsyr/uRpog50QOCYqcfaDbYZ
+	 FCt9yyV5z7PwpqKgOBk29XEwDzsz4kcw/JgTipw7RdTeoyC9oV1Y2jGIRaEHONpA+F
+	 d5tq+HqbwX1sC70wMHz6C9goeYR+VRkPpTKH0dSrtp3wkKudjrnK7KyxtIVBMVQqrV
+	 rJP4GB9l4/9inBG3KTZYRiieqC1+Xdh8B7Ula0fZYpHIe7L9zGLd+7aHslL5Sb+TQL
+	 KCbOit45g6hbD+2BBQavQ4NlZxDQ9dXl7rjkyUCnBAU0J8yaZvvMbt7SWITYfcJkwH
+	 D4eUkRN6zGxMQ==
+Message-ID: <sashiko-outbox-206155@kernel.org>
+From: sashiko-bot@kernel.org
+Subject: Re: [PATCH v7 2/3] KEYS: Replace assoc_array with rhashtable
+Reply-To: sashiko-reviews@lists.linux.dev
+To: "Jarkko Sakkinen" <jarkko@kernel.org>, "David Howells" <dhowells@redhat.com>
+Cc: bpf@vger.kernel.org, dm-devel@lists.linux.dev, fsverity@lists.linux.dev, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, "Alasdair
+ Kergon" <agk@redhat.com>, "Alexei Starovoitov" <ast@kernel.org>, "Alex Shi" <alexs@kernel.org>, "Andrew
+ Morton" <akpm@linux-foundation.org>, "Andrii Nakryiko" <andrii@kernel.org>, "Benjamin
+ Marzinski" <bmarzins@redhat.com>, "Daniel Borkmann" <daniel@iogearbox.net>, "Dongliang
+ Mu" <dzm91@hust.edu.cn>, "Eduard Zingerman" <eddyz87@gmail.com>, "Emil
+ Tsalapatis" <emil@etsalapatis.com>, "Eric Biggers" <ebiggers@kernel.org>, "Ignat
+ Korchagin" <ignat@linux.win>, "Ihor Solodrai" <ihor.solodrai@linux.dev>, "James
+ Morris" <jmorris@namei.org>, "Jiri Olsa" <jolsa@kernel.org>, "Jonathan
+ Corbet" <corbet@lwn.net>, "Kumar Kartikeya Dwivedi" <memxor@gmail.com>, "Martin
+ KaFai Lau" <martin.lau@linux.dev>, "Mike Snitzer" <snitzer@kernel.org>, "Mikulas
+ Patocka" <mpatocka@redhat.com>, "Paul Moore" <paul@paul-moore.com>, "Randy
+ Dunlap" <rdunlap@infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>, "Shuah
+ Khan" <skhan@linuxfoundation.org>, "Song Liu" <song@kernel.org>,
+ =?utf-8?b?VGhlb2RvcmUgWS4gVHMnbw==?= <tytso@mit.edu>, "Yanteng Si" <si.yanteng@linux.dev>, "Yonghong
+ Song" <yonghong.song@linux.dev>, "Linus Torvalds" <torvalds@linux-foundation.org>
+In-Reply-To: <20261110033738.2495880-3-jarkko@kernel.org>
+References: <20261110033738.2495880-1-jarkko@kernel.org>
+ <20261110033738.2495880-3-jarkko@kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date: Tue, 10 Nov 2026 03:56:03 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -85,286 +73,138 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
-MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v6 9/9] pseries/plpks/wrapkey: expose PKWM wrapping key
- management to userspace via sysfs
-To: sashiko-reviews@lists.linux.dev, keyrings@vger.kernel.org
-Cc: maddy@linux.ibm.com, ritesh.list@gmail.com, sshegde@linux.ibm.com,
-        mpe@ellerman.id.au, npiggin@gmail.com, christophe.leroy@csgroup.eu,
-        James.Bottomley@HansenPartnership.com, jarkko@kernel.org,
-        zohar@linux.ibm.com, linux-security-module@vger.kernel.org,
-        nayna@linux.ibm.com, rnsastry@linux.ibm.com
-References: <20261105144320.357260-1-ssrish@linux.ibm.com>
- <20261105144320.357260-10-ssrish@linux.ibm.com>
- <sashiko-outbox-199284@kernel.org>
-Content-Language: en-US
-From: Srish Srinivasan <ssrish@linux.ibm.com>
-In-Reply-To: <sashiko-outbox-199284@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Reinject: loops=2 maxloops=12
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMTEwMDAxNCBTYWx0ZWRfX3kCLRQv9uUri
- fA9YGBxVaer3SELKqfF2fsZCPJNQ/xBWn904QVmcZ0FNx5ucSIBQghUzrDV+L9Xa01JSGf1QeqC
- 1dxlwFgYPW0XHf9/w3jkYowuVHHPqosPYN7TUb490GZ5Y0Wk77GLyUjHjfrybDQpIJVyFX8fwgf
- wSHzJw6VdUbkM8rGHsYu/LKVyG3qI0DvZpCbUHAqUKINDNKruH42TVJR6a5WPxqjZb8vDkZAH7T
- 3U7lypyQDWN9zxs6MXFAuytkH/FhFetqI48evMeLnrJzggmtZGbqeJtQ3h/A7tJM9hckUOc8yKd
- HndhG3NJtN7XDTUY93oRr2Ox7jamG5vqVf2FrweJu5+IkSMz2VRB/b7c/YZQ/zV4LcHn80kGGt5
- ENk51EJJ4i/XcJObI+wrBC47V8IkVrSQqXGZkMyihZhPnm62tWEgIh+ZMmwlcLv9QFUz9cyTiu2
- frwtjnLIHfmRIATKMBQ==
-X-Proofpoint-ORIG-GUID: ZR7XViUcabHuWNbR42r2QoUvpE7ypHwj
-X-Proofpoint-Spam-Info: AW1haW4tMjYxMTEwMDAxNCBTYWx0ZWRfX6tM6yJPfifuv
- u0X7b9csavYrKt9811kXZEvSnGvZbrbj2IjqN7470afwgC63jQHAnKTyCRExBOMp+IrJO3+yETj
- C9satVS39ioyW1Bnb89BHKxllOdRxtY=
-X-Authority-Analysis: v=2.4 cv=euZKXYpX c=1 sm=1 tr=0 ts=6af29324 cx=c_pps
- a=GFwsV6G8L6GxiO2Y/PsHdQ==:117 a=GFwsV6G8L6GxiO2Y/PsHdQ==:17
- a=IkcTkHD0fZMA:10 a=zJRp6_cAMcgA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=uAbxVGIbfxUO_5tXvNgY:22 a=VwQbUJbxAAAA:8
- a=VnNF1IyMAAAA:8 a=QUUJxjL6Vp10tb9qvx0A:9 a=QEXdDO2ut3YA:10
-X-Proofpoint-GUID: nKMORCa3UUQg_mvwF9PdaoBSQ5FFdkHj
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.138,FMLib:17.12.100.49
- definitions=2026-11-10_01,2026-11-06_01,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- phishscore=0 clxscore=1011 suspectscore=0 spamscore=0 priorityscore=1501
- lowpriorityscore=0 bulkscore=0 impostorscore=0 adultscore=0 malwarescore=0
- classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
- reason=mlx scancount=1 engine=8.22.0-2611040001 definitions=main-2611100014
 
-Hi
+Thank you for your contribution! Sashiko AI review found 2 potential
+issues to consider:
+- [Medium] keys: missing insecure_elasticity and unbounded -EBUSY loop
+  in __key_link_begin()
+- [Low] keys: mixed goto and delayed __free() initialization in
+  __key_link_begin()
+--
 
-On 11/5/26 8:32 PM, sashiko-bot@kernel.org wrote:
-> Thank you for your contribution! Sashiko AI review found 3 potential issue(s) to consider:
-> - [Medium] pseries/plpks: label truncation and undocumented format in list_key_labels()
-> - [Medium] pseries/plpks: TOCTOU race between delete_store() and unrevoke_store()
-> - [Low] pseries/plpks: duplicated sysfs store/show logic in plpks-wrapkey-sysfs.c
-> --
+commit 2ac2cea452f12974dec0263462b3e701c718671c
+Author: Jarkko Sakkinen <jarkko@kernel.org>
 
+KEYS: Replace assoc_array with rhashtable
 
-Yes, these are valid findings and I will fix these in my next version.
+This commit replaces the associative array in struct key with a
+keyring_index backed by an rhashtable for direct lookups and an
+RCU-protected list of keyring_link entries for ordered traversal.
 
-Thanks,
-Srish
+> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> index ac48d6204915a..772fa0e35f9db 100644
+> --- a/security/keys/keyring.c
+> +++ b/security/keys/keyring.c
+> @@ -31,25 +33,152 @@
 
+[ ... ]
 
->
-> commit 58203a02dbc210e21378df2545831a7ea49bbca4
-> Author: Srish Srinivasan <ssrish@linux.ibm.com>
->
-> pseries/plpks/wrapkey: expose PKWM wrapping key management to userspace via sysfs
->
-> This commit adds a sysfs interface under /sys/firmware/plpks/wrapkey to allow
-> userspace to create, revoke, unrevoke, delete, and list PKWM wrapping keys.
->
->> diff --git a/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c b/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
->> new file mode 100644
->> index 0000000000000..c293196cc9adf
->> --- /dev/null
->> +++ b/arch/powerpc/platforms/pseries/plpks-wrapkey-sysfs.c
-> [ ... ]
->> +static ssize_t list_key_labels(char *buf, u8 *obj_labels_buf,
->> +			       u64 obj_labels_count, int revoked)
->> +{
->> +	struct plpks_var var = { 0 };
->> +	u8 *obj_labels_buf_ptr, *comp_prefix;
->> +	u8 *key_label_ptr;
->> +	u16 obj_label_len;
->> +	int len = 0;
->> +	int is_revoked;
->> +	u64 i;
->> +
->> +	var.os = PLPKS_VAR_LINUX;
->> +	var.component = PLPKS_WRAPKEY_COMPONENT;
->> +	obj_labels_buf_ptr = obj_labels_buf;
->> +
->> +	for (i = 0; i < obj_labels_count; ++i) {
->> +		obj_label_len = get_unaligned_be16(obj_labels_buf_ptr);
->> +		comp_prefix = obj_labels_buf_ptr +
->> +			      PLPKS_OBJLABEL_LEN_FIELD_SIZE;
->> +
->> +		var.namelen = obj_label_len - PLPKS_MAX_LABEL_ATTR_SIZE;
->> +		var.name = kzalloc(var.namelen + 1, GFP_KERNEL);
->> +
->> +		if (!var.name)
->> +			return -ENOMEM;
->> +
->> +		key_label_ptr = comp_prefix + PLPKS_MAX_LABEL_ATTR_SIZE;
->> +		memcpy(var.name, key_label_ptr, var.namelen);
->> +
->> +		is_revoked = plpks_is_wrapping_key_revoked(&var);
->> +		if (is_revoked == revoked)
->> +			len += sysfs_emit_at(buf, len, "<%s>\n",
->> +					     (char *)var.name);
-> [Severity: Medium]
-> Can list_key_labels() silently truncate wrapping key labels when reading
-> /sys/firmware/plpks/wrapkey/list_active or list_revoked?
->
-> plpks_get_object_labels() can retrieve labels across multiple 4KB buffers via
-> H_CONTINUE, and each label can be up to PLPKS_MAX_NAME_SIZE (239) bytes.
-> However, a standard kobj_attribute show buffer is limited to PAGE_SIZE - 1
-> bytes. Once len reaches PAGE_SIZE - 1, sysfs_emit_at() returns 0 and any
-> remaining wrapping key labels are silently omitted without any error or
-> indication to userspace.
->
-> Also, list_key_labels() formats each label wrapped in angle brackets
-> ("<%s>\n"), whereas Documentation/ABI/testing/sysfs-firmware-plpks does not
-> mention the angle-bracket format for list_active and list_revoked. Should the
-> output format and buffer limit be addressed or documented?
->
->> +		else if (is_revoked < 0)
->> +			pr_warn("Failed to get revocation status for <%s>\n",
->> +				(char *)var.name);
->> +
->> +		kfree(var.name);
->> +		obj_labels_buf_ptr = key_label_ptr + var.namelen;
->> +	}
->> +
->> +	return len;
->> +}
->> +
->> +static ssize_t list_active_show(struct kobject *kobj,
->> +				struct kobj_attribute *attr, char *buf)
->> +{
->> +	u8 *obj_labels_buf = NULL;
->> +	u64 obj_labels_count = 0;
->> +	int rc;
->> +
->> +	rc = plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
->> +				     PLPKS_WRAPKEY_COMPONENT);
->> +	if (rc) {
->> +		pr_err("Retrieving object labels failed. rc=%d\n", rc);
->> +		goto out;
->> +	}
->> +
->> +	rc = list_key_labels(buf, obj_labels_buf, obj_labels_count,
->> +			     PLPKS_WRAPKEY_UNREVOKED);
->> +
->> +out:
->> +	kfree(obj_labels_buf);
->> +	return rc;
->> +}
->> +
->> +static ssize_t list_revoked_show(struct kobject *kobj,
->> +				 struct kobj_attribute *attr, char *buf)
->> +{
->> +	u8 *obj_labels_buf = NULL;
->> +	u64 obj_labels_count = 0;
->> +	int rc;
->> +
->> +	rc = plpks_get_object_labels(&obj_labels_buf, &obj_labels_count,
->> +				     PLPKS_WRAPKEY_COMPONENT);
->> +	if (rc) {
->> +		pr_err("Retrieving object labels failed. rc=%d\n", rc);
->> +		goto out;
->> +	}
->> +
->> +	rc = list_key_labels(buf, obj_labels_buf, obj_labels_count,
->> +			     PLPKS_WRAPKEY_REVOKED);
->> +
->> +out:
->> +	kfree(obj_labels_buf);
->> +	return rc;
->> +}
->> +
->> +static ssize_t create_store(struct kobject *kobj, struct kobj_attribute *attr,
->> +			    const char *buf, size_t count)
->> +{
-> [ ... ]
->> +static ssize_t unrevoke_store(struct kobject *kobj, struct kobj_attribute *attr,
->> +			      const char *buf, size_t count)
->> +{
->> +	struct plpks_var var = { 0 };
->> +	int rc;
->> +
->> +	if (!capable(CAP_SYS_ADMIN)) {
->> +		rc = -EPERM;
->> +		goto out;
->> +	}
->> +
->> +	if (!count) {
->> +		rc = -EINVAL;
->> +		goto out;
->> +	}
->> +
->> +	if (count > PLPKS_MAX_NAME_SIZE) {
->> +		rc = -ENAMETOOLONG;
->> +		goto out;
->> +	}
->> +
->> +	if (!strcmp(buf, PLPKS_DEFAULT_WRAPKEY_LABEL)) {
->> +		rc = -EINVAL;
->> +		goto out;
->> +	}
->> +
->> +	if (!is_wrapkey_label_alnum(buf, count)) {
->> +		rc = -EINVAL;
->> +		goto out;
->> +	}
->> +
->> +	var.name = kstrndup(buf, count, GFP_KERNEL);
->> +	if (!var.name) {
->> +		rc = -ENOMEM;
->> +		goto out;
->> +	}
->> +
->> +	var.namelen = count;
->> +	var.os = PLPKS_VAR_LINUX;
->> +	var.component = PLPKS_WRAPKEY_COMPONENT;
->> +
->> +	rc = plpks_unrevoke_wrapping_key(&var);
->> +
->> +	if (rc) {
->> +		pr_err("un-revocation of wrapping key <%s> failed. rc = %d\n",
->> +		       (char *)var.name, rc);
->> +		goto out;
->> +	}
->> +
->> +	rc = count;
->> +out:
->> +	kfree(var.name);
->> +	return rc;
->> +}
-> [Severity: Low]
-> This isn't a bug, but create_store(), revoke_store(), unrevoke_store(), and
-> delete_store() all duplicate the same CAP_SYS_ADMIN check, count validation,
-> PLPKS_DEFAULT_WRAPKEY_LABEL check, is_wrapkey_label_alnum() validation,
-> kstrndup() allocation, and struct plpks_var initialization (with
-> unrevoke_store() returning -EINVAL instead of -EPERM for
-> PLPKS_DEFAULT_WRAPKEY_LABEL).
->
-> Similarly, list_active_show() and list_revoked_show() duplicate the
-> plpks_get_object_labels() call and cleanup, differing only in passing
-> PLPKS_WRAPKEY_UNREVOKED vs PLPKS_WRAPKEY_REVOKED to list_key_labels().
->
-> Could the shared store validation/setup and show label retrieval logic be
-> factored into common helpers?
->
->> +
->> +static ssize_t delete_store(struct kobject *kobj, struct kobj_attribute *attr,
->> +			    const char *buf, size_t count)
->> +{
-> [ ... ]
->> +	rc = plpks_del_wrapping_key(&var);
-> [Severity: Medium]
-> What prevents a TOCTOU race if delete_store() and unrevoke_store() are called
-> concurrently on the same revoked wrapping key?
->
-> In arch/powerpc/platforms/pseries/plpks.c, plpks_del_wrapping_key() enforces
-> that a key is revoked before deletion across two separate hypercalls without
-> any lock:
->
-> plpks_del_wrapping_key()
->      rc = plpks_is_wrapping_key_revoked(var);
->      if (rc == 1) {
->          ...
->          rc = plpks_remove_var(PLPKS_WRAPKEY_COMPONENT, var->os, vname);
->
-> Because delete and unrevoke are separate sysfs attributes, kernfs only holds
-> its per-open-file mutex separately for each attribute. If CPU 0 enters
-> delete_store() -> plpks_del_wrapping_key() and sees
-> plpks_is_wrapping_key_revoked() == 1, and CPU 1 concurrently runs
-> unrevoke_store() -> plpks_unrevoke_wrapping_key() (H_PKS_UNREVOKE_OBJECT)
-> before CPU 0 calls plpks_remove_var() (H_PKS_REMOVE_OBJECT), won't CPU 0
-> delete the now-active wrapping key?
->
+> +static const struct rhashtable_params keyring_link_params =3D {
+> +	.head_offset		=3D offsetof(struct keyring_link, node),
+> +	.hashfn			=3D keyring_hashfn,
+> +	.obj_hashfn		=3D keyring_obj_hashfn,
+> +	.obj_cmpfn		=3D keyring_obj_cmpfn,
+> +	.min_size		=3D 4,
+> +	.nelem_hint		=3D 3,
+> +	.automatic_shrinking	=3D true,
+> +};
+
+[ ... ]
+
+> @@ -1317,56 +1155,94 @@ int __key_move_lock(struct key *l_keyring, struct=
+ key *u_keyring,
+
+[ ... ]
+
+>  int __key_link_begin(struct key *keyring,
+>  		     const struct keyring_index_key *index_key,
+> -		     struct assoc_array_edit **_edit)
+> +		     struct keyring_edit *edit)
+>  {
+> -	struct assoc_array_edit *edit;
+> +	struct keyring_link *link __free(kfree) =3D NULL;
+> +	struct keyring_link *replace;
+> +	struct keyring_index *links;
+>  	int ret;
+> =20
+>  	kenter("%d,%s,%s,",
+>  	       keyring->serial, index_key->type->name, index_key->description);
+> =20
+> -	BUG_ON(index_key->desc_len =3D=3D 0);
+> -	BUG_ON(*_edit !=3D NULL);
+> +	if (WARN_ON(index_key->desc_len =3D=3D 0) || WARN_ON(edit->new))
+> +		return -EINVAL;
+> =20
+> -	*_edit =3D NULL;
+> +	edit->new =3D NULL;
+> +	edit->old =3D NULL;
+> =20
+>  	ret =3D -EKEYREVOKED;
+>  	if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
+>  		goto error;
+> =20
+> -	/* Create an edit script that will insert/replace the key in the
+> -	 * keyring tree.
+> -	 */
+> -	edit =3D assoc_array_insert(&keyring->keys,
+> -				  &keyring_assoc_array_ops,
+> -				  index_key,
+> -				  NULL);
+> -	if (IS_ERR(edit)) {
+> -		ret =3D PTR_ERR(edit);
+> +	links =3D keyring_get_index(keyring);
+> +	if (IS_ERR(links)) {
+> +		ret =3D PTR_ERR(links);
+>  		goto error;
+>  	}
+> =20
+> +	ret =3D -ENOMEM;
+> +	link =3D kzalloc_obj(struct keyring_link);
+> +	if (!link)
+> +		goto error;
+
+[Severity: Low]
+This isn't a bug, but per the cleanup.h conventions, link should be
+defined and initialized at its kzalloc_obj() allocation site rather than
+declared as NULL at the top of __key_link_begin() and mixed with goto
+error paths.
+
+> +	link->hash =3D index_key->hash;
+> +
+> +	replace =3D keyring_find_link(links, index_key);
+>  	/* If we're not replacing a link in-place then we're going to need some
+>  	 * extra quota.
+>  	 */
+> -	if (!edit->dead_leaf) {
+> +	if (!replace) {
+>  		ret =3D key_payload_reserve(keyring,
+>  					  keyring->datalen + KEYQUOTA_LINK_BYTES);
+>  		if (ret < 0)
+> -			goto error_cancel;
+> +			goto error;
+> +
+> +		do {
+> +			ret =3D rhashtable_insert_fast(&links->ht, &link->node,
+> +						     keyring_link_params);
+> +			if (ret =3D=3D -EBUSY)
+> +				fsleep(100);
+> +		} while (ret =3D=3D -EBUSY);
+
+[Severity: Medium]
+As reported by Eric Biggers on v5 [1], should keyring_link_params set
+.insecure_elasticity =3D true instead of looping on -EBUSY here?
+
+Without .insecure_elasticity, rhashtable_insert_fast() enforces the
+16-entry bucket chain limit (RHT_ELASTICITY) and returns -EBUSY to trigger
+a rehash.  Because keyring_obj_hashfn() only hashes the 32-bit link->hash
+via jhash_1word(), entries with colliding 32-bit SipHash digests cannot be
+split by rehashing with a new seed, so __key_link_begin() can spin
+indefinitely in this loop while holding keyring->sem.  This was fixed in
+v6 by setting .insecure_elasticity =3D true and dropping the retry loop, but
+appears to have been lost in v7.
+
+[1] https://lore.kernel.org/r/20261107032551.GA1990@sol
+
+--=20
+Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261110033738.2495=
+880-1-jarkko@kernel.org?part=3D2
