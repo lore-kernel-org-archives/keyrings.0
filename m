@@ -1,61 +1,58 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794354778;
-	b=MQL5yGnmUjoCPN2BTAFFoacvpXOcVEMUnBODeLvquqTP1OHnS6zDfBHeFc9Nle+QqVGn
-	 lxVcXl8T7RrA8B6BcdSvoUUdUEdsDpjjPJ1UDJ1ceQiKxC2cCd0vaVRKiAlTjykyDRNRA
-	 XSPlHN3h22dpU007fqSZHJ+qHIVqu+jYlZtHqbPaUWKUrunhOBu3eWHZwNYvCTUD+XGU/
-	 L+9m6bCEeTzjbvaclDB7uemL8y+J1liabpZDI9kGCkwH2nxNksrt4Ryn8AiA8S7F0l49H
-	 evmUeYFfQ4RfCJQb/2nkN4wLm0xHihAnDbfraTNYwxWo7WY4xAp5E85VsHakZMgSRQA==
+	t=1794406862;
+	b=2k81AA/3LxXvDmGDhSOq9eRm+b6TVh0QDT8wXCLWaAWE3TAiNiwF6OzYF6qIt8eXoiy7
+	 Ko0PfLXKXdlyaQ9EsnAlvx+EylvXu472H/vYMwGUZisvRxvLsvpfrNB+yA6Y4uOltIrpM
+	 YspqJ2Z+26ywLR/O28Wgaf8i1Ykbb3N4cP286yofovCq6Re9Qre3+gXyKRdcs3VVV4Cbf
+	 HMdgiQg2v9ruZgfXDh4EJf8Y+y/AaLF96Z7nz9XJ34IfWFId0Un37asXuxoypPRvwDMlS
+	 ZPiyB+AW0nC1D0QEPHoWg7zQl1n1bHL3waxyBn0rUGTU0NbVkGTghoDWCW9iuzS9PnA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794354778;
-	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
-	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=HoG9is9sVaNrexmB6oJ68fL5RKwI/mjHmSlJNyQJLe4=;
-	b=sFD6AF320GK+5eDm6yBw6LQHAUd8LOK7K+jQdpofsMdKvPHWy7wgRWg6eYAlTqQJCOHX
-	 HiF/EKuchgallPGjgfcicZHqyWPTa4jcS6wyuPH+FEZhJlBy+F+U3EHvacIvXfFJxJFmg
-	 OsEYTED4g3jmjlK3wo5JDg80gjBra0IXZCsNFRXIbiZQsqVM4Oy9Juo5jIJKwU9amf+k5
-	 Rn+qpKazXUgRiE1WTczoXic2VlcRBYjnTP1zr23SeiBv3AegY3yJu3WEXrLLA4C/R4zga
-	 dQtvcyw2kNjd+taXflTn2Uld8OZl0DJdrHOZ/gQGwJy9TDG70mOXMxY8m6OvGb7aJ9A==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794406862;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:
+	 Content-Transfer-Encoding:In-Reply-To;
+	bh=Zprllg4nPCi52f6KRO2S0bElXyAgA6mcaWozz8BopYo=;
+	b=kiqgjlTbrll535ZHbrm1++MKqyMNQX8buAyI5P0DIPYGJv7ZSW5qh/tt19tzP/ePoDHT
+	 fo6ii86/lkQs45i9DNlwcm0+7kxynkobFEMzHgRHsI0podGsgmYoeQrdYHPb8S5R/7hwx
+	 6SiB4QNfJsvvtQINIobRNHGI0iMNBTgn1Bdfeutlk2q8vlSol7U42uDWpeAYFP+VYAEvP
+	 G8c69ba73Nt0aMelTyO6I83EQ1wOK3NmcbQ7jZ/fo7h0LtwCHxicfO220UPGtD4Y5r0xm
+	 fbiznsPsSdo5JHB3PX+s2BnE8Q+CpU4xdlnUoT9EChaLMrOQduKtbZwMtadpVfKPP+Q==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=D0VNsPS+;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=NkvCD04A;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C6BAD606A320;
-	Tue, 10 Nov 2026 23:52:58 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E5008606A324;
+	Wed, 11 Nov 2026 14:21:01 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=D0VNsPS+
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id C27A91F0093C;
-	Tue, 10 Nov 2026 23:52:57 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=NkvCD04A
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id E898C1F00A05;
+	Wed, 11 Nov 2026 14:20:57 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794354778;
-	bh=HoG9is9sVaNrexmB6oJ68fL5RKwI/mjHmSlJNyQJLe4=;
-	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=D0VNsPS+ZhcGGjSFNMxdyGE9pqCUBXXHhAXY7FpMXDNq95vJF7NsIvt/cTxSnl5gS
-	 7QXh07K/D3Y8JMm2YMP/lksTqAul598mdAqjtHeVo6z57pTnOkEi/l8TsCG/VacxDM
-	 7dJ3cTjnX8xI+CGOH6gVBWvocKFwE3JV4zHQN6DAydv1xzHTTxgfWDoNMIdarY2nCE
-	 UErEI+0dhh2ljCKZcxjOTctFxbh3aDOBbJgmM5h9pTUOaYAs1p8khnDjkeXi5Q5uN1
-	 wcq1j0MjrdaWZTAU7T9t3g4Wx3QA/Z/FX72R3AsuveIuJjv6rnAsTHWw0BP6bxo690
-	 NkLxtoPTtk9sQ==
-Message-ID: <sashiko-outbox-207958@kernel.org>
-From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v9 3/3] selftests/namespaces: test the CAP_SETFCAP rule
- for user namespaces
-Reply-To: sashiko-reviews@lists.linux.dev
-To: "Josef Bacik" <josef@toxicpanda.com>, "Serge Hallyn" <serge@hallyn.com>, "Paul
- Moore" <paul@paul-moore.com>, "Christian Brauner" <brauner@kernel.org>
-Cc: "James Morris" <jmorris@namei.org>, "David Howells" <dhowells@redhat.com>, "Jarkko
- Sakkinen" <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, "Serge
- Hallyn" <sergeh@kernel.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, "Shuah
- Khan" <shuah@kernel.org>, "Bradley Morgan" <brads@mainlining.org>
-In-Reply-To: <20261109-b4-setfcap-userns-v9-3-0d3f00976ce2@toxicpanda.com>
-References: <20261109-b4-setfcap-userns-v9-0-0d3f00976ce2@toxicpanda.com>
- <20261109-b4-setfcap-userns-v9-3-0d3f00976ce2@toxicpanda.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date: Tue, 10 Nov 2026 23:52:57 +0000
+	s=k20260515; t=1794406861;
+	bh=Zprllg4nPCi52f6KRO2S0bElXyAgA6mcaWozz8BopYo=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=NkvCD04Ak60M1qFrJy1HAiOPSeo0A1/tesB31G5t7NZZeRYSuy+1h8ayMEmUCmUQE
+	 bZz5urs/EFu2GgEAJfPqxBH1Wyo1YtyMekjMKppI5U/8tYVO5p8xyMJeLqM3k9b23K
+	 MWL8t7xCBO2w5qqOrSvcZsjVmCuQ4X0h/zfZIFgDkaKHkBAc3eBimllLjWI8twOJul
+	 jYLeQk9LDtedigkWtEZWjFt6u1/jWj9rIB3wZUUUuSQyPJJnF47sSXa4xldo7kkvmO
+	 +55/+e6LL/AbHAAjzFG9zpvKrBnBX4XETxXf/lGiboZbHy0w3ewTHU7/s+RHHy1m5x
+	 ZHzTVkpl/Ewcw==
+Date: Wed, 11 Nov 2026 15:20:55 +0100
+From: Christian Brauner <brauner@kernel.org>
+To: =?utf-8?Q?Micka=C3=ABl_Sala=C3=BCn?= <mic@digikod.net>
+Cc: Josef Bacik <josef@toxicpanda.com>, Serge Hallyn <serge@hallyn.com>, 
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, 
+	David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, 
+	"Andrew G. Morgan" <morgan@kernel.org>, Serge Hallyn <sergeh@kernel.org>, 
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, 
+	linux-fsdevel@vger.kernel.org, Bradley Morgan <brads@mainlining.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] userns: Let LSMs deny the CAP_SETFCAP snapshot for
+ mapping uid 0
+Message-ID: <20261111-kommt-gischt-ohnedies-469998d2f219@brauner>
+References: <20261110144205.2404088-1-mic@digikod.net>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -64,127 +61,44 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20261110144205.2404088-1-mic@digikod.net>
 
-Thank you for your contribution! Sashiko AI review found 2 potential
-issues to consider:
-- [Medium] selftests/namespaces: host /mnt creation and false skip in
-  idmap_tmp()
-- [Low] selftests/namespaces: add setfcap_test to .gitignore
---
+On Tue, Nov 10, 2026 at 03:42:04PM +0100, Mickaël Salaün wrote:
+> Commit db2e718a4798 ("capabilities: require CAP_SETFCAP to map uid 0")
+> records in parent_could_setfcap whether the creator of a user namespace
+> had CAP_SETFCAP, because a creator writing its own uid_map only has
+> capabilities in the new namespace.  The snapshot uses cap_raised(), so a
+> task whose LSM policy denies CAP_SETFCAP can still map uid 0 in a
+> namespace it creates.
+> 
+> Use security_capable() against the parent namespace instead: the
+> creator's credentials still belong to it at this point, so commoncap
+> returns the same result, and only LSM denials are added.
+> 
+> Do not audit this check: creating a user namespace does not use
+> CAP_SETFCAP, and most namespaces never map uid 0.  The uid_map write
+> that later fails has no LSM audit record.
+> 
+> Checking CAP_SETFCAP when the map is written would not work: the
+> writer's credentials then belong to the new namespace, where commoncap
+> grants the creator all capabilities.
+> 
+> Cc: Christian Brauner <brauner@kernel.org>
+> Cc: Josef Bacik <josef@toxicpanda.com>
+> Cc: Paul Moore <paul@paul-moore.com>
+> Cc: Serge Hallyn <serge@hallyn.com>
+> Cc: stable@vger.kernel.org
+> Fixes: db2e718a4798 ("capabilities: require CAP_SETFCAP to map uid 0")
+> Signed-off-by: Mickaël Salaün <mic@digikod.net>
+> ---
 
-commit 38eae5440ed3d06c4f6383c08c8a0e11e61d724f
-Author: Josef Bacik <josef@toxicpanda.com>
+This seems fine but is another instance where what we really really
+really want is for the LSM to be informed where exactly
+security_capable() is called from. IOW, it would be nice if the LSM
+would know that it is called from the user namespace creation path.
 
-selftests/namespaces: test the CAP_SETFCAP rule for user namespaces
-
-This commit adds kselftests verifying that a uid 0 task without CAP_SETFCAP
-cannot regain the ability to set root file capabilities via setns() or
-ptrace into a user namespace, while preserving valid namespace mappings,
-idmapped mounts, and file capability operations.
-
-> diff --git a/tools/testing/selftests/namespaces/Makefile b/tools/testing/=
-selftests/namespaces/Makefile
-> index 9b22d12708e1a..0455b6544869d 100644
-> --- a/tools/testing/selftests/namespaces/Makefile
-> +++ b/tools/testing/selftests/namespaces/Makefile
-> @@ -14,7 +14,8 @@ TEST_GEN_PROGS :=3D nsid_test \
->  		  stress_test \
->  		  listns_pagination_bug \
->  		  regression_pidfd_setns_test \
-> -		  uid_map_range_test
-> +		  uid_map_range_test \
-> +		  setfcap_test
-> =20
->  include ../lib.mk
-> =20
-
-[Severity: Low]
-Should setfcap_test also be added to
-tools/testing/selftests/namespaces/.gitignore so in-tree builds do not leave
-an untracked binary?
-
-> diff --git a/tools/testing/selftests/namespaces/setfcap_test.c b/tools/te=
-sting/selftests/namespaces/setfcap_test.c
-> new file mode 100644
-> index 0000000000000..aee0b1d6f329a
-> --- /dev/null
-> +++ b/tools/testing/selftests/namespaces/setfcap_test.c
-
-[ ... ]
-
-> +/* /tmp idmapped with the user namespace of pid, at /mnt */
-> +static int idmap_tmp(int pid)
-> +{
-> +	struct mount_attr attr =3D { .attr_set =3D MOUNT_ATTR_IDMAP };
-> +	char path[64];
-> +	int tfd, nsfd;
-> +
-> +	mkdir("/mnt", 0755);
-> +	snprintf(path, sizeof(path), "/proc/%d/ns/user", pid);
-> +	nsfd =3D open(path, O_RDONLY);
-> +	tfd =3D syscall(__NR_open_tree, AT_FDCWD, "/tmp",
-> +		      OPEN_TREE_CLONE | OPEN_TREE_CLOEXEC);
-> +	if (nsfd < 0 || tfd < 0)
-> +		return -1;
-> +	attr.userns_fd =3D nsfd;
-> +	if (syscall(__NR_mount_setattr, tfd, "", AT_EMPTY_PATH, &attr,
-> +		    sizeof(attr)))
-> +		return -1;
-> +	if (syscall(__NR_move_mount, tfd, "", AT_FDCWD, "/mnt",
-> +		    MOVE_MOUNT_F_EMPTY_PATH))
-> +		return -1;
-> +	close(tfd);
-> +	close(nsfd);
-> +	return 0;
-> +}
-> +
-> +/* Each test: private mounts, a tmpfs on /tmp with copies of this progra=
-m */
-> +static void prepare(struct __test_metadata *_metadata)
-> +{
-> +	ASSERT_EQ(unshare(CLONE_NEWNS), 0);
-> +	ASSERT_EQ(mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL), 0);
-> +	ASSERT_EQ(mount("tmpfs", "/tmp", "tmpfs", 0, "mode=3D1777"), 0);
-> +	ASSERT_EQ(new_file("/tmp/x", 0), 0);
-> +	ASSERT_EQ(new_file("/tmp/u", 1000), 0);
-> +	mkdir("/mnt", 0755);
-> +}
-
-[ ... ]
-
-> +/* returns 1 to skip: no idmapped mounts on tmpfs */
-> +static int idmap_case(const struct idmap_case *c, long *r)
-> +{
-> +	struct holder ns, im =3D { -1, -1 };
-> +	struct idmap_join j;
-> +	int ret =3D -1;
-> +
-> +	ns =3D spawn_mapped(HOLDER_ROOT, c->ns_map);
-> +	if (ns.pid <=3D 0)
-> +		return -1;
-> +	if (c->idmap_map) {
-> +		im =3D spawn_mapped(HOLDER_ROOT, c->idmap_map);
-> +		if (im.pid <=3D 0)
-> +			goto out;
-> +	}
-> +	if (new_file("/tmp/x", c->file_uid))
-> +		goto out;
-> +	if (idmap_tmp(c->idmap_map ? im.pid : ns.pid)) {
-> +		ret =3D 1;
-> +		goto out;
-> +	}
-
-[Severity: Medium]
-Should prepare() and idmap_tmp() place the mountpoint inside the private
-/tmp tmpfs instead of at /mnt, and should idmap_tmp() distinguish
-mount_setattr() failures from other setup errors?
-
-prepare() only mounts a tmpfs on /tmp, so mkdir("/mnt", 0755) creates /mnt
-on the host root filesystem, or fails on a read-only root filesystem where
-/mnt does not exist.  In addition, idmap_case() treats any error from
-idmap_tmp() as ret =3D 1, causing TEST_F(idmap, fcap) to report a skip ("no
-idmapped mounts on tmpfs") when open(), open_tree(), or move_mount() fails.
-
---=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261109-b4-setfcap=
--userns-v9-0-0d3f00976ce2@toxicpanda.com?part=3D3
+Can be a follow-up but would be nice.
