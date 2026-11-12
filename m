@@ -1,61 +1,52 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794438082;
-	b=umq7naFnMoy8Tzxl9PXWs/DM1wGP/2G4RHrYyqUABeZZ3rqqByTFQh56fL7eE9Z1SfB5
-	 26IpH1eu26pA5miTNmNQR8T87TlgGb5z8DVrj5U2iEW898RNjjaz7xG5g6N9vuG30oLCx
-	 nblui2HzznPQ4qQczUB1tmU1Ej41QOewoT8a0wEKLOmksVWWMXasdd6As/JlqqPUXAgTs
-	 DEIwT2kyvLIVG+/eaY/3xDiZKZCceSaeggAl+g6g1CheWT6K/iXCH+YIQWhJQnB+cuhwq
-	 9wrmpE8CO4ZulQPMs6fcpHs6RqoLbsJbgES8YYfOjADx31lYRX4+OuA0/j8lPjmrLPw==
+	t=1794442692;
+	b=nzpQwt/yL0y+3zxhn/V/bQA6ote9BHV2FV4DZlXzeZCUcVf9u3b4lr0XkujC4/F+MVRG
+	 +/eUxb4/v32Ha7XVXPF5cUUsOVHe80mCzL+XOmPWytea+HwIhGB0tFF8T9yGBvcY/bzno
+	 eVJfIDpoWgYdsAiJc2j+vGk07ZAJqgwSJLiKyvqctEXySrCoYyjt6cTwAT/cLW9PHB+YP
+	 6cJ7DpZhn6QJCORAjbTCuQNeGCxbk2oNgDzz5M4ecehzNv3ylpEsZr8HDCVusud12jIws
+	 pCckrDhektcmZAHHoDiNiiKn5ZzBROoIuoqOtyWFN5VHhvlRyi0j22ko/eFaqtiJ1Ew==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794438082;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794442692;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=es2W//wdjmPVYd4m7qpzscuMfFc0jaKJ7FDPSuWbxV4=;
-	b=uwNZwTPBZFiN4kFQj1b1DbJwtNyWiWUjrIhO+2eDCGk1FZj+qyjn9o5JET0GF5GBCWLP
-	 FDxoqJ5Q/dom9bkTOHyH3AVW4ymJoYrZWIq4P6Z96R0VYq/WZkAWdVRipmPYNIUJiU9LT
-	 /Gk7/Ov+k57elvPMGdGAPuRjI3ZtJoNuUA4HBSe1nDD8As0ISpX0WNFRUjL+rlebgD4A9
-	 hEI1xd2iUbWXinACVLCQaS1M6r7rAZ1kN02VfYPQKQhOhQ5sFz+f/Q+ZyaanZYfTZhaf8
-	 Z9hhR8sX7sH7hSjtYHv+sZvIJL2Ep5s92Q3o4IVfVjr9svgyzlbFtZ3LOuSZfmkMlCw==
+	 MIME-Version:Content-Type:Content-Disposition;
+	bh=O3I8mf8n3FTJhmHTEesrftYjlGJiq3bHpKQ86tB55E0=;
+	b=pIAAYOizWfsjVoRN+Kmvf6eQx80SRZwjcYQdNhI1u7KpXVzhFVHAXmYQM8X7x4Eb7j4P
+	 di+xdLuPS6Wp6TwM4JZNMWXe2JQNzdGyN8izdcx0ZaNGIIz8ULp8yyyKwBuvXv/bEto3M
+	 Na6Mp71cQSE2UOiMg9OlWWoNW/EPH8d48BsXG4MnWcz+bvbFZz5Wvy6YcQlJ3RRyBKVk7
+	 Um7zqrwzOYcNHOFXyWRMHsXTkulJ3W3XfeeUMyh5j26f9XldLtGZZfKqbRHie2NYTA8OS
+	 D9wLlZjCZS7VpG+YUoEreCRM6LDONz/84NHNQ0nWhZ/t/frW3MqrvpbShnh1mRni3TQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=NOXMy5DW;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=S413R+Bc;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 043EC606A32A;
-	Wed, 11 Nov 2026 23:01:21 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 6D167606A32E;
+	Thu, 12 Nov 2026 00:18:12 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=NOXMy5DW
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 0334E1F00A05;
-	Wed, 11 Nov 2026 23:01:20 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=S413R+Bc
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 932981F00A0D;
+	Thu, 12 Nov 2026 00:18:11 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794438081;
-	bh=es2W//wdjmPVYd4m7qpzscuMfFc0jaKJ7FDPSuWbxV4=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=NOXMy5DWybbYd7K3He+h+oTeCws9eV61iNHecz83rKnt9KToNrjjjFbLPZ9DZ44KQ
-	 p1ubAP3PSClYqlnyOsMB4YvkcIzv7dl9dYAEWlVdfDHs9TK/b0DKyu6YCWsj44ZVNW
-	 zk42KWJHCjoTn3G/5sox0aDzbb/ta+ryPeoC1ieUYUtlAe99lzguR0FVLxFBSbhP0n
-	 x4yndzlP650V2LctloZhZ0vOM0skZckhtz8h8j4Ydf46OIlAyVBVKwB2/32yMxINKa
-	 PkOpjZAqKEh81KKcVelwaGsMzBcm/cHpVs416JWbtbsZDve495sKipC3npy16+H3u1
-	 2DRo9xQKe+BbQ==
-Date: Thu, 12 Nov 2026 01:01:17 +0200
+	s=k20260515; t=1794442692;
+	bh=O3I8mf8n3FTJhmHTEesrftYjlGJiq3bHpKQ86tB55E0=;
+	h=Date:From:To:Cc:Subject;
+	b=S413R+Bc22sJoo2RIkHceaS+59Pmlo6oabqwwvtpdBxK9l3OFjYrYKQ7dV6Go59IN
+	 4cLpBhUq5Mh8XGtjnoKmk3hTiG+E0dIWYupcKkqWyKvqeg+IIe7yV+qVgzc4nw9hom
+	 IkDFPQZPzV8yXcKaSFQ0eRMynDAbhz5GW6/gwGDj1r2+BgyPcIexkVM29lbdvu4vp/
+	 r154R11iK9Is3AFiGYsSM3fwfx+hQUkc6wFm9hWkFm6mqjRiLLk/4K284MBQgIf5zI
+	 b8PCk72rw8Z02JxuLlu+SojsccTY2Yb08ny2B7neR2aNB+6mPq8Xh8oKvWVydrjUEw
+	 wqF1AVQr/5wPw==
+Date: Thu, 12 Nov 2026 02:18:08 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: florian.bauckholt@cispa.de
-Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
-	Ignat Korchagin <ignat@linux.win>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, Hui Peng <benquike@gmail.com>,
-	keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] KEYS: asymmetric: Fix PKCS#1 decryption of an empty
- message
-Message-ID: <avTzvV6hI3HsgiF3@kernel.org>
-References: <20261111-keyctl-pkey-fixes-v1-0-934ebaa267a7@cispa.de>
- <20261111-keyctl-pkey-fixes-v1-2-934ebaa267a7@cispa.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>,
+	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] TPM DEVICE DRIVER changes for v7.4-rc3
+Message-ID: <avUFwDt0ZQjf2os-@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,13 +58,56 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261111-keyctl-pkey-fixes-v1-2-934ebaa267a7@cispa.de>
 
-On Wed, Nov 11, 2026 at 04:56:08PM +0100, Florian Bauckholt via B4 Relay wrote:
-> <SNIP>
- 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+The following changes since commit b3dfbde62cf1981c4638939c159dfd087b7a72e9:
 
-That said, I'd by default pick only 1/2 to my tree.
+  Merge tag 'linux_kselftest-fixes-7.4-rc3' of git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest (2026-11-09 16:39:05 -0800)
 
-Br, Jarkko
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/tpm-v7.4-rc3
+
+for you to fetch changes up to 03fcb358249dc715124b3616f814ea0ecc6ec36c:
+
+  tpm: acpi: Fix memory leak at tpm_read_log_acpi() error path (2026-11-10 14:52:19 +0200)
+
+----------------------------------------------------------------
+[GIT PULL] TPM DEVICE DRIVER changes for v7.4-rc3
+
+Briefly described this PR tag contains the following bug fixes:
+
+  1. Add the missing check of the return value of crypto_kpp_set_secret()
+     when creating an authenticated HMAC session.
+  2. Check the payload size of EVENT_TAG entries before reading them, in
+     order to avoid out-of-bounds reads with a truncated TPM 1.x event
+     log.
+  3. Flush the timeout work outside buffer_mutex in tpm_common_read(), as
+     the work itself takes the same mutex, which can lead to a deadlock.
+  4. Fix a memory leak of the event log buffer in the error path of
+     tpm_read_log_acpi().
+
+No other bigger story here except as I've put tpm2-sessions.c to my private
+"address the vector" TODO-list. It's something I'd really like to refurbish
+in near future as secure boot enabled hibernate will also depend on it (an
+upcoming feature).
+
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+
+----------------------------------------------------------------
+Eric Biggers (1):
+      tpm: Check return value of crypto_kpp_set_secret()
+
+Guanglei Zhu (1):
+      tpm: eventlog: check the payload size before reading tag events
+
+Hyunjung Ko (1):
+      tpm: flush timeout work outside buffer_mutex to avoid deadlock
+
+Takashi Iwai (1):
+      tpm: acpi: Fix memory leak at tpm_read_log_acpi() error path
+
+ drivers/char/tpm/eventlog/acpi.c  |  4 +---
+ drivers/char/tpm/eventlog/tpm1.c  |  7 +++++++
+ drivers/char/tpm/tpm-dev-common.c | 12 +++++++++++-
+ drivers/char/tpm/tpm2-sessions.c  |  4 +++-
+ 4 files changed, 22 insertions(+), 5 deletions(-)
