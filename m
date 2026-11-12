@@ -1,57 +1,79 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794481220;
-	b=l5NkKSIqsBfMcuXnGBJCDiIc92e6eR/oRFR8DSSncYxBVTnUa8cxeKGQDFMYGeLFw9/X
-	 rYizAHNbATZjdmbHS61aY4FSUfT66nxtsU43KKXD2Guch/Cp3GVtb1JLuXIe6a3b+MBR4
-	 ujF0aqkJxYk9pi++WPuGq+JuM/qbPxhk3RYF3FbXPdVeWV3frA897q+jHWXv8L/Z1MPsH
-	 x+CWcEb5eOULuGoSbvP110ocACCxdcWJAa+a5DsyX6Xi/6RyZUe6Wa/Sok/F+Z852qka5
-	 wOPlb4prZYCx46+XWoraSpvPeT7nrfgSbXM4celuM+Jbe7bEKvHUpY/M8lr55STVETQ==
+	t=1794493173;
+	b=u8hilQYCIPnIgVM+HF0USvW1R4Sz6qgdZAS3dMN1FqAm43Tomkufpz7rKnvLZpuzPSYk
+	 W5RbSDFoJ5w3ORtRGUVBJyReG46qCAfYc30HCbzdldvnYxLD2cfUGEErA/t8o5D8J9a9I
+	 PnHPrF89HZJWB5C3/GQchD8+muDdGmNN4l46+9ndow0/sdxt6hRl7AM1Wxk77TxxmgLzh
+	 Sf4YbcX45CHHvvmMxzL0fdkFWEyJISQOxENG48BndbJxxEITDJI/q75RDIBte3DlXTyFX
+	 AWWWMEMCCmbkWdePmIghrjJ4+mhVSBR//exRlt+2KMcnpixApkLLUbBBQDmuG0eWAuw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794481220;
-	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
-	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=Ji73FbGWrdaMviN2yljUtW8HkBEVveCjduuH/AySRBw=;
-	b=x5dO9jLOA4lfxnER2l7VOU23gMF+KUAcQvJkGpesan+u4wbgEFDR7rg+g8CZq7r0HRVz
-	 QTWIEWsFf6eKQtQMEOGD0yl3YBHaPDsHAPnpRnxrt7ugs1Hh3Vf6FIWnP6qVRGC8cv3By
-	 FivaIMKEt7Ws/vlkdgmZ40HvmxhiV6zJtmGaRXJtwu/bvDE7rSUxXkrX+2o2MW7lVTbB1
-	 eRdjYVaG0/e9E2pz3jEFEF0docKDj9jeKbLkdHBKngxGhLeJSf19akKtOTcODjPw8RJCQ
-	 9GnzQ8gFHOakdRC5YwWvZXQ0LCE5bvJDXa4osa1r+0aw5f6T2s+ZSMx+mrrJFB5js3g==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794493173;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=PtL6fQIP5x0WU3dTc2bEBHEkK0f64LH1mQ5PFkYFhLE=;
+	b=kmRT+bTpOmqqTFGPSbLW7KoCtYbf7RXKPFwjDdpzlxUM04BqUoM+JO16Xgb1gdsGI+To
+	 KuaB4/avsQF0iAORXukcXgtymH4emMKcbDoAC/TgkjDOH9+/mMXLk6P16DzIG7ohtctC5
+	 Thuusv0R5FV07S0eq1UvVoZyH7iu0tfaJEMJhQxNLgxOA4rFDgrWgX++O/uZLl4qyu7Wp
+	 GYp3/UBEm8VHhKkWQMe+3SgmoVY9+Hmt0VHTaHxEg/YCrMGzw+d775KkUH7rMSCvBRzE4
+	 UoyOLxmIHaoQsJpxXDUsUI3yw0lYiW4zekEpiUzBjyJwGBdJiJSw3gllA3Dw5gIRFKw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="eB/oB02a";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f8Roc0cn;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 15B0F606A321;
-	Thu, 12 Nov 2026 11:00:19 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 7BA71606A8B8;
+	Thu, 12 Nov 2026 14:19:33 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eB/oB02a
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 25AAD1F00A05;
-	Thu, 12 Nov 2026 11:00:19 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f8Roc0cn
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 8A5A81F00A05;
+	Thu, 12 Nov 2026 14:19:32 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794481219;
-	bh=Ji73FbGWrdaMviN2yljUtW8HkBEVveCjduuH/AySRBw=;
-	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=eB/oB02atLGi6Z1dPMiOSd78bKpNvo9PnonbLmcNYBhMV2mbIgJgDTESUpyJySRyt
-	 Ej9BMJgd7RgZN3L+9Tq7Agj2xwPdLCYEN5jv0Ldsw9Vz9ieIqwPabvINbHwkca6trl
-	 dtLCLxz47SS+j2BvoBeAv+9K4B20x4MNL+Ze3ZPNRBpFRFZ5AmA9xfErYEF5AslOAh
-	 3NiJ9+Wc3Jas5qeKmXi7zKUIC9TixJm94jRXksNRy2h+Tzc3bD/Yigx//XlCtV3Sm/
-	 T21MSeE6qu0zn+7cjDwUh46tyEqpD8LjvjCg5x1HaDkyxSedp1IyiUJvN/kAGhEQEs
-	 3gfO5oFWcXlWw==
-Message-ID: <sashiko-outbox-210983@kernel.org>
-From: sashiko-bot@kernel.org
-Subject: Re: [PATCH] crypto: ecdsa - Reject non-DER X9.62 signatures
-Reply-To: sashiko-reviews@lists.linux.dev
-To: "Florian Bauckholt" <florian.bauckholt@cispa.de>, "Lukas Wunner" <lukas@wunner.de>, "Ignat
- Korchagin" <ignat@linux.win>, "Stefan Berger" <stefanb@linux.ibm.com>, "Herbert
- Xu" <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
-In-Reply-To: <20261112-ecdsa-x962-der-v1-1-36b24c5f5e11@cispa.de>
-References: <20261112-ecdsa-x962-der-v1-1-36b24c5f5e11@cispa.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date: Thu, 12 Nov 2026 11:00:18 +0000
+	s=k20260515; t=1794493173;
+	bh=PtL6fQIP5x0WU3dTc2bEBHEkK0f64LH1mQ5PFkYFhLE=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=f8Roc0cn+u0O6ciGdXv0N/5hcJSLC8kHdFhAQejJqfdgDhIHN7lbJIFyWjliyn9wv
+	 AHbYxO6tYFds4zpiwiNjwDENXGeowTYs1VpY2vh9W0r1YiuRyl2LWdNnx3JO/5GS+R
+	 m9kHpUSrAVM4oc8cB59tP2gyh5shglS+H/fY5e/h8k74l3RK7OdzKafIA+M/4z5OaU
+	 jo8Lx61IXK9lgsoKiKfzQnpssl+cW/pfFg8khmPNbM7Y6w/DoFd+8U5BjWvCXleo9Z
+	 LL+umGjeOKnYEvxWh1rCvVVBaJR+QBYwrwMNc8KtpQHX+cuHVFFLcWjQysR7+uIe/o
+	 3R3xCo03mT+NQ==
+Date: Thu, 12 Nov 2026 16:19:29 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: bpf@vger.kernel.org, dm-devel@lists.linux.dev, fsverity@lists.linux.dev,
+	keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-kselftest@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	Alasdair Kergon <agk@redhat.com>,
+	Alexei Starovoitov <ast@kernel.org>, Alex Shi <alexs@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andrii Nakryiko <andrii@kernel.org>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	Daniel Borkmann <daniel@iogearbox.net>,
+	Dongliang Mu <dzm91@hust.edu.cn>,
+	Eduard Zingerman <eddyz87@gmail.com>,
+	Emil Tsalapatis <emil@etsalapatis.com>,
+	Eric Biggers <ebiggers@kernel.org>,
+	Ignat Korchagin <ignat@linux.win>,
+	Ihor Solodrai <ihor.solodrai@linux.dev>,
+	James Morris <jmorris@namei.org>, Jiri Olsa <jolsa@kernel.org>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Kumar Kartikeya Dwivedi <memxor@gmail.com>,
+	Martin KaFai Lau <martin.lau@linux.dev>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Paul Moore <paul@paul-moore.com>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Shuah Khan <skhan@linuxfoundation.org>, Song Liu <song@kernel.org>,
+	"Theodore Y. Ts'o" <tytso@mit.edu>,
+	Yanteng Si <si.yanteng@linux.dev>,
+	Yonghong Song <yonghong.song@linux.dev>
+Subject: Re: [PATCH v9 0/3] KEYS: Replace assoc_array with rhashtable
+Message-ID: <avXK8UKNmsr8NwSM@kernel.org>
+References: <20261110053323.2936729-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -60,90 +82,34 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261110053323.2936729-1-jarkko@kernel.org>
 
-Thank you for your contribution! Sashiko AI review found 1 potential
-issue to consider:
-- [High] crypto: ecdsa - keyctl_pkey_params_get_2() breaks
-  ecdsa_x962_verify()
---
+On Tue, Nov 10, 2026 at 07:33:20AM +0200, Jarkko Sakkinen wrote:
+> The keyrings subsystem is the sole user of assoc_array. It has over 1700
+> lines of code, no test suite, and a long history of bugs, with LLMs now
+> finding more.
+> 
+> This unfortunate outcome has evolved over time by large from the shortage
+> of in-kernel callers, time bandwidth and 3rd party contributors.  What the
+> keyrings subsystem needs is just a generic key-value store, which performs
+> well with sparse key sets. Replace assoc_array with an rhashtable-backed
+> keyring index and remove assoc_array from the kernel.
 
-commit 507f70b0a1dc8642ced214dd9427e506b434b4b9
-Author: Florian Bauckholt <florian.bauckholt@cispa.de>
+Hmm...
 
-crypto: ecdsa - Reject non-DER X9.62 signatures
+- 1/3: 2x R-by
+- 2/3: 1x R-by
+- 3/3: 1x R-by
 
-This commit enforces strict DER encoding for X9.62 ECDSA signatures by
-validating the INTEGER and SEQUENCE headers and rejecting trailing bytes,
-along with adding Wycheproof test vectors for invalid BER encodings.
+Does anyone want to bring something up, and should I just apply these?
 
-> diff --git a/crypto/ecdsa-x962.c b/crypto/ecdsa-x962.c
-> index ee71594d10a06..69e932bbd5511 100644
-> --- a/crypto/ecdsa-x962.c
-> +++ b/crypto/ecdsa-x962.c
-[ ... ]
-> @@ -73,6 +88,24 @@ int ecdsa_get_signature_s(void *context, size_t hdrlen=
-, unsigned char tag,
->  				      sig_ctx->ndigits);
->  }
-> =20
-> +/*
-> + * The BER decoder accepts a SEQUENCE tag without the constructed bit,
-> + * long-form and indefinite lengths, and ignores data following the SEQU=
-ENCE.
-> + * DER permits only the constructed tag, the shortest length encoding and
-> + * nothing after the SEQUENCE.  The decoder has already checked that r a=
-nd s
-> + * fill a definite-length SEQUENCE exactly.
-> + */
-> +static bool ecdsa_x962_seq_is_der(const u8 *src, unsigned int slen)
-> +{
-> +	if (src[0] !=3D (ASN1_CONS_BIT | ASN1_SEQ))
-> +		return false;
-> +
-> +	if (src[1] < 0x80)
-> +		return slen =3D=3D 2 + src[1];
-> +
-> +	return src[1] =3D=3D 0x81 && src[2] >=3D 0x80 && slen =3D=3D 3 + src[2];
-> +}
-> +
->  static int ecdsa_x962_verify(struct crypto_sig *tfm,
->  			     const void *src, unsigned int slen,
->  			     const void *digest, unsigned int dlen)
-> @@ -88,6 +121,9 @@ static int ecdsa_x962_verify(struct crypto_sig *tfm,
->  	if (err < 0)
->  		return err;
-> =20
-> +	if (!ecdsa_x962_seq_is_der(src, slen))
-> +		return -EINVAL;
+I'm lost of ideas what to do with this further.
 
-[Severity: High]
-Does requiring slen to match the exact DER SEQUENCE length break
-keyctl(KEYCTL_PKEY_VERIFY) for valid X9.62 signatures in this tree?
+The only thing that comes up to my mind is whether it would be smart to
+stick to ids instead of moving back to addresses. This is not actually
+important (and can be always revisited).
 
-In struct kernel_pkey_params, out_len and in2_len share an anonymous union.
-Since commit cb481e59ea6c ("KEYS: fix overflow in
-keyctl_pkey_params_get_2()"), keyctl_pkey_params_get_2() overwrites
-params->in2_len with info.max_sig_size:
-
-security/keys/keyctl_pkey.c:keyctl_pkey_params_get_2() {
-    ...
-	case KEYCTL_PKEY_VERIFY:
-		if (uparams.in_len  > info.max_data_size ||
-		    uparams.in2_len > info.max_sig_size)
-			return -EINVAL;
-
-		params->out_len =3D info.max_sig_size;
-		break;
-    ...
-}
-
-keyctl_pkey_verify() -> asymmetric_key_verify_signature() then passes
-info.max_sig_size as slen to ecdsa_x962_verify().  As noted in the patch
-commentary, until the separate keyctl fix is applied in this tree, any
-valid DER-encoded X9.62 signature shorter than max_sig_size (for example, a
-70- or 71-byte NIST P-256 signature where max_sig_size is 72) fails the
-slen check in ecdsa_x962_seq_is_der() with -EINVAL.
-
---=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261112-ecdsa-x962=
--der-v1-1-36b24c5f5e11@cispa.de?part=3D1
+Br, Jarkko
