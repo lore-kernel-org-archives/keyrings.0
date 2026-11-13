@@ -1,80 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794587205;
-	b=yHGxPlPTsEx9FHqrXkAf/QsM5+ap5Vv2wnDQ19xH1vKBYOFjOzmeSpRoF/3sdV1FS2WC
-	 KAuM9E7ZG/VueSdUFPU+NgcTXEM9X1E2aG8biHF7beqREDW3DViD+Oz3Egp927q92MEzZ
-	 uq5U5fQzh2+H+tvOVRuP1M6zi48E+6srY/hBZOfZRdkdD+caMQ8V26AiZFWH+VtnpH1yn
-	 8nCildS0GcYd835+JV9J/WfC97ixi65biwHwHftk4EOUcEbxDjda7Tnu4cE/nWbEBmBQb
-	 cXVmrlt30hoyn4eXallKQkb/RtsMDwozHr51wmcZeTnYLJN6CQiLUDoxKiaTWgcql/g==
+	t=1794597271;
+	b=YZr+UEi4qUGXlgkYoe/1c3ybkkGM/EG6LeQLgc17P8FFKzZIbeQJHTjAhf9QbNXpegGg
+	 CAs7yoKxG2z2n8NCflwShUU5xmhgXeQw5gYuDVv9MVQKQoSp96B+VU0i1UmPIBfaB9PIa
+	 d/aJc57wBPxk2uRp0N9xKHZdgpGxbOc6V6MoMlEdIhgz37ecLog6ya7BTrEE8vRpNCcS2
+	 lDutVFqFjKKaF5C08SQ0gdBbGQahEhI7aKfim9ZBGK/+5/vg8WvIKps51IUTlBtQPlz7n
+	 sxTlYOeCKUUc1H8NoX9HUfug2WiXfinSCqMx85d6KbrnxwG9NSmop1iz8o9tENUSVKw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794587205;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794597271;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=7ZfF8luHREto/ub5t5xIcKnzvyfNad3KP1cbQ4+yoxs=;
-	b=TQ42+SvPVDgfofY3wrfBE1O/uKtJZDZ7Rbms3QnWvBxCa1FEf4AncrtzvxieXr9C1xTM
-	 vPLBLIYuZTKcTnMQLRh5ddkcIRMQdJ8vOzOzu4okF47Tz7ZttQ2U088xj1tic6F3zktBZ
-	 p/jDejhnVhTJ3PeF9GVr01VfWGKUOCdZcyGMefDgakqaDl1ehIryKXQlDfXMdStXbAWbT
-	 O+D3BUpjAA7eryt2nrg1jZMFKiOoLKer5J9xKAdl1j+VwBBn/DUQcSOMHYjvsvGISllgj
-	 KiyBJZNX1DTU9TMrZSmTY7i6T5Q90eTVohs0PRsy4vQ8oT7wDlFvXnx81IDnv0eqmyw==
+	 MIME-Version:Content-Type:Content-Disposition:X-Mailer;
+	bh=Z4yYXkmxh701AcFaXQRx0Ej7ViNSTX0++LPPaE17898=;
+	b=TOCux05iBOlbsn0uO2KTsxXfC4jFjwYz8KQSQrdpLNuFnGiDafLln4T7MXbgyFtCmU4C
+	 eMk/dpoA1k1A0lans+KxkMZ5RzKWR4Okn/YWKn7ij0vQZtsiXx6QcdnPH117XAM+Gh8sJ
+	 qjGYpL51ynL9+Lfb4foFGF4hd1jKHHEYLC4UViP0SPKtzhJ5/U+uKDOW8EmyjIYM66xMe
+	 ajIef4mysZKubQ1yaPw0Kxaa59HKX2rw33uz+E94MyRXtMiVeHCOhcgOBFEfbbozCK3qN
+	 hQpPzVuzI7ZKGW25bR0r5UR1U6mS6l4zpdzXSh5XcC6NOLfy/wWznCgZqleZ91djEdA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PGdbvyD+;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=IsfoCP0+;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 6D136606B2EA;
-	Fri, 13 Nov 2026 16:26:45 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 91510606A331;
+	Fri, 13 Nov 2026 19:14:31 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=PGdbvyD+
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5B4821F000C4;
-	Fri, 13 Nov 2026 16:26:44 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=IsfoCP0+
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A4EAF1F000C4;
+	Fri, 13 Nov 2026 19:14:30 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794587205;
-	bh=7ZfF8luHREto/ub5t5xIcKnzvyfNad3KP1cbQ4+yoxs=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=PGdbvyD+2glvNYn4aWF67C5abmwt8X5SusDm06ubZ5KfmfHlvA6WSsotDlfEZ5Jo5
-	 nCkLaoKt0XLmtR1Hi6JkJ61CaAwYpyRTC740e6+kpGsdAxlAuQvQNwET/tXQKB+X3K
-	 /XdbhzeuRy2IFU1d0BiJxGO8t7i/48Vqq1Nsj238jba6JtysSGtxnC0shZNGF8ZtQP
-	 JnsH+OOidLxZFlQ/yFf5c97LWhpISeIeBjbWvvDsigvl9jdT1Taj/lRgvRobfeVEHK
-	 8cfOs6ioXBp1G03RIOuVBD8tQzIiQrwnD8WH+Qj5wr5SMUVr+KhZcoCLQSJoIWTxvm
-	 2JjKLTgq7vBMA==
-Date: Fri, 13 Nov 2026 18:26:41 +0200
+	s=k20260515; t=1794597271;
+	bh=Z4yYXkmxh701AcFaXQRx0Ej7ViNSTX0++LPPaE17898=;
+	h=Date:From:To:Cc:Subject;
+	b=IsfoCP0+CDhYTRrZNsK/b4g9RK3UIcQVMNMgpANt/1EpdCj7xaIdHl42GPoBQGX22
+	 m3s3OfkXqnIanESxvpudAZx5OhG/73L8PF0wI2y0HVRlOHxMjNH1ATKBZ/K+bzyZcG
+	 4CM+YfwTuxi8LJWSED6SBAZpGS3QxsFNESup2Ep8novQzbeM5OLV8gqkAKeNsCyO6Q
+	 2J7tAzZH1Pqm4MPPKVf8mmBtHfetAI9vBwFvxbSuPm+4WgMLwilNFkux3lC5rWh7Wk
+	 voU2xPl7SmELbCpGnXNtWS7FoE/K9AhG1pLek/J4yTLwd7EIthfAN1HT9SbYi6gti1
+	 rK3r0BaokaV5A==
+Date: Fri, 13 Nov 2026 21:14:27 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: bpf@vger.kernel.org, dm-devel@lists.linux.dev, fsverity@lists.linux.dev,
-	keyrings@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-kselftest@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	Alasdair Kergon <agk@redhat.com>,
-	Alexei Starovoitov <ast@kernel.org>, Alex Shi <alexs@kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Andrii Nakryiko <andrii@kernel.org>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	Daniel Borkmann <daniel@iogearbox.net>,
-	Dongliang Mu <dzm91@hust.edu.cn>,
-	Eduard Zingerman <eddyz87@gmail.com>,
-	Emil Tsalapatis <emil@etsalapatis.com>,
-	Eric Biggers <ebiggers@kernel.org>,
-	Ignat Korchagin <ignat@linux.win>,
-	Ihor Solodrai <ihor.solodrai@linux.dev>,
-	James Morris <jmorris@namei.org>, Jiri Olsa <jolsa@kernel.org>,
-	Jonathan Corbet <corbet@lwn.net>,
-	Kumar Kartikeya Dwivedi <memxor@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Martin KaFai Lau <martin.lau@linux.dev>,
-	Mike Snitzer <snitzer@kernel.org>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Paul Moore <paul@paul-moore.com>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Shuah Khan <skhan@linuxfoundation.org>, Song Liu <song@kernel.org>,
-	"Theodore Y. Ts'o" <tytso@mit.edu>,
-	Yanteng Si <si.yanteng@linux.dev>,
-	Yonghong Song <yonghong.song@linux.dev>
-Subject: Re: [PATCH v10 0/3] KEYS: Replace assoc_array with rhashtable
-Message-ID: <avc6QSzdVwtpUxUf@kernel.org>
-References: <20261113161836.3587552-1-jarkko@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>,
+	James Bottomley <James.Bottomley@hansenpartnership.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Eric Biggers <ebiggers@kernel.org>, keyrings@vger.kernel.org,
+	linux-integrity@vger.kernel.org,
+	linux-security-module@vger.kernel.org
+Subject: [GIT PULL] KEYS: changes for v7.4-rc3-2
+Message-ID: <avdhk_n9dwfd4jVk@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -86,19 +63,50 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261113161836.3587552-1-jarkko@kernel.org>
+X-Mailer: aerc
 
-On Fri, Nov 13, 2026 at 06:18:33PM +0200, Jarkko Sakkinen wrote:
-> v10:
-> - No changes since the previous round. This is a sanity check round
->   given the lack of feedback to v9. I'll apply these patch very soon,
->   unless nothing (relevant) comes up fast.
+The following changes since commit 7e1392a42ea288d70a266f6553fe06f57f8647ea:
 
-We're at mid-cycle. Thus, it makes sense to get these changes ASAP to
--next so that they get more exposure.
+  Merge tag 'net-7.4-rc3' of git://git.kernel.org/pub/scm/linux/kernel/git/netdev/net (2026-11-12 12:26:14 -0800)
 
-I have one PR waiting for keyrings in queue with a couple of bug fixes.
-As soon as -next is in-sync, I'll send tate PR, apply rhashstable patches
-and make the commits available at -next.
+are available in the Git repository at:
 
-Br, Jarkko
+  git://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git tags/keys-v7.4-rc3-2
+
+for you to fetch changes up to bab48a1044475f62d6e910c6d7267ce4bae847f9:
+
+  KEYS: Protect pkey method checks against type removal (2026-11-13 06:28:55 +0200)
+
+----------------------------------------------------------------
+[GIT PULL] KEYS: changes for v7.4-rc3-2
+
+This second PR for v7.4-rc3 bundles two bug fixes:
+
+1. Invoke the match callback before the state checks in
+   keyring_search_iterator(), so that a non-matching revoked, expired or
+   invalidated key cannot decide the search result.
+2. Take key->sem for reading around the ->asym_*() method calls in the
+   keyctl pkey operations, as a key reference does not pin the module
+   providing the key type.
+
+I decided to send this in order to get the remaining key type fixes off
+the way.
+
+As said earlier this week, I have made a patch set, making the life-time of
+a key type dependent of the keys that use it at the kernel module level.
+My goal is to land both rhashtable changes and key type changes to v7.5,
+as that would provide a nice baseline to further improving keyrings (and
+IMHO best picks as starting points overall).
+
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+
+----------------------------------------------------------------
+Guixiong Wei (1):
+      KEYS: do not let an unmatched key decide the search result
+
+Yuansheng Yang (1):
+      KEYS: Protect pkey method checks against type removal
+
+ security/keys/keyctl_pkey.c | 100 +++++++++++++++++++++++++++++++++-----------
+ security/keys/keyring.c     |  12 +++---
+ 2 files changed, 82 insertions(+), 30 deletions(-)
