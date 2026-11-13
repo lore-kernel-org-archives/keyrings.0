@@ -1,64 +1,85 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=180.181.231.80
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=148.163.158.5
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794575047;
-	b=Ptw36B0eStupV0dnpUpgmtJc9e4pj0T7hNUPacZp1W1aRg7AVACyCyK3p6ifm8LV6/gC
-	 HwA3o+tn9YMFwnbqm0LYLW09fYHGDVfqiclYEySdfj5ecfwvNKAjssoGIXxNUjlKuoDTn
-	 oxbOzSkOx3NS8/SsDI4/nW8334ZYNz8NGJpzo26CNChCIiRYxgBONoWM6rQUbH0cLRLGK
-	 L5LaqsHpb7uknT0BGC4lJVWeeDTr/rc94xtXafyJVyOBlW+lrPH+6NoCUdiH4cT0eFLT4
-	 TrZEjM+HaCM3qBYvQ1z6Nr5pRFnciwIqzM0MJpvc940NGnM4bBTmavFhb7q/EM20BAg==
+	t=1794578609;
+	b=PtCPFHt2xhb8jc+a3WCYFFKl8t87NgdiVRJNYTR6qjxrgIWgEZkqHcGJ/A2wx4FcEUX6
+	 4IBymLu6HYASnfAcTiCCAzdi5w5eQV82z3Iss80SEqnV1lbt0c4Y6F7R3/jlTB3obIQ+V
+	 h4XZo8bCO+9Md+EyAL4+Apk53qCZ8UwntPriWQCZkSQ2kjauqkRbEvQf9G+LplNEuwmb9
+	 q/zUrQBaxzYgkkUSWJ5f2B0Flc15n5KhQhXSvO4DPJIzQuqyUcQ5hc8gApQMmcr9juwdH
+	 h21PoKbaQhxjYzAN0nlnaJg1fm1nuDYVViS2cLEMJTiBLYdBe/jVZ+ZwVOlS/5StY3A==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794575047;
-	h=DMARC-Filter:DKIM-Signature:Received:Received:Date:From:To:Cc:
-	 Subject:Message-ID:References:MIME-Version:Content-Type:
-	 Content-Disposition:In-Reply-To;
-	bh=HqTuUMXfM22ySYhQPGjeWLFpYJZoIXrpBRITb/aVutg=;
-	b=v9N709OuN1Qi78SvaAeWAbgoaPeeIpIsx60xmWHWpl/EsOnhZJfKEeAwgvedQ7W30upf
-	 K9FgIU6hTzVu1lP0tkiGSC/YuV/sJcUy2ioQ0ZevnXlQ9V3yFNZQVY8uHltpmjkvq5QOo
-	 j4p38i2RhFrTBfI7H/3UT6PjfHULYtet0kFWi5pICg2ksB3eBEPdRAfgKnu8wyqzXAKVx
-	 sJWPVBlHfLsmc8Qn2p0qIHuA0OM8om7Lsv3gcOPlV4xMUuEA2d81XzZKq6VZ54A6bqsr4
-	 0Q1HnzeEEnBG6v9Ny9VAkQxCzDEm+GisEaosfxC1UIVlo8XLA0wbh/TKUqzCR1I7TBw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794578609;
+	h=DMARC-Filter:Received:DKIM-Signature:Received:Received:Received:
+	 Received:Received:Received:Received:From:To:Cc:Subject:Date:
+	 Message-ID:X-Mailer:MIME-Version:Content-Transfer-Encoding:
+	 X-TM-AS-GCONF:X-Authority-Analysis:X-Proofpoint-Spam-Details-Enc:
+	 X-Proofpoint-Spam-Info:X-Proofpoint-GUID:X-Proofpoint-ORIG-GUID:
+	 X-Proofpoint-Virus-Version:X-Proofpoint-Spam-Details;
+	bh=tvqygwyUVR4EPp0FlDryYT67wk1QCPl6+ronOyRVySw=;
+	b=EEnLVK3pXhh4SAojwEMunVJIuEDmjFJwbz5kDni4+JSJ52JDwlsRkxMzPWV3vgTQkZhF
+	 LDcBxk724+TkwcUb+Px+xz7k24Vi8Weq6JZRP1hqSNUF+zFtCKENFYhe3e/L+mI8f4tT8
+	 EcgEUnJLTaOJWwhcviXiyE7QclW6nSt3HGNEhhfCMZI5poNx4jthtWCJC+6yxceXKQZyN
+	 vOytKmBJAV4K2rOsXa4scOxt/vQb3hLYIYArya/eIv21TvPiC4bm57NvwYLrtAMmPyChA
+	 sG35lYSlH77dZVMS5rAGwm0VWIiGHni9bCCUubMVqv9c5QveoKW1zcjM83mX1au2Gog==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gondor.apana.org.au;
-	spf=pass smtp.mailfrom=gondor.apana.org.au;
-	dkim=pass header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.a=rsa-sha256 header.s=h01 header.b=oSaGoiFO;
-	arc=none smtp.remote-ip=180.181.231.80
-Received: from abb.hmeau.com (abb.hmeau.com [180.181.231.80])
+	dmarc=pass header.from=linux.ibm.com;
+	spf=pass smtp.mailfrom=linux.ibm.com;
+	dkim=pass header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=A4WK0up7;
+	arc=none smtp.remote-ip=148.163.158.5
+Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange ECDHE (prime256v1) server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 46ED8606A327;
-	Fri, 13 Nov 2026 13:04:07 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 46ED8606A327
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gondor.apana.org.au
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 092CA606A323;
+	Fri, 13 Nov 2026 14:03:28 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 092CA606A323
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.a=rsa-sha256 header.s=h01 header.b=oSaGoiFO
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=gondor.apana.org.au; s=h01; h=In-Reply-To:Content-Type:MIME-Version:
-	References:Message-ID:Subject:Cc:To:From:Date:cc:to:subject:message-id:date:
-	from:content-type:reply-to; bh=HqTuUMXfM22ySYhQPGjeWLFpYJZoIXrpBRITb/aVutg=; 
-	b=oSaGoiFOdjh0rfYr65GZKf3juj7y7Mmj+eDclXhQ+3MngLaduAamh1ryN0xXowbAU6BkkYuPOsM
-	llhb8CP/yOBB/KCpcdzSLhos9sH8thV1kTr3DMVyqyUTXA864m+Ki/KRffvtM7l1+Rlp/bMYEJmfF
-	RCorlpclBc5J6Ez9CJFZOadkUTAiYkv4pebTfHnnN01VLB+6Ga9kyLeD7lsXaf9lu8m2X2hCRDmm5
-	nEedynDzkXDcwrg9yFpUJ98XTvWpB2OQ0KTQu5qxZ88dQjljthv07Y1F3n6wLE0YAx69jfye+NvFE
-	SDBvFndpdIucLkZfIwtKjSl5wKOhpcQf43RQ==;
-Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
-	by formenos.hmeau.com with smtp (Exim 4.98.2 #2 (Debian))
-	id 1xRqwf-0000000EfCh-2DZ2;
-	Fri, 13 Nov 2026 21:03:58 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Fri, 13 Nov 2026 21:03:57 +0800
-Date: Fri, 13 Nov 2026 21:03:57 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Gu Bowen <gubowen5@huawei.com>
-Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
-	Ignat Korchagin <ignat@linux.win>, keyrings@vger.kernel.org,
-	linux-crypto@vger.kernel.org, kexec@lists.infradead.org,
-	linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-	lujialin4@huawei.com
-Subject: Re: [PATCH -next] crypto: asymmetric_keys: verify_pefile: fix
- integer underflow in pefile_strip_sig_wrapper
-Message-ID: <avcKvXmCOXYwJM5D@gondor.apana.org.au>
-References: <20261102074934.2925339-1-gubowen5@huawei.com>
+	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.a=rsa-sha256 header.s=pp1 header.b=A4WK0up7
+Received: from pps.filterd (m0353725.ppops.net [127.0.0.1])
+	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 6ADCEQ611667877;
+	Fri, 13 Nov 2026 14:03:16 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
+	:content-transfer-encoding:date:from:message-id:mime-version
+	:subject:to; s=pp1; bh=tvqygwyUVR4EPp0FlDryYT67wk1QCPl6+ronOyRVy
+	Sw=; b=A4WK0up7FkOaDUyH7VfjvFWOpaP5iop5egxAPwYY/jT47b8YkCSaWo1sf
+	A5GDxbFNJRB4FybHSipDPO/Lfv9dRonpwm+LdPgLsQPGVC8ZyGStTIanHSizNCN9
+	gQQ86g9Ke3qH3k6sYpqjtpSSYh6U9VLhlzu5RBH9DDP9ynGAlzy2VNPjSa8KXiJr
+	bD8Hu49XLEXOEX1OLVxZspvdCjks0qpBQm7iqhFmnALlK9ZnyMFkVoStFBbFMMvW
+	mMUhz42ftdn7bGzVv64+KIYzi3oAIFomrR+SokYTqcgpXDadDXmgxxkxKOXKSmjW
+	O/2L/SRAcfqpKH6rUL2jBNDFJ3APQ==
+Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
+	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4hstdgjsc1-1
+	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
+	Fri, 13 Nov 2026 14:03:15 +0000 (GMT)
+Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
+	by ppma12.dal12v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 6ADC5FqJ2245052;
+	Fri, 13 Nov 2026 14:03:15 GMT
+Received: from smtprelay05.dal12v.mail.ibm.com ([172.16.1.7])
+	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4hwd85catc-1
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+	Fri, 13 Nov 2026 14:03:15 +0000 (GMT)
+Received: from smtpav02.wdc07v.mail.ibm.com (smtpav02.wdc07v.mail.ibm.com [10.39.53.229])
+	by smtprelay05.dal12v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 6ADE3Ebg16122494
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+	Fri, 13 Nov 2026 14:03:14 GMT
+Received: from smtpav02.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id 8EF2858017;
+	Fri, 13 Nov 2026 14:03:14 +0000 (GMT)
+Received: from smtpav02.wdc07v.mail.ibm.com (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id E0F935805C;
+	Fri, 13 Nov 2026 14:03:13 +0000 (GMT)
+Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
+	by smtpav02.wdc07v.mail.ibm.com (Postfix) with ESMTP;
+	Fri, 13 Nov 2026 14:03:13 +0000 (GMT)
+From: Stefan Berger <stefanb@linux.ibm.com>
+To: jarkko@kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, Stefan Berger <stefanb@linux.ibm.com>,
+        Florian Bauckholt <florian.bauckholt@cispa.de>
+Subject: [PATCH] KEYS: Fix signature input size for KEYCTL_PKEY_VERIFY
+Date: Fri, 13 Nov 2026 09:03:11 -0500
+Message-ID: <20261113140311.1375048-1-stefanb@linux.ibm.com>
+X-Mailer: git-send-email 2.56.0
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -68,69 +89,64 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261102074934.2925339-1-gubowen5@huawei.com>
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Authority-Analysis: v=2.4 cv=J+M/fwnS c=1 sm=1 tr=0 ts=6af718a3 cx=c_pps
+ a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
+ a=zJRp6_cAMcgA:10 a=VkNPw1HP01LnGYTKEx00:22 a=RnoormkPH1_aCDwRdu11:22
+ a=V8glGbnc2Ofi9Qvn3v5h:22 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8
+ a=Dg1OHsfEkaJg19lmKZgA:9
+X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYxMTEzMDA1NCBTYWx0ZWRfX94st5tQ0YWCw
+ +kBMG6f3AyBENXkW0n8jepBcHCuHWeqPmszh+zC5b9gxPnWrkjJquFZHZGBQSoJSHujSFzU+yEM
+ /fcGmjDF5OO4V1BL/R+A/SKbwTgX7o/7WomcDD43J/IpZ4akpO+TJVGMeFC1I5KRcu151YV+wqN
+ 4Xs4cC6ItZTPS1eFUVuU8DafOmpQJIQbH8c8Gf8nYmdQ9Hqh/GeE2noga/DJobQOz/NkwROFxkh
+ +CrXRPJ8EiTeGdlr/BL9mNLjbhb0yNSTQzCd4WHAy+EO+fQxRaQmKWTgGA0zrmRftI7401o0ReM
+ KmU4ogBAnLavLxSJadyq2aZyt+tbee086F5y8R7xhyr5dYUoMgiLS/DtZ9ZPWTB2Lbv2oZsfZd/
+ 56jDD3fMcdetL9RTk6o5Oe66lhJ2G+P17+b72VyWo1c8D7GivbfBAY44mzoNFp5CMu8/lsjQtml
+ TlpgRvvW1RI2KyGxFtw==
+X-Proofpoint-Spam-Info: AW1haW4tMjYxMTEzMDA1NCBTYWx0ZWRfX2wAOMOX+bPr8
+ OE7h506AZgvJ19z8pLIh03g9LzSYlj9Qb6AkMNWM6p34rrInd9HZTJBNaXhTxl5h5gJqgW7qr/r
+ RMoeCJr8CKt6qplmB4kZWyoey6a64AY=
+X-Proofpoint-GUID: efJEbBTl7iXUdL3vFKtIdO23gJuyoL4r
+X-Proofpoint-ORIG-GUID: efJEbBTl7iXUdL3vFKtIdO23gJuyoL4r
+X-Proofpoint-Virus-Version: vendor=baseguard
+ engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.138,FMLib:17.12.100.49
+ definitions=2026-11-13_04,2026-11-11_03,2025-10-01_01
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
+ lowpriorityscore=0 phishscore=0 bulkscore=0 adultscore=0 suspectscore=0
+ malwarescore=0 clxscore=1015 priorityscore=1501 impostorscore=0 spamscore=0
+ classifier=typeunknown authscore=0 authtc= authcc= route=outbound adjust=0
+ reason=mlx scancount=1 engine=8.22.0-2611040001 definitions=main-2611130054
 
-On Mon, Nov 02, 2026 at 03:49:34PM +0800, Gu Bowen wrote:
-> The pefile_strip_sig_wrapper() function validates the win_certificate
-> wrapper that precedes the PKCS#7 signature in a PE binary.  It checks
-> that the wrapper length does not exceed the certificate table size
-> (``wrapper.length > ctx->sig_len``) but fails to verify that the
-> wrapper length is at least ``sizeof(struct win_certificate)`` (8 bytes).
-> 
-> When a crafted PE image supplies a wrapper with ``length`` in the range
-> [1, 7], the subsequent arithmetic::
-> 
->     ctx->sig_len = wrapper.length;      /* e.g. 1 */
->     ctx->sig_offset += sizeof(wrapper);
->     ctx->sig_len -= sizeof(wrapper);    /* 1 - 8 = 0xFFFFFFF9 (unsigned) */
-> 
-> underflows the unsigned ``ctx->sig_len`` to a value near UINT_MAX.  The
-> following ``sig_len < 4`` sanity check is bypassed because 0xFFFFFFF9 is
-> greater than 4.
-> 
-> The underflowed ``sig_len`` is then passed to verify_pkcs7_signature()
-> and onwards to asn1_ber_decoder().  The ASN.1 decoder's own
-> ``datalen > 65535`` entry guard can be satisfied by constructing a
-> PKCS#7 length field of exactly 65535 (e.g. ``30 82 ff fb``), allowing
-> the decoder to proceed and attempt to read OID octets beyond the
-> allocated vmalloc buffer, triggering a page fault in look_up_OID()::
-> 
->   BUG: unable to handle page fault for address: ffffd1e986cb2000
->   #PF: supervisor read access in kernel mode
->   RIP: 0010:look_up_OID+0x14/0x100
->   Call Trace:
->    pkcs7_note_OID+0x33/0xa0
->    asn1_ber_decoder+0x363/0xbd0
->    pkcs7_parse_message+0xd9/0x1b0
->    verify_pkcs7_signature+0x24/0x80
->    verify_pefile_signature+0x7b/0xf0
->    kexec_kernel_verify_pe_sig+0x1b/0x40
->    kimage_file_alloc_init+0x1d8/0x3f0
->    __se_sys_kexec_file_load+0xc6/0x270
-> 
-> This is reachable through the kexec_file_load syscall on architectures
-> that verify PE signatures (x86 bzImage with
-> CONFIG_KEXEC_BZIMAGE_VERIFY_SIG, arm64 Image with
-> CONFIG_KEXEC_IMAGE_VERIFY_SIG), requiring CAP_SYS_BOOT.
-> 
-> The oops occurs while the caller holds kexec_lock; if the faulting task
-> is killed, the lock is never released, leaving all subsequent kexec and
-> kdump operations permanently returning -EBUSY until reboot.
-> 
-> Add a lower-bound check on wrapper.length before the subtraction to
-> prevent the underflow.
-> 
-> Fixes: 09dacbbda935 ("pefile: Strip the wrapper off of the cert data block")
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Gu Bowen <gubowen5@huawei.com>
-> ---
->  crypto/asymmetric_keys/verify_pefile.c | 5 +++++
->  1 file changed, 5 insertions(+)
+Revert the changes made for signature verification in cb481e59ea6c back
+to the old behavior where effectively the params->in2_len was set to the
+length of the user provided buffer uparams.in2_len (out_len is an alias
+for in2_len due to the union). We cannot use the max_sig_size in the
+case of signature verification since this is neither the true size of the
+input buffer nor would it pass tests of size indicators found in the ASN.1
+in the buffer comparing against the input buffer size.
 
-Patch applied.  Thanks.
+Fixes: cb481e59ea6c ("KEYS: fix overflow in keyctl_pkey_params_get_2()")
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Florian Bauckholt <florian.bauckholt@cispa.de>
+Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+---
+ security/keys/keyctl_pkey.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+index 15b6bf6399b5..794fa3d01911 100644
+--- a/security/keys/keyctl_pkey.c
++++ b/security/keys/keyctl_pkey.c
+@@ -160,7 +160,7 @@ static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_par
+ 		    uparams.in2_len > info.max_sig_size)
+ 			return -EINVAL;
+ 
+-		params->out_len = info.max_sig_size;
++		params->in2_len = uparams.in2_len;
+ 		break;
+ 	default:
+ 		return -EOPNOTSUPP;
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+2.56.0
+
