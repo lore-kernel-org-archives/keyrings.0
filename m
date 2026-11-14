@@ -1,45 +1,98 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794627149;
-	b=ikjof5ip8ODU3L2hGolAqjpOhn3JQ9MlG+HiIOHvRjf71Ddmv45F1PbaQVHcgrpmhE+C
-	 fb0zNnNTt3XJv6LyG9KephGOV7ZYtaKAQILrm7embcfrl9iPRpoX7/0TPiWbiWW4EJhQS
-	 WLnRTWX1TNa/dSRd8jdKY5WJeK/hCBoP0e8bFxmsUJs+bWfjMGFXYSluLlBXiYAxNcoYI
-	 Vq8d/RwUY5DzRcWt8vkJOledQyoNX88qSfJDi2ZXTtIIIuCRgakwDo8QmU9Z8nkFld5Yb
-	 PyauHJhbP2pUcVowZllcBNnl0VP1GK5BdDQBCuqOZimXykVChK1mH0JVjsfDbWY3clQ==
+	t=1794672741;
+	b=xWkzga6Id5LlGTmHr+BUbWeuNDSnV1lytHyznOEYMWQ/S6qstR0fPx6Ry2dW2X7ds64n
+	 pueERn/YLvxrvajmu4Fk9/UpsbgwnMre2fq3Q5V/5fG787ixI7hXJrbZuPbyBMwT30/b2
+	 zL/lf9hqvg0PYthW3dEit+1f2Giq9/3mgOeno57huJ/c8XlFW19CURVUX/eO/V8YgtrE7
+	 g2Ji12PVjTn4dN5apSmP4l793yq4DZQm/DN77tOhZJ9Z3ecqQ3B7iX3pjaTIwgD87YTKm
+	 6NP9H2n+J7zIXRbnM/OK10Nfn87NRvAoxUo3MyUK8Plnjv/Xgg112m17AmF/MMqPXpQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794627149;
-	h=Received:DKIM-Signature:Content-Type:MIME-Version:Message-Id:
-	 In-Reply-To:References:Subject:From:To:Cc:Date;
-	bh=hZ/+DLpUIlcbirEPmqeVlKHp9sAsvUE1CUbfS01vK7I=;
-	b=2FSf8QcY6erjWA9bYYaDd2UmRYsglAP4eouYhd+bxmSVYRp99H9zW5GQLShV4yWoqbh2
-	 w+BM+OmU4EJFchMR6451Vf4+QxPNgF5ODWGLbF1o/gUgI09ztdYJQTpwMqBjLKxviqnNU
-	 0HGfHP+ivsR2dSWSztRmK/LvyD5oPnQHsYQCzrt6sVCqC4Fv1JWfyaYXYoBe8aCeNr/l3
-	 5kiEQGOGHphOfy9cOP1N5I2XDLfxMQ0ZfHnaQgbU7NUAW9ZLZSBBRKy2uNCavGHpqdeAC
-	 IVUKrAdSQG6sgtujkM/bJQEneNEzq7AUNvOYLkft/5Jc4mxb6S7cAQDI1KzyPJPJe2Q==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794672741;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=npXXWf9bkQOy8U5TqJ9aVn20ccmsTW/bXp+1TmKrOYs=;
+	b=k4cjkJ9H394w4CFUEdqhoz93bUp8vJowSYEqQ4Rb+9X+up5M0yXii6+rpp3CwGu0dEFR
+	 c4Un1E+bIYNSpdFqnFIu89ARl9SsTYcgGcAj914cKjX1Y7u6V9TpJ2g82mRQXxoRJ2J+6
+	 bIUVktBwSLgvgg6UZWIPLZErQr/97ICOna3NQOQyM9MJ0hOwQVrFX0jeNpUusXTiix5AO
+	 PTyBTmOlY8TUu7ZzjaoAVNBcBVagTwWsckOnn5PFp5qYog7LyD1rjeZG7PUrLanEH8F+D
+	 a5ymri+/BkzwUfWhbPSM4IelJ8jU6Fes6DIb9UMPTIKV6oAKrTc1AFl5C8amhINvS3w==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="fSpHT/5Y";
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EJTBUzXB;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D8D07606A898;
-	Sat, 14 Nov 2026 03:32:29 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 3D88C606A327;
+	Sat, 14 Nov 2026 16:12:20 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=fSpHT/5Y
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 82EC11F000C4;
-	Sat, 14 Nov 2026 03:32:25 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EJTBUzXB
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 2905A1F000C4;
+	Sat, 14 Nov 2026 16:12:20 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794627149;
-	bh=hZ/+DLpUIlcbirEPmqeVlKHp9sAsvUE1CUbfS01vK7I=;
-	h=In-Reply-To:References:Subject:From:To:Cc:Date;
-	b=fSpHT/5YlKnVLQuflwMsI4ithJsCcCowAQeNfKXQn68pyvBjpKOneHjq/7tzigdU/
-	 fBYUSuvX8vs6XD0Sn0kOKRcLcTwIu0Vg+RMZHWWD3GcLzqxkS3cfmNIIqSZYc26qY+
-	 e+zaW8YGi4y83EuS58EkSpi3pyOfNOq8dmKJmiH2jWdqIZtcpzuEOpufh+oDPw55vW
-	 NlHXaKHb0KHbJFsWf1drlXvwoCAnfiwAPpnZUcdaNCSrw/PXdN5K49A1P6Ts/eABr4
-	 bzbs8Ld8g0AH+bTkbgSH6KnYPbPzcnPA9mJWzrtCxdw0ooLNs+ziSbnxkD9zD2M0t9
-	 jQAMzdYVhW1tg==
-Content-Type: multipart/mixed; boundary="===============0128583470197541293=="
+	s=k20260515; t=1794672740;
+	bh=npXXWf9bkQOy8U5TqJ9aVn20ccmsTW/bXp+1TmKrOYs=;
+	h=From:To:Cc:Subject:Date;
+	b=EJTBUzXBe8rjr5yh5ccLRpts7XvWjq18FiMs8xaL2XAeu2uQxJ/hrTJnbN6rbxseb
+	 LixAmCY2Z0ySqxyrMr80GlwFgwl4PFLFhwdJTLcVPBEmrathSm95qk2RbEXpYAO2No
+	 MGcb6mqnOlu/q47fxN2Jfut9WVDUIa+b4dKANM5gTSpK7+f4zq6rItS26T1LLrQmA8
+	 YYdEHESexWT1eFLACP/GeWvV+q1t9hIhjCU0MPU79Ki3CDghyAFHgdc+lhmysODDyV
+	 qzVJdfxGK5xP5BsMBERiRRg+cXj0rM9KRc7IyswfTXmXDBfmwO1lQ5MNLqghs23SUZ
+	 Rf0DP8aUVi1iw==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>,
+	bpf@vger.kernel.org,
+	dm-devel@lists.linux.dev,
+	fsverity@lists.linux.dev,
+	keyrings@vger.kernel.org,
+	linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-kselftest@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	Alasdair Kergon <agk@redhat.com>,
+	Alexander Gordeev <agordeev@linux.ibm.com>,
+	Alexei Starovoitov <ast@kernel.org>,
+	Alex Shi <alexs@kernel.org>,
+	Anastasia Eskova <anastasia.eskova@ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andrii Nakryiko <andrii@kernel.org>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	Christian Borntraeger <borntraeger@linux.ibm.com>,
+	Daniel Borkmann <daniel@iogearbox.net>,
+	Dongliang Mu <dzm91@hust.edu.cn>,
+	Eduard Zingerman <eddyz87@gmail.com>,
+	Emil Tsalapatis <emil@etsalapatis.com>,
+	Eric Biggers <ebiggers@kernel.org>,
+	Ignat Korchagin <ignat@linux.win>,
+	Heiko Carstens <hca@linux.ibm.com>,
+	Ihor Solodrai <ihor.solodrai@linux.dev>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	James Morris <jmorris@namei.org>,
+	Jiri Olsa <jolsa@kernel.org>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Kumar Kartikeya Dwivedi <memxor@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Martin KaFai Lau <martin.lau@linux.dev>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Paul Moore <paul@paul-moore.com>,
+	Peter Oberparleiter <oberpar@linux.ibm.com>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Roberto Sassu <roberto.sassu@huawei.com>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Song Liu <song@kernel.org>,
+	Sven Schnelle <svens@linux.ibm.com>,
+	"Theodore Y. Ts'o" <tytso@mit.edu>,
+	Vasily Gorbik <gor@linux.ibm.com>,
+	Yanteng Si <si.yanteng@linux.dev>,
+	Yonghong Song <yonghong.song@linux.dev>
+Subject: [PATCH v11 0/6] KEYS: Replace assoc_array with
+Date: Sat, 14 Nov 2026 18:12:05 +0200
+Message-ID: <20261114161211.376859-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -49,95 +102,211 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Message-Id: <2bd464dd12d81f4d712f7d89f65e0e572c66c9e84acce225d144eef3badc0251@mail.kernel.org>
-In-Reply-To: <20261113161836.3587552-3-jarkko@kernel.org>
-References: <20261113161836.3587552-3-jarkko@kernel.org>
-Subject: Re: [PATCH v10 2/3] KEYS: Replace assoc_array with rhashtable
-From: bot+bpf-ci@kernel.org
-To: jarkko@kernel.org,dhowells@redhat.com
-Cc: jarkko@kernel.org,bpf@vger.kernel.org,dm-devel@lists.linux.dev,fsverity@lists.linux.dev,keyrings@vger.kernel.org,linux-doc@vger.kernel.org,linux-kernel@vger.kernel.org,linux-kselftest@vger.kernel.org,linux-security-module@vger.kernel.org,agk@redhat.com,ast@kernel.org,alexs@kernel.org,akpm@linux-foundation.org,andrii@kernel.org,bmarzins@redhat.com,daniel@iogearbox.net,dzm91@hust.edu.cn,eddyz87@gmail.com,emil@etsalapatis.com,ebiggers@kernel.org,ignat@linux.win,ihor.solodrai@linux.dev,jmorris@namei.org,jolsa@kernel.org,corbet@lwn.net,memxor@gmail.com,torvalds@linux-foundation.org,martin.lau@linux.dev,snitzer@kernel.org,mpatocka@redhat.com,paul@paul-moore.com,rdunlap@infradead.org,serge@hallyn.com,skhan@linuxfoundation.org,song@kernel.org,tytso@mit.edu,si.yanteng@linux.dev,yonghong.song@linux.dev,ast@kernel.org,andrii@kernel.org,daniel@iogearbox.net,martin.lau@kernel.org,eddyz87@gmail.com,yonghong.song@linux.dev,mason@kernel.org,ihor.solodrai@linux.dev
-Date: Sat, 14 Nov 2026 03:32:25 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
 
---===============0128583470197541293==
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+The keyrings subsystem is the sole user of assoc_array. It has over 1700
+lines of code, no test suite, and a long history of bugs, with LLMs now
+finding more.
 
-> KEYS: Replace assoc_array with rhashtable
+This unfortunate outcome has evolved over time by large from the shortage
+of in-kernel callers, time bandwidth and 3rd party contributors.  What the
+keyrings subsystem needs is just a generic key-value store, which performs
+well with sparse key sets. Replace assoc_array with an rhashtable-backed
+keyring index and remove assoc_array from the kernel.
 
-TL;DR: keyring_read() now needs keyring->sem, but s390 cert_store calls it
-unlocked; this may trigger a lockdep splat and possibly a use-after-free if a
-link or index is freed during the walk.
+CHANGES
+=======
 
-> diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> --- a/security/keys/keyring.c
-> +++ b/security/keys/keyring.c
+v11:
+- RCU-safe iterator for keyring_read().
+- Addresses s390 issues. I won't carry them for long in the series.
 
-[ ... ]
+v10:
+- No changes since the previous round. This is a sanity check round
+  given the lack of feedback to v9. I'll apply these patch very soon,
+  unless nothing (relevant) comes up fast.
 
->  static long keyring_read(const struct key *keyring,
->  			 char *buffer, size_t buflen)
->  {
-> -	struct keyring_read_iterator_context ctx;
-> +	struct keyring_index *links = keyring_index_locked(keyring);
-> +	key_serial_t *serials = (key_serial_t *)buffer;
-> +	struct keyring_link *link;
-> +	size_t count = 0;
->  	long ret;
->  
->  	kenter("{%d},,%zu", key_serial(keyring), buflen);
+v9:
+- Replace __free(kfree) with explicit cleanup so early goto out paths
+  cannot bypass initialization of the link pointer. Preserve kleave()
+  tracing on all exit paths.
 
-[ ... ]
+v8:
+- Fixed broken rebase.
+- Restructured __key_link_begin() a bit as a response to a minor
+  complaint from Sashiko.
+- Fixed a minor glitch in __key_link_begin(): now also first invariant
+  invokes kleave() on failure.
 
-> +	if (buffer && buflen && links) {
-> +		list_for_each_entry(link, &links->list, list) {
-> +			if (count == buflen / sizeof(*serials))
-> +				break;
-> +
-> +			serials[count++] = keyring_link_key(link)->serial;
-> +			cond_resched();
-> +		}
->  	}
+v7:
+- Rebased.
 
-keyring_index_locked() is rcu_dereference_protected() on
-lockdep_is_held(&keyring->sem), and the list is then walked with plain
-list_for_each_entry() and a cond_resched() per entry.  That is fine when
-the caller holds keyring->sem, as __keyctl_read_key() does.
+v6:
+- Eric Biggers: Set .insecure_elasticity = true in keyring_link_params and
+  drop the -EBUSY retry loop in __key_link_begin().
+- Addeded Reviewed-by's from Eric Bigger and Ignat Korchagin.
 
-Is that also true for all callers of the read method?  The s390 certificate
-store calls it with no lock held:
+v5:
+- Eric Biggers: Include <linux/jhash.h> explicitly in keyring.c.
+- Eric Biggers: Document why hashing type/domain_tag pointers with SipHash
+  and truncating the digest to 32 bits are safe.
+- Eric Biggers: Rework the commit message for "KEYS: Replace assoc_array
+  with rhashtable", including behavioral and operational changes.
+- Retry rhashtable_insert_fast() on transient -EBUSY in __key_link_begin().
 
-arch/s390/kernel/cert_store.c:invalidate_keyring_keys() {
-    keyring_payload_len = key_type_keyring.read(keyring, NULL, 0);
-    ...
-    rc = key_type_keyring.read(keyring, (char *)key_array,
-                               keyring_payload_len);
-}
+v4:
+- Eric Biggers: Correct the kerneldoc summary for keyring_is_empty().
+- Eric Biggers: Truncate keyring_index_key hash to u32 and drop index_id.
+- Eric Biggers, David Howells: Use a proper struct instead of a two-element
+  array to pass the edits.
+- Eric Biggers: __keyring_link(): Call key_put() in the rollback of
+  rhashtable_replace_fast().
+- Eric Biggers: Retract from using __free(kfree) in keyring_get_index().
+- Eric Biggers: Reuse keyring_link_key() in keyring_obj_cmpfn().
+- Eric Biggers: Document why keyring_index_free() uses queue_rcu_work().
+- Eric Biggers: Fix the commit message for "KEYS: Replace assoc_array with
+  rhashtable".
 
-The path is refresh_store() -> fill_cs_keyring() -> create_cs_keyring() ->
-cleanup_cs_keys() -> find_cs_keyring() -> invalidate_keyring_keys(), and it
-holds only cs_refresh_lock.
+v3:
+- Since David is away for the next week I decided to address the
+  low hanging fruit that I reported myself.
+- Unified and sanitized function and variable naming and removed
+  unnecessary asymmetry e.g., by renaming keyring_remove_all_links
+  as keyring_index_free, 'links' as 'index' and '_edit' as 'edit'.
+- Flattened the implementation by refactoring out some useless
+  wrappers and other constructs.
+- Addressed continuation after triggered WARN_ON() on at the three
+  sites that I've described in my email response to the previous
+  patch set version.
+- Reworked keyring_read() so that it triggers the scheduler between
+  the iterations.
+- Dropped "Assisted-by: LLM" tag because checkpatch.pl told me so.
 
-Before this patch the (keyring, NULL, 0) size query only read
-nr_leaves_on_tree, and the real read used assoc_array_iterate(), which has
-no lockdep check and never scheduled.  Now keyring_index_locked() runs at
-function entry, so with CONFIG_PROVE_RCU=y a second cert_store refresh
-looks like it would report a suspicious rcu_dereference_protected() usage.
+v2:
+- Tried to address all the issues pointed out by David and Eric. Tell me
+  if something was ignored, as that would be an unintentional mishap.
+- Updated and trimmed the source code comments.
+- For assoc_array_edit I decided to go with two-element pointer array,
+  which shifts a bit what David suggested.
+- Dropped is_keyring flag. It was so obvious call so I mention it here
+  just in case because too obvious maxes out my self-doubt ;-)
+- Used cleanup.h primitives where I possibly could especially in order
+  to make fallible initializations more bug-resistant.
+- The already-ack'd bug fixes are included but will be dropped as soon
+  as I've sent them over to Linus.
 
-The walk also runs with neither keyring->sem nor rcu_read_lock(), and
-cond_resched() lets a grace period complete while the walker is sitting on
-a link.  Can a concurrent key_unlink() or keyring_gc() (list_del_rcu() plus
-call_rcu(keyring_link_free_rcu)), or keyring_clear() or keyring_revoke()
-(keyring_index_free() -> queue_rcu_work()), free the link or the whole
-index under the walker?
+VERSIONS
+========
 
-Should invalidate_keyring_keys() take down_read(&keyring->sem) around its
-two read calls as part of this conversion?
+- v10:
+  https://lore.kernel.org/keyrings/20261113161836.3587552-1-jarkko@kernel.org/
+- v9:
+  https://lore.kernel.org/keyrings/20261110053323.2936729-1-jarkko@kernel.org/k
+- v8:
+  https://lore.kernel.org/keyrings/20261110044043.2608600-1-jarkko@kernel.org/
+- v7:
+  https://lore.kernel.org/keyrings/20261110033738.2495880-1-jarkko@kernel.org/
+- v6:
+  https://lore.kernel.org/keyrings/20261107195605.3929659-1-jarkko@kernel.org/
+- v5:
+  https://lore.kernel.org/keyrings/20261105031401.956609-1-jarkko@kernel.org/
+- v4:
+  https://lore.kernel.org/keyrings/20261029232437.2581640-1-jarkko@kernel.org/
+- v3:
+  https://lore.kernel.org/keyrings/20261025001105.1824178-1-jarkko@kernel.org/
+- v2:
+  https://lore.kernel.org/keyrings/20261023120953.1206778-1-jarkko@kernel.org/
+- v1:
+  https://lore.kernel.org/keyrings/20261016215326.4110064-1-jarkko@kernel.org/
 
 
----
-AI reviewed your patch. Please fix the bug or email reply why it's not a bug.
-See: https://github.com/kernel-patches/vmtest/blob/master/ci/claude/README.md
+Cc: bpf@vger.kernel.org
+Cc: dm-devel@lists.linux.dev
+Cc: fsverity@lists.linux.dev
+Cc: keyrings@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-kselftest@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: Alexander Gordeev <agordeev@linux.ibm.com>
+Cc: Alexei Starovoitov <ast@kernel.org>
+Cc: Alex Shi <alexs@kernel.org>
+Cc: Anastasia Eskova <anastasia.eskova@ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrii Nakryiko <andrii@kernel.org>
+Cc: Benjamin Marzinski <bmarzins@redhat.com>
+Cc: Christian Borntraeger <borntraeger@linux.ibm.com>
+Cc: Daniel Borkmann <daniel@iogearbox.net>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Dongliang Mu <dzm91@hust.edu.cn>
+Cc: Eduard Zingerman <eddyz87@gmail.com>
+Cc: Emil Tsalapatis <emil@etsalapatis.com>
+Cc: Eric Biggers <ebiggers@kernel.org>
+Cc: Ignat Korchagin <ignat@linux.win>
+Cc: Heiko Carstens <hca@linux.ibm.com>
+Cc: Ihor Solodrai <ihor.solodrai@linux.dev>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Kumar Kartikeya Dwivedi <memxor@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin KaFai Lau <martin.lau@linux.dev>
+Cc: Mike Snitzer <snitzer@kernel.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: Peter Oberparleiter <oberpar@linux.ibm.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Roberto Sassu <roberto.sassu@huawei.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Shuah Khan <skhan@linuxfoundation.org>
+Cc: Song Liu <song@kernel.org>
+Cc: Sven Schnelle <svens@linux.ibm.com>
+Cc: "Theodore Y. Ts'o" <tytso@mit.edu>
+Cc: Vasily Gorbik <gor@linux.ibm.com>
+Cc: Yanteng Si <si.yanteng@linux.dev>
+Cc: Yonghong Song <yonghong.song@linux.dev>
 
-CI run summary: https://github.com/kernel-patches/bpf/actions/runs/43549115625
---===============0128583470197541293==--
+Jarkko Sakkinen (6):
+  s390/cert_store: Pin the user session keyring
+  s390/cert_store: Return an owned reference from find_cs_keyring()
+  s390/cert_store: Skip keys that disappeared during invalidation
+  KEYS: Introduce keyring_is_empty()
+  KEYS: Replace assoc_array with rhashtable
+  lib: Remove assoc_array
+
+ Documentation/core-api/assoc_array.rst        |  564 ------
+ Documentation/core-api/index.rst              |    1 -
+ .../zh_CN/core-api/assoc_array.rst            |  473 -----
+ .../translations/zh_CN/core-api/index.rst     |    1 -
+ arch/s390/kernel/cert_store.c                 |   47 +-
+ drivers/md/dm-verity-verify-sig.c             |    2 +-
+ fs/verity/signature.c                         |    2 +-
+ include/keys/keyring-type.h                   |    1 -
+ include/linux/assoc_array.h                   |   88 -
+ include/linux/assoc_array_priv.h              |  178 --
+ include/linux/key-type.h                      |    1 -
+ include/linux/key.h                           |   29 +-
+ kernel/bpf/keys.c                             |    2 +-
+ lib/Kconfig                                   |   14 -
+ lib/Makefile                                  |    1 -
+ lib/assoc_array.c                             | 1724 -----------------
+ security/keys/Kconfig                         |    1 -
+ security/keys/internal.h                      |   14 +-
+ security/keys/key.c                           |   22 +-
+ security/keys/keyring.c                       | 1016 +++++-----
+ security/keys/request_key.c                   |    8 +-
+ .../dm-verity/test-dm-verity-keyring.sh       |    2 +-
+ 22 files changed, 530 insertions(+), 3661 deletions(-)
+ delete mode 100644 Documentation/core-api/assoc_array.rst
+ delete mode 100644 Documentation/translations/zh_CN/core-api/assoc_array.rst
+ delete mode 100644 include/linux/assoc_array.h
+ delete mode 100644 include/linux/assoc_array_priv.h
+ delete mode 100644 lib/assoc_array.c
+
+--
+2.47.3
+
