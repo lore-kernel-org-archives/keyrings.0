@@ -1,44 +1,44 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794782867;
-	b=Rg7EQTEEw7SutyhjGeDI8Zy9zBjT/b9DZKtJuvFtde2Cz81evOsVOgABMiMYuiCZ5JGJ
-	 vPk3EzhKNqrgA1ElxnlPcTH4N6Th7JpQUB8YnQRUgg/Z2tbaknSjAmjht6kVcdzY1KqdF
-	 TbqmoSAbreZTEH0pGowa8puza2LNsfUyaYHPXjaI9Suao9vCvbZmZ0yc8VsHfYllL/ASg
-	 TMoKs/Y9nnDiNYKtehP+UH1dOiNb83ToemdNh9T1nBB7DHpza6/yhiZFtpZ4LWW0m00Sd
-	 yDonq2cqkFVOQ/schztKj+BRnSpQx9yUCzRxg5PAX5tyGxja1t8N2HDI21y4BEKNZAw==
+	t=1794782871;
+	b=W1m0G3sr5Vu6yB9kgY/Tb10r0T/aXyV1KoRxAPsCykQgDpbkVEKQPQCiieHFI8nbk3xq
+	 +uQJuXXyCcr+alRNqcvIzJ7xjFzTkYqO1wjMq9KheRXIoEQRDMtf2JcUwCuOwOMIUIcrr
+	 NbI62mmyirrmz5NOU0yKk5pKpgwMOes05wgUFN9UnmSlN7CEUmh9fC81MMaLaYLni2yUS
+	 IR6Q325EZOCLLpaFfgERxEu0ZdAtYGaWIlFk6RRZTcr2R2YHNCG5Cyj8TvOJSzLVo0N6m
+	 mm57Z/N9f7z4cUD5VKBiQwFrJiaCiodUGHrybPmjwtWXdPKnR6TRYPMISHdgZy1d0bQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794782867;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794782871;
 	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
 	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
-	bh=4q5qcmlwImEHW4opagfSJu67mHlh6kx/M+zxLcR9Lys=;
-	b=e+W/XJ3EzFU45uwcM30F5rAMDbetrzOaPYTrS9Dgeuig9mTVBn/c/b3RhsYPNT7R2giU
-	 OU+4moZZ4oEfIh/CEcmDrhmfH2vNH+jf3gabw3oLOoYbaeutgLgM0AyRP7jZ2j6flZaeP
-	 dECOlVZjQgjxT9dKdS0gvIybfv6qdcO4Fn8lfRXlzFclSgAbTvKHRBoyq759qtGbmMb90
-	 GxC3oH2l/bgMMc9bbK5ei5SGtA3r7BwD6xV1aD7cm36SnlBN5m+acxkyIlCBkQ07w0aRt
-	 uwJhv3A60F6rXdh6D05U8S52B1SM//zg4OuOvpkAolXIRkRiYHFgrI2Si5WT3QT15Kg==
+	bh=Lw/2Sknje3EGI75DWj24OrTfi16M+xJmFFH2q6PuZi0=;
+	b=DC8XzwYRpSf7TtcVgo0Aiyr9nCwBP3GHqPeFmtk4XNj4miDbDkgeE0QKaLU/YN5gzI8K
+	 rkDgr8GKWpZMM4ld6ooF36ySBTrmabbza2DGGFBznStDimOLLSx/Kx8/a50fhNEzYOaNu
+	 7azyGFSW3MIs5GzQ/3Eyz+cxmh7gYdfovdzzpR3UOjmZVKW0IBtTWQEeDU2WRLANCcBpn
+	 kjea2pa0TLHznGqOUoRVZwaqg6ZNKwEU4A55dT0B49XPf7sxGu6YjP8yNlgK+btsPLFso
+	 ANJaqz8yNpJoxoZHFbN6CtgpC0ejJoixlir/9ueAqy+Gic5ZKFuFP0xNAEvdnPyHuIg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HlgYPtpc;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="NkqBw//d";
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id ADC61606A32F;
-	Sun, 15 Nov 2026 22:47:47 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 6B82D606A31F;
+	Sun, 15 Nov 2026 22:47:51 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HlgYPtpc
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id BF4C81F000CD;
-	Sun, 15 Nov 2026 22:47:46 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=NkqBw//d
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9A8811F000CB;
+	Sun, 15 Nov 2026 22:47:50 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794782867;
-	bh=4q5qcmlwImEHW4opagfSJu67mHlh6kx/M+zxLcR9Lys=;
+	s=k20260515; t=1794782871;
+	bh=Lw/2Sknje3EGI75DWj24OrTfi16M+xJmFFH2q6PuZi0=;
 	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=HlgYPtpcFp8L4Pa3NbLWP4fqCf+XT5Vi33JI9+rgW0q2tk7cH0rCwwFUcSougZQz2
-	 aQZ63iqVPzXmOZEOCDEa8Rf44L8NDLgEhvm/bQlYLwEGZq3/A3LRYXA4d/Bprr+61q
-	 qvTW3VCOnH2BVK+eN3JYtuqqy2H0q/upbdAHXzitjFvHGome/ERRB7mjF08X8pb/nN
-	 YCj1c+aTHu9gaz+NfB4CS0Zy58LDndMMTR2GdMglSInAnIqV8DCLAz1jpX8uaieLpS
-	 O0EF9FTMBJatFnWTYkLk2839XwyfvC9rY3cyRKzh09ywVEwH3neANyGrk7w2UQOTo9
-	 OyXMQJFPtKsSg==
+	b=NkqBw//dmQCb+/QBx+0ehWMc5vyX0gXR9SmS+fTQoUGJoX0dlQDHiiSNw6RSGPEyo
+	 O6v4ItxtMp/3iy01GwQXbDDMR8jLpYfbjhOvXqAaCRyEHqbB3cWClRh5AdNifPCoGy
+	 gSnq+b8rYB3ROL4YvaeYmhH6nLFsQ8+mTD5WT1HDLlq0KaEHprHFxER/enSsRtKs1K
+	 r2DHPKDEhyEtDaCu2C0TrL2uBgonnlCXTsIIr5zJWEI8Akdg+XqSMSMnlMjto4hPpE
+	 bwVEvv3H/OXbO6OOs41vCFG23q8sx0poHhVBKw8sO5OFfB2yMZBxq4hw3waPBFBK1P
+	 HLCqxGPFhOwwA==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: Jarkko Sakkinen <jarkko@kernel.org>,
@@ -57,10 +57,11 @@ Cc: Jarkko Sakkinen <jarkko@kernel.org>,
 	Paul Moore <paul@paul-moore.com>,
 	Peter Huewe <peterhuewe@gmx.de>,
 	Ross Philipson <ross.philipson@gmail.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>
-Subject: [PATCH 2/4] KEYS: trusted: Open code tpm2_buf_append_auth()
-Date: Mon, 16 Nov 2026 00:47:20 +0200
-Message-ID: <20261115224722.1450498-3-jarkko@kernel.org>
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Jonathan McDowell <noodles@meta.com>
+Subject: [PATCH 3/4] KEYS: trusted: Remove dead branch from tpm2_unseal_cmd
+Date: Mon, 16 Nov 2026 00:47:21 +0200
+Message-ID: <20261115224722.1450498-4-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
 In-Reply-To: <20261115224722.1450498-1-jarkko@kernel.org>
 References: <20261115224722.1450498-1-jarkko@kernel.org>
@@ -75,74 +76,51 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-tpm2_buf_append_auth() has a single call site and most of its parameters
-are redundant. Open code it to the call site so that less cross-referencing
-is required while browsing the source code.
+TPM2_Unseal requires TPM2_ST_SESSIONS, and tpm2_unseal_cmd() always does
+set up either password or HMAC session.
 
-Reviewed-by: Jonathan McDowell <noodles@earth.li>
+Remove the branch in tpm2_unseal_cmd() conditionally setting
+TPM2_ST_NO_SESSIONS. It is faulty but luckily it is never exercised at
+run-time, and thus does not cause regressions.
+
+Reviewed-by: Jonathan McDowell <noodles@meta.com>
 Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
- security/keys/trusted-keys/trusted_tpm2.c | 40 ++++-------------------
- 1 file changed, 7 insertions(+), 33 deletions(-)
+ security/keys/trusted-keys/trusted_tpm2.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
 diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index 30188a0ec676..563997600636 100644
+index 563997600636..22d27e2512db 100644
 --- a/security/keys/trusted-keys/trusted_tpm2.c
 +++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -197,36 +197,6 @@ int tpm2_key_priv(void *context, size_t hdrlen,
- 	return 0;
- }
+@@ -467,10 +467,8 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 			   u32 blob_handle)
+ {
+ 	struct trusted_key_tpm *private = options->private;
+-	struct tpm_header *head;
+ 	struct tpm_buf *buf __free(kfree) = NULL;
+ 	u16 data_len;
+-	int offset;
+ 	u8 *data;
+ 	int rc;
  
--/**
-- * tpm2_buf_append_auth() - append TPMS_AUTH_COMMAND to the buffer.
-- *
-- * @buf: an allocated tpm_buf instance
-- * @session_handle: session handle
-- * @nonce: the session nonce, may be NULL if not used
-- * @nonce_len: the session nonce length, may be 0 if not used
-- * @attributes: the session attributes
-- * @hmac: the session HMAC or password, may be NULL if not used
-- * @hmac_len: the session HMAC or password length, maybe 0 if not used
-- */
--static void tpm2_buf_append_auth(struct tpm_buf *buf, u32 session_handle,
--				 const u8 *nonce, u16 nonce_len,
--				 u8 attributes,
--				 const u8 *hmac, u16 hmac_len)
--{
--	tpm_buf_append_u32(buf, 9 + nonce_len + hmac_len);
--	tpm_buf_append_u32(buf, session_handle);
--	tpm_buf_append_u16(buf, nonce_len);
--
--	if (nonce && nonce_len)
--		tpm_buf_append(buf, nonce, nonce_len);
--
--	tpm_buf_append_u8(buf, attributes);
--	tpm_buf_append_u16(buf, hmac_len);
--
--	if (hmac && hmac_len)
--		tpm_buf_append(buf, hmac, hmac_len);
--}
--
- /**
-  * tpm2_seal_trusted() - seal the payload of a trusted key
-  *
-@@ -537,9 +507,13 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 		 * could repeat our actions with the exfiltrated
- 		 * password.
- 		 */
--		tpm2_buf_append_auth(buf, private->policyhandle,
--				     NULL /* nonce */, 0, 0,
--				     private->blobauth, private->blobauth_len);
-+		tpm_buf_append_u32(buf, 9 + private->blobauth_len);
-+		tpm_buf_append_u32(buf, private->policyhandle);
-+		tpm_buf_append_u16(buf, 0);
-+		tpm_buf_append_u8(buf, 0);
-+		tpm_buf_append_u16(buf, private->blobauth_len);
-+		tpm_buf_append(buf, private->blobauth, private->blobauth_len);
-+
- 		if (tpm2_chip_auth(chip)) {
+@@ -514,15 +512,9 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		tpm_buf_append_u16(buf, private->blobauth_len);
+ 		tpm_buf_append(buf, private->blobauth, private->blobauth_len);
+ 
+-		if (tpm2_chip_auth(chip)) {
++		if (tpm2_chip_auth(chip))
  			tpm_buf_append_hmac_session(chip, buf, TPM2_SA_ENCRYPT,
  						    NULL, 0);
+-		} else  {
+-			offset = buf->handles * 4 + TPM_HEADER_SIZE;
+-			head = (struct tpm_header *)buf->data;
+-			if (tpm_buf_length(buf) == offset)
+-				head->tag = cpu_to_be16(TPM2_ST_NO_SESSIONS);
+-		}
+ 	}
+ 
+ 	rc = tpm_buf_fill_hmac_session(chip, buf);
 -- 
 2.47.3
 
