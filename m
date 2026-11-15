@@ -1,57 +1,54 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=79.135.106.29
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794745070;
-	b=ciWk8bvwjXGiunVRngXXjncINPRu4EAu6oPaDUehaLU4/VjglSeK3anYkE7x0nBvh7Vc
-	 RnkyfGBwYmfUVOz7JiiXqytYawjeI+b0qFQ7RlhH4+gh6dByTfX2pl1/tlnXkZLttUj9Q
-	 8meBLJA/AohCK634VidwiqPPhQvDNy//C1yuhYmScrRM52oxg3MfGMXwacBfmzuJSKoBh
-	 ZLbdeG7XJ0+obFZsHKr9TXAeb7GYMBcGJ7ujZyMKjhZaOQymXPeL/RY/CIstMuROZgMcC
-	 k7To9fNxVjx8PXKuPWO/WBu+XF0wPyssUzf4kNNlrA1sUizKUvV0sdIJyiuMh86KOzA==
+	t=1794745823;
+	b=0y5sjbwh3XGtE05AbFIOUri9LtS14ZYfp16lLss3YCrSCIL8Fc1lp9sRypIqyNWiHOC6
+	 vjn1pClQaxjbhq/TzeipTla5F0sD6KaKs776bhAn8LHE9ttj3VynsXgU6D01dC09K5VRL
+	 DMaCF5mBUT3kvGyoWRrmk7jxbd1DelUNSEBV3MRzOuDt8anDX+iqUE55nVuRZRkXI8pMy
+	 4ZvD5m9Yfac1tmjw1UNLwDO0yorOrtZbmItZhE6zy//obukW+fIhE7oLRxn/kUmi8sjPA
+	 oRcs78aW53bW+SifOSI+qlznuq7kILJHTYRHOJK64Gk/JLDSCrB/aqlucEe6K9cRqIg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794745070;
-	h=DMARC-Filter:DKIM-Signature:Date:To:From:Cc:Subject:Message-ID:
-	 Feedback-ID:X-Pm-Message-ID:MIME-Version:Content-Type:
-	 Content-Transfer-Encoding;
-	bh=EluYiwlFKYuh/LI+cnM/6qB8JrNrz30s4NvnPy3YyL0=;
-	b=I9lXKyHaS72PcCpa0G6mlSVZKmjsn0K+u7Dh1P2NCX9pnc3PD9i1f9cAehI8aqg+zUoE
-	 USCdPIa16HieL1W6WX7+f2nXLVcPX6IagYR85s/t4u/bXn5RzDv8xkwmNLE+VpjWnaYme
-	 XKFfSqGGjQrOEvkRAlZ/9LaqRUSq9YP+UW6AfKcCs9+nKjPrOLbjaGx+2+lBmmToiB/O1
-	 ix2m845HG2oapx4+sf7kakKhov5Pc5LIYEMWZI6qnXP9Ody65iXM9yQTPmuieWlvH+ShZ
-	 V0S/dxv563zF7pHrAjh5aSSJu4usn308k4+TQG1nijTM15A+a7gqX/oH8kaIkflS6Nw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794745823;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=WZzFMt6N0oscpoj+ztiBIum+kpkhuZGDDxLOdqW23yg=;
+	b=gdww3uOC+ket7XbcKaziv7pJNwrZMriGZEcfHkw659Nx35MeCOCB5Efn8XftZcYWAokQ
+	 AsxEBOikvMfOGZ4tzYK132lYw+esMKwLaoBXogOZlMM0yvKHSzIpMGowip0wWNCzRNNr6
+	 DELKQCBYbjwOPPn6oYGGBEoFYZcOLsWDjDOoT4GnmdT0slsAW+AeLR2+SdebzekL2DMl/
+	 W8+TbLbC2I1sR/IqZs+Hj7I+wQQpXGSobSS8oWlUbM3aeXDjwfKeEVvf3T/prxBEj5tUO
+	 Rx1Vs4CSCDg9BQIqfwlI0v9nxVGQnbAp/2SWeRcGY6m7d3thtStT+/0PEf10exd4KMQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=pm.me;
-	spf=pass smtp.mailfrom=pm.me;
-	dkim=pass header.d=pm.me header.i=@pm.me header.a=rsa-sha256 header.s=protonmail3 header.b=OUAq5Fc9;
-	arc=none smtp.remote-ip=79.135.106.29
-Received: from mail-10629.protonmail.ch (mail-10629.protonmail.ch [79.135.106.29])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="dS+jd/jP";
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8CDEF606A327;
-	Sun, 15 Nov 2026 12:17:49 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 8CDEF606A327
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=pm.me
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=pm.me
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 67454606A31F;
+	Sun, 15 Nov 2026 12:30:23 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=pm.me header.i=@pm.me header.a=rsa-sha256 header.s=protonmail3 header.b=OUAq5Fc9
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=pm.me;
-	s=protonmail3; t=1794745067; x=1795004267;
-	bh=EluYiwlFKYuh/LI+cnM/6qB8JrNrz30s4NvnPy3YyL0=;
-	h=Date:To:From:Cc:Subject:Message-ID:Feedback-ID:From:To:Cc:Date:
-	 Subject:Reply-To:Feedback-ID:Message-ID:BIMI-Selector;
-	b=OUAq5Fc9kmK9eU6iD30wyyVivgL5YQ7TnSXW00wEYIR9CYYpjLs54b4s0ZtR9WJ0I
-	 8nbv714q1kGMRxiksvmn5vnC+02HF8sV9rptv6MQRUddkj4/L9UahuAFU7i807wuI/
-	 g3wi3KzbE9oDuPr4GwdIScq0oDZVZP5UQgok5sSV8WvEvawpzZlYCh1IZpM1fnc6b7
-	 MhPy79br/0jiXsgbok4tjLeyTl8B/PCwpH9K7zyIIqPcDukLk9EFMnh+J7o4yv63LH
-	 Rjm/Q3GdsUMgtng5578auYkh881eHnokX3LtOS/kur5gFSo3gJ1jBYphhOkPRAowtX
-	 hAsPrIbzce6UQ==
-Date: Sun, 15 Nov 2026 12:17:40 +0000
-To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>
-From: Sinan Turunc <enscrpt@pm.me>
-Cc: paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] keys: serialise instantiation against keyctl_chown_key
-Message-ID: <20261115121722.206-1-enscrpt@pm.me>
-Feedback-ID: 48393780:user:proton
-X-Pm-Message-ID: 62b592fa9ecff3d6048e83be9e5f68d5467bc76f
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=dS+jd/jP
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 7F08F1F000C4;
+	Sun, 15 Nov 2026 12:30:22 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1794745823;
+	bh=WZzFMt6N0oscpoj+ztiBIum+kpkhuZGDDxLOdqW23yg=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=dS+jd/jPYFvvjFIYV1vY92nmcfy4SWqh6EwhxguzUFdXqBRYEbQZMjtUhR6aXIHLy
+	 p5FBwvEs8yxUSGeKfnio1PnHsFIvZZQKyBwx3aosQnuwSTg+jkSyc5UrgGqU/51RXP
+	 BUMqVCFKF+WlIL3/oDyFh4F2DnnRATiQiDrnpEfBhz9BJ7cMgSSb6UjGM7hMvcfLKM
+	 264nyox1JOjUTw7pji/E9iHdv4oxRW05p8AqPWf0AZh5KlefYzVl1oVMnxQdc4XKlr
+	 7oC2Cv8gD/PTUI98jetFO4SQ059HkptFZ5aqxF/r3aN5HCVXBAvthDQUqW2PZE8Wsx
+	 1jzm5AV72hsmA==
+Date: Sun, 15 Nov 2026 14:30:19 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Sinan Turunc <enscrpt@pm.me>
+Cc: David Howells <dhowells@redhat.com>, paul@paul-moore.com,
+	jmorris@namei.org, serge@hallyn.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org
+Subject: Re: [PATCH] keys: serialise instantiation against keyctl_chown_key
+Message-ID: <avml2-lpRCJYlHOp@kernel.org>
+References: <20261115121722.206-1-enscrpt@pm.me>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -61,104 +58,116 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261115121722.206-1-enscrpt@pm.me>
 
-keyctl_chown_key() replaces key->user under key->sem, but the
-instantiation path reads key->user without it: __key_instantiate_and_link()
-and key_reject_and_link() bump key->user->nikeys under
-key_construction_mutex only, and key_payload_reserve(), called from the
-type's instantiate op, reads key->user once for spin_lock_irqsave() and
-again for spin_unlock_irqrestore().
+On Sun, Nov 15, 2026 at 12:17:40PM +0000, Sinan Turunc wrote:
+> keyctl_chown_key() replaces key->user under key->sem, but the
+> instantiation path reads key->user without it: __key_instantiate_and_link()
+> and key_reject_and_link() bump key->user->nikeys under
+> key_construction_mutex only, and key_payload_reserve(), called from the
+> type's instantiate op, reads key->user once for spin_lock_irqsave() and
+> again for spin_unlock_irqrestore().
+> 
+> A chown of an under-construction key that lands between those two reads
+> locks the old owner's quota spinlock and unlocks the new owner's.  The
+> paravirt unlock slow path reports the unheld unlock and the old lock is
+> never released, so the next quota operation on that uid spins with
+> interrupts disabled:
+> 
+>   pvqspinlock: lock 0xffff88800f94dc38 has corrupted value 0x0!
+>   WARNING: CPU: 2 PID: 215 at kernel/locking/qspinlock_paravirt.h:504 __pv_queued_spin_unlock_slowpath+0x1dc/0x2e0
+>   Call Trace:
+>    _raw_spin_unlock_irqrestore+0xe/0x30
+>    key_payload_reserve+0x230/0x300
+>    generic_key_instantiate+0x47/0x230
+>    __key_instantiate_and_link+0xbd/0x310
+>    key_instantiate_and_link+0x3f0/0x490
+>    keyctl_instantiate_key_common+0x246/0x410
+> 
+> The same unsynchronised read lets the instantiator touch the old
+> key_user after the chown has dropped the last reference to it.
+> 
+> Hold key->sem for write across the instantiate op and the owner-record
+> updates so that instantiation and chown serialise on the lock that
+> already protects key->user.  key->sem nests inside key_construction_mutex
+> and the destination keyring's semaphore here; nothing takes the
+> construction mutex under a key's semaphore.  The acquisition is
+> annotated as nested because a keyring instantiated into a keyring shares
+> the destination's lock class; the key under construction cannot be a
+> destination itself, so no cycle exists.
+> 
+> Reproducer: a request_key() helper that chowns the target key between
+> two uids from one thread while instantiating it from another, as root.
+> Triggers within tens of milliseconds on 6.12.104 and on mainline.
+> 
+> Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Sinan Turunc <enscrpt@pm.me>
+> ---
+> An AI tool helped with the analysis and the patch. I reviewed and
+> tested it myself: the unpatched kernel hangs within 40 ms, the patched
+> one ran the same workload for 60 s with lockdep on and no report.
+> 
+>  security/keys/key.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/keys/key.c b/security/keys/key.c
+> --- a/security/keys/key.c
+> +++ b/security/keys/key.c
+> @@ -439,7 +439,13 @@
+>  
+>  	mutex_lock(&key_construction_mutex);
+>  
+> -	/* can't instantiate twice */
+> +	/* can't instantiate twice; key->sem keeps key->user stable against
+> +	 * keyctl_chown_key() for the instantiate op and the quota update.
+> +	 * Nested: the caller may hold the destination keyring's sem and the
+> +	 * key under construction may be a keyring too, but it cannot be
+> +	 * anyone's destination yet, so there is no cycle.
+> +	 */
 
-A chown of an under-construction key that lands between those two reads
-locks the old owner's quota spinlock and unlocks the new owner's.  The
-paravirt unlock slow path reports the unheld unlock and the old lock is
-never released, so the next quota operation on that uid spins with
-interrupts disabled:
+:-(
 
-  pvqspinlock: lock 0xffff88800f94dc38 has corrupted value 0x0!
-  WARNING: CPU: 2 PID: 215 at kernel/locking/qspinlock_paravirt.h:504 __pv_=
-queued_spin_unlock_slowpath+0x1dc/0x2e0
-  Call Trace:
-   _raw_spin_unlock_irqrestore+0xe/0x30
-   key_payload_reserve+0x230/0x300
-   generic_key_instantiate+0x47/0x230
-   __key_instantiate_and_link+0xbd/0x310
-   key_instantiate_and_link+0x3f0/0x490
-   keyctl_instantiate_key_common+0x246/0x410
+> +	down_write_nested(&key->sem, 1);
+>  	if (key->state == KEY_IS_UNINSTANTIATED) {
+>  		/* instantiate the key */
+>  		ret = key->type->instantiate(key, prep);
+> @@ -469,6 +475,7 @@
+>  				key_set_expiry(key, prep->expiry);
+>  		}
+>  	}
+> +	up_write(&key->sem);
+>  
+>  	mutex_unlock(&key_construction_mutex);
+>  
+> @@ -600,7 +607,8 @@
+>  
+>  	mutex_lock(&key_construction_mutex);
+>  
+> -	/* can't instantiate twice */
+> +	/* can't instantiate twice; see __key_instantiate_and_link() */
+> +	down_write_nested(&key->sem, 1);
+>  	if (key->state == KEY_IS_UNINSTANTIATED) {
+>  		/* mark the key as being negatively instantiated */
+>  		atomic_inc(&key->user->nikeys);
+> @@ -621,6 +629,7 @@
+>  		if (authkey)
+>  			key_invalidate(authkey);
+>  	}
+> +	up_write(&key->sem);
+>  
+>  	mutex_unlock(&key_construction_mutex);
+>  
+> -- 
+> 2.56.0
+> 
 
-The same unsynchronised read lets the instantiator touch the old
-key_user after the chown has dropped the last reference to it.
+Please review the LLM generated patch yourself at first and write
+a commit message thta you can understand yourself.
 
-Hold key->sem for write across the instantiate op and the owner-record
-updates so that instantiation and chown serialise on the lock that
-already protects key->user.  key->sem nests inside key_construction_mutex
-and the destination keyring's semaphore here; nothing takes the
-construction mutex under a key's semaphore.  The acquisition is
-annotated as nested because a keyring instantiated into a keyring shares
-the destination's lock class; the key under construction cannot be a
-destination itself, so no cycle exists.
+Plus, remove spurious inline comment changes. I'm only then going
+to review this.
 
-Reproducer: a request_key() helper that chowns the target key between
-two uids from one thread while instantiating it from another, as root.
-Triggers within tens of milliseconds on 6.12.104 and on mainline.
-
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Cc: stable@vger.kernel.org
-Signed-off-by: Sinan Turunc <enscrpt@pm.me>
----
-An AI tool helped with the analysis and the patch. I reviewed and
-tested it myself: the unpatched kernel hangs within 40 ms, the patched
-one ran the same workload for 60 s with lockdep on and no report.
-
- security/keys/key.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/security/keys/key.c b/security/keys/key.c
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -439,7 +439,13 @@
-=20
- =09mutex_lock(&key_construction_mutex);
-=20
--=09/* can't instantiate twice */
-+=09/* can't instantiate twice; key->sem keeps key->user stable against
-+=09 * keyctl_chown_key() for the instantiate op and the quota update.
-+=09 * Nested: the caller may hold the destination keyring's sem and the
-+=09 * key under construction may be a keyring too, but it cannot be
-+=09 * anyone's destination yet, so there is no cycle.
-+=09 */
-+=09down_write_nested(&key->sem, 1);
- =09if (key->state =3D=3D KEY_IS_UNINSTANTIATED) {
- =09=09/* instantiate the key */
- =09=09ret =3D key->type->instantiate(key, prep);
-@@ -469,6 +475,7 @@
- =09=09=09=09key_set_expiry(key, prep->expiry);
- =09=09}
- =09}
-+=09up_write(&key->sem);
-=20
- =09mutex_unlock(&key_construction_mutex);
-=20
-@@ -600,7 +607,8 @@
-=20
- =09mutex_lock(&key_construction_mutex);
-=20
--=09/* can't instantiate twice */
-+=09/* can't instantiate twice; see __key_instantiate_and_link() */
-+=09down_write_nested(&key->sem, 1);
- =09if (key->state =3D=3D KEY_IS_UNINSTANTIATED) {
- =09=09/* mark the key as being negatively instantiated */
- =09=09atomic_inc(&key->user->nikeys);
-@@ -621,6 +629,7 @@
- =09=09if (authkey)
- =09=09=09key_invalidate(authkey);
- =09}
-+=09up_write(&key->sem);
-=20
- =09mutex_unlock(&key_construction_mutex);
-=20
---=20
-2.56.0
-
+Br, Jarkko
