@@ -1,44 +1,44 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794785527;
-	b=3l1MTxuNH1z15eowV7GL7aokUkNvaqG4ux9hFUiTrFmIQR9+u/OiywdnqJCVbzRfpNur
-	 cjsHUSPTExiAH/tST1Nfs3mQkWz1hbsyy6fnoLy5Y55UP1MWflVNwMkfr6SJNH2msEc2W
-	 fUpWOM6zB5zmBaurFDOIBEuuFHz4CapkYlw+whIa7F1jNmCVq+YXiOcnjcaH3ZVKMcuEd
-	 BiTqQnIS3eNODS73uNMH0D/uwwiQ7MnXHeCbAj99ddc4e6kCB8+u/0TntHxKo7CtceYSE
-	 dB3rV3OwqkKry2LqTDdC9WITTyh71dNC1afwIVqQjzisKf5sFJ3ZLQ8obw/YvKFqhZg==
+	t=1794785531;
+	b=cPajaadaFJzvnK/5xo4dj0NK2zuTqqGTVf75x3xzDlegBe/hz1eOA153iiFXYhFmZZEQ
+	 4WMU9qzubvWb0XaxaXLwgoSMK9JcSeokezw8txFGRSvKMwrPD1P+bI+gFPL5i7FOJ5tYH
+	 jcCZlo92DmQsthmrl2jGjRMF5wp+wZwEQjh33eFNC+1GEmZ8Sxo7O2+1hFYJBYbfT6rSk
+	 f3C00nEXrgQUh3m5cmisfxzMoa93ECiDn8k+dR/esVA6Mmh/yHnqlGdPfqV0cV7mMp+vv
+	 T//UTENad1odDyjS5vcfJz78rRPmg4mjKECxqdSZFIhRxny9EgVdz6Ythn7tqwzgEMA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794785527;
+	a=rsa-sha256; c=relaxed/relaxed; t=1794785531;
 	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
 	 In-Reply-To:References:MIME-Version:Content-Transfer-Encoding;
-	bh=vmIQUtngFlNvhyn0Se9v5OKBcLzkjaEzyL4mMCGL7iA=;
-	b=UanS++SRV/vtxqs1cZnR4wZBr/AsgLLiR4K6x2KF9p6lZTik9K6aQDkxmrrlAJmBEY16
-	 Bkc7vXK5GfD4Zqctyrdkw/DUjSOTg7OvjVPcgxk1rjbc4DU+rVqO+pYrhXHLuuHJqQ+Ki
-	 U7cl6nFCzW5OcrVIrJdCH8/ltRu5bdFpEr5bkcGNbhB2kBnY5Gqn4pEfpN3Q04mHm5PS+
-	 QMxuYglRto6LGE+sC/usITJjdNBzzn3hQ0ts4MuiD3bKzNiN0rHv29PiHcyGR8YMnkwT/
-	 Q2RB+t2McOWOlsO9W86AtSK3WmITj+lXKsc59iamg9ax8AginZuLRfNrjDuQxgzQB4g==
+	bh=4q5qcmlwImEHW4opagfSJu67mHlh6kx/M+zxLcR9Lys=;
+	b=NLzKv+ACf8eEhi9rOiBzahLilNCxmxnNX+dhzsSXPPJKhnoV2PXl+3oSUCxdglM7L2O+
+	 BN7gHEO4l9cZgH9x2dOmD7wvZAgU3eth8DkqrkWhO8TwMeQiunwP3uoOay0PEweF6WXy+
+	 B3FWqh6YRRd9JJHP35ymvdHDBOGrGftVeGbT4Cnp/uvfbXsmmg4NzAEAGWnQQFPGqOC18
+	 QWcykp0UWJqj/u4r01mOSPTmRgOyWM+6UwrNnrek6vcH3DXt/HMTzPfZ+x0b66gWraLTK
+	 UDt/cbZJ+zB+OKlxatZA2wmHIndRJAJNpAFGphrtOZKEx1H8wE3Lab8D8njjbvS1IZA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=JwSDbXcH;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=M+dyko6i;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 9A5DA606A329;
-	Sun, 15 Nov 2026 23:32:07 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 50F96606A323;
+	Sun, 15 Nov 2026 23:32:11 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=JwSDbXcH
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A3D391F000CA;
-	Sun, 15 Nov 2026 23:32:06 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=M+dyko6i
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5AD061F000D4;
+	Sun, 15 Nov 2026 23:32:10 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794785527;
-	bh=vmIQUtngFlNvhyn0Se9v5OKBcLzkjaEzyL4mMCGL7iA=;
+	s=k20260515; t=1794785530;
+	bh=4q5qcmlwImEHW4opagfSJu67mHlh6kx/M+zxLcR9Lys=;
 	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=JwSDbXcH0xLVDBjOubneAfKG+BnQveXGPS6YStjpCaqS+DJgTTAMWHDDXH27ClQpV
-	 zu7e0qjLI1S5D+KJSs7p0O+v28kvH3i4MzeNhiFGxs6VeZ+7epc2Jq7NOnna4gySzC
-	 NaSSX3yp0G7cQdvV3MSYKk+Zz/twPIOPRbZZu5AWHgEeedvx+Ibk9OKK2ByHA5qUE4
-	 duSbbRxV3zdbH0mLkYKovi7GFqSjG8yDgEt4XNrPZOkB5GzHNdaemVW20CA3I/13Mk
-	 gaXZXtmBwoMheEtQjwMAl928SZL5n4ULIcYz1R9Gsi7614R/H9lojl1GpbpzSIQiu3
-	 3YxGEkFNmMTqQ==
+	b=M+dyko6iMaEZAe2w/FHQj41bR/rF3yeMIx24zQJxeYupiSF1fWhtUNOQVUjalL4Xy
+	 /9TEUPeAvIC0C8OL70FUqOUDnWznjOt1yzubuq9rcnPhBLrPUnNQ1ruqVue0rzJ0NG
+	 c4IZvrSU2pZqoUFKEkb3W3IeoUs46gR3/ltEPmp0BUtDSmalJimGUHlMbdT+nPzLxP
+	 M705Lu1tE8Ss82kmIMsTpThwr4wBzqysNqARzQ/gdds92xODK5fBtRF0rw46hqzABQ
+	 ptM/9lnSL3jj3IbgXKqgIjtr1o8oXtozvVTZ1st/5mgNngVdv/3nBghtPaWbq9WyGf
+	 Oy8oGCkpbBz2g==
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: David Howells <dhowells@redhat.com>
 Cc: Jarkko Sakkinen <jarkko@kernel.org>,
@@ -59,11 +59,10 @@ Cc: Jarkko Sakkinen <jarkko@kernel.org>,
 	Peter Huewe <peterhuewe@gmx.de>,
 	Roberto Sassu <roberto.sassu@huawei.com>,
 	Ross Philipson <ross.philipson@gmail.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	stable@vger.kernel.org
-Subject: [PATCH v2 1/4] tpm2-sessions: Drop TPM2_NAME_SIZE
-Date: Mon, 16 Nov 2026 01:31:53 +0200
-Message-ID: <20261115233156.1485238-2-jarkko@kernel.org>
+	"Serge E. Hallyn" <serge@hallyn.com>
+Subject: [PATCH v2 2/4] KEYS: trusted: Open code tpm2_buf_append_auth()
+Date: Mon, 16 Nov 2026 01:31:54 +0200
+Message-ID: <20261115233156.1485238-3-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
 In-Reply-To: <20261115233156.1485238-1-jarkko@kernel.org>
 References: <20261115233156.1485238-1-jarkko@kernel.org>
@@ -78,72 +77,74 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-TPM2_NAME_SIZE was left to include/linux/tpm.h when the base definitions
-were consolidated. Switch struct tpm2_auth to TPM2_MAX_NAME_SIZE and
-convert TPM2_NAME_SIZE users to TPM2_NULL_NAME_SIZE, removing the
-redundant TPM2_NAME_SIZE definition.
+tpm2_buf_append_auth() has a single call site and most of its parameters
+are redundant. Open code it to the call site so that less cross-referencing
+is required while browsing the source code.
 
-Cc: stable@vger.kernel.org # v7.3+
-Fixes: 88c5a62c3af7 ("tpm: Move TPM common base definitions to the command header")
+Reviewed-by: Jonathan McDowell <noodles@earth.li>
 Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
- drivers/char/tpm/tpm-sysfs.c     | 2 +-
- drivers/char/tpm/tpm2-sessions.c | 2 +-
- include/linux/tpm.h              | 8 +-------
- 3 files changed, 3 insertions(+), 9 deletions(-)
+ security/keys/trusted-keys/trusted_tpm2.c | 40 ++++-------------------
+ 1 file changed, 7 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-index d915307ae833..0f726cf65189 100644
---- a/drivers/char/tpm/tpm-sysfs.c
-+++ b/drivers/char/tpm/tpm-sysfs.c
-@@ -318,7 +318,7 @@ static ssize_t null_name_show(struct device *dev, struct device_attribute *attr,
- 			      char *buf)
- {
- 	struct tpm_chip *chip = to_tpm_chip(dev);
--	int size = TPM2_NAME_SIZE;
-+	int size = TPM2_NULL_NAME_SIZE;
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index 30188a0ec676..563997600636 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -197,36 +197,6 @@ int tpm2_key_priv(void *context, size_t hdrlen,
+ 	return 0;
+ }
  
- 	bin2hex(buf, chip->null_key_name, size);
- 	size *= 2;
-diff --git a/drivers/char/tpm/tpm2-sessions.c b/drivers/char/tpm/tpm2-sessions.c
-index 9608e545602c..94c11135beb3 100644
---- a/drivers/char/tpm/tpm2-sessions.c
-+++ b/drivers/char/tpm/tpm2-sessions.c
-@@ -137,7 +137,7 @@ struct tpm2_auth {
- 	 * we must compute and remember
- 	 */
- 	u32 name_h[AUTH_MAX_NAMES];
--	u8 name[AUTH_MAX_NAMES][2 + SHA512_DIGEST_SIZE];
-+	u8 name[AUTH_MAX_NAMES][TPM2_MAX_NAME_SIZE];
- };
- 
- #ifdef CONFIG_TCG_TPM2_HMAC
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 0db277af45c3..84c8fe226235 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -94,12 +94,6 @@ struct tpm_chip_seqops {
- /* Fixed define for the curve we use which is NIST_P256 */
- #define EC_PT_SZ	32
- 
--/*
-- * fixed define for the size of a name.  This is actually HASHALG size
-- * plus 2, so 32 for SHA256
+-/**
+- * tpm2_buf_append_auth() - append TPMS_AUTH_COMMAND to the buffer.
+- *
+- * @buf: an allocated tpm_buf instance
+- * @session_handle: session handle
+- * @nonce: the session nonce, may be NULL if not used
+- * @nonce_len: the session nonce length, may be 0 if not used
+- * @attributes: the session attributes
+- * @hmac: the session HMAC or password, may be NULL if not used
+- * @hmac_len: the session HMAC or password length, maybe 0 if not used
 - */
--#define TPM2_NAME_SIZE	34
+-static void tpm2_buf_append_auth(struct tpm_buf *buf, u32 session_handle,
+-				 const u8 *nonce, u16 nonce_len,
+-				 u8 attributes,
+-				 const u8 *hmac, u16 hmac_len)
+-{
+-	tpm_buf_append_u32(buf, 9 + nonce_len + hmac_len);
+-	tpm_buf_append_u32(buf, session_handle);
+-	tpm_buf_append_u16(buf, nonce_len);
 -
- /*
-  * The maximum size for an object context
-  */
-@@ -166,7 +160,7 @@ struct tpm_chip {
- 	/* saved context for NULL seed */
- 	u8 null_key_context[TPM2_MAX_CONTEXT_SIZE];
- 	 /* name of NULL seed */
--	u8 null_key_name[TPM2_NAME_SIZE];
-+	u8 null_key_name[TPM2_NULL_NAME_SIZE];
- 	u8 null_ec_key_x[EC_PT_SZ];
- 	u8 null_ec_key_y[EC_PT_SZ];
- 	struct tpm2_auth *auth;
+-	if (nonce && nonce_len)
+-		tpm_buf_append(buf, nonce, nonce_len);
+-
+-	tpm_buf_append_u8(buf, attributes);
+-	tpm_buf_append_u16(buf, hmac_len);
+-
+-	if (hmac && hmac_len)
+-		tpm_buf_append(buf, hmac, hmac_len);
+-}
+-
+ /**
+  * tpm2_seal_trusted() - seal the payload of a trusted key
+  *
+@@ -537,9 +507,13 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		 * could repeat our actions with the exfiltrated
+ 		 * password.
+ 		 */
+-		tpm2_buf_append_auth(buf, private->policyhandle,
+-				     NULL /* nonce */, 0, 0,
+-				     private->blobauth, private->blobauth_len);
++		tpm_buf_append_u32(buf, 9 + private->blobauth_len);
++		tpm_buf_append_u32(buf, private->policyhandle);
++		tpm_buf_append_u16(buf, 0);
++		tpm_buf_append_u8(buf, 0);
++		tpm_buf_append_u16(buf, private->blobauth_len);
++		tpm_buf_append(buf, private->blobauth, private->blobauth_len);
++
+ 		if (tpm2_chip_auth(chip)) {
+ 			tpm_buf_append_hmac_session(chip, buf, TPM2_SA_ENCRYPT,
+ 						    NULL, 0);
 -- 
 2.47.3
 
