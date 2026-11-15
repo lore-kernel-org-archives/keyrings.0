@@ -1,78 +1,57 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=79.135.106.29
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794699348;
-	b=1Wb9XrXVcsBFizCfoluSzpywGcgS5n+WOkx79mLLlcylfOAzyofhykWRc1Aeu6awI5tt
-	 s0HI6BM2OJfih16WZ1cPyV9utCGxOX5htm8DjtiKDZxV455PkaOxWMypYyJIpmhjPBmFS
-	 4fOD8oEdfe7s4Vcz0FAfe9ziYaaneYUopGs1pfABzZ3z/PduGrZdCi+VnvpV2huzSUT60
-	 bFBBiIEBx6x2EHB8diJV1oBq4GKkGI3jBQKox/3MaxGVzducTgqeMRO8R77rCQwfVrsSG
-	 TmFri4L23TFnztKD/0NqJhzV2lDhnpN3grh+AJ8mf+UCseX9tQtqvl1f7IyUaTOu1Fg==
+	t=1794745070;
+	b=ciWk8bvwjXGiunVRngXXjncINPRu4EAu6oPaDUehaLU4/VjglSeK3anYkE7x0nBvh7Vc
+	 RnkyfGBwYmfUVOz7JiiXqytYawjeI+b0qFQ7RlhH4+gh6dByTfX2pl1/tlnXkZLttUj9Q
+	 8meBLJA/AohCK634VidwiqPPhQvDNy//C1yuhYmScrRM52oxg3MfGMXwacBfmzuJSKoBh
+	 ZLbdeG7XJ0+obFZsHKr9TXAeb7GYMBcGJ7ujZyMKjhZaOQymXPeL/RY/CIstMuROZgMcC
+	 k7To9fNxVjx8PXKuPWO/WBu+XF0wPyssUzf4kNNlrA1sUizKUvV0sdIJyiuMh86KOzA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794699348;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=VIR6mXYK3ETiApKWl+z2FejP/5a8onBjeYRAKhIC2pc=;
-	b=oME7icCvfLRnlNUlBjEljHrxDnBSt60jUksFlx1BlF8FevroSG5+N2kJ7DQJ/MPiDD0E
-	 omQpC1x1r4Ucfyipql9Zvgl64X2brPfaCnjiYYzk8jEiIPlCKJKqDpIC3wAhIvVHLRVE1
-	 xupD7Fsaul/DxjJ5w7pEedFY3HWcsAnswe2QdPw5hMSKfLnVFKjWbzJ4uOXuNT3W1/ZlF
-	 nIldnw7RJ5+l1exM0ckWk084mhHwfAZhvcjI3Khzfrs5E71HsKdk77fHlrNdfjbtaLd+t
-	 qddjqxXkq5EBcD6sok15QVXtV5RrReu51xRQj1ZoLT/iDspi/RKp9SYrTfIpPqhr0MA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794745070;
+	h=DMARC-Filter:DKIM-Signature:Date:To:From:Cc:Subject:Message-ID:
+	 Feedback-ID:X-Pm-Message-ID:MIME-Version:Content-Type:
+	 Content-Transfer-Encoding;
+	bh=EluYiwlFKYuh/LI+cnM/6qB8JrNrz30s4NvnPy3YyL0=;
+	b=I9lXKyHaS72PcCpa0G6mlSVZKmjsn0K+u7Dh1P2NCX9pnc3PD9i1f9cAehI8aqg+zUoE
+	 USCdPIa16HieL1W6WX7+f2nXLVcPX6IagYR85s/t4u/bXn5RzDv8xkwmNLE+VpjWnaYme
+	 XKFfSqGGjQrOEvkRAlZ/9LaqRUSq9YP+UW6AfKcCs9+nKjPrOLbjaGx+2+lBmmToiB/O1
+	 ix2m845HG2oapx4+sf7kakKhov5Pc5LIYEMWZI6qnXP9Ody65iXM9yQTPmuieWlvH+ShZ
+	 V0S/dxv563zF7pHrAjh5aSSJu4usn308k4+TQG1nijTM15A+a7gqX/oH8kaIkflS6Nw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ZZQFDPr2;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=pm.me;
+	spf=pass smtp.mailfrom=pm.me;
+	dkim=pass header.d=pm.me header.i=@pm.me header.a=rsa-sha256 header.s=protonmail3 header.b=OUAq5Fc9;
+	arc=none smtp.remote-ip=79.135.106.29
+Received: from mail-10629.protonmail.ch (mail-10629.protonmail.ch [79.135.106.29])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 5DCCC606A329;
-	Sat, 14 Nov 2026 23:35:48 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8CDEF606A327;
+	Sun, 15 Nov 2026 12:17:49 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 8CDEF606A327
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=pm.me
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=pm.me
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ZZQFDPr2
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 42A021F000C4;
-	Sat, 14 Nov 2026 23:35:47 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794699348;
-	bh=VIR6mXYK3ETiApKWl+z2FejP/5a8onBjeYRAKhIC2pc=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=ZZQFDPr2OBteoJK60ty3lgYNXS982/JqevYnayq5M2JVQt56VdJ0f7HgXeEBXp7XF
-	 CYD7i9q4a6s4qq48G33GZIZ7L7NDnGKKgS+Zd7cfEUxuqFx+vjuOFx7fJkkIjLF3j7
-	 BPxRY+5oqsHntFgHsq77skoWTKPkj0x48vYhVdR8SAWzHLjrkNJiwM8qHDB7G0wZNW
-	 K3FzuiTooW3tl0aiWfgk/x35HLj1Fmx8h/X9zphKIrw+uzyLGMw4pFFdjyFbLxmWmq
-	 7Sky8LjYCk3m7OheBofEcorLf8EV13An9NDMZNhLmq8c4R/5NoM//E+m0T9xsssCgg
-	 jYU0VRyjZhqhQ==
-Date: Sun, 15 Nov 2026 01:35:44 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-afs@lists.infradead.org,
-	linux-cifs@vger.kernel.org, linux-integrity@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-	linux-s390@vger.kernel.org, linux-security-module@vger.kernel.org,
-	netdev@vger.kernel.org, Alexander Gordeev <agordeev@linux.ibm.com>,
-	Anna Schumaker <anna@kernel.org>,
-	Bharath SM <bharathsm@microsoft.com>,
-	Christian Borntraeger <borntraeger@linux.ibm.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Eric Biggers <ebiggers@kernel.org>,
-	Eric Dumazet <edumazet@kernel.org>,
-	Heiko Carstens <hca@linux.ibm.com>,
-	Jakub Kicinski <kuba@kernel.org>,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	James Morris <jmorris@namei.org>,
-	Marc Dionne <marc.dionne@auristor.com>,
-	Mimi Zohar <zohar@linux.ibm.com>,
-	Namjae Jeon <linkinjeon@kernel.org>,
-	Paolo Abeni <pabeni@redhat.com>, Paul Moore <paul@paul-moore.com>,
-	Paulo Alcantara <pc@manguebit.org>,
-	Ronnie Sahlberg <ronniesahlberg@gmail.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Shyam Prasad N <sprasad@microsoft.com>,
-	Simon Horman <horms@kernel.org>, Sumit Garg <sumit.garg@kernel.org>,
-	Sven Schnelle <svens@linux.ibm.com>, Tom Talpey <tom@talpey.com>,
-	Trond Myklebust <trondmy@kernel.org>,
-	Vasily Gorbik <gor@linux.ibm.com>
-Subject: Re: [PATCH v6 00/13] KEYS: Sanitize the garbage collector
-Message-ID: <avjwUDaXiAwNvFai@kernel.org>
-References: <20261112040242.247168-1-jarkko@kernel.org>
- <avjutAro2-Q5VPvx@kernel.org>
+	dkim=pass (2048-bit key) header.d=pm.me header.i=@pm.me header.a=rsa-sha256 header.s=protonmail3 header.b=OUAq5Fc9
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=pm.me;
+	s=protonmail3; t=1794745067; x=1795004267;
+	bh=EluYiwlFKYuh/LI+cnM/6qB8JrNrz30s4NvnPy3YyL0=;
+	h=Date:To:From:Cc:Subject:Message-ID:Feedback-ID:From:To:Cc:Date:
+	 Subject:Reply-To:Feedback-ID:Message-ID:BIMI-Selector;
+	b=OUAq5Fc9kmK9eU6iD30wyyVivgL5YQ7TnSXW00wEYIR9CYYpjLs54b4s0ZtR9WJ0I
+	 8nbv714q1kGMRxiksvmn5vnC+02HF8sV9rptv6MQRUddkj4/L9UahuAFU7i807wuI/
+	 g3wi3KzbE9oDuPr4GwdIScq0oDZVZP5UQgok5sSV8WvEvawpzZlYCh1IZpM1fnc6b7
+	 MhPy79br/0jiXsgbok4tjLeyTl8B/PCwpH9K7zyIIqPcDukLk9EFMnh+J7o4yv63LH
+	 Rjm/Q3GdsUMgtng5578auYkh881eHnokX3LtOS/kur5gFSo3gJ1jBYphhOkPRAowtX
+	 hAsPrIbzce6UQ==
+Date: Sun, 15 Nov 2026 12:17:40 +0000
+To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>
+From: Sinan Turunc <enscrpt@pm.me>
+Cc: paul@paul-moore.com, jmorris@namei.org, serge@hallyn.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] keys: serialise instantiation against keyctl_chown_key
+Message-ID: <20261115121722.206-1-enscrpt@pm.me>
+Feedback-ID: 48393780:user:proton
+X-Pm-Message-ID: 62b592fa9ecff3d6048e83be9e5f68d5467bc76f
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -82,36 +61,104 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <avjutAro2-Q5VPvx@kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Nov 15, 2026 at 01:28:56AM +0200, Jarkko Sakkinen wrote:
-> On Thu, Nov 12, 2026 at 06:02:29AM +0200, Jarkko Sakkinen wrote:
-> > 1. Replace key_type_dead retyping with module reference pinning so live
-> >    keys and restrictions keep their backing key_type module loaded until
-> >    key_gc_unused_keys() or keyring_destroy() completes.
-> > 2. Process serial-tree scans and graveyard destruction in fixed 64-key
-> >    chunks to a bound workqueue execution latency without hurting overall
-> >    throughput for a significant amount.
-> > 
-> > The first part has a user-space visible effect: rmmod returns -EBUSY while
-> > keys or keyring restrictions still pin the backing module.
-> > 
-> > Internal key caches or transport state bottlenecks are addressed by either
-> > clearing their private caches on last-client teardown or splitting key
-> > types into dedicated provider modules.
-> 
-> This passes bot+bpf-ci@kernel.org and Sashiko other than the remark
-> about inline comment.
-> 
-> I'll update the inline comment, and make the commits available at
-> -next.
-> 
-> I'll leave S390 fixes out as they are out-of-band. They can be
-> picked from this patch set; or I can later on send a separate
-> patch set.
+keyctl_chown_key() replaces key->user under key->sem, but the
+instantiation path reads key->user without it: __key_instantiate_and_link()
+and key_reject_and_link() bump key->user->nikeys under
+key_construction_mutex only, and key_payload_reserve(), called from the
+type's instantiate op, reads key->user once for spin_lock_irqsave() and
+again for spin_unlock_irqrestore().
 
-Done: https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git/log/?h=for-next-keys
+A chown of an under-construction key that lands between those two reads
+locks the old owner's quota spinlock and unlocks the new owner's.  The
+paravirt unlock slow path reports the unheld unlock and the old lock is
+never released, so the next quota operation on that uid spins with
+interrupts disabled:
 
-Br, Jarkko
+  pvqspinlock: lock 0xffff88800f94dc38 has corrupted value 0x0!
+  WARNING: CPU: 2 PID: 215 at kernel/locking/qspinlock_paravirt.h:504 __pv_=
+queued_spin_unlock_slowpath+0x1dc/0x2e0
+  Call Trace:
+   _raw_spin_unlock_irqrestore+0xe/0x30
+   key_payload_reserve+0x230/0x300
+   generic_key_instantiate+0x47/0x230
+   __key_instantiate_and_link+0xbd/0x310
+   key_instantiate_and_link+0x3f0/0x490
+   keyctl_instantiate_key_common+0x246/0x410
+
+The same unsynchronised read lets the instantiator touch the old
+key_user after the chown has dropped the last reference to it.
+
+Hold key->sem for write across the instantiate op and the owner-record
+updates so that instantiation and chown serialise on the lock that
+already protects key->user.  key->sem nests inside key_construction_mutex
+and the destination keyring's semaphore here; nothing takes the
+construction mutex under a key's semaphore.  The acquisition is
+annotated as nested because a keyring instantiated into a keyring shares
+the destination's lock class; the key under construction cannot be a
+destination itself, so no cycle exists.
+
+Reproducer: a request_key() helper that chowns the target key between
+two uids from one thread while instantiating it from another, as root.
+Triggers within tens of milliseconds on 6.12.104 and on mainline.
+
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Cc: stable@vger.kernel.org
+Signed-off-by: Sinan Turunc <enscrpt@pm.me>
+---
+An AI tool helped with the analysis and the patch. I reviewed and
+tested it myself: the unpatched kernel hangs within 40 ms, the patched
+one ran the same workload for 60 s with lockdep on and no report.
+
+ security/keys/key.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/security/keys/key.c b/security/keys/key.c
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -439,7 +439,13 @@
+=20
+ =09mutex_lock(&key_construction_mutex);
+=20
+-=09/* can't instantiate twice */
++=09/* can't instantiate twice; key->sem keeps key->user stable against
++=09 * keyctl_chown_key() for the instantiate op and the quota update.
++=09 * Nested: the caller may hold the destination keyring's sem and the
++=09 * key under construction may be a keyring too, but it cannot be
++=09 * anyone's destination yet, so there is no cycle.
++=09 */
++=09down_write_nested(&key->sem, 1);
+ =09if (key->state =3D=3D KEY_IS_UNINSTANTIATED) {
+ =09=09/* instantiate the key */
+ =09=09ret =3D key->type->instantiate(key, prep);
+@@ -469,6 +475,7 @@
+ =09=09=09=09key_set_expiry(key, prep->expiry);
+ =09=09}
+ =09}
++=09up_write(&key->sem);
+=20
+ =09mutex_unlock(&key_construction_mutex);
+=20
+@@ -600,7 +607,8 @@
+=20
+ =09mutex_lock(&key_construction_mutex);
+=20
+-=09/* can't instantiate twice */
++=09/* can't instantiate twice; see __key_instantiate_and_link() */
++=09down_write_nested(&key->sem, 1);
+ =09if (key->state =3D=3D KEY_IS_UNINSTANTIATED) {
+ =09=09/* mark the key as being negatively instantiated */
+ =09=09atomic_inc(&key->user->nikeys);
+@@ -621,6 +629,7 @@
+ =09=09if (authkey)
+ =09=09=09key_invalidate(authkey);
+ =09}
++=09up_write(&key->sem);
+=20
+ =09mutex_unlock(&key_construction_mutex);
+=20
+--=20
+2.56.0
+
