@@ -1,56 +1,75 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=93.93.131.124
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794808317;
-	b=BNlpDw3E+4X8rkg8EYlrCaRLJZzniZBUCJL5WAooWPbyOc8vVAWGWSHZhAKHAPQYtsw6
-	 dE4QSkmvzHsGE26NfZr44eqcQAXIJXbwihSY24A33Ugvn2pHNj0al6O1IWynpB9ki/qlH
-	 bUDbVu2yoKqiXTXS0PJgV1wn6daYbyJfRVZX6YuhXH5WMFpYl94/+B66y8CgYdwaiOM8l
-	 pZVGp9QLlNLkQ/uMZKbmu2cpcqqwnHgzoFhe4Hqbnk4v08Yk0H9bbt0VT4nSq3vdAZJ2q
-	 XnOsfOEyp8LmGsEP1Afb6MiT5mOFxyNRAx7rSZ7yj9+zhz7QIloexu44wHscDZX8XGw==
+	t=1794822240;
+	b=H7BFh6Cfwy983GpG82hdgjlw6lh1prwSM47briB6ctNCnwKezIrFgmVVLDODEtM614CC
+	 dqFhvIZRyqb9n4uzAR43E4xSycyamk26s66j67R9OOaQ/SNjDR2gog4qRDkZdPaYmk4PI
+	 WXotgj67G2A+tcgchy8B3lXpCHyJcEEANGHt0Zw3MNjkmPFIV3JlHLF56PUbyGIFN1OTJ
+	 kjP+zkLkVc7u637N0JpHOocB8N7AkOffdqkXYmwHq8SMENUfs7JnfqRJ+43cZzD4Jpf6V
+	 veSm8wmqOsV76+xwPp/oyho8yqZ3dcC0YeHomr+OGgkuPWimqkvrg5IBRDEE8lnYAeA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794808317;
-	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
-	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=8tAhjUC1sN1NfqvNuWp5ZIfz98OM+/jpe+TE94GU4Qc=;
-	b=kopLf5pA87yDTe6jPb3IAUn6kWzrDEmAI5b33NaBA6F1rqk9xxC6BIFzxSd9NBFNrLDo
-	 HMpLtmthTgkd5RQckVOer+4FRDPqZeezwpb1vOAd71kJRmsLHC6Np9FVFFBU5ooZM7DjZ
-	 3z7LnOc2GMBd2HNBk1sBN0XzE6iqulJnhnl7z0zwz/ERouiFC6QEH6QpKk1M/VTfEPCAu
-	 4ExpTUqxZjlOBLjE+2jZz0oFQbqUklsK7THa/Ha/hFarNmyNJBydJNSflHSqkdRxC0SNB
-	 bBXIqEDAmJU9s69MLsf5GvKlu6LOW+AAPVuxdHzQyTD/7g1Qea9y8bjmzIfMIZ8JLyQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794822240;
+	h=DMARC-Filter:DKIM-Signature:Received:Date:From:To:Cc:Subject:
+	 Message-ID:References:MIME-Version:Content-Type:Content-Disposition:
+	 In-Reply-To;
+	bh=RSWKnESEVnr4VXKVjRJhnaoqTz4cwHJfNjyq1NrtClw=;
+	b=Db5iVERh2ZMKh3mjL4otCwJ1qJDZNou7cot9nANucnJYmCZXqk9ib3kzTfWPTiCQ9+hy
+	 7krk2VD6KzCzrS+H30nbFDqwuPsD+eAHwr2U9xzW89fZDY3A+WBF55kTCh5RDyF38y9Xb
+	 TGTggR7toTVjNTejdvDI5sva6CuAVqtYqPFobDme4PVTyOk46NX8kkznWo1O9CtGbqJev
+	 TlH9Y3+vP5gmtxpHRlfpPToa1bzLiCFQYs6NAeE3505wh3iHV510MuXFxHd26Ma8055ku
+	 FFMIKOm1sU8hBWoHACAkrGZKWJJm6CEou/pR5RVUgnu7DEeAwg+GI4kk7wG4ylFvP4A==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=aEIP77aY;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=earth.li;
+	spf=pass smtp.mailfrom=earth.li;
+	dkim=pass header.d=earth.li header.i=@earth.li header.a=rsa-sha256 header.s=the header.b=M1cq45IL;
+	arc=none smtp.remote-ip=93.93.131.124
+Received: from the.earth.li (the.earth.li [93.93.131.124])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange ECDHE (prime256v1) server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4C16C606A31C
-	for <keyrings@vger.kernel.org>; Mon, 16 Nov 2026 05:51:57 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 79786606A323;
+	Mon, 16 Nov 2026 09:43:58 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 79786606A323
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=earth.li
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=earth.li
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=aEIP77aY
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id A7AE01F000C4;
-	Mon, 16 Nov 2026 05:51:56 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794808316;
-	bh=8tAhjUC1sN1NfqvNuWp5ZIfz98OM+/jpe+TE94GU4Qc=;
-	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=aEIP77aYuwFRJLVvyTRGuaRYPoIGLEV1qaWW3Gid6Tjf4txHWA1cAGZ1fYzsXZdOU
-	 dyfgvq+H92gV/jpHzrgdS+hTWBTMcPjXiokXSlrXi/x1o49s0APjl0Q/vSxgHcyOQn
-	 tfxukppvN4WbHe+BaAjz5/78ywwsFWQidd92DuMQsRDPH+AWY/sOLCMsy6GQbXBey3
-	 EmcmIEWn/6NWVleoKcozNXVaKzIkMff6pkn2C4O3zl9yHmAW5ZiFEO3rgTX9QpBk7J
-	 HmyrqR9RQ/KP0EGTAbJDqEglb0NSh9zRfJ1SQ3ratYUxmDT4hbMQRkncXhAXNs+i6S
-	 NFFCrhDm0iWSQ==
-Message-ID: <sashiko-outbox-216230@kernel.org>
-From: sashiko-bot@kernel.org
-Subject: Re: [PATCH 1/2] lib/assoc_array: add KUnit test suite
-Reply-To: sashiko-reviews@lists.linux.dev
-To: "William Chuang" <founder@logarcheon.com>, akpm@linux-foundation.org
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org
-In-Reply-To: <20261116054112.39078-2-founder@logarcheon.com>
-References: <20261116054112.39078-1-founder@logarcheon.com>
- <20261116054112.39078-2-founder@logarcheon.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date: Mon, 16 Nov 2026 05:51:56 +0000
+	dkim=pass (2048-bit key, unprotected) header.d=earth.li header.i=@earth.li header.a=rsa-sha256 header.s=the header.b=M1cq45IL
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=earth.li;
+	s=the; h=In-Reply-To:Content-Type:MIME-Version:References:Message-ID:Subject:
+	Cc:To:From:Date:Sender:Reply-To:Content-Transfer-Encoding:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:List-Id:List-Help:List-Unsubscribe:List-Subscribe:
+	List-Post:List-Owner:List-Archive;
+	bh=RSWKnESEVnr4VXKVjRJhnaoqTz4cwHJfNjyq1NrtClw=; b=M1cq45IL+n51Vb8QGu8nCZ0eKU
+	XeqhXFMpC67FbM/nNk+CTZCBl1E6UgzMVojKFjJJFxaRwzvt7wBBp5BN9E21+c2bsbVfmU7Q4KovT
+	xduNpdow4PS/A3zMY7jl/WhaNPoUjep6ow8e8nglFmnJ3pq5XiLCaWpk0amcwElEu1WW3wX+f6pMo
+	JIRE1QbUgRU8oOEDcPjfI4TZiRhpUYYi5O3QN38DxXUULeIb0tijJlzwwnM7oDlEIellcOdBng+4x
+	/2xFljQUl6zKR1C+30nYL+4pgChhQPvvxRn6+eUNCJ3JpJ2ApPwaH1ozu3uDhe8iUmn9qgoAcwK3E
+	+kKkZ7OQ==;
+Received: from noodles by the.earth.li with local (Exim 4.98.2)
+	(envelope-from <noodles@earth.li>)
+	id 1xStFU-00000008R0V-1SMs;
+	Mon, 16 Nov 2026 09:43:40 +0000
+Date: Mon, 16 Nov 2026 09:43:40 +0000
+From: Jonathan McDowell <noodles@earth.li>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+	Alec Brown <alec.r.brown@oracle.com>,
+	"Daniel P. Smith" <dpsmith@apertussolutions.com>,
+	David Howells <dhowells@redhat.com>,
+	Eric Biggers <ebiggers@kernel.org>,
+	James Bottomley <James.Bottomley@hansenpartnership.com>,
+	James Morris <jmorris@namei.org>, Jason Gunthorpe <jgg@ziepe.ca>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
+	Peter Huewe <peterhuewe@gmx.de>,
+	Roberto Sassu <roberto.sassu@huawei.com>,
+	Ross Philipson <ross.philipson@gmail.com>,
+	"Serge E. Hallyn" <serge@hallyn.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] tpm2-sessions: Drop TPM2_NAME_SIZE
+Message-ID: <avrQTPj-iwlrUvcp@earth.li>
+References: <20261116005105.1573016-1-jarkko@kernel.org>
+ <20261116005105.1573016-2-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -59,47 +78,86 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261116005105.1573016-2-jarkko@kernel.org>
 
-Thank you for your contribution! Sashiko AI review found 1 potential
-issue to consider:
-- [Medium] lib/assoc_array: unexported symbols break modular
-  ASSOC_ARRAY_KUNIT_TEST=3Dm build
---
+On Mon, Nov 16, 2026 at 02:51:00AM +0200, Jarkko Sakkinen wrote:
+> TPM2_NAME_SIZE was left to include/linux/tpm.h when the base definitions
+> were consolidated. Switch struct tpm2_auth to TPM2_MAX_NAME_SIZE and
+> convert TPM2_NAME_SIZE users to TPM2_NULL_NAME_SIZE, removing the
+> redundant TPM2_NAME_SIZE definition.
+> 
+> Cc: stable@vger.kernel.org # v7.3+
+> Fixes: 88c5a62c3af7 ("tpm: Move TPM common base definitions to the command header")
+> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-commit 07438606f16e23d96f51f8a13d17b392d4d4bc67
-Author: William Chuang <founder@logarcheon.com>
+Reviewed-by: Jonathan McDowell <noodles@meta.com>
 
-lib/assoc_array: add KUnit test suite
+> ---
+>  drivers/char/tpm/tpm-sysfs.c     | 2 +-
+>  drivers/char/tpm/tpm2-sessions.c | 2 +-
+>  include/linux/tpm.h              | 8 +-------
+>  3 files changed, 3 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
+> index d915307ae833..0f726cf65189 100644
+> --- a/drivers/char/tpm/tpm-sysfs.c
+> +++ b/drivers/char/tpm/tpm-sysfs.c
+> @@ -318,7 +318,7 @@ static ssize_t null_name_show(struct device *dev, struct device_attribute *attr,
+>  			      char *buf)
+>  {
+>  	struct tpm_chip *chip = to_tpm_chip(dev);
+> -	int size = TPM2_NAME_SIZE;
+> +	int size = TPM2_NULL_NAME_SIZE;
+>  
+>  	bin2hex(buf, chip->null_key_name, size);
+>  	size *= 2;
+> diff --git a/drivers/char/tpm/tpm2-sessions.c b/drivers/char/tpm/tpm2-sessions.c
+> index 9608e545602c..94c11135beb3 100644
+> --- a/drivers/char/tpm/tpm2-sessions.c
+> +++ b/drivers/char/tpm/tpm2-sessions.c
+> @@ -137,7 +137,7 @@ struct tpm2_auth {
+>  	 * we must compute and remember
+>  	 */
+>  	u32 name_h[AUTH_MAX_NAMES];
+> -	u8 name[AUTH_MAX_NAMES][2 + SHA512_DIGEST_SIZE];
+> +	u8 name[AUTH_MAX_NAMES][TPM2_MAX_NAME_SIZE];
+>  };
+>  
+>  #ifdef CONFIG_TCG_TPM2_HMAC
+> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+> index 0db277af45c3..84c8fe226235 100644
+> --- a/include/linux/tpm.h
+> +++ b/include/linux/tpm.h
+> @@ -94,12 +94,6 @@ struct tpm_chip_seqops {
+>  /* Fixed define for the curve we use which is NIST_P256 */
+>  #define EC_PT_SZ	32
+>  
+> -/*
+> - * fixed define for the size of a name.  This is actually HASHALG size
+> - * plus 2, so 32 for SHA256
+> - */
+> -#define TPM2_NAME_SIZE	34
+> -
+>  /*
+>   * The maximum size for an object context
+>   */
+> @@ -166,7 +160,7 @@ struct tpm_chip {
+>  	/* saved context for NULL seed */
+>  	u8 null_key_context[TPM2_MAX_CONTEXT_SIZE];
+>  	 /* name of NULL seed */
+> -	u8 null_key_name[TPM2_NAME_SIZE];
+> +	u8 null_key_name[TPM2_NULL_NAME_SIZE];
+>  	u8 null_ec_key_x[EC_PT_SZ];
+>  	u8 null_ec_key_y[EC_PT_SZ];
+>  	struct tpm2_auth *auth;
+> -- 
+> 2.47.3
+> 
 
-This commit adds a KUnit test suite for the generic associative array in
-lib/assoc_array.c, testing insertion, replacement, deletion, clearance,
-iteration, and garbage collection against an expected model.
+J.
 
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 1dac2674a9838..157f350eee5dc 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -2856,6 +2856,23 @@ config SYSCTL_KUNIT_TEST
-> =20
->  	  If unsure, say N.
-> =20
-> +config ASSOC_ARRAY_KUNIT_TEST
-> +	tristate "KUnit test for the generic associative array" if !KUNIT_ALL_T=
-ESTS
-> +	depends on KUNIT
-> +	select ASSOCIATIVE_ARRAY
-> +	default KUNIT_ALL_TESTS
-
-[Severity: Medium]
-Does building with CONFIG_ASSOC_ARRAY_KUNIT_TEST=3Dm (such as under
-allmodconfig) fail at modpost?
-
-CONFIG_ASSOCIATIVE_ARRAY is a bool option that compiles lib/assoc_array.o
-into vmlinux, and lib/assoc_array.c does not export any of the
-assoc_array_*() functions with EXPORT_SYMBOL().  Either
-ASSOC_ARRAY_KUNIT_TEST needs to be bool with "depends on KUNIT=3Dy", or the
-assoc_array_*() functions need to be exported.
-
---=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261116054112.3907=
-8-1-founder@logarcheon.com?part=3D1
+-- 
+... I am afraid of the dark.
