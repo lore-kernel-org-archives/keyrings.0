@@ -1,60 +1,59 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794851719;
-	b=pQmmvTDhwV751lejChQtRBhE2rq3q64Srv+b3UdxpEp1FuQizcMACMO1F1uYZT8BNiM7
-	 08zv5PALycsemYmqVounuH5j277LvGh/U00H1RD4zVSgH7b3VyAOKZA+CXga8i7atuysn
-	 JB2ukmRwZsqLw13ZC7cWUp27cVd0VEeZqZn/dsCgVVv9fa+pim22QG/lihCytYzedQeDK
-	 RAp+q0XbB0E1foHE42sVQT3PY6rVsaq2h8tplkp6kfwmesMM8rdKfznEBfmfcsyUEYdLU
-	 VskWdRpIBSZYIL6/a22ciQvCyHTwMktKC7aTngIUATou5IEQHLlaUktwVuQwGMm/avg==
+	t=1794854450;
+	b=czxKK2BzvqBqzxTcRLReKWv1hmQOI1L+ia63iWV8rsXqXQTEBf5DoqcdVwwc7lWEQpC7
+	 CcRhhrr8QlS/8p84yYJLrZMSkyDT+xR1oiRuxzmlGNcHUcHcAXMoFznM2801W1PBWMf0S
+	 lUR78VL29a1hXmqmeSgSp9CXUeFssMj0RducuZA3QMuaEaUdFZwCNM+HmmHCnGUXclBSO
+	 UhUIKBruVC6s2A8XKk3R6ZmvpjJvfl6MaqD6+KMPeozGD8M6obM2hoU6i79U+pkbgazt1
+	 iqceKxp4nyKo62xTXxKXw9r7V79qDkwmRB29Y4Kx63fY/KZjk8tmGxhItSLVgwC2JmA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794851719;
-	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
-	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=E9WiqVTsHYyO82owqIeFl1E3Hx54jB7Uqk6hwRVxVYE=;
-	b=cRZCYv5+gNvc3TkLdJmSC3lEgjOcfGQwc5jvWG3GQwhw0gEpde79mStkitB2Dr9Ox93o
-	 hI3tKm7y5ILyOTGsrn6ANK6r1760S0rX5nOVNsQYoUG61dGp02OPjTATuQFu3nuQgaNHZ
-	 MWAX/jYphitbO+K92ii0uvZA1qWErBqUNZAVuawgtpqWJPr5TynZjYFahIGgaXhHk4lLP
-	 DHGCdiB/gRwL19SdD0jV3TKVK03nN96j/4URBZpNmZV8fdOKCDxLuKIh3HY7Jx9kUDNzQ
-	 ER2Wkqx3nQnhizjsVQ3ct96oSRttRgIUMdTlEUYkh6ml/gzTb51UZ2DskM+8Wag0kcw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794854450;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=6S5DXRhFto9Buyw4ZB9PCZW+zUxe7QjX/mLLATt2xeg=;
+	b=AiV3zWX4+RYXFIhEGCHOTVe6BY5LOvl3D8g4gW9Bi29i0BZ2gcrngSvGTe75tmpq4n+r
+	 KVlbLy9TWf1ai8zDQnwB8s74z8RhKIa32MnqN31zghv+lleOkDZ+wVio/PiqWt1f2XJwT
+	 dWFeQwX3uf3LZOD9AI39NzU2zY6GFNXGpXpKzawCvd/N4vVwTqQ4KhwjXIlRCXj6004nZ
+	 Zay+k6ahX7Ukqpw8aDFF4EJN/+VtQpfuvOyV7yQkYtLAvus/dYglRei8qD3ORBpTe+JIU
+	 eTR7EQupAfctZCnLwcZ0B1xEvuQbm6inFKQY+NwRhU4/nUYQfFlxJPVFibJAxMoESIA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=K0wjrA5y;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=MfFRChTN;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E5E88606A33B;
-	Mon, 16 Nov 2026 17:55:18 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id CA434606A334;
+	Mon, 16 Nov 2026 18:40:50 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=K0wjrA5y
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id B353C1F000C9;
-	Mon, 16 Nov 2026 17:55:17 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=MfFRChTN
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id EDCAF1F000CC;
+	Mon, 16 Nov 2026 18:40:49 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794851718;
-	bh=E9WiqVTsHYyO82owqIeFl1E3Hx54jB7Uqk6hwRVxVYE=;
-	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=K0wjrA5yq/+4ZUtKvOH91rRmZechP5/SEm1J4yeVIrd3bX5E0lHEKdhMfj/d0f5D8
-	 wLomE07mgBMb7e2cuu2+d7ychzgX5grKnrKS7EyPYS63lDEFP3IGu4xRc7F/FQXGK/
-	 RKdgLENWsjJvCCaexIgPjvfFksio1au7ckvteYVeztoJ8qoWo8YrOD0gd16XZPpdrw
-	 9bnKTQc6sNAaquUHBiXvTChfYe2l9QXJWb06U+Ri9JM4oAOO77Gab4NeSOvYGtlArh
-	 PRRxs93F3e65ZxzMVO84F9tU5+nMv+FTYcz1Sc2vZV9LCzzV29K8jguSp9OQqabdyj
-	 sDoLhs6B4isEA==
-Message-ID: <sashiko-outbox-217458@kernel.org>
-From: sashiko-bot@kernel.org
-Subject: Re: [PATCH 02/15] s390/cert_store: Fix return code handling in
+	s=k20260515; t=1794854450;
+	bh=6S5DXRhFto9Buyw4ZB9PCZW+zUxe7QjX/mLLATt2xeg=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=MfFRChTNSPaNo0GzUFEja2A8YWEIGsYzACAntpeplXvVbPeCm/JgbqK1XxlixVKpS
+	 639WzcNS2qq978N9qpIg13QDt+CFXddydYNaaZ+z6OvaNzUhaQzKXSFdufx/l6xvhD
+	 JI4L3vd9cx092NpTBFUW9ZL7cjcy6oqzqHlfu8MdE/eDK1M7Nn1C/YCzLvvPj3UtPB
+	 b4VrdaTLy95Sk+bORvff3V7NrIb5kJXyRBpyd4LuTnqCJCxgCoC+bHZgKP3CiVJH01
+	 DJxT/CfnL7usVOZwHqCGxUeiVYfCC7RV+UZBCQ92sdhoUNXBRRxl3JxI7FUK/vcarh
+	 Wy4vYdgUmiu6g==
+Date: Mon, 16 Nov 2026 20:40:46 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Heiko Carstens <hca@linux.ibm.com>
+Cc: Anastasia Eskova <anastasia.eskova@ibm.com>,
+	Sven Schnelle <svens@linux.ibm.com>,
+	Peter Oberparleiter <oberpar@linux.ibm.com>,
+	Vasily Gorbik <gor@linux.ibm.com>,
+	Alexander Gordeev <agordeev@linux.ibm.com>,
+	Christian Borntraeger <borntraeger@linux.ibm.com>,
+	keyrings@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [PATCH 05/15] s390/cert_store: Unlink before invalidate in
  invalidate_keyring_keys()
-Reply-To: sashiko-reviews@lists.linux.dev
-To: "Heiko Carstens" <hca@linux.ibm.com>, "Jarkko Sakkinen" <jarkko@kernel.org>, "Anastasia
- Eskova" <anastasia.eskova@ibm.com>
-Cc: "Sven Schnelle" <svens@linux.ibm.com>, "Peter Oberparleiter" <oberpar@linux.ibm.com>, "Vasily
- Gorbik" <gor@linux.ibm.com>, "Alexander Gordeev" <agordeev@linux.ibm.com>, "Christian
- Borntraeger" <borntraeger@linux.ibm.com>, keyrings@vger.kernel.org, linux-s390@vger.kernel.org
-In-Reply-To: <20261116143534.158375-3-hca@linux.ibm.com>
+Message-ID: <avtOLkZ_7VhYXUlq@kernel.org>
 References: <20261116143534.158375-1-hca@linux.ibm.com>
- <20261116143534.158375-3-hca@linux.ibm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date: Mon, 16 Nov 2026 17:55:17 +0000
+ <20261116143534.158375-6-hca@linux.ibm.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -63,58 +62,47 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261116143534.158375-6-hca@linux.ibm.com>
 
-Thank you for your contribution! Sashiko AI review found no new issues
-in this patch, but noticed 1 related pre-existing issue it does not
-introduce:
-- [Critical] s390/cert_store: unchecked key_lookup() and UAF in
-  invalidate_keyring_keys() [1]
---
-
-commit ad52ff18526194809b9921405599d976809c02b9
-Author: Heiko Carstens <hca@linux.ibm.com>
-
-s390/cert_store: Fix return code handling in invalidate_keyring_keys()
-
-This commit adds error handling to invalidate_keyring_keys() when
-key_type_keyring.read() returns an error or a short read.
-
+On Mon, Nov 16, 2026 at 03:35:24PM +0100, Heiko Carstens wrote:
+> If a key is invalidated, the key garbage collector may remove its link
+> from the keyring at any time. If that happens the subsequent key_unlink()
+> fails.
+> 
+> invalidate_keyring_keys() would then incorrectly return an error, which
+> would lead to unregistering the cert_store key type.
+> 
+> Unlink the key first and invalidate it afterwards to avoid this race.
+> 
+> Fixes: 8cf57d7217c3 ("s390: add support for user-defined certificates")
+> Signed-off-by: Heiko Carstens <hca@linux.ibm.com>
+> ---
+>  arch/s390/kernel/cert_store.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
 > diff --git a/arch/s390/kernel/cert_store.c b/arch/s390/kernel/cert_store.c
-> index d35b1ea22507d..89cc3a1683a32 100644
+> index 8eb32497ca24..a69eccf6affd 100644
 > --- a/arch/s390/kernel/cert_store.c
 > +++ b/arch/s390/kernel/cert_store.c
-[ ... ]
-> @@ -345,7 +347,7 @@ static int invalidate_keyring_keys(struct key *keyrin=
-g)
+> @@ -346,10 +346,10 @@ static int invalidate_keyring_keys(struct key *keyring)
+>  			continue;
+>  		pr_dbf_msg("Invalidating key %08x", current_key->serial);
+>  
+> -		key_invalidate(current_key);
+>  		rc = key_unlink(keyring, current_key);
+>  		if (rc)
+>  			pr_dbf_msg("Couldn't unlink key %08x: %ld", current_key->serial, rc);
+> +		key_invalidate(current_key);
 >  		key_put(current_key);
->  		rc =3D key_unlink(keyring, current_key);
->  		if (rc) {
-> -			pr_dbf_msg("Couldn't unlink key %08x: %d", current_key->serial, rc);
-> +			pr_dbf_msg("Couldn't unlink key %08x: %ld", current_key->serial, rc);
+>  		if (rc)
 >  			break;
->  		}
->  	}
+> -- 
+> 2.56.1
+> 
 
-[Severity: Critical]
-This problem wasn't introduced by this patch, but can current_key in this l=
-oop
-[1] be an error pointer or be used after free?
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-keyring->sem is released after reading key_array, without holding references
-to the keys.  If a concurrent keyctl operation unlinks a key and garbage
-collection frees it before key_lookup(key_array[key_index]) runs, key_looku=
-p()
-returns ERR_PTR(-ENOKEY), and dereferencing current_key->serial or passing
-current_key to key_invalidate() crashes.
-
-In addition, when key_lookup() succeeds, calling key_put(current_key) before
-key_unlink(keyring, current_key) and the current_key->serial debug print dr=
-ops
-the caller's reference early, which allows a concurrent unlink and garbage
-collection to free current_key and cause a use-after-free.
-
-[1] https://sashiko.dev/#/bug/linux-3ea8bbf3-6016-4165-bad4-2a5916ce887e
-
---=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261116143534.1583=
-75-2-hca@linux.ibm.com?part=3D2
+Br, Jarkko
