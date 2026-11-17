@@ -1,57 +1,60 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=109.224.244.16
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1794885848;
-	b=VWo2yZnbLFb7ubA7XslNKM/sB+WnT9baU7rgGT4jxen7smcmIzskZV1Hkr0DW4Q8/Kkw
-	 EIIKGpLwF/oDltoaytzOlMkPn+SckDHzDKVOBGrE3pUPolR8GSs74wgJGiaa22Ich+iwM
-	 dlgQeW8qsDgzQo4NL4gwk5SNA7/bV0m9IVUP1lmOv4VuKso6BEjg57zETP1814hXK32RS
-	 t301hUpOplF/XatTYUUJ9+ZQYcjaH3r2gue7x/NJbCwGPKLXzlABWb6R3UOIwEaLQ2CBb
-	 mOkkS6PAz7O2kK9x10QTJKAMLZ0tKfmHG6ryFi3WxUzxvr8uQGDx4AytrPz4gGlmgiA==
+	t=1794918697;
+	b=pCgY9WoHp5fLxWkWOdLmw4PfsCIxr68Nn6snnL6eFWbFlPDttlw+1WTkiMnK+0HtLnYQ
+	 hw8MsETnwR5jPX2szQqhge0IRYaOgv3UiVkgbBunbOfj8eKVfLJnov8/BlS9KKC3gBS8a
+	 /gHzyxn8Lmc8W2lb2HZArG2E+4M+xDk9MPCThRcLrWdyJZGCk6nnATwKFj0VeWSWKlCz9
+	 wThDNSkhpN8AP9L7n3sD8UNCAxa0D01eUOIThunn/ILm0ageXKuf3KMJZm21AiIiCsuNs
+	 9pkIyNo+H1D1uI7rqdad6rXchcABVQkFYU15LpIW+MSjsWIklc3gZWYYDCb3K5WBEug==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1794885848;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:
-	 Content-Transfer-Encoding:In-Reply-To;
-	bh=3orSBMWKdzbMx744GJIWZnn0L4NEkFQ8t34eASoTZSA=;
-	b=1X452n1PXPAY9Hrz8eIVpxDt4vvONursPkNXZpcPPi2g+o8xX2LF4sbUIq67BFw4+bx2
-	 Golb7Dls8ieDBwu8ye2MdwVoFX0+Q1xWpNr+8GREo9zv/jjORrPnC2FCXinPpdlG+Urkx
-	 Jme2MdDZeyZ0KPKomS8f/JLw9struW24MN7JQvhawfYBlsPhiFVzK9whHqyXPLPcVdSoU
-	 PncPvHxd1/cectYGRid9JleHQDiFge/WbbeEjYqdO+1sbTHrvRrf97qXHxYsE2Vheyf95
-	 FuDwMVKXng6OvmwrwINZi5xh3PkoTMf8vf4/CE61GTCoAn0y3N+RCL04gkF3qfMxSEw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1794918697;
+	h=DMARC-Filter:DKIM-Signature:Date:To:From:Cc:Subject:Message-ID:
+	 In-Reply-To:References:Feedback-ID:X-Pm-Message-ID:MIME-Version:
+	 Content-Type:Content-Transfer-Encoding;
+	bh=l0r+PNrqFBNtuM7tcgiDOPoaHoxY6H4NbwLfENsaXyc=;
+	b=0zGp9nc8UXatgwn1BaNHwDtYaIA65+SjeOUiQpm52Yvxz8ReTnHph5BsAC+ooQIPQnhp
+	 TZr8VFxi/RKWEFdX8HDeMSeXuFSJLOjH54NqIaGpkM5AGnI2tQb1iNME8ALbzd2eXMtHn
+	 5MT//G7PL9IoFg6dL6NaaQvyeAzvV33Uw6ZhZgRq/0s+BbxyOAcsYJ81q6qu01ABHSlIN
+	 zIaZ/YwrruFs5PxTU/uiABRQsLDVY3nyzc/3nHQb+Gjjaabj+zSxt5wPYCGBiXE8NbJTV
+	 2WwQYujyrxx9H475lix7EFbHGs26cL4mcyAc7nScJoBQQXuUZpxRhLnb6GEqbV0mrhA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="jgrPVDr/";
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=pm.me;
+	spf=pass smtp.mailfrom=pm.me;
+	dkim=pass header.d=pm.me header.i=@pm.me header.a=rsa-sha256 header.s=protonmail3 header.b=GgI3DPnu;
+	arc=none smtp.remote-ip=109.224.244.16
+Received: from mail-24416.protonmail.ch (mail-24416.protonmail.ch [109.224.244.16])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 737EE606A323;
-	Tue, 17 Nov 2026 03:24:07 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0BAC9606A329
+	for <keyrings@vger.kernel.org>; Tue, 17 Nov 2026 12:31:36 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 0BAC9606A329
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=pm.me
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=pm.me
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=jgrPVDr/
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 3B0CF1F000C4;
-	Tue, 17 Nov 2026 03:24:07 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1794885847;
-	bh=3orSBMWKdzbMx744GJIWZnn0L4NEkFQ8t34eASoTZSA=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=jgrPVDr/2pu0oWBxS7zsNS2iIhhXxVLBF68T/jibx5TmONcez9qvzUe2zs26Cnky/
-	 7fGwO7fJXVFIopWdEFlOUlhlKn6/lV3rQVSIsjb6BgNhXm9HHUy40ZHPM4acFsZvop
-	 ULsbIEktV8PZYsVqfAsdMRHDykFhpjXeEv2UMK79uc2ru1hjnzen4uzzXEaeyhbWjd
-	 7oQU+yeEJ7nbV87XK69HDu0dlUcZnajNkfsoxKXG8/cxlcYhzG+J0TNkoRzI31XihN
-	 YwcNHntvvKe0Fj8EaTSYD82mrtcc76SthYYTaLLSTumBFG5Un2jriZsELJepU7+4j8
-	 01LgtnxlI9vyw==
-Date: Tue, 17 Nov 2026 05:24:04 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: William =?utf-8?Q?Chuang=2C_Founder_=E2=80=93?= Logarcheon <founder@logarcheon.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-	kunit-dev@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] lib/asn1_decoder: add KUnit test suite
-Message-ID: <avvI1PuQUtBlfZWP@kernel.org>
-References: <20261117001711.47722-1-founder@logarcheon.com>
- <avuumVbCS2YQi4cv@kernel.org>
- <wzMUBnLl6Z2s-eoaXFHCl92wV6voRbr7imPSy9hdJzHqoxg3869_lCqHtMa3G5N3H0G9XfrGCW9Nzw0Vm0HCJhvNKkTUtUFDXuM7S821AIU=@logarcheon.com>
- <avvFgRqiYnBo9Q7c@kernel.org>
+	dkim=pass (2048-bit key, unprotected) header.d=pm.me header.i=@pm.me header.a=rsa-sha256 header.s=protonmail3 header.b=GgI3DPnu
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=pm.me;
+	s=protonmail3; t=1794918694; x=1795177894;
+	bh=l0r+PNrqFBNtuM7tcgiDOPoaHoxY6H4NbwLfENsaXyc=;
+	h=Date:To:From:Cc:Subject:Message-ID:In-Reply-To:References:
+	 Feedback-ID:From:To:Cc:Date:Subject:Reply-To:Feedback-ID:
+	 Message-ID:BIMI-Selector;
+	b=GgI3DPnu3/lS00sVNW9WIiLjM5kP93ZlxXOSeF3NFV5d15rWtjYbI9BGuq+PZ+iHh
+	 K52gHANR9Oj0cK3Oi3iMoxi2RwM7T5RZ8iMxHMT1GxzlaZSo6TaRrpug0+rdPpebYu
+	 AvUEdVhqrFIge0aQ+O8XQAiFvMfXxc54XHPWGI3Qmv8Hk/Wq+G2gSY74gWpp34zUdx
+	 S+P0SzyrhWFIO/CA7GLyApNy/rj3bEpT6uJw6w0Mrrl/GhK2uKt6zipE4mw9faDKJL
+	 VXLboNhTbT7tkJP3IwrGDwT1n1IJkyR0u4ODjKPcZG/uMMi0jHYkE1t58T8HE9K9w+
+	 nLl2a8zq1l1yg==
+Date: Tue, 17 Nov 2026 12:31:30 +0000
+To: Jarkko Sakkinen <jarkko@kernel.org>
+From: Sinan Turunc <enscrpt@pm.me>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] keys: serialise instantiation against keyctl_chown_key
+Message-ID: <20261117123056.1797-1-enscrpt@pm.me>
+In-Reply-To: <avmoe41hNwe5GryN@kernel.org>
+References: <20261115121722.206-1-enscrpt@pm.me> <avml2-lpRCJYlHOp@kernel.org> <avmmnHsz2vDUk8HO@kernel.org> <avmnRbuvbSg2fCVg@kernel.org> <avmoe41hNwe5GryN@kernel.org>
+Feedback-ID: 48393780:user:proton
+X-Pm-Message-ID: f3dc833893944b86caf72da5a4897f1391cf4944
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -62,46 +65,46 @@ List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <avvFgRqiYnBo9Q7c@kernel.org>
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Nov 17, 2026 at 05:09:57AM +0200, Jarkko Sakkinen wrote:
-> On Tue, Nov 17, 2026 at 02:39:37AM +0000, William Chuang, Founder – Logarcheon wrote:
-> > Fair questions.
-> > 
-> > Why at all: asn1_ber_decoder() parses untrusted ASN.1 BER/DER input. X.509 certificates (keyrings) and PKCS#7 signatures (module signing) both go through it, and it has had a length-validation bug of this kind before — CVE-2016-0758, in asn1_find_indefinite_length(). 
-> > Scope: the suite checks that malformed and truncated input is rejected rather than over-read, in the cases it exercises. It does not reproduce that CVE or prove the decoder memory-safe. That it isn’t vacuous: I weakened one bounds check in asn1_decoder.c to allow a short over-read. asn1_test_truncated_content then fails its return-value check — the decoder accepts a truncated SEQUENCE (returns 0 instead of -EBADMSG). The other 12 cases pass; reverting restores 13/13.
-> > 
-> > Why KUnit: it exercises the in-kernel decoder directly, with no
-> > userspace harness, and the cases can also run under KASAN/UBSAN
-> > (verified in my config). It is deterministic and is not built into production kernels.
-> > 
-> > Why in-kernel: the coverage travels with the code. An out-of-tree test does not run when someone changes lib/asn1_decoder.c.
-> > 
-> > I agree the maintenance has to be justified by the coverage. If the current cases are too thin to carry, I’m happy to strengthen or narrow them on your feedback.
-> > 
-> > Thanks,
-> > William
-> 
-> I'd start by learning to use the email client properly at first:
-> 
-> https://docs.kernel.org/process/email-clients.html
+Hi Jarkko,
 
-Within past 17 years the total number of commits is 22. This includes
-all the possible. Of these total six carry a Fixes tag.
+Sorry for the sloppy v1 patch and for over-relying on an LLM to write
+the commit message. That will not happen again. I have removed the
+inline comments and rewritten the commit message in my own words.
+Please let me know if any part of it is unclear, as I have tried to
+describe it as clearly as I can.
 
-That makes about 0.35 bug fixes annually. How do you explain this?
+The race happens because keyctl_chown_key() looks up the target key by
+calling lookup_user_key() with KEY_LOOKUP_PARTIAL. That flag lets a
+caller with CAP_SYS_ADMIN change the UID of an uninstantiated key during
+construction. When the UID changes, keyctl_chown_key() swaps key->user
+under key->sem and drops the old reference with key_user_put().
+__key_instantiate_and_link() and key_reject_and_link() only hold
+key_construction_mutex when they increment key->user->nikeys during
+construction. __key_instantiate_and_link() also calls the key type
+instantiate callback without holding key->sem on the key.
 
-For me this looks whole a lot like LLM lottery i.e., sending random
-and useless patches in the hopes that something might happen to get
-in.
+In key_payload_reserve(), when the key is in quota and its size changes,
+key->user is read without key->sem. It reads key->user once for
+spin_lock_irqsave(&key->user->lock, flags) and reads it again for
+spin_unlock_irqrestore(&key->user->lock, flags). If keyctl_chown_key()
+replaces key->user between those two reads, key_payload_reserve()
+unlocks the new spinlock and leaves the old spinlock held.
 
-Your previous kunit supports this point of view given that it is
-a possible "LLM remix" of a patch (kunit for assoc_array) that I
-sent a month ago but we discarded the idea in favor of a better
-solution.
+As the Sashiko review noted on v1, taking down_write_nested(&key->sem,
+1) also causes a lockdep cycle against __key_move_lock(). A lockdep test
+on v1 triggered that warning on the first KEYCTL_MOVE call against the
+keyring instantiation order. __key_move_lock() takes subclass 1 before
+keyring_serialise_link_lock, while __key_link_lock() takes
+keyring_serialise_link_lock before __key_instantiate_and_link() takes
+key_construction_mutex. In v2 I switched down_write_nested() to subclass
+2, which is an unused subclass taken only inside key_construction_mutex.
+That change ran clean under lockdep on both 7.4-rc2 and your
+for-next-keys branch across our test workloads.
 
-Stop doing this.
+I will send the v2 patch out to the list right after this message.
 
-Br, Jarkko
+Thanks,
+Sinan
+
