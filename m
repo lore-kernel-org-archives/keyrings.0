@@ -1,69 +1,69 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=134.76.10.21
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795042928;
-	b=S4XSbVUSzYLwHMePDL6T6wWMECmO3Vt6orjRkEeeDBjMomwiEleZ+qvvRfrkArlKguXX
-	 Ex9MYvVhbvvEh+v13oZrptevBro0w1G3viYIDsxu1RsoWQHRtHLWH3Lc8fueOMnRjTIsx
-	 vHAu/2pxm4RJcLz7Oeagy+eHM5R4seNjYabehckqkXQ0u5By3k4056fDS6t3GtBIovnpy
-	 c2WzTh4tKOcrBRvF02dWEPBUykp3fajimgVpYJLJNAVysPP3QwGGsz7/sHoeYJH2FdvHu
-	 2FU6e+DbIKmBiHzrGqxTjVlKx1d9qRxFNmPoS/gALFQzhDsqAV9O6seUUxqhHhT706Q==
+	t=1795043925;
+	b=4iAdF++B665jP8Sav+I9rnoIa6jOeJEdFiFXTduwPaF4rMgKGRVB2eJuNxfmvAWXg3kY
+	 pJN2nAz7fiBU05DtSvcOAVCt3uP610/bWGjEuYznKMmAzWuBVJz/cz95tIP1Pazv3jncv
+	 Iz74Xkg8U3mwouqwgMxOMxKQ780h2/boO36DBmjKjVuYjQAdJXOBjuw9/aCUhtHTgdGfh
+	 2LhpfFnOlKxg2dp4NM72OfscZAm397uDAMqgqdDzUIBH0AsYZFNClAEt7Z1aVBKbsGfVg
+	 iHMwyRF6o0q2PTnXVtL3tuPM2mS+I1UpX21zGOtygwNBI0lpHxRkJqaB01e07oHjDwQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795042928;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795043925;
 	h=DMARC-Filter:DKIM-Signature:Received:Received:Received:Message-ID:
 	 Date:MIME-Version:User-Agent:Subject:To:CC:References:
 	 Content-Language:From:Autocrypt:In-Reply-To:Content-Type:
 	 Content-Transfer-Encoding:X-Originating-IP:X-ClientProxiedBy:
 	 X-Virus-Scanned:X-Spam-Level;
-	bh=X3maKqnYdaEm9n614F6elzN2A+NycPJ175S/7AVqG8E=;
-	b=oPbln6MiqELDFxjdrD1lUfT5bzwNKg0L+kWEV8WVB9Z8ptk8s9T/wYeDJ+qjizOwlmR+
-	 1+9sADIvv9kxY3PU3kiCSiKgZncgsEPhvOE3VYwmX2Oni/OPy9ZzpXZUU35tUkJYDX3QJ
-	 iN6MYvKdJHvCmd2kgU3FNtfXi4Yb5A3NOpHhNxdAjfECtQikgm9vXjHxQjc8ZBVQaTGm4
-	 A2FUatblBCfBP1PgcVow8hVfNz2Bz/ZPoNh2ru+EHsAYQ/ydxLj/ojL4A3p/Owq12x+Y5
-	 zPVCHhKnOH2iroZHt7dpwXnVuqXgKVNbZKfLZ1+f8FxOna1dF81BiJxA/QOe71OS+Lw==
+	bh=JDoxYPpMuMBE75pF/Op+Adyf6/VS3J3TnGd9XMcVHtg=;
+	b=D/6CE638MkNscUSymTk/WWjhNZ7CJD4fPA2LJh0bl+cxdNyt727FAGsBzelgUVTVQZrx
+	 W031bxftVnikARJaHQruRRY6bw3lSQqAtnUfpRIRX7iNiGMl/Shu+hyBZEIjEsNfsWlPN
+	 f9zbdIAPZDrRZqKnS7zH4u9htz3cU3GPga90ILS2y9YtvXbU09eBG78xsJNx1lcTmHADc
+	 IW/1yNbH6JrSZ3cPIUro2S5whyo6e3hwOwaz7sqx64vLYVYD5qghcwTrJr2owb/LDaLEn
+	 /57enf/cRs4wll6t7Z3FR/y8fcMSeFU0/CbIi6z7sZNgDtHeLZYfWkig8VijnpIIrQA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=cispa.de;
 	spf=pass smtp.mailfrom=cispa.de;
-	dkim=pass header.d=cispa.de header.i=@cispa.de header.a=rsa-sha256 header.s=2023-rsa header.b=QqrCcce7;
+	dkim=pass header.d=cispa.de header.i=@cispa.de header.a=rsa-sha256 header.s=2023-rsa header.b=YEBh6Uc+;
 	arc=none smtp.remote-ip=134.76.10.21
 Received: from mx-2023-1.gwdg.de (mx-2023-1.gwdg.de [134.76.10.21])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange ECDHE (prime256v1) server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B90D1606A32C;
-	Wed, 18 Nov 2026 23:02:06 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org B90D1606A32C
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 32460606A31C;
+	Wed, 18 Nov 2026 23:18:43 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 32460606A31C
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=cispa.de
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cispa.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=cispa.de header.i=@cispa.de header.a=rsa-sha256 header.s=2023-rsa header.b=QqrCcce7
+	dkim=pass (2048-bit key) header.d=cispa.de header.i=@cispa.de header.a=rsa-sha256 header.s=2023-rsa header.b=YEBh6Uc+
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=cispa.de;
 	s=2023-rsa; h=Content-Transfer-Encoding:Content-Type:In-Reply-To:From:
 	References:CC:To:Subject:MIME-Version:Date:Message-ID:Sender:Reply-To:
 	Content-ID:Content-Description:Resent-Date:Resent-From:Resent-Sender:
 	Resent-To:Resent-Cc:Resent-Message-ID:List-Id:List-Help:List-Unsubscribe:
 	List-Subscribe:List-Post:List-Owner:List-Archive;
-	bh=X3maKqnYdaEm9n614F6elzN2A+NycPJ175S/7AVqG8E=; b=QqrCcce7/ZtqJ96qzrymjyPUfx
-	m23rRr113aOGL0hLHDCQuOxOLJTkpVmrF8Cx7sQRW0agYz3L/XyVZVsDO2DtoThU2mVJ4M157vaG4
-	5rd8zZoALzDjJYBCFe5JikGKuBwBbI+0aZCKEYbr6gbWFFLDZY080jvpoFErE05P7MIu+zwIur+bR
-	WmBwfrsaJBoibBcS6VtRNNKISynX0qu5QueDEZS5jNaD7T8YGFXcj9HRf+4nGKB5rTKq+DrxBjtAX
-	uvPNX2q3KWf5Fy/l2bYIEWSxqjcUkQz/vTzE7K3+FP5SDIFcGncvIgTrhXO1qDPhm9Pzb62hlkhwD
-	amK4jOGA==;
-Received: from mailer.gwdg.de ([134.76.10.26]:59524)
+	bh=JDoxYPpMuMBE75pF/Op+Adyf6/VS3J3TnGd9XMcVHtg=; b=YEBh6Uc+Fs1XK1Yl0qcX4Zeyix
+	6zjDCC+x569jxsg0+bW78XiDg0PyvCTLuGO/WkBCPqpRDvrTCX7j7JvNparhMwKI0IJghR10/hFV1
+	7plvNq4OlPCeH1SUeADdyFj+FNBvuEPrV54xm2Q1lYGB232paeo2V/tW+JqGlkdC7NnzvMqEnjz67
+	I/RZ9vopvM/uhUtcYjz9FEbl7X7Y+EqxlexW947xyObD79W5KFAInY+keI99+82SaTdxNWth+y73P
+	a1OF/wGKISwqVzijHJqO0hWC+foDuG/M54V9MWWX6Z9KgQ9mKu465aOw6+JlsochB0iDHBrfZYZ1X
+	d0lAQwCw==;
+Received: from mailer.gwdg.de ([134.76.10.26]:37272)
 	by mailer.gwdg.de with esmtp (GWDG Mailer)
 	(envelope-from <florian.bauckholt@cispa.de>)
-	id 1xToes-008jo8-1e;
-	Thu, 19 Nov 2026 00:01:42 +0100
+	id 1xTovI-008jxB-2Y;
+	Thu, 19 Nov 2026 00:18:41 +0100
 Received: from mbx19-sub-11.um.gwdg.de ([10.108.142.88] helo=email.gwdg.de)
 	by mailer.gwdg.de with esmtps (TLS1.2:ECDHE-RSA-AES256-GCM-SHA384:256)
 	(GWDG Mailer)
 	(envelope-from <florian.bauckholt@cispa.de>)
-	id 1xToes-00050j-2B;
-	Thu, 19 Nov 2026 00:01:42 +0100
+	id 1xTovI-000AB3-36;
+	Thu, 19 Nov 2026 00:18:40 +0100
 Received: from [192.168.0.168] (10.250.9.200) by mbx19-sub-11.um.gwdg.de
  (10.108.142.88) with Microsoft SMTP Server (version=TLS1_2,
  cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id 15.2.2562.57; Thu, 19 Nov
- 2026 00:01:42 +0100
-Message-ID: <e33d2059-0b63-40fc-996f-c962509c9c63@cispa.de>
-Date: Thu, 19 Nov 2026 00:01:41 +0100
+ 2026 00:18:40 +0100
+Message-ID: <db5a384d-e833-4ab0-baf3-619717b39f60@cispa.de>
+Date: Thu, 19 Nov 2026 00:18:39 +0100
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -76,18 +76,18 @@ MIME-Version: 1.0
 User-Agent: Mozilla Thunderbird
 Subject: Re: [PATCH 1/2] KEYS: fix signature length passed to
  KEYCTL_PKEY_VERIFY
-To: Jarkko Sakkinen <jarkko@kernel.org>, Stefan Berger <stefanb@linux.ibm.com>
-CC: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>, Ignat
- Korchagin <ignat@linux.win>, Herbert Xu <herbert@gondor.apana.org.au>, "David
- S. Miller" <davem@davemloft.net>, Paul Moore <paul@paul-moore.com>, James
- Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Hui Peng
-	<benquike@gmail.com>, <keyrings@vger.kernel.org>,
+To: Rodolfo Giometti <giometti@enneenne.com>, David Howells
+	<dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>, Lukas Wunner
+	<lukas@wunner.de>, Ignat Korchagin <ignat@linux.win>, Herbert Xu
+	<herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
+CC: Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>, "Serge
+ E. Hallyn" <serge@hallyn.com>, Hui Peng <benquike@gmail.com>, Stefan Berger
+	<stefanb@linux.ibm.com>, <keyrings@vger.kernel.org>,
 	<linux-crypto@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
 	<linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 References: <20261111-keyctl-pkey-fixes-v1-0-934ebaa267a7@cispa.de>
  <20261111-keyctl-pkey-fixes-v1-1-934ebaa267a7@cispa.de>
- <f38f6d32-16d3-4986-8d6a-9d65517f5317@linux.ibm.com>
- <av4KYKy7pZHyErVs@kernel.org>
+ <0e20f799-e389-40d2-aaee-2f174748faae@enneenne.com>
 Content-Language: en-US
 From: Florian Bauckholt <florian.bauckholt@cispa.de>
 Autocrypt: addr=florian.bauckholt@cispa.de; keydata=
@@ -99,21 +99,28 @@ Autocrypt: addr=florian.bauckholt@cispa.de; keydata=
  tDrQlEp5XdrAZUWzYVj26t0q0BhMLOqKLXSMmA5xAwEIB8J+BBgWCAAmFiEELNiBrOFnIU9k
  EnoYHhm6saud+jUFAmr9xkYFCQWjmoACGwwACgkQHhm6saud+jUl5AD/S78nLqAgIn53lOzT
  A8NTSByrtVvDBb9G9heETfLzVBIBANDFhjZQpssjUeVZ7QV/1GDL9ZhGssjnTQmzHKavboEK
-In-Reply-To: <av4KYKy7pZHyErVs@kernel.org>
+In-Reply-To: <0e20f799-e389-40d2-aaee-2f174748faae@enneenne.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MBX19-SUB-05.um.gwdg.de (10.108.142.70) To
+X-ClientProxiedBy: MBX19-SUB-07.um.gwdg.de (10.108.142.72) To
  mbx19-sub-11.um.gwdg.de (10.108.142.88)
 X-Virus-Scanned: (clean) by clamav
 X-Spam-Level: -
 
-On 11/18/26 21:28, Jarkko Sakkinen wrote:
-> Can these patches be rebased? They don't apply.
+On 11/17/26 14:21, Rodolfo Giometti wrote:
+> The test suite of craf (https://github.com/giometti/crypto-afalg,
+> test3008) hits this with RSA too: it cuts a genuine 256-byte RSA-2048
+> PKCS#1 signature to 255 bytes and expects the verify to fail.
+> 
+> Maybe it is worth saying so in the commit message, since this is going
+> to stable?
 
-Sure, I'll rebase and send a v2.
 
-I'll keep 2/2 in v2 in case you take it. Let me know if I should send it
-separately to linux-crypto instead.
+Yes, I'll add it to v2 and link to your report.
 
-Thanks,
+> I'll send my Tested-by once test3008 has run 2000 times on a kernel
+> with your patch applied.
+
+Thanks. v2 is rebased but the code change is the same.
+
 Florian
