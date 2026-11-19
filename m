@@ -1,64 +1,52 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=62.149.156.116
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795086712;
-	b=vlB7t+E1hf1IkDbeBrORpQlrfGLt2UDFzzBVWVJCVCJdYVDPpZFy30e0rKstbMXk4exe
-	 JpNPzFoKsYHUdII8vDg/hR/5pHBIneP/txvjrNokCdbyzD21MTngjA2JOZ8mkihfC41mn
-	 Z2BVGs9zI646cqrXvO09VEFIJFMI1MsEmXm6hp3/ozJ+YzVLnL/9fpxVIqteYrslQkNJR
-	 N01zGmA4Zyom3rWQ9BAzmP9gyzKWv8t10HHTLLAVZZv+Mmohkx1rrCOt2XHa+8wOLecgF
-	 Vfg1fYf3hZys3lou9lDH3OSiloB2Y3KN9oYzwiQH32dXfKjdFeURSUpsr3X+4GMiXdQ==
+	t=1795090655;
+	b=g24+GfSCypIWFr20HTml6ec/SWAGzoRTcJXoPIlepT0syqoBcDPE1AtyQzSqUfj26a8h
+	 bLZB5qvByinG9mmuHPxaZAwOcBkfnY8GXeniX8MZVSbJVsH4DRkG03cgBBTc7PEfzcS4m
+	 n1O23vj4alHVu/W2BEACyirVaSWxIVGqcMpmtkf9LJ3tfn7EwEcZYWilpwWxGpt0hC6Ss
+	 rf5drNGPcfl5t0XF+q+sHBKxnlmMR2xsZhp0ul6fqbiiUFQIxH4W1rrsXe+mpSBF7SWvO
+	 uEUq/6WL4dnipWBO6UoxoTWmZcx+6ycPcrBEwwYQf6XCURmLMZpW+9CB4ySg3nSlITw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795086712;
-	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
-	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=LCOapwdiJ/mxQK1vHFKgpgThzsZ2mfZKj0yvw8rC9Fs=;
-	b=i4PNWA5UKAkR/5y3FuSXOLh7LSMdS+lyonT1EBMZjmiKOZ+W+eje2W9LYSilEt1YX5sI
-	 iIE2Fvx5mFhygVnflDKvi3dSb2qncCIbUG/w+lL3iWF11I8RTVNY2n8snyx+wb+4fvW3S
-	 NvOCe3lbsi0JmAWI/Pt6FeBYDr0baQdM0BymKhnuY2BnFmewXY8/g6rNoUsYNCa8hC4xi
-	 HSGLX2nPeAHldsU05btHEsvFJ9+iLfeZo1ija3vZ6bZPuNJLMotLfXBICcIIISFHsyrOL
-	 H3jdeG64C1/T0Rl43jOu/IPeQQlutFAKkO/XYZpPsUy8aWpygETDRAYE0dAx/2I5cCQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795090655;
+	h=DMARC-Filter:Received:DKIM-Signature:Message-ID:Date:MIME-Version:
+	 User-Agent:Subject:Content-Language:To:Cc:References:From:In-Reply-To:
+	 Content-Type:Content-Transfer-Encoding:X-CMAE-Envelope;
+	bh=4+hewYS5Xc85XMsrC6qSZHgaMk+5vxcwYlnKkuazLe8=;
+	b=sXGWjgvXoloAVsJk81+4ks9vq+81m728WY0+tUSiv+/xTMgDK4DT1xqKOOk5G7nQIs8c
+	 hT6130x7MGMMKE57Td8vDiD3zvyGJh+EyuDN0ys6P6mCwrM5rz1GBbCbcUxVI3mMzyYbr
+	 zNLQyFShijtZQ3DiOf3Y8Vbrre8a3bN0ALefmVHX2qv2F4+BRd5aAfdVlA1pQr43AsqPV
+	 JPjG+IaSVBYMrakQoZU/V/8biebVaHaqmVprT4gLCtXPX8gcTggCIX+w43OQjEi+ork9z
+	 zuWiYRIXMNOKb7uVg+scO+vZoCDw5u2E9pF+OQuWLFzPReAYvWec91/40WW5B66IUCQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=jrh0CvRG;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=enneenne.com;
+	spf=pass smtp.mailfrom=enneenne.com;
+	dkim=pass header.d=aruba.it header.i=@aruba.it header.a=rsa-sha256 header.s=a1 header.b=CycFhd9A;
+	arc=none smtp.remote-ip=62.149.156.116
+Received: from smtpcmd11116.aruba.it (smtpcmd11116.aruba.it [62.149.156.116])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F36C9606A320;
-	Thu, 19 Nov 2026 11:11:51 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E9FFC606A330
+	for <keyrings@vger.kernel.org>; Thu, 19 Nov 2026 12:17:33 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org E9FFC606A330
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=enneenne.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=enneenne.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=jrh0CvRG
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id A1EF21F000C7;
-	Thu, 19 Nov 2026 11:11:50 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795086711;
-	bh=LCOapwdiJ/mxQK1vHFKgpgThzsZ2mfZKj0yvw8rC9Fs=;
-	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=jrh0CvRGat3ns3SUcUqNHA2ku+OTgsog/fWII9YD65VL3zrd/DyiC9XTMepZCCZJW
-	 Gg2RsvMHhf7swE+80rfO3SzFBzpsLZFYroP9niCbVw+cMMIe5EV9twSYRYZt1wIm/+
-	 FDnZviWS95SSK99JrQA3akeqKG7qQrCiQ05WEPS/jkn5dSJt692uSbOdyRc/tX/hXh
-	 6S21LwUWLa6O0fBnQmYh+HG63fOdUKfHItZOaaKrVWvlKAJhAOMHF0O0iujX3UMVe3
-	 sUQgwlJF4ujO6hIotmfcHCSPbtCh84UKL5Dac7at48R+tPOdbJuNR4U736jQfUe6H4
-	 xvgcHHzFi3l4w==
-Message-ID: <sashiko-outbox-223014@kernel.org>
-From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v2 1/4] userns: introduce capability bounding set for
- user namespaces
-Reply-To: sashiko-reviews@lists.linux.dev
-To: "Hallgrimur H. Gunnarsson" <halg@google.com>, "Christian Brauner" <brauner@kernel.org>, "Serge
- Hallyn" <sergeh@kernel.org>, "Andy Lutomirski" <luto@kernel.org>
-Cc: "Paul Moore" <paul@paul-moore.com>, "James Morris" <jmorris@namei.org>, "David
- Howells" <dhowells@redhat.com>, "Jarkko Sakkinen" <jarkko@kernel.org>, "Kees
- Cook" <kees@kernel.org>, "Jonathan Corbet" <corbet@lwn.net>, "Shuah Khan" <skhan@linuxfoundation.org>, "Randy
- Dunlap" <rdunlap@infradead.org>, =?utf-8?b?TWlja2HDq2wgU2FsYcO8bg==?= <mic@digikod.net>, "Jonathan
- Calmels" <jcalmels@3xx0.net>, "Jann Horn" <jannh@google.com>,
- =?utf-8?b?R8O8bnRoZXIgTm9hY2s=?= <gnoack@google.com>, "KP Singh" <kpsingh@kernel.org>, "Casey
- Schaufler" <casey@schaufler-ca.com>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
-In-Reply-To: <20261119104208.782900-2-halg@google.com>
-References: <20261119104208.782900-1-halg@google.com>
- <20261119104208.782900-2-halg@google.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date: Thu, 19 Nov 2026 11:11:50 +0000
+	dkim=pass (2048-bit key) header.d=aruba.it header.i=@aruba.it header.a=rsa-sha256 header.s=a1 header.b=CycFhd9A
+Received: from [192.168.0.186] ([101.57.122.26])
+	by Aruba SMTP with ESMTPSA
+	id U14zxDwan6VShU14zxRiua; Thu, 19 Nov 2026 13:17:31 +0100
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=aruba.it; s=a1;
+	t=1795090651; bh=V3OZh4icVrzbMI2k6cXTPEjlLw6DW6zRycuz+4CAfec=;
+	h=Date:MIME-Version:Subject:To:From:Content-Type;
+	b=CycFhd9A1catDJK8mSVVnIjyH5ROQd1v+wC5+drY99wllUzOcvv0JnbleYae1QyWl
+	 BfXvel5+GlGK/smjYdZVOsE8ifTJ+aNn92e3/PHwymqXJ9vopCmtPNtiJdDDxgFhXQ
+	 gH0O5LL0GqGBMM5zzAqHd0YcDoUE/TebWvQKcOdv9bAt/QbHhwHYpgUqx3x1h4Ldgp
+	 75NfGZPT+sNKTTrA02giDUkiO0gk016/Jf4H4Ha37Gpw+3d0e3MxEHOw+7cjazCAy7
+	 12PcNhVzIViATgQFKluA/RK3kpXudgDDYCPNifgplaPxzA8PVajw1Iru4DOG02ulfO
+	 Vnl/JByjL9DVw==
+Message-ID: <10d27c34-72d7-4380-abc9-6f8eddc6c08c@enneenne.com>
+Date: Thu, 19 Nov 2026 13:17:29 +0100
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,78 +55,107 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
+MIME-Version: 1.0
+User-Agent: Mozilla Thunderbird
+Subject: Re: [RFC PATCH 0/9] KEYS: keycrypt: keys that user space can use but
+ never read
+Content-Language: en-US
+To: Demi Marie Obenour <demiobenour@gmail.com>,
+ Jarkko Sakkinen <jarkko@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+ Herbert Xu <herbert@gondor.apana.org.au>,
+ "David S. Miller" <davem@davemloft.net>, Jens Wiklander <jenswi@kernel.org>,
+ Sumit Garg <sumit.garg@kernel.org>, op-tee@lists.trustedfirmware.org,
+ =?UTF-8?Q?Horia_Geant=C4=83?= <horia.geanta@nxp.com>,
+ Pankaj Gupta <pankaj.gupta@nxp.com>, Sahil Malhotra
+ <sahil.malhotra@nxp.com>, Ahmad Fatoum <a.fatoum@pengutronix.de>,
+ Richard Weinberger <richard@nod.at>,
+ "Christophe Leroy (CS GROUP)" <chleroy@kernel.org>,
+ Eric Biggers <ebiggers@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+ Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+ "Serge E. Hallyn" <serge@hallyn.com>, Jonathan Corbet <corbet@lwn.net>,
+ Shuah Khan <skhan@linuxfoundation.org>, Randy Dunlap
+ <rdunlap@infradead.org>, linux-crypto@vger.kernel.org,
+ linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org,
+ linux-kselftest@vger.kernel.org, linux-doc@vger.kernel.org,
+ linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+ linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+References: <20261118140421.584086-1-giometti@enneenne.com>
+ <650f89ef-9745-4f75-b254-80fa5ac4773d@gmail.com>
+ <av5EyVHnNzT27dyK@kernel.org>
+ <61ca7c37-7b42-48a3-be2e-95deb4d999a2@gmail.com>
+ <01692969-8e92-4a08-bde9-aad86674504f@gmail.com>
+From: Rodolfo Giometti <giometti@enneenne.com>
+In-Reply-To: <01692969-8e92-4a08-bde9-aad86674504f@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-CMAE-Envelope: MS4xfKBPrYJ2CDN4f71Kap/ixDsQG8LCW21ix5G/r+qduPuGoKFzPku3ui/3D6NrDy/I4fLjS/AZ5x4bSLPCyVIF0to5TjSclhUTdSU4uon2/XK98GioKEpu
+ t0DAXGgZowfR8EBdb4xlQI1aOmtiyouqFm6ozJqENawyIYsyVwWUPVtIrxKIMh6tgg2DcE0bNvKSfTxI4E/KX6og6HQ36T9SsUF5L6ywvP0CPLLtoj3XfOJK
+ KK6OL4sQiUzIGXyKYC/g5t6eDL7TGBKZYqtynb/EnlVDCDMoH+BMpug/FQzubq89PMXLKw1FzF7r79429pnKXBHAlDBdAGSZfIFNS5uHsw8Ky4Ryb//LMK9V
+ xLfwyhC5KBHWow0xsn0MR7mF6xbrK8rHOP6EY/6N+7N/mkYzZW0dxG31VP79/qgd0FE+u/f6bwMdsGglkPiv7Y+X/kQhNQovCMTLqK/xd4/A1//iDD4ibkuq
+ 1/kQFk3iW8okXGDrlVnZ6UkHWDYJU0H4V33JM+dA1KrG1s5yxelszfrfDGYXDXRvM9MRXG2C0JJFVnXDW1DBfX7oruz0XIMBt6ZuUqYpwYoCJYgDT8/Y94gB
+ RtndS527vikEPvkczW3D2qQoIsrt4+TG4WSJC3lfoPhIyloLUzoc3clohznlcZ5d41rbBCRbfQ1vSp4l+bVmTsLWseSQTZKxyCBx5FWky+xTaEm69CxDc2nW
+ HxMYdlYxr4DwnIfL+x2fqCJ5RbC7gBciMQd6ihsH1iadIXHfBcS4KhXDviVzexL7jL7TLPHnlpjTAhT/rODrCAAiT5G8Le0zqKlXI3LhP81Ke0+765dQ0e9y
+ vgu5MhNb82zl8mX48OJ9rhfGTJKQP6C/S1uHuzQOV8VuqFJx7jL006rc7ZGJIcc4/bSi4OzRvFhFOgNVnMJP+jAWIUvBJtJS4o9aDPfIoaC0wUPeec7ltUUx
+ 3YAptj8Js+/LJy8wIk8KSIHNu1+DIrXnbtSxZ48rdWX3ylBXpUU2OdzVbAPjylucDm+hVHDEnZGmwM4stN3z19Ce9cCXkLIDcyAWyz9J1zqQ0O2bu0XmE7hv
+ 9+HAxJgOrvm6fyiIZnDN/P7bOyh6SKydeOvoEul+E155hehVkqO41wFNa7awsiPXufzyRwo7sKbPtMCbyJ4P/mnlwQSbOC29VJQeoCboPfyks3hw+p1gJkwG
+ UStDxD9YrJOkVXUS048vbJ5rbuI5vxFjkO5bxo7Dsgk2WyJjnWav55v2ahPGzLX0t+XZEaY1n4iDLxnooNN/H35sYauqbDVs3RMMPG938OJL4wUKNVf/6fDh
+ Y3+0UYag
 
-Thank you for your contribution! Sashiko AI review found 1 potential
-issue to consider:
-- [Medium] userns: cap_ptrace_access_check() denies owner access without
-  CAP_SYS_PTRACE
---
+On 19/11/2026 05:35, Demi Marie Obenour wrote:
+> On 11/18/26 7:43 PM, Demi Marie Obenour wrote:
+>> On 11/18/26 7:37 PM, Jarkko Sakkinen wrote:
+>>> On Wed, Nov 18, 2026 at 06:42:15PM -0500, Demi Marie Obenour wrote:
+>>>> AES-256-CBC isn't a suitable mode on its own, unless it's combined
+>>>> with a MAC in encrypt-then-MAC.  Even then, it has a 2^64 birthday
+>>>> bound, so it should only be used 2^48 times with a single key unless
+>>>> the key is ephemeral.
 
-commit e4e71a2ec01bd6f7552fbbff2f1b525d5dbf74f6
-Author: Hallgrimur H. Gunnarsson <halg@google.com>
+CBC is there for existing formats (craf writes files that openssl enc
+can read) and because the CAAM path is CBC only. I take your points
+on it.
 
-userns: introduce capability bounding set for user namespaces
+>>>> AES-GCM is not a suitable algorithm either.  If you allow encrypting
+>>>> with a key loaded from persistent storage, there is no way for the API
+>>>> to ensure it is only used with a unique nonce.  Nonce reuse leaks the
+>>>> authentication key and allows forgeries.  Using random nonces isn't
+>>>> good enough either: NIST only allows 2^32 encryptions in this case,
+>>>> and the API can't enforce that limit.
 
-This commit introduces a per-user-namespace capability bounding set
-(user_ns->cap_bset) and a per-credential userns capability set
-(cred->cap_userns) controlled via prctl(PR_CAP_USERNS) and
-SECBIT_CAP_USERNS_STRICT.
+You are right that a construction of our own is the wrong choice:
+patch 9, the only GCM in the series, has no user yet and can go.
 
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index d47ab30223435..ddac8e9176808 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -88,11 +88,15 @@ static inline int cap_capable_helper(const struct cre=
-d *cred,
->  		if (ns->level <=3D cred_ns->level)
->  			return -EPERM;
-> =20
-> -		/*=20
-> +		/*
->  		 * The owner of the user namespace in the parent of the
-> -		 * user namespace has all caps.
-> +		 * user namespace has all caps within the owned namespace's
-> +		 * bounding set, as long as it does not exceed the caller's
-> +		 * userns capability ceiling.
->  		 */
-> -		if ((ns->parent =3D=3D cred_ns) && uid_eq(ns->owner, cred->euid))
-> +		if (ns->parent =3D=3D cred_ns && uid_eq(ns->owner, cred->euid) &&
-> +		    cap_issubset(ns->cap_bset, cred_userns_bset(cred)) &&
-> +		    userns_has_cap(ns, cap))
->  			return 0;
-> =20
->  		/*
+[snip]
 
-[Severity: Medium]
-Does bounding implicit owner capabilities by userns_has_cap(ns, cap) break
-cap_ptrace_access_check() and cap_ptrace_traceme() for a parent namespace
-owner when CAP_SYS_PTRACE is excluded from the child namespace's cap_bset?
+>> The usual solution to something like this is a userspace service
+>> like ssh-agent.  Then you can do whatever key management you want.
+>> That doesn't protect against root, but if someone can get root you
+>> have bigger problems.
 
-When an unprivileged task lowers CAP_SYS_PTRACE (or uses
-PR_CAP_USERNS_CLEAR_ALL) before creating a child user namespace,
-cap_ptrace_access_check() skips the capability subset check because
-cred->user_ns !=3D child_cred->user_ns and falls back to
-ns_capable(child_cred->user_ns, CAP_SYS_PTRACE):
+The threat here is root, on devices where root eventually falls: a
+key root can copy decrypts that device's data offline and forever. A
+service that holds the key in its memory gives that away. keycrypt
+with the OP-TEE backend does not: the TA keeps the key and checks the
+purpose sealed with it at every use, so even a compromised kernel can
+only use it on that device, and only for that purpose.
 
-security/commoncap.c:cap_ptrace_access_check() {
-    ...
-	if (cred->user_ns =3D=3D child_cred->user_ns &&
-	    cap_issubset(child_cred->cap_permitted, *caller_caps))
-		goto out;
-	if (ns_capable(child_cred->user_ns, CAP_SYS_PTRACE))
-		goto out;
-	ret =3D -EPERM;
-    ...
-}
+> Also, if you need keys stored in hardware for some reason (compliance,
+> time-limited exfiltration), you can use a userspace library or
+> daemon that abstracts over whatever the hardware-specific API is.
 
-Because CAP_SYS_PTRACE is not in child_cred->user_ns->cap_bset,
-ns_capable() now returns false even when the child task has an empty
-cap_permitted set or only capabilities covered by the owner's userns
-ceiling.  The parent owner is then denied ptrace_may_access() and
-PTRACE_TRACEME on its own same-UID child tasks in that namespace, breaking
-PTRACE_ATTACH, opening /proc/<child>/ns/*, setns(pidfd, ...), and
-pidfd_getfd().
+Yes, that is the case I mean, and a daemon over a TEE would not give
+the key away either. What it costs here is, for OP-TEE's PKCS#11 TA,
+secure storage before the root filesystem exists; for the CAAM, the
+only user-space path is AF_ALG cbc(paes), the one off-CPU exception
+left in an interface the kernel documents as deprecated, privileged by
+default, with a key format per driver and no purpose.
 
---=20
-Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261119104208.7829=
-00-1-halg@google.com?part=3D1
+Ciao,
+
+Rodolfo
+
+-- 
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming
