@@ -1,52 +1,52 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=62.149.156.116
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=62.149.156.117
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795083572;
-	b=K39b0aJXSS5xfjNtSKlvVMF1av2hubCp2bAoKJnW06Ea6EO5nMUbtySJIhVUZn2aeZoh
-	 tRzndQsk/uVQ1/rTDiESS4N/9iou20ZtITKNGTm5FfItWUELopquYyH7yUTEMNPDFAwuG
-	 Y5uxUYP6uzkMlX5vnkAW/xxQgV6nqGiaZgBFtxrfkt9KFTnMMVm028RwUNg5gT1Jbx7Bo
-	 bc5Kux+2/FqYcAl1VpuODag6Pmd/dK74msVBdn4R9MF6SdFkOD5O20TMwk/fe5qo91jhv
-	 KaCRnTnF6EYWvozICGSpMYmzxMScCe0Ggkvp9d5kC1nuxcri01Y0rkghTUjf8HZvItg==
+	t=1795083911;
+	b=Ki52jT1Er/owZndu9cllaef+uZi6Mb9a3AGcK058vtSy14xhqdNtjYyha2yNXzfMcNjD
+	 h2xfWEn4lHRlLS7Y6ePsQsTzPwmkPJ1PQKPs3aFLpLXwvwj/H44tDbVxNL61g8mcCfGaH
+	 WMlriKnajB9Z0Ij12xnHijtiBtub30nCtdzxotAJbAa7qOZ3hPCdVILOObNFOe8EbBnVd
+	 NFSMDa4qbB7kT73Z6y0lEd0DUjfjiW0wOeTDqp63ykx0zjncbKPTSBgV+Nhw954/ghjvB
+	 4rjhemWpMVUK2Ee2oUzuWx2WZQcZGnnAj8uv08/4rDRhgPYb7AaNha1XJkM4hU+iYNw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795083572;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795083911;
 	h=DMARC-Filter:Received:DKIM-Signature:Message-ID:Date:MIME-Version:
 	 User-Agent:Subject:Content-Language:To:Cc:References:From:In-Reply-To:
 	 Content-Type:Content-Transfer-Encoding:X-CMAE-Envelope;
-	bh=qoTfovvGGzpx6qWwGgUcp8ZrLCtEAOaZqm/XAVRtgu8=;
-	b=3PDwLCdp5vpVODLG3dh350jk5r/6EZV4hNH/ZWFvV0OMJIVV9ioANYAYH7oRG1/8WpmT
-	 NNpP60oJpHb50rvLL0GC92hqFghCKfJSNKDnqCTqTpxQtevNUrD6NuUbWjNYprAnMWwR4
-	 9wtFNnXwn00MHN1PeKzRjgTsU31eTMis671gB8sTLbhoOjp3yGwyTnywd4shvQUJ907rf
-	 MhLaRiFzuyIBShdwGc0aNHZdEdKisZwg+a/H8fbSK5CPuVl9SUNe/jIWoAm0g2ZAQISNt
-	 dEJpq/JMxS9lAgE4INM90Cle0cEpAW9LfstbGZ/ElPLEIU+wXA4IFxlyTBwK3CBBlkA==
+	bh=oENtBgDxQDILpdWFr9SR7q3ozaqUclSFojY+BQjWBhY=;
+	b=L4sWMl/H42YNAQwNO9fWFrDkQ6BPieyQl1nGPLtRlMqyyhhHVyMOKw/TjR2mgjBTW7NW
+	 IO1oE+/ZErrHLBaE3AAPKDRs0+a1l1FDr2Kf6uYIJYokhcIdUagsRjEzH8++LeEhHrRGX
+	 rOtg3ldLzbR1S26evsVAb0PXn7LCFcspyIbku5qJFWHSDibIX39OrOHGykYoxIs7A7tTQ
+	 LCoZmtXq03J5cPQn5Yjx7tCmNbQJHBN6l19r6fMRj47kbARY1svqATOF8mQTfHvErqXQQ
+	 8WqLNcu2C16I0Hd0Danski9o4fuKV41nVyYDSkUdfwsIhS87qp/KRsHQUDdonXN7xAg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=enneenne.com;
 	spf=pass smtp.mailfrom=enneenne.com;
-	dkim=pass header.d=aruba.it header.i=@aruba.it header.a=rsa-sha256 header.s=a1 header.b="YbUT/4nB";
-	arc=none smtp.remote-ip=62.149.156.116
-Received: from smtpcmd11116.aruba.it (smtpcmd11116.aruba.it [62.149.156.116])
+	dkim=pass header.d=aruba.it header.i=@aruba.it header.a=rsa-sha256 header.s=a1 header.b=NC1M5oxU;
+	arc=none smtp.remote-ip=62.149.156.117
+Received: from smtpcmd11117.aruba.it (smtpcmd11117.aruba.it [62.149.156.117])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A86EF60A2609
-	for <keyrings@vger.kernel.org>; Thu, 19 Nov 2026 10:19:31 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org A86EF60A2609
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7B4A8606A331
+	for <keyrings@vger.kernel.org>; Thu, 19 Nov 2026 10:25:10 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 7B4A8606A331
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=enneenne.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=enneenne.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=aruba.it header.i=@aruba.it header.a=rsa-sha256 header.s=a1 header.b=YbUT/4nB
+	dkim=pass (2048-bit key) header.d=aruba.it header.i=@aruba.it header.a=rsa-sha256 header.s=a1 header.b=NC1M5oxU
 Received: from [192.168.0.186] ([101.57.122.26])
 	by Aruba SMTP with ESMTPSA
-	id TzEoxCjbX6VShTzEoxQo8b; Thu, 19 Nov 2026 11:19:31 +0100
+	id TzKFxCnXp6VShTzKFxQr4y; Thu, 19 Nov 2026 11:25:08 +0100
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=aruba.it; s=a1;
-	t=1795083571; bh=xVDB/U48+KhBs5UAsVUdiYW+qscID3emDO8ims3vEAk=;
+	t=1795083908; bh=Q9zJrZ0wXnXWsmyjv9s33EBa7YlKOzYgFTENm8dVngg=;
 	h=Date:MIME-Version:Subject:To:From:Content-Type;
-	b=YbUT/4nBgfoaIXJwrMhQeMlvt9sIO8ewa18oowgWvXyRXmLc2FHqa2uE+1ff4WSTf
-	 +SlwXjDXm5+E/qUhmEoIB20CoCnXl3yFBCAfguB9RFKweMi7UXcT5bvO6X6JzcKsVY
-	 YdpDu59seHkq9sF+x9RNqBAoaQVUMas1goxW3myB1EgiT3nhghCefk4/uA0S5tFFps
-	 TKVA8foIHclyKVCWFHy5lEMDBTPNoWtxVHid8dwSdINvi25UgNeSV0dcPqLyfphhGR
-	 kGKvJwZviyVJAXY+tsejDtlxxsZooEEM2WPMcXCcmF3vDQZeiDtSbhOPjEWtT1DFPA
-	 jFwJQ9Lcm3lfg==
-Message-ID: <6fc1eaee-3a60-49d9-a5a0-74b662f2232f@enneenne.com>
-Date: Thu, 19 Nov 2026 11:19:30 +0100
+	b=NC1M5oxUUNCSSCHGiwV892TMLdF959kGeURs1nrEkqaWyTLh6YvXuV+5yvDOQeMKO
+	 fFjPL94Tw4hxZKRDpdib8mjHJncCTVsG0uppaf4Cs3SVx4chbIYxB/igZctOILjiDq
+	 eUTsh+T/xYooLfuM7ik1u26dEmK6GKx4wTXf/dvQPERuk1wJlRyRxMcHo0IJhiuSC3
+	 v1v1H8/3qKVWMuK6eZ1bKvIPE6n9SiKhZmXNUL4B0WRSVZTGePYhSJ7KKfzpeDK5We
+	 ixCsNxJpFemu5sDF2dViPAT34arQ5nL9ss8RFi+haABojG1U2wzpx6s7bK/b16EKsE
+	 LH+tkkZAMhwqA==
+Message-ID: <80ded1ae-51a7-46d1-bb67-02b4b06de71b@enneenne.com>
+Date: Thu, 19 Nov 2026 11:25:07 +0100
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -57,91 +57,87 @@ List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
 User-Agent: Mozilla Thunderbird
-Subject: Re: [RFC PATCH 0/9] KEYS: keycrypt: keys that user space can use but
- never read
+Subject: Re: [PATCH v2 1/2] KEYS: fix signature length passed to
+ KEYCTL_PKEY_VERIFY
 Content-Language: en-US
-To: Jarkko Sakkinen <jarkko@kernel.org>,
- Demi Marie Obenour <demiobenour@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
- Herbert Xu <herbert@gondor.apana.org.au>,
- "David S. Miller" <davem@davemloft.net>, Jens Wiklander <jenswi@kernel.org>,
- Sumit Garg <sumit.garg@kernel.org>, op-tee@lists.trustedfirmware.org,
- =?UTF-8?Q?Horia_Geant=C4=83?= <horia.geanta@nxp.com>,
- Pankaj Gupta <pankaj.gupta@nxp.com>, Sahil Malhotra
- <sahil.malhotra@nxp.com>, Ahmad Fatoum <a.fatoum@pengutronix.de>,
- Richard Weinberger <richard@nod.at>,
- "Christophe Leroy (CS GROUP)" <chleroy@kernel.org>,
- Eric Biggers <ebiggers@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
- Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
- "Serge E. Hallyn" <serge@hallyn.com>, Jonathan Corbet <corbet@lwn.net>,
- Shuah Khan <skhan@linuxfoundation.org>, Randy Dunlap
- <rdunlap@infradead.org>, linux-crypto@vger.kernel.org,
- linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org,
- linux-kselftest@vger.kernel.org, linux-doc@vger.kernel.org,
- linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
- linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-References: <20261118140421.584086-1-giometti@enneenne.com>
- <650f89ef-9745-4f75-b254-80fa5ac4773d@gmail.com>
- <av5EyVHnNzT27dyK@kernel.org>
+To: florian.bauckholt@cispa.de, David Howells <dhowells@redhat.com>,
+ Jarkko Sakkinen <jarkko@kernel.org>, Lukas Wunner <lukas@wunner.de>,
+ Ignat Korchagin <ignat@linux.win>, Herbert Xu <herbert@gondor.apana.org.au>,
+ "David S. Miller" <davem@davemloft.net>
+Cc: Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+ "Serge E. Hallyn" <serge@hallyn.com>, Hui Peng <benquike@gmail.com>,
+ Stefan Berger <stefanb@linux.ibm.com>, keyrings@vger.kernel.org,
+ linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+ linux-kernel@vger.kernel.org, stable@vger.kernel.org
+References: <20261119-keyctl-pkey-fixes-v2-0-9e2d1c7db7ec@cispa.de>
+ <20261119-keyctl-pkey-fixes-v2-1-9e2d1c7db7ec@cispa.de>
 From: Rodolfo Giometti <giometti@enneenne.com>
-In-Reply-To: <av5EyVHnNzT27dyK@kernel.org>
+In-Reply-To: <20261119-keyctl-pkey-fixes-v2-1-9e2d1c7db7ec@cispa.de>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-CMAE-Envelope: MS4xfNmI1DIntSdZQogEw4CF+ExsMW52Dv4KVdQXYoEI2SlV11eEe+IxA80+xUydMG7wJYG2UEM6OiD9fNlRWY7iZyyfEynPQDNyEEdFhZWKfwj8abUd2CVm
- Lq49bpZ8Z2hgx71DU6sYhhPLl43jb2ht+KlVBI2Wws/GNH5B314G6kSkVXdUI0zRZd2gi9GuTGtx9GWmWncQRI4c/1+DT6GPQBX8WtlSvd+6+m3S0U28wDVb
- 9Hs0soZ49fsX6dkU30YublBd1jh16ccPykwFzi0QXARm/rgb+5uK/CGYB48nylkVg/Iou536TAACMpiIFEXZHeWUt50k8OfWaF0zaM+UpvSSdAus9yIAxvfo
- TN94jAoBEVnYhfDi4/82Wy353ZJ1o5Gj7OLddeLFkBJpl5Wzw5rMleizI45QkQxnhWD9ETOrQetS561qT7M5CxMYKxPdP2CZdtSrbjcXhI6YyhaQFk/VhuOD
- xGbNMNlUIo4efMC8Jcl4US1dtNwkfWg/BpgPT1zm36hQYfAnbrypJsoCkLgDERPLHDlxy3WHcdLrwjTHDhF152PUwUN3+0cXJP+rpQt4cnKrbJOd8mbnMBA5
- EMXx6ob9CMe6mj+soYJG99NcZl4tQ0l+s5hpHAPsuc526bT/lm5wQJkL1AqL3CRNSBp8R47j5nwfQayZ+tYMift/3GXo8dIjA1+x5Yvr6vMNcofIH7i/59ur
- Cr0sge9wRuaNCXPdPiwh8reCg0jcdmIDUSmDeezWJ/vVEu0ZRJk6A0sox8LZ4P6BOT1DZRkpwpiVSc8FzhApAGo7gQFx9BodEBr1xaKmgy0lQPUfofalbEII
- C6SljIGeSVkINsuuIJIc4xdBFC7WWD/A2Sc+c78UHrVkV0MV4yXYbaTvr9wNBVTgrAwp3+Y2tyceUQ++SVMYBYF0Ep10RMiXXsCHHx8Ag3zq5QoaPh3C5Ewb
- Xi3Ngl0pycbj6Q70Q43aVHp4xi3eUQlhWi1FOWVON921NfgQcZmZwXdeGWDCESlVLmbWInKcpIgUO2tNtllaYf9/CQP+sPgnyHv17dhDWbS3pxvLllfyiCb3
- ok3jS7JCxO6vaFDZQLPPhhR/83ZbJ2KLWnwLSR3vhTJoHsFu1MSbYvLxA49eoVbSM//x+PpbPS6efabzTOuqyXJypu2VSbiPywrJvlCcYgz8HkYiOp/KN/7w
- 5+vVhbHV+6327zrFt84ZC5MvsP6W7QnSoCxLdbTLlHwV7lXCyMgyzPaAh/4+68Unc1/0NALeZ2REnwOiT7xXoxkV85CK2tGeb5X9z7vGZH0Jh1i15QTOZRXm
- iZpFWF2L
+X-CMAE-Envelope: MS4xfFykGQACKRhov2XIilpQECvM/aNjmfh3eHVua/dfX0mTSaGmrnTrp8wSFXmi+91PsZSR3CNox52tQk7OthlCbvK81cCmNr2Bq+elt3dYE8UB6ypJlI5Y
+ R6Za03zQGsoH9FMve8bmQSnfKS6L998MsYSHzy+1ZLB8G48Be8og32QffVafXX/6AhPy1H3Wf3A/Ja5hG0sgpDB/wEha7FfezD863t0w5oBfizJmIm0srYEr
+ YHpuz8HGd8f6mzCTH1apwOsDitXAdAj9C6I0YqJgxY/zU2TkGQgk9mfZpi8QoYj0KOdpTUYD9+ByTCLD0cuaVpmQEQFj+pSrmpl2hgr0YYcJmj0DCTDHR5py
+ 3ec7oV1RE/duvtWRkdpC9VensJ3kFcZeUf2Tl4QWf+b45NgK8Hcy9StlAtigoYLQBdXKtWkZYnhN4ni1QYp8LtfKmBxIf34WD6EVfhqqVG66PoFMpbqLF0GW
+ 3zSCJGMaAT2QN8PtAAH1uuyRETQeK1nsQlHYZqkPM0WirdN0Y+1EvdCPrS2dPD4unRGPnZxbrPotroy1KkotYaoVu8+O2vKSsis5foc+s8QSheZTuR2Rd+Bl
+ iRzq7ymBlkPzMZtH8Fx8SKFF+wtsUkWXKYZ/ormRZ96Cv8JAkkPTkRD2U9RwSwseEghc3s73XPXHaw3udkQmr/ZzaINMARjij7rhJsYhW7gzGfljLka7To7V
+ 5XwetE54oiYhcHLTlyBsNlQVPJWzubXg
 
-On 19/11/2026 01:37, Jarkko Sakkinen wrote:
-
-[snip]
-
-> The exitential problem here is that KEYCTL_CRYPT_OPEN creates a circular
-> relationship between the keyrings API and a specific key type.
-
-Agreed: it should be a key_type operation, dispatched the way
-KEYCTL_PKEY_* dispatches to asym_eds_op, so that keyctl knows no key
-type.
-
-> At hardware level I did not see any support for TPM, which narrows down
-> the potential user base.
-
-On a TPM system the sw backend can take its master from a TPM-sealed
-trusted key, but there keycrypt adds little over a trusted key. The
-users are SoCs with a TEE and often no TPM, OP-TEE on i.MX for one.
-
-> The remaining potential user base is further reduced by those that use
-> trusted keys; leaving out those who need to solve the assumed problem
-> that only this patch set can presumebly sort out.
+On 19/11/2026 00:19, Florian Bauckholt via B4 Relay wrote:
+> From: Florian Bauckholt <florian.bauckholt@cispa.de>
 > 
-> And we don't really know at this point that cut. This is pretty much
-> the break down of what is wrong here.
+> Commit cb481e59ea6c ("KEYS: fix overflow in keyctl_pkey_params_get_2()")
+> made keyctl_pkey_params_get_2() set params->out_len to the maximum
+> output size of the operation instead of the size provided by the caller.
+> It does so for KEYCTL_PKEY_VERIFY as well, but verify has no output
+> buffer: out_len shares a union with in2_len, the length of the
+> signature.
 > 
-> If there is/was a problem to sort out, it should be so constrained that
-> it should be as quick to describe as stepping over a nail really.
+> As a result keyctl_pkey_verify() ignores the signature length passed by
+> the caller and always reads max_sig_size bytes from the signature
+> pointer. A shorter signature is extended with whatever follows it in
+> the caller's memory, or the call fails with -EFAULT if that memory is
+> not readable.
+> 
+> The x962 ECDSA template currently ignores data following a DER-encoded
+> signature, which hides the problem there. A truncated RSA signature,
+> however, is accepted if the bytes following it happen to match the ones
+> that were cut off, as reported by Rodolfo Giometti [1].
+> 
+> Use the length provided by the caller, which has already been checked
+> against max_sig_size.
+> 
+> Fixes: cb481e59ea6c ("KEYS: fix overflow in keyctl_pkey_params_get_2()")
+> Cc: stable@vger.kernel.org
+> Link: https://lore.kernel.org/all/20260919221742.3709658-1-benquike@gmail.com/
+> Link: https://lore.kernel.org/all/0e20f799-e389-40d2-aaee-2f174748faae@enneenne.com/ [1]
+> Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+> Tested-by: Stefan Berger <stefanb@linux.ibm.com>
+> Signed-off-by: Florian Bauckholt <florian.bauckholt@cispa.de>
+> ---
+>  security/keys/keyctl_pkey.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+> index e7121523b9c9..722521a014ab 100644
+> --- a/security/keys/keyctl_pkey.c
+> +++ b/security/keys/keyctl_pkey.c
+> @@ -175,7 +175,7 @@ static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_par
+>  			goto out_up_key_sem;
+>  		}
+>  
+> -		params->out_len = info.max_sig_size;
+> +		params->in2_len = uparams.in2_len;
+>  		break;
+>  	default:
+>  		ret = -EOPNOTSUPP;
+>
 
-The nail: a device must encrypt and decrypt its own files, also from
-a minimal initramfs, with a key that root or a kernel exploit can use
-on the device but never copy off it. Trusted keys hand their users the
-key's bytes (dm-crypt, encrypted keys and AF_ALG read them). CAAM's
-"pk" option is the one exception, but even there a new key is drawn
-in kernel memory before the CAAM wraps it, and user space reaches it
-only through AF_ALG, which the kernel calls insecure and deprecated
-(Documentation/crypto/userspace-if.rst, and "Userspace interface
-(deprecated)" in crypto/Kconfig), privileged by default, with no
-purpose bound to the key. The i.MX93 has no CAAM at all: there the key
-can live in OP-TEE, and keycrypt lets the keyring use it without it
-ever leaving the TA.
+I ran test3008 of craf 2000 times on a UML kernel of current mainline
+(666539eecdf4) with this change applied: no failures, against 4 out of
+2000 without it.
 
-The stream of patch 9 has no user yet and can go.
+Tested-by: Rodolfo Giometti <giometti@enneenne.com>
 
 Ciao,
 
