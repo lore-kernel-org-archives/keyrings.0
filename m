@@ -1,54 +1,94 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.167.198
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=124.126.103.232
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795071601;
-	b=wYX/KpMC41x3XN3lTL6oQftckWb5Rh+/Jqlpie/vooetly2xNTA9c3FCr3FYXXxtWlfa
-	 E2ynZ/Trq0w8mjQjRD4iNWN8xF/+uhMqk8tHAUvuiHTgf8Be8pmKEDgAJI6jEQUJuegBW
-	 2ldAJKglxKjpP0hgtv6k3xGSvNwDWKQUyzrgpaZtpQZZ2mT3YGAW0wFw1ka1R9BWqzJbx
-	 N+UF10K+t0RjRDPS3+EoB9ivaUL0Xtgn7b7rfkg8fqkWAFErcusOSv1n5Y7Dkk7kmtGgo
-	 mwRzEd4qR4QR83ao75QL9HZQq54u5YcYlpVuLlg9V1uHU8xhRnLp1TxKYl6jCszQLGQ==
+	t=1795074616;
+	b=yhvm5M4u7RaET8hFTwSYaunbn0TkqCMzsfaMa4s8qoR6N+9vJ2FxKCh2b6N/3kM54j+l
+	 sBxFJ9K7l7xupDF9zeGdSF1APvRwhxEWOCKrrWaRwWlrfQeyi1i1fIpJchDIDVbQuqusB
+	 DbfD0BzXrHD6Dc/PqqdEvyzPOQKDxbXkWgF5lvkmFzEqhjOteOtHjztmucBRXZnEB2icQ
+	 gYMv+xNgs7HnOdysZBhOj4i6S4mpkz0AgiedGNa1mFUlipp6vs21e9X1hemzD1Eg1UjAJ
+	 5r2J0iNgmjrTmK9s/Cq6RG++OMcmQ97YLD40ZEB2JdN6z3mWi9wnoHafzmVw6xlKHiQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795071601;
-	h=DMARC-Filter:Received:X-Google-DKIM-Signature:X-Forwarded-Encrypted:
-	 X-Gm-Message-State:MIME-Version:X-Received:Date:In-Reply-To:
-	 X-Google-Appengine-App-Id:X-Google-Appengine-App-Id-Alias:Message-ID:
-	 Subject:From:To:Cc:Content-Type;
-	bh=N5eSPNBlwV7KKPmI6DqqlrxRRkqVZeqqeoXHkxOFY4E=;
-	b=u8/4ks1USkjv8hsFaLwG5M5Aqq+GR331d2AtXh83dsy0c7zA5qJKj7JpcZxFDy+6op0z
-	 S9qhW0Pu1C7RkNvPhsuYXLaneKLk9lomijWj32psLpk6XzuI5zL+5I7PeCOJS4I1LSuBs
-	 OvVSzgp2wKueYXeJ/J/kwckt/fuCCa1OxoFxcRGwdQ5Ab0/fRc9y4p/kCe2k4idGAwDpd
-	 ZQDxoeP7SZMb+HIoplvq1UR34Me/gKOnf4QNJuNUxAkWmxzWAyiOSaWlzcY2UYmFpA4tn
-	 g2dEiuxqk9L9H2cgqHq9cpQ7Lb9ijuKxmiUOg+v8u6h/picJCIDTGmC13obickZ/Bgw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795074616;
+	h=DMARC-Filter:X-UUID:X-CTIC-Tags:X-CID-P-RULE:X-CID-O-INFO:X-CID-INFO:
+	 X-CID-META:X-CID-BVR:X-CID-BAS:X-CID-FACTOR:X-CID-RHF:X-UUID:X-User:
+	 Received:From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:
+	 References:MIME-Version:Content-Transfer-Encoding;
+	bh=YK7Q5AGYD5X7mb5K/vaLkSYnqHBLTOag7oVBX3R6fSI=;
+	b=rZ2pwo0S8j8Q3VZ2ztG/UzK6zgTGKgCfjVKnk7qNyeNWIVkYkASARAJvszPSLJwkYcAt
+	 yxZuDCoqhWQw3JlcuL6z1vnfw0GOgFm6ncQ/Vgi/7UVX1SlxXbZnpT5dKFj5lA593ZLB3
+	 WUwciBxPfnGowspqyluME+/cdmuc9trAy2QMNIFqzSNWhHYNVy0GFkIeURROByE+6YHWr
+	 sVt8dRk9VVnZZFIP/ePVcVJQMGjK4zTuQTbayVejPmQVw+IkjJghV3TGslnb4jEj0Sonh
+	 xWu/KoRVOdeeZmasTTm/sXn19stUj//SDLXND5ZhL7j1Ba9Ugybd8tzb/2OMx/086ng==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=fail header.from=syzkaller.appspotmail.com;
-	spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com;
-	arc=none smtp.remote-ip=209.85.167.198
-Received: from mail-oi1-f198.google.com (mail-oi1-f198.google.com [209.85.167.198])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	dmarc=none header.from=kylinos.cn;
+	spf=pass smtp.mailfrom=kylinos.cn;
+	arc=none smtp.remote-ip=124.126.103.232
+Received: from mailgw.kylinos.cn (mailgw.kylinos.cn [124.126.103.232])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 24531606A32F
-	for <keyrings@vger.kernel.org>; Thu, 19 Nov 2026 07:00:00 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 24531606A32F
-Authentication-Results: smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=syzkaller.appspotmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com
-Received: by mail-oi1-f198.google.com with SMTP id 5614622812f47-4dab94dc3e7so3283741b6e.0
-        for <keyrings@vger.kernel.org>; Wed, 18 Nov 2026 23:00:00 -0800 (PST)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1795071600; x=1795676400;
-        h=content-type:cc:to:from:subject:message-id:in-reply-to:date
-         :mime-version:x-gm-message-state:from:to:cc:subject:date:message-id
-         :reply-to:content-type;
-        bh=N5eSPNBlwV7KKPmI6DqqlrxRRkqVZeqqeoXHkxOFY4E=;
-        b=g9dPWTD3KZCLgpBEEqTsGmapNYc79/YZ0Xop33fCVfIsF9NBA3mix4pP5AuAFbjdjd
-         iaWKdgtWM/rcGWDdHiGFaepTbRbybfKfi40SKyaPtw6+lui+ScyVtHko1ONjTPqTfxTq
-         LzfSMZkVuE0S0Eeyl0HOP25gI6eQpiiloCOUwaOH2J9FoHCSj8EJNCt42V8f/PJUXEXr
-         mFuiFMppomwf9jd8B9G+SCy74chrlKjR77GMDWIE7mS/z+JFI7iiZo0fzcvaO3ULMBZM
-         Co837SywQs2HWDewXupmcb2IRE/3+aF3ZH8i7WDEJIjhpzWE/pagEVAkJ9B0G3hLwIcU
-         EeWw==
-X-Forwarded-Encrypted: i=1; AL+hErH4C02QuZwt2nSSVyXqY3vl0uH2LJsuMxFd6dfjadk5iYOLvkIOcy+XRFvP/LEN0BNgs1W5aQywqQ==@vger.kernel.org
-X-Gm-Message-State: APuU4Z9fDvoU8VR3w7Zkxk8mW/b8LZvUXieESVfw/WeNtkOf9yw8g4Xp
-	ZX5iutj5/uHYg8rGTtGvnGG3oW1F6U4vm3rz5jr5i9yjH4SXebFMzQngvxJUpNUCUYJsj5y/kbo
-	IO5LU20F0OvWC8MpgiKOUgAYjmQX3RxkHIri4ttYYL/mTeo03lgkuXF4jyag=
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5BEBC606A320;
+	Thu, 19 Nov 2026 07:50:14 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 5BEBC606A320
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.cn
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinos.cn
+X-UUID: d65f8368e3ed11f19a56ed5b684f684d-20261119
+X-CTIC-Tags:
+	HR_CC_COUNT, HR_CC_DOMAIN_COUNT, HR_CC_NAME, HR_CC_NO_NAME, HR_CTE_8B
+	HR_CTT_MISS, HR_DATE_H, HR_DATE_WKD, HR_DATE_ZONE, HR_FROM_NAME
+	HR_SJ_DIGIT_LEN, HR_SJ_LANG, HR_SJ_LEN, HR_SJ_LETTER, HR_SJ_NOR_SYM
+	HR_SJ_PHRASE, HR_SJ_PHRASE_LEN, HR_SJ_PRE_RE, HR_SJ_WS, HR_TO_COUNT
+	HR_TO_DOMAIN_COUNT, HR_TO_NAME, IP_UNTRUSTED, SRC_UNTRUSTED, IP_UNFAMILIAR
+	SRC_UNFAMILIAR, SA_UNTRUSTED, SA_UNFAMILIAR, SN_UNTRUSTED, SN_UNFAMILIAR
+	SPF_NOPASS, DKIM_NOPASS, DMARC_NOPASS, CIE_BAD, CIE_GOOD_SPF
+	CIE_UNKNOWN, GTI_FG_BS, GTI_RG_INFO, GTI_C_BU, AMN_GOOD
+	ABX_MISS_RDNS
+X-CID-P-RULE: Release_Ham
+X-CID-O-INFO: VERSION:1.3.19,REQID:698003bd-e3c6-4df3-a8cb-788b68fb5408,IP:10,
+	URL:0,TC:0,Content:0,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION
+	:release,TS:10
+X-CID-INFO: VERSION:1.3.19,REQID:698003bd-e3c6-4df3-a8cb-788b68fb5408,IP:10,UR
+	L:0,TC:0,Content:0,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION:r
+	elease,TS:10
+X-CID-META: VersionHash:7db8b62,CLOUDID:d3243e08d7160a42ecc393c04f771288,BulkI
+	D:261119155009ZBQBSZKZ,BulkQuantity:0,SF:19|38|64|66|72|78|80|81|82|83|102
+	|127|136|153|841|850|865|898|915,TC:nil,Content:0|15|50|99,EDM:-3|-100,IP:
+	-2,URL:0,File:nil,RT:nil,Bulk:nil,QS:nil,BEC:nil,COL:0,OSI:0,OSA:0,AV:0,LE
+	S:1,SPR:NO,DKR:0,DKP:0,BRR:0,BRE:0,ARC:0
+X-CID-BVR: 2,SSN|SDN
+X-CID-BAS: 2,SSN|SDN,0,_
+X-CID-FACTOR: TF_CID_SPAM_SNR,TF_CID_SPAM_FSD
+X-CID-RHF: D41D8CD98F00B204E9800998ECF8427E
+X-UUID: d65f8368e3ed11f19a56ed5b684f684d-20261119
+X-User: maguicai@kylinos.cn
+Received: from localhost.localdomain [(36.106.123.207)] by mailgw.kylinos.cn
+	(envelope-from <maguicai@kylinos.cn>)
+	(Generic MTA with TLSv1.3 TLS_AES_256_GCM_SHA384 256/256)
+	with ESMTP id 641219735; Thu, 19 Nov 2026 15:50:06 +0800
+From: Guicai Ma <maguicai@kylinos.cn>
+To: Florian Bauckholt <florian.bauckholt@cispa.de>,
+	David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Lukas Wunner <lukas@wunner.de>,
+	Ignat Korchagin <ignat@linux.win>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S . Miller" <davem@davemloft.net>
+Cc: Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	Hui Peng <benquike@gmail.com>,
+	Stefan Berger <stefanb@linux.ibm.com>,
+	Rodolfo Giometti <giometti@enneenne.com>,
+	keyrings@vger.kernel.org,
+	linux-crypto@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Guicai Ma <maguicai@kylinos.cn>
+Subject: Re: [PATCH v2 1/2] KEYS: fix signature length passed to KEYCTL_PKEY_VERIFY
+Date: Thu, 19 Nov 2026 02:50:04 -0500
+Message-ID: <20261119075004.689388-1-maguicai@kylinos.cn>
+X-Mailer: git-send-email 2.47.3
+In-Reply-To: <20261119-keyctl-pkey-fixes-v2-1-9e2d1c7db7ec@cispa.de>
+References: <20261119-keyctl-pkey-fixes-v2-1-9e2d1c7db7ec@cispa.de>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -58,172 +98,24 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-X-Received: by 2002:a05:6808:1992:b0:567:bfc4:c94f with SMTP id
- 5614622812f47-577422121bdmr6168455b6e.67.1795071600207; Wed, 18 Nov 2026
- 23:00:00 -0800 (PST)
-Date: Wed, 18 Nov 2026 23:00:00 -0800
-In-Reply-To: <20261115121722.206-1-enscrpt@pm.me>
-X-Google-Appengine-App-Id: s~syzkaller
-X-Google-Appengine-App-Id-Alias: syzkaller
-Message-ID: <6afe9e70.902182b0.170f33.0005.GAE@google.com>
-Subject: [syzbot ci] Re: keys: serialise instantiation against keyctl_chown_key
-From: syzbot ci <syzbot+ci69a2f6975b022dfa@syzkaller.appspotmail.com>
-To: dhowells@redhat.com, enscrpt@pm.me, jarkko@kernel.org, jmorris@namei.org, 
-	keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, 
-	linux-security-module@vger.kernel.org, paul@paul-moore.com, serge@hallyn.com, 
-	stable@vger.kernel.org
-Cc: syzbot@lists.linux.dev, syzkaller-bugs@googlegroups.com
-Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 
-syzbot ci has tested the following series
+On Wed, Nov 18, 2026 at 11:19:28PM +0000, Florian Bauckholt wrote:
+> As a result keyctl_pkey_verify() ignores the signature length passed by
+> the caller and always reads max_sig_size bytes from the signature
+> pointer. A shorter signature is extended with whatever follows it in
+> the caller's memory, or the call fails with -EFAULT if that memory is
+> not readable.
 
-[v1] keys: serialise instantiation against keyctl_chown_key
-https://lore.kernel.org/all/20261115121722.206-1-enscrpt@pm.me
-* [PATCH] keys: serialise instantiation against keyctl_chown_key
+Verified the union usage in struct kernel_pkey_params and reproduced both
+failure modes on arm64 with an RSA-2048 PKCS#8 key (enc=pkcs1 hash=sha256):
 
-and found the following issue:
-possible deadlock in key_move
+- A truncated 200-byte signature with the remaining 56 bytes still intact
+  in userspace memory was falsely accepted (0) before this patch, and is
+  now rejected with -EINVAL.
+- A 16-byte signature placed right before a PROT_NONE guard page (as well
+  as a 0-byte signature at the page boundary) returned -EFAULT before this
+  patch, and now returns -EINVAL without faulting.
 
-Full report is available here:
-https://ci.syzbot.org/series/51455b74-3344-42d0-9ba7-b64be2ff0b40
-
-***
-
-possible deadlock in key_move
-
-tree:      torvalds
-URL:       https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux
-base:      4405c18c95d2d0f99f6c581ef0ee8591a1aa6ccd
-arch:      amd64
-compiler:  Debian clang version 22.1.8 (1~deb13u4), Debian LLD 22.1.8
-config:    https://ci.syzbot.org/builds/309e9321-2f31-411e-ac93-724f183b5510/config
-syz repro: https://ci.syzbot.org/findings/89658ad2-f692-4500-bd4e-ef9d90dc18e5/syz_repro
-
-======================================================
-WARNING: possible circular locking dependency detected
-syzkaller #0 Not tainted
-------------------------------------------------------
-syz.0.17/5852 is trying to acquire lock:
-ffffffff908c1a40 (keyring_serialise_link_lock){+.+.}-{4:4}, at: __key_move_lock security/keys/keyring.c:1305 [inline]
-ffffffff908c1a40 (keyring_serialise_link_lock){+.+.}-{4:4}, at: key_move+0x1d3/0x7b0 security/keys/keyring.c:1634
-
-but task is already holding lock:
-ffff888104aa1290 (&type->lock_class/1){+.+.}-{4:4}, at: __key_move_lock security/keys/keyring.c:-1 [inline]
-ffff888104aa1290 (&type->lock_class/1){+.+.}-{4:4}, at: key_move+0x16a/0x7b0 security/keys/keyring.c:1634
-
-which lock already depends on the new lock.
-
-
-the existing dependency chain (in reverse order) is:
-
--> #2 (&type->lock_class/1){+.+.}-{4:4}:
-       down_write_nested+0x98/0x200 kernel/locking/rwsem.c:1757
-       __key_instantiate_and_link+0x9d/0x4d0 security/keys/key.c:451
-       key_instantiate_and_link+0x331/0x4b0 security/keys/key.c:549
-       keyring_alloc+0x6f/0xb0 security/keys/keyring.c:541
-       system_trusted_keyring_init+0x67/0x120 certs/system_keyring.c:231
-       do_one_initcall+0x250/0x870 init/main.c:1419
-       do_initcall_level+0x10a/0x1a0 init/main.c:1481
-       do_initcalls+0x59/0xa0 init/main.c:1497
-       kernel_init_freeable+0x29d/0x3e0 init/main.c:1732
-       kernel_init+0x22/0x1d0 init/main.c:1622
-       ret_from_fork+0x514/0xb70 arch/x86/kernel/process.c:158
-       ret_from_fork_asm+0x1a/0x30 arch/x86/entry/entry_64.S:245
-
--> #1 (key_construction_mutex){+.+.}-{4:4}:
-       __mutex_lock_common kernel/locking/mutex.c:646 [inline]
-       __mutex_lock+0x197/0x15a0 kernel/locking/mutex.c:821
-       __key_instantiate_and_link+0x8f/0x4d0 security/keys/key.c:443
-       key_instantiate_and_link+0x466/0x4b0 security/keys/key.c:549
-       keyring_alloc+0x6f/0xb0 security/keys/keyring.c:541
-       look_up_user_keyrings+0x376/0x670 security/keys/process_keys.c:116
-       do_one_initcall+0x250/0x870 init/main.c:1419
-       do_initcall_level+0x10a/0x1a0 init/main.c:1481
-       do_initcalls+0x59/0xa0 init/main.c:1497
-       kernel_init_freeable+0x29d/0x3e0 init/main.c:1732
-       kernel_init+0x22/0x1d0 init/main.c:1622
-       ret_from_fork+0x514/0xb70 arch/x86/kernel/process.c:158
-       ret_from_fork_asm+0x1a/0x30 arch/x86/entry/entry_64.S:245
-
--> #0 (keyring_serialise_link_lock){+.+.}-{4:4}:
-       check_prev_add kernel/locking/lockdep.c:3209 [inline]
-       check_prevs_add kernel/locking/lockdep.c:3328 [inline]
-       validate_chain kernel/locking/lockdep.c:3952 [inline]
-       __lock_acquire+0x164c/0x2de0 kernel/locking/lockdep.c:5288
-       lock_acquire+0x115/0x350 kernel/locking/lockdep.c:5942
-       __mutex_lock_common kernel/locking/mutex.c:646 [inline]
-       __mutex_lock+0x197/0x15a0 kernel/locking/mutex.c:821
-       __key_move_lock security/keys/keyring.c:1305 [inline]
-       key_move+0x1d3/0x7b0 security/keys/keyring.c:1634
-       keyctl_keyring_move+0xd6/0x110 security/keys/keyctl.c:618
-       __do_sys_keyctl security/keys/keyctl.c:2023 [inline]
-       __se_sys_keyctl+0x85a/0xbc0 security/keys/keyctl.c:1885
-       do_syscall_x64 arch/x86/entry/syscall_64.c:61 [inline]
-       do_syscall_64+0x171/0x540 arch/x86/entry/syscall_64.c:89
-       entry_SYSCALL_64_after_hwframe+0x77/0x7f
-
-other info that might help us debug this:
-
-Chain exists of:
-  keyring_serialise_link_lock --> key_construction_mutex --> &type->lock_class/1
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&type->lock_class/1);
-                               lock(key_construction_mutex);
-                               lock(&type->lock_class/1);
-  lock(keyring_serialise_link_lock);
-
- *** DEADLOCK ***
-
-locks held by syz.0.17/5852: 2, on CPU#0:
- #0: ffff888104aa1090 (&type->lock_class#2){+.+.}-{4:4}, at: __key_move_lock security/keys/keyring.c:-1 [inline]
- #0: ffff888104aa1090 (&type->lock_class#2){+.+.}-{4:4}, at: key_move+0x159/0x7b0 security/keys/keyring.c:1634
- #1: ffff888104aa1290 (&type->lock_class/1){+.+.}-{4:4}, at: __key_move_lock security/keys/keyring.c:-1 [inline]
- #1: ffff888104aa1290 (&type->lock_class/1){+.+.}-{4:4}, at: key_move+0x16a/0x7b0 security/keys/keyring.c:1634
-
-stack backtrace:
-CPU: 0 UID: 0 PID: 5852 Comm: syz.0.17 Not tainted syzkaller #0 PREEMPT(full) 
-Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS 1.16.2-debian-1.16.2-1 04/01/2014
-Call Trace:
- <TASK>
- dump_stack_lvl+0xe8/0x150 lib/dump_stack.c:120
- print_circular_bug+0x2e2/0x300 kernel/locking/lockdep.c:2087
- check_noncircular+0x12f/0x150 kernel/locking/lockdep.c:2219
- check_prev_add kernel/locking/lockdep.c:3209 [inline]
- check_prevs_add kernel/locking/lockdep.c:3328 [inline]
- validate_chain kernel/locking/lockdep.c:3952 [inline]
- __lock_acquire+0x164c/0x2de0 kernel/locking/lockdep.c:5288
- lock_acquire+0x115/0x350 kernel/locking/lockdep.c:5942
- __mutex_lock_common kernel/locking/mutex.c:646 [inline]
- __mutex_lock+0x197/0x15a0 kernel/locking/mutex.c:821
- __key_move_lock security/keys/keyring.c:1305 [inline]
- key_move+0x1d3/0x7b0 security/keys/keyring.c:1634
- keyctl_keyring_move+0xd6/0x110 security/keys/keyctl.c:618
- __do_sys_keyctl security/keys/keyctl.c:2023 [inline]
- __se_sys_keyctl+0x85a/0xbc0 security/keys/keyctl.c:1885
- do_syscall_x64 arch/x86/entry/syscall_64.c:61 [inline]
- do_syscall_64+0x171/0x540 arch/x86/entry/syscall_64.c:89
- entry_SYSCALL_64_after_hwframe+0x77/0x7f
-RIP: 0033:0x7f417a9a8fd9
-Code: ff c3 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 c7 c1 e8 ff ff ff f7 d8 64 89 01 48
-RSP: 002b:00007f417b7c9028 EFLAGS: 00000246 ORIG_RAX: 00000000000000fa
-RAX: ffffffffffffffda RBX: 00007f417ac25fa0 RCX: 00007f417a9a8fd9
-RDX: fffffffffffffffe RSI: 00000000326b97d4 RDI: 000000000000001e
-RBP: 00007f417aa37fed R08: 0000000000000000 R09: 0000000000000000
-R10: 00000000326b97d4 R11: 0000000000000246 R12: 0000000000000000
-R13: 00007f417ac26038 R14: 00007f417ac25fa0 R15: 00007ffc44b5b118
- </TASK>
-
-
-***
-
-If these findings have caused you to resend the series or submit a
-separate fix, please add the following tag to your commit message:
-  Tested-by: syzbot@syzkaller.appspotmail.com
-
----
-This report is generated by a bot. It may contain errors.
-syzbot ci engineers can be reached at syzkaller@googlegroups.com.
+Reviewed-by: Guicai Ma <maguicai@kylinos.cn>
+Tested-by: Guicai Ma <maguicai@kylinos.cn>
