@@ -1,65 +1,60 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=180.181.231.80
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795168468;
-	b=tP1U/DtFLosgh/2YWGxzei6hnq0VDd59T8uXojXmiJX4qDrKofTRhdv3P+hsMGpRQHbX
-	 nlJdY+laDlGQ1o0i3R5Ybw9pj710kGhToAJUhcpRNRIjeFaWKRlqg2ZmzmUZ98PJrLFhb
-	 Rvc4xRdWAtl/iSmcm3UUfiIBkWwPpU7QZafCO4xzPVisb2cJw+lFQbjDijkzoXOiM9C0F
-	 7Xb7pouTtSaFYgOmYKiQlKX9bmT376n6Vppa8iTihkqk9aNrk/e7rlLwN2j5NnsW5QU8U
-	 iXki0gf+luIoETKtfq6O8hFqSHB3mHW3cquJN9iUCr2J0fFGg8Nrme8I2zSCJBTUqlg==
+	t=1795169500;
+	b=eq4mRAJMqz/78q4DKoM4z2/4lyXkC+xn2IUv1C42NMsqEs8CbzPAltyqwQqyx3WmULZv
+	 xhZcilxkVNxrh/lodm4/DdTJ+ZUB4mH3T6jIrpcNQULGwcJLjE4umMdS/xVzIYqUz38gZ
+	 IukiWnINvjqQVd/HftpgN90DXXtrMbys9IwLC4N05T9TrT4mt6LxzoB7+TgXbdXqOSvJE
+	 EwxeSCbvDyQNVvFACtQNamh/yES2p7Yps1cXX861iC+5V3EZVJIJKckDngyI9VCLBGm5i
+	 sFcUN5cOQGFEYxBaVlbhGmhZgG6pyIdUj+4/G+5GMpvCzQWwKT5qjH9+YSRd0cKzw3w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795168468;
-	h=DMARC-Filter:DKIM-Signature:Received:Received:Date:From:To:Cc:
-	 Subject:Message-ID:References:MIME-Version:Content-Type:
-	 Content-Disposition:In-Reply-To;
-	bh=wvm5O4QSr+2slEL7sSNtDaICWbKDd4kaL3RphmV8wS0=;
-	b=5aKiVN6Vl0sGPLqsoDRqHJ2P0Yy+rzqh/QTbKOZYWUiumPbUh8r4NSY4t1EsRHiaVXkk
-	 M2JlRmJd+VpkAaIofw3qoN7zmVfivra9RluhOtcrzgtOewAdrDrThs1Jkcjqv38KNPGk2
-	 bngklAYwnKFOzmidtTbCfFbUqChX/1AWUSVxgS/3ktUsA3HY7F4dO/pHbXRU2MteUg5C7
-	 vFW64Ns3XMS/koy6iIfK962zlJgNmlcDMQ3Vo4AU+cn8yenzTA/yqQDEiuZE6vBLzjaHe
-	 Ej19dnoENx4YVTJXkYz3AYCavkKLx9UlklSLq83X1VloEySszVESUI3fPmuaad0GrEw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795169500;
+	h=Received:DKIM-Signature:From:To:Cc:In-Reply-To:References:Subject:
+	 Message-Id:Date:MIME-Version:Content-Type:Content-Transfer-Encoding:
+	 X-Mailer;
+	bh=dZiF4/CWqCQ7gcRMAMR0YOlOB4gblyvSfeSB/PEX/KA=;
+	b=h6SgTZjoTjHOv9rV8PkkW4LWiSC6YJDI2B5z5NLOhVIzedol0ybvnSRuaHoha7yhmnhT
+	 88/1uRukpZYYJca1UMBbMujbIEA/Fqd4j6w7xOpBYvk+M2/bJDi8K5KqsjhemaAwB6VrZ
+	 bdSDlm3XpfJNU7D3HNYmvAzChIraXZxsyy1qOKRPVgX/fLjlPA4m8y3HF5r7HJQGSgvZn
+	 0MLyi4R2fJVGTWhEnxpG+YQVjfOhaldA6thDM+9mayrb3WtFWBVG9aQDXZ6cphsbFTGrq
+	 YN6C7qpRl12jQNRaRNgG4oezWI2pAq5sTiLeoRyySsunyO44zyiMLWp5ZGMZ153SAoQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gondor.apana.org.au;
-	spf=pass smtp.mailfrom=gondor.apana.org.au;
-	dkim=pass header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.a=rsa-sha256 header.s=h01 header.b=dh7SoQY+;
-	arc=none smtp.remote-ip=180.181.231.80
-Received: from abb.hmeau.com (abb.hmeau.com [180.181.231.80])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="bhEWf/3U";
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange ECDHE (prime256v1) server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 31A7B606A33A;
-	Fri, 20 Nov 2026 09:54:27 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 31A7B606A33A
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=gondor.apana.org.au
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gondor.apana.org.au
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3955B606A326;
+	Fri, 20 Nov 2026 10:11:40 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gondor.apana.org.au header.i=@gondor.apana.org.au header.a=rsa-sha256 header.s=h01 header.b=dh7SoQY+
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=gondor.apana.org.au; s=h01; h=In-Reply-To:Content-Type:MIME-Version:
-	References:Message-ID:Subject:Cc:To:From:Date:cc:to:subject:message-id:date:
-	from:content-type:reply-to; bh=wvm5O4QSr+2slEL7sSNtDaICWbKDd4kaL3RphmV8wS0=; 
-	b=dh7SoQY+YOdWpmwGsfPl1JIHoAtNavKeFsvj9blSEm/Te43IpDZqfKzMvwXIKY6ivpd2fZt8GKm
-	A+EVjMpt97/1dgyHl/8KOmG5BbUW08HL8S7tc+9OXw951XR0O3jv8s4fSs7v/WXg3hcV7yzeLkxHE
-	g5/Aevv0jm6SP0exp8qzh4rQx8yYvD4JGGg+x18V3XbCjMH8NwiWeB+gPqwoCPk2Xxl/OEGfMOMjo
-	W4k41MG+1Dv0aJlN6QK30ANVXXT95LWFWuDB8R8MVsq5lrReJX9Qu5xp7OiV1LqLu8NhI7mQNQJJK
-	QvjTXbBVP09gk4s2Nkb7j0QBobe9aBpu9JsA==;
-Received: from loth.rohan.me.apana.org.au ([192.168.167.2])
-	by formenos.hmeau.com with smtp (Exim 4.98.2 #2 (Debian))
-	id 1xULJx-0000000HYhV-0uQd;
-	Fri, 20 Nov 2026 17:54:18 +0800
-Received: by loth.rohan.me.apana.org.au (sSMTP sendmail emulation); Fri, 20 Nov 2026 17:54:17 +0800
-Date: Fri, 20 Nov 2026 17:54:17 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Laveesh Bansal <laveeshb@laveeshbansal.com>
-Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
-	Ignat Korchagin <ignat@linux.win>,
-	"David S . Miller" <davem@davemloft.net>,
-	Denis Kenzior <denkenz@gmail.com>,
-	Maximilian Stahlberg <maximilian.stahlberg@uni-bremen.de>,
-	keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] X.509: Accept a certificate with an empty subject
-Message-ID: <awAYyQ-cZ3Nl4Ja_@gondor.apana.org.au>
-References: <20261112074246.99421-1-laveeshb@laveeshbansal.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=bhEWf/3U
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 886951F000CA;
+	Fri, 20 Nov 2026 10:11:36 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795169500;
+	bh=dZiF4/CWqCQ7gcRMAMR0YOlOB4gblyvSfeSB/PEX/KA=;
+	h=From:To:Cc:In-Reply-To:References:Subject:Date;
+	b=bhEWf/3UVSV5Oj/LaVfj5iyFojab9TYNDhaX1mHwwaJAwXpdymbQOnxSokoln8AMY
+	 mX9mf4v6rXtAee5qHVWTUcejqpeGe/FkoS9Zzds8aXx3HJn35atom00NnbYxDM3e4z
+	 W4lRRn7krZTg4Xx68Ti4Pn5x4zLUufyP2G3OeRRrOJPpnrkx2mDd/w6A+blHcAFoc+
+	 8jsVCtIM79JK8gWtPvQx3NJdPTVkpIv1SLIm6unPRy/rgIv1D6q1SOLBYgH59Hx6ve
+	 eumgNRPrSC1g3HeBPTkLeny1Ub6+j+i7sZRoyfjYVbGLx+ge1hPbdrcXBaCatzCdEp
+	 DTHGPS7zjwGbg==
+From: Christian Brauner <brauner@kernel.org>
+To: Serge Hallyn <serge@hallyn.com>, Paul Moore <paul@paul-moore.com>, 
+ Josef Bacik <josef@toxicpanda.com>
+Cc: James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>, 
+ Jarkko Sakkinen <jarkko@kernel.org>, "Andrew G. Morgan" <morgan@kernel.org>, 
+ Serge Hallyn <sergeh@kernel.org>, linux-security-module@vger.kernel.org, 
+ linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, 
+ linux-fsdevel@vger.kernel.org, Shuah Khan <shuah@kernel.org>, 
+ linux-kselftest@vger.kernel.org, Bradley Morgan <brads@mainlining.org>
+In-Reply-To: <20261117-b4-setfcap-userns-v11-0-2be11a2c32f4@toxicpanda.com>
+References: <20261117-b4-setfcap-userns-v11-0-2be11a2c32f4@toxicpanda.com>
+Subject: Re: [PATCH v11 0/3] capabilities: close the ways around the
+ CAP_SETFCAP rule for uid 0
+Message-Id: <20261120-zutun-ausgearbeitet-erregen-ebd3834404ea@brauner>
+Date: Fri, 20 Nov 2026 11:11:34 +0100
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -69,36 +64,43 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261112074246.99421-1-laveeshb@laveeshbansal.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: b4 0.17-dev-04696
 
-On Wed, Nov 11, 2026 at 11:42:44PM -0800, Laveesh Bansal wrote:
-> Patch 1 fixes loading a certificate with an empty Subject, which iwd
-> hits with an eduroam server certificate [1]. Patch 2 adds a KUnit test
-> for it.
+On Tue, 17 Nov 2026 19:54:23 +0000, Josef Bacik wrote:
+> v1: https://lore.kernel.org/all/20261006-b4-setfcap-userns-v1-0-f47e7ed66072@toxicpanda.com/
+> v2: https://lore.kernel.org/all/20261014-b4-setfcap-userns-v2-0-fac4d19281d7@toxicpanda.com/
+> v3: https://lore.kernel.org/all/20261021-b4-setfcap-userns-v3-0-97c7ed4e43e1@toxicpanda.com/
+> v4: https://lore.kernel.org/all/20261022-b4-setfcap-userns-v4-0-88aa0ffaa08f@toxicpanda.com/
+> v5: https://lore.kernel.org/all/20261023-b4-setfcap-userns-v5-0-0620223be951@toxicpanda.com/
+> v6: https://lore.kernel.org/all/20261026-b4-setfcap-userns-v6-0-25f10b7ca497@toxicpanda.com/
+> v7: https://lore.kernel.org/all/20261026-b4-setfcap-userns-v7-0-bf8a576f7259@toxicpanda.com/
+> v8: https://lore.kernel.org/all/20261027-b4-setfcap-userns-v8-0-2674adc63f3c@toxicpanda.com/
+> v9: https://lore.kernel.org/all/20261109-b4-setfcap-userns-v9-0-0d3f00976ce2@toxicpanda.com/
+> v10: https://lore.kernel.org/all/20261112-b4-setfcap-userns-v10-0-84f6f7faa903@toxicpanda.com/
 > 
-> I developed this series using an LLM coding assistant.
-> 
-> [1] https://lore.kernel.org/r/9b05b89cf296b8a6392bbe6327228c1bc2f05c49.camel@uni-bremen.de
-> 
-> 
-> Laveesh Bansal (2):
->   X.509: Accept a certificate with an empty subject
->   X.509: Add KUnit tests for the certificate parser
-> 
->  crypto/asymmetric_keys/Kconfig            |  11 ++
->  crypto/asymmetric_keys/Makefile           |   1 +
->  crypto/asymmetric_keys/x509.asn1          |   8 +-
->  crypto/asymmetric_keys/x509_parser_test.c | 160 ++++++++++++++++++++++
->  4 files changed, 179 insertions(+), 1 deletion(-)
->  create mode 100644 crypto/asymmetric_keys/x509_parser_test.c
-> 
-> -- 
-> 2.54.0
+> [...]
 
-All applied.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Applied to the namespace-7.5.misc branch of the vfs/vfs.git tree.
+Patches in the namespace-7.5.misc branch should appear in linux-next soon.
+
+Please report any outstanding bugs that were missed during review in a
+new review to the original patch series allowing us to drop it.
+
+It's encouraged to provide Acked-bys and Reviewed-bys even though the
+patch has now been applied. If possible patch trailers will be updated.
+
+Note that commit hashes shown below are subject to change due to rebase,
+trailer updates or similar. If in doubt, please check the listed branch.
+
+tree:   https://git.kernel.org/pub/scm/linux/kernel/git/vfs/vfs.git
+branch: namespace-7.5.misc
+
+[1/3] userns: don't let setns() lend CAP_SETFCAP
+      https://git.kernel.org/vfs/vfs/c/711bc24f1d8f
+[2/3] capabilities: don't let ptrace borrow CAP_SETFCAP
+      https://git.kernel.org/vfs/vfs/c/c1e5f4d36d2a
+[3/3] selftests/namespaces: test the CAP_SETFCAP rule for user namespaces
+      https://git.kernel.org/vfs/vfs/c/cbe977960cb3
+
