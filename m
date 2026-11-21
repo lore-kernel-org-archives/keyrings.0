@@ -1,68 +1,96 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=178.63.66.53
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.214.170
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795196049;
-	b=yB4xl0B4FTQkxBNsDy3BobZVk4IaqDHkHz/RyRZpJAfNXOZYqcAzQEIG6cXNIzihnAPi
-	 d3YL3SfWUxqk5YHZYoo4AutFbAkE/t1GzO9RDxlhLHXFJIO0EOZanyDEffE0N1oLGOE4J
-	 rICB+FZt5agOxeCT4F7EgjUCyMks0FMCu7XDEDA87NZ7r9hgS0gXeAUvFYxPuQrnwL0nD
-	 xO9eS9be02m+XMCwfkQceX0j54wDSi357LzE0IddWKVMUIUUCzGrl3czye4VUNEuC87PD
-	 6/VscNKhscm+B9BGL6KCb+1G/zNcZFf4Hdym9Ql+mFN6Lw+wFhb6Mgk29NCEFmn+Bzg==
+	t=1795256309;
+	b=r1255b57iqmeXlUC8MQRcbIzHiwvgBGwe+ss3Yo2UKf31IkA4Ac8rOGj1fFj5dvX69+/
+	 8SS3d0RojVJOU0kZPVlKhr/Q5xpY0dl8Jrsr/FpYUcDm0yE9ee+8d3a8Re0QK8l79LM+b
+	 blo3gQcx1H2wG6/psIEZgdnPBdLeFL7mUNuZkl6Y0KjknqncYEVjJMWFkgxxP5qeuDwwV
+	 SSBI3Gq+9h5aG6L+4mMEzLZb3kU7aHeTtGXd973KLFdg8d7Qym4vQW+icRemDZia1MLv8
+	 8c5lDBBVntFmMtJpC8WyKj1ulCEd82c+utp+0FFEf3CrJDICjkZveNfXaFXKiRidbcA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795196049;
-	h=DMARC-Filter:DKIM-Signature:Received:Date:From:To:Cc:Subject:
-	 Message-ID:References:MIME-Version:Content-Type:Content-Disposition:
-	 In-Reply-To;
-	bh=77/C6SYfI38rig3b5Xhp6zxSG4ayQ0fXmak+LEOxmn0=;
-	b=r6toZx8q7i0HBAymrwKhgmTDcJFrXSpB5R9iQl03ecjzkrf42l75CbvfUCN0WJF6HsQW
-	 kll2XdtWkG2IDQ3WmF85kcsPKm7cGoMjbahDJqcrVrSZcl0PM2/4c9b1iy33CTmoemQt7
-	 xxrnaOleb+NYIHjmSDjasTA+6UedbxqJoBDI3vquqBpbNPEaYZKp0R112fB7nZofF8yUW
-	 babA0PC8zVL8cxDtyfxX1RcaamVrKr8WAfXjD+sfQZPTU2B8xUT7ZESwp5P2SZVh6yMz+
-	 GnLVqV5f60hqWxTny4y/G2r4H0+1UPR3OH5hBAn9boHaM0aQQXxz7vHfpjpLjALJPpw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795256309;
+	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
+	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
+	 From:To:Cc:Subject:Date:Message-ID:Content-Type:
+	 Content-Transfer-Encoding:MIME-Version;
+	bh=ybCiBiLC+wMkxHxvSe2Dz7VO4d0TKq7kRkdKiMWCjnc=;
+	b=zns/sqBUTgAADWaeRopjCkJu3Tm6LkFADhCNv/rkLsCu+ruQVBLfbx49tGIy+QOsUrY/
+	 RLK77YDb+iJWkpE4Nq2+loeejQgssTM0wRCcnE7b52GHl8bH+dH8GhqmPuThw+tXEycKm
+	 IIWlqeKGv707M1Z5W2UGIuLJIxYqR3L/vt327fmn3u2wK/S7PZAl9GDwKplme/Ozn+6qT
+	 dJEybwDN93HI1lZj2mDdp93C7h0VfKdF7qyhnVGmz7YXQ4yrhL4KdpFqlODHE7N/dskSI
+	 gt5h/ODMIaxPUKrwQZ2J4E5ZdY7yCdwus5+4hPCAXCgYYGjJxctWNL8K98z67hBA2yg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=hallyn.com;
-	spf=pass smtp.mailfrom=hallyn.com;
-	dkim=pass header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=OjjnOtnM;
-	arc=none smtp.remote-ip=178.63.66.53
-Received: from mail.hallyn.com (mail.hallyn.com [178.63.66.53])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	dmarc=pass header.from=gmail.com;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=0CR70O6z;
+	arc=none smtp.remote-ip=209.85.214.170
+Received: from mail-pl1-f170.google.com (mail-pl1-f170.google.com [209.85.214.170])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 69514606A330;
-	Fri, 20 Nov 2026 17:34:06 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 69514606A330
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=hallyn.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=hallyn.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DD0BA606A32C
+	for <keyrings@vger.kernel.org>; Sat, 21 Nov 2026 10:18:28 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org DD0BA606A32C
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=OjjnOtnM
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=hallyn.com; s=mail;
-	t=1795196044; bh=tqr7JujF5uPqlUHh7F9lKO+IL/G70y7dJOo/+zScl8c=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=OjjnOtnMigu7ogGoTDg3h0S4qj/bYFjLfh33PSJkRSsFNOnUBQSWhxWWJAovRBcwt
-	 hVPlPBAgmHCGPIToIygykBN/mfX2J34V83UQwX8CG0zcuQF5Z5kWE9wmrao7Imq47K
-	 tTHrjTxlSwa/sbBf1m8nPUQsMXb/PYAIXJCMM03VoboukgKYezk4bK4rzZo5aAKLZH
-	 aGIGNi/6rGJHjFF61569cAgrSwXaqTHz8UCnMVup4sZOQVVPjWLVOOBx0NsbdE3Rj7
-	 AXHV8s7cM5CbPbMPTeW+r67raMu5DjCRZAb4M5kXUL82b0m+HM/EFOotIee/llvd4l
-	 lZZJOwtdmvqtQ==
-Received: by mail.hallyn.com (Postfix, from userid 1001)
-	id C11251B33; Fri, 20 Nov 2026 11:34:04 -0600 (CST)
-Date: Fri, 20 Nov 2026 11:34:04 -0600
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Josef Bacik <josef@toxicpanda.com>
-Cc: Paul Moore <paul@paul-moore.com>,
-	Christian Brauner <brauner@kernel.org>,
-	James Morris <jmorris@namei.org>,
-	David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	"Andrew G. Morgan" <morgan@kernel.org>,
-	Serge Hallyn <sergeh@kernel.org>,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	Shuah Khan <shuah@kernel.org>, linux-kselftest@vger.kernel.org,
-	Bradley Morgan <brads@mainlining.org>
-Subject: Re: [PATCH v11 1/3] userns: don't let setns() lend CAP_SETFCAP
-Message-ID: <awCEjJ8syhv+f4vd@hallyn.com>
-References: <20261117-b4-setfcap-userns-v11-0-2be11a2c32f4@toxicpanda.com>
- <20261117-b4-setfcap-userns-v11-1-2be11a2c32f4@toxicpanda.com>
- <awCB3UkCPzLGRBTk@hallyn.com>
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=0CR70O6z
+Received: by mail-pl1-f170.google.com with SMTP id d9443c01a7336-2e9ae391a05so11629135ad.1
+        for <keyrings@vger.kernel.org>; Sat, 21 Nov 2026 02:18:28 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20260707; t=1795256308; x=1795861108; darn=vger.kernel.org;
+        h=mime-version:content-transfer-encoding:content-type:message-id:date
+         :subject:cc:to:from:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=ybCiBiLC+wMkxHxvSe2Dz7VO4d0TKq7kRkdKiMWCjnc=;
+        b=0CR70O6zM57iqUKWetRzT5oUBSl2GhokaGg/cpikzwOYvOOqilYqTDL+Y9GagQrMkp
+         Nh8KfKaOqOTCVY/1NGh3tJNyA7Ja5KcdTT9BUXtnhPUA3eVZJW5GmngU7I3CZBngAqAu
+         EqkD2jTb//499zm/oua+Mh4bxNDRqSS5W/dTasJ01XbWyEylNzMeKHRGpZZsG2XapDuk
+         0u9uV7FtpXkXpb1dN3wGqYQDtCCsUrnuTsCGcSKRWSbebDqk7AbelvQ/3lmHUjZmE7x4
+         dKupWOxjwdnawW6im8C/yy7DjB6rscufQMn+y1eYtq9DM0mMznsoVopI1qURUl3TKSpU
+         w9Uw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1795256308; x=1795861108;
+        h=mime-version:content-transfer-encoding:content-type:message-id:date
+         :subject:cc:to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject
+         :date:message-id:reply-to:content-type;
+        bh=ybCiBiLC+wMkxHxvSe2Dz7VO4d0TKq7kRkdKiMWCjnc=;
+        b=yC1OY+SNzh0vao4GBdCI2ENZDkgyQbxU2htj9NHmFwvMazLWjO3c+94oNamNu4Eq7B
+         RZP8UMUbvzBJd2+xAiyDuUtlWamPGASrptI/7sen8O0y74UMUhA58lGz9hHK8lsEa5vQ
+         m0LnFqhaFeqgVnxyZFpM0WL7b+os/U0rhfHXuAByD74aFCs9hsvsMNQk5bjgZR6UFdqi
+         Xiswjf5HGsh8P78545qQrxcUjNyCim5KBhHeQnaeBCKComzskj2DLyCUpBcVM+C6ISjy
+         34/dItId3qr+64dinizTlBgTLW2io3doIjB8DdzhSnmQnIkXJ0J9SsdVv8qIz/90mxY3
+         R5FA==
+X-Forwarded-Encrypted: i=1; AL+hErH5DKf+Fwc/Xzn84ck2RaanBauFPFOclbC3tieSGe4n+xSgFqf4KYXtPjEMadOGt5BRr+x1SMsIjw==@vger.kernel.org
+X-Gm-Message-State: APuU4Z/vvulIwRcp9LJ7XW/tmigFiMgalRB5x484TbgaVYBkWRtK+J70
+	4G07Kg4l6urLDlnb8ts5BVWuWEYlf5/UlH4JZBMUFdf668rwr2FgF2Nn
+X-Gm-Gg: AZFdTZc1JHA/qa0OkoT6J+N9g08Yt4I5mQPRVB3wQt2YxtjbuX8BJYuX5jUodhNceb3
+	IfuSr3ZtjDoU8ixf/vqzpu4m4ktMAd33aJTzBnuz7DV/d+6afvmxpJWR0tPTrdeKjher9O4X5qN
+	mGD84tdD+Ig1q3Rw3DF9U/5K4oFv7ct5uw50iCvMYW6ZEcTjXdkG/SHOW97x1cc0MyLVNIE3sw1
+	jU/Sj2Mwv+y6zKbI926KzLmGlxKjKgNrPCSFP7QYwS3lE+cyPEYibi4FtsK4FQedJPwOhKaWibU
+	/W5DA3sMBBIvTrS21fGVEb721+qRH8gJypf8izhZJ2qB0dWqMXNw/97h3RCXnPw0xwuNh261kAb
+	CQzD1/VrT9/xS9WQ0nxGrylElFHUtRafYkXbmHaOOpl/YXpTkFsXw9+7fn4ySAuVw6IXOboFcYI
+	LBFpgBw+tFxARuJQK+AwR+aiBIBNM3hxiWB+iGgr8kKKbNgB3aNQQwoOEHc+sdufxOW2nNL6X0U
+	XcvwbD/4iys4Vk9EFNbcEz2jfAfHRfgZlVHpkRmyCqU+MQ8P+VaIbB4uBtlkEMo8DOsr8CYtjln
+	pzjNJiUwbKGuSZEdUTuO84L27mc8c76gNg0bkgZTMiscRQMqIMB+SceJgqYLHuDxpW5FaC361ik
+	7PjmshzuDfHPeWTCecZK3P9xSwbmJ
+X-Received: by 2002:a17:903:1545:b0:2e9:5598:d182 with SMTP id d9443c01a7336-2f031eab286mr53575105ad.15.1795256307921;
+        Sat, 21 Nov 2026 02:18:27 -0800 (PST)
+Received: from patch.eml (awork078078.netvigator.com. [203.198.250.78])
+        by smtp.gmail.com with ESMTPSA id d9443c01a7336-2f03f0dc0f8sm24859755ad.27.2026.11.21.02.18.18
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sat, 21 Nov 2026 02:18:27 -0800 (PST)
+From: Yuqi Xu <xuyuqiabc@gmail.com>
+To: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>,
+ Ignat Korchagin <ignat@linux.win>, Herbert Xu <herbert@gondor.apana.org.au>,
+ "David S. Miller" <davem@davemloft.net>,
+ Rusty Russell <rusty@rustcorp.com.au>, stable@vger.kernel.org,
+ Vega <vega@nebusec.ai>, Ren Wei <weir@nebusec.ai>, xuyq21@lenovo.com
+Subject: [PATCH v5] KEYS: Account for asymmetric key payload data in the quota
+Date: Sat, 21 Nov 2026 18:18:05 +0800
+Message-ID: <20261121181805.58538-1-xuyuqiabc@gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -72,182 +100,268 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <awCB3UkCPzLGRBTk@hallyn.com>
 
-On Fri, Nov 20, 2026 at 11:22:37AM -0600, Serge E. Hallyn wrote:
-> On Tue, Nov 17, 2026 at 07:54:24PM +0000, Josef Bacik wrote:
-> > A uid 0 task that gave up CAP_SETFCAP can get it back by joining a user
-> > namespace that another root task created.  Commit db2e718a4798
-> > ("capabilities: require CAP_SETFCAP to map uid 0") keeps such a task
-> > from mapping uid 0 into a namespace it creates itself, because tasks in
-> > that namespace could then write file capabilities for its root user.
-> > setns() gives a joiner a full capability set in the namespace too, so
-> > it can do the same there:
-> > 
-> >   task A: uid 0, full caps          task B: uid 0, no CAP_SETFCAP
-> >   unshare(CLONE_NEWUSER)
-> >                                     setns(A's user ns)
-> >                                       allowed, euid == ns->owner
-> >                                     write "0 0 1" to /proc/self/uid_map
-> >                                       A had CAP_SETFCAP -> allowed
-> > 
-> > If A's namespace already maps host uid 0, at any uid, B can set
-> > security.capability on a file right away.  Either way uid 1000 can then
-> 
-> "Either way" here means whether it already maps host uid 0, or whether
-> it has no mappings yet?  I'd just drop 'Either way'.
-> 
-> > run that file with CAP_SYS_ADMIN, which the selftest at the end of this
-> > series shows on an unmodified kernel.
-> > 
-> > The check doesn't look at the joiner's uids, which it can change while
-> 
-> >From here until the 'Fix by', it is confusing whether any given statement
-> refers to the pre-patch or post-patch state.
-> 
-> > keeping its other capabilities, and CAP_SYS_PTRACE doesn't stand in for
-> 
-> Is this a reference to the next patch?  But that's a completely different
-> commit.
-> 
-> > CAP_SETFCAP.  What gets refused is a task without CAP_SETFCAP that has
-> > CAP_SYS_ADMIN over a namespace that maps the joiner's root user, or that
-> > has no uid_map yet while its parent maps that root user, so that it can
-> > still be mapped.  If that is uid 0 of the parent and the creator of the
-> > namespace didn't have CAP_SETFCAP, the join is let through: only a
-> > writer with CAP_SETFCAP in the parent could map it then.  Containers
-> > that don't map the joiner's root user, tasks with CAP_SETFCAP and
-> > unprivileged users are not affected.
-> > 
-> > Like verify_root_map(), the check is about uid 0 of the joiner's own
-> > namespace.  The root user of an ancestor that it maps at another uid,
-> > and a root user stored through an idmapped mount, are left to whoever
-> > set up that map or mount.
-> > 
-> > Fix by refusing setns() when the joiner doesn't have CAP_SETFCAP and
-> > tasks in the namespace can write file capabilities for the root user of
-> > the joiner's namespace.
-> > 
-> > Suggested-by: Serge Hallyn <serge@hallyn.com>
-> > Link: https://lore.kernel.org/all/fd159e68-c613-4c7d-bfba-8af0a3f3a96e@hallyn.com/
-> > Fixes: db2e718a4798 ("capabilities: require CAP_SETFCAP to map uid 0")
-> > Signed-off-by: Josef Bacik <josef@toxicpanda.com>
-> 
-> The code looks good to me,
-> 
-> Reviewed-by: Serge Hallyn <serge@hallyn.com>
-> 
-> If you don't mind making the commit message and comments shorter and
-> clearer, I think that would help.  In the words of the reverend
-> Maclean, "Half as long".  If you feel like I"m being unreasonable or
-> misguided, or would prefer I rewrite them, please let me know, but imo
-> it'd be good to keep this entirely yours :)
+add_key("asymmetric", ...) preparses the supplied blob and then
+instantiates the key with generic_key_instantiate(), which charges
+prep->quotalen to the owning user's key quota through
+key_payload_reserve().
 
-Never mind.  I see it has been applied to Christian's tree.  Let's just
-leave it as is then.
+pkcs8_parse() duplicates the attacker-controlled PrivateKey OCTET
+STRING with kmemdup() into pub->key. pkcs8_key_preparse() stores that
+object in the asymmetric-key payload but hard-codes prep->quotalen to
+100, so the quota records 100 bytes regardless of the retained private
+key size. The ASN.1 decoder accepts blobs up to 65535 bytes, so one
+key can pin about 64 KiB while consuming 100 quota bytes. With the
+default non-root limits (200 keys / 20000 bytes) a user can retain
+roughly 12 MiB instead of the 20 KiB the limit is meant to allow.
 
-> > ---
-> >  include/linux/capability.h |  3 +++
-> >  kernel/user_namespace.c    |  4 ++++
-> >  security/commoncap.c       | 49 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 56 insertions(+)
-> > 
-> > diff --git a/include/linux/capability.h b/include/linux/capability.h
-> > index 622137f66f09..9ebcdab56937 100644
-> > --- a/include/linux/capability.h
-> > +++ b/include/linux/capability.h
-> > @@ -34,6 +34,7 @@ struct cpu_vfs_cap_data {
-> >  #define _USER_CAP_HEADER_SIZE  (sizeof(struct __user_cap_header_struct))
-> >  #define _KERNEL_CAP_T_SIZE     (sizeof(kernel_cap_t))
-> >  
-> > +struct cred;
-> >  struct file;
-> >  struct inode;
-> >  struct dentry;
-> > @@ -222,4 +223,6 @@ int get_vfs_caps_from_disk(const struct mnt_idmap *idmap,
-> >  int cap_convert_nscap(const struct mnt_idmap *idmap, struct dentry *dentry,
-> >  		      const void **ivalue, size_t size);
-> >  
-> > +bool cred_borrows_setfcap(const struct cred *cred, struct user_namespace *ns);
-> > +
-> >  #endif /* !_LINUX_CAPABILITY_H */
-> > diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> > index 50c374ed4687..34becacaccd6 100644
-> > --- a/kernel/user_namespace.c
-> > +++ b/kernel/user_namespace.c
-> > @@ -1390,6 +1390,10 @@ static int userns_install(struct nsset *nsset, struct ns_common *ns)
-> >  	if (!ns_capable(user_ns, CAP_SYS_ADMIN))
-> >  		return -EPERM;
-> >  
-> > +	/* Don't hand back CAP_SETFCAP to a root task that gave it up. */
-> > +	if (cred_borrows_setfcap(current_cred(), user_ns))
-> > +		return -EPERM;
-> > +
-> >  	cred = nsset_cred(nsset);
-> >  	if (!cred)
-> >  		return -EINVAL;
-> > diff --git a/security/commoncap.c b/security/commoncap.c
-> > index d47ab3022343..96ac039fddad 100644
-> > --- a/security/commoncap.c
-> > +++ b/security/commoncap.c
-> > @@ -131,6 +131,55 @@ int cap_capable(const struct cred *cred, struct user_namespace *target_ns,
-> >  	return ret;
-> >  }
-> >  
-> > +/*
-> > + * @ns has no uid_map yet.  Could @caller_root_kuid still be mapped into it,
-> > + * so that tasks in @ns get CAP_SETFCAP over it?  A writer in the parent can
-> > + * map any uid that the parent maps.  If that is uid 0 of the parent, a task
-> > + * in @ns can only map it if the creator of @ns had CAP_SETFCAP, a writer in
-> > + * the parent only if it has CAP_SETFCAP there, see verify_root_map().
-> > + */
-> > +static inline bool userns_may_map_root(struct user_namespace *ns,
-> > +				       kuid_t caller_root_kuid)
-> > +{
-> > +	uid_t caller_root_in_parent = from_kuid(ns->parent, caller_root_kuid);
-> > +
-> > +	if (caller_root_in_parent == (uid_t)-1)
-> > +		return false;
-> > +	return caller_root_in_parent != 0 || ns->parent_could_setfcap;
-> > +}
-> > +
-> > +/**
-> > + * cred_borrows_setfcap - Check whether a userns gives back CAP_SETFCAP
-> > + * @cred: The credentials of a task that joins @ns or traces a task in it
-> > + * @ns: The user namespace
-> > + *
-> > + * A task without CAP_SETFCAP can't map uid 0 of its namespace into a user
-> > + * namespace it creates, see verify_root_map(), as tasks there could then
-> > + * write file capabilities that are honoured for that root user.  Tasks in
-> > + * @ns can do that if @ns maps it, at any uid, or if it can still be mapped
-> > + * into @ns, see userns_may_map_root().
-> > + *
-> > + * Like verify_root_map(), this only looks at uid 0 of @cred's namespace, not
-> > + * at the root users of ancestors that it maps at another uid, and a root
-> > + * user stored through an idmapped mount is up to whoever sets up the mount.
-> > + *
-> > + * Return: true if @cred doesn't have CAP_SETFCAP and tasks in @ns can write
-> > + * file capabilities for the root user of @cred's namespace.
-> > + */
-> > +bool cred_borrows_setfcap(const struct cred *cred, struct user_namespace *ns)
-> > +{
-> > +	kuid_t caller_root_kuid = make_kuid(cred->user_ns, 0);
-> > +
-> > +	if (!uid_valid(caller_root_kuid) ||
-> > +	    cap_raised(cred->cap_permitted, CAP_SETFCAP))
-> > +		return false;
-> > +
-> > +	if (READ_ONCE(ns->uid_map.nr_extents))
-> > +		return kuid_has_mapping(ns, caller_root_kuid);
-> > +
-> > +	return userns_may_map_root(ns, caller_root_kuid);
-> > +}
-> > +
-> >  /**
-> >   * cap_settime - Determine whether the current process may set the system clock
-> >   * @ts: The time to set
-> > 
-> > -- 
-> > 2.55.0
+x509_key_preparse() keeps the parsed public key, its parameters, the
+signature and the authority key IDs, but also charges a fixed 100
+bytes. PKCS#8 later repeated the same fixed-100 accounting. The same
+add_key() call reaches the X.509 parser, so fixing only PKCS#8 would
+leave the bypass reachable.
+
+Charge the size of the retained payload instead. An oversized PKCS#8
+key now fails with -EDQUOT instead of being accepted for 100 bytes,
+and the same applies to an X.509 certificate that retains an oversized
+public key or set of authority key IDs.
+
+A charge which does not fit in unsigned short is rejected, because
+key_payload_reserve() keeps the full delta in the user counter and
+refunds only the truncated key->quotalen. The asymmetric parsers reject
+such a charge before installing the payload; put the same guard in
+key_payload_reserve() so every key type is covered, not only the
+asymmetric parsers. The guard also applies to other key types that use
+the same field, including big_key updates and keyring link accounting:
+a charge that would exceed USHRT_MAX bytes now fails instead of
+wrapping the counter. key_alloc() also charges the key description to
+the same field, so the effective description length is part of the
+check.
+
+Measured on v7.3-rc1 (10396a2d6d41), 2 vCPU / 2 GiB QEMU guest, as uid
+1000, adding PKCS#8 keys with a 65000-byte PrivateKey field. Before
+the patch, 176 keys were retained (about 11.4 MiB) while
+/proc/key-users charged only 19712 bytes. After the patch the
+oversized key is rejected immediately, and a 200-byte PrivateKey still
+loads and is charged 264 bytes. A small X.509 certificate whose only
+large object is a 26000-byte authorityKeyIdentifier is likewise
+rejected, while the unpatched kernel accepted it and charged 109
+bytes.
+
+Fixes: c26fd69fa009 ("X.509: Add a crypto key parser for binary (DER) X.509 c=
+ertificates")
+Fixes: 3c58b2362ba8 ("KEYS: Implement PKCS#8 RSA Private Key parser [ver #2]")
+Cc: stable@vger.kernel.org
+Reported-by: Vega <vega@nebusec.ai>
+Assisted-by: LLM
+Signed-off-by: Yuqi Xu <xuyuqiabc@gmail.com>
+Reviewed-by: Ren Wei <weir@nebusec.ai>
+---
+Changes in v5:
+ - Ignat Korchagin: add the missing PKCS#8 Fixes tag.
+ - Ignat Korchagin: add the USHRT_MAX guard to key_payload_reserve()
+   so every key type is covered, not only the asymmetric parsers.
+ - v4 Link: https://lore.kernel.org/all/20261026024840.23482-1-xuyuqiabc@gmai=
+l.com/
+
+Changes in v4:
+ - Sashiko (High): "keys: integer truncation of key->quotalen causes
+   permanent quota leak" on key_alloc() and key_payload_reserve().
+   Include the effective key description length in the USHRT_MAX
+   limit. key_alloc() and key_payload_reserve() add the description
+   and the payload to the same unsigned short field, so checking the
+   payload alone was not enough.
+ - v3 Link: https://lore.kernel.org/all/20261019041314.48569-1-xuyuqiabc@gmai=
+l.com/
+
+Changes in v3:
+ - Sashiko (High): "keys: integer truncation of key->quotalen causes
+   permanent quota leak" on pkcs8_key_preparse() and
+   x509_key_preparse(). A payload charge above USHRT_MAX is rejected
+   with -EINVAL before the payload is installed. key_payload_reserve()
+   keeps the full delta in the user quota and refunds only the
+   truncated key->quotalen, so that charge would leak quota.
+ - Reposted so Sashiko records a review against this Message-ID, as
+   requested by Herbert Xu. v2 was posted and Ignat Korchagin replied.
+ - v2 Link: https://lore.kernel.org/all/4a0b2e00f5cc62c173a01fec2f56eab1b04d7=
+0bb.1790568982.git.xuyuqiabc@gmail.com/
+
+Changes in v2:
+ - Move the bug details and the measured quota numbers into this
+   commit message, as requested by Ignat Korchagin.
+ - Sashiko (High): "keys: integer truncation in key->quotalen causes
+   permanent quota leak" on pkcs8_key_preparse() and
+   x509_key_preparse(). Not changed in v2. The same finding is
+   addressed in v3 and v4.
+ - v1 Link: https://lore.kernel.org/all/cover.1789801335.git.xuyuqiabc@gmail.=
+com/
+
+ crypto/asymmetric_keys/pkcs8_parser.c    | 18 ++++++++++-
+ crypto/asymmetric_keys/x509_public_key.c | 38 ++++++++++++++++++++++--
+ security/keys/key.c                      | 16 ++++++++--
+ 3 files changed, 66 insertions(+), 6 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/pkcs8_parser.c b/crypto/asymmetric_keys/p=
+kcs8_parser.c
+index 9dd1c181789a..db2d57489d96 100644
+--- a/crypto/asymmetric_keys/pkcs8_parser.c
++++ b/crypto/asymmetric_keys/pkcs8_parser.c
+@@ -10,6 +10,7 @@
+ #include <linux/kernel.h>
+ #include <linux/export.h>
+ #include <linux/slab.h>
++#include <linux/string.h>
+ #include <linux/err.h>
+ #include <linux/oid_registry.h>
+ #include <keys/asymmetric-subtype.h>
+@@ -136,6 +137,8 @@ static struct public_key *pkcs8_parse(const void *data, s=
+ize_t datalen)
+ static int pkcs8_key_preparse(struct key_preparsed_payload *prep)
+ {
+ 	struct public_key *pub;
++	const char *description;
++	size_t desclen, quotalen;
+=20
+ 	pub =3D pkcs8_parse(prep->data, prep->datalen);
+ 	if (IS_ERR(pub))
+@@ -144,13 +147,26 @@ static int pkcs8_key_preparse(struct key_preparsed_payl=
+oad *prep)
+ 	pr_devel("Cert Key Algo: %s\n", pub->pkey_algo);
+ 	pub->id_type =3D "PKCS8";
+=20
++	/*
++	 * key_alloc() charges the description to the same unsigned short
++	 * field that key_payload_reserve() later adds the payload to.
++	 */
++	description =3D prep->orig_description ?: prep->description;
++	desclen =3D description ? strlen(description) + 1 : 0;
++
++	quotalen =3D sizeof(*pub) + pub->keylen;
++	if (desclen > USHRT_MAX || quotalen > USHRT_MAX - desclen) {
++		public_key_free(pub);
++		return -EINVAL;
++	}
++
+ 	/* We're pinning the module by being linked against it */
+ 	__module_get(public_key_subtype.owner);
+ 	prep->payload.data[asym_subtype] =3D &public_key_subtype;
+ 	prep->payload.data[asym_key_ids] =3D NULL;
+ 	prep->payload.data[asym_crypto] =3D pub;
+ 	prep->payload.data[asym_auth] =3D NULL;
+-	prep->quotalen =3D 100;
++	prep->quotalen =3D quotalen;
+ 	return 0;
+ }
+=20
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_key=
+s/x509_public_key.c
+index 25cf8ac7f257..4a9c85277ce0 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -163,9 +163,11 @@ static int x509_key_preparse(struct key_preparsed_payloa=
+d *prep)
+ {
+ 	struct x509_certificate *cert __free(x509_free_certificate) =3D NULL;
+ 	struct asymmetric_key_ids *kids __free(kfree) =3D NULL;
++	struct asymmetric_key_id *id;
+ 	char *p, *desc __free(kfree) =3D NULL;
+-	const char *q;
+-	size_t srlen, sulen;
++	const char *description, *q;
++	size_t desclen, srlen, sulen, quotalen;
++	int i;
+=20
+ 	cert =3D x509_cert_parse(prep->data, prep->datalen);
+ 	if (IS_ERR(cert))
+@@ -221,6 +223,36 @@ static int x509_key_preparse(struct key_preparsed_payloa=
+d *prep)
+ 	if (IS_ERR(kids->id[2]))
+ 		return PTR_ERR(kids->id[2]);
+=20
++	/* Charge the memory retained in the payload, not a fixed estimate */
++	quotalen =3D sizeof(*cert->pub) + cert->pub->keylen +
++		   cert->pub->paramlen;
++	if (cert->sig) {
++		quotalen +=3D sizeof(*cert->sig) + cert->sig->s_size;
++		if (cert->sig->m_free)
++			quotalen +=3D cert->sig->m_size;
++		for (i =3D 0; i < ARRAY_SIZE(cert->sig->auth_ids); i++) {
++			id =3D cert->sig->auth_ids[i];
++			if (id)
++				quotalen +=3D sizeof(*id) + id->len;
++		}
++	}
++	quotalen +=3D sizeof(*kids);
++	for (i =3D 0; i < ARRAY_SIZE(kids->id); i++) {
++		id =3D kids->id[i];
++		if (id)
++			quotalen +=3D sizeof(*id) + id->len;
++	}
++	/*
++	 * key_alloc() charges the description to the same unsigned short
++	 * field that key_payload_reserve() later adds the payload to.
++	 */
++	description =3D prep->orig_description ?: desc;
++	desclen =3D strlen(description) + 1;
++	if (desclen > USHRT_MAX || quotalen > USHRT_MAX - desclen) {
++		kfree(kids->id[2]);
++		return -EINVAL;
++	}
++
+ 	/* We're pinning the module by being linked against it */
+ 	__module_get(public_key_subtype.owner);
+ 	prep->payload.data[asym_subtype] =3D &public_key_subtype;
+@@ -228,7 +260,7 @@ static int x509_key_preparse(struct key_preparsed_payload=
+ *prep)
+ 	prep->payload.data[asym_crypto] =3D cert->pub;
+ 	prep->payload.data[asym_auth] =3D cert->sig;
+ 	prep->description =3D desc;
+-	prep->quotalen =3D 100;
++	prep->quotalen =3D quotalen;
+=20
+ 	/* We've finished with the certificate */
+ 	cert->pub =3D NULL;
+diff --git a/security/keys/key.c b/security/keys/key.c
+index b34a64d81d47..3f6886844089 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -373,11 +373,17 @@ EXPORT_SYMBOL(key_alloc);
+  */
+ int key_payload_reserve(struct key *key, size_t datalen)
+ {
+-	int delta =3D (int)datalen - key->datalen;
++	int delta;
+ 	int ret =3D 0;
+=20
+ 	key_check(key);
+=20
++	/* key->quotalen is an unsigned short and cannot represent this. */
++	if (test_bit(KEY_FLAG_IN_QUOTA, &key->flags) && datalen > USHRT_MAX)
++		return -EDQUOT;
++
++	delta =3D (int)datalen - key->datalen;
++
+ 	/* contemplate the quota adjustment */
+ 	if (delta !=3D 0 && test_bit(KEY_FLAG_IN_QUOTA, &key->flags)) {
+ 		unsigned maxbytes =3D uid_eq(key->user->uid, GLOBAL_ROOT_UID) ?
+@@ -386,9 +392,15 @@ int key_payload_reserve(struct key *key, size_t datalen)
+=20
+ 		spin_lock_irqsave(&key->user->lock, flags);
+=20
++		/*
++		 * key->quotalen is an unsigned short.  Reject a charge that
++		 * would wrap it; key_put() refunds only the stored value, so
++		 * a wrap would leak quota.
++		 */
+ 		if (delta > 0 &&
+ 		    (key->user->qnbytes + delta > maxbytes ||
+-		     key->user->qnbytes + delta < key->user->qnbytes)) {
++		     key->user->qnbytes + delta < key->user->qnbytes ||
++		     (size_t)key->quotalen + delta > USHRT_MAX)) {
+ 			ret =3D -EDQUOT;
+ 		}
+ 		else {
+--=20
+2.56.1
+
+
