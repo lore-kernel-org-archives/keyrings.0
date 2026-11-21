@@ -1,45 +1,45 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795267712;
-	b=X4wvVm8+x3s65wq1ZRTvBpp+d+jyitTGtPPn+enGJobw7b4IzRP3pj/en1GP8QHNubN9
-	 3lBZ0pGY1iFZ+YtZB5PQX0mbx2Fppth9x2Y2owH70THl3mKpqJ6DkwgzYTCF3PzpTk4H3
-	 CP9rePbk5BNyKHtAs2MVt/OLV1pIxddxYjOMDIoag3EOxLkRcjemr4ydiTpfkavvHDMZl
-	 NzzAzG1/y0pIYfTFzfkuk3rk6o+11bLPuXurmWhiHRmyYI87L4WPB1ByWgdIBHR2Cmdl/
-	 QeBpkOX2SfJTH/PlU9zE3Km/zFCEemY69RSKI3vL9nDJ0aop+mP8v9QY5x/a8Bts6Nw==
+	t=1795271505;
+	b=VmenHJg+2yGvCqqHn7nH+LzBt6h/AP8LNHBCnQtzuTTKy35yX+orvqZ8qwp17fG9H4gN
+	 Rjy6FSxj7qop9WeEFXZ2BeutFhhRkkj7lPi7t7otdGzuS05ZnExyD1sanz6SLJ4rkRfZe
+	 VVxENMBlcyer0k6iDbNc52gaBcQT1kEExMsu6B8s+xa8sUdW9DIg2kRrkwpEMAMSuZTXa
+	 cJPSIQ785ab/y1l6mAVd/PpOZ0MYp2ZWdbDoGHoUUULHgOGbmgBxX0XOUiZ3f3VzWJmbq
+	 Vrr1OsDgP4Q1yjueSXZ/k3wcaMnB6xLxteDF8qmd9D7lgQgtCKK0RYXrX37LSGCyZhg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795267712;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795271505;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=kDNbZxXOaisBTyYZgGVkrcz49v41G3fPzDPbhhCuzWk=;
-	b=0tDzH3XbF4aMqGFaZz36hifEHk+yYHh+Oh9xny2goOcDmB96mX5F/yprR0HZJ11aBCAs
-	 4EV6bhMjXNj7MNNjAw9x3/MF3dSILuJawiPwd5m1jdyWlKXbYMnrd4tRmNgaxQXhRlTbd
-	 7RvHnG2qev6d0abIL1pVwIcRNRjCXXu1RwtZ0WPrDVDVAle/PWmEQwz8Qaw7u1F2N8hDa
-	 HE7rs2jMeYicwd+wFj5wKVA7bB0LTtJgJFQCm+5aNOoYZpjOPJHY0Oekd+hCIaiCsmWtd
-	 Bp9hj6ul5hapjIo1ZWAjve9UevDhCSHafgWo+mif+Ll4uEQbJ5b7xOCMYuOai/ilzHg==
+	bh=uyOE8Ay4ZFWz1zTavYu6tu+l5AyqoVpkO8APGAtFXwE=;
+	b=FW08vNBb2RimeM03aWteXniARqAhT4ipW3ZZse1JjwpJ4UELVvND7o5Wy7m+0tIiI6G1
+	 qhIVpw7fumZhK9h88x2Ml+PJxsxPvJGYxhGClv3dW1jgJKIV1CVGrgdRKadLoVrvh9QXb
+	 ajAU3EsqwfPeqp4/da18y7cinM7LOH0dEvgxwJ36rm8Hkg9A1QxNcOjqtFVmMp39WvwzL
+	 ADDMe3FQr7UROYhFUQWl8ncoHawYYU70dMMnavpMFtd7P3AZkNM1krgT1A7eZoQq062Jb
+	 WvRKSIqba3p2vV0/VdTcE/zQJ/P/AyPVdtixPnha8gVi4puiLPH+4GyrjD6zTGfEIiA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f2qtp1le;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="Ixa87/9v";
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A9F86606A320;
-	Sat, 21 Nov 2026 13:28:32 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 416EC606A320;
+	Sat, 21 Nov 2026 14:31:44 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=f2qtp1le
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E69F81F000C6;
-	Sat, 21 Nov 2026 13:28:31 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Ixa87/9v
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 44FF01F000C4;
+	Sat, 21 Nov 2026 14:31:44 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795267712;
-	bh=kDNbZxXOaisBTyYZgGVkrcz49v41G3fPzDPbhhCuzWk=;
+	s=k20260515; t=1795271504;
+	bh=uyOE8Ay4ZFWz1zTavYu6tu+l5AyqoVpkO8APGAtFXwE=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=f2qtp1lemvblFmUy2qlArDDs1OdYxtd6qgLFU5qNkY4MgBdEMsuT0pCFq/dctZC+c
-	 S282KNo8jmbO6TSh+OD0AwTij4ZYtFprDCbEJ59U3lFi1YHKA7FrOIsOb7EuweIGrT
-	 qjv1XrslgPf4prUqreGjp14tRs5h1rX0TFVQXMenzaiWfrfrfCpwcyomyDqjPIE/Ej
-	 sI2kaxAXuqtkh53gyt1+EwYRDYv6eBGWiccrLean8ME1u/sBuA8xpqyZ9hpEOTfSAj
-	 wZvo/qlWIW9T2PhU8zNuO/qNSZq/t5Hs+CR8aDfM3kHaEc7KTNMJq4CG0dyRfYKClX
-	 vGnBU5uFh9Jcw==
-Date: Sat, 21 Nov 2026 15:28:28 +0200
+	b=Ixa87/9vUcJtEdIU63RABmV1aW7O1alGdKpEBkYD6ynqqUPteiTu0T/hZ7yDcj8to
+	 bjUCMOfVQjJDWnc9ffj56tZNW5Auz9HiC01XAy5YyUOoYaCNiCsBIrfvTlNpuBqGbo
+	 nqWsqkao28BAzdI1v3Da1uuh/b0yS0OUnr3N3vFsdyT3+LB/0o8OzO6PtT4lmYb2VE
+	 06DGJBCxqCkFg4BRT9mwnR+qmgyq29AU7iJbN81RLG5TPtvGtCcGKZSy9JN2zaw6PG
+	 aH5N5KwS5pgIlp3Ogmcml62ZB4NM7/uVg0bQ0UnKyVQ1T929ZmXPezKUjudUflmKox
+	 lN5vE9KZj89sw==
+Date: Sat, 21 Nov 2026 16:31:41 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
 To: Sinan Turunc <enscrpt@pm.me>
 Cc: David Howells <dhowells@redhat.com>, paul@paul-moore.com,
@@ -48,7 +48,7 @@ Cc: David Howells <dhowells@redhat.com>, paul@paul-moore.com,
 	stable@vger.kernel.org
 Subject: Re: [PATCH v3] keys: serialise key instantiation against
  keyctl_chown_key()
-Message-ID: <awGcfFldbGuXWBJL@kernel.org>
+Message-ID: <awGrTTKldMOVxITI@kernel.org>
 References: <20261121111246.3478-1-enscrpt@pm.me>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
@@ -163,8 +163,9 @@ On Sat, Nov 21, 2026 at 11:13:07AM +0000, Sinan Turunc wrote:
 > 2.56.0
 > 
 
-Thank you looks good to me.
 
 Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+
+Thanks.
 
 Br, Jarkko
