@@ -1,55 +1,69 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=178.63.66.53
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795271505;
-	b=VmenHJg+2yGvCqqHn7nH+LzBt6h/AP8LNHBCnQtzuTTKy35yX+orvqZ8qwp17fG9H4gN
-	 Rjy6FSxj7qop9WeEFXZ2BeutFhhRkkj7lPi7t7otdGzuS05ZnExyD1sanz6SLJ4rkRfZe
-	 VVxENMBlcyer0k6iDbNc52gaBcQT1kEExMsu6B8s+xa8sUdW9DIg2kRrkwpEMAMSuZTXa
-	 cJPSIQ785ab/y1l6mAVd/PpOZ0MYp2ZWdbDoGHoUUULHgOGbmgBxX0XOUiZ3f3VzWJmbq
-	 Vrr1OsDgP4Q1yjueSXZ/k3wcaMnB6xLxteDF8qmd9D7lgQgtCKK0RYXrX37LSGCyZhg==
+	t=1795364108;
+	b=TO66DzSngxwlhZntLJHBL8azNqYiCfwDDLT+GzPsW9qDxx0SKsNXKHrHdgr7q4CsApBl
+	 KriANjJeAbX5E3uxiZDXunot+tA8LYk0AtGater+yQe1yHmzK3mvCAmXmjN9Oi9EL5ffm
+	 dJndI5snOyIGMd8O6OOeH+VAD8EK0AEkTjvu0J5g7z44FpVHcZhs4SSWYFeiU2QW+v4xw
+	 GTwhTTD++bBKADJM+GWvcyNGXGkg4zVdQ0cZuqg4uqFFP8cOLbk3B2sUjDbIBDSDZ1Fwl
+	 L16yU+VwGrMf7xFRzEd6rdr5yblv5djiVmd7iD/l90ME+pVFJnm7ZQzFkd9Q+hBwPUA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795271505;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=uyOE8Ay4ZFWz1zTavYu6tu+l5AyqoVpkO8APGAtFXwE=;
-	b=FW08vNBb2RimeM03aWteXniARqAhT4ipW3ZZse1JjwpJ4UELVvND7o5Wy7m+0tIiI6G1
-	 qhIVpw7fumZhK9h88x2Ml+PJxsxPvJGYxhGClv3dW1jgJKIV1CVGrgdRKadLoVrvh9QXb
-	 ajAU3EsqwfPeqp4/da18y7cinM7LOH0dEvgxwJ36rm8Hkg9A1QxNcOjqtFVmMp39WvwzL
-	 ADDMe3FQr7UROYhFUQWl8ncoHawYYU70dMMnavpMFtd7P3AZkNM1krgT1A7eZoQq062Jb
-	 WvRKSIqba3p2vV0/VdTcE/zQJ/P/AyPVdtixPnha8gVi4puiLPH+4GyrjD6zTGfEIiA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795364108;
+	h=DMARC-Filter:DKIM-Signature:Received:Date:From:To:Cc:Subject:
+	 Message-ID:References:MIME-Version:Content-Type:Content-Disposition:
+	 In-Reply-To;
+	bh=sidA8Eikj4NCuusYzJo7PSjkBiaXOdmJGfqzy6mhVLA=;
+	b=DJfr1Sj2bqo6lmqncaN3UoxfeGrPUKSB1l6P4RhY0KBuAujEV+iXyg8hGl7A7d2gSAcp
+	 9xUYJOiW3E+mFGSpr/breMMGTMHNicSu/0KyD2iXlOagGljaLTq9DI/+dPvv5wwSlyqRP
+	 BSKFbjaiNAgIlGpHM1Sa3FM5Xje8SSCnIwxszuoZyKWzIGVArHz33OUAiV8d4zpDQaBaE
+	 91uIaJ4dmcTPISYYYNjTcEzj3KwkJR7P5A4WdIWDSwkfE3cpzLmeDXWRjxa6q7NlVuKPm
+	 DoELAq9s2MepojZkBGwrL9LRJr/aOreNSHJRNBI8XUoyrL3bYf0igvEwhibvjdozXQg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="Ixa87/9v";
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=hallyn.com;
+	spf=pass smtp.mailfrom=hallyn.com;
+	dkim=pass header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=bS7tYBYm;
+	arc=none smtp.remote-ip=178.63.66.53
+Received: from mail.hallyn.com (mail.hallyn.com [178.63.66.53])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 416EC606A320;
-	Sat, 21 Nov 2026 14:31:44 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 98A6E60A3820;
+	Sun, 22 Nov 2026 16:15:06 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 98A6E60A3820
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=hallyn.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=hallyn.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Ixa87/9v
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 44FF01F000C4;
-	Sat, 21 Nov 2026 14:31:44 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795271504;
-	bh=uyOE8Ay4ZFWz1zTavYu6tu+l5AyqoVpkO8APGAtFXwE=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=Ixa87/9vUcJtEdIU63RABmV1aW7O1alGdKpEBkYD6ynqqUPteiTu0T/hZ7yDcj8to
-	 bjUCMOfVQjJDWnc9ffj56tZNW5Auz9HiC01XAy5YyUOoYaCNiCsBIrfvTlNpuBqGbo
-	 nqWsqkao28BAzdI1v3Da1uuh/b0yS0OUnr3N3vFsdyT3+LB/0o8OzO6PtT4lmYb2VE
-	 06DGJBCxqCkFg4BRT9mwnR+qmgyq29AU7iJbN81RLG5TPtvGtCcGKZSy9JN2zaw6PG
-	 aH5N5KwS5pgIlp3Ogmcml62ZB4NM7/uVg0bQ0UnKyVQ1T929ZmXPezKUjudUflmKox
-	 lN5vE9KZj89sw==
-Date: Sat, 21 Nov 2026 16:31:41 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Sinan Turunc <enscrpt@pm.me>
-Cc: David Howells <dhowells@redhat.com>, paul@paul-moore.com,
-	jmorris@namei.org, serge@hallyn.com, keyrings@vger.kernel.org,
+	dkim=pass (2048-bit key, unprotected) header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=bS7tYBYm
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=hallyn.com; s=mail;
+	t=1795364099; bh=Jg096sU21vyNh6oEq9d3agCbhZ6LbEQFdC1QhQMToUA=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=bS7tYBYm1lS0vPKSrdKUJYU9IiyMuYvvtKSx0tDvDXpq7HM6gtnFxFLxmIStcH3et
+	 3ppCZ5Iz36iQZInpcEZVc1mPA+YAeLLFfvzVXpt8CbPOhYma9+AY/1obg1N510ZcFT
+	 TNoAIDzvrKJKCwbU6vc/PIYu+nYulKUZlZg9pWzcqrNHITN/Dcuf2QiiR0NwZelPKL
+	 nXxLf/hXrLq8tRiJWlY4hjGeZD4uK2Mzb8/pEEfr+8h/bo6vOfpXTQGLrOf+XmgHIO
+	 YeaepmOCdyiVrEZnXDVakTd3N2UHZTW8viQjzWFI8QwLR0BJj4VkcduEUpm1I5hdgx
+	 9nQqWY3upTuHw==
+Received: by mail.hallyn.com (Postfix, from userid 1001)
+	id 937EFB8C; Sun, 22 Nov 2026 10:14:59 -0600 (CST)
+Date: Sun, 22 Nov 2026 10:14:59 -0600
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Josef Bacik <josef@toxicpanda.com>
+Cc: Paul Moore <paul@paul-moore.com>,
+	Christian Brauner <brauner@kernel.org>,
+	James Morris <jmorris@namei.org>,
+	David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	"Andrew G. Morgan" <morgan@kernel.org>,
+	Serge Hallyn <sergeh@kernel.org>,
 	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-Subject: Re: [PATCH v3] keys: serialise key instantiation against
- keyctl_chown_key()
-Message-ID: <awGrTTKldMOVxITI@kernel.org>
-References: <20261121111246.3478-1-enscrpt@pm.me>
+	keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	Shuah Khan <shuah@kernel.org>, linux-kselftest@vger.kernel.org,
+	Bradley Morgan <brads@mainlining.org>
+Subject: Re: [PATCH v11 1/3] userns: don't let setns() lend CAP_SETFCAP
+Message-ID: <awMVA+9Q+7mF7naH@hallyn.com>
+References: <20261117-b4-setfcap-userns-v11-0-2be11a2c32f4@toxicpanda.com>
+ <20261117-b4-setfcap-userns-v11-1-2be11a2c32f4@toxicpanda.com>
+ <awCB3UkCPzLGRBTk@hallyn.com>
+ <awCEjJ8syhv+f4vd@hallyn.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -61,111 +75,77 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261121111246.3478-1-enscrpt@pm.me>
+In-Reply-To: <awCEjJ8syhv+f4vd@hallyn.com>
 
-On Sat, Nov 21, 2026 at 11:13:07AM +0000, Sinan Turunc wrote:
-> keyctl_chown_key() looks up the target key by calling lookup_user_key()
-> with the KEY_LOOKUP_PARTIAL flag. That flag lets a caller with
-> CAP_SYS_ADMIN change the UID of an uninstantiated key during construction.
-> When the UID changes, keyctl_chown_key() replaces key->user under key->sem
-> and drops the old reference with key_user_put().
-> 
-> __key_instantiate_and_link() and key_reject_and_link() hold
-> key_construction_mutex during instantiation, but neither function takes
-> key->sem. Both functions increment key->user->nikeys, and
-> __key_instantiate_and_link() also calls key->type->instantiate() without
-> holding key->sem. When a key is in quota and its size changes,
-> key_payload_reserve() reads key->user seven times without key->sem. Those
-> reads include spin_lock_irqsave(&key->user->lock, flags) at the start and
-> spin_unlock_irqrestore(&key->user->lock, flags) at the end.
-> 
-> If keyctl_chown_key() swaps key->user between those two calls,
-> key_payload_reserve() unlocks the new owner's spinlock and leaves the old
-> spinlock held. By source inspection, key_user_put() can also kfree() the
-> old struct key_user while instantiation still dereferences it. That struct
-> key_user use-after-free was found by reading the code and did not trigger
-> during our KASAN runs.
-> 
->   =====================================
->   WARNING: bad unlock balance detected!
->   7.4.0-rc2-g23c62304dde2 #3 Not tainted
->   -------------------------------------
->   request-key/163 is trying to release lock (&candidate->lock) at:
->   [<ffffffff82698fff>] key_payload_reserve+0x29f/0x370
->   but there are no more locks to release!
-> 
->   other info that might help us debug this:
->   locks held by request-key/163: 2, on CPU#3:
->    #0: ffffffff871c10a0 (key_construction_mutex){+.+.}-{4:4}, at: __key_instantiate_and_link+0x38/0x370
->    #1: ffff88800de4a8b8 (&candidate->lock){..-.}-{3:3}, at: key_payload_reserve+0x160/0x370
-> 
->   Call Trace:
->    lock_release+0x286/0x2e0
->    _raw_spin_unlock_irqrestore+0x1a/0x50
->    key_payload_reserve+0x29f/0x370
->    generic_key_instantiate+0x42/0x230
->    __key_instantiate_and_link+0xd7/0x370
->    key_instantiate_and_link+0x40d/0x4b0
->    keyctl_instantiate_key_common+0x2d2/0x450
->    keyctl_instantiate_key+0x167/0x180
->    __do_sys_keyctl+0x391/0x550
-> 
-> Take key->sem for write with down_write_nested(&key->sem, 2) inside
-> key_construction_mutex in __key_instantiate_and_link() and
-> key_reject_and_link().
-> 
-> Fixes: 5801649d8b83 ("[PATCH] keys: let keyctl_chown() change a key's owner")
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Sinan Turunc <enscrpt@pm.me>
-> ---
-> In v3 I removed the tool paragraph and the two lockdep subclass sentences.
-> 
->  security/keys/key.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/security/keys/key.c b/security/keys/key.c
-> index 3f1f0fc..df31d10 100644
-> --- a/security/keys/key.c
-> +++ b/security/keys/key.c
-> @@ -441,6 +441,7 @@ static int __key_instantiate_and_link(struct key *key,
->  	ret = -EBUSY;
->  
->  	mutex_lock(&key_construction_mutex);
-> +	down_write_nested(&key->sem, 2);
->  
->  	/* can't instantiate twice */
->  	if (key->state == KEY_IS_UNINSTANTIATED) {
-> @@ -473,6 +474,7 @@ static int __key_instantiate_and_link(struct key *key,
->  		}
->  	}
->  
-> +	up_write(&key->sem);
->  	mutex_unlock(&key_construction_mutex);
->  
->  	/* wake up anyone waiting for a key to be constructed */
-> @@ -609,6 +611,7 @@ int key_reject_and_link(struct key *key,
->  	}
->  
->  	mutex_lock(&key_construction_mutex);
-> +	down_write_nested(&key->sem, 2);
->  
->  	/* can't instantiate twice */
->  	if (key->state == KEY_IS_UNINSTANTIATED) {
-> @@ -632,6 +635,7 @@ int key_reject_and_link(struct key *key,
->  			key_invalidate(authkey);
->  	}
->  
-> +	up_write(&key->sem);
->  	mutex_unlock(&key_construction_mutex);
->  
->  	if (keyring && link_ret == 0)
-> -- 
-> 2.56.0
-> 
+On Fri, Nov 20, 2026 at 11:34:04AM -0600, Serge E. Hallyn wrote:
+> On Fri, Nov 20, 2026 at 11:22:37AM -0600, Serge E. Hallyn wrote:
+> > On Tue, Nov 17, 2026 at 07:54:24PM +0000, Josef Bacik wrote:
+> > > A uid 0 task that gave up CAP_SETFCAP can get it back by joining a user
+> > > namespace that another root task created.  Commit db2e718a4798
+> > > ("capabilities: require CAP_SETFCAP to map uid 0") keeps such a task
+> > > from mapping uid 0 into a namespace it creates itself, because tasks in
+> > > that namespace could then write file capabilities for its root user.
+> > > setns() gives a joiner a full capability set in the namespace too, so
+> > > it can do the same there:
+> > > 
+> > >   task A: uid 0, full caps          task B: uid 0, no CAP_SETFCAP
+> > >   unshare(CLONE_NEWUSER)
+> > >                                     setns(A's user ns)
+> > >                                       allowed, euid == ns->owner
+> > >                                     write "0 0 1" to /proc/self/uid_map
+> > >                                       A had CAP_SETFCAP -> allowed
+> > > 
+> > > If A's namespace already maps host uid 0, at any uid, B can set
+> > > security.capability on a file right away.  Either way uid 1000 can then
+> > 
+> > "Either way" here means whether it already maps host uid 0, or whether
+> > it has no mappings yet?  I'd just drop 'Either way'.
+> > 
+> > > run that file with CAP_SYS_ADMIN, which the selftest at the end of this
+> > > series shows on an unmodified kernel.
+> > > 
+> > > The check doesn't look at the joiner's uids, which it can change while
+> > 
+> > >From here until the 'Fix by', it is confusing whether any given statement
+> > refers to the pre-patch or post-patch state.
+> > 
+> > > keeping its other capabilities, and CAP_SYS_PTRACE doesn't stand in for
+> > 
+> > Is this a reference to the next patch?  But that's a completely different
+> > commit.
+> > 
+> > > CAP_SETFCAP.  What gets refused is a task without CAP_SETFCAP that has
+> > > CAP_SYS_ADMIN over a namespace that maps the joiner's root user, or that
+> > > has no uid_map yet while its parent maps that root user, so that it can
+> > > still be mapped.  If that is uid 0 of the parent and the creator of the
+> > > namespace didn't have CAP_SETFCAP, the join is let through: only a
+> > > writer with CAP_SETFCAP in the parent could map it then.  Containers
+> > > that don't map the joiner's root user, tasks with CAP_SETFCAP and
+> > > unprivileged users are not affected.
+> > > 
+> > > Like verify_root_map(), the check is about uid 0 of the joiner's own
+> > > namespace.  The root user of an ancestor that it maps at another uid,
+> > > and a root user stored through an idmapped mount, are left to whoever
+> > > set up that map or mount.
+> > > 
+> > > Fix by refusing setns() when the joiner doesn't have CAP_SETFCAP and
+> > > tasks in the namespace can write file capabilities for the root user of
+> > > the joiner's namespace.
+> > > 
+> > > Suggested-by: Serge Hallyn <serge@hallyn.com>
+> > > Link: https://lore.kernel.org/all/fd159e68-c613-4c7d-bfba-8af0a3f3a96e@hallyn.com/
+> > > Fixes: db2e718a4798 ("capabilities: require CAP_SETFCAP to map uid 0")
+> > > Signed-off-by: Josef Bacik <josef@toxicpanda.com>
+> > 
+> > The code looks good to me,
+> > 
+> > Reviewed-by: Serge Hallyn <serge@hallyn.com>
 
+I've tested that unprivileged lxc still works with these two patches, so feel
+free to add
 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+Tested-by: Serge Hallyn <serge@hallyn.com>
 
-Thanks.
+to the first two as well.
 
-Br, Jarkko
+-serge
