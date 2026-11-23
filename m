@@ -1,54 +1,74 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795461171;
-	b=LUECjcBIEOzd8AfBPxNByx3qObP/hq6qh3iqIhyez2+a9v+OqUSD25aPji8AOATEGCze
-	 2OmOHy8LvBUaEOl8e62Ozm83PScSKJF8BAIhAL0JsKB7shpPDVGsDERQzQZy6hnkM3vYf
-	 jQQr75RXy4+cAZ5A7CHeQ5l+ebHLGG0Ooe/rSuRcsZtKClQ+KT7xyEgNNyREL3wmGAUA+
-	 qiNx6XUw8Ec8HYkrlQcyhEW2P6Fzh66h2TDfp6wYHPZy/N3/uXRClJgqPc8jl607UTXIq
-	 J8YaAm33Dd2vVXeXN3WGG0GgTUqDfTFNTbvTivOIeLMT99hyUNKLBJ1cFSghZeOVNTw==
+	t=1795462516;
+	b=KVodzSI4ciIMzpz4oekWX6TYG4PMI46WYGENtIssFWJiRvzMZgAPXFNwJtWmux3wrJZq
+	 VYkpZ4l01AFG2PevgRGNmaOi7tKEW7Ld0gpopukRKV41L6/YzHE+dySTA1mjBB7Jzp3RX
+	 hcBIWAtuL+ssIBUARAAUXymv2RWONUuczNBbrthnmPW5ST4l0DwAKTWTcz+dhnsQeUyA7
+	 BQ3ni1FHyiHoKcfgIppPKVFsuPILWP/ZD1dv+rRmT814VLwW2iQ5GFYKDHsmqxBgs4Yt5
+	 Atv6j6GKgumsN1SfdQm+5rQdtj4igNqNcSotaHAG5+n8Gdv8CQ66FjK7mWKPJNISyxw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795461171;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795462516;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=1aSuqE91A4JA8nziXePdbRYInCs8V/0AUq1tsDNXB2k=;
-	b=0ha4KHQV8YBkomY1+/XknFGvABhLKyGyxP3re3Un4eu6DppKpc8SKy+bWAJYG6Cc2S9Z
-	 NlYLVfkzR0ClE2yX3mW7V9sgfHDxDg2YkbLXOR5T8IDuGl93ZTZHYsn03rx9K3IuEXDRM
-	 xh6JwV7WPDXt43gN21U0Iaf7qrvwFXppxWjUIxHSXQZmpmte8miciXlrIVojd/B15qwKr
-	 1nPrTBGbt9Q2sfg7IGUzMaV6gNdfoRmNjWhLMOnT7f+/LMnvj/6HRjKqy2UqQsa5RhXL2
-	 Akaeoi4LJw8VWYptpHlLnseL/pOJT/GYdUU/0nw21+2CYYJVtG3hAFFhzN9qiaMdmJQ==
+	 References:MIME-Version:Content-Type:Content-Disposition:
+	 Content-Transfer-Encoding:In-Reply-To;
+	bh=HEYr25BwavW4B0nOGSoBgW57x7aoPk1h9WB+MxPRJ64=;
+	b=5GxfzTXZnOwmRjJy6kLhD1CPM8A9U2k3UhOLcUah0kODI5Wclr7F6xpcNSVfM8gK4WWN
+	 LaRmcqnJMbOYPqzDt+cwprvqngv4znUOvb3Z4HxCV0MOQ8wuz8vZIpjkFUP6s2O5WmDHN
+	 ekqxhMYwTaJqO7jOegfP2rEm4Ko2ShAeyY/cQDFmonijCB8cOEN38JmKecwvGVLpUcnvh
+	 ArhsA3pVO3/cXb+NoiKOQhd9ANLFjIr1fZaZyaoO/2VLZ0g4SW62qMfNhdRjgSiv6b9SO
+	 vbDI7/pLgvedrezUCWiSj9tIChiIgAit9+Qp/wYz5aIRX/GplMUkO5rXG5Gx9rgiMJg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nt5GC4BA;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nB2Qms66;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 427E2606A32E;
-	Mon, 23 Nov 2026 19:12:51 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 3EDD4606A31A;
+	Mon, 23 Nov 2026 19:35:16 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nt5GC4BA
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 7994F1F000C4;
-	Mon, 23 Nov 2026 19:12:50 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nB2Qms66
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E34091F000C4;
+	Mon, 23 Nov 2026 19:35:14 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795461171;
-	bh=1aSuqE91A4JA8nziXePdbRYInCs8V/0AUq1tsDNXB2k=;
+	s=k20260515; t=1795462515;
+	bh=HEYr25BwavW4B0nOGSoBgW57x7aoPk1h9WB+MxPRJ64=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=nt5GC4BAe3Cpt9xRhfsbWl4ijfqR7/5oz7Aq532m7vMKgPvaJDDZZahV8kK3qw3BW
-	 7cmRdjOri6KvQ7Dwx4pTKiQwBJp5MggDtt2A888eRn7EO8sEVvwGg5A6I69TICXd5m
-	 9dQVgIPmRkRpymfoIgJby/ZdUo6jur5RFmRXb58B6lEvVqH4bjl8I2PtQaFmQvEdyb
-	 dA1e/HoX/07ZwmvvSeqkfpjIOomIB27vogZuQnkNZvn+TB8I0n7uD4NLac99Ok7O9P
-	 lttWSnQvUGJrRwDkOj2g1sD/9iizp9GyU4pkcdJbwDoXnhZWi9Sr0jjBtKYymUyyFZ
-	 zGHAdyYakULmg==
-Date: Mon, 23 Nov 2026 21:12:47 +0200
+	b=nB2Qms66XD3m7ZFDdqumsz3O75zEBJR3hO0COkHwXQeCNxLtD6cs6LAZ4JTYySHDz
+	 jSg/+/+avc0A3vbj4dDLsNs/G9gBO5b5YeXTols78J6ds3V725snBllIozgbwbT4Uw
+	 WhDNHahlXVr+SI21zxlXpXeCcB5H7jxaGkYIuOncPEqQuP4T+OQMfaBEPjhb233EG+
+	 fWqI+ly+/aARaBGdC3mebxWb004oPLrrsdJyyN1B+G3PeGJ9IY8kSqxYys9LH7n5ck
+	 /v2axwcsM4QZY0LnftV9ZR1Z8Bx2iouZMAvZRJpopVyZAtzJuc1gmgNagSKtaTA8+6
+	 6jQ8HaOPqlJ6g==
+Date: Mon, 23 Nov 2026 21:35:12 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Henry Martin <bsdhenrymartin@gmail.com>
-Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
-	serge@hallyn.com, Jason@zx2c4.com, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] keys: fix crash on big_key read or revoke after a failed
- update
-Message-ID: <awSQL3uLNktPEwIo@kernel.org>
-References: <20261123165443.4092852-1-bsdhenrymartin@gmail.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+	Andy Lutomirski <luto@kernel.org>,
+	"Hallgrimur H. Gunnarsson" <halg@google.com>,
+	Christian Brauner <brauner@kernel.org>,
+	Serge Hallyn <sergeh@kernel.org>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	David Howells <dhowells@redhat.com>, Kees Cook <kees@kernel.org>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	=?iso-8859-1?Q?Micka=EBl_Sala=FCn?= <mic@digikod.net>,
+	Jonathan Calmels <jcalmels@3xx0.net>, Jann Horn <jannh@google.com>,
+	=?iso-8859-1?Q?G=FCnther?= Noack <gnoack@google.com>,
+	Singh KP <kpsingh@kernel.org>, linux-fsdevel@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-api@vger.kernel.org,
+	containers@lists.linux.dev, keyrings@vger.kernel.org,
+	linux-doc@vger.kernel.org, linux-kselftest@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] userns: introduce capability bounding set for
+ user namespacesg
+Message-ID: <awSVO9Zc-233M7_P@kernel.org>
+References: <20261119104208.782900-1-halg@google.com>
+ <20261119104208.782900-2-halg@google.com>
+ <CALCETrVqc+1bjH1bhqHee9bsUdk2B6314z7PMexbsnNpMhk14g@mail.gmail.com>
+ <CALCETrV=zSxb6sgA08DLiK2bQovdMEj9ycG=Cc71mLn2C5Pgeg@mail.gmail.com>
+ <4db941ba-3001-4019-8910-63e534b29f89@schaufler-ca.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -58,92 +78,77 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20261123165443.4092852-1-bsdhenrymartin@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4db941ba-3001-4019-8910-63e534b29f89@schaufler-ca.com>
 
-On Tue, Nov 24, 2026 at 12:54:43AM +0800, Henry Martin wrote:
-> big_key_update() destroys the old payload with big_key_destroy() before
-> calling generic_key_instantiate(), which can fail.  The destroy drops the
-> payload's path and data but keeps payload->length.  If instantiate fails,
-> e.g. with -EDQUOT when a concurrent allocation grabs the quota freed by
-> the destroy, the key stays positive with a gutted payload and a stale
-> length.
+On Mon, Nov 23, 2026 at 09:22:29AM -0800, Casey Schaufler wrote:
+> On 11/20/2026 9:09 AM, Andy Lutomirski wrote:
+> >> On Nov 19, 2026, at 2:52 PM, Andy Lutomirski <luto@kernel.org> wrote:
+> >> ﻿On Thu, Nov 19, 2026 at 2:43 AM Hallgrimur H. Gunnarsson
+> >> <halg@google.com> wrote:
+> >>> When a process creates a new user namespace, it receives a full set of
+> >>> capabilities (CAP_FULL_SET) scoped to that namespace. While namespaced
+> >>> in scope, several of these capabilities (such as CAP_NET_ADMIN and
+> >>> CAP_NET_RAW) expose broad kernel attack surface that many sandboxes and
+> >>> containers never need. However, there is currently no configurable way
+> >>> to withhold such capabilities from user namespaces while still granting
+> >>> them to workloads that require them.
+> >>
+> >> One thought (from the rootns thread): the other decent sized attack
+> >> surface here is CAP_MOUNT_ADMIN.  Which doesn't exist as a capability
+> >> bit.
+> >>
+> >> A sort of horrible solution (but maybe not so awful) would be to
+> >> declare that the bits in cap_userns aren't actually capability bits,
+> >> and that you need the bit in cap_userns *and* the bit in cap_effective
+> >> to do sensitive things, and that mounting needs cap_userns to have
+> >> NSCAP_MOUNT_ADMIN *and* cap_effective to have CAP_SYS_ADMIN.
+> >>
+> >> I want to sleep on this.  It might actually solve several problems,
+> >> e.g. controlling creation of ipv4 and ipv6 loopback or tunnel devices
+> >> or whatever.
+> > I slept on it. Here’s a counterproposal.  I’m not saying I think this
+> > is better than this patch set, but I think it’s worth weighting the
+> > options.
+> >
+> > Define a whole new set of privilege bits.  As a
+> > poorly-painted-bikeshed option, I’ll call them eprivs (for exposure
+> > privileges - it’s a crappy name but at least it’s pronounceable).
 > 
-> A later KEYCTL_READ on such a key follows the stale length.  For a
-> file-backed payload it hits BUG_ON(!path->mnt) in dentry_open().  For a
-> buffer-backed one it memcpy()s from a NULL payload->data.  KEYCTL_REVOKE
-> passes the NULL path to vfs_truncate().  All of these crash the kernel,
-> e.g. on mainline v7.4-rc4:
+> I played with a mechanism I called "chits" (all the good terms for security
+> bits have been consumed for a very long time) that looks a lot like
+> what you're proposing. I did it to address the CAP_SYS_ADMIN problem,
+> where any use of the capability opens up a whole barrel of worms.
+> I cannot, unfortunately, find my patches. :( The basic approach is:
 > 
-> kernel BUG at fs/open.c:1145!
-> Oops: invalid opcode: 0000 [#1] SMP KASAN NOPTI
-> RIP: 0010:dentry_open+0x7b/0x90
->  big_key_read+0x141/0x280
+> A process has an optional set of chits. A process without a chit set is
+> unaffected by the mechanism. A process with a chit set is allowed only
+> those operations for which it has a chit. The existing but empty chit set
+> allows no operations. A process may drop a chit, but not the set, which,
+> again, can be empty.
 > 
-> Fix the ordering: instantiate the new payload first and destroy the old
-> one only on success.  There is no need to release the old quota first:
-> a big_key payload always reserves a fixed 16 bytes, which was already
-> charged when the key was instantiated, so the instantiate of a positive
-> key leaves the reservation unchanged and cannot fail.  Releasing it
-> first was what allowed a concurrent allocation to take the quota and
-> make the instantiate fail after the payload had been destroyed.
+> Because I was after CAP_SYS_ADMIN, I envisioned a call
+> 	cap_able_chit(capability, chit-list)
+> but there's no reason there couldn't be a
+> 	chit_able(chit-list)
+> as well.
 > 
-> This issue was discovered by Tencent CodeBuddy Security.
-> Cc: stable@vger.kernel.org
-> Fixes: b6f61c314649 ("keys: Implement update for the big_key type")
-> Signed-off-by: Henry Martin <bsdhenrymartin@gmail.com>
-> ---
->  security/keys/big_key.c | 23 +++++++++++++++++++----
->  1 file changed, 19 insertions(+), 4 deletions(-)
+> I wrote this as an LSM, but the system-wide aspect of it made that
+> a questionable choice.
 > 
-> diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-> index 268f702df380e..3bf371f6c28d3 100644
-> --- a/security/keys/big_key.c
-> +++ b/security/keys/big_key.c
-> @@ -193,16 +193,31 @@ void big_key_destroy(struct key *key)
->   */
->  int big_key_update(struct key *key, struct key_preparsed_payload *prep)
->  {
-> +	struct big_key_payload old = { };
-> +	bool positive = key_is_positive(key);
->  	int ret;
->  
-> -	ret = key_payload_reserve(key, prep->datalen);
-> +	if (positive)
-> +		old = *to_big_key_payload(key->payload);
-> +
-> +	/*
-> +	 * The quota for a big_key payload is a fixed 16 bytes that was
-> +	 * already reserved when the key was instantiated, so the instantiate
-> +	 * below does not change the reservation of a positive key.  Do not
-> +	 * release it first: a concurrent allocation could take the quota and
-> +	 * make the instantiate fail after the old payload was destroyed.
-> +	 */
+> If you have any interest, I could dig more deeply to try to find the
+> patches. Otherwise, I'm happy to look at what you come up with.
 
-I'd leave the comment out. It's very time variant and commit specific.
+What if eprivs or chits would take each capability and subvidide
+them into pieces? CAP_MAC_ADMIN would be formally a set of chits
+(or eprivs).
 
-> +	ret = generic_key_instantiate(key, prep);
->  	if (ret < 0)
->  		return ret;
->  
-> -	if (key_is_positive(key))
-> -		big_key_destroy(key);
-> +	if (positive) {
-> +		if (old.length > BIG_KEY_FILE_THRESHOLD)
-> +			path_put(&old.path);
-> +		kfree_sensitive(old.data);
-> +	}
->  
-> -	return generic_key_instantiate(key, prep);
-> +	return 0;
->  }
->  
->  /*
-> -- 
-> 2.53.0
-> 
+And process having e.g., CAP_MAC_ADMIN, would actually have the
+set of chits that are included to CAP_MAC_ADMIN.
 
-I did not specifically check the Sashiko output.
+Without that type of relation there's just a space full of chit
+;-)
 
 Br, Jarkko
