@@ -1,56 +1,59 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795469201;
-	b=23ROtTY5C8y5VjvAdYLcdMRPjonCM2/6J5THSjZkMzjCXRltCdYVlAHLmvPsa/YPrSnk
-	 x8rDSl8ZGwBOf2/VEXVxbQrviSVYAJ0v7ywPN5np+lybWLOsE7ENaruKFvsT6usc44K1l
-	 NzL8ieCYOxvY7IH5mp+WbJKjUl0Cktcmmxq++VyOGuREjz2ug7ORGvIInzRxbJmC1VnQn
-	 Wm/SaOnjQyBA8Pf79Xl7Wmwt2IuPAba1AzmnHG2RYj5FOtQzVHp7Lh1AGg9tMEoThrnXF
-	 zUzhF7uiqnnS3VlUARFi8R7nhs0F2v+VXgSjTpUTqPHcT2Q9YQep20mlOtzAjZyqP+Q==
+	t=1795469563;
+	b=HkVfDwQR83TPQYBrif83J2ZMIVW8r/ljyfc5gA2U9cVzVD6+IipRuLeuJsx5GW5lZQE/
+	 UGYwR28+mh153QDZT+206Yf9ff0eFSCtjsUxfHMUGmPFAl/vi4x7ql9NGVfVlBwQFt37q
+	 PSeJlsTdoYTzlcBeGUHIBCUx7aTnOCU65SLf0EG986/BEaC4KlN4u1U7HbvhvbB0/lGsi
+	 yuEH942exFOxkaWhhjLoWVuux28iSVZqistdcbSPhG46LQwm6uZlgiyrj8hqwehvBq0TI
+	 o9649mfAZj3tqWK9xo7Do99oNaw/ThfGW+AEHsR/c5rAUBrgpFZmfWxleVxuv5cOKBA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795469201;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=2f4zLT/mLbzpdxNkBcyOmTZl9xYwYOy/bawS8EITYeo=;
-	b=owMrsPZFmfIyMQQaJvQ/Mw21rQfM7ZoxQ55X6BW7AQPR7xffaKvsPq90bg875zF2tURe
-	 K05Y8sk6xcwmoyZwkq+a0kLrXk4EZe+eymeSSmE7c0BipCYwoWeFrwGFK1YiwZn9X4ojn
-	 Fw1GsSCSAqc/bs0JjCrJ3XHyJWIXDk7zH8zU4rvbtWkbuXDTm4oIcmVR8kuBoD3kUVqU+
-	 60ojErUTHav4Z2k7uiaxMEVhs6aRngfry02zMRxsDy6ic5LxRrQpXpxFISRAWioKyVSay
-	 FKkK+MspUKSkLCQuEpX2PWEqAeRWlNtCDSatmUPa0CcFW18qb0VzCXoNS7MlQADMh4Q==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795469563;
+	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
+	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
+	bh=Otij95+VYXMoOWI9Klbnj5m/hsBQBJVpERjyzPzaN4A=;
+	b=36f4zhQE8dGTnGB6UCDM3lTFzKWxvZ7S43burYWZsEOoxVMPDTP9ftIHeZI8BRKnr1Yi
+	 5DNscqClIXRfnz+0TIYbeqvuA0ofyfjhOebocwg9KFEE4ECAElVCNKCOMZpqMw30wnwiW
+	 ym/8TR3OP7NzFEaYeSxwldyiH5FWoB0YNgulHfPJQMVzS1mIaAeyWoXn0bOPck0TnUC7A
+	 GhIWuSRoDikIJ0lKD4e4TWEeWITKMZlCQgkI50maW49lzk9Vq9FDP39iHXKQknTQItEQD
+	 Fv7P3MFaqbJnBUQkDaKvjHRLsnpFp8xfpdrRdcM846CMzrRO845CXqql743IquoXIRA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YC7xMOx3;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=KwNqsjzF;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 16B66606A6AF;
-	Mon, 23 Nov 2026 21:26:41 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 708B6606A31E;
+	Mon, 23 Nov 2026 21:32:43 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=YC7xMOx3
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 500D31F000C6;
-	Mon, 23 Nov 2026 21:26:40 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=KwNqsjzF
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id AE8E91F000CA;
+	Mon, 23 Nov 2026 21:32:42 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795469200;
-	bh=2f4zLT/mLbzpdxNkBcyOmTZl9xYwYOy/bawS8EITYeo=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=YC7xMOx37+OSsIvr60lVA5uVBO5GMxpGAmnQF8DNxlQOQDHQ/cdcqFrVEpdqU9c4f
-	 2QpUFUB2HTeASpSIBOyeyyIEOiqER7KCVF8PWs4tc7d1RBXswuUixSRq7CiNj75PJ7
-	 Do2E9gipcwMIgu7udhcafLcckdaOAuTNMfeehmltaPmU0EGkvy8awZb5Y/vlS4aByv
-	 7zj0+GuaTc1bhiE9m+9fzO3cU9e7DK+SGTEfY2v0o5wcxyedhYkjdZx5NbphMEmjFa
-	 f/Cobhx2nOpfjown0F3xl5g5h7+g5ypTspI3HkkVtRCLEineRbpJn/mLOHkn+Hj7ij
-	 ZOSIONwMzTsfw==
-Date: Mon, 23 Nov 2026 23:26:37 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: keyrings@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-	David Howells <dhowells@redhat.com>,
-	Guicai Ma <maguicai@kylinos.cn>, James Morris <jmorris@namei.org>,
-	Paul Moore <paul@paul-moore.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] KEYS: Fix asym key overflow in keyctl_pkey_verify()
-Message-ID: <awSvjU7khM8kqWUP@kernel.org>
+	s=k20260515; t=1795469563;
+	bh=Otij95+VYXMoOWI9Klbnj5m/hsBQBJVpERjyzPzaN4A=;
+	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
+	b=KwNqsjzFkvLrYwOS3JTNsKA+Q8p6f3eM4SZEcjHzLnIYBC98kwdhODLzsvf6FKQTx
+	 nfeB70BqKy0udnFZL3jip2yqjFsJe6CXKOk7JGKnqquiTEY51CSPku8VFLjRQsXKNm
+	 l1AiPoMuxUHX/CHaBm8IXJu/u3gUnTohvppb4nJicTy+/2G0BTh1Mg/X0rT9ZJLGHy
+	 cqfk+gAtIsCpXmXjwTkGdwlAiiIP2s06AiuGuWSVlF6Q7URSMX0lRGweNAcs6KDb1N
+	 goyKR1roDQbX8VnCA+q4Nv+gE+UlhqoNF1GA+JYkNjxu4V+KPJERY8yOxbNJfBAcAM
+	 Pk08guNvzDhHw==
+Message-ID: <sashiko-outbox-230085@kernel.org>
+From: sashiko-bot@kernel.org
+Subject: Re: [PATCH 1/2] KEYS: Fix userspace buffer overflow in
+ keyctl_pkey_e_d_s()
+Reply-To: sashiko-reviews@lists.linux.dev
+To: "Jarkko Sakkinen" <jarkko@kernel.org>, keyrings@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, "David Howells" <dhowells@redhat.com>, "Guicai
+ Ma" <maguicai@kylinos.cn>, "James Morris" <jmorris@namei.org>, "Paul Moore" <paul@paul-moore.com>, "Serge
+ E. Hallyn" <serge@hallyn.com>
+In-Reply-To: <20261123211959.4102708-2-jarkko@kernel.org>
 References: <20261123211959.4102708-1-jarkko@kernel.org>
- <20261123211959.4102708-3-jarkko@kernel.org>
+ <20261123211959.4102708-2-jarkko@kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date: Mon, 23 Nov 2026 21:32:42 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -59,43 +62,59 @@ List-Subscribe: <mailto:keyrings+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261123211959.4102708-3-jarkko@kernel.org>
 
-On Mon, Nov 23, 2026 at 11:19:59PM +0200, Jarkko Sakkinen wrote:
-> While verifying a variable-length signature shorter than info.max_sig_size,
-> memdup_user() reads past the end of the caller's _in2 and passes trailing
-> bytes to ->asym_verify_signature().
-> 
-> Set params->in2_len to uparams.in2_len in the KEYCTL_PKEY_VERIFY case.
-> 
-> Cc: stable@vger.kernel.org # v7.2+
-> Closes: https://sashiko.dev/#/bug/linux-dd9ad2ca-a846-4d0d-89d6-aa262ffd40f1
-> Fixes: cb481e59ea6c ("KEYS: fix overflow in keyctl_pkey_params_get_2()")
-> Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-> ---
->  security/keys/keyctl_pkey.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
+Thank you for your contribution! Sashiko AI review found no new issues
+in this patch, but noticed 1 related pre-existing issue it does not
+introduce:
+- [High] KEYS: sensitive plaintext leaked to slab in keyctl_pkey_e_d_s()
+  [1]
+--
+
+commit e1794f1dd0090bbea27485536c98f990c8a30f19
+Author: Guicai Ma <maguicai@kylinos.cn>
+
+KEYS: Fix userspace buffer overflow in keyctl_pkey_e_d_s()
+
+This commit passes the caller's output buffer length back from
+keyctl_pkey_params_get_2() to keyctl_pkey_e_d_s() and returns -EOVERFLOW if
+the operation output exceeds it before copying to userspace.
+
 > diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
-> index b5f82804b5ad..662226576954 100644
+> index e7121523b9c9a..b5f82804b5ad1 100644
 > --- a/security/keys/keyctl_pkey.c
 > +++ b/security/keys/keyctl_pkey.c
-> @@ -176,7 +176,7 @@ static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_par
->  			goto out_up_key_sem;
->  		}
->  
-> -		params->out_len = info.max_sig_size;
-> +		params->in2_len = uparams.in2_len;
->  		break;
->  	default:
->  		ret = -EOPNOTSUPP;
-> -- 
-> 2.47.3
-> 
+[ ... ]
+> @@ -310,6 +315,10 @@ long keyctl_pkey_e_d_s(int op,
+>  	if (ret < 0)
+>  		goto error_out;
+> =20
+> +	if (ret > user_out_len) {
+> +		ret =3D -EOVERFLOW;
+> +		goto error_out;
+> +	}
+>  	if (copy_to_user(_out, out, ret) !=3D 0)
+>  		ret =3D -EFAULT;
 
-I'll apply this with or without r-by's and/or t-by's but they will be appreciated.
+[Severity: High]
+This problem wasn't introduced by this patch, but should the error_out and
+error_in paths in keyctl_pkey_e_d_s() use kfree_sensitive() instead of
+kfree() [1]?
 
-Br, Jarkko
+security/keys/keyctl_pkey.c:keyctl_pkey_e_d_s() {
+	...
+error_out:
+	kfree(out);
+error_in:
+	kfree(in);
+	...
+}
+
+Because in and out hold plaintext or other cryptographic payloads for
+KEYCTL_PKEY_ENCRYPT, KEYCTL_PKEY_DECRYPT, and KEYCTL_PKEY_SIGN, freeing
+them with kfree() leaves sensitive material in the slab cache.
+
+[1] https://sashiko.dev/#/bug/linux-4199b169-0b8d-4055-9a71-6b5b79e38eb3
+
+--=20
+Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261123211959.4102=
+708-1-jarkko@kernel.org?part=3D1
