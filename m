@@ -1,55 +1,57 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795468868;
-	b=Wo40W56qrHg++kbcZeR5OcwOOxfcdLzyu2LKiKnhh1u4xQsbd/e97Fs8jux7dNK9YLPs
-	 OPvTJMg1OTMBde9psuQdr3Hzpw2V7+CRU9DA8aDRn+Pg7lw9bj3/FIlQxTZ/4qstI+4n0
-	 hgeu5tK9NoVNQ7ILE2rVxZki1pCgVomB0g62NJ4B1LhwmyEwTs/Xiv0L6jbxdHPKJIZ4r
-	 omFdjJNLKvTQov16cMkLGuXDY5f8xVQ1EucW1YWg5iKMD1grM21ch11Ka5dGyIIRD4/x/
-	 SSSuW1OTIQD74MADyW0eXtC5Naq7rJSdqqMepsXVBSPzCWlZo3t5RCfuBCsdk0hNI0w==
+	t=1795469147;
+	b=B5zZfH1AYVQuj3Vv2pI8HW3NIe5pi4WXE8ufvtflKA9T6UqVt4VHWba26Ln1/Vqf6n3s
+	 oR3IgQB1O9yU1HhbFzx1HaNMobnkKu+TpxkXYq4GrY8ao28WeWKhaYfjlUosnMqaZdII9
+	 Yqp/0FGPq7CMbceNq+T4m0a/5ZHs/mY+FwrAP519LLzbTpAQHPxGN6UavLItR1WQJ7fje
+	 AOG0ZSWPffZvWSSSh1D+HBiAevotzfv5bdLW3zq7LxP+irOeZ/nZOd29HAowbYV6jSPWQ
+	 A85PBLjIg8KTkR9sxtllMs0w70D/HUWfgPqAfGeM8ev8CR2now5/4GANz9vDEdVgJSg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795468868;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795469147;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=oK69RON+lsCt00ViP4o69fvdYWZ6O8Adv4O6ypLAgdk=;
-	b=lABq96HKZW2ujy4Xd2BQdD+AF7CdtiUqLi7iNyNJ2A6ykfUuV3zbCKjdOasXkkykLB//
-	 EAiwLwiU/M86wVy/8Touk4R1EEPVa2jjYxuF4vclLGf49KvwLW8ulDPY85qNjFdtnRZDM
-	 LAXQGsnogKoCFrqhQVvjHhMa8YZ/cniOWjznTT47P8dqyCHZtnHWCxYhP7lqPuho6lSRU
-	 Kb9+/pfNLCwjcms0M2kZjnXVX3BXvJ5dDySONAY9VGglmlLUj5PMqbkAW3pBA6EUe8rVh
-	 elkERidE4rFsWCkrml5mTTw+x2hUiQ5oq43y5RM2Z4C/focm6LBL3e4C4n5f6E+fwGg==
+	bh=ztADtyHmHGAk4JObPomuXMSa3LOmAYf1N2zGLOoiWU4=;
+	b=gvcemBK/wE1AxrD5r1gRiTm1Ox+T/asrYO5Uz/ItFHo9jzjBb/qWPeRVD14nYbvpu7Z6
+	 Btvv9T/RY7U+Qd122bWJUtxwdmez2mPWEwog4Kd13ePq4hkKhc38Q8wGzt4YpKzkjMbh1
+	 Oi8EGAa7SD1wviwAK+oHIwIkUbiCME3cmdl5JS1lRkU4Vk8GnZcRm7PUae1qKfu8lReUV
+	 c5/pdzvFRTL1A3CClNfwfBNtyvds9b78nK1f9cMABTkyol8KvVzSFgEsVHlaTiU71XYJI
+	 cxpgDb449dNhm+ki7+49qjrCoFV23V77d2DWuGWfrF/EXGFvWhXzP7fs81M0flpcGQg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H7v5HFrd;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=DvBMv4jS;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4E359606A31E;
-	Mon, 23 Nov 2026 21:21:07 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id C412C606A33C;
+	Mon, 23 Nov 2026 21:25:47 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H7v5HFrd
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 26A1E1F000C0;
-	Mon, 23 Nov 2026 21:21:07 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=DvBMv4jS
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id B26DB1F000C6;
+	Mon, 23 Nov 2026 21:25:46 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795468867;
-	bh=oK69RON+lsCt00ViP4o69fvdYWZ6O8Adv4O6ypLAgdk=;
+	s=k20260515; t=1795469147;
+	bh=ztADtyHmHGAk4JObPomuXMSa3LOmAYf1N2zGLOoiWU4=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=H7v5HFrdX453GUoX1AkV9s3bworAQ4Z9Vz8MM83NcgW9jAZyG2cPfzrke4f65hOjr
-	 nMXfvS8nwJiRG7/buZ5j4im7v4vHTk2K77zB6brcTxvdaI+gnyj+c7GQd7zMRINk6H
-	 F8pZX0S+0I2pmcsiMsTd7s+Nw7Dc6iZjUZAaXBrmIXYMmQHdAN4Ru+ybK1pM/l3Am3
-	 VpBqNmU996R7gqDAvBdo5M0qTYVDe9GMVXfYPAugt5QsvIj3S6EryKXE1jGJsBt+B6
-	 jCobdoJsrc27tfktCHbxurRDhXcieLMgp/xlukYErj7DqFIPf1/PvWzT5crlZ6i2kl
-	 eeolWwu2pFrfg==
-Date: Mon, 23 Nov 2026 21:21:05 +0000
-From: Eric Biggers <ebiggers@kernel.org>
-To: Hannes Reinecke <hare@kernel.org>
-Cc: Keith Busch <kbusch@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-	Christoph Hellwig <hch@lst.de>, Sagi Grimberg <sagi@grimberg.me>,
-	Hannes Reinecke <hare@suse.de>, Chaitanya Kulkarni <kch@nvidia.com>,
-	linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
-	keyrings@vger.kernel.org
-Subject: Re: [PATCH v6 0/9] nvme-auth: switch to use the kernel keyring
-Message-ID: <20261123212105.GA18468@google.com>
-References: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
+	b=DvBMv4jSryqIBus7z1VTiXoXdUWwaLmsH06VMxWuXV8IyAdwkBQCIFh6sz6d/ujAZ
+	 Se9D6FYMFr/GZd3mimd2P89AAQ/NWDiKFxTdB8/W63qnvMFFztjWlmFGuDQrhIhaSk
+	 YabdPwRnoxBIL0WFd0CMRiFCYe4JPbrHzhFAvgFP3PyAl9KGKMOXmk/VlOCeVoVwsR
+	 r4mQVjGQWKHLYjFeLVEhUCo0L3cmAvQi4hBdQxLAdqlANleKNcfZtqUFIi5tn6ad7y
+	 gWlGTNWU0chp6rBtXsExxx4sOn5QFI7fTAGwOA9ZHpP3ceASCLkeEqOnxqfSaz5JOz
+	 i6kfwx0jgwasg==
+Date: Mon, 23 Nov 2026 23:25:43 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: keyrings@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+	David Howells <dhowells@redhat.com>,
+	Guicai Ma <maguicai@kylinos.cn>, James Morris <jmorris@namei.org>,
+	Paul Moore <paul@paul-moore.com>,
+	"Serge E. Hallyn" <serge@hallyn.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] KEYS: Fix userspace buffer overflow in
+ keyctl_pkey_e_d_s()
+Message-ID: <awSvVxRb9dRd-AWX@kernel.org>
+References: <20261123211959.4102708-1-jarkko@kernel.org>
+ <20261123211959.4102708-2-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -61,98 +63,98 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
+In-Reply-To: <20261123211959.4102708-2-jarkko@kernel.org>
 
-[ +Cc keyrings@vger.kernel.org ]
-
-On Mon, Nov 23, 2026 at 06:10:00PM +0100, Hannes Reinecke wrote:
-> Hey all,
+On Mon, Nov 23, 2026 at 11:19:58PM +0200, Jarkko Sakkinen wrote:
+> From: Guicai Ma <maguicai@kylinos.cn>
 > 
-> the current NVMe authentication code is using a hand-crafted key
-> structure; idea was to have the initial implementation with a minimal
-> set of dependencies.
-> (And me not having a good grasp on how to use the kernel keyring :-)
-> That had the drawback that keys always had to be specified on the
-> nvme-cli commandline, which is far from ideal from a security standpoint.
+> Commit cb481e59ea6c ("KEYS: fix overflow in keyctl_pkey_params_get_2()")
+> changed keyctl_pkey_params_get_2() to set params->out_len to the maximum
+> output size of the operation instead of uparams.out_len, so that the
+> kernel buffer allocated in keyctl_pkey_e_d_s() is large enough.
 > 
-> So this patchset switches the authentication code over to use the
-> kernel keyring. User-facing interface (namely argument to 'nvme
-> connect') remain the same, but the key data is converted into keys
-> which are stored as a new key type 'dhchap' with a random UUID as
-> description in the kernel keyring.
+> Because uparams.out_len is no longer kept, keyctl_pkey_e_d_s() copies
+> ret bytes to _out without checking whether the result fits in the
+> caller's buffer. If a smaller out_len was passed, copy_to_user() writes
+> past the end of _out instead of failing with -EOVERFLOW.
 > 
-> With this I have updated the dhchap arguments to 'nvme connect' and
-> the configfs interface to either be the keydata (ie the original
-> interface) _or_ a key description referring to a pre-populated dhchap
-> key in the kernel keyring. This allows for easier provisioning of keys
-> and avoids the security risk from having to specify the key data on
-> the kernel commandline.
-[...]
->  16 files changed, 1140 insertions(+), 386 deletions(-)
+> uparams.out_len cannot simply be required to be at least the maximum
+> output size in keyctl_pkey_params_get_2(), since KEYCTL_PKEY_DECRYPT
+> with enc=pkcs1 can return a plaintext shorter than max_dec_size into a
+> matching smaller buffer.
+> 
+> Pass uparams.out_len back to keyctl_pkey_e_d_s() and return -EOVERFLOW
+> before copy_to_user() if ret exceeds it.
+> 
+> Cc: stable@vger.kernel.org # v7.2+
+> Fixes: cb481e59ea6c ("KEYS: fix overflow in keyctl_pkey_params_get_2()")
+> Signed-off-by: Guicai Ma <maguicai@kylinos.cn>
+> ---
+>  security/keys/keyctl_pkey.c | 15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+> index e7121523b9c9..b5f82804b5ad 100644
+> --- a/security/keys/keyctl_pkey.c
+> +++ b/security/keys/keyctl_pkey.c
+> @@ -113,7 +113,8 @@ static int keyctl_pkey_params_get(key_serial_t id,
+>  static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_params,
+>  				    const char __user *_info,
+>  				    int op,
+> -				    struct kernel_pkey_params *params)
+> +				    struct kernel_pkey_params *params,
+> +				    u32 *user_out_len)
+>  {
+>  	struct keyctl_pkey_params uparams;
+>  	struct kernel_pkey_query info;
+> @@ -183,6 +184,8 @@ static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_par
+>  	}
+>  
+>  	params->in_len  = uparams.in_len;
+> +	if (user_out_len)
+> +		*user_out_len = uparams.out_len;
+>  
+>  	switch (op) {
+>  	case KEYCTL_PKEY_VERIFY:
+> @@ -264,10 +267,12 @@ long keyctl_pkey_e_d_s(int op,
+>  		       void __user *_out)
+>  {
+>  	struct kernel_pkey_params params;
+> +	u32 user_out_len;
+>  	void *in, *out;
+>  	long ret;
+>  
+> -	ret = keyctl_pkey_params_get_2(_params, _info, op, &params);
+> +	ret = keyctl_pkey_params_get_2(_params, _info, op, &params,
+> +				       &user_out_len);
+>  	if (ret < 0)
+>  		goto error_params;
+>  
+> @@ -310,6 +315,10 @@ long keyctl_pkey_e_d_s(int op,
+>  	if (ret < 0)
+>  		goto error_out;
+>  
+> +	if (ret > user_out_len) {
+> +		ret = -EOVERFLOW;
+> +		goto error_out;
+> +	}
+>  	if (copy_to_user(_out, out, ret) != 0)
+>  		ret = -EFAULT;
+>  
+> @@ -349,7 +358,7 @@ long keyctl_pkey_verify(const struct keyctl_pkey_params __user *_params,
+>  	long ret;
+>  
+>  	ret = keyctl_pkey_params_get_2(_params, _info, KEYCTL_PKEY_VERIFY,
+> -				       &params);
+> +				       &params, NULL);
+>  	if (ret < 0)
+>  		goto out_free_params;
+>  
+> -- 
+> 2.47.3
+> 
 
-This should have been Cc'ed to the keyrings mailing list.  I found it
-via lore search.
 
-As far as I can tell, this series is trying to do two main things:
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-    (1) parse secrets up front instead of keeping raw "DHHC-1:..."
-    strings around in 'opts' and 'nvmet_host'; and
-
-    (2) let userspace reference pre-loaded keys in a keyring so
-    cleartext secrets don't have to live in config files or
-    sysfs/configfs 'show' output.
-
-(Patch 7's flush_work() change looks independent of the rest.)
-
-Neither of those requires replacing 'struct nvme_dhchap_key' with
-'struct key' at runtime, or synthesizing random-UUID keys in ".nvme"
-when raw secrets are passed.  Doing that adds a lot of complexity and
-opportunity for bugs (as Sashiko's review already seems to show), for no
-real gain.  Note that 'user_key_payload' still lives in slab memory just
-like 'struct nvme_dhchap_key' does.
-
-The semantics of the keyrings subsystem just don't match storage very
-well, and it's quite hard to integrate with correctly.  In fscrypt, I
-had to deal with a lot of bugs before moving away from the keyrings
-subsystem almost entirely, due to issues with per-process keyring
-scoping, delayed key destruction, locking, and LSM checks.
-
-This series already runs into the first of these: patches 8-9 use
-request_key(), which only searches the caller's process keyrings and
-won't even find ".nvme".  And keys are no longer wiped synchronously
-with kfree_sensitive(), but rather whenever the last reference is
-dropped and the garbage collector gets around to it.
-
-Note that NVMe-TCP TLS isn't a relevant precedent here, either.  TLS
-handshakes run in userspace (tlshd), which needs to read the PSK via
-keyctl, whereas DH-HMAC-CHAP is done entirely in-kernel.
-
-This series also gives the 'dhchap' key type a ->read() method, so even
-pre-populated keys remain readable from userspace via keyctl_read() (by
-default, by any possessor).
-
-And inserting raw secrets into ".nvme" with KEY_USR_READ makes them
-readable via keyctl_read() by any process running as uid 0, even without
-CAP_SYS_ADMIN and without access to sysfs or configfs.  Due to the
-KEY_USR_* permissions on ".nvme" and the keys, such processes can also
-invalidate or revoke in-use keys, breaking authentication.  (Separately,
-the existing nvmet dhchap_key and dhchap_ctrl_key configfs attributes
-are 0644 world-readable, which should be fixed regardless.)
-
-How about keeping 'struct nvme_dhchap_key' as the runtime
-representation, and just parsing into it up front in 'opts' and
-'nvmet_host'?  The sysfs/configfs 'show' methods could re-encode the
-secret if really needed, though not exposing it at all would be better.
-
-Then if keyring-based provisioning is still wanted so config files don't
-need raw secrets, it could work like "fscrypt-provisioning" keys: define
-a write-only key type (no ->read(), ->update(), or ->revoke()), look up
-the key by serial number with lookup_user_key() once when the
-option/attribute is written, copy the decoded key (and description, if
-needed for 'show') into 'struct nvme_dhchap_key', and immediately
-key_put() it.
-
-Raw secrets wouldn't touch keyrings at all, and the keyrings subsystem
-would stay out of the runtime path.
-
-- Eric
+Br, Jarkko
