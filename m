@@ -1,64 +1,54 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795460024;
-	b=upfkhXBFyOPEByaIh6CmDzAXu4+l+hHIKjnc+eZyY2AZQvevsp2o0Fqakqf5CMhKgxn3
-	 GFwMcFnDVhgMUdEf7s1yvJVSChsE0MQ6YBDtU7ML3CR4lsLOGMSwiSoOrW7qE6u+ftPKA
-	 UVt8k1Sjr7IjCmOkalEOrwmv0LZjHxKe+WHza8retaa87OrumpSslfqfGOBxJxh9e2CGf
-	 YC8aCCSm0WQmuzf8tgXYd3O2oMDSSE1sEprYr7gXPNbJAWuC4kkeY4UzUBTVvKX9RyGgW
-	 VtlY3FRArgOIYJpXrH3n2n65BjDFAsgzPluw+uV+aij2w3kYZuDgeJS8U89jgHo/F/w==
+	t=1795461171;
+	b=LUECjcBIEOzd8AfBPxNByx3qObP/hq6qh3iqIhyez2+a9v+OqUSD25aPji8AOATEGCze
+	 2OmOHy8LvBUaEOl8e62Ozm83PScSKJF8BAIhAL0JsKB7shpPDVGsDERQzQZy6hnkM3vYf
+	 jQQr75RXy4+cAZ5A7CHeQ5l+ebHLGG0Ooe/rSuRcsZtKClQ+KT7xyEgNNyREL3wmGAUA+
+	 qiNx6XUw8Ec8HYkrlQcyhEW2P6Fzh66h2TDfp6wYHPZy/N3/uXRClJgqPc8jl607UTXIq
+	 J8YaAm33Dd2vVXeXN3WGG0GgTUqDfTFNTbvTivOIeLMT99hyUNKLBJ1cFSghZeOVNTw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795460024;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795461171;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=WdqrFA4uMZhpfSRMkoHMOlyWPOST+lnV86bO3jFjXcQ=;
-	b=Nzcrlcn0WlMS/24KGHLGupSL1XizCWMF8bXHzaCNew+iyNYDFoA+fCa7t5K+6QaXecZO
-	 JA62CPn8py8A5/Kw01Ay+Y5lwjSTNGeBg/eGagzBr+hlNO/dy+7bbt6dpzrsVtBLD0deD
-	 JV/gLoDveGtq2XlKLEvubgb0zsRVD/qO6zuIgBpO6B+zUXMf2Xra5IBd04Jp+HNNrdSUP
-	 u0pg3IHUcEE4V6bLqn0tBjlMgBH/WhHhHd2b7r4tg6W5YdqByjI0Xx5EIMYgBYN3p+jYn
-	 E1Pd/bLknaUOp3c9GleSDm8JEu8R7sZv6QXCsV0lBtJvENNejOKiMmBNTchiNf34XqA==
+	bh=1aSuqE91A4JA8nziXePdbRYInCs8V/0AUq1tsDNXB2k=;
+	b=0ha4KHQV8YBkomY1+/XknFGvABhLKyGyxP3re3Un4eu6DppKpc8SKy+bWAJYG6Cc2S9Z
+	 NlYLVfkzR0ClE2yX3mW7V9sgfHDxDg2YkbLXOR5T8IDuGl93ZTZHYsn03rx9K3IuEXDRM
+	 xh6JwV7WPDXt43gN21U0Iaf7qrvwFXppxWjUIxHSXQZmpmte8miciXlrIVojd/B15qwKr
+	 1nPrTBGbt9Q2sfg7IGUzMaV6gNdfoRmNjWhLMOnT7f+/LMnvj/6HRjKqy2UqQsa5RhXL2
+	 Akaeoi4LJw8VWYptpHlLnseL/pOJT/GYdUU/0nw21+2CYYJVtG3hAFFhzN9qiaMdmJQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H0jZDblr;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nt5GC4BA;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 53F0F60A260D;
-	Mon, 23 Nov 2026 18:53:44 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 427E2606A32E;
+	Mon, 23 Nov 2026 19:12:51 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=H0jZDblr
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9B2921F00ADF;
-	Mon, 23 Nov 2026 18:53:43 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=nt5GC4BA
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 7994F1F000C4;
+	Mon, 23 Nov 2026 19:12:50 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795460024;
-	bh=WdqrFA4uMZhpfSRMkoHMOlyWPOST+lnV86bO3jFjXcQ=;
+	s=k20260515; t=1795461171;
+	bh=1aSuqE91A4JA8nziXePdbRYInCs8V/0AUq1tsDNXB2k=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=H0jZDblrgj/8Uj0P38G4u0vgtl/UQEubq9xMla+QYomELeA7br61lMP0RsFSj3LEm
-	 lwMNRaW2Y7006f/ZnPdCOb7G+6jRfn1P/JAdNPLpGNMyLDBx5h43t8OL1aFq23Wu7T
-	 wZWdbkzHKkPTbzymtBxjIDfKS0XW7zHzhqdhnAjpiCXzGAVtsI0hzSkNNCvTE/cCe/
-	 enlaqm7LBSbN61CGFmCjdOF85zwpPHiF8n0argJ+IcqAtEtAS+kInKlcX6ijm90a9d
-	 I/AU9opWj9KmQjoCl1rD/+KXjh+DBrc0+SE0kZBh8hmuYjKD0vuQyHIBNOC1jnVNUQ
-	 R4KJ602A+3kuw==
-Date: Mon, 23 Nov 2026 20:53:40 +0200
+	b=nt5GC4BAe3Cpt9xRhfsbWl4ijfqR7/5oz7Aq532m7vMKgPvaJDDZZahV8kK3qw3BW
+	 7cmRdjOri6KvQ7Dwx4pTKiQwBJp5MggDtt2A888eRn7EO8sEVvwGg5A6I69TICXd5m
+	 9dQVgIPmRkRpymfoIgJby/ZdUo6jur5RFmRXb58B6lEvVqH4bjl8I2PtQaFmQvEdyb
+	 dA1e/HoX/07ZwmvvSeqkfpjIOomIB27vogZuQnkNZvn+TB8I0n7uD4NLac99Ok7O9P
+	 lttWSnQvUGJrRwDkOj2g1sD/9iizp9GyU4pkcdJbwDoXnhZWi9Sr0jjBtKYymUyyFZ
+	 zGHAdyYakULmg==
+Date: Mon, 23 Nov 2026 21:12:47 +0200
 From: Jarkko Sakkinen <jarkko@kernel.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-	Matthew Garrett <matthewg@nvidia.com>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org, rafael@kernel.org,
-	linux-pm@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH 01/17] tpm: Define a kernel-owned TPM NV index that can't
- be modified by userland
-Message-ID: <awSLtAUT8KBcKvQI@kernel.org>
-References: <asqthz69ohnMVCye@srcf.ucam.org>
- <059384e86fd256618498b9a7214b6421d38fdf1f.camel@HansenPartnership.com>
- <astjpI65VOyU8xvI@srcf.ucam.org>
- <f002fc613bf0bdcf895e5be02dfd2524b7608787.camel@HansenPartnership.com>
- <asty4acE2B94t5q6@srcf.ucam.org>
- <avnMl7fD156F1fx4@kernel.org>
- <ba43d150febc8a85247d6c54f57db0835cb8f5de.camel@HansenPartnership.com>
- <av3SvHN3UCzzvyY9@kernel.org>
- <av3V7zfq5WhR9d44@kernel.org>
- <av3WLT51SpyCmbG2@kernel.org>
+To: Henry Martin <bsdhenrymartin@gmail.com>
+Cc: dhowells@redhat.com, paul@paul-moore.com, jmorris@namei.org,
+	serge@hallyn.com, Jason@zx2c4.com, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] keys: fix crash on big_key read or revoke after a failed
+ update
+Message-ID: <awSQL3uLNktPEwIo@kernel.org>
+References: <20261123165443.4092852-1-bsdhenrymartin@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -70,45 +60,90 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <av3WLT51SpyCmbG2@kernel.org>
+In-Reply-To: <20261123165443.4092852-1-bsdhenrymartin@gmail.com>
 
-On Wed, Nov 18, 2026 at 06:45:33PM +0200, Jarkko Sakkinen wrote:
-> On Wed, Nov 18, 2026 at 06:44:35PM +0200, Jarkko Sakkinen wrote:
-> > On Wed, Nov 18, 2026 at 06:30:56PM +0200, Jarkko Sakkinen wrote:
-> > > On Wed, Nov 18, 2026 at 11:06:55AM -0500, James Bottomley wrote:
-> > > > The better mechanisms to address this are probably:
-> > > > 
-> > > >    1. Detect that PCR5 has been disrupted (get the kernel to store the
-> > > >       on-boot value and check they match) and if so refuse signed
-> > > >       suspend to disk with a message (this is easy).
-> > > >    2. Capture the additional writes to PCR5 and store them as part of
-> > > >       the attestation so the resuming system can prove the current boot
-> > > >       value of PCR5 matches the attested one when the additional
-> > > >       extends are replayed (this is a bit more complex).
-> > > 
-> > > (2) is a great suggestion IMHO; did not cross my mind.
-> > > 
-> > > That approach would also help to debug any possible issues.
-> > > 
-> > > I think it also might make sense to drift away from kernel config flag
-> > > to kernel-command line parameter when it comes to pre-existing integrity
-> > > code. It's time consuming to test and improve right now.
-> > 
-> > The problem with it is probably the indefinite growth. I.e. despite the
-> > log won't likely be that large it has no theoretically maximum  number
->                                            theoretical
+On Tue, Nov 24, 2026 at 12:54:43AM +0800, Henry Martin wrote:
+> big_key_update() destroys the old payload with big_key_destroy() before
+> calling generic_key_instantiate(), which can fail.  The destroy drops the
+> payload's path and data but keeps payload->length.  If instantiate fails,
+> e.g. with -EDQUOT when a concurrent allocation grabs the quota freed by
+> the destroy, the key stays positive with a gutted payload and a stale
+> length.
+> 
+> A later KEYCTL_READ on such a key follows the stale length.  For a
+> file-backed payload it hits BUG_ON(!path->mnt) in dentry_open().  For a
+> buffer-backed one it memcpy()s from a NULL payload->data.  KEYCTL_REVOKE
+> passes the NULL path to vfs_truncate().  All of these crash the kernel,
+> e.g. on mainline v7.4-rc4:
+> 
+> kernel BUG at fs/open.c:1145!
+> Oops: invalid opcode: 0000 [#1] SMP KASAN NOPTI
+> RIP: 0010:dentry_open+0x7b/0x90
+>  big_key_read+0x141/0x280
+> 
+> Fix the ordering: instantiate the new payload first and destroy the old
+> one only on success.  There is no need to release the old quota first:
+> a big_key payload always reserves a fixed 16 bytes, which was already
+> charged when the key was instantiated, so the instantiate of a positive
+> key leaves the reservation unchanged and cannot fail.  Releasing it
+> first was what allowed a concurrent allocation to take the quota and
+> make the instantiate fail after the payload had been destroyed.
+> 
+> This issue was discovered by Tencent CodeBuddy Security.
+> Cc: stable@vger.kernel.org
+> Fixes: b6f61c314649 ("keys: Implement update for the big_key type")
+> Signed-off-by: Henry Martin <bsdhenrymartin@gmail.com>
+> ---
+>  security/keys/big_key.c | 23 +++++++++++++++++++----
+>  1 file changed, 19 insertions(+), 4 deletions(-)
+> 
+> diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+> index 268f702df380e..3bf371f6c28d3 100644
+> --- a/security/keys/big_key.c
+> +++ b/security/keys/big_key.c
+> @@ -193,16 +193,31 @@ void big_key_destroy(struct key *key)
+>   */
+>  int big_key_update(struct key *key, struct key_preparsed_payload *prep)
+>  {
+> +	struct big_key_payload old = { };
+> +	bool positive = key_is_positive(key);
+>  	int ret;
+>  
+> -	ret = key_payload_reserve(key, prep->datalen);
+> +	if (positive)
+> +		old = *to_big_key_payload(key->payload);
+> +
+> +	/*
+> +	 * The quota for a big_key payload is a fixed 16 bytes that was
+> +	 * already reserved when the key was instantiated, so the instantiate
+> +	 * below does not change the reservation of a positive key.  Do not
+> +	 * release it first: a concurrent allocation could take the quota and
+> +	 * make the instantiate fail after the old payload was destroyed.
+> +	 */
 
-Hey, what if this resolved with a combination of your suggestions:
+I'd leave the comment out. It's very time variant and commit specific.
 
-1. Fixed amount of memory for storing event long entries. It does not
-   have to be huge in order to be unlikely to end up.
-2. However, if this does happen, kernel marks PCR5 as "distrupted",
-   and semantics go according to your first proposal.
+> +	ret = generic_key_instantiate(key, prep);
+>  	if (ret < 0)
+>  		return ret;
+>  
+> -	if (key_is_positive(key))
+> -		big_key_destroy(key);
+> +	if (positive) {
+> +		if (old.length > BIG_KEY_FILE_THRESHOLD)
+> +			path_put(&old.path);
+> +		kfree_sensitive(old.data);
+> +	}
+>  
+> -	return generic_key_instantiate(key, prep);
+> +	return 0;
+>  }
+>  
+>  /*
+> -- 
+> 2.53.0
+> 
 
-I think this would be pretty good and totally doable approach.
-
-What do you think?
+I did not specifically check the Sashiko output.
 
 Br, Jarkko
-
-
