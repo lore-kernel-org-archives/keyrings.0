@@ -1,59 +1,96 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.221.41
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795555944;
-	b=I4ji+UpHeRWmoq1r8QotN4xq1OdIweZW0TTl7tU6ssJcqhL3r83U4fpMj0asQqDjl4f/
-	 6Eu41JQHavFZUJ70yKwcyBy0erNQalJ3hW+1Tjzrq1Ipow1EE3yTpbM8MugLckdBghr3Y
-	 tIdyhb12PlusIXP4gEpqTcW73MIA9N/6WxGxuxy+17NzkZ9DS539ahux79EYZ8/CeaTpK
-	 XjZpBcxNG9gYQZNHXzcU/XpaZqnflEIDGZSSs+yxIQKlVsh165EkWQ4XhpKJsa4OBekCj
-	 dCmjfmeseIe7HwY1lRqFCeRu7ZxhJzuH1HVJBdSSwhNy/lqoWyqSnYR35p3Jxx9DY7w==
+	t=1795556497;
+	b=w5UDGg3U1Q/V53K1Q7bkOgAm30ntcxVhNoJ1oQhtWO2C6uZQdTCa60jouY96rwrUQKEc
+	 V1BrPerd2vbYaMNa7Ji8WpDZ4Pn6aOlL5NGW5JSgchpZ/GQtffQmhHpw8nOD261ePYN/R
+	 RI2tqnGFTzzkOatVtFKGqyCewtlHpwM0zToHwykHB3Uiqda6+mY8rSbazIq29ZtgpEVct
+	 B/dUltCGpg+O/wIxbikSorEWYKQRNC/WtG4IQ2g3I21whhnUl8hogd546kuOm7nXmNpCc
+	 SCWKUm6/dRNFZ57hnM/C9q/ZyOTWleeTg/w2ReImHDUxhvzXzBamkuyPs4Xx6rPJT0w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795555944;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=pxCVoM8sZVyMKnjJ/b022SiYasxrgvXvq5CHraLjb1M=;
-	b=3zYmVyiwp1Gcch/VvKQ8nIncjJTQTL+3ECHnGwwJWphkyOIcY9ziq90BNVFNK8EbSauG
-	 yoN+OLyIMoidAP3jlX1ujUhBDzXHQWBkDmTfFGt2Nu9HfpiCQ7OKS/4PmKmCRwTUopSGc
-	 H4lrZPyg04k6Cx32YVs+lOMg8MhpDiEDP/39P4cSOffr1pxMYJNyt6NbeZaEz8syEjhSr
-	 5r1a3sCx9AyEOs5hj9XXYiwxEuIFqhwfJwNE2DbgoL7KrzQw+qDmHpvP4W7Upc/99qSri
-	 WVtfEIpzdY7rh1HcPD1q7mw8D1yvgqhAZ+h4DqsOVvQ6GKzQBba1kTHrcupLu2sCy2w==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795556497;
+	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
+	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
+	 From:To:Cc:Subject:Date:Message-ID:X-Mailer:MIME-Version:
+	 Content-Transfer-Encoding;
+	bh=sC418Lw+Cxfpv60Ui/bgj9nml+ea5R2G+4fhinGo4II=;
+	b=UFJE+If7X+FUNy3lxLvTT0zE2Q4ES+RJzHaicuIYPGMhJ4wCHcBR9LZAyIdoPkF0fY/w
+	 h65S3PFz22NApJjNY/5ey2wJtrEAzbS2ky4tynPXqNqlQR0bJPN0y45OC+sVpKt7QmCgU
+	 dopz7cdorBomNygWR3ghnOqaZBsLYQTdIMCECReDf12nIT7+f+KXSEvLmNGk2JohpRUbd
+	 su8fenB/cjFimwlYq0/fa0+gVLASfwXfr8GDpwWQmos02w0D8KEYZwmqwkCj5qF82rI6V
+	 odadk8p3y7Rs41/zZHD1vowtVjmqksvTg/gi2qR4IR1i1OzFS5HROadgjeyGlmGDJrw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="oQjn/bus";
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	dmarc=pass header.from=gmail.com;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=MtSrbVdv;
+	arc=none smtp.remote-ip=209.85.221.41
+Received: from mail-wr1-f41.google.com (mail-wr1-f41.google.com [209.85.221.41])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6FBCA606A333;
-	Tue, 24 Nov 2026 21:32:24 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9912E606A323
+	for <keyrings@vger.kernel.org>; Tue, 24 Nov 2026 21:41:36 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 9912E606A323
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=oQjn/bus
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 356E81F000C6;
-	Tue, 24 Nov 2026 21:32:23 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795555943;
-	bh=pxCVoM8sZVyMKnjJ/b022SiYasxrgvXvq5CHraLjb1M=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=oQjn/buspK+FsKyIqdVIEeQgGWGRa+2OaMKzQCzkGixU0KkDDN+dSgXo8I2DXx8i1
-	 K4ve8D76M7hbTnWb1QJpojstKh0C+zhHT/21Gak4Lvlh/vkcoYG+IGfnbTmO0fXq6Q
-	 6emK9uqekBpNHhNsJr6vlcVQdu4+pAbEHLLuGT6cZu/RekuvB0l0pUv1KqBz1CiHQR
-	 9UouIwYolzuRBLbd0yim8GAXYi7FntbMnTo+FcXEYv2rYVc9oN7b0UT8VutWS6Z8at
-	 ksWuNE4XoCltAvJ0XAJpfTSBdcLHVYn3sMx67Kg/Kk0CH0nFMcWgoYge+2vdQwN08z
-	 Upj6oC2vty6Iw==
-Date: Tue, 24 Nov 2026 21:32:22 +0000
-From: Eric Biggers <ebiggers@kernel.org>
-To: Martin Belanger <martin.nvme.dev@gmail.com>
-Cc: Hannes Reinecke <hare@suse.de>, Hannes Reinecke <hare@kernel.org>,
-	Keith Busch <kbusch@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-	Christoph Hellwig <hch@lst.de>, Sagi Grimberg <sagi@grimberg.me>,
-	Chaitanya Kulkarni <kch@nvidia.com>, linux-nvme@lists.infradead.org,
-	linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
-Subject: Re: [PATCH v6 0/9] nvme-auth: switch to use the kernel keyring
-Message-ID: <20261124213222.GD2227373@google.com>
-References: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
- <20261123212105.GA18468@google.com>
- <692e91cc-e2ea-47cc-926f-6639952fb195@suse.de>
- <20261124201152.GA2227373@google.com>
- <851e3fa5-ad88-4470-877f-e977bb1a6ad9@gmail.com>
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=MtSrbVdv
+Received: by mail-wr1-f41.google.com with SMTP id ffacd0b85a97d-48e46e449e8so3261854f8f.3
+        for <keyrings@vger.kernel.org>; Tue, 24 Nov 2026 13:41:36 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20260707; t=1795556495; x=1796161295; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=sC418Lw+Cxfpv60Ui/bgj9nml+ea5R2G+4fhinGo4II=;
+        b=MtSrbVdvXPESULp49wFyKVViyU6uV845m7VObPFqQPp+cyXIAZJY0lPMcSZaqh9RMU
+         N1tn7Cskb/nzr5TmOpSei1JbApwJPvIUOkkSfAmWzK/tZT6ItSWCfbM8Dqt8uRrm6ILw
+         uAxYcp3P/gS4qEes1+47utnIUp6VHolN9lPusRgZZNHcsMeZ4aRO6PXyE7zt9JRzN+of
+         s7geRWDZ2G5R369y+x98KK0gmNXD5A+NLVUkRHcLq6qgLwbJ523zzN2yhGFEmYMiWxsk
+         XHOahvLYAKaR6JTglJyNLuiV8s4uu39q9ZuzK277Cjv85T9Pg0iVNzTDL3rWXY+2B0vz
+         bRyg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1795556495; x=1796161295;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=sC418Lw+Cxfpv60Ui/bgj9nml+ea5R2G+4fhinGo4II=;
+        b=TABQIbfK8O9FS1D7T+VMF756cf8USq5PmYIQvQibOx6yuQKt1+CFt4ncqUoCcUTO6r
+         1R2dfRzCccNLR/7jc45cX9vgr/1WBwofbqvq9NNyEja5t53cUEMMxwpT2JgZHARdNWed
+         uxhrZI3x7Lt71BFxlMxRycWAX5pcVsLJbKEKN8F39DfLNEq7vlSsyN9asASQk9nM2cWU
+         Q3wyvB6UZyCY/oUGTrXjqSTA1kc1fWK0i6ewNwpt4BoPH9d/h3K/TViDMOVZ8b/WIWym
+         CwEViw/5EsSonPHSgbVlNJ1HacCOOm8cex4+X6Ci8lAlsN4eobxBz9jiFPaAREXlMRvX
+         +JjQ==
+X-Forwarded-Encrypted: i=1; AL+hErHTyD/FieiA0C2qlfH+KJ7Dabx25tR41mNlRhmroJZ/ll+O4chT0Gc40ECZq0rT9DNt6rvX1DH9Iw==@vger.kernel.org
+X-Gm-Message-State: APuU4Z/kPYGmkQMTe+pRmjG05fqUXLfG4FeeUBv42SeObA/KADKqTcas
+	e6oBM2OcyqJBCpAclOUjk2LB48lOo6r5ePkL2M0U0Ob9seY09lCHtpo=
+X-Gm-Gg: AZFdTZc+asIoYDabXA7mZ9aVqe837XPKdQbxl1wxX83VKk/ihMKSaZAShxSqWWc0JDJ
+	RPMaYJfcYB3+5aOF6xzirdCHEgAc610Thfzl7F4wRV13ggWhVCvwv/3Mwq0ojpSqHeX5JjU3KQO
+	TzoFUWBGha2ShKGXgt6p6BeXo8B+Nft325CtRdzsqnkwupd2xC6LOesS6/50wv1kDIjOA2KqnUF
+	59LghI/8IkGPdpezAmwVVQ6ueIGtvMFjnArGimuAeTpgKWKvLUNla4igQeBD+89/W9gHMKeQ3Ri
+	IyiXlux0c340mr3Ht2wLsX15We/3NfShghS9SU4Eua2P36XDYJzn0UOFIlC2MjsuobESiJXbq7d
+	YIdYd9iM73xtgCWyeYI3srevRjYpDdaBPEqMHcg722IZXvVNnb5frZvm9+ZQMwOk9kjN2ZO7KEa
+	w82Mgpurjlh0m1fq9jlOe2zfAqkl2w/pT0gBfYvC3tD6UgLcoAeb04iWizAtxwQsUKuPi0FMfxU
+	vekamC8dnZGoE8Anpq7IebexRvCtzsH3h+B5vHdd+5M+kMv/ADzTXSPt65J1hNr+7NpSdcEHzTT
+	auqR8ZxWXYeAxxk=
+X-Received: by 2002:a5d:64c9:0:b0:4b3:f000:1bdc with SMTP id ffacd0b85a97d-4b3f0001c13mr12286559f8f.45.1795556495020;
+        Tue, 24 Nov 2026 13:41:35 -0800 (PST)
+Received: from localhost.localdomain ([2001:41d0:303:db6b::])
+        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-4ab6bb98b4dsm31041908f8f.53.2026.11.24.13.41.34
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 24 Nov 2026 13:41:34 -0800 (PST)
+From: Tristan Madani <tristmd@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	stable@vger.kernel.org,
+	Tristan Madani <tristan@talencesecurity.com>
+Subject: [PATCH v3] KEYS: protect construct_key type dereference with key semaphore
+Date: Tue, 24 Nov 2026 21:41:25 +0000
+Message-ID: <20261124214125.3198541-1-tristmd@gmail.com>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -63,67 +100,63 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <851e3fa5-ad88-4470-877f-e977bb1a6ad9@gmail.com>
+Content-Transfer-Encoding: 8bit
 
-On Tue, Nov 24, 2026 at 03:50:14PM -0500, Martin Belanger wrote:
-> On 11/24/26 15:11, Eric Biggers wrote:
-> > Keys not being readable from userspace is one of the usual reasons
-> > people think they want to use the keyrings.  The cover letter should say
-> > what this series is actually trying to accomplish.  Currently, it only
-> > mentions making it so that keys no longer need to be specified on the
-> > command line.  But when stated like that, it's a userspace issue: if the
-> > nvme program doesn't accept keys on stdin like keyctl does, that's an
-> > issue in the nvme program, not the kernel.
-> 
-> The goal from the user side is that no DH-HMAC-CHAP secret appears on a
-> command line, in a connect string or in a configuration file. These end
-> up in shell scripts, config files and logs, where unprivileged users can
-> read them. With the keyring, the configuration only names the key.
-> nvme-keysd (in nvme-cli) imports the secrets into the keyring from
-> systemd credentials or from a KMS, and the connection passes only the
-> key description.
+From: Tristan Madani <tristan@talencesecurity.com>
 
-That is a userspace issue though, unless you also need the key to be
-kept out of the /dev/nvme-fabrics connect string or sysfs/configfs show
-output.  Note that this patchset also keeps the keyring keys readable by
-userspace still.
+construct_key() reads key->type->request_key without holding key->sem,
+then calls the resulting actor function pointer.  The key garbage
+collector retypes keys to key_type_dead under key->sem write lock when
+their type is unregistered.  Without the read lock, construct_key() can
+observe a stale type pointer if the garbage collector retypes the key
+between the pointer read and the actor invocation.
 
-> > It sounds like the idea is that the kernel would look up the 'struct
-> > key' by description again at runtime, such as on reset?  But this series
-> > doesn't actually do that.  The lookup just happens once, when the option
-> > or sysfs/configfs attribute is written to.  The key is not updatable
-> > either, so an external provider that rotates the key has to write to the
-> > attribute.  So there's no benefit to keeping the 'struct key' around
-> > after that write.
-> 
-> That is the part that does not work for a key provider. The secret
-> behind a key description can change at any time, and the new secret
-> must be used at the next authentication. This includes a controller
-> that is in a reconnect loop, which can last for a long time.
-> 
-> v6 looks up the key by description once, when the connect options are
-> parsed, and keeps it in opts->dhchap_key for the lifetime of the
-> controller. Every reconnect uses that same key. When nvme-keysd
-> replaces the key with add_key(), the controller keeps the old secret.
-> When the old key is revoked instead, the reconnect fails with -ENOKEY.
-> 
-> The same happens when an admin changes the secret on the storage
-> system. The host must use the new secret at the next reconnect,
-> otherwise every reconnect fails until someone writes the new secret to
-> the sysfs attribute or connects the controller again.
-> 
-> Copying the secret into 'struct nvme_dhchap_key' once has the same
-> problem. What the provider needs is a lookup by description at each
-> authentication, the way NVMe/TCP TLS without a pinned key already
-> works: nvme_tcp_alloc_admin_queue() calls nvme_tls_psk_default() at
-> each reconnect. That lookup runs in a kernel worker, which has no
-> process keyrings, so it also needs a fixed keyring: '.nvme', or the one
-> given with the 'keyring' option.
+Take key->sem for reading around the key->type->request_key lookup to
+prevent concurrent retyping by the garbage collector, then release the
+semaphore before invoking the actor.  The semaphore cannot be held
+across the actor call because call_sbin_request_key() blocks in
+call_usermodehelper_keys() with UMH_WAIT_PROC until the userspace
+helper exits, and standard helpers such as key.dns_resolver and
+nfsidmap take key->sem for writing via keyctl_set_timeout() before
+they return.
 
-Even if you actually need runtime key rotation without touching
-configfs/sysfs (why, when nvme-keysd could just write those files
-itself?), this series doesn't actually implement that.
+This follows the same defensive pattern as commit 925c84e3cc21 ("keys:
+Protect the read method check against type removal") but narrows the
+lock scope to the type pointer read to avoid the deadlock.
 
-- Eric
+Fixes: b5f545c880a2 ("[PATCH] keys: Permit running process to instantiate keys")
+Cc: stable@vger.kernel.org
+Signed-off-by: Tristan Madani <tristan@talencesecurity.com>
+---
+v3: narrow the lock scope to the type pointer read only, releasing
+key->sem before the actor() call. Holding the semaphore across actor()
+deadlocks when call_sbin_request_key blocks in UMH_WAIT_PROC and the
+userspace helper takes key->sem write via keyctl_set_timeout() (Sashiko)
+
+v2: hold key->sem across the actor() call, not just the type pointer
+read, matching the established pattern from three prior fixes (Sashiko)
+
+Build tested: x86_64 defconfig + CONFIG_KEYS=y, gcc 14.2, W=1,
+0 warnings.
+
+ security/keys/request_key.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index a7673ad86d18d..ccc4e94197423 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -241,8 +241,10 @@ static int construct_key(struct key *key, const void *callout_info,
+ 
+ 	/* Make the call */
+ 	actor = call_sbin_request_key;
++	down_read(&key->sem);
+ 	if (key->type->request_key)
+ 		actor = key->type->request_key;
++	up_read(&key->sem);
+ 
+ 	ret = actor(authkey, aux);
+ 
+-- 
+2.47.3
+
