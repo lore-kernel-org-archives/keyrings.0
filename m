@@ -1,57 +1,75 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795551115;
-	b=tPYoVg3iTf7rYbDn2aGe1B1mxf0U/m3kxziLPty6DRqtrI3R+0m/9Ppfk+ydenhRcN/R
-	 L8+rusMJV09AOgbGP5mUWUS4y/5fWNnnm/HiBxnb/XRdZ2M2GhhkMsWnyyupuwHaHPvn0
-	 D7x2B2shR5dTWA82ThM9bXllPeoZCZMe74FfQ95DFuHgP7KOmtwGbrMGNF2U7KtY5VlYJ
-	 4a8pmsXgroEMGKWsAEPnJjk2Gru8kwpdq96vlCqK+TFh/XGqv6UzDBPmnpKwl8m+h/mP5
-	 YzGJ/WRjOTiuLIccOeaSaVyAc2MyIIYBbv5DSwQftBcNoRjELueyIgubUOLa2zaCLiw==
+	t=1795551642;
+	b=r/YkF/u0+vqzb9aWbr+I7DQqEyJSLavpSm3ZKg0Ify7VKeUzFcRNc6eHI1Rh7fyEbaqq
+	 0NLEbBPXvWJ2Kab9HTp+eJux1CPS/Kurs3WiforCvavtKN0s2gCfuEFv+mHp2TsnGVOT/
+	 jD3ICf3bF34LaO+x9lvFJzlTInOAVCa/0FiW8mkNxNVh5mC0lSTAHNK8K2+l2Dph4GmBk
+	 DiMkSKspMKEqeK+kXqpbmyusRECeOwOM/jrVWbk0TBZw8q8Qigfb3MpHHEUKzn6XcX1u/
+	 MUbRW1lcnvuJVwYswZIEfGGxoAuW4wjNcSmiK9ufsO+Yd+lg2bfBbbvm2sn/DOdLGTA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795551115;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795551642;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=GPdlpMaV9B9H+5mUiWoXm0dHDRx+tPUGbDQufOLp/FM=;
-	b=X79gThjaEvFS9M5506zw1yMJ0vp5/77vzgy2EVXv9fhKNuTxTzWi9PnmIqH8gJMSvSzS
-	 sUfyVheCRkkZcVqaWbSiIP1hJSV+PdlzxJoz8Acu5exyRq/B6Y6VcmRWi34NDLAaDHl2g
-	 T00R3zuwfC4Rwcde5Xvp60MGY2qzgCXyc2Pbr2V5RX7P7gk1qYP4IjtfQEaAh8lf4mJrZ
-	 g9arr3Hd5sR4MD31rVd9fTeMJX/Hjxh3T1wnXyha0E3BWZaBQdl+vMuimG6bfzlCe2Hit
-	 /Kyl3+69T5sUH5FDFkxyXvUaLhSwBa2PLNB8Ra2pldaiNzKgzfg664MZfMc6VtunxpA==
+	bh=SuAGoQXREiWQsrWDhfb/EjKtLC4QuRo6T16dlNndy6I=;
+	b=pTo3xgeB8GVKMQhND0q3rJsbb52nRGPvR45lnAhBqBCZ5yoNtuJEUdbS/GEmh5ZBpeas
+	 btaxfenHwsne0UQqZAZLOeEPhNdtrNBtINGwbkWs7a24S+1SeuawBzxq75LZ/gf3zYGYh
+	 sDWB5b17vCjCCDgZGRcDtBepmHIM7TKNmT9w+lciDmpnIpTDIsoGDaQ0VU5HmcakAUQc6
+	 copnChX8tDJzzo7Zh12MHqW2HnruaEJj5noUnIcOcHwGoSxx5yXvUq7F7c+GCyw0rybLl
+	 WQ66awbX5kJF0KGPvGEcsnM5GI1mzJq/pWwR+p+C7bAdC15XOeZ4VXRXY+ytKwltGNQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=BXlVDEjo;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EpCZT6Ut;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 174EF606A31E;
-	Tue, 24 Nov 2026 20:11:54 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 45C56606A31E;
+	Tue, 24 Nov 2026 20:20:42 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=BXlVDEjo
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id E73781F000CF;
-	Tue, 24 Nov 2026 20:11:53 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EpCZT6Ut
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 490221F000C0;
+	Tue, 24 Nov 2026 20:20:41 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795551114;
-	bh=GPdlpMaV9B9H+5mUiWoXm0dHDRx+tPUGbDQufOLp/FM=;
+	s=k20260515; t=1795551641;
+	bh=SuAGoQXREiWQsrWDhfb/EjKtLC4QuRo6T16dlNndy6I=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=BXlVDEjoWFBKlFX4dY5Y6SZzpsmoiCusaWPr4DnP6xsb/M3XuR+4kupDz9RNMI67m
-	 2Wbrg9mJ2ZaO/5B8FgxEhmJ1cYuWHpr3J6iJhdYN726R2xVcNlk/6v0161FpVE32Ic
-	 2lXkCYc6BlzoFxPmt3Q0GF1D1Ox6HdAM14m1DtYDxdsh9Ds1GizqTW3UAslmZBOCd4
-	 sgJ3xoCGo/+MtVLfrA2/BoAjB/mEZn9kVr/TjYsuKUhs8skYcv3JQNBi4YTeZku3yO
-	 XYqQJwTpY8Ze0TJsrbXQwhqt99evufmpisy58eIET7dF7t6GrXBO6ICT97J2HrBLds
-	 918HnQ2RuDMog==
-Date: Tue, 24 Nov 2026 20:11:52 +0000
-From: Eric Biggers <ebiggers@kernel.org>
-To: Hannes Reinecke <hare@suse.de>
-Cc: Hannes Reinecke <hare@kernel.org>, Keith Busch <kbusch@kernel.org>,
-	Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-	Sagi Grimberg <sagi@grimberg.me>,
-	Chaitanya Kulkarni <kch@nvidia.com>, linux-nvme@lists.infradead.org,
-	linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
-Subject: Re: [PATCH v6 0/9] nvme-auth: switch to use the kernel keyring
-Message-ID: <20261124201152.GA2227373@google.com>
-References: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
- <20261123212105.GA18468@google.com>
- <692e91cc-e2ea-47cc-926f-6639952fb195@suse.de>
+	b=EpCZT6UtgQ16nWYXI9lVCS80/sTVSKxnfoTlbvkbqsGhTtnxYtUWVkXUyAj4eyB6y
+	 7w07w802t/zo9bITY3kwTN40Tb1ksJaWqcwNieak9R4GbzDddzHHBDiSRpFRIbJmOl
+	 RarJqc+ZQPNkcFOzQYRfWZz1JpVfhrTeIfXdtLsuSKW+e0zrqmuQYenAYudHyL/aaO
+	 qqjcdleA94Qe6kchCVdBrrUSGhH9+Rg7rdplA6AhW3hxKXQnE005Lk0m4QZiU38LRX
+	 FO2tnr/1H0FJTVJITAGxajAYKHEbEgAQnRPMnGWRTaEjk0KpoebpnDph+ukQDC1481
+	 TQNMSp+jfWv8g==
+Date: Tue, 24 Nov 2026 22:20:38 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: keyrings@vger.kernel.org
+Cc: dm-devel@lists.linux.dev, linux-crypto@vger.kernel.org,
+	linux-doc@vger.kernel.org, linux-integrity@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+	Ahmad Fatoum <a.fatoum@pengutronix.de>,
+	Alasdair Kergon <agk@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	David Gstir <david@sigma-star.at>,
+	David Howells <dhowells@redhat.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	Ignat Korchagin <ignat@linux.win>,
+	James Bottomley <James.Bottomley@hansenpartnership.com>,
+	James Morris <jmorris@namei.org>,
+	James Prestwood <prestwoj@gmail.com>,
+	Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>,
+	Lukas Wunner <lukas@wunner.de>, Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
+	Peter Huewe <peterhuewe@gmx.de>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Sumit Garg <sumit.garg@kernel.org>
+Subject: Re: [PATCH v2 0/9] KEYS: trusted: asymmetric keys
+Message-ID: <awXxlkS9vo11BCMo@kernel.org>
+References: <20261124194043.1651679-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -63,147 +81,125 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <692e91cc-e2ea-47cc-926f-6639952fb195@suse.de>
+In-Reply-To: <20261124194043.1651679-1-jarkko@kernel.org>
 
-On Tue, Nov 24, 2026 at 11:30:42AM +0100, Hannes Reinecke wrote:
-> > Neither of those requires replacing 'struct nvme_dhchap_key' with
-> > 'struct key' at runtime, or synthesizing random-UUID keys in ".nvme"
-> > when raw secrets are passed.  Doing that adds a lot of complexity and
-> > opportunity for bugs (as Sashiko's review already seems to show), for no
-> > real gain.  Note that 'user_key_payload' still lives in slab memory just
-> > like 'struct nvme_dhchap_key' does.
-> > 
-> > The semantics of the keyrings subsystem just don't match storage very
-> > well, and it's quite hard to integrate with correctly.  In fscrypt, I
-> > had to deal with a lot of bugs before moving away from the keyrings
-> > subsystem almost entirely, due to issues with per-process keyring
-> > scoping, delayed key destruction, locking, and LSM checks.
-> > 
-> Hmm.
+On Tue, Nov 24, 2026 at 09:40:34PM +0200, Jarkko Sakkinen wrote:
+> OVERVIEW
+> ========
 > 
-> > This series already runs into the first of these: patches 8-9 use
-> > request_key(), which only searches the caller's process keyrings and
-> > won't even find ".nvme".  And keys are no longer wiped synchronously
-> > with kfree_sensitive(), but rather whenever the last reference is
-> > dropped and the garbage collector gets around to it.
-> > 
-> But I sincerely would hope that the key subsystem will wipe them correctly
-> eventually, right?
-
-It happens asynchronously, and processes can look up the keys by serial
-number and pin them in memory.  Even a process without permission to
-access the key can pin it in memory temporarily.  Not a huge issue, but
-it's an unnecessary complication, which caused problems for tests that
-tried to verify that keys were gone.  It was nice to finally fix this in
-fscrypt (by no longer using the keyrings subsystem).
-
-> > Note that NVMe-TCP TLS isn't a relevant precedent here, either.  TLS
-> > handshakes run in userspace (tlshd), which needs to read the PSK via
-> > keyctl, whereas DH-HMAC-CHAP is done entirely in-kernel.
-> > 
-> > This series also gives the 'dhchap' key type a ->read() method, so even
-> > pre-populated keys remain readable from userspace via keyctl_read() (by
-> > default, by any possessor).
-> > 
-> Which is kinda the main idea. And it's no different from the current
-> behaviour, where the DH-CHAP keys remain visible via sysfs.
-
-Keys not being readable from userspace is one of the usual reasons
-people think they want to use the keyrings.  The cover letter should say
-what this series is actually trying to accomplish.  Currently, it only
-mentions making it so that keys no longer need to be specified on the
-command line.  But when stated like that, it's a userspace issue: if the
-nvme program doesn't accept keys on stdin like keyctl does, that's an
-issue in the nvme program, not the kernel.
-
-So that leaves the cover letter not stating any real motivation for
-these kernel changes, as far as I can tell.
-
-> > And inserting raw secrets into ".nvme" with KEY_USR_READ makes them
-> > readable via keyctl_read() by any process running as uid 0, even without
-> > CAP_SYS_ADMIN and without access to sysfs or configfs.  Due to the
-> > KEY_USR_* permissions on ".nvme" and the keys, such processes can also
-> > invalidate or revoke in-use keys, breaking authentication.  (Separately,
-> > the existing nvmet dhchap_key and dhchap_ctrl_key configfs attributes
-> > are 0644 world-readable, which should be fixed regardless.)
-> > 
-> Again, one could argue that this was the intention.
-> The idea behind this patchset is to separate key provisioning from
-> key usage; the DH-CHAP key values have to be present whenever the
-> nvme subsystem is doing a reset, and the current way of providing
-> them via the nvme-cli command-line requires quite some instrumentation
-> to insert the correct settings.
-> It also makes integration with other entities providing external
-> DH-CHAP keys quite hard as these entities have to deal not only with
-> the kernel side (to trigger re-authentication), but also the whatever
-> tooling is there to generate the nvme-cli commandline.
+> Extend  TPM 2.0 trusted keys to load ASN.1 TPMKey [1] asymmetric keys
+> (OID_TPMLoadableKey, 2.23.133.10.1.3) and expose keyctl pkey-operations
+> directly on key_type_trusted. In addition there are some TPMKey
+> interoperability fixes.
 > 
-> Moving to a separate storage for DH-CHAP keys hence seemed appealing
-> to me, especially as we already have a keyring integration, so adding
-> another key type for DH-CHAP felt quite a natural step.
-> And it allows for an easy integration with external key providers,
-> as adding keys to the key store is a quite simple process and
-> doesn't require you to integrate with nvme-cli tooling.
-
-It sounds like the idea is that the kernel would look up the 'struct
-key' by description again at runtime, such as on reset?  But this series
-doesn't actually do that.  The lookup just happens once, when the option
-or sysfs/configfs attribute is written to.  The key is not updatable
-either, so an external provider that rotates the key has to write to the
-attribute.  So there's no benefit to keeping the 'struct key' around
-after that write.
-
-> > How about keeping 'struct nvme_dhchap_key' as the runtime
-> > representation, and just parsing into it up front in 'opts' and
-> > 'nvmet_host'?  The sysfs/configfs 'show' methods could re-encode the
-> > secret if really needed, though not exposing it at all would be better.
-> > 
-> It really feels naff to have this structure. We already have
-> a 'struct key', providing basically all the features we need.
-
-Could you elaborate on what those features are, in your view?  It
-doesn't seem like you're using anything other than the provisioning by
-description, which doesn't require keeping the 'struct key' around.
-
-> > Then if keyring-based provisioning is still wanted so config files don't
-> > need raw secrets, it could work like "fscrypt-provisioning" keys: define
-> > a write-only key type (no ->read(), ->update(), or ->revoke()), look up
-> > the key by serial number with lookup_user_key() once when the
-> > option/attribute is written, copy the decoded key (and description, if
-> > needed for 'show') into 'struct nvme_dhchap_key', and immediately
-> > key_put() it.
-> > 
-> The main idea here is to allow for external provisioning of the keys,
-> which then can be looked up by nvme-cli tooling to assemble the
-> actual command-line.
-> The write-only key method would leave us with an abstract key serial,
-> which then will have to be passed between the key provisioning tooling
-> over to nvme-cli. Which really doesn't gain us anything.
+> I.e. this my old series with a twist: instead of introducing a separate
+> subtype for asymmetric keys, factor out pkey-operations into a separate
+> CONFIG_KEYCTL_PKEY-feature, and wire asymmetric operations to
+> key_type_trusted.
 > 
-> > Raw secrets wouldn't touch keyrings at all, and the keyrings subsystem
-> > would stay out of the runtime path.
-> > 
-> Main issue here is to keep compability with previous versions.We currently
-> have 'dhchap_secret' and 'dhchap_ctrl_secret' sysfs
-> attributes holding the encoded DH-CHAP keys.
-> And these values are written to the configuration file to be
-> able to re-establish the connection upon the next boot.
-> So whatever we do, we need to have 'something' in here allowing
-> us to identify the DH-CHAP key. So a key serial is out of question
-> here (we tried that with TLS, and failed miserably).
+> This work was originally derived from [3] and is direct offspring of
+> [2].
 > 
-> So really we just use the keystore to be able to lookup external
-> keys; I really want to get away from having to store the keys
-> as a file or in encoded from in the configuration file.
+> [1] https://www.hansenpartnership.com/draft-bottomley-tpm2-keys.html
+> [2] https://lore.kernel.org/linux-integrity/20240520184727.22038-1-jarkko@kernel.org/
+> [3] https://lore.kernel.org/all/20200518172704.29608-1-prestwoj@gmail.com/
+> 
+> CHANGES
+> =======
+> 
+> v2:
+> - lib/asn1_encoder: Remove unreachable !bytes_len branch in
+>   asn1_encode_integer_bytes().
+> - tpm: Bounds-check ECC coordinates, defer state updates until after
+>   validation, and verify subsequent TPM2_RH_NULL primaries against
+>   chip->null_key_name in tpm2_parse_create_primary().
+> - trusted: Reject trailing or truncated TPM2B bytes in tpm2_key_decode() so
+>   tpm2_load_cmd() and tpm2_asym_load() pass the same blob length.
+> - trusted: Avoid 32-bit param_size wraparound in tpm2_asym_rsa_decrypt()
+>   and tpm2_asym_parse_signature().
+> 
+> VERSIONS
+> ========
+> 
+> v1: https://lore.kernel.org/keyrings/20261124120044.1481752-1-jarkko@kernel.org/
+> 
+> Cc: dm-devel@lists.linux.dev
+> Cc: keyrings@vger.kernel.org
+> Cc: linux-crypto@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-integrity@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-security-module@vger.kernel.org
+> Cc: Ahmad Fatoum <a.fatoum@pengutronix.de>
+> Cc: Alasdair Kergon <agk@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Benjamin Marzinski <bmarzins@redhat.com>
+> Cc: David Gstir <david@sigma-star.at>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: Ignat Korchagin <ignat@linux.win>
+> Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: James Prestwood <prestwoj@gmail.com>
+> Cc: Jarkko Sakkinen <jarkko@kernel.org>
+> Cc: Jason Gunthorpe <jgg@ziepe.ca>
+> Cc: Jonathan Corbet <corbet@lwn.net>
+> Cc: Lukas Wunner <lukas@wunner.de>
+> Cc: Mike Snitzer <snitzer@kernel.org>
+> Cc: Mikulas Patocka <mpatocka@redhat.com>
+> Cc: Mimi Zohar <zohar@linux.ibm.com>
+> Cc: Paul Moore <paul@paul-moore.com>
+> Cc: Peter Huewe <peterhuewe@gmx.de>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+> Cc: Shuah Khan <skhan@linuxfoundation.org>
+> Cc: Sumit Garg <sumit.garg@kernel.org>
+> 
+> Jarkko Sakkinen (9):
+>   KEYS: trusted: Allow ASN.1 TPM2 sealed data shorter than MIN_KEY_SIZE
+>   lib/asn1_encoder: Add asn1_encode_integer_bytes()
+>   tpm: Export tpm2_create_primary()
+>   tpm: Add persistent hierarchies to tpm2_create_primary()
+>   KEYS: trusted: Extend TPMKey support
+>   KEYS: Factor out KEYCTL_PKEY
+>   KEYS: trusted: Reject zero-length keys in symmetric consumers
+>   KEYS: trusted: Factor out TPM2 blob loading
+>   KEYS: trusted: Add asymmetric key support for TPM2
+> 
+>  .../security/keys/trusted-encrypted.rst       |   25 +-
+>  crypto/af_alg.c                               |    2 +
+>  crypto/asymmetric_keys/Kconfig                |    1 +
+>  drivers/char/tpm/Kconfig                      |    2 +-
+>  drivers/char/tpm/tpm2-sessions.c              |  239 +--
+>  drivers/md/dm-crypt.c                         |    2 +-
+>  include/keys/trusted-type.h                   |    5 +-
+>  include/keys/trusted_tpm.h                    |   16 +-
+>  include/linux/asn1_encoder.h                  |    3 +
+>  include/linux/tpm.h                           |    2 +
+>  include/linux/tpm_command.h                   |   13 +
+>  lib/asn1_encoder.c                            |   56 +
+>  security/keys/Kconfig                         |    3 +
+>  security/keys/Makefile                        |    2 +-
+>  .../keys/encrypted-keys/masterkey_trusted.c   |    5 +
+>  security/keys/internal.h                      |    2 +-
+>  security/keys/keyctl.c                        |    2 +-
+>  security/keys/trusted-keys/Kconfig            |   10 +
+>  security/keys/trusted-keys/tpm2key.asn1       |   19 +
+>  security/keys/trusted-keys/trusted_core.c     |   20 +-
+>  security/keys/trusted-keys/trusted_tpm1.c     |   26 +
+>  security/keys/trusted-keys/trusted_tpm2.c     | 1339 ++++++++++++++++-
+>  22 files changed, 1585 insertions(+), 209 deletions(-)
+> 
+> --
+> 2.47.3
+> 
 
-If it needs to be a stable string it could be a key description instead
-of a key serial.  The point is the same.  Note that the kernel can keep
-around the key description to return in the sysfs attributes even if it
-doesn't keep the 'struct key' itself; see dm-crypt for example.
+"Sashiko has reviewed this 9-patch series and found no issues."
 
-Anyway, separately from that, the user-configurable dhchap_keyring still
-seems odd.  It's consulted only when dhchap_key is written to, and that
-might as well do the lookup in the process's keyrings similar to what
-dm-crypt's support for keyring keys does.
+There is not much new code here. The only major change is decoupling
+from asymmetric-keys, and thus being able to have just one hardware
+backed key type, which I think makes whole a lot of sense.
 
-- Eric
+Br, Jarkko
