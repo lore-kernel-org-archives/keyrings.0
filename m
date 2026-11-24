@@ -1,104 +1,83 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=195.135.223.130
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=124.126.103.232
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795516245;
-	b=zufGbvGPRMbdSGY6y0DCbHa1wLeXx5mv70RFxlrBHQb5mGi9pL2yvACJ1NYoDMnHhRxx
-	 741WbyM52lnUOcawIoglA0G0YnSCM4k2H9GOo9a5Ht/TaIaERsf0562DIxFL+N04p0DBW
-	 vwUVQEJ5sLUqUjfb168Ixl+0pMgzNSdadFipm8acXF9YpIvHI7S024T2bM3whgkEP1p5P
-	 G9adGFlZfUw/1XITBvwuM9EPsmLOIKToged6Lw1P3ljbWi4K/Kpndtt73ZOvQ6+h+xpzD
-	 hIJekeRrZ64y9BbaFjakGTgyDc0K4GdWKLyjxJfpIDX+zRcLN6V0rF0pFvRewIKgBZw==
+	t=1795519259;
+	b=iyBV7C1kLgcrxSnAh6sY/7iImLXcQfmEm66rtwkplBnaS1r0lDxLc68bqW/cNlB/FDq+
+	 VTysqQxcBjLC0eLWDiWL7Zwj5hdFaJYVgyk8c//npMIMMiMaucO51//w2kWDn+qVMOc8w
+	 MrhTIKuV49ZvOjxH0RWkbqI0rhQj5Cl4cwo4qnCo/eGxq2w4rzM0kuCthMasQ688IiuWI
+	 0e9abAxh93eLB+iUHcP7Plz9IuSd8hlDV+u2Sn1Isz4e+Sc2Cbog3GL5w8ozS5w9PMLkC
+	 xxJaJd1kfymeDQHjYBYQMIp62q7I9HKtmgrLSNil/RjRHjD5qMX9fuAtXZ8JCx1wxtw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795516245;
-	h=DMARC-Filter:Received:DKIM-Signature:DKIM-Signature:DKIM-Signature:
-	 DKIM-Signature:Received:Received:Message-ID:Date:MIME-Version:
-	 User-Agent:Subject:To:Cc:References:Content-Language:From:In-Reply-To:
-	 Content-Type:Content-Transfer-Encoding:X-Rspamd-Queue-Id:X-Spam-Level:
-	 X-Rspamd-Server:X-Rspamd-Action:X-Spam-Flag:X-Spamd-Result:
-	 X-Spam-Score;
-	bh=h1Z0aG2ZB4ocZ0WSU3Ux+BgxwDtyBAIxvmuyQzy525E=;
-	b=1l/9QtSGFwtj1SEZTX/I17y89XKmaBVLGCvWfji5ZuHiQySZjLRpa6hN97PKreHtJIZV
-	 BiK/xJGAKcdJYZvJlD/l2e8LzC1/OdVyMqDMyDBGsSGDn/okHVkjLauHMkJAnIqWo9iR5
-	 S1T/N2jIzXIz2/B5G54+3Yf7RFYK6wWeAqnLmvSRXg4TUaMV0yJkOLN0rM0ImnMBa9eL0
-	 Y5dun5n/ABHnUHJC5SGRQaz4biqfPBvRery/CrOHrK95GBPAw5Xk+wWXulwtRV3QEuSN+
-	 8hYPqX3OhFac1Mtst75GwUNPMNMP8pdweXhdkPGhmyWINGlXwb1x4EnzBLKskfXbWqw==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795519259;
+	h=DMARC-Filter:X-UUID:X-CTIC-Tags:X-CID-P-RULE:X-CID-O-INFO:X-CID-INFO:
+	 X-CID-META:X-CID-BVR:X-CID-BAS:X-CID-FACTOR:X-CID-RHF:X-UUID:X-User:
+	 Received:From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:
+	 References:MIME-Version:Content-Transfer-Encoding;
+	bh=IVS6eL8QbCi0pXUvL6cuqVq9lxhuJRcorsy7TUfmbDc=;
+	b=jW+zu2502VxV+O2tmrJq+0rC0iqL7yPexTVWxYkPsgv6irdluqEH0MCb9y19wm6EScm2
+	 YCgKg8bA6K+YZtDI7gVzqRJP9YK91BgvceTBkI95ul0Gwi2dUtO4DqzC2vSpRpmL5bNkL
+	 CocidyJX4rOiIFnraQ0TYz+epAlRxH8eSMJGUNzHaamr2/5U3R9nqnc2aOHUW3gFYWQFG
+	 qonjmYMnP/8S2gIZ/0xbbYhqCmzLAehENVGe+XlBO3zeR9iWzx+CmKx3B90mxBrC5P/Qt
+	 Zll0lwx3Nj37+LOE4pIGANUx1PD6qio+R6QZ/Utzayy88irCOvzZB7lWtO/x49fG2SQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=suse.de;
-	spf=pass smtp.mailfrom=suse.de;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b="Q/4wbPnO";
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=mhCOoaY0;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b="Q/4wbPnO";
-	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=mhCOoaY0;
-	arc=none smtp.remote-ip=195.135.223.130
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.223.130])
+	dmarc=none header.from=kylinos.cn;
+	spf=pass smtp.mailfrom=kylinos.cn;
+	arc=none smtp.remote-ip=124.126.103.232
+Received: from mailgw.kylinos.cn (mailgw.kylinos.cn [124.126.103.232])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 38D95606A32A;
-	Tue, 24 Nov 2026 10:30:45 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 38D95606A32A
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=Q/4wbPnO;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=mhCOoaY0;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=Q/4wbPnO;
-	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=mhCOoaY0
-Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [IPv6:2a07:de40:b281:104:10:150:64:97])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-out1.suse.de (Postfix) with ESMTPS id 1EA4C2224C;
-	Tue, 24 Nov 2026 10:30:43 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1795516243; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=h1Z0aG2ZB4ocZ0WSU3Ux+BgxwDtyBAIxvmuyQzy525E=;
-	b=Q/4wbPnOqeqTQ6XbsDvX9bCWCF1jmNuVKMDRe+WHvXh/LT3j8DPWPgV+iWikZfunR+YzXo
-	FS+Q+03flkiUbzRaLZJpRd9H410ZWvO8oFLKikKMQHPoeZ3YYf+JwO4YBndgbEksBpLchy
-	EJVkUAdTfuvMl0GCKGnJkFyrARUmk8s=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1795516243;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=h1Z0aG2ZB4ocZ0WSU3Ux+BgxwDtyBAIxvmuyQzy525E=;
-	b=mhCOoaY0RVM7radUWUxS2jAZZbJq4EzkQPXGf+VwkZxR0SP8q/0aWRJ5l2o4RN5QNeCiYf
-	BA6BYZeVnAfHD6Bw==
-Authentication-Results: smtp-out1.suse.de;
-	dkim=pass header.d=suse.de header.s=susede2_rsa header.b="Q/4wbPnO";
-	dkim=pass header.d=suse.de header.s=susede2_ed25519 header.b=mhCOoaY0
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1795516243; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=h1Z0aG2ZB4ocZ0WSU3Ux+BgxwDtyBAIxvmuyQzy525E=;
-	b=Q/4wbPnOqeqTQ6XbsDvX9bCWCF1jmNuVKMDRe+WHvXh/LT3j8DPWPgV+iWikZfunR+YzXo
-	FS+Q+03flkiUbzRaLZJpRd9H410ZWvO8oFLKikKMQHPoeZ3YYf+JwO4YBndgbEksBpLchy
-	EJVkUAdTfuvMl0GCKGnJkFyrARUmk8s=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1795516243;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=h1Z0aG2ZB4ocZ0WSU3Ux+BgxwDtyBAIxvmuyQzy525E=;
-	b=mhCOoaY0RVM7radUWUxS2jAZZbJq4EzkQPXGf+VwkZxR0SP8q/0aWRJ5l2o4RN5QNeCiYf
-	BA6BYZeVnAfHD6Bw==
-Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id AAC8C1339F;
-	Tue, 24 Nov 2026 10:30:42 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
-	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id ZfqAHlJnBWtPCgAAD6G6ig
-	(envelope-from <hare@suse.de>); Tue, 24 Nov 2026 10:30:42 +0000
-Message-ID: <692e91cc-e2ea-47cc-926f-6639952fb195@suse.de>
-Date: Tue, 24 Nov 2026 11:30:42 +0100
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8B8CE606A32A;
+	Tue, 24 Nov 2026 11:20:56 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 8B8CE606A32A
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.cn
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinos.cn
+X-UUID: 18ab7722e7f911f19a56ed5b684f684d-20261124
+X-CTIC-Tags:
+	HR_CC_COUNT, HR_CC_DOMAIN_COUNT, HR_CC_NAME, HR_CC_NO_NAME, HR_CTE_8B
+	HR_CTT_MISS, HR_DATE_H, HR_DATE_WKD, HR_DATE_ZONE, HR_FROM_NAME
+	HR_SJ_DIGIT_LEN, HR_SJ_LANG, HR_SJ_LEN, HR_SJ_LETTER, HR_SJ_NOR_SYM
+	HR_SJ_PHRASE, HR_SJ_PHRASE_LEN, HR_SJ_PRE_RE, HR_SJ_WS, HR_TO_COUNT
+	HR_TO_DOMAIN_COUNT, HR_TO_NAME, SA_EXISTED, SN_EXISTED, SPF_NOPASS
+	DKIM_NOPASS, DMARC_NOPASS, CIE_BAD, CIE_GOOD, CIE_GOOD_SPF
+	GTI_FG_BS, GTI_RG_INFO, GTI_C_BU, AMN_GOOD, ABX_MISS_RDNS
+X-CID-P-RULE: Release_Ham
+X-CID-O-INFO: VERSION:1.3.19,REQID:5e60e0a9-95b9-423f-8750-d27f3a71bc6f,IP:10,
+	URL:0,TC:0,Content:0,EDM:25,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTIO
+	N:release,TS:35
+X-CID-INFO: VERSION:1.3.19,REQID:5e60e0a9-95b9-423f-8750-d27f3a71bc6f,IP:10,UR
+	L:0,TC:0,Content:0,EDM:25,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION:
+	release,TS:35
+X-CID-META: VersionHash:7db8b62,CLOUDID:df191d0fa27302da380c1b7e7acd0a28,BulkI
+	D:2611241920513HWIY6N7,BulkQuantity:0,SF:17|19|66|78|81|82|83|102|127|136|
+	153|850|865|898|915,TC:nil,Content:0|15|50|99,EDM:5|-100,IP:-2,URL:0,File:
+	nil,RT:nil,Bulk:nil,QS:nil,BEC:nil,COL:0,OSI:0,OSA:0,AV:0,LES:1,SPR:NO,DKR
+	:0,DKP:0,BRR:0,BRE:0,ARC:0
+X-CID-BVR: 2,SSN|SDN
+X-CID-BAS: 2,SSN|SDN,0,_
+X-CID-FACTOR: TF_CID_SPAM_SNR,TF_CID_SPAM_FAS,TF_CID_SPAM_FSD
+X-CID-RHF: D41D8CD98F00B204E9800998ECF8427E
+X-UUID: 18ab7722e7f911f19a56ed5b684f684d-20261124
+X-User: maguicai@kylinos.cn
+Received: from localhost.localdomain [(36.106.123.207)] by mailgw.kylinos.cn
+	(envelope-from <maguicai@kylinos.cn>)
+	(Generic MTA with TLSv1.3 TLS_AES_256_GCM_SHA384 256/256)
+	with ESMTP id 907033931; Tue, 24 Nov 2026 19:20:47 +0800
+From: Guicai Ma <maguicai@kylinos.cn>
+To: Henry Martin <bsdhenrymartin@gmail.com>
+Cc: David Howells <dhowells@redhat.com>,
+	Jarkko Sakkinen <jarkko@kernel.org>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	Guicai Ma <maguicai@kylinos.cn>
+Subject: Re: [PATCH v2] keys: fix crash on big_key read or revoke after a failed update
+Date: Tue, 24 Nov 2026 06:20:44 -0500
+Message-ID: <20261124112044.1042041-1-maguicai@kylinos.cn>
+X-Mailer: git-send-email 2.47.3
+In-Reply-To: <20261124025759.39344-1-bsdhenrymartin@gmail.com>
+References: <20261124025759.39344-1-bsdhenrymartin@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -108,207 +87,23 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v6 0/9] nvme-auth: switch to use the kernel keyring
-To: Eric Biggers <ebiggers@kernel.org>, Hannes Reinecke <hare@kernel.org>
-Cc: Keith Busch <kbusch@kernel.org>, Jens Axboe <axboe@kernel.dk>,
- Christoph Hellwig <hch@lst.de>, Sagi Grimberg <sagi@grimberg.me>,
- Chaitanya Kulkarni <kch@nvidia.com>, linux-nvme@lists.infradead.org,
- linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
-References: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
- <20261123212105.GA18468@google.com>
-Content-Language: en-US
-From: Hannes Reinecke <hare@suse.de>
-In-Reply-To: <20261123212105.GA18468@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-Rspamd-Queue-Id: 1EA4C2224C
-X-Spam-Level: 
-X-Rspamd-Server: rspamd2.dmz-prg2.suse.org
-X-Rspamd-Action: no action
-X-Spam-Flag: NO
-X-Spamd-Result: default: False [-13.50 / 50.00];
-	SUSE_INTERNAL_BYPASS(-9.00)[];
-	BAYES_HAM(-3.00)[100.00%];
-	NEURAL_HAM_LONG(-1.00)[-1.000];
-	R_DKIM_ALLOW(-0.20)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	NEURAL_HAM_SHORT(-0.20)[-1.000];
-	MIME_GOOD(-0.10)[text/plain];
-	XM_UA_NO_VERSION(0.01)[];
-	MX_GOOD(-0.01)[];
-	RBL_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:104:10:150:64:97:from];
-	RCVD_VIA_SMTP_AUTH(0.00)[];
-	RECEIVED_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:106:10:150:64:167:received];
-	MIME_TRACE(0.00)[0:+];
-	ARC_NA(0.00)[];
-	RCPT_COUNT_SEVEN(0.00)[10];
-	RCVD_TLS_ALL(0.00)[];
-	TO_DN_SOME(0.00)[];
-	FROM_EQ_ENVFROM(0.00)[];
-	FROM_HAS_DN(0.00)[];
-	MID_RHS_MATCH_FROM(0.00)[];
-	RCVD_COUNT_TWO(0.00)[2];
-	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[imap1.dmz-prg2.suse.org:rdns,imap1.dmz-prg2.suse.org:helo,suse.de:dkim,suse.de:email];
-	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	DKIM_TRACE(0.00)[suse.de:+]
-X-Spam-Score: -13.50
 
-On 11/23/26 10:21 PM, Eric Biggers wrote:
-> [ +Cc keyrings@vger.kernel.org ]
-> 
-> On Mon, Nov 23, 2026 at 06:10:00PM +0100, Hannes Reinecke wrote:
->> Hey all,
->>
->> the current NVMe authentication code is using a hand-crafted key
->> structure; idea was to have the initial implementation with a minimal
->> set of dependencies.
->> (And me not having a good grasp on how to use the kernel keyring :-)
->> That had the drawback that keys always had to be specified on the
->> nvme-cli commandline, which is far from ideal from a security standpoint.
->>
->> So this patchset switches the authentication code over to use the
->> kernel keyring. User-facing interface (namely argument to 'nvme
->> connect') remain the same, but the key data is converted into keys
->> which are stored as a new key type 'dhchap' with a random UUID as
->> description in the kernel keyring.
->>
->> With this I have updated the dhchap arguments to 'nvme connect' and
->> the configfs interface to either be the keydata (ie the original
->> interface) _or_ a key description referring to a pre-populated dhchap
->> key in the kernel keyring. This allows for easier provisioning of keys
->> and avoids the security risk from having to specify the key data on
->> the kernel commandline.
-> [...]
->>   16 files changed, 1140 insertions(+), 386 deletions(-)
-> 
-> This should have been Cc'ed to the keyrings mailing list.  I found it
-> via lore search.
-> 
-Oh, sorry. I had hoped that 'b4 --auto-cc-to' would cover it...
+On Tue, Nov 24, 2026 at 10:57:59AM +0800, Henry Martin wrote:
+> Instantiate the new payload first and destroy the old one only on success;
+> a positive key's reservation is already 16 bytes, so it cannot fail.
 
-> As far as I can tell, this series is trying to do two main things:
-> 
->      (1) parse secrets up front instead of keeping raw "DHHC-1:..."
->      strings around in 'opts' and 'nvmet_host'; and
-> 
->      (2) let userspace reference pre-loaded keys in a keyring so
->      cleartext secrets don't have to live in config files or
->      sysfs/configfs 'show' output.
-> 
-> (Patch 7's flush_work() change looks independent of the rest.)
-> 
-Correct.
+Looks good. Saving the old big_key_payload on the stack before calling
+generic_key_instantiate() also keeps negative keys untouched if the
+quota reserve fails, and the caller still frees prep via
+big_key_free_preparse().
 
-> Neither of those requires replacing 'struct nvme_dhchap_key' with
-> 'struct key' at runtime, or synthesizing random-UUID keys in ".nvme"
-> when raw secrets are passed.  Doing that adds a lot of complexity and
-> opportunity for bugs (as Sashiko's review already seems to show), for no
-> real gain.  Note that 'user_key_payload' still lives in slab memory just
-> like 'struct nvme_dhchap_key' does.
-> 
-> The semantics of the keyrings subsystem just don't match storage very
-> well, and it's quite hard to integrate with correctly.  In fscrypt, I
-> had to deal with a lot of bugs before moving away from the keyrings
-> subsystem almost entirely, due to issues with per-process keyring
-> scoping, delayed key destruction, locking, and LSM checks.
-> 
-Hmm.
+I tested this on 7.4.0-rc3 arm64 in QEMU (KASAN, lockdep,
+CONFIG_BIG_KEYS=y). After creating a 4096-byte big_key and setting
+root_maxbytes=1, a 1-byte KEYCTL_UPDATE fails with -EDQUOT on the
+unpatched kernel and the next KEYCTL_READ hits the BUG at
+fs/open.c:1145 in dentry_open(). With this patch the 1-byte update and
+read succeed, as do file/buff update transitions and KEYCTL_REVOKE.
 
-> This series already runs into the first of these: patches 8-9 use
-> request_key(), which only searches the caller's process keyrings and
-> won't even find ".nvme".  And keys are no longer wiped synchronously
-> with kfree_sensitive(), but rather whenever the last reference is
-> dropped and the garbage collector gets around to it.
-> 
-But I sincerely would hope that the key subsystem will wipe them 
-correctly eventually, right?
-
-> Note that NVMe-TCP TLS isn't a relevant precedent here, either.  TLS
-> handshakes run in userspace (tlshd), which needs to read the PSK via
-> keyctl, whereas DH-HMAC-CHAP is done entirely in-kernel.
-> 
-> This series also gives the 'dhchap' key type a ->read() method, so even
-> pre-populated keys remain readable from userspace via keyctl_read() (by
-> default, by any possessor).
-> 
-Which is kinda the main idea. And it's no different from the current
-behaviour, where the DH-CHAP keys remain visible via sysfs.
-
-> And inserting raw secrets into ".nvme" with KEY_USR_READ makes them
-> readable via keyctl_read() by any process running as uid 0, even without
-> CAP_SYS_ADMIN and without access to sysfs or configfs.  Due to the
-> KEY_USR_* permissions on ".nvme" and the keys, such processes can also
-> invalidate or revoke in-use keys, breaking authentication.  (Separately,
-> the existing nvmet dhchap_key and dhchap_ctrl_key configfs attributes
-> are 0644 world-readable, which should be fixed regardless.)
-> 
-Again, one could argue that this was the intention.
-The idea behind this patchset is to separate key provisioning from
-key usage; the DH-CHAP key values have to be present whenever the
-nvme subsystem is doing a reset, and the current way of providing
-them via the nvme-cli command-line requires quite some instrumentation
-to insert the correct settings.
-It also makes integration with other entities providing external
-DH-CHAP keys quite hard as these entities have to deal not only with
-the kernel side (to trigger re-authentication), but also the whatever
-tooling is there to generate the nvme-cli commandline.
-
-Moving to a separate storage for DH-CHAP keys hence seemed appealing
-to me, especially as we already have a keyring integration, so adding
-another key type for DH-CHAP felt quite a natural step.
-And it allows for an easy integration with external key providers,
-as adding keys to the key store is a quite simple process and
-doesn't require you to integrate with nvme-cli tooling.
-
-> How about keeping 'struct nvme_dhchap_key' as the runtime
-> representation, and just parsing into it up front in 'opts' and
-> 'nvmet_host'?  The sysfs/configfs 'show' methods could re-encode the
-> secret if really needed, though not exposing it at all would be better.
-> 
-It really feels naff to have this structure. We already have
-a 'struct key', providing basically all the features we need.
-
-> Then if keyring-based provisioning is still wanted so config files don't
-> need raw secrets, it could work like "fscrypt-provisioning" keys: define
-> a write-only key type (no ->read(), ->update(), or ->revoke()), look up
-> the key by serial number with lookup_user_key() once when the
-> option/attribute is written, copy the decoded key (and description, if
-> needed for 'show') into 'struct nvme_dhchap_key', and immediately
-> key_put() it.
-> 
-The main idea here is to allow for external provisioning of the keys,
-which then can be looked up by nvme-cli tooling to assemble the
-actual command-line.
-The write-only key method would leave us with an abstract key serial,
-which then will have to be passed between the key provisioning tooling
-over to nvme-cli. Which really doesn't gain us anything.
-
-> Raw secrets wouldn't touch keyrings at all, and the keyrings subsystem
-> would stay out of the runtime path.
-> 
-Main issue here is to keep compability with previous versions.We 
-currently have 'dhchap_secret' and 'dhchap_ctrl_secret' sysfs
-attributes holding the encoded DH-CHAP keys.
-And these values are written to the configuration file to be
-able to re-establish the connection upon the next boot.
-So whatever we do, we need to have 'something' in here allowing
-us to identify the DH-CHAP key. So a key serial is out of question
-here (we tried that with TLS, and failed miserably).
-
-So really we just use the keystore to be able to lookup external
-keys; I really want to get away from having to store the keys
-as a file or in encoded from in the configuration file.
-
-And what other method is there?
-I still like the keystore somewhat, even if it's quite overblown
-for in-kernel usage.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke                  Kernel Storage Architect
-hare@suse.de                                +49 911 74053 688
-SUSE Software Solutions GmbH, Frankenstr. 146, 90461 Nürnberg
-HRB 36809 (AG Nürnberg), GF: I. Totev, A. McDonald, W. Knoblich
+Reviewed-by: Guicai Ma <maguicai@kylinos.cn>
+Tested-by: Guicai Ma <maguicai@kylinos.cn>
