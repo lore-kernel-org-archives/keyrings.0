@@ -1,69 +1,56 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=134.76.10.21
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795535671;
-	b=p6iVNTGjmvOiw7dxHGbDGorGP3rhpCakHllB1fdOL7kxEZOKvFI3EkrKTkvHq9k4fRQa
-	 V4c2xl7GLkx1xItQRYhw71YPsMwn7cWaOJTrj8AHXThULS4SKppUSo6ETxhjqlU1TflrX
-	 g2TsIdpCCK0fDjwlkwQupfMZNxeMcHXlji2tUtTRwZf0PUJZ1FwxpeKP/RM+cQRSaG66F
-	 6EWn27Oo3pUecU7uO7PcLLV644YRHYKjgG/kxjFxY+tGLH+Twmx/IElcXPtHA60SEz5Ed
-	 rrw+5FpC5YdxgtA3mvYXrGnHV5MIRH/knzoiUUeDXuxra4FsqDv4Yqt2HX4e6JD2QkQ==
+	t=1795537640;
+	b=FLsu0S7XVfACApJ1GW693DjSIF9qKajwDnmBvNHWR2YgKT4jO9hOwisIqF0kBO55OPi0
+	 +7gW2qXgh7rEo34IsxbAqFkfWltiZL2swuhr6+NmMr9kiVwDELHt32G0QkwEaziO/tv5B
+	 4rGoiza5oAW4xpVmCDhJAqUCfeeN5l4RzkjFDn61UHbYJuUpYyGyMGNZn0zAvQhRHT/7j
+	 eNkRsZwzwlx5H8Q1lFOpFJV7XYpLdPFm0f/nTUckHu7JyWJwKdTRhMv2LY5pt5DRItmOz
+	 +Xu1zn9sm/PrFMwDsr5FkC/uQPcs77v8AV23HM62xC91LgPYfF4PHdOOPz7vHIACPXQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795535671;
-	h=DMARC-Filter:DKIM-Signature:Received:Received:Received:Message-ID:
-	 Date:MIME-Version:User-Agent:Subject:To:CC:References:
-	 Content-Language:From:Autocrypt:In-Reply-To:Content-Type:
-	 Content-Transfer-Encoding:X-Originating-IP:X-ClientProxiedBy:
-	 X-Virus-Scanned:X-Spam-Level;
-	bh=hSy+H+hShpXfVAx28ypP7A4wHZge7gvgNn4QOg2Gqzo=;
-	b=n9h0CYuoGKrrFmYDEkYKJExDnJPQnhgrlqsqGIZS6DgGLpnLplvDUYZoQQBrxUI222rM
-	 AAQEhzbn1hSKQOfEJEETbgTt8GtdH7+XiO+ShM9eTvtJCjSy5WKOeqy2de+NW0WANMcgE
-	 t7ySFJ2x7RsFDhmebbc23L8FGk3CHpY0xo49rW8hyEqtZojXaSM4Eui1ZxchF8RI+wGpW
-	 PZW2/gECLz6ao4U0qR6UuK+GRS1Nmc3GgGzOx8+mZqfUCcc2RQvMeNgt0jzyQWSJQoHs5
-	 92maFD8hMkmENkq70cN3ivwt5J7NdvnlePsjG3eRhNcKsG+tyoBrVDbuZe3OIGea5qA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795537640;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=/+3j8Kgy9C8irEIqEgZC/GGq9yhGv+BkGWWDPqpisWM=;
+	b=AW6csCyaFrkDLIodyTKHM+JhXHAadDxtWfeL2ougez8CW3Y8y5pN700q+SHWc/3yHZ35
+	 58J9A4HZaeDnx5biBDpA+lbCMPqjKB+yio2PdLda6zq4Sk+8jDdAA4MwvCNjwuFGi0N53
+	 DvDo2BpATNECNNuylIZR0pGmkaFqcKLS0Bw1V9IRc/84zTJxIyaVwXeFMrT03wBRblSMS
+	 Vm+l93x6YPg+X9yURKpQGlXOrMk2WMl+I1iLVYgABDiRs+lYeZ5LDrFIMXDgaHf9iSxaj
+	 Wfa01cV+0PR/lIitM+qn8oGc5aogervuU0i83sBsYBNKEN9CPHXlRrhXT5S91g9GwKg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=cispa.de;
-	spf=pass smtp.mailfrom=cispa.de;
-	dkim=pass header.d=cispa.de header.i=@cispa.de header.a=rsa-sha256 header.s=2023-rsa header.b=sDLOnWzf;
-	arc=none smtp.remote-ip=134.76.10.21
-Received: from mx-2023-1.gwdg.de (mx-2023-1.gwdg.de [134.76.10.21])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HFxswjOq;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange ECDHE (prime256v1) server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9E52D606A699;
-	Tue, 24 Nov 2026 15:54:28 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 9E52D606A699
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=cispa.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=cispa.de
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E2B4A606A31E;
+	Tue, 24 Nov 2026 16:27:19 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=cispa.de header.i=@cispa.de header.a=rsa-sha256 header.s=2023-rsa header.b=sDLOnWzf
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=cispa.de;
-	s=2023-rsa; h=Content-Transfer-Encoding:Content-Type:In-Reply-To:From:
-	References:CC:To:Subject:MIME-Version:Date:Message-ID:Sender:Reply-To:
-	Content-ID:Content-Description:Resent-Date:Resent-From:Resent-Sender:
-	Resent-To:Resent-Cc:Resent-Message-ID:List-Id:List-Help:List-Unsubscribe:
-	List-Subscribe:List-Post:List-Owner:List-Archive;
-	bh=hSy+H+hShpXfVAx28ypP7A4wHZge7gvgNn4QOg2Gqzo=; b=sDLOnWzfkw17DBTLsqtuUDih7F
-	S7xbEZP3p29/Udy9/Rq23ZEluJQM5Gocg/zi0sT9qo3Q4mZC+tVrK1dXi1dnqlsdGyyW75jvp/6/n
-	oSYpA5DhCLer9AG+FMH6ZCg4Z/NPIPQPsmQ2AQ3FjCMtI9XPhJVSYFt+v517bV4MNl9TixbaAea5h
-	y4oKub/Tm2Q+BZDS9qEl9/sHlOmYvkeNAOyNlXEaczGSEPIUg/xz1ALoWGxAiurkvfzUefV3/tnKU
-	BzrrA5QdZAyJx1UoqlgjJWnEA69OAkH7PpQpvNB8BWz9VTROWzHfLj96eALBpDCKi1q3Jh0RKTZ1J
-	EwxpCf5Q==;
-Received: from mailer.gwdg.de ([134.76.10.26]:43056)
-	by mailer.gwdg.de with esmtp (GWDG Mailer)
-	(envelope-from <florian.bauckholt@cispa.de>)
-	id 1xVsqV-00BiEy-2u;
-	Tue, 24 Nov 2026 16:54:16 +0100
-Received: from mbx19-sub-11.um.gwdg.de ([10.108.142.88] helo=email.gwdg.de)
-	by mailer.gwdg.de with esmtps (TLS1.2:ECDHE-RSA-AES256-GCM-SHA384:256)
-	(GWDG Mailer)
-	(envelope-from <florian.bauckholt@cispa.de>)
-	id 1xVsqV-000RMN-2l;
-	Tue, 24 Nov 2026 16:54:16 +0100
-Received: from [10.100.202.21] (10.250.9.200) by mbx19-sub-11.um.gwdg.de
- (10.108.142.88) with Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.2562.57; Tue, 24 Nov
- 2026 16:54:15 +0100
-Message-ID: <5d833d4c-bf8b-4ffb-a214-126de4403d4e@cispa.de>
-Date: Tue, 24 Nov 2026 16:54:15 +0100
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HFxswjOq
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 7E3641F000C6;
+	Tue, 24 Nov 2026 16:27:18 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795537639;
+	bh=/+3j8Kgy9C8irEIqEgZC/GGq9yhGv+BkGWWDPqpisWM=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=HFxswjOqjlOU5O8sEduHm9m2VZFLGo+Mn5AZc6zBg2oA1Zd7d/lMbMjPQWJhXOBn9
+	 Cfxe+++lyg58q0+DzTMzbO2x8+bXrq+kDL5FVyMF3xieg687ljG1o4TgKSnBXqOpFc
+	 WLGP6nFvAcsE0chG6ha18UaNjckmWqafRBWVion0okOvMM7UdAeckOyXJiXMAeCO5J
+	 a5oJuuaMvXQ5AN1NqyX/N/Xt4DEVqG653oo7UsEjJwijcwG2+XjaReUScKEAG6Ecpg
+	 jwFBF/KH6uQgSU2/j4/0aTmnAy+8b5ZHhc7+h+UySkg+1XzbeW3drR6oo/lPyAybFN
+	 usLHHzy2AA60A==
+Date: Tue, 24 Nov 2026 18:27:15 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Guicai Ma <maguicai@kylinos.cn>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KEYS: Protect key instantiation and rejection against
+ type removal
+Message-ID: <awW640zaT8Bnqd0-@kernel.org>
+References: <20261124053303.940216-1-maguicai@kylinos.cn>
+ <20261124091243.1019217-1-maguicai@kylinos.cn>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -73,58 +60,78 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v2 1/2] KEYS: fix signature length passed to
- KEYCTL_PKEY_VERIFY
-To: Jarkko Sakkinen <jarkko@kernel.org>, Rodolfo Giometti
-	<giometti@enneenne.com>
-CC: David Howells <dhowells@redhat.com>, Lukas Wunner <lukas@wunner.de>, Ignat
- Korchagin <ignat@linux.win>, Herbert Xu <herbert@gondor.apana.org.au>, "David
- S. Miller" <davem@davemloft.net>, Paul Moore <paul@paul-moore.com>, James
- Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Hui Peng
-	<benquike@gmail.com>, Stefan Berger <stefanb@linux.ibm.com>,
-	<keyrings@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
-	<linux-security-module@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-	<stable@vger.kernel.org>, Guicai Ma <maguicai@kylinos.cn>
-References: <20261119-keyctl-pkey-fixes-v2-0-9e2d1c7db7ec@cispa.de>
- <20261119-keyctl-pkey-fixes-v2-1-9e2d1c7db7ec@cispa.de>
- <80ded1ae-51a7-46d1-bb67-02b4b06de71b@enneenne.com>
- <av7x53CigERu-cf2@kernel.org>
-Content-Language: en-US
-From: Florian Bauckholt <florian.bauckholt@cispa.de>
-Autocrypt: addr=florian.bauckholt@cispa.de; keydata=
- xjMEav3GRRYJKwYBBAHaRw8BAQdAnELDrQj5frnVfDEzfgTLq+dYQyGwNlrF4RK4Lnh0EtLN
- LkZsb3JpYW4gQmF1Y2tob2x0IDxmbG9yaWFuLmJhdWNraG9sdEBjaXNwYS5kZT7CjwQTFggA
- NxYhBCzYgazhZyFPZBJ6GB4ZurGrnfo1BQJq/cZFBQkFo5qAAhsDBAsJCAcFFQgJCgsFFgID
- AQAACgkQHhm6saud+jWpqAEAvdY72AqnlDNhbzgaDPghigkZxQsXy0SguVI4rIFdkYoA/RRN
- yQMEpqS/x1bseRnNFeLmtDviMLMoLUrKGY23VuUPzjgEav3GRhIKKwYBBAGXVQEFAQEHQElQ
- tDrQlEp5XdrAZUWzYVj26t0q0BhMLOqKLXSMmA5xAwEIB8J+BBgWCAAmFiEELNiBrOFnIU9k
- EnoYHhm6saud+jUFAmr9xkYFCQWjmoACGwwACgkQHhm6saud+jUl5AD/S78nLqAgIn53lOzT
- A8NTSByrtVvDBb9G9heETfLzVBIBANDFhjZQpssjUeVZ7QV/1GDL9ZhGssjnTQmzHKavboEK
-In-Reply-To: <av7x53CigERu-cf2@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MBX19-GWD-07.um.gwdg.de (10.108.142.60) To
- mbx19-sub-11.um.gwdg.de (10.108.142.88)
-X-Virus-Scanned: (clean) by clamav
-X-Spam-Level: -
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261124091243.1019217-1-maguicai@kylinos.cn>
 
-On 11/19/26 13:56, Jarkko Sakkinen wrote:
-> Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+On Tue, Nov 24, 2026 at 04:12:43AM -0500, Guicai Ma wrote:
+> key_instantiate_and_link() reads key->type->def_datalen and ->preparse,
+> passes key->type to restrict_link->check(), and invokes ->instantiate()
+> and ->free_preparse() without synchronizing against key type removal.
+> A reference on the key keeps the key object alive, but does not pin the
+> module that provides its type.
+> 
+> unregister_key_type() removes the type from key_types_list and waits for
+> key_garbage_collector() to run three passes: pass 1 sets KEY_FLAG_DEAD
+> and clears key->perm, pass 2 unlinks dead keys from keyrings, and pass 3
+> takes key->sem for writing, retypes key->type to &key_type_dead, and
+> destroys the payload. A key still under construction stays in
+> KEY_IS_UNINSTANTIATED with a valid authorisation key, so an upcall
+> helper calling KEYCTL_INSTANTIATE after pass 3 reaches
+> __key_instantiate_and_link() and jumps to key_type_dead.instantiate,
+> which is NULL:
+> 
+>   Unable to handle kernel NULL pointer dereference at
+>   virtual address 0000000000000000
+>   Internal error: Oops: 0000000086000006 [#1] SMP
+>   pc : 0x0
+>   lr : __key_instantiate_and_link+0xb8/0x2f8
+>   Call trace:
+>    0x0 (P)
+>    key_instantiate_and_link+0x2e8/0x36c
+>    keyctl_instantiate_key_common+0x1cc/0x338
+>    keyctl_instantiate_key+0xbc/0x120
+>    __arm64_sys_keyctl+0x218/0x3f0
+> 
+> If the module unloads while ->preparse() or ->instantiate() is running,
+> execution can also return into freed module text or skip
+> ->free_preparse(). While the request_key() syscall holds key_types_sem
+> across the upcall, in-kernel request_key() callers do not, so
+> unregister_key_type() can run before KEYCTL_INSTANTIATE or
+> KEYCTL_REJECT.
+> 
+> key_reject_and_link() shares the same window: it links the key into
+> @keyring and calls key_set_expiry() (which reads key->type->flags)
+> without checking KEY_FLAG_DEAD. Linking a dead key between GC pass 2 and
+> pass 3 leaves it in the keyring's assoc_array while pass 3 overwrites
+> key->type (which aliases key->index_key.type) in place.
+> 
+> Neither key->sem nor key_types_sem can be taken here: holding key->sem
+> across __key_link_lock() and __key_instantiate_and_link() inverts lock
+> order against encrypted_instantiate() (which locks the master key's
+> semaphore under keyring->sem and key_construction_mutex), and
+> key_instantiate_and_link() is already called with key_types_sem held for
+> reading (e.g. from request_key_auth_new()).
+> 
+> Add key_type_srcu and call synchronize_srcu(&key_type_srcu) at the end
+> of GC pass 1 (KEY_GC_REAPING_DEAD_1) whenever dead keys were marked.
+> SRCU rather than RCU because ->preparse() and ->instantiate() may sleep.
+> Hold key_type_srcu across the full body of key_instantiate_and_link()
+> and key_reject_and_link() and check KEY_FLAG_DEAD:
+> 
+> - Callers that observe !KEY_FLAG_DEAD finish all key->type accesses and
+>   any keyring linking before pass 2 unlinks dead keys and pass 3 retypes
+>   them to key_type_dead.
+> - Callers entering after synchronize_srcu() observe KEY_FLAG_DEAD:
+>   key_instantiate_and_link() returns -EKEYREVOKED (matching
+>   key_validate()), and key_reject_and_link() skips linking (returning
+>   -EKEYREVOKED if @keyring was given) and key_set_expiry() while still
+>   completing negative instantiation so waiters wake up and @authkey is
+>   invalidated.
+> 
+> Also return -EOPNOTSUPP in key_instantiate_and_link() if a live key type
+> does not provide ->instantiate().
 
-Hi,
+The commit message is incomprehensible.
 
-I saw that for-next-keys now has 94cd21592349 ("KEYS: Fix asym key
-overflow in keyctl_pkey_verify()") with the same (trivial) patch.
-I'm not sure how this goes, but if you'd like to add some context, a
-link to this thread and these tags can probably be moved over:
-
-https://lore.kernel.org/all/20261119-keyctl-pkey-fixes-v2-1-9e2d1c7db7ec@cispa.de/
-
-  Tested-by: Stefan Berger <stefanb@linux.ibm.com>
-  Reviewed-by: Guicai Ma <maguicai@kylinos.cn>
-  Tested-by: Guicai Ma <maguicai@kylinos.cn>
-  Tested-by: Rodolfo Giometti <giometti@enneenne.com>
-
-Thanks,
-Florian
+Br, Jarkko
