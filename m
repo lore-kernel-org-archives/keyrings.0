@@ -1,78 +1,88 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=74.125.224.131
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795558158;
-	b=UqHWkZN4S39cpF+aN87A8kTjnFDJy4t+oyDvjBZPilrBJt4rqydCA3m9XVrTUxAOCdeF
-	 JLodgo6L7ETEQ5/kRJAdo5cNyruzvv/oTpyBtXv50zxA4GhxmiyCfuEU2ea1D1sePvvk2
-	 hgtPyxxtyvKjFKnw42LUYD4zjtIuPhmababboQYVkpBv7O5Nbj0MsV2GHQQqaqivqJQtS
-	 1aOMseGkPEcsJAyyQ9CfKOl20XySNJXIuaghXhwqBj2uBpD4LtrgeCQS4IwsM1kJOpiBZ
-	 RI3LaXaVjyfiLlfgbL1KciqBNBkIA64SEScUpG6i5ptQGxwOFZhXPDvlSeMS1ejt95A==
+	t=1795558406;
+	b=mMuJFzpxnGwTyDABZnjP2Wx8yDMzegVcRy/N/hUuxQ8V3UsI82SIVBsA4i8bTSvESrb9
+	 bgvsne3x77gQT6B4ECRfLNs+zRK6N8w0tKCl17X2lfrTxn1rygwHSugjwkq50YnWVONWL
+	 ah6/j3kHz6otW6e9L0R4T2fqEhiBD72Xjf0Whwn+YOV+ugHpoFKMSLLVAlixIraHLPSNh
+	 z8l6M8AuqRSOhzZK1Op+UkFiWl9+mcriLtw0Fx13e82lofJu732LFKOh59cxEOfK/HBli
+	 BkHm3XYV6wVgytuQmpf5TaU6XNRfI5kTxBGq5uQHa8XMDy2pUy4Pb5RFbwe8gXBy0QA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795558158;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=lUuj/Y6wOVZtmwHgP4+/UEb7LXrLLClkrKGeWeDx+eI=;
-	b=UJIskd5Aemp4dHxT2nC29Jl6h5nlMbNQiDn3XlDxhkrRVoiqdfbGlPnGZTE3mujZHYWv
-	 UW6wCwD8okQI9V0+By1VLTolnNq1Cn/5CSCSc9e4usYAe8lUwPYeUJvY8YaK0RVz/1Wtd
-	 0mhFs5beyUgEKErCcNQxCsTp7O3F7k7EXCLJUwxO//IYY3YCJiystfhvIDrRyuvmsVfQu
-	 rugg0Tfb/rWJtADKasAEfzsqgafFOx6OEhX1jayKnyEDWEKl/4ngCtj3bHOHcxfc/aJrr
-	 aqR3mrBr5KF9voiVZOjDUV5E05KbgVCD0XRaNN61YEjBUdqEku4uy1TTuIsYsbacWew==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795558406;
+	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
+	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
+	 Message-ID:Date:MIME-Version:User-Agent:Subject:To:Cc:References:
+	 Content-Language:From:In-Reply-To:Content-Type:
+	 Content-Transfer-Encoding;
+	bh=0L7WJQgcx2P9Iy3RWSJdXtSMcIIiqi2RystV/kGBxpo=;
+	b=u5KJ6AfzjqASLFtrqvQ5Vwf0tCzD9vB25TiYXOSRGqNnVSwLwTGN8QaSmywIODFY1l/2
+	 IeknMaYVBxQ1Kem6r1F+QB3/cC2NmG/XYdZM3sQgVcKgR4acGsUJnznO6bUBcKEJLbxxq
+	 cw3R2Z2zat5DkkyeXd6dWhkRtgIuOO0UPxt83Uk37wIxEtucVSbTM2SbFyu7J445f9J5P
+	 umHMoB3AqmTz4apKocPX9F0fq5ReTVH4sIEYNyr9PDDEttoXyC8ZSb0UwSBOnXMNfOlPR
+	 0pyAzAXLWHgkYXfrLGQ9b9OzKJk/v+bf/5EIVpGp+1NLiXdyzeq3Ok/X8i5vOgicd3Q==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EobdNwq0;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	dmarc=pass header.from=gmail.com;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=IDLc7hNT;
+	arc=none smtp.remote-ip=74.125.224.131
+Received: from mail-yx2-f3.google.com (mail-yx2-f3.google.com [74.125.224.131])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 411B6606A31E;
-	Tue, 24 Nov 2026 22:09:18 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5165D606A321
+	for <keyrings@vger.kernel.org>; Tue, 24 Nov 2026 22:13:26 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 5165D606A321
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=EobdNwq0
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 2F1D81F000C0;
-	Tue, 24 Nov 2026 22:09:17 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795558157;
-	bh=lUuj/Y6wOVZtmwHgP4+/UEb7LXrLLClkrKGeWeDx+eI=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=EobdNwq0XFrXRfmZajs7bbG74i4Re6S8ODnQDetAu5BfFTs7Px15bLs2ypdGHCytT
-	 BL7oY60Q/rBtrpeWOlgH1CJUtEovaXYYRHkFq9wb9mFTKQ4wZIU9HwshFXJeLxeJue
-	 zULkzPY1A7XYb8xACMxHs57BjXXMEzY0qyDnFJW6Zwq50A9odHxHAavwHvWp4wFFOJ
-	 cbUTKxbmzaYDbyEMROVvlPj1xecJA1KUFCAJTV4wvv9TTGlc6MLiFMYkv8VJFGfZiV
-	 U3zw/ELW4Wn3qClz6DKfZDgzECTW1zRkq+yLpARdbf7JmKwZimNRAZuiz1c2TkiFv2
-	 yYJsJs8wiYiHA==
-Date: Wed, 25 Nov 2026 00:09:14 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: keyrings@vger.kernel.org, dm-devel@lists.linux.dev,
-	linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	Ahmad Fatoum <a.fatoum@pengutronix.de>,
-	Alasdair Kergon <agk@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	David Gstir <david@sigma-star.at>,
-	David Howells <dhowells@redhat.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Ignat Korchagin <ignat@linux.win>,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	James Morris <jmorris@namei.org>,
-	James Prestwood <prestwoj@gmail.com>,
-	Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>,
-	Lukas Wunner <lukas@wunner.de>, Mike Snitzer <snitzer@kernel.org>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
-	Peter Huewe <peterhuewe@gmx.de>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Shuah Khan <skhan@linuxfoundation.org>,
-	Sumit Garg <sumit.garg@kernel.org>
-Subject: Re: [PATCH v2 6/9] KEYS: Factor out KEYCTL_PKEY
-Message-ID: <awYLCuCIG8--aa2Z@kernel.org>
-References: <20261124194043.1651679-1-jarkko@kernel.org>
- <20261124194043.1651679-7-jarkko@kernel.org>
- <20261124215035.GE2227373@google.com>
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=IDLc7hNT
+Received: by mail-yx2-f3.google.com with SMTP id 00721157ae682-8b521794242so7621777b3.1
+        for <keyrings@vger.kernel.org>; Tue, 24 Nov 2026 14:13:26 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20260707; t=1795558405; x=1796163205; darn=vger.kernel.org;
+        h=content-transfer-encoding:content-type:in-reply-to:from
+         :content-language:references:cc:to:subject:user-agent:mime-version
+         :date:message-id:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=0L7WJQgcx2P9Iy3RWSJdXtSMcIIiqi2RystV/kGBxpo=;
+        b=IDLc7hNTu5+Ki/2urx0xGVwPx1ge6KES8tl67HhEyposIInM0NddOsieyTHhoBgRZw
+         eUDh3pmJ5kPD9Lm7UFichaB1jeC2oGKsbtCdp4VeabJCFDYUydsl8PM0qIQs1t7dIB5z
+         05o0lKtNRFIiNhsZe6HeyHpR26szeysImpDo+yB9d+RxbNfuKleNZZ0jOeJvBYUWV1KX
+         VGRLmjh2PDD8SLm4vwpsjUEwPsEPmHKdN7xZDwD7E9RsWTeLgGX5X8ENm7drAFPd0S9e
+         mlV5S4svAzhoMWD9ItfNanRRJv2FMGccMK/KBjFaX71pAqPozA9w7gbkV7O9Fcs1UC0P
+         7/Qg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1795558405; x=1796163205;
+        h=content-transfer-encoding:content-type:in-reply-to:from
+         :content-language:references:cc:to:subject:user-agent:mime-version
+         :date:message-id:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=0L7WJQgcx2P9Iy3RWSJdXtSMcIIiqi2RystV/kGBxpo=;
+        b=XJjQmRIwiQmr200mJb9d0dDQXzA5uMNcnaPAE3bg2A3ThFWBBkkMQ3987B+D4hizKf
+         mbw02azMuZ8LSm38/5fsfYZ/om0SzYZWSYS813PlpP0Qsp2nqXioXmHLnuimjZUGFeXZ
+         Cew1aCYxsarybK4sSyeioHM19nB8Crr+JBKKU41tUI7/RjgAXcEmizi0ylkGQ0U//AyO
+         pJXwxrx/6nkVxAi4tMNAEx2Pa/vBdJ3/JaBPYKago0Qf/2b5tSOONps+vLNIIBsEp2K7
+         DBHh+gIAxP+A6wRPw18jThnWqsLgvobFhTJmtqdMJWF07lSWZp8l5Ao/4p4H0EhAGolm
+         htPw==
+X-Forwarded-Encrypted: i=1; AL+hErEa4GzYGkcRuWZIDTmaLANKD+bvJQWK7GGWSr98pfVRGqQodrjkKA5osh4oX7PRTUSuzc22LZT0OQ==@vger.kernel.org
+X-Gm-Message-State: APuU4Z8Y++S6/7I4KrO/RRejo+HcB1yY5oGbKFse27tOwziuIjJFOgey
+	QLsc9QCFQC1/p2rvBtxrRuEUGILOQODgVZfkCIuQ1AnksODgiK6JsEVh
+X-Gm-Gg: AZFdTZeaMPo9oZJvfTu34bI2oDmGhnjKGejVUkZ4cBcuJxM8JWWAPyDn92kbtC/QsnK
+	d/LAHryN6x6GkmKIjKyKJkgYIB9x9wEj76owyFeG78Vx+o3sRjYvt8Cjp6OSC3D5Uf4KDglaDRg
+	832jNZts+3KNXKexYQR5kT5llt+gN7eUByUhEUCPr0KNm1mqkUf5buD4SRGKVbJ1zUWg5RZyFrG
+	qi1ULpjOvn7qKkUrM3qf57lOcUsikermNPrQT+FUS79u2NEr4kzAcwFzk12M/7ThjrNCvMVPohq
+	62ShNK4Yi9jUL+Y0iEClRYU6FBzBXiiHCu38I0Ul9GV8PxwWazIvB9+TobGK5p1HQMsMoaMwqBd
+	QPECPKkzpdiwUPEGwjcjEh072ebxTXhyvP4kAmy0PdJDct8UK2qlInh5vKnGkuLx7gzumh51UFk
+	pFHJM1bBFji9XBrltqt+tVevt0o/uK/b100IkBpBKMHoFXXVPiu2pKBxhqPjtoKaWDIURP8uPE5
+	ifrZ4/rRJsWEyca9Z8E6MRDYp0yaBHpplFnoedeecxzZm9MR0R0wKq+TCFf/odKas7zHgVdDzrE
+	o6dLubohRUl7sojpe6E4Zgn6dW31Y8OEjMws
+X-Received: by 2002:a05:690c:4b8f:b0:8b0:e10d:1975 with SMTP id 00721157ae682-8b520435695mr52461807b3.29.1795558405356;
+        Tue, 24 Nov 2026 14:13:25 -0800 (PST)
+Received: from [10.0.0.48] ([71.69.222.122])
+        by smtp.gmail.com with ESMTPSA id 00721157ae682-8b52028d89csm65560977b3.15.2026.11.24.14.13.24
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Tue, 24 Nov 2026 14:13:24 -0800 (PST)
+Message-ID: <c2163003-948c-49fa-815e-b1f91814a80a@gmail.com>
+Date: Tue, 24 Nov 2026 17:13:24 -0500
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -82,36 +92,53 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261124215035.GE2227373@google.com>
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH v6 0/9] nvme-auth: switch to use the kernel keyring
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: Hannes Reinecke <hare@suse.de>, Hannes Reinecke <hare@kernel.org>,
+ Keith Busch <kbusch@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+ Christoph Hellwig <hch@lst.de>, Sagi Grimberg <sagi@grimberg.me>,
+ Chaitanya Kulkarni <kch@nvidia.com>, linux-nvme@lists.infradead.org,
+ linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
+ <20261123212105.GA18468@google.com>
+ <692e91cc-e2ea-47cc-926f-6639952fb195@suse.de>
+ <20261124201152.GA2227373@google.com>
+ <851e3fa5-ad88-4470-877f-e977bb1a6ad9@gmail.com>
+ <20261124213222.GD2227373@google.com>
+Content-Language: en-US
+From: Martin Belanger <martin.nvme.dev@gmail.com>
+In-Reply-To: <20261124213222.GD2227373@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-On Tue, Nov 24, 2026 at 09:50:35PM +0000, Eric Biggers wrote:
-> On Tue, Nov 24, 2026 at 09:40:40PM +0200, Jarkko Sakkinen wrote:
-> > diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-> > index c73979b2e98e..1c78a9a663c5 100644
-> > --- a/crypto/asymmetric_keys/Kconfig
-> > +++ b/crypto/asymmetric_keys/Kconfig
-> > @@ -2,6 +2,7 @@
-> >  menuconfig ASYMMETRIC_KEY_TYPE
-> >  	bool "Asymmetric (public-key cryptographic) key type"
-> >  	depends on KEYS
-> > +	select KEYCTL_PKEY
-> >  	help
-> >  	  This option provides support for a key type that holds the data for
-> >  	  the asymmetric keys used for public key cryptographic operations such
-> 
-> Could we use this opportunity to give CONFIG_KEYCTL_PKEY an
-> off-by-default prompt like CONFIG_KEY_DH_OPERATIONS, please?  There are
-> a lot of systems that need ASYMMETRIC_KEY_TYPE for verifying signatures
-> but don't the KEYCTL_PKEY keyctls.  The fact that the KEYCTL_PKEY
-> keyctls get pulled in too has always been a huge problem, given the
-> additional attack surface they expose as well as other issues like the
-> kernel's RSA code not being resistant to timing attacks.
 
-We can do that.
 
-> 
-> - Eric
+On 11/24/26 16:32, Eric Biggers wrote:
+> Even if you actually need runtime key rotation without touching
+> configfs/sysfs (why, when nvme-keysd could just write those files
+> itself?), this series doesn't actually implement that.
 
-Br, Jarkko
+Correct, v6 does not implement it. That is what I am asking for.
+
+Writing sysfs from nvme-keysd would give two mechanisms for the same
+key: the keyring for the connect, and sysfs for every change after
+that. One mechanism is enough.
+
+It would also make nvme-keysd controller-aware. Today nvme-keysd adds
+a key to the keyring and does not know which controllers use it. This
+is by design. To write sysfs, it would have to track every controller
+and know which key each one uses, also for controllers created later.
+
+A lookup by description at each authentication avoids this. It is
+also how NVMe/TCP TLS PSKs already work.
+
+With a lookup at each authentication, the sysfs and configfs
+attributes no longer need to carry secrets. For a key from the
+keyring, they can hold the key description: a read returns it, and a
+write sets the description used at the next authentication. The
+secret then stays in the keyring, and changing it needs no write to
+sysfs. Raw secrets given on connect keep the current behavior.
+
+Martin
+
