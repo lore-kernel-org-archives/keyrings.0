@@ -1,69 +1,54 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=178.63.66.53
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795538283;
-	b=NeAZPRVp2bMzAzzBkE1osYIFnP1Xqyla9J16jULD+Nt4plxxFnNQ2VCy+UWZje63Whmg
-	 xlqEVpTqGJ2YaTfK4uEC6cfdPYtBn+LHirW2u8uaf4puhMh4UW4pl6BIfaZ4av6Q2vg+w
-	 VABBErcG5IyfzUp3cXTYvD15uEP+UMcNbuYin3G+ZdRozaBBClajpV+wKQ5/nWX+A1d89
-	 2QCyuon8wFtyMyLyhoo3SGYCfsFieSRvejM0TSZpy9RW7F+UyPZ4dYti4gv8yHKAoTLMK
-	 /TQ/GiQZCIfKlngZk6JktLU+XCkvCWqhDe/M2GLpsWFyrZr9m1smJJYCABzpdPLRqvg==
+	t=1795540718;
+	b=GsZHvG+Sx2rMla5nAMBP8ec4qD7q/Ua55VmbiFRdrYM/V2DDCaLSeAzht89IAt0IlfIi
+	 FHlibbJd9naZ9vMJdJPOBknmXJKvOVfAVnzzoHg9Q+b3oxUXZZuYwj2dS6vjR5wI6wS0X
+	 ocHDYFLBV/S72uhAh5InG4QBb7kyL6b1I2DHFy7KjtkGqqmhbYMag4c8Wg5MDBFdp4moN
+	 OW812AWqWQLf66pKrboh7qUQYoGho4G4w9quZ7eYvK6eX7CYpVSTDEOK4ycbAfdlRORg4
+	 LXLZylNMiQR47cHfdXwwlXhqC68NZv+ESAY0k6zp0FSB7yYU7DWW6LpeNvh+XRwl7zg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795538283;
-	h=DMARC-Filter:DKIM-Signature:Received:Date:From:To:Cc:Subject:
-	 Message-ID:References:MIME-Version:Content-Type:Content-Disposition:
-	 In-Reply-To;
-	bh=zEWnkRahKuJva+EOdM9aoJAlXIBskSC96lQmEW7AFzQ=;
-	b=FFF7AE03cSdBzD38IOpP3cfHLF/ImJVQDwqUItMtfh1LdMDPbZQ5s++IWzVW+CFOLU2+
-	 Asr1fLgcerzpocHan3lXYmmKKkMrXC2nXUrRHgGA8jxUUgrlkgdNNNbdlcgNsGRsrpd8N
-	 nICBZ1r3JB4o3S7rJGk2YKbv1UItu1PIwF4ebFv4puJrZ8fvsRoVMJo3UogpAy1Q1G/Bu
-	 qhGiORsUN1yO3YlYwPihDht0MJb5LnJGKx/H+ns4J3I9vef/poref0pLtHUuX++MmIO3O
-	 61j8xi8P8nTpw5bqfP1cEZ8a4t8UEk+ISue+1WGHvIY0w5r11i3Fro5RWAZ1TtDWFQQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795540718;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=soJkr184OzWpwDgsoaY68pRGyt4XwVTMqpDdnHjHds0=;
+	b=e6aCM0A3nfPx2CZY+prnJiZcwzlxHkDh7X1WZwX2pKWH6t3i2whpaFnBX/mgJX+ZEXUd
+	 Autkm+2/ZrZhvL5WdjbA9wwIJhv0ROpxSv+uDABS42kbIkyhxjUesJfQeGw094jLkFed5
+	 SpjYzgtxfnaYIak8gFptQCDyc0CkZLesO6qxP6Vd+E5rtgxs+MO/tPqK8RDCnmCVQjv2B
+	 unLh8viEEmYnyge0uQ3jLLLXWVPU4oeo1u7WxcnI/0O632BrWEsxB0Yl2TZTgfh/map4N
+	 U/JrMMBY+FxIeqB2yoIWEw4f82cBubY+fe8zd3X9LWxGhEIE9Sz+793cYdR7UCeP6pw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=hallyn.com;
-	spf=(null) smtp.mailfrom=hallyn.com;
-	dkim=pass header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=v9YcfGyK;
-	arc=none smtp.remote-ip=178.63.66.53
-Received: from mail.hallyn.com (mail.hallyn.com [178.63.66.53])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=OeAJP7rq;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0A83F606A326;
-	Tue, 24 Nov 2026 16:38:01 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 0A83F606A326
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=hallyn.com
-Authentication-Results: smtp.subspace.kernel.org; spf=tempfail smtp.mailfrom=hallyn.com
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 93295606A333;
+	Tue, 24 Nov 2026 17:18:38 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=v9YcfGyK
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=hallyn.com; s=mail;
-	t=1795538274; bh=gVNMqSzHWFVNsBvzejWuL1IJS9TsIWZJdXA/XbrBWyI=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-	b=v9YcfGyKwCXUY2FxrBRj0yodJwse7j9ISVnVCIxxdF1hIU4FWhYIdPDjTLHP7ek4K
-	 pg3V6vtGF+Bha4u5Ina7ZfdHdd+kni2O+NdmSy3Eg5Deno2nb2tHLrAPKwx14xpWEi
-	 QpwZg6TRNFUjJ+Ndgv0DRwChyQVEbWT/gfk8xnasqjRBMj5kC6lBVZf3WwGPQE9SWl
-	 9L4rh5Q0Zfk4nbtkKFwHDRnAXLXaZ8x2ZwJQz96SPifWPWRKh8A2R9LqFJ9a47tVDu
-	 dvOPZ29augFzVArx0VjSwI4qk150x2GdsH7abRvl2l3z9ElcS/DnJMedc/uhtqm1Sb
-	 DmtZkDEQ+9HTQ==
-Received: by mail.hallyn.com (Postfix, from userid 1001)
-	id 64804177; Tue, 24 Nov 2026 10:37:54 -0600 (CST)
-Date: Tue, 24 Nov 2026 10:37:54 -0600
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Keisuke Tsukuda <tkdkei@outlook.jp>,
-	Meenakshi Aggarwal <meenakshi.aggarwal@nxp.com>
-Cc: "a.fatoum@pengutronix.de" <a.fatoum@pengutronix.de>,
-	"kernel@pengutronix.de" <kernel@pengutronix.de>,
-	"James.Bottomley@HansenPartnership.com" <James.Bottomley@hansenpartnership.com>,
-	"jarkko@kernel.org" <jarkko@kernel.org>,
-	"zohar@linux.ibm.com" <zohar@linux.ibm.com>,
-	"dhowells@redhat.com" <dhowells@redhat.com>,
-	"paul@paul-moore.com" <paul@paul-moore.com>,
-	"jmorris@namei.org" <jmorris@namei.org>,
-	"linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>,
-	"keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-	"linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KEYS: trusted: caam: propagate protected key option
- parsing errors
-Message-ID: <awW9YvoCRAXXiq27@hallyn.com>
-References: <20261124155310.32044-1-tkdkei@outlook.jp>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=OeAJP7rq
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 9E0A31F000D4;
+	Tue, 24 Nov 2026 17:18:37 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795540718;
+	bh=soJkr184OzWpwDgsoaY68pRGyt4XwVTMqpDdnHjHds0=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=OeAJP7rqeF5fhHtCGxSIyjakVHmz9pmbHe6/jkkhDmu1cYueKA9xSezT6evR4vN5S
+	 uIvxnaj+2OibkbIysQTEOD13yBmTM7ZyskbqetfrcJh1LArTwOwqd4dmdn505thhNJ
+	 H631sOpWNHeyfHk9HWVdHdIJKtH8osV7tKyqfZfpKSQBvR6r+fRuFCWaOWfqogElkJ
+	 xEPFuF0J3pxylSj6nXnBDVAOl6jo2j0/NxFcUKbbmnQXP/nzyUzoS79BG22+UzL6mV
+	 ZSzv9dLH7dciBMggP4Ggk1mKNrQr/V697Lm4mr6DE4Y2CZ6weHIPQoCn2hTvRVTR04
+	 ZuVtQEffoL33Q==
+Date: Tue, 24 Nov 2026 19:18:34 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Guicai Ma <maguicai@kylinos.cn>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH] KEYS: Use kfree_sensitive() in keyctl_pkey_e_d_s()
+Message-ID: <awXG6k1HFYsE2wE5@kernel.org>
+References: <20261124052849.940005-1-maguicai@kylinos.cn>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -75,67 +60,42 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261124155310.32044-1-tkdkei@outlook.jp>
+In-Reply-To: <20261124052849.940005-1-maguicai@kylinos.cn>
 
-On Tue, Nov 24, 2026 at 03:53:39PM +0000, Keisuke Tsukuda wrote:
-> From: Keisuke Tsukuda <tkdkei@outlook.jp>
+On Tue, Nov 24, 2026 at 12:28:49AM -0500, Guicai Ma wrote:
+> keyctl_pkey_e_d_s() frees the temporary 'in' and 'out' buffers with
+> kfree(). For encrypt, decrypt and sign operations these buffers hold
+> plaintext or other sensitive data.
 > 
-> get_pkey_options() returns -EINVAL for invalid protected key options,
-> such as "key_enc_algo=GG". trusted_caam_seal() and trusted_caam_unseal()
-> ignore this error and return 0. The trusted key core then instantiates
-> a key without a blob for "new", or with a zero-length key for "load".
+> Free them with kfree_sensitive() instead.
 > 
-> On an i.MX6Q running a 7.4.0-rc2-based kernel, adding a key with
-> "new 32 pk key_enc_algo=GG" succeeds, but KEYCTL_READ returns zero
-> bytes because no blob was created. The key cannot be saved and
-> reloaded.
-> 
-> Return the parsing error from both paths. On the patched kernel,
-> "new" and "load" with "key_enc_algo=GG" both fail with -EINVAL, while
-> valid requests succeed.
-> 
-> Fixes: a703a4c2a328 ("KEYS: trusted: caam based protected key")
-> Signed-off-by: Keisuke Tsukuda <tkdkei@outlook.jp>
-
-Reviewed-by: Serge Hallyn <serge@hallyn.com>
-
-But, it looks like these were both added by
-
-  commit a703a4c2a3280835003d4d0eb8845bac0f1a6ef1
-  Author: Meenakshi Aggarwal <meenakshi.aggarwal@nxp.com>
-  Date:   Mon Oct 6 09:17:52 2025 +0200
-  
-      KEYS: trusted: caam based protected key
-
-Adding Meenakshi to the thread to make sure this wasn't intentional,
-and serving some purpose we're overlooking.
-
+> Closes: https://sashiko.dev/#/bug/linux-4199b169-0b8d-4055-9a71-6b5b79e38eb3
+> Fixes: 00d60fd3b932 ("KEYS: Provide keyctls to drive the new key type ops for asymmetric keys [ver #2]")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Guicai Ma <maguicai@kylinos.cn>
 > ---
->  security/keys/trusted-keys/trusted_caam.c | 4 ++--
+>  security/keys/keyctl_pkey.c | 4 ++--
 >  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/security/keys/trusted-keys/trusted_caam.c b/security/keys/trusted-keys/trusted_caam.c
-> index 6a33dbf2a..33000d7bb 100644
-> --- a/security/keys/trusted-keys/trusted_caam.c
-> +++ b/security/keys/trusted-keys/trusted_caam.c
-> @@ -110,7 +110,7 @@ static int trusted_caam_seal(struct trusted_key_payload *p, char *datablob)
->  		info.pkey_info.is_pkey = 1;
->  		ret = get_pkey_options(datablob, &info.pkey_info);
->  		if (ret < 0)
-> -			return 0;
-> +			return ret;
->  		dump_options(&info.pkey_info);
->  	}
+> diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+> index e7121523b9c9..8d2c2b65f50b 100644
+> --- a/security/keys/keyctl_pkey.c
+> +++ b/security/keys/keyctl_pkey.c
+> @@ -314,9 +314,9 @@ long keyctl_pkey_e_d_s(int op,
+>  		ret = -EFAULT;
 >  
-> @@ -142,7 +142,7 @@ static int trusted_caam_unseal(struct trusted_key_payload *p, char *datablob)
->  		info.pkey_info.is_pkey = 1;
->  		ret = get_pkey_options(datablob, &info.pkey_info);
->  		if (ret < 0)
-> -			return 0;
-> +			return ret;
->  		dump_options(&info.pkey_info);
->  
->  		p->key_len = p->blob_len + sizeof(struct caam_pkey_info);
+>  error_out:
+> -	kfree(out);
+> +	kfree_sensitive(out);
+>  error_in:
+> -	kfree(in);
+> +	kfree_sensitive(in);
+>  error_params:
+>  	keyctl_pkey_params_free(&params);
+>  	return ret;
 > -- 
-> 2.50.1 (Apple Git-155)
-> 
+> 2.47.3
+
+Thanks applied.
+
+Br, Jarkko
