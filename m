@@ -1,95 +1,83 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=74.125.227.130
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=124.126.103.232
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795489089;
-	b=EGiVEAVBmRdxZPTTKyupC6OUm5RsLK7HUiPO/UuLOoBUaq9liZgDyDHD9Om9uSAWMB7E
-	 0F3u1zLIRQL59oMC5yubKx+G0haUOadRumJNfBlLyJCBKiFNojTVSqRF8CIKh9PW92u3O
-	 MZRHFXWpaqasxOB+6WZJQ2qE+8f35u7Vkjc6to33nPCe4n8sFQq9iaAYIEVSmk/J5wT7p
-	 gNVRpvUQgG4GH29pRngF+scubeFcj87cpsSSHK1jeZK7z5tA0x8a3ud90213Yh7/+9oJ4
-	 kNjK6VA+TaCLA9PUwzxgzGPU5tmJyxcZTLPr2I4bQSQ73alQ59J+32xHMG2Ddkc/URQ==
+	t=1795497939;
+	b=PXwGuVo7qKJr16hBsc41PU9MSgYeoZ9St+2Sb7IyycobRNsQDZxEcSGaapUIM0cXPLFg
+	 Q2CeasGR0VtbiNflEUXdVlJwkWPaNDZgP3zyZBKevDKUBUVaGPYjX4EqmIUBdmH7PfsOf
+	 TrYZAVk4/TeH4cmg9aoewp0fMShVQ7CbDPcJaFBqwMgCxYf3hr2kJRhwJEqLyGDQwlxvG
+	 HaNBzWhOXVLDehbQoFphJOaKeIjkBLh/rrU15Vv8vaTcEbaPjqXSvR0tQ9FW5orGu9r7d
+	 bbEZo/jByN09l/UV5LT5ccruga+c9wVN+XfymU3Vcz/repvPwYwoQRq/bUiKwLJetYg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795489089;
-	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Gm-Message-State:X-Gm-Gg:X-Received:Received:From:To:Cc:Subject:
-	 Date:Message-ID:X-Mailer:MIME-Version:Content-Transfer-Encoding;
-	bh=Yur4tOxm2ygBh4jOsPulqFe9YZgZ9r4tQ95a2ZsCDLs=;
-	b=d7OEJvd/uehY3CIRJjGwqLUdXz4ujXCgc4gBbC/M2pPG3NTC8PD1Et6zBQjeNDFXdvj+
-	 +UqDt/O3d+A3S5JuuiR4lv1dnpH0Tnt2+x3sNmBm2zApMzx9P2EGgAUIW5Z34xYPjw9Od
-	 n8NSpfugPUpUREwg+Ao15RHJwhqdh9dvMs5/3jO3ZNPnnDnN+aGtPxDPr8qFUOFTGWD06
-	 4JKVKh2CHLFzQYCatQHuuNheWuYybNnasdc7z4X3bt8BJNvRBUa7KIUSMG7fk7kjb/Bsb
-	 y9uRKCrfme3D6K8Qp3iGRe7g4UQhhcG4k+amLmyjVdNAMNF4Nu1jRmGwtB66XUcDa3A==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795497939;
+	h=DMARC-Filter:X-UUID:X-CTIC-Tags:X-CID-P-RULE:X-CID-O-INFO:X-CID-INFO:
+	 X-CID-META:X-CID-BVR:X-CID-BAS:X-CID-FACTOR:X-CID-RHF:X-UUID:X-User:
+	 Received:From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:
+	 References:MIME-Version:Content-Transfer-Encoding;
+	bh=gt7qPrM9qdKVWUQeM+5YYRxWTA6OuBqueaSihtYdXpM=;
+	b=bClzzMeNDwQWtDIt2x83Foka4GVQjKla6I3oAWtJS7HmkXus4R82thkTaRdJz1duDyz8
+	 YY0Lurt4ycL7wywZkecbXzsBaSuvkMmeb4kQCnrzgpepz8Xbn6+ZrAdwpEf+XQO+0+vrF
+	 Kn9OuHvFfK5N4y+eaZ131TtKpIP23qLEIxdWeisnM9GwX8zli0J6MQDDecugReD5TxWau
+	 eGmGUHlp+mn0bfQ0M5VcpjeUGrSifsfkmKS+Jc8NHffemZIprdJLBlNCdynkSz7JdDHmD
+	 erRdZGireNAraOSO3KQ9rMD8lH4Z6XHBV4H1mfjqX2N8bIOtASKJRMih7h4WNqUg4Yw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=gmail.com;
-	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=MuqElge5;
-	arc=none smtp.remote-ip=74.125.227.130
-Received: from mail-pj2-f2.google.com (mail-pj2-f2.google.com [74.125.227.130])
-	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	dmarc=none header.from=kylinos.cn;
+	spf=pass smtp.mailfrom=kylinos.cn;
+	arc=none smtp.remote-ip=124.126.103.232
+Received: from mailgw.kylinos.cn (mailgw.kylinos.cn [124.126.103.232])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 309D0606A31E
-	for <keyrings@vger.kernel.org>; Tue, 24 Nov 2026 02:58:09 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 309D0606A31E
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20260707 header.b=MuqElge5
-Received: by mail-pj2-f2.google.com with SMTP id 98e67ed59e1d1-3b14c80b210so904857a91.0
-        for <keyrings@vger.kernel.org>; Mon, 23 Nov 2026 18:58:08 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20260707; t=1795489088; x=1796093888; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
-        bh=Yur4tOxm2ygBh4jOsPulqFe9YZgZ9r4tQ95a2ZsCDLs=;
-        b=MuqElge5ywtfzHq35FtslzC0hNsAzaejU1E3w15IRDL67GoXUJEVd1UciPryn+W6j/
-         AS6vLAdUSzJuhweHqzFvtsDTmqWz+rzVXViNm3hCfMRw1/6/WFln7DYh6w7gH4ZxZ5kE
-         WVIcz7/jncarv/uz8Rzv0MXitgIY7U3AxFhyTjJH3l7BqCjjWPJQJLUbinj+gXE9Ice6
-         pcByujUfFzq6RbnXQEWF0mBvdCb+gP6sv1bmNamAYjH0KDL1UHqR77Ta7yItgmXCdJDv
-         jlc6w9RpY7oMrBKaIkdRDNFnVJ65j+8D/qoJcGhNMxb78wY5MMmCcF27LcitpWWpMU94
-         kd7g==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1795489088; x=1796093888;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=Yur4tOxm2ygBh4jOsPulqFe9YZgZ9r4tQ95a2ZsCDLs=;
-        b=d8OAWHVcfg9eoPg6dkq3/4/IEz7zGZuVdU/jlQY+3Zvw4VkM9bM/DElu5olr5c7qZq
-         qY/nVAy1g6CYZ/xK5vZJJNWwQ6U0k0+ZukqwvpvJxU7ZW6eiAi9ToMnGFLXiRFA/Xt+i
-         2pR/eBpJf3ZPkcNjTYPUbeRa21ZxPPmvQLJ5FFSlYXFG5oQmitO73QgZNIWmtMs8yUIi
-         B4EPg/DvXyqGxdXdKjngNWrS4wCPglFx1mU2+Y7/PDBTZzlYQWNjBGtIdih+9KUeBQVp
-         tOiwDYbqREnjrFqvJCErp5TXDotmFfSC35UoCFyJ35RHKvUdwthbByinotYr7Pmj5EoQ
-         BRHg==
-X-Gm-Message-State: APuU4Z88uTZOj2njPS233ibyB0EmiwRWARahrh8cKEvCHIe4gja3vBt8
-	XtUgmsy/PynCnbXNEMjlMeO+8h1i4JtaCVbE5TemSxsA+qV3ZRGK4lyc
-X-Gm-Gg: AZFdTZeK2qNkkpZX8ro+K63c2Voo/rSHJFnYPPvQIRWphVl+b3XqoPP2yTsE+WZZ9Jw
-	6Q+EQPDfKqWwZTMl19/IkyFh+itXTQ6EHLlZ8Uu+8dHx7BLJpo28QG+5Bw2TEnS1IgM+cNelXIK
-	dGaLGGS23uaF/rq7d8GbH5iEYpI2puFDZ1lHgQKIhBkidjWaRethWY4qBr1y4VtvCW4VFUEtjMu
-	R8FTYk4oSlhxB7zYCDAQpFUMNoI+2oyHmCdqOBQEErOSPXYUtU3K7LIJRerqReMDCU9TtUUbE3n
-	4ouSedH2fnyv0LeSNJYbGzlfkmJjMr1SVXnAS6+3wRIJ/TUIz2eHUQH2gEYnOkQ4ba3/M0YcOuM
-	gdO9cYsu4L4qg7rgNMOFLda1tvPf5+cnuUMWK19Ve/ZVRGvYRvTzCXlcqtiMaQcoIUTprFW3KVX
-	/OHL1roupb9q1dEjFf8mXGn+fDfmGmKwb3KFaZA/m5ALoMOeNSTOZaRP7zxSDskK9HcwrWB2Hkp
-	DUQvh8twxiKVlps4Kls0Cplb/G7Jr+owHNSHIUzGIwy9CIsV8U/45qJFKJ5FCEbeIG8qCJrAyHJ
-	SeiIF4HHSJDwsnWm1NdlKAdkhh05EFClFXoN20HGWlOBhsNpS4IePu3ZhivZ1mUaKs59aIMugg=
-	=
-X-Received: by 2002:a17:90b:2792:b0:3ac:4e18:238c with SMTP id 98e67ed59e1d1-3b41cb0c476mr10628516a91.49.1795489088382;
-        Mon, 23 Nov 2026 18:58:08 -0800 (PST)
-Received: from BSDHENRYMA-PC1.localdomain ([43.132.141.31])
-        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-3b405d63728sm25195844a91.8.2026.11.23.18.58.04
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 23 Nov 2026 18:58:07 -0800 (PST)
-From: Henry Martin <bsdhenrymartin@gmail.com>
-To: dhowells@redhat.com,
-	jarkko@kernel.org,
-	paul@paul-moore.com,
-	jmorris@namei.org,
-	serge@hallyn.com
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9B5B3606A326;
+	Tue, 24 Nov 2026 05:25:36 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 9B5B3606A326
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.cn
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinos.cn
+X-UUID: 7534ae96e7c711f19a56ed5b684f684d-20261124
+X-CTIC-Tags:
+	HR_CC_COUNT, HR_CC_DOMAIN_COUNT, HR_CC_NAME, HR_CC_NO_NAME, HR_CTE_8B
+	HR_CTT_MISS, HR_DATE_H, HR_DATE_WKD, HR_DATE_ZONE, HR_FROM_NAME
+	HR_SJ_DIGIT_LEN, HR_SJ_LANG, HR_SJ_LEN, HR_SJ_LETTER, HR_SJ_NOR_SYM
+	HR_SJ_PHRASE, HR_SJ_PHRASE_LEN, HR_SJ_PRE_RE, HR_SJ_WS, HR_TO_COUNT
+	HR_TO_DOMAIN_COUNT, HR_TO_NAME, SA_EXISTED, SN_EXISTED, SPF_NOPASS
+	DKIM_NOPASS, DMARC_NOPASS, CIE_BAD, CIE_GOOD, CIE_GOOD_SPF
+	GTI_FG_BS, GTI_RG_INFO, GTI_C_BU, AMN_GOOD, ABX_MISS_RDNS
+X-CID-P-RULE: Release_Ham
+X-CID-O-INFO: VERSION:1.3.19,REQID:2ac807dd-1c9a-4e57-9293-8dfcc65ffee5,IP:10,
+	URL:0,TC:0,Content:7,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION
+	:release,TS:17
+X-CID-INFO: VERSION:1.3.19,REQID:2ac807dd-1c9a-4e57-9293-8dfcc65ffee5,IP:10,UR
+	L:0,TC:0,Content:7,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION:r
+	elease,TS:17
+X-CID-META: VersionHash:7db8b62,CLOUDID:6525c901083e2b5399c99180e13d4bee,BulkI
+	D:261124052649EMM1JUQD,BulkQuantity:1,SF:17|19|64|66|78|80|81|82|83|102|12
+	7|136|153|841|850|865|898|915,TC:nil,Content:4|15|50|99,EDM:-3|-100,IP:-2,
+	URL:0,File:nil,RT:nil,Bulk:40,QS:nil,BEC:nil,COL:0,OSI:0,OSA:0,AV:0,LES:1,
+	SPR:NO,DKR:0,DKP:0,BRR:0,BRE:0,ARC:0
+X-CID-BVR: 2,SSN|SDN
+X-CID-BAS: 2,SSN|SDN,0,_
+X-CID-FACTOR: TF_CID_SPAM_SNR,TF_CID_SPAM_FAS,TF_CID_SPAM_FSD
+X-CID-RHF: D41D8CD98F00B204E9800998ECF8427E
+X-UUID: 7534ae96e7c711f19a56ed5b684f684d-20261124
+X-User: maguicai@kylinos.cn
+Received: from localhost.localdomain [(36.106.123.207)] by mailgw.kylinos.cn
+	(envelope-from <maguicai@kylinos.cn>)
+	(Generic MTA with TLSv1.3 TLS_AES_256_GCM_SHA384 256/256)
+	with ESMTP id 917687200; Tue, 24 Nov 2026 13:25:27 +0800
+From: Guicai Ma <maguicai@kylinos.cn>
+To: Jarkko Sakkinen <jarkko@kernel.org>
 Cc: keyrings@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
-	Henry Martin <bsdhenrymartin@gmail.com>,
-	stable@vger.kernel.org
-Subject: [PATCH v2] keys: fix crash on big_key read or revoke after a failed update
-Date: Tue, 24 Nov 2026 10:57:59 +0800
-Message-ID: <20261124025759.39344-1-bsdhenrymartin@gmail.com>
-X-Mailer: git-send-email 2.53.0
+	linux-kernel@vger.kernel.org,
+	David Howells <dhowells@redhat.com>,
+	James Morris <jmorris@namei.org>,
+	Paul Moore <paul@paul-moore.com>,
+	"Serge E . Hallyn" <serge@hallyn.com>,
+	Guicai Ma <maguicai@kylinos.cn>
+Subject: Re: [PATCH 2/2] KEYS: Fix asym key overflow in keyctl_pkey_verify()
+Date: Tue, 24 Nov 2026 00:25:23 -0500
+Message-ID: <20261124052524.939642-1-maguicai@kylinos.cn>
+X-Mailer: git-send-email 2.47.3
+In-Reply-To: <20261123211959.4102708-3-jarkko@kernel.org>
+References: <20261123211959.4102708-3-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -101,71 +89,28 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-big_key_update() reserves quota with the raw payload length and then
-destroys the old payload before instantiating the new one.  For a payload
-of N < 16 bytes that reserve releases 16-N bytes, so the reserve of 16
-done by generic_key_instantiate() charges them again and can fail with
--EDQUOT once the payload is already destroyed.  big_key_destroy() keeps
-payload->length but clears path and data, so the key stays positive with
-a stale length that KEYCTL_READ and KEYCTL_REVOKE then follow:
+On Mon, Nov 23, 2026 at 11:19:59PM +0200, Jarkko Sakkinen wrote:
+> While verifying a variable-length signature shorter than info.max_sig_size,
+> memdup_user() reads past the end of the caller's _in2 and passes trailing
+> bytes to ->asym_verify_signature().
+> 
+> Set params->in2_len to uparams.in2_len in the KEYCTL_PKEY_VERIFY case.
+[...]
+> @@ -176,7 +176,7 @@ static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_par
+>  			goto out_up_key_sem;
+>  		}
+>  
+> -		params->out_len = info.max_sig_size;
+> +		params->in2_len = uparams.in2_len;
+>  		break;
+>  	default:
+>  		ret = -EOPNOTSUPP;
 
-kernel BUG at fs/open.c:1145!
-Oops: invalid opcode: 0000 [#1] SMP KASAN NOPTI
-RIP: 0010:dentry_open+0x7b/0x90
- big_key_read+0x141/0x280
+Tested this series with an RSA-2048 key (enc=pkcs1 hash=sha256) on
+arm64. A truncated signature with the remaining bytes still present in
+userspace memory and a short signature placed right before an unmapped
+page now both fail with -EINVAL, and normal signature verification
+still passes.
 
-Instantiate the new payload first and destroy the old one only on success;
-a positive key's reservation is already 16 bytes, so it cannot fail.
-
-This issue was discovered by Tencent CodeBuddy Security.
-Cc: stable@vger.kernel.org
-Fixes: b6f61c314649 ("keys: Implement update for the big_key type")
-Signed-off-by: Henry Martin <bsdhenrymartin@gmail.com>
----
-Changes in v2:
-- Drop the comment in big_key_update(); it belongs in the changelog.
-- Rework the changelog per the review below: the quota is released by the
-  removed key_payload_reserve() call, not by big_key_destroy(), which only
-  drops path and data.
-
-Link: https://sashiko.dev/#/patchset/20261123165443.4092852-1-bsdhenrymartin@gmail.com?part=1
-
- security/keys/big_key.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-index 268f702df380e..aa3e82ac93ee2 100644
---- a/security/keys/big_key.c
-+++ b/security/keys/big_key.c
-@@ -193,16 +193,24 @@ void big_key_destroy(struct key *key)
-  */
- int big_key_update(struct key *key, struct key_preparsed_payload *prep)
- {
-+	struct big_key_payload old = { };
-+	bool positive = key_is_positive(key);
- 	int ret;
- 
--	ret = key_payload_reserve(key, prep->datalen);
-+	if (positive)
-+		old = *to_big_key_payload(key->payload);
-+
-+	ret = generic_key_instantiate(key, prep);
- 	if (ret < 0)
- 		return ret;
- 
--	if (key_is_positive(key))
--		big_key_destroy(key);
-+	if (positive) {
-+		if (old.length > BIG_KEY_FILE_THRESHOLD)
-+			path_put(&old.path);
-+		kfree_sensitive(old.data);
-+	}
- 
--	return generic_key_instantiate(key, prep);
-+	return 0;
- }
- 
- /*
--- 
-2.53.0
-
+Reviewed-by: Guicai Ma <maguicai@kylinos.cn>
+Tested-by: Guicai Ma <maguicai@kylinos.cn>
