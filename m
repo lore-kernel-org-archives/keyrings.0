@@ -1,92 +1,73 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=198.37.111.173
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795528622;
-	b=beW6zEwhidoEgKqZqyljjmm2Km2GhxU4LejKk9rnlFDRDxAGF/bS6WkryriJKBievFHq
-	 0EBrT++Ey7KXYQn5TvD79jNVW5693+2It+XMqxLSsV0F7didaCfFeW1FuNxOPJ4ShsczX
-	 Z2TKaMmA23Nen4leJBy/tBYs3B8Qm/iMM/GvQErle1yjgj/MmEJxmzR2cKItf5R7ZPOrh
-	 oWOjieG75kem9IFNGtHHcBTZObHqlqlu9yGz9anVoGyuL9c5z1kUpXhM+FPqeLKpMhObW
-	 0DzrzxvHJfzn4KGnPy6GjSJRdnZ1NEzr8AR6sNWs2ZCzqGYLFh8Eo11mNNDdnHWp4qg==
+	t=1795532963;
+	b=MTT5tTv0rrRVeW4dOXB8E7LgPBa6PVxoN5Y0DpDOVpSDRJ+oN9pR/HsehJbPKHZuoCcf
+	 RVBdwFIcOBqe4NOQ3EEN3mkbN8OHAqo0/PuLxxs3idu0B5Rl2CR97jfp6Rh43fVyED3u9
+	 3Q11jP41NX/vJZFgI9Lp2cGU0mSOXQsdVDKV2pv0oiqTiUZGmrh0oigJZLsA/pBPcPoOO
+	 AWpP+AG3iqQzhRml1hCzJpZD0H1Rv+TPRfnwe1XOfsH016DcSmqUpqiTCq08z5XpXQ04O
+	 g+HqFE48BuYvoxMUmyZaDeW3AMhwHmhe8WXSg0dfroOecZ/BqCQ4Tk83j6y7vGPMeJA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795528622;
-	h=DMARC-Filter:DKIM-Signature:Received:Message-ID:Subject:From:To:Cc:
-	 Date:In-Reply-To:References:Autocrypt:Content-Type:
-	 Content-Transfer-Encoding:User-Agent:MIME-Version;
-	bh=itbrjM4Vsygy1H0F0wv0PDqACzzXdZib2AUrYhCNxGE=;
-	b=Nxr+KcARAi+Wur1kXrXjNdNpOiBwdrGZ2//M+YkVEGjMdK/Rx9rupdVZneRm2P7zs5t6
-	 ZuO743XKo26sOe95hU9SZrHUyneWmMG8SMH81edvGaNf3xKkkQKZCOXRAvxFMDsCuacPF
-	 B8gdgDxaLEvZquqbxRpEi/1gWKKSnZb3e8q2/XJlyUKCv72pKm0EbNJjeEtdIWIvrK+LH
-	 fsg39K2v99axCUpoYPCs9ID/kSWU1QZE56ixi0jlwCLNP1y7pTO9kVHUS0UKv2jYK3By9
-	 lb0/kiy1jAu/4phxw+rfYRap4/bVBEKNrIaiRHZcbhvgWwH0lI2HKecyi49amBkfW1w==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795532963;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=K+IekPDE+jkqEoJ25TetgowrP8a4LUWhHnBuiLXn8A8=;
+	b=D/ZQuH8RJb5ohZPVopFV6q1o+rlMLEWwXsjgY8PPSBC8YQsnnNthgHkBgZH1xymVO5+A
+	 wOQsYEuDGfsnNZH4IkQVO/D8QRQOZ2FR/tm4AsmfByjRyjSxf5XUAd6S2qSAtdh9au5dO
+	 L4H62+JNEH1T9yFam9BFtnOx16uKOELHA2oxAZTLAp0lMTmR0Rdmwd3px0rEQ7iSUdXZ1
+	 pjtkslSLI6cxtgSIfswPF/xNH7BhNe3kf7Flds3VmRePn5jtKtZfLnZPoziHOaoJbktHG
+	 c0ku1P5TgENr6lt/Mit5V1beeCjoF219CVN6SM3P2yjm5eUHpwiM+A8Fxt+LVbLz53g==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=HansenPartnership.com;
-	spf=pass smtp.mailfrom=HansenPartnership.com;
-	dkim=pass header.d=hansenpartnership.com header.i=@hansenpartnership.com header.a=rsa-sha256 header.s=20151216 header.b=UoaQYs4q;
-	arc=none smtp.remote-ip=198.37.111.173
-Received: from lamorak.hansenpartnership.com (lamorak.hansenpartnership.com [198.37.111.173])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AxiV7WZS;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 474C6606A31E;
-	Tue, 24 Nov 2026 13:57:01 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 474C6606A31E
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=HansenPartnership.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=HansenPartnership.com
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 3ED24606A321;
+	Tue, 24 Nov 2026 15:09:23 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.a=rsa-sha256 header.s=20151216 header.b=UoaQYs4q
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-	d=hansenpartnership.com; s=20151216; t=1795528620;
-	bh=XlCM40uFy1qcEBiaeIgSy61xYvoYIP2WJvzH+1MvZ6w=;
-	h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-	b=UoaQYs4qL23we/csnAnk+lSTr86UZN7B2r4f1keQpo0tMXkCxm/VJkKVzNkdTX6oc
-	 UmlFBQIrDP2CAhLMEUSHh7l5HdldjwrJA48mDyjjsTOmDVKZyJnpvas+KltDYPT1UP
-	 ofLnkYXeanG+nKEp/W04fqAkmeUpw55K/QSZlWh4=
-Received: from lingrow.int.hansenpartnership.com (unknown [IPv6:2601:5c4:4300:d341::8309])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519MLKEM768 server-signature RSA-PSS (2048 bits) server-digest SHA256)
-	(No client certificate requested)
-	by lamorak.hansenpartnership.com (Postfix) with ESMTPSA id 051FB1C01C9;
-	Tue, 24 Nov 2026 08:56:59 -0500 (EST)
-Message-ID: <b4c2860a41daafb789a2386f2779e5f9f8741d8e.camel@HansenPartnership.com>
-Subject: Re: [PATCH] lib/asn1_encoder: fix encoding of zero OID components
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>, zzz <abc0eichs@qq.com>
-Cc: linux-kernel@vger.kernel.org, Jarkko Sakkinen <jarkko@kernel.org>, David
- Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
- linux-integrity@vger.kernel.org
-Date: Tue, 24 Nov 2026 08:56:59 -0500
-In-Reply-To: <20261123220311.9ee34b6c33545185d41d09ce@linux-foundation.org>
-References: <tencent_AFE15D698FFD4F18E16A6EF7CDA002D69806@qq.com>
-	 <20261123220311.9ee34b6c33545185d41d09ce@linux-foundation.org>
-Autocrypt: addr=James.Bottomley@HansenPartnership.com;
- keydata=mQENBE58FlABCADPM714lRLxGmba4JFjkocqpj1/6/Cx+IXezcS22azZetzCXDpm2MfNE
- lecY3qkFjfnoffQiw5rrOO0/oRSATOh8+2fmJ6el7naRbDuh+i8lVESfdlkoqX57H5R8h/UTIp6gn
- 1mpNlxjQv6QSZbl551zQ1nmkSVRbA5TbEp4br5GZeJ58esmYDCBwxuFTsSsdzbOBNthLcudWpJZHU
- RfMc0ew24By1nldL9F37AktNcCipKpC2U0NtGlJjYPNSVXrCd1izxKmO7te7BLP+7B4DNj1VRnaf8
- X9+VIApCi/l4Kdx+ZR3aLTqSuNsIMmXUJ3T8JRl+ag7kby/KBp+0OpotABEBAAG0N0phbWVzIEJvd
- HRvbWxleSA8SmFtZXMuQm90dG9tbGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT6JAVgEEwEIAEICGw
- MGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAhkBFiEE1WBuc8i0YnG+rZrfgUrkfCFIVNYFAml2ZBI
- FCS3GUMIACgkQgUrkfCFIVNZKjQf/deRzlXZClKxTC/Ee2yEPqqS7mm/INUA49KdQQ5oIhSxkUBy0
- 9J4qjMIo5F8ZFkFTqikBqeL35LKu7O7rn8WETfX8Bxvos3HUsl3jHo34DES4MUFIpoQPgtiLRGwLb
- K0cVCAArR2u2qj4ABmTRrs1I1kvdjEw6gatOuXtEe/j5O2fvfzTq9GBr0Q3n2IAsFXi4hLlx6VPE8
- tyWUZ8BWJKtih3JAeUiXFvASL3McV0rV9RnU0VbjEQEhSE7PMYhWpnDC9AyBb0lXJllQRvC3NSkUB
- 8KVQgNNxRPss0WE/nBoZ4dFA42jTyzTz8lNylxZoAWV7WJb3QxVg4oCodRVrxxrQhSmFtZXMgQm90
- dG9tbGV5IDxqZWpiQGtlcm5lbC5vcmc+iQFVBBMBCAA/AhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeA
- QIXgBYhBNVgbnPItGJxvq2a34FK5HwhSFTWBQJgS5mYBQkbNYS9AAoJEIFK5HwhSFTWBpwIAL5Bk3
- 5FB34U6iHmDzzgdCbxLTs43T/YQyJpcGIvopBvnI/fDY8oSG6Df64/O6B+1R+A8TDp6ZG5ysUWnCC
- 6GuIaEHemBYkitMPglR6+sGCMQY7O0mlsPvdssvKK1KI9Bno4VU6ogaF2qVzefSqg1Djmf/DcsxWP
- rI/jdJ8FB5AYR2rjIdDFc+zRdAJuavo1/anyY2wgpFh/3R8IOYAEfWV9nGgYkf9+tA4EIn1sxE0I3
- L5oW2N3mbyRrkzuBwO8ztMCwqEPk7moWzhokcZqMXiAIahaZdkashJC+s2X2RZSGCy+g+pvY5NN4B
- BVG5XwLgVBqbHMTcxE0fbmPqz+q6O0LEphbWVzIEJvdHRvbWxleSA8amVqYkBoYW5zZW5wYXJ0bmV
- yc2hpcC5jb20+iQFXBBMBCABBFiEE1WBuc8i0YnG+rZrfgUrkfCFIVNYFAmODZ5ACGwMFCRs1hL0F
- CwkIBwICIgIGFQoJCAsCBBYCAwECHgcCF4AACgkQgUrkfCFIVNZu0Af/TzvL2/NdgAcw9uN3x60H8
- jc4QUq14VpxcFEFEMpcj1morkX/G93V+56HBBaXZj+yK8PhxIA/SIz+sU7C/0YvKuvzakP8ZX/7WJ
- e32SOUtjfr/VTaqjIBzNj6OxLvZpmNbBw7s6DwhhNpHOWqJ/1ml+PtDRDV71IB58yVqQjp1xlNKVl
- ZppcJ5908EJzsFnRIVjiQiDSKoppqB2BCibBbrWcln7CiWMyOC/cco6SIn6twH+f7+aivJ3xGcOE2
- a9gBKF5rNi9TBoX9oyPmshv/TDmnohsVrH7AYXlGYfZTk15SWEiROh1QX8/uD9wl/gcIv5EDUpT/F
- L2jzOsA5663bw==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-User-Agent: Evolution 3.56.2 
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=AxiV7WZS
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 36FD81F000D4;
+	Tue, 24 Nov 2026 15:09:22 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795532962;
+	bh=K+IekPDE+jkqEoJ25TetgowrP8a4LUWhHnBuiLXn8A8=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=AxiV7WZSd4PJ6njfHxHjci8C4W3rlHZiStM2FsIJxUt9/7C+Ank9ouOae768ogJKt
+	 +S54ua88UepNEkPBO6qjzgCWCZWeSY7Nr1RNSJqOcNds+Ygoe+HJyxY11VPr0ZLXxk
+	 iaYHYERsCjcwthMRREuWi033qD+cFkVBdv3YAl5YuA6D6WGV+a3YtT6hT9u5hLYoA8
+	 02P71nq4V8c8pfqRkWRA5AXuZdmYn/SbEgClf0uNzk3s1IfiIu7l0hhXIe/KlG+hbA
+	 Oj+FZwYYVRWGv5aCyggVQaFSCQHBF64t+o1e+Quhe9huy6dUrx1Rwf5Cj1zg3Ygmba
+	 3b0AD2lJpQAyg==
+Date: Tue, 24 Nov 2026 17:09:18 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: sashiko-reviews@lists.linux.dev
+Cc: keyrings@vger.kernel.org, dm-devel@lists.linux.dev,
+	linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+	Alasdair Kergon <agk@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	David Howells <dhowells@redhat.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	Ignat Korchagin <ignat@linux.win>,
+	James Bottomley <James.Bottomley@hansenpartnership.com>,
+	James Morris <jmorris@namei.org>, Jason Gunthorpe <jgg@ziepe.ca>,
+	Jonathan Corbet <corbet@lwn.net>, Lukas Wunner <lukas@wunner.de>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
+	Peter Huewe <peterhuewe@gmx.de>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	James Prestwood <prestwoj@gmail.com>
+Subject: Re: [PATCH 9/9] KEYS: trusted: Add asymmetric key support for TPM2
+Message-ID: <awWonunbfilZrzQV@kernel.org>
+References: <20261124120044.1481752-1-jarkko@kernel.org>
+ <20261124120044.1481752-10-jarkko@kernel.org>
+ <sashiko-outbox-231131@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -96,68 +77,26 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <sashiko-outbox-231131@kernel.org>
 
-On Mon, 2026-11-23 at 22:03 -0800, Andrew Morton wrote:
-> On Fri, 20 Nov 2026 21:00:55 +0800 zzz <abc0eichs@qq.com> wrote:
-> > --- a/lib/asn1_encoder.c
-> > +++ b/lib/asn1_encoder.c
-> > @@ -97,7 +97,7 @@ static int asn1_encode_oid_digit(unsigned char
-> > **_data, int *data_len, u32 oid)
-> > =C2=A0
-> > =C2=A0	/* quick case */
-> > =C2=A0	if (oid =3D=3D 0) {
-> > -		*data++ =3D 0x80;
-> > +		*data++ =3D 0;
-> > =C2=A0		(*data_len)--;
-> > =C2=A0		goto out;
-> > =C2=A0	}
+On Tue, Nov 24, 2026 at 12:25:44PM +0000, sashiko-bot@kernel.org wrote:
+> Thank you for your contribution! Sashiko AI review found 2 potential
+> issues to consider:
+> - [Medium] KEYS: trusted: 32-bit param_size overflow in
+>   tpm2_asym_rsa_decrypt()
 
-Yes, well, I was just thinking about the single case when I wrote it.
-Actually, wouldn't getting rid of all the special casing make this code
-more maintainable.  Something like
+I've now learned that sometimes people expect you to fix these before
+they will review, or they get upset if you fix them and iterate the
+series. Someone will be rip their trousers whatever you do.
 
-diff --git a/lib/asn1_encoder.c b/lib/asn1_encoder.c
-index 92f35aae13b1..fc97cb4d27fa 100644
---- a/lib/asn1_encoder.c
-+++ b/lib/asn1_encoder.c
-@@ -92,15 +92,9 @@ static int asn1_encode_oid_digit(unsigned char
-**_data, int *data_len, u32 oid)
- 	int start =3D 7 + 7 + 7 + 7;
- 	int ret =3D 0;
-=20
--	if (*data_len < 1)
--		return -EINVAL;
--
- 	/* quick case */
--	if (oid =3D=3D 0) {
--		*data++ =3D 0x80;
--		(*data_len)--;
--		goto out;
--	}
-+	if (oid >> 7 =3D=3D 0)
-+		goto encode_last;
-=20
- 	while (oid >> start =3D=3D 0)
- 		start -=3D 7;
-@@ -116,6 +110,7 @@ static int asn1_encode_oid_digit(unsigned char
-**_data, int *data_len, u32 oid)
- 		(*data_len)--;
- 	}
-=20
-+ encode_last:
- 	if (*data_len > 0) {
- 		*data++ =3D oid;
- 		(*data_len)--;
-@@ -123,7 +118,6 @@ static int asn1_encode_oid_digit(unsigned char
-**_data, int *data_len, u32 oid)
- 		ret =3D -EINVAL;
- 	}
-=20
-- out:
- 	*_data =3D data;
- 	return ret;
- }
+Or then, some gets pissed when some random bot gives feedback pm
+the next day.
 
-?
+Since this is the worst of the worst I'll mark it down and let's
+consider it addressed.
 
-James
+I like Sashiko but don't know how to dance the dance.
+
+Br, Jarkko
