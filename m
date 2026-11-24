@@ -1,56 +1,69 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=178.63.66.53
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795537640;
-	b=FLsu0S7XVfACApJ1GW693DjSIF9qKajwDnmBvNHWR2YgKT4jO9hOwisIqF0kBO55OPi0
-	 +7gW2qXgh7rEo34IsxbAqFkfWltiZL2swuhr6+NmMr9kiVwDELHt32G0QkwEaziO/tv5B
-	 4rGoiza5oAW4xpVmCDhJAqUCfeeN5l4RzkjFDn61UHbYJuUpYyGyMGNZn0zAvQhRHT/7j
-	 eNkRsZwzwlx5H8Q1lFOpFJV7XYpLdPFm0f/nTUckHu7JyWJwKdTRhMv2LY5pt5DRItmOz
-	 +Xu1zn9sm/PrFMwDsr5FkC/uQPcs77v8AV23HM62xC91LgPYfF4PHdOOPz7vHIACPXQ==
+	t=1795538283;
+	b=NeAZPRVp2bMzAzzBkE1osYIFnP1Xqyla9J16jULD+Nt4plxxFnNQ2VCy+UWZje63Whmg
+	 xlqEVpTqGJ2YaTfK4uEC6cfdPYtBn+LHirW2u8uaf4puhMh4UW4pl6BIfaZ4av6Q2vg+w
+	 VABBErcG5IyfzUp3cXTYvD15uEP+UMcNbuYin3G+ZdRozaBBClajpV+wKQ5/nWX+A1d89
+	 2QCyuon8wFtyMyLyhoo3SGYCfsFieSRvejM0TSZpy9RW7F+UyPZ4dYti4gv8yHKAoTLMK
+	 /TQ/GiQZCIfKlngZk6JktLU+XCkvCWqhDe/M2GLpsWFyrZr9m1smJJYCABzpdPLRqvg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795537640;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=/+3j8Kgy9C8irEIqEgZC/GGq9yhGv+BkGWWDPqpisWM=;
-	b=AW6csCyaFrkDLIodyTKHM+JhXHAadDxtWfeL2ougez8CW3Y8y5pN700q+SHWc/3yHZ35
-	 58J9A4HZaeDnx5biBDpA+lbCMPqjKB+yio2PdLda6zq4Sk+8jDdAA4MwvCNjwuFGi0N53
-	 DvDo2BpATNECNNuylIZR0pGmkaFqcKLS0Bw1V9IRc/84zTJxIyaVwXeFMrT03wBRblSMS
-	 Vm+l93x6YPg+X9yURKpQGlXOrMk2WMl+I1iLVYgABDiRs+lYeZ5LDrFIMXDgaHf9iSxaj
-	 Wfa01cV+0PR/lIitM+qn8oGc5aogervuU0i83sBsYBNKEN9CPHXlRrhXT5S91g9GwKg==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795538283;
+	h=DMARC-Filter:DKIM-Signature:Received:Date:From:To:Cc:Subject:
+	 Message-ID:References:MIME-Version:Content-Type:Content-Disposition:
+	 In-Reply-To;
+	bh=zEWnkRahKuJva+EOdM9aoJAlXIBskSC96lQmEW7AFzQ=;
+	b=FFF7AE03cSdBzD38IOpP3cfHLF/ImJVQDwqUItMtfh1LdMDPbZQ5s++IWzVW+CFOLU2+
+	 Asr1fLgcerzpocHan3lXYmmKKkMrXC2nXUrRHgGA8jxUUgrlkgdNNNbdlcgNsGRsrpd8N
+	 nICBZ1r3JB4o3S7rJGk2YKbv1UItu1PIwF4ebFv4puJrZ8fvsRoVMJo3UogpAy1Q1G/Bu
+	 qhGiORsUN1yO3YlYwPihDht0MJb5LnJGKx/H+ns4J3I9vef/poref0pLtHUuX++MmIO3O
+	 61j8xi8P8nTpw5bqfP1cEZ8a4t8UEk+ISue+1WGHvIY0w5r11i3Fro5RWAZ1TtDWFQQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HFxswjOq;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=hallyn.com;
+	spf=(null) smtp.mailfrom=hallyn.com;
+	dkim=pass header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=v9YcfGyK;
+	arc=none smtp.remote-ip=178.63.66.53
+Received: from mail.hallyn.com (mail.hallyn.com [178.63.66.53])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id E2B4A606A31E;
-	Tue, 24 Nov 2026 16:27:19 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0A83F606A326;
+	Tue, 24 Nov 2026 16:38:01 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 0A83F606A326
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=hallyn.com
+Authentication-Results: smtp.subspace.kernel.org; spf=tempfail smtp.mailfrom=hallyn.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=HFxswjOq
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 7E3641F000C6;
-	Tue, 24 Nov 2026 16:27:18 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795537639;
-	bh=/+3j8Kgy9C8irEIqEgZC/GGq9yhGv+BkGWWDPqpisWM=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=HFxswjOqjlOU5O8sEduHm9m2VZFLGo+Mn5AZc6zBg2oA1Zd7d/lMbMjPQWJhXOBn9
-	 Cfxe+++lyg58q0+DzTMzbO2x8+bXrq+kDL5FVyMF3xieg687ljG1o4TgKSnBXqOpFc
-	 WLGP6nFvAcsE0chG6ha18UaNjckmWqafRBWVion0okOvMM7UdAeckOyXJiXMAeCO5J
-	 a5oJuuaMvXQ5AN1NqyX/N/Xt4DEVqG653oo7UsEjJwijcwG2+XjaReUScKEAG6Ecpg
-	 jwFBF/KH6uQgSU2/j4/0aTmnAy+8b5ZHhc7+h+UySkg+1XzbeW3drR6oo/lPyAybFN
-	 usLHHzy2AA60A==
-Date: Tue, 24 Nov 2026 18:27:15 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Guicai Ma <maguicai@kylinos.cn>
-Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] KEYS: Protect key instantiation and rejection against
- type removal
-Message-ID: <awW640zaT8Bnqd0-@kernel.org>
-References: <20261124053303.940216-1-maguicai@kylinos.cn>
- <20261124091243.1019217-1-maguicai@kylinos.cn>
+	dkim=pass (2048-bit key, unprotected) header.d=hallyn.com header.i=@hallyn.com header.a=rsa-sha256 header.s=mail header.b=v9YcfGyK
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=hallyn.com; s=mail;
+	t=1795538274; bh=gVNMqSzHWFVNsBvzejWuL1IJS9TsIWZJdXA/XbrBWyI=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+	b=v9YcfGyKwCXUY2FxrBRj0yodJwse7j9ISVnVCIxxdF1hIU4FWhYIdPDjTLHP7ek4K
+	 pg3V6vtGF+Bha4u5Ina7ZfdHdd+kni2O+NdmSy3Eg5Deno2nb2tHLrAPKwx14xpWEi
+	 QpwZg6TRNFUjJ+Ndgv0DRwChyQVEbWT/gfk8xnasqjRBMj5kC6lBVZf3WwGPQE9SWl
+	 9L4rh5Q0Zfk4nbtkKFwHDRnAXLXaZ8x2ZwJQz96SPifWPWRKh8A2R9LqFJ9a47tVDu
+	 dvOPZ29augFzVArx0VjSwI4qk150x2GdsH7abRvl2l3z9ElcS/DnJMedc/uhtqm1Sb
+	 DmtZkDEQ+9HTQ==
+Received: by mail.hallyn.com (Postfix, from userid 1001)
+	id 64804177; Tue, 24 Nov 2026 10:37:54 -0600 (CST)
+Date: Tue, 24 Nov 2026 10:37:54 -0600
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Keisuke Tsukuda <tkdkei@outlook.jp>,
+	Meenakshi Aggarwal <meenakshi.aggarwal@nxp.com>
+Cc: "a.fatoum@pengutronix.de" <a.fatoum@pengutronix.de>,
+	"kernel@pengutronix.de" <kernel@pengutronix.de>,
+	"James.Bottomley@HansenPartnership.com" <James.Bottomley@hansenpartnership.com>,
+	"jarkko@kernel.org" <jarkko@kernel.org>,
+	"zohar@linux.ibm.com" <zohar@linux.ibm.com>,
+	"dhowells@redhat.com" <dhowells@redhat.com>,
+	"paul@paul-moore.com" <paul@paul-moore.com>,
+	"jmorris@namei.org" <jmorris@namei.org>,
+	"linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>,
+	"keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+	"linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KEYS: trusted: caam: propagate protected key option
+ parsing errors
+Message-ID: <awW9YvoCRAXXiq27@hallyn.com>
+References: <20261124155310.32044-1-tkdkei@outlook.jp>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -62,76 +75,67 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20261124091243.1019217-1-maguicai@kylinos.cn>
+In-Reply-To: <20261124155310.32044-1-tkdkei@outlook.jp>
 
-On Tue, Nov 24, 2026 at 04:12:43AM -0500, Guicai Ma wrote:
-> key_instantiate_and_link() reads key->type->def_datalen and ->preparse,
-> passes key->type to restrict_link->check(), and invokes ->instantiate()
-> and ->free_preparse() without synchronizing against key type removal.
-> A reference on the key keeps the key object alive, but does not pin the
-> module that provides its type.
+On Tue, Nov 24, 2026 at 03:53:39PM +0000, Keisuke Tsukuda wrote:
+> From: Keisuke Tsukuda <tkdkei@outlook.jp>
 > 
-> unregister_key_type() removes the type from key_types_list and waits for
-> key_garbage_collector() to run three passes: pass 1 sets KEY_FLAG_DEAD
-> and clears key->perm, pass 2 unlinks dead keys from keyrings, and pass 3
-> takes key->sem for writing, retypes key->type to &key_type_dead, and
-> destroys the payload. A key still under construction stays in
-> KEY_IS_UNINSTANTIATED with a valid authorisation key, so an upcall
-> helper calling KEYCTL_INSTANTIATE after pass 3 reaches
-> __key_instantiate_and_link() and jumps to key_type_dead.instantiate,
-> which is NULL:
+> get_pkey_options() returns -EINVAL for invalid protected key options,
+> such as "key_enc_algo=GG". trusted_caam_seal() and trusted_caam_unseal()
+> ignore this error and return 0. The trusted key core then instantiates
+> a key without a blob for "new", or with a zero-length key for "load".
 > 
->   Unable to handle kernel NULL pointer dereference at
->   virtual address 0000000000000000
->   Internal error: Oops: 0000000086000006 [#1] SMP
->   pc : 0x0
->   lr : __key_instantiate_and_link+0xb8/0x2f8
->   Call trace:
->    0x0 (P)
->    key_instantiate_and_link+0x2e8/0x36c
->    keyctl_instantiate_key_common+0x1cc/0x338
->    keyctl_instantiate_key+0xbc/0x120
->    __arm64_sys_keyctl+0x218/0x3f0
+> On an i.MX6Q running a 7.4.0-rc2-based kernel, adding a key with
+> "new 32 pk key_enc_algo=GG" succeeds, but KEYCTL_READ returns zero
+> bytes because no blob was created. The key cannot be saved and
+> reloaded.
 > 
-> If the module unloads while ->preparse() or ->instantiate() is running,
-> execution can also return into freed module text or skip
-> ->free_preparse(). While the request_key() syscall holds key_types_sem
-> across the upcall, in-kernel request_key() callers do not, so
-> unregister_key_type() can run before KEYCTL_INSTANTIATE or
-> KEYCTL_REJECT.
+> Return the parsing error from both paths. On the patched kernel,
+> "new" and "load" with "key_enc_algo=GG" both fail with -EINVAL, while
+> valid requests succeed.
 > 
-> key_reject_and_link() shares the same window: it links the key into
-> @keyring and calls key_set_expiry() (which reads key->type->flags)
-> without checking KEY_FLAG_DEAD. Linking a dead key between GC pass 2 and
-> pass 3 leaves it in the keyring's assoc_array while pass 3 overwrites
-> key->type (which aliases key->index_key.type) in place.
-> 
-> Neither key->sem nor key_types_sem can be taken here: holding key->sem
-> across __key_link_lock() and __key_instantiate_and_link() inverts lock
-> order against encrypted_instantiate() (which locks the master key's
-> semaphore under keyring->sem and key_construction_mutex), and
-> key_instantiate_and_link() is already called with key_types_sem held for
-> reading (e.g. from request_key_auth_new()).
-> 
-> Add key_type_srcu and call synchronize_srcu(&key_type_srcu) at the end
-> of GC pass 1 (KEY_GC_REAPING_DEAD_1) whenever dead keys were marked.
-> SRCU rather than RCU because ->preparse() and ->instantiate() may sleep.
-> Hold key_type_srcu across the full body of key_instantiate_and_link()
-> and key_reject_and_link() and check KEY_FLAG_DEAD:
-> 
-> - Callers that observe !KEY_FLAG_DEAD finish all key->type accesses and
->   any keyring linking before pass 2 unlinks dead keys and pass 3 retypes
->   them to key_type_dead.
-> - Callers entering after synchronize_srcu() observe KEY_FLAG_DEAD:
->   key_instantiate_and_link() returns -EKEYREVOKED (matching
->   key_validate()), and key_reject_and_link() skips linking (returning
->   -EKEYREVOKED if @keyring was given) and key_set_expiry() while still
->   completing negative instantiation so waiters wake up and @authkey is
->   invalidated.
-> 
-> Also return -EOPNOTSUPP in key_instantiate_and_link() if a live key type
-> does not provide ->instantiate().
+> Fixes: a703a4c2a328 ("KEYS: trusted: caam based protected key")
+> Signed-off-by: Keisuke Tsukuda <tkdkei@outlook.jp>
 
-The commit message is incomprehensible.
+Reviewed-by: Serge Hallyn <serge@hallyn.com>
 
-Br, Jarkko
+But, it looks like these were both added by
+
+  commit a703a4c2a3280835003d4d0eb8845bac0f1a6ef1
+  Author: Meenakshi Aggarwal <meenakshi.aggarwal@nxp.com>
+  Date:   Mon Oct 6 09:17:52 2025 +0200
+  
+      KEYS: trusted: caam based protected key
+
+Adding Meenakshi to the thread to make sure this wasn't intentional,
+and serving some purpose we're overlooking.
+
+> ---
+>  security/keys/trusted-keys/trusted_caam.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/keys/trusted-keys/trusted_caam.c b/security/keys/trusted-keys/trusted_caam.c
+> index 6a33dbf2a..33000d7bb 100644
+> --- a/security/keys/trusted-keys/trusted_caam.c
+> +++ b/security/keys/trusted-keys/trusted_caam.c
+> @@ -110,7 +110,7 @@ static int trusted_caam_seal(struct trusted_key_payload *p, char *datablob)
+>  		info.pkey_info.is_pkey = 1;
+>  		ret = get_pkey_options(datablob, &info.pkey_info);
+>  		if (ret < 0)
+> -			return 0;
+> +			return ret;
+>  		dump_options(&info.pkey_info);
+>  	}
+>  
+> @@ -142,7 +142,7 @@ static int trusted_caam_unseal(struct trusted_key_payload *p, char *datablob)
+>  		info.pkey_info.is_pkey = 1;
+>  		ret = get_pkey_options(datablob, &info.pkey_info);
+>  		if (ret < 0)
+> -			return 0;
+> +			return ret;
+>  		dump_options(&info.pkey_info);
+>  
+>  		p->key_len = p->blob_len + sizeof(struct caam_pkey_info);
+> -- 
+> 2.50.1 (Apple Git-155)
+> 
