@@ -1,83 +1,78 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=124.126.103.232
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795519259;
-	b=iyBV7C1kLgcrxSnAh6sY/7iImLXcQfmEm66rtwkplBnaS1r0lDxLc68bqW/cNlB/FDq+
-	 VTysqQxcBjLC0eLWDiWL7Zwj5hdFaJYVgyk8c//npMIMMiMaucO51//w2kWDn+qVMOc8w
-	 MrhTIKuV49ZvOjxH0RWkbqI0rhQj5Cl4cwo4qnCo/eGxq2w4rzM0kuCthMasQ688IiuWI
-	 0e9abAxh93eLB+iUHcP7Plz9IuSd8hlDV+u2Sn1Isz4e+Sc2Cbog3GL5w8ozS5w9PMLkC
-	 xxJaJd1kfymeDQHjYBYQMIp62q7I9HKtmgrLSNil/RjRHjD5qMX9fuAtXZ8JCx1wxtw==
+	t=1795521669;
+	b=q4AIeslkZqwWmWYsrTdxWNiB1lDWLxGnbxtfjUrL12dpyrvYs21bQs7XbgrP8kjVIqf4
+	 6FqMYUz0+ZmiMsZ3PG6Jm0YGikGfYtQJNy14vtVj6aBFNwR6FJvQze/DC7w1jB9c3fElv
+	 1M9HfOBwduS1cB/gkth/vzOkttdCKF0PTUj3VCwrSYHuKLBT/QEZFs5Rdy0EKckvZNwk4
+	 w3/i7fxMXieTLQm0+DlZGgmpsQakVclT64t9GC1UFwnxcsSmeKiqxsrN+0Gc8znWAtZu5
+	 n1h3jYh1NwQWmx+AD7pw2RrcOWBiTTzjtMahyPCueEeHv8E57ZOa5FKeFi1zAMeQdkw==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795519259;
-	h=DMARC-Filter:X-UUID:X-CTIC-Tags:X-CID-P-RULE:X-CID-O-INFO:X-CID-INFO:
-	 X-CID-META:X-CID-BVR:X-CID-BAS:X-CID-FACTOR:X-CID-RHF:X-UUID:X-User:
-	 Received:From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:
-	 References:MIME-Version:Content-Transfer-Encoding;
-	bh=IVS6eL8QbCi0pXUvL6cuqVq9lxhuJRcorsy7TUfmbDc=;
-	b=jW+zu2502VxV+O2tmrJq+0rC0iqL7yPexTVWxYkPsgv6irdluqEH0MCb9y19wm6EScm2
-	 YCgKg8bA6K+YZtDI7gVzqRJP9YK91BgvceTBkI95ul0Gwi2dUtO4DqzC2vSpRpmL5bNkL
-	 CocidyJX4rOiIFnraQ0TYz+epAlRxH8eSMJGUNzHaamr2/5U3R9nqnc2aOHUW3gFYWQFG
-	 qonjmYMnP/8S2gIZ/0xbbYhqCmzLAehENVGe+XlBO3zeR9iWzx+CmKx3B90mxBrC5P/Qt
-	 Zll0lwx3Nj37+LOE4pIGANUx1PD6qio+R6QZ/Utzayy88irCOvzZB7lWtO/x49fG2SQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795521669;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=G3HDr+rlUwMTz5EXde1gL4gZLnJyvEJHBt9n0Z6ARZQ=;
+	b=WJFIJyT/4VgT6PfbzuRsDLSQ9CSgrZRcKo8CW8WgUzOqMpyiWxxTAq5TjcCi0YtHNZxy
+	 hi/aAGfuaJLgFKUxXN+H64H+nnHD6ockxtGVjJs7NlKoL7kDmE4JR+EjmHI00RQhKmB34
+	 4RJcyQhzSseNa/WBX+cBS5YX3xazsZ7LpMfmeV4yzhuiBcXgPlj0o0fNsHKReIaJqy9h0
+	 J0szBKIIiq1tuGXwZnh3Sjzmsbh+3W2yypHaOZfqd+CxDPkSE+nMu4J5MP4skzW+DrMPT
+	 sVaL3BquSSh+Ab68h/WkjJh42lLDeT0b5nyChQDunrrObgbN2KftC+RtKzicvybDwnQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=none header.from=kylinos.cn;
-	spf=pass smtp.mailfrom=kylinos.cn;
-	arc=none smtp.remote-ip=124.126.103.232
-Received: from mailgw.kylinos.cn (mailgw.kylinos.cn [124.126.103.232])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=GNTb5Qoz;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8B8CE606A32A;
-	Tue, 24 Nov 2026 11:20:56 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 8B8CE606A32A
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.cn
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinos.cn
-X-UUID: 18ab7722e7f911f19a56ed5b684f684d-20261124
-X-CTIC-Tags:
-	HR_CC_COUNT, HR_CC_DOMAIN_COUNT, HR_CC_NAME, HR_CC_NO_NAME, HR_CTE_8B
-	HR_CTT_MISS, HR_DATE_H, HR_DATE_WKD, HR_DATE_ZONE, HR_FROM_NAME
-	HR_SJ_DIGIT_LEN, HR_SJ_LANG, HR_SJ_LEN, HR_SJ_LETTER, HR_SJ_NOR_SYM
-	HR_SJ_PHRASE, HR_SJ_PHRASE_LEN, HR_SJ_PRE_RE, HR_SJ_WS, HR_TO_COUNT
-	HR_TO_DOMAIN_COUNT, HR_TO_NAME, SA_EXISTED, SN_EXISTED, SPF_NOPASS
-	DKIM_NOPASS, DMARC_NOPASS, CIE_BAD, CIE_GOOD, CIE_GOOD_SPF
-	GTI_FG_BS, GTI_RG_INFO, GTI_C_BU, AMN_GOOD, ABX_MISS_RDNS
-X-CID-P-RULE: Release_Ham
-X-CID-O-INFO: VERSION:1.3.19,REQID:5e60e0a9-95b9-423f-8750-d27f3a71bc6f,IP:10,
-	URL:0,TC:0,Content:0,EDM:25,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTIO
-	N:release,TS:35
-X-CID-INFO: VERSION:1.3.19,REQID:5e60e0a9-95b9-423f-8750-d27f3a71bc6f,IP:10,UR
-	L:0,TC:0,Content:0,EDM:25,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION:
-	release,TS:35
-X-CID-META: VersionHash:7db8b62,CLOUDID:df191d0fa27302da380c1b7e7acd0a28,BulkI
-	D:2611241920513HWIY6N7,BulkQuantity:0,SF:17|19|66|78|81|82|83|102|127|136|
-	153|850|865|898|915,TC:nil,Content:0|15|50|99,EDM:5|-100,IP:-2,URL:0,File:
-	nil,RT:nil,Bulk:nil,QS:nil,BEC:nil,COL:0,OSI:0,OSA:0,AV:0,LES:1,SPR:NO,DKR
-	:0,DKP:0,BRR:0,BRE:0,ARC:0
-X-CID-BVR: 2,SSN|SDN
-X-CID-BAS: 2,SSN|SDN,0,_
-X-CID-FACTOR: TF_CID_SPAM_SNR,TF_CID_SPAM_FAS,TF_CID_SPAM_FSD
-X-CID-RHF: D41D8CD98F00B204E9800998ECF8427E
-X-UUID: 18ab7722e7f911f19a56ed5b684f684d-20261124
-X-User: maguicai@kylinos.cn
-Received: from localhost.localdomain [(36.106.123.207)] by mailgw.kylinos.cn
-	(envelope-from <maguicai@kylinos.cn>)
-	(Generic MTA with TLSv1.3 TLS_AES_256_GCM_SHA384 256/256)
-	with ESMTP id 907033931; Tue, 24 Nov 2026 19:20:47 +0800
-From: Guicai Ma <maguicai@kylinos.cn>
-To: Henry Martin <bsdhenrymartin@gmail.com>
-Cc: David Howells <dhowells@redhat.com>,
-	Jarkko Sakkinen <jarkko@kernel.org>,
-	Paul Moore <paul@paul-moore.com>,
-	James Morris <jmorris@namei.org>,
-	"Serge E . Hallyn" <serge@hallyn.com>,
-	keyrings@vger.kernel.org,
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 94DAC606A31E;
+	Tue, 24 Nov 2026 12:01:09 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=GNTb5Qoz
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 8EAD21F000E0;
+	Tue, 24 Nov 2026 12:01:08 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795521669;
+	bh=G3HDr+rlUwMTz5EXde1gL4gZLnJyvEJHBt9n0Z6ARZQ=;
+	h=From:To:Cc:Subject:Date;
+	b=GNTb5QozUrSxKzyzzcv4Q2v8rkGNOqMbQ72p7tucOe3ayS3iNCjw3EcGTpfTi3nWM
+	 yLYmeb13NYLhXxMnMjPoZCcS7/M+Foiq5R6HfBmUbwiHlNyX14BIWOzZr2jdN7KYJ9
+	 OsVmLomDFU0QjapgGcaqT4Z1WQpFRNssOcg8iDgkFEZ+PmHL6QCemEcIGo7ts7wvNn
+	 I+JG6Gwx/JyiPr1eKvzZZWHN7ITbVE/+2+7VaxskuwBbPJvQujJ9EUytj7v0fH/FZC
+	 ETureQXTNn3Jg0jmy31RNXP08r1ZjEVvw3GQQUwZvN/62MH4PG1bEWf9yrbhj2i+GW
+	 5/osVEamRrKhw==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: keyrings@vger.kernel.org
+Cc: Jarkko Sakkinen <jarkko@kernel.org>,
+	dm-devel@lists.linux.dev,
+	linux-crypto@vger.kernel.org,
+	linux-doc@vger.kernel.org,
+	linux-integrity@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
-	Guicai Ma <maguicai@kylinos.cn>
-Subject: Re: [PATCH v2] keys: fix crash on big_key read or revoke after a failed update
-Date: Tue, 24 Nov 2026 06:20:44 -0500
-Message-ID: <20261124112044.1042041-1-maguicai@kylinos.cn>
+	Alasdair Kergon <agk@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	David Howells <dhowells@redhat.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	Ignat Korchagin <ignat@linux.win>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	James Morris <jmorris@namei.org>,
+	Jason Gunthorpe <jgg@ziepe.ca>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Lukas Wunner <lukas@wunner.de>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Mimi Zohar <zohar@linux.ibm.com>,
+	Paul Moore <paul@paul-moore.com>,
+	Peter Huewe <peterhuewe@gmx.de>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Shuah Khan <skhan@linuxfoundation.org>
+Subject: [PATCH 0/9] KEYS: trusted: asymmetric keys
+Date: Tue, 24 Nov 2026 14:00:35 +0200
+Message-ID: <20261124120044.1481752-1-jarkko@kernel.org>
 X-Mailer: git-send-email 2.47.3
-In-Reply-To: <20261124025759.39344-1-bsdhenrymartin@gmail.com>
-References: <20261124025759.39344-1-bsdhenrymartin@gmail.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -89,21 +84,91 @@ Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-On Tue, Nov 24, 2026 at 10:57:59AM +0800, Henry Martin wrote:
-> Instantiate the new payload first and destroy the old one only on success;
-> a positive key's reservation is already 16 bytes, so it cannot fail.
+OVERVIEW
+========
 
-Looks good. Saving the old big_key_payload on the stack before calling
-generic_key_instantiate() also keeps negative keys untouched if the
-quota reserve fails, and the caller still frees prep via
-big_key_free_preparse().
+Extend  TPM 2.0 trusted keys to load ASN.1 TPMKey [1] asymmetric keys
+(OID_TPMLoadableKey, 2.23.133.10.1.3) and expose keyctl pkey-operations
+directly on key_type_trusted. In addition there are some TPMKey
+interoperability fixes.
 
-I tested this on 7.4.0-rc3 arm64 in QEMU (KASAN, lockdep,
-CONFIG_BIG_KEYS=y). After creating a 4096-byte big_key and setting
-root_maxbytes=1, a 1-byte KEYCTL_UPDATE fails with -EDQUOT on the
-unpatched kernel and the next KEYCTL_READ hits the BUG at
-fs/open.c:1145 in dentry_open(). With this patch the 1-byte update and
-read succeed, as do file/buff update transitions and KEYCTL_REVOKE.
+I.e. this my old series with a twist: instead of introducing a separate
+subtype for asymmetric keys, factor out pkey-operations into a separate
+CONFIG_KEYCTL_PKEY-feature, and wire asymmetric operations to
+key_type_trusted.
 
-Reviewed-by: Guicai Ma <maguicai@kylinos.cn>
-Tested-by: Guicai Ma <maguicai@kylinos.cn>
+This work was originally derived from [3] and is direct offspring of
+[2].
+
+[1] https://www.hansenpartnership.com/draft-bottomley-tpm2-keys.html
+[2] https://lore.kernel.org/linux-integrity/20240520184727.22038-1-jarkko@kernel.org/
+[3] https://lore.kernel.org/all/20200518172704.29608-1-prestwoj@gmail.com/
+
+Cc: dm-devel@lists.linux.dev
+Cc: keyrings@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Benjamin Marzinski <bmarzins@redhat.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Ignat Korchagin <ignat@linux.win>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Jason Gunthorpe <jgg@ziepe.ca>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Lukas Wunner <lukas@wunner.de>
+Cc: Mike Snitzer <snitzer@kernel.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Shuah Khan <skhan@linuxfoundation.org>
+
+Jarkko Sakkinen (9):
+  KEYS: trusted: Allow ASN.1 TPM2 sealed data shorter than MIN_KEY_SIZE
+  lib/asn1_encoder: Add asn1_encode_integer_bytes()
+  tpm: Export tpm2_create_primary()
+  tpm: Add persistent hierarchies to tpm2_create_primary()
+  KEYS: trusted: Extend TPMKey support
+  KEYS: Factor out KEYCTL_PKEY
+  KEYS: trusted: Reject zero-length keys in symmetric consumers
+  KEYS: trusted: Factor out TPM2 blob loading
+  KEYS: trusted: Add asymmetric key support for TPM2
+
+ .../security/keys/trusted-encrypted.rst       |   25 +-
+ crypto/af_alg.c                               |    2 +
+ crypto/asymmetric_keys/Kconfig                |    1 +
+ drivers/char/tpm/Kconfig                      |    2 +-
+ drivers/char/tpm/tpm2-sessions.c              |  203 +--
+ drivers/md/dm-crypt.c                         |    2 +-
+ include/keys/trusted-type.h                   |    5 +-
+ include/keys/trusted_tpm.h                    |   16 +-
+ include/linux/asn1_encoder.h                  |    3 +
+ include/linux/tpm.h                           |    2 +
+ include/linux/tpm_command.h                   |   13 +
+ lib/asn1_encoder.c                            |   62 +
+ security/keys/Kconfig                         |    3 +
+ security/keys/Makefile                        |    2 +-
+ .../keys/encrypted-keys/masterkey_trusted.c   |    5 +
+ security/keys/internal.h                      |    2 +-
+ security/keys/keyctl.c                        |    2 +-
+ security/keys/trusted-keys/Kconfig            |   10 +
+ security/keys/trusted-keys/tpm2key.asn1       |   19 +
+ security/keys/trusted-keys/trusted_core.c     |   20 +-
+ security/keys/trusted-keys/trusted_tpm1.c     |   26 +
+ security/keys/trusted-keys/trusted_tpm2.c     | 1332 ++++++++++++++++-
+ 22 files changed, 1558 insertions(+), 199 deletions(-)
+
+--
+2.47.3
+
