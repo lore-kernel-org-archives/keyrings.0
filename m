@@ -1,74 +1,79 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=124.126.103.232
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795561229;
-	b=rIWtdLLBEJrX9ZrTlJSJP8uudQXK8mZdxxOPE8sVXdrDY4DJHYz38IEe9BjngwDnWnwu
-	 pt+/EiPCJdivramMeOFI7P8Pb4VoTm9eOWu+BpEa6qBwM/Mxg/afdXulWgUzKGxmld0Ls
-	 YGgtiFlXvZqp7rtO6mrH5EOLN/o6+xzT0g/ff/P0fqSQTsbQuN8LN/1UYPRis5G8zZOvt
-	 DkstKdTFpakba37oYTiYtCdzR571Os1WQM/GngzmEmZ7Yr1w3aUuF49WHFCobDTbnsLhU
-	 y9+R5eljynbPIBpl15gTEdI9GxsKGXFAyKdivE8ZpKwqYh0psI5Yghc9Jl9LwDUBAyw==
+	t=1795561665;
+	b=ZnOOxnYRMlaGTRh7UFEoPI4b2cocRoIEk8oD1Qr5YV1h67cy29WxB9ix1wyBYFeRVueX
+	 6WflLrZQ0yGglSvUOpLZA2N8TQjg1mpLMyv5XlbjhLH8/1ew9fuGxWqA38x5wyDeymWzj
+	 QH0Vn6dwx2caqCG/4+WUgGCDDqG1b5lIZIhJFaIGRLqE2ZgTuHz3Jet3is9aGCWrcRHxi
+	 4vhXrm3tfN3Hzkl+rVSGybJGfRkqMclQdhfSw/bLFAteQdocOClcStgsQvk6gaZWn+znA
+	 5xB8fGY9h7xvqlwaeF51Gbo56DHzxd4xlVqL++CxyRaZ35VAdNIb0oYblNDkgKCvIDQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795561229;
-	h=DMARC-Filter:X-UUID:X-CID-P-RULE:X-CID-O-INFO:X-CID-INFO:X-CID-META:
-	 X-CID-BVR:X-CID-BAS:X-CID-FACTOR:X-CID-RHF:X-UUID:X-User:Received:
-	 From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:References:
-	 MIME-Version:Content-Transfer-Encoding;
-	bh=ep6SCRIYIbStpixZ7wEhVusC48UyfLD4TrkTg3oZ188=;
-	b=b+egdj5qrzW3Deo1062X9pMAom93tVrtuC7JpqtQLTJE6nq1PGdfv3OXhiYRMSxkDDpX
-	 mDz7nj0TSnfr6ZyfBSSxNMPn9AzQWBzFk4EdRG4FGclkAGtOu/CqXCLXLjrtsUY/kx3WA
-	 sgz4+YGPBy9a9QLUJ/BDZ3Z+tqvd/PWjzTzq4Ka7Pp0V3DecpSXurwj3yFX/gfSs3wI6d
-	 cxoMMq0MdDcyYwq9EppF/A46JSda/N0LVOlHXX4NcATr8+Nl/BD4Mj2QcK+mhyGPq8GUa
-	 Jt7sE0Od7LP168mUqTkJ2dabGfOQGcqi2cLMuOgjvVTL4f5EcJVitHubsmburc1vMMA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795561665;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=+1ShINOhrETVckZgwkDQ2yDcTAY5roVvnqnqdvL+Hbk=;
+	b=sTNKiREt5E7Ijj8nD5jPS62/i59+NwkTiq73IYHiDCq6sdjPmVfb34ZreB6j/eP+YzUB
+	 CqCgdDLj01MQI70AOwCoDTzJ4Qaww1KXFQosz6BBl4Q+p5fcGZA6CkO3HbajkRceOpGoR
+	 Ua++/EIRj9XzIBmB2+fnX1SqKuuF5uEf/X0ITYoKZpkzAOOhSEsQtCmif4pc6d25Ts1HO
+	 hmB95eNe2lduJJCTmJ+rnw+nlkpn4KGPIiXJybO9mYLJck8hAt+tpRc3u5kAaau4HYA/R
+	 4nNExNE27B7WSparM8mOy7N55eZj0+pWCwsFFPVZ/+Dl/bkkJGSNbQAmU88VijnWx1w==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=none header.from=kylinos.cn;
-	spf=pass smtp.mailfrom=kylinos.cn;
-	arc=none smtp.remote-ip=124.126.103.232
-Received: from mailgw.kylinos.cn (mailgw.kylinos.cn [124.126.103.232])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=dVQjkdi+;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3BAB3606A326;
-	Tue, 24 Nov 2026 23:00:26 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 3BAB3606A326
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.cn
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinos.cn
-X-UUID: d1b9f50ce85a11f19a56ed5b684f684d-20261125
-X-CID-P-RULE: Release_Ham
-X-CID-O-INFO: VERSION:1.3.19,REQID:eec460be-8fac-41b1-9066-05b27503b274,IP:10,
-	URL:0,TC:0,Content:0,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION
-	:release,TS:10
-X-CID-INFO: VERSION:1.3.19,REQID:eec460be-8fac-41b1-9066-05b27503b274,IP:10,UR
-	L:0,TC:0,Content:0,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION:r
-	elease,TS:10
-X-CID-META: VersionHash:7db8b62,CLOUDID:25b574335cd683da1331a8fc84426721,BulkI
-	D:261125014500UWOFTBKL,BulkQuantity:1,SF:17|19|64|66|78|80|81|82|83|101|10
-	2|127|153|841|850|865|898|915,TC:nil,Content:0|15|50|99,EDM:-3,IP:-2,URL:0
-	,File:nil,RT:nil,Bulk:40,QS:nil,BEC:nil,COL:0,OSI:0,OSA:0,AV:0,LES:1,SPR:N
-	O,DKR:0,DKP:0,BRR:0,BRE:0,ARC:0
-X-CID-BVR: 2,SSN|SDN
-X-CID-BAS: 2,SSN|SDN,0,_
-X-CID-FACTOR: TF_CID_SPAM_SNR,TF_CID_SPAM_FAS,TF_CID_SPAM_FSD
-X-CID-RHF: D41D8CD98F00B204E9800998ECF8427E
-X-UUID: d1b9f50ce85a11f19a56ed5b684f684d-20261125
-X-User: maguicai@kylinos.cn
-Received: from localhost.localdomain [(36.106.123.207)] by mailgw.kylinos.cn
-	(envelope-from <maguicai@kylinos.cn>)
-	(Generic MTA with TLSv1.3 TLS_AES_256_GCM_SHA384 256/256)
-	with ESMTP id 456235794; Wed, 25 Nov 2026 07:00:18 +0800
-From: Guicai Ma <maguicai@kylinos.cn>
-To: Jarkko Sakkinen <jarkko@kernel.org>
-Cc: keyrings@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id B2DA4606A327;
+	Tue, 24 Nov 2026 23:07:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=dVQjkdi+
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id BB17D1F000C0;
+	Tue, 24 Nov 2026 23:07:44 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795561665;
+	bh=+1ShINOhrETVckZgwkDQ2yDcTAY5roVvnqnqdvL+Hbk=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=dVQjkdi+8IRvs0yX8C9we8uPqfWBw4PBtDidtovyXGmo6jzND4pqoWA5i9nS9C16q
+	 QmLLotzAOsH2d0e60fdXLQtsyWOyGdQCIec0Ay0nbE7jmq22QyPYcs8RZ5HwD3Xi9s
+	 1qykf2nNARtiKwl0Mlk3Oa8IpONRCgo8OPbdnFl6ggM4gbpUbqOiYI0zGyt0NHq86+
+	 2KqZuQppqAg996IAnB+YYMytFDCsHeqTsjq1nEzBb/xDsgy5GH137DtiREGq1+rj+V
+	 J6JKuWDX6n5j3AK4UQWTIKSlrTAhrhnf/UMaJd2hHtqM/9yygrwRJ+tYb39hwxi7IN
+	 HIZeeC4eAP7fw==
+Date: Wed, 25 Nov 2026 01:07:41 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: keyrings@vger.kernel.org, dm-devel@lists.linux.dev,
+	linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
+	Ahmad Fatoum <a.fatoum@pengutronix.de>,
+	Alasdair Kergon <agk@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	David Gstir <david@sigma-star.at>,
 	David Howells <dhowells@redhat.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	Ignat Korchagin <ignat@linux.win>,
+	James Bottomley <James.Bottomley@hansenpartnership.com>,
 	James Morris <jmorris@namei.org>,
-	Paul Moore <paul@paul-moore.com>,
-	"Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH] KEYS: Prevent key type removal during key_instantiate_and_link()
-Date: Tue, 24 Nov 2026 18:00:16 -0500
-Message-ID: <20261124230016.1211738-1-maguicai@kylinos.cn>
-X-Mailer: git-send-email 2.47.3
-In-Reply-To: <20261124174035.1614480-1-jarkko@kernel.org>
-References: <20261124174035.1614480-1-jarkko@kernel.org>
+	James Prestwood <prestwoj@gmail.com>,
+	Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>,
+	Lukas Wunner <lukas@wunner.de>, Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
+	Peter Huewe <peterhuewe@gmx.de>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Sumit Garg <sumit.garg@kernel.org>
+Subject: Re: [PATCH v2 6/9] KEYS: Factor out KEYCTL_PKEY
+Message-ID: <awYYvQwk6AWHhtNU@kernel.org>
+References: <20261124194043.1651679-1-jarkko@kernel.org>
+ <20261124194043.1651679-7-jarkko@kernel.org>
+ <20261124215035.GE2227373@google.com>
+ <awYLCuCIG8--aa2Z@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -78,47 +83,37 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <awYLCuCIG8--aa2Z@kernel.org>
 
-On Tue, 24 Nov 2026 19:40:35 +0200, Jarkko Sakkinen wrote:
-> @@ -610,11 +628,12 @@ int key_reject_and_link(struct key *key,
->  		}
->  	}
->
-> -	mutex_lock(&key_construction_mutex);
->  	down_write_nested(&key->sem, 2);
->
->  	/* can't instantiate twice */
->  	if (key->state == KEY_IS_UNINSTANTIATED) {
-> +		mutex_lock(&key_construction_mutex);
+On Wed, Nov 25, 2026 at 12:09:18AM +0200, Jarkko Sakkinen wrote:
+> On Tue, Nov 24, 2026 at 09:50:35PM +0000, Eric Biggers wrote:
+> > On Tue, Nov 24, 2026 at 09:40:40PM +0200, Jarkko Sakkinen wrote:
+> > > diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+> > > index c73979b2e98e..1c78a9a663c5 100644
+> > > --- a/crypto/asymmetric_keys/Kconfig
+> > > +++ b/crypto/asymmetric_keys/Kconfig
+> > > @@ -2,6 +2,7 @@
+> > >  menuconfig ASYMMETRIC_KEY_TYPE
+> > >  	bool "Asymmetric (public-key cryptographic) key type"
+> > >  	depends on KEYS
+> > > +	select KEYCTL_PKEY
+> > >  	help
+> > >  	  This option provides support for a key type that holds the data for
+> > >  	  the asymmetric keys used for public key cryptographic operations such
+> > 
+> > Could we use this opportunity to give CONFIG_KEYCTL_PKEY an
+> > off-by-default prompt like CONFIG_KEY_DH_OPERATIONS, please?  There are
+> > a lot of systems that need ASYMMETRIC_KEY_TYPE for verifying signatures
+> > but don't the KEYCTL_PKEY keyctls.  The fact that the KEYCTL_PKEY
+> > keyctls get pulled in too has always been a huge problem, given the
+> > additional attack surface they expose as well as other issues like the
+> > kernel's RSA code not being resistant to timing attacks.
+> 
+> We can do that.
 
-Here __key_link_begin() still runs before key->sem is taken and there is
-no KEY_FLAG_DEAD check, so the link path is still taken: on 7.4-rc3 with
-KASAN and PROVE_LOCKING, KEYCTL_REJECT with a target keyring on a dead
-key returns 0 instead of -EKEYREVOKED. If pass 3 retypes the key before
-key->sem is taken, __key_link() inserts it with an edit built from the
-old type.
+I'd be also interested to hear, if there are any wishes from non-TPM
+trusted backend side. Thus, increased Cc-list.
 
-Taking key->sem before __key_link_begin() and skipping the link with
-link_ret = -EKEYREVOKED when KEY_FLAG_DEAD is set avoids that, and still
-lets the negative instantiation finish so request_key() waiters wake up.
-
-In key_instantiate_and_link():
-> +	down_write_nested(&key->sem, 2);
-> +
-> +	if (test_bit(KEY_FLAG_DEAD, &key->flags)) {
-> +		ret = -EKEYREVOKED;
-> +		goto out_unlock;
-> +	}
-
-After a modular type is unloaded, key->sem still carries the module's
-lock_class_key, which lockdep_free_key_range() dropped. In the post-rmmod
-instantiate test up_write() here warns "trying to release lock
-(&type->lock_class) ... no more locks to release". Module pinning would
-remove this; it still matters for stable backports.
-
-The 200-round instantiate/reject race and encrypted-key instantiation
-pass.
-
-Thanks,
-Guicai
+Br, Jarkko
