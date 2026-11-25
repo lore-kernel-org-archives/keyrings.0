@@ -1,102 +1,56 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=195.135.223.131
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795621415;
-	b=zZ9MX565TSK4jaJSPQxXIm62QFr3CdMtMLCgMgHa5PaVGDeZSWZvv0jQ+6ciezDSzP4x
-	 Ji/GtmE+SnH1UTxy2zUcASZvK5zxhVwTrtr3JFe5WGc2wx8EQyiYPiCXySx+N5cTfMV6Q
-	 LxegeIpxNbl9R+bvXWjxhf/kKaweqmuozaprIDsj8FVZfBughIEv33U3RjzYgquB8zRti
-	 jJtTmnEQLOT9odbLRJcygfA0Jtew4sXInqySqmTjFRuh3b/0bNpBOTj5F/eadaimLs2LM
-	 9fWpOCLjsDCpAXvGlXEQYd2HmwpNNepHsZqwR5a7PAZhaYm/+6v3A9pcYWlO+cbrM+w==
+	t=1795627165;
+	b=z2aInozAMHczVnKUP++fhbctVLVNYSY5AMbeD0qEgsXUCNQvyhehFfemO6UyeMbFD4ck
+	 D+Y51owe2hPzkmg/3LuSs4n6Iv7wDzmxZUus63SlDlIUORTiIvl9KMdlwdzzhSqfNQliH
+	 NAOqGMG1hNDWRe4aF3bZb3VvhQXCA3JuvavNuUs4/ZVYmiZZzhPoVzPk5AKJtBoAcfjqR
+	 RCLJZJ7kh4Ba7bX3kZh/ZBZPLglQM5JusKo+WkYzwKOetFvojtPzrWwLsnkLIUYRkVRje
+	 rVKnMT1DWQRI1Cu+MCBpMArj201SYPr2LjLUq/MvffUvDGv67ZDWhzXjSVL4nZA3ePA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795621415;
-	h=DMARC-Filter:Received:DKIM-Signature:DKIM-Signature:DKIM-Signature:
-	 DKIM-Signature:Received:Received:Message-ID:Date:MIME-Version:
-	 User-Agent:Subject:To:Cc:References:Content-Language:From:In-Reply-To:
-	 Content-Type:Content-Transfer-Encoding:X-Spam-Flag:X-Spam-Level:
-	 X-Spamd-Result:X-Spam-Score;
-	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
-	b=5l8DmQoEXdIN43v/j5F/1ZUrNvyFP2NxU4qQI4yF/Mn1T2xbSQ3uEMO+prOf0QnQ1f66
-	 26Fdq7q/zzcVitpMj9dPXigS9kcirQiKoB63XA8R7DoX7z3YGNN5bPaAtKd5N4QwbW6HI
-	 zAxoNZcbnPTtf5vudqeHeRjtZAyULs44v6YkuOTL7hUBiwb0nuiTkmd1h6tJjsQ3VQDl+
-	 +0kI921QLDCjq0jzN7EGNrnEQzGBdQA1M5xcLNV3ahY8UIaL1zdd7m4V/wJlxWLXkGAmd
-	 OU40XGSfzZcp5fIrVA1lsAtkbNgHIhZSxq7chQ/efQhW88Vyh9oZGnXgz545Lu6XosQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795627165;
+	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
+	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
+	bh=zlUDtLSedtGVqw9aJT44i6qtvT7PvK8DE79lqMDex5I=;
+	b=4dmDzzq/LU3XnwapslHzM7T75zM07hNLHjn0zCpkImZJMm9wT58VThkDnY4Jw4S5cUXd
+	 /XkoXxjmmELobYIpetUv3k8Err/imCY4Qv7qqxyIHuhBzEGAwnN0Q3o87nlXk/3Cug8jT
+	 AAbH3/Qc+zFnUVvw0NHVvaL7bJ3Qu938IUvzZjSnfM77sX4dyVWiPhRLz/XV71SuEfChJ
+	 4SQuZuJxVL6DLKvRheLzaRm5Xgag2cuevkhJHtVSOoYvnex83RwbcK/eyPTxecpyEprjX
+	 qtM18Qrh1+DN5bAm0Kxts2GXDJUGO4G4d7pRUU/zWkVRB5VKePE6I6wae+zHtSoPXKA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=suse.de;
-	spf=pass smtp.mailfrom=suse.de;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
-	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko;
-	arc=none smtp.remote-ip=195.135.223.131
-Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.223.131])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=mY2vPG6c;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2965C606A327;
-	Wed, 25 Nov 2026 15:43:34 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 2965C606A327
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id F1A84606A31E;
+	Wed, 25 Nov 2026 17:19:24 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
-	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko
-Received: from imap1.dmz-prg2.suse.org (unknown [10.150.64.97])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-out2.suse.de (Postfix) with ESMTPS id 338161F855;
-	Wed, 25 Nov 2026 15:43:33 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1795621413; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
-	b=PSgnByZwB70WlhPqQ1ZfFGP6kqEymEQM1aeRCnTyoIgL82qHayBMh8UI3if65skg1gcEXX
-	4jMhrTsuL1vMTA1U2gmwmdwN3JeRqMhDF/0uLpNCA3UF2KalQqm9YWTuzWQmvOe3oaxKwD
-	WmtN886VnWSKqiY+Vha3hsctDuhK2Z4=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1795621413;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
-	b=J25ShKkozirXFEnmi/SBbmFOlqoUXJ6gC0cFrABl05JubDLAyndyiYeSJLqeGxWO9FujUw
-	TOqvx3MY7Hxn5rCQ==
-Authentication-Results: smtp-out2.suse.de;
-	none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1795621413; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
-	b=PSgnByZwB70WlhPqQ1ZfFGP6kqEymEQM1aeRCnTyoIgL82qHayBMh8UI3if65skg1gcEXX
-	4jMhrTsuL1vMTA1U2gmwmdwN3JeRqMhDF/0uLpNCA3UF2KalQqm9YWTuzWQmvOe3oaxKwD
-	WmtN886VnWSKqiY+Vha3hsctDuhK2Z4=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1795621413;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
-	b=J25ShKkozirXFEnmi/SBbmFOlqoUXJ6gC0cFrABl05JubDLAyndyiYeSJLqeGxWO9FujUw
-	TOqvx3MY7Hxn5rCQ==
-Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id C6D631339F;
-	Wed, 25 Nov 2026 15:43:32 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
-	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id VqI3JyQCB2vjNAAAD6G6ig
-	(envelope-from <hare@suse.de>); Wed, 25 Nov 2026 15:43:32 +0000
-Message-ID: <18f90b98-470e-4693-bf28-64d7cf3df078@suse.de>
-Date: Wed, 25 Nov 2026 16:43:32 +0100
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=mY2vPG6c
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id A03911F000CA;
+	Wed, 25 Nov 2026 17:19:23 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795627164;
+	bh=zlUDtLSedtGVqw9aJT44i6qtvT7PvK8DE79lqMDex5I=;
+	h=Date:From:To:Cc:Subject:References:In-Reply-To;
+	b=mY2vPG6cNcQZRH4rhcFHA18JmcAtiNBnjCZT8VLygTsLVlMZdxX08/dKKCICB7hv0
+	 R8xFabYiDqcsN+O4lHBLmHvQgrPW3tktJqHIi3eI7zgo0SODliFaJmqXMaK9TGzBDT
+	 j3YBrxmxYzaM+V4nzatSZ2zCgV4ftIwDyKhK3n3LGsqUd1dW8kFeL7qSFJrvQ0g4L9
+	 i6TDaRWPJagM+A07gCFstmKbcYTSonQW6F7CUlle0psrT9GL3uL/zfxXGgm/nBKSIB
+	 nrGVO+z9xpJlzUBroTzItfiHGWfVMP1Q5fNCIMRpKtPuiTPygDvtEenhjbwabIcmMU
+	 /HTPb4Z4LKT1Q==
+Date: Wed, 25 Nov 2026 19:19:20 +0200
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: Guicai Ma <maguicai@kylinos.cn>
+Cc: David Howells <dhowells@redhat.com>, Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] KEYS: Protect key instantiation and rejection against
+ type removal
+Message-ID: <awcYmOxzJ9TfsdjJ@kernel.org>
+References: <20261124091243.1019217-1-maguicai@kylinos.cn>
+ <20261125032605.1327954-1-maguicai@kylinos.cn>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -106,126 +60,293 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v6 0/9] nvme-auth: switch to use the kernel keyring
-To: Martin Belanger <martin.nvme.dev@gmail.com>,
- Eric Biggers <ebiggers@kernel.org>
-Cc: Hannes Reinecke <hare@kernel.org>, Keith Busch <kbusch@kernel.org>,
- Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
- Sagi Grimberg <sagi@grimberg.me>, Chaitanya Kulkarni <kch@nvidia.com>,
- linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
- keyrings@vger.kernel.org
-References: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
- <20261123212105.GA18468@google.com>
- <692e91cc-e2ea-47cc-926f-6639952fb195@suse.de>
- <20261124201152.GA2227373@google.com>
- <851e3fa5-ad88-4470-877f-e977bb1a6ad9@gmail.com>
- <20261124213222.GD2227373@google.com>
- <c2163003-948c-49fa-815e-b1f91814a80a@gmail.com>
- <561e1abd-2430-4808-af99-cbdd3fd86d31@suse.de>
- <a71a3d9f-0f19-45f4-bc98-a5663ad537b2@gmail.com>
-Content-Language: en-US
-From: Hannes Reinecke <hare@suse.de>
-In-Reply-To: <a71a3d9f-0f19-45f4-bc98-a5663ad537b2@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam-Flag: NO
-X-Spam-Level: 
-X-Spamd-Result: default: False [-11.79 / 50.00];
-	SUSE_INTERNAL_BYPASS(-9.00)[];
-	BAYES_HAM(-3.00)[100.00%];
-	SUSPICIOUS_RECIPS(1.50)[];
-	NEURAL_HAM_LONG(-1.00)[-1.000];
-	NEURAL_HAM_SHORT(-0.20)[-1.000];
-	MIME_GOOD(-0.10)[text/plain];
-	XM_UA_NO_VERSION(0.01)[];
-	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	ARC_NA(0.00)[];
-	FREEMAIL_TO(0.00)[gmail.com,kernel.org];
-	MIME_TRACE(0.00)[0:+];
-	RCVD_TLS_ALL(0.00)[];
-	FREEMAIL_ENVRCPT(0.00)[gmail.com];
-	RCVD_VIA_SMTP_AUTH(0.00)[];
-	FROM_EQ_ENVFROM(0.00)[];
-	FROM_HAS_DN(0.00)[];
-	TO_DN_SOME(0.00)[];
-	RCVD_COUNT_TWO(0.00)[2];
-	RCPT_COUNT_SEVEN(0.00)[11];
-	MID_RHS_MATCH_FROM(0.00)[];
-	TAGGED_RCPT(0.00)[];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[imap1.dmz-prg2.suse.org:helo,suse.de:email]
-X-Spam-Score: -11.79
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20261125032605.1327954-1-maguicai@kylinos.cn>
 
-Hey Martin,
+On Tue, Nov 24, 2026 at 10:26:05PM -0500, Guicai Ma wrote:
+> key_instantiate_and_link() and key_reject_and_link() access key->type
+> and link keys without synchronizing against unregister_key_type(). If
+> the type is removed while a key is under construction, GC retypes it to
+> key_type_dead (where ->instantiate is NULL) or links a dead key before
+> pass 3 rewrites key->type.
+> 
+> key->sem cannot be used here because it inverts lock order against
+> encrypted_instantiate() and references a freed lockdep class after a
+> modular type unloads, while callers may already hold key_types_sem and
+> ->preparse() or ->instantiate() may sleep. Guard both paths with
+> key_type_srcu and a KEY_FLAG_DEAD check, and wait for in-flight calls
+> with synchronize_srcu(&key_type_srcu) at the end of GC pass 1.
+> 
+> Fixes: 0c061b5707ab ("KEYS: Correctly destroy key payloads when their keytype is removed")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Guicai Ma <maguicai@kylinos.cn>
+> ---
+> v3:
+> - Shorten the commit message and focus on why SRCU is used.
+> - Change Fixes tag to 0c061b5707ab.
+> - No code changes.
+> 
+> v2:
+> - Switch from key->sem to key_type_srcu and check KEY_FLAG_DEAD in
+>   key_instantiate_and_link() and key_reject_and_link().
+> 
+>  security/keys/gc.c       |  13 +++++
+>  security/keys/internal.h |   2 +
+>  security/keys/key.c      | 108 +++++++++++++++++++++++++++++----------
+>  3 files changed, 95 insertions(+), 28 deletions(-)
+> 
+> diff --git a/security/keys/gc.c b/security/keys/gc.c
+> index eda445f815d4..61cb2b9a7aaf 100644
+> --- a/security/keys/gc.c
+> +++ b/security/keys/gc.c
+> @@ -35,6 +35,8 @@ static unsigned long key_gc_flags;
+>  #define KEY_GC_REAP_KEYTYPE	1	/* A keytype is being unregistered */
+>  #define KEY_GC_REAPING_KEYTYPE	2	/* Cleared when keytype reaped */
+>  
+> +DEFINE_SRCU(key_type_srcu);
+> +
+>  
+>  /*
+>   * Any key whose type gets unregistered will be re-typed to this if it can't be
+> @@ -286,6 +288,17 @@ static void key_garbage_collector(struct work_struct *work)
+>  		key_schedule_gc(new_timer);
+>  	}
+>  
+> +	if (unlikely((gc_state & KEY_GC_REAPING_DEAD_1) &&
+> +		     (gc_state & KEY_GC_FOUND_DEAD_KEY))) {
+> +		/* Wait for any in-flight key_instantiate_and_link() or
+> +		 * key_reject_and_link() calls that did not observe
+> +		 * KEY_FLAG_DEAD before pass 2 unlinks dead keys from keyrings
+> +		 * and pass 3 retypes them to key_type_dead.
+> +		 */
+> +		kdebug("gc dead type sync");
+> +		synchronize_srcu(&key_type_srcu);
+> +	}
+> +
+>  	if (unlikely(gc_state & KEY_GC_REAPING_DEAD_2) ||
+>  	    !list_empty(&graveyard)) {
+>  		/* Make sure that all pending keyring payload destructions are
+> diff --git a/security/keys/internal.h b/security/keys/internal.h
+> index b7b622bc36a1..73d71de274c2 100644
+> --- a/security/keys/internal.h
+> +++ b/security/keys/internal.h
+> @@ -19,6 +19,7 @@
+>  #include <linux/compat.h>
+>  #include <linux/mm.h>
+>  #include <linux/vmalloc.h>
+> +#include <linux/srcu.h>
+>  
+>  struct iovec;
+>  
+> @@ -86,6 +87,7 @@ extern struct kmem_cache *key_jar;
+>  extern struct rb_root key_serial_tree;
+>  extern spinlock_t key_serial_lock;
+>  extern struct mutex key_construction_mutex;
+> +extern struct srcu_struct key_type_srcu;
+>  extern wait_queue_head_t request_key_conswq;
+>  
+>  extern void key_set_index_key(struct keyring_index_key *index_key);
+> diff --git a/security/keys/key.c b/security/keys/key.c
+> index 3f1f0fc13710..d923ddf457e9 100644
+> --- a/security/keys/key.c
+> +++ b/security/keys/key.c
+> @@ -422,9 +422,10 @@ static void mark_key_instantiated(struct key *key, int reject_error)
+>  
+>  /*
+>   * Instantiate a key and link it into the target keyring atomically.  Must be
+> - * called with the target keyring's semaphore writelocked.  The target key's
+> - * semaphore need not be locked as instantiation is serialised by
+> - * key_construction_mutex.
+> + * called with the target keyring's semaphore writelocked.  The caller must
+> + * hold key_type_srcu (after checking !KEY_FLAG_DEAD) or key_types_sem for
+> + * reading via key_type_lookup(), so the type cannot be retyped to
+> + * key_type_dead or its module unloaded while its methods run.
+>   */
+>  static int __key_instantiate_and_link(struct key *key,
+>  				      struct key_preparsed_payload *prep,
+> @@ -496,7 +497,9 @@ static int __key_instantiate_and_link(struct key *key,
+>   *
+>   * If successful, 0 is returned, the authorisation token is revoked and anyone
+>   * waiting for the key is woken up.  If the key was already instantiated,
+> - * -EBUSY will be returned.
+> + * -EBUSY will be returned.  If the key's type has been removed, -EKEYREVOKED
+> + * will be returned.  If the key type does not provide an instantiate method,
+> + * -EOPNOTSUPP will be returned.
+>   */
+>  int key_instantiate_and_link(struct key *key,
+>  			     const void *data,
+> @@ -506,7 +509,28 @@ int key_instantiate_and_link(struct key *key,
+>  {
+>  	struct key_preparsed_payload prep;
+>  	struct assoc_array_edit *edit = NULL;
+> -	int ret;
+> +	int ret, srcu_idx;
+> +
+> +	/*
+> +	 * A reference on the key does not pin the module that provides its
+> +	 * type.  Hold key_type_srcu across every use of key->type
+> +	 * (def_datalen, preparse, restrict_link->check, instantiate and
+> +	 * free_preparse) and across linking into @keyring.  Pass 1 of
+> +	 * key_garbage_collector() sets KEY_FLAG_DEAD and waits for
+> +	 * synchronize_srcu(&key_type_srcu) before pass 2 unlinks dead keys
+> +	 * and pass 3 retypes them to key_type_dead.
+> +	 */
+> +	srcu_idx = srcu_read_lock(&key_type_srcu);
+> +
+> +	if (test_bit(KEY_FLAG_DEAD, &key->flags)) {
+> +		ret = -EKEYREVOKED;
+> +		goto out;
+> +	}
+> +
+> +	if (!key->type->instantiate) {
+> +		ret = -EOPNOTSUPP;
+> +		goto out;
+> +	}
+>  
+>  	memset(&prep, 0, sizeof(prep));
+>  	prep.orig_description = key->description;
+> @@ -517,17 +541,17 @@ int key_instantiate_and_link(struct key *key,
+>  	if (key->type->preparse) {
+>  		ret = key->type->preparse(&prep);
+>  		if (ret < 0)
+> -			goto error;
+> +			goto out_free_preparse;
+>  	}
+>  
+>  	if (keyring) {
+>  		ret = __key_link_lock(keyring, &key->index_key);
+>  		if (ret < 0)
+> -			goto error;
+> +			goto out_free_preparse;
+>  
+>  		ret = __key_link_begin(keyring, &key->index_key, &edit);
+>  		if (ret < 0)
+> -			goto error_link_end;
+> +			goto out_link_end;
+>  
+>  		if (keyring->restrict_link && keyring->restrict_link->check) {
+>  			struct key_restriction *keyres = keyring->restrict_link;
+> @@ -535,19 +559,22 @@ int key_instantiate_and_link(struct key *key,
+>  			ret = keyres->check(keyring, key->type, &prep.payload,
+>  					    keyres->key);
+>  			if (ret < 0)
+> -				goto error_link_end;
+> +				goto out_link_end;
+>  		}
+>  	}
+>  
+>  	ret = __key_instantiate_and_link(key, &prep, keyring, authkey, &edit);
+>  
+> -error_link_end:
+> +out_link_end:
+>  	if (keyring)
+>  		__key_link_end(keyring, &key->index_key, edit);
+>  
+> -error:
+> +out_free_preparse:
+>  	if (key->type->preparse)
+>  		key->type->free_preparse(&prep);
+> +
+> +out:
+> +	srcu_read_unlock(&key_type_srcu, srcu_idx);
+>  	return ret;
+>  }
+>  
+> @@ -581,7 +608,8 @@ int key_reject_and_link(struct key *key,
+>  			struct key *authkey)
+>  {
+>  	struct assoc_array_edit *edit = NULL;
+> -	int ret, awaken, link_ret = 0;
+> +	int ret, awaken, link_ret = 0, srcu_idx;
+> +	bool dead;
+>  
+>  	key_check(key);
+>  	key_check(keyring);
+> @@ -589,22 +617,42 @@ int key_reject_and_link(struct key *key,
+>  	awaken = 0;
+>  	ret = -EBUSY;
+>  
+> +	/*
+> +	 * Hold key_type_srcu across linking into @keyring and
+> +	 * key_set_expiry() (which reads key->type->flags).  If the key is
+> +	 * already marked dead, skip linking and expiry but still complete
+> +	 * negative instantiation so waiters are woken and @authkey is
+> +	 * invalidated.
+> +	 */
+> +	srcu_idx = srcu_read_lock(&key_type_srcu);
+> +	dead = test_bit(KEY_FLAG_DEAD, &key->flags);
+> +
+>  	if (keyring) {
+> -		link_ret = __key_link_lock(keyring, &key->index_key);
+> -		if (link_ret == 0) {
+> -			/*
+> -			 * Check the restriction under the keyring semaphore.
+> -			 * keyring_restrict() installs it while holding the
+> -			 * semaphore, so testing it beforehand races with a
+> -			 * concurrent restriction install.
+> -			 */
+> -			if (keyring->restrict_link) {
+> -				__key_link_end(keyring, &key->index_key, edit);
+> -				return -EPERM;
+> +		if (dead) {
+> +			link_ret = -EKEYREVOKED;
+> +		} else {
+> +			link_ret = __key_link_lock(keyring, &key->index_key);
+> +			if (link_ret == 0) {
+> +				/*
+> +				 * Check the restriction under the keyring
+> +				 * semaphore. keyring_restrict() installs it
+> +				 * while holding the semaphore, so testing it
+> +				 * beforehand races with a concurrent
+> +				 * restriction install.
+> +				 */
+> +				if (keyring->restrict_link) {
+> +					__key_link_end(keyring, &key->index_key,
+> +						       edit);
+> +					ret = -EPERM;
+> +					goto out;
+> +				}
+> +				link_ret = __key_link_begin(keyring,
+> +							    &key->index_key,
+> +							    &edit);
+> +				if (link_ret < 0)
+> +					__key_link_end(keyring, &key->index_key,
+> +						       edit);
+>  			}
+> -			link_ret = __key_link_begin(keyring, &key->index_key, &edit);
+> -			if (link_ret < 0)
+> -				__key_link_end(keyring, &key->index_key, edit);
+>  		}
+>  	}
+>  
+> @@ -616,7 +664,8 @@ int key_reject_and_link(struct key *key,
+>  		atomic_inc(&key->user->nikeys);
+>  		mark_key_instantiated(key, -error);
+>  		notify_key(key, NOTIFY_KEY_INSTANTIATED, -error);
+> -		key_set_expiry(key, ktime_get_real_seconds() + timeout);
+> +		if (!dead)
+> +			key_set_expiry(key, ktime_get_real_seconds() + timeout);
+>  
+>  		if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
+>  			awaken = 1;
+> @@ -641,7 +690,10 @@ int key_reject_and_link(struct key *key,
+>  	if (awaken)
+>  		wake_up_bit(&key->flags, KEY_FLAG_USER_CONSTRUCT);
+>  
+> -	return ret == 0 ? link_ret : ret;
+> +	ret = ret == 0 ? link_ret : ret;
+> +out:
+> +	srcu_read_unlock(&key_type_srcu, srcu_idx);
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL(key_reject_and_link);
+>  
+> -- 
+> 2.47.3
+> 
+o
 
-On 11/25/26 1:18 PM, Martin Belanger wrote:
-> 
-> 
-> On 11/25/26 02:26, Hannes Reinecke wrote:
->> And the other problem with your approach is that DH-CHAP
->> key don't actually have 'names'; they are just binary blobs.
->> If we want to refer to them by name we first would need to
->> agree on what the name actually _is_.
->>
->> What we could do is to store the key serial in struct
->> nvmf_ctrl_options; that would allow keysd to provision
->> the keys and rotate them via 'keyctl update' (or whatever
->> it's doing internally). And would get away from the
->> business of having to come up with a name for the key.
-> 
-> Yes, a key serial works for me. The kernel then needs no name for
-> the key. The key description stays a userspace matter:
-> 
-> - The admin names each secret in the configuration: the connection
->    configuration of nvme-cli or nvme-discoverd refers to the secret by
->    that name, and nvme-keysd's configuration (or the KMIP server) holds
->    the secret under the same name.
-> - At boot, nvme-keysd adds each secret to the keyring with
->    add_key("dhchap", <name>, ...). The name becomes the key
->    description.
-> - At connect, libnvme takes the name from the connection
->    configuration, looks up the serial with keyctl_search() and passes
->    the serial to the kernel, as tls_key= does for TLS. libnvme already
->    does this lookup today, to check that the key exists before the
->    connect.
-> 
-> For rotation, the serial must stay the same when the secret changes,
-> so that a connected controller uses the new secret at its next
-> authentication. For this, v7 needs an .update operation in the
-> dhchap key type (user_update() should do). nvme-keysd then rotates a
-> secret with add_key() under the same description, which replaces the
-> payload of the existing key. nvme-keysd does not need to know which
-> controllers use the key, and no sysfs or configfs write is needed.
-> 
-Okay, good point. Will be doing that.
+LGTM with quick skim. I'll revisit later with time
 
-> For the sysfs and configfs attributes:
-> 
-> - For a key from the keyring, a read returns the key serial, as
->    tls_key and tls_configured_key do. The serial names the key the
->    controller uses. The description is available with keyctl describe.
-> - A write of a serial is rejected. The serial is set at connect, and
->    after that the keyring is the only way to change the secret. I do
->    not want a second way to change a key: a writable serial would be
->    one, and it would let a write point the controller at any dhchap
->    key on the system.
-> - A write of a raw secret (DHHC-1:...) keeps the current behavior,
->    because existing tools use it.
-> 
-> The same applies to dhchap_key and dhchap_ctrl_key in nvmet configfs.
-> 
-Okay, I see to get this included for the next round.
-I will also move keyring handling towards linking any additional keyring
-into the .nvme keyring for in-kernel usage. That will get us away from
-the problem of not being able to access users-specified keyrings, and
-also makes the internal interfaces easier.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke                  Kernel Storage Architect
-hare@suse.de                                +49 911 74053 688
-SUSE Software Solutions GmbH, Frankenstr. 146, 90461 Nürnberg
-HRB 36809 (AG Nürnberg), GF: I. Totev, A. McDonald, W. Knoblich
+Br, Jarkko
