@@ -1,78 +1,102 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=195.135.223.131
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795621139;
-	b=aHuZsH7Y83BJg4c/t9ikJ+e7yvMpaDcaKK0s96GW1Nkhjm3/WfOkfCEQnsR0YiqgNC4i
-	 RDrALxYDgzfGt0/KZLMZtn++LyKWqQoEV/M+rgFoeZmFmOlEReG+Rbr92Obd7h5vlhvzz
-	 a1g64nXmdVS+g23/YETeHDfxW1t3WQ3xSvBGSIiFsbmC9yk+pa1zb6Anv4FTtnq8R0z9b
-	 010fxTFrBH9tLrkd/r6kb0Zjmkrg84Pd/o89r0LimqUhLW9Rj8Qhk4x+zeBGwkrSDWvCo
-	 7l4URAu1AEP1UL3nmH+abSZ/VLQOreGvTjpVcXDVukA4dSjNpAe0SL47cLHW4R+yByQ==
+	t=1795621415;
+	b=zZ9MX565TSK4jaJSPQxXIm62QFr3CdMtMLCgMgHa5PaVGDeZSWZvv0jQ+6ciezDSzP4x
+	 Ji/GtmE+SnH1UTxy2zUcASZvK5zxhVwTrtr3JFe5WGc2wx8EQyiYPiCXySx+N5cTfMV6Q
+	 LxegeIpxNbl9R+bvXWjxhf/kKaweqmuozaprIDsj8FVZfBughIEv33U3RjzYgquB8zRti
+	 jJtTmnEQLOT9odbLRJcygfA0Jtew4sXInqySqmTjFRuh3b/0bNpBOTj5F/eadaimLs2LM
+	 9fWpOCLjsDCpAXvGlXEQYd2HmwpNNepHsZqwR5a7PAZhaYm/+6v3A9pcYWlO+cbrM+w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795621139;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=LOGY0hZnpFwEaOhuB3IIZhLALqVjR5JHtYG7Io23+Jo=;
-	b=R9orAIQfhCrgI9ZrgmFjx41fyLAzS91VRBl1AeoltLb+DWvfBVuHcTPzt0e+o+WKK6eF
-	 zRj51/X3CNfbghEldUkywCdOf6VzcibuPTEozVlEYf+/2CwBac6XRNwo6V+F4vXwOhJDW
-	 Ys6yZwHrIdDF3QKOIGSXNrW5KmbUi15oLSubTUNTNFCzU+54TFnqhroubrd84Ax8FyBcK
-	 XJTpjyNE39pblF4vneUCUETCbCH2P0ufcyXkvNCw5TG4235281oMqBaDhXL18IeR4QHkH
-	 a/85mlYJjYWlJKU86RMgZIvPIIOM3NVeuR6p3Cnt/BusqxDdSB81EIK1FqfKDOlkfoQ==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795621415;
+	h=DMARC-Filter:Received:DKIM-Signature:DKIM-Signature:DKIM-Signature:
+	 DKIM-Signature:Received:Received:Message-ID:Date:MIME-Version:
+	 User-Agent:Subject:To:Cc:References:Content-Language:From:In-Reply-To:
+	 Content-Type:Content-Transfer-Encoding:X-Spam-Flag:X-Spam-Level:
+	 X-Spamd-Result:X-Spam-Score;
+	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
+	b=5l8DmQoEXdIN43v/j5F/1ZUrNvyFP2NxU4qQI4yF/Mn1T2xbSQ3uEMO+prOf0QnQ1f66
+	 26Fdq7q/zzcVitpMj9dPXigS9kcirQiKoB63XA8R7DoX7z3YGNN5bPaAtKd5N4QwbW6HI
+	 zAxoNZcbnPTtf5vudqeHeRjtZAyULs44v6YkuOTL7hUBiwb0nuiTkmd1h6tJjsQ3VQDl+
+	 +0kI921QLDCjq0jzN7EGNrnEQzGBdQA1M5xcLNV3ahY8UIaL1zdd7m4V/wJlxWLXkGAmd
+	 OU40XGSfzZcp5fIrVA1lsAtkbNgHIhZSxq7chQ/efQhW88Vyh9oZGnXgz545Lu6XosQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=INCIqH0r;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=suse.de;
+	spf=pass smtp.mailfrom=suse.de;
+	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
+	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko;
+	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
+	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko;
+	arc=none smtp.remote-ip=195.135.223.131
+Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.223.131])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id D3019606A321;
-	Wed, 25 Nov 2026 15:38:59 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2965C606A327;
+	Wed, 25 Nov 2026 15:43:34 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 2965C606A327
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=INCIqH0r
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E23EB1F000D2;
-	Wed, 25 Nov 2026 15:38:58 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795621139;
-	bh=LOGY0hZnpFwEaOhuB3IIZhLALqVjR5JHtYG7Io23+Jo=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=INCIqH0ryZAtM7z39Zm4RtbAYtyDGoFJQZudEZQc1DwarELaQvBjpHn0L3jLibE4f
-	 Fs9VyGZBJcbvJQoHDIN0U+4Ro5XoiVng+82+0CB7Tn9gzikkFdQD1h9KKuK5HZBJiE
-	 tPKwn23CuEntHzZdvApiB6FP3B0GBxjnjEQPC7IiF+cQkGToMlDjHEOUP8ShMArqII
-	 TEFAHi3XqVdRc/97WJ6dDUsS1BfB5h8jB4RAx4Q4qeAnFGn1Irjy0b/fr0Bq8zrOzt
-	 pWq60abFhwrsnEIonLZUJ1Mug9t/c/qQxh5bZi7Zpux2uCKPE+vnysqu5oiDf6hqKZ
-	 AEuZyo/hpE4Og==
-Date: Wed, 25 Nov 2026 17:38:55 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: David Laight <david.laight.linux@gmail.com>
-Cc: keyrings@vger.kernel.org, dm-devel@lists.linux.dev,
-	linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-security-module@vger.kernel.org,
-	Ahmad Fatoum <a.fatoum@pengutronix.de>,
-	Alasdair Kergon <agk@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	David Gstir <david@sigma-star.at>,
-	David Howells <dhowells@redhat.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Ignat Korchagin <ignat@linux.win>,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	James Morris <jmorris@namei.org>,
-	James Prestwood <prestwoj@gmail.com>,
-	Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>,
-	Lukas Wunner <lukas@wunner.de>, Mike Snitzer <snitzer@kernel.org>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
-	Peter Huewe <peterhuewe@gmx.de>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Shuah Khan <skhan@linuxfoundation.org>,
-	Sumit Garg <sumit.garg@kernel.org>
-Subject: Re: [PATCH v2 2/9] lib/asn1_encoder: Add asn1_encode_integer_bytes()
-Message-ID: <awcBD-bp27JCVpc-@kernel.org>
-References: <20261124194043.1651679-1-jarkko@kernel.org>
- <20261124194043.1651679-3-jarkko@kernel.org>
- <20261125091921.4bf40279@pumpkin>
+	dkim=pass (1024-bit key, unprotected) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
+	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko;
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=PSgnByZw;
+	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=J25ShKko
+Received: from imap1.dmz-prg2.suse.org (unknown [10.150.64.97])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
+	(No client certificate requested)
+	by smtp-out2.suse.de (Postfix) with ESMTPS id 338161F855;
+	Wed, 25 Nov 2026 15:43:33 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+	t=1795621413; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
+	b=PSgnByZwB70WlhPqQ1ZfFGP6kqEymEQM1aeRCnTyoIgL82qHayBMh8UI3if65skg1gcEXX
+	4jMhrTsuL1vMTA1U2gmwmdwN3JeRqMhDF/0uLpNCA3UF2KalQqm9YWTuzWQmvOe3oaxKwD
+	WmtN886VnWSKqiY+Vha3hsctDuhK2Z4=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+	s=susede2_ed25519; t=1795621413;
+	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
+	b=J25ShKkozirXFEnmi/SBbmFOlqoUXJ6gC0cFrABl05JubDLAyndyiYeSJLqeGxWO9FujUw
+	TOqvx3MY7Hxn5rCQ==
+Authentication-Results: smtp-out2.suse.de;
+	none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+	t=1795621413; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
+	b=PSgnByZwB70WlhPqQ1ZfFGP6kqEymEQM1aeRCnTyoIgL82qHayBMh8UI3if65skg1gcEXX
+	4jMhrTsuL1vMTA1U2gmwmdwN3JeRqMhDF/0uLpNCA3UF2KalQqm9YWTuzWQmvOe3oaxKwD
+	WmtN886VnWSKqiY+Vha3hsctDuhK2Z4=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+	s=susede2_ed25519; t=1795621413;
+	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=IPWf29Ud9WhaTTrAL8Sio6mm9zTZA1n/ebtoOZ/3hzA=;
+	b=J25ShKkozirXFEnmi/SBbmFOlqoUXJ6gC0cFrABl05JubDLAyndyiYeSJLqeGxWO9FujUw
+	TOqvx3MY7Hxn5rCQ==
+Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
+	(No client certificate requested)
+	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id C6D631339F;
+	Wed, 25 Nov 2026 15:43:32 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
+	by imap1.dmz-prg2.suse.org with ESMTPSA
+	id VqI3JyQCB2vjNAAAD6G6ig
+	(envelope-from <hare@suse.de>); Wed, 25 Nov 2026 15:43:32 +0000
+Message-ID: <18f90b98-470e-4693-bf28-64d7cf3df078@suse.de>
+Date: Wed, 25 Nov 2026 16:43:32 +0100
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -82,27 +106,126 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20261125091921.4bf40279@pumpkin>
+User-Agent: Mozilla Thunderbird
+Subject: Re: [PATCH v6 0/9] nvme-auth: switch to use the kernel keyring
+To: Martin Belanger <martin.nvme.dev@gmail.com>,
+ Eric Biggers <ebiggers@kernel.org>
+Cc: Hannes Reinecke <hare@kernel.org>, Keith Busch <kbusch@kernel.org>,
+ Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+ Sagi Grimberg <sagi@grimberg.me>, Chaitanya Kulkarni <kch@nvidia.com>,
+ linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
+ keyrings@vger.kernel.org
+References: <20261123-dhchap-keyring-v4-v6-0-5082a49715ab@kernel.org>
+ <20261123212105.GA18468@google.com>
+ <692e91cc-e2ea-47cc-926f-6639952fb195@suse.de>
+ <20261124201152.GA2227373@google.com>
+ <851e3fa5-ad88-4470-877f-e977bb1a6ad9@gmail.com>
+ <20261124213222.GD2227373@google.com>
+ <c2163003-948c-49fa-815e-b1f91814a80a@gmail.com>
+ <561e1abd-2430-4808-af99-cbdd3fd86d31@suse.de>
+ <a71a3d9f-0f19-45f4-bc98-a5663ad537b2@gmail.com>
+Content-Language: en-US
+From: Hannes Reinecke <hare@suse.de>
+In-Reply-To: <a71a3d9f-0f19-45f4-bc98-a5663ad537b2@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Spam-Flag: NO
+X-Spam-Level: 
+X-Spamd-Result: default: False [-11.79 / 50.00];
+	SUSE_INTERNAL_BYPASS(-9.00)[];
+	BAYES_HAM(-3.00)[100.00%];
+	SUSPICIOUS_RECIPS(1.50)[];
+	NEURAL_HAM_LONG(-1.00)[-1.000];
+	NEURAL_HAM_SHORT(-0.20)[-1.000];
+	MIME_GOOD(-0.10)[text/plain];
+	XM_UA_NO_VERSION(0.01)[];
+	TO_MATCH_ENVRCPT_ALL(0.00)[];
+	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
+	ARC_NA(0.00)[];
+	FREEMAIL_TO(0.00)[gmail.com,kernel.org];
+	MIME_TRACE(0.00)[0:+];
+	RCVD_TLS_ALL(0.00)[];
+	FREEMAIL_ENVRCPT(0.00)[gmail.com];
+	RCVD_VIA_SMTP_AUTH(0.00)[];
+	FROM_EQ_ENVFROM(0.00)[];
+	FROM_HAS_DN(0.00)[];
+	TO_DN_SOME(0.00)[];
+	RCVD_COUNT_TWO(0.00)[2];
+	RCPT_COUNT_SEVEN(0.00)[11];
+	MID_RHS_MATCH_FROM(0.00)[];
+	TAGGED_RCPT(0.00)[];
+	DBL_BLOCKED_OPENRESOLVER(0.00)[imap1.dmz-prg2.suse.org:helo,suse.de:email]
+X-Spam-Score: -11.79
 
-On Wed, Nov 25, 2026 at 09:19:21AM +0000, David Laight wrote:
-> On Tue, 24 Nov 2026 21:40:36 +0200
-> Jarkko Sakkinen <jarkko@kernel.org> wrote:
+Hey Martin,
+
+On 11/25/26 1:18 PM, Martin Belanger wrote:
 > 
-> > Add a helper encoding a positive integer from a byte array in big-endian
-> > format.
 > 
-> Interesting...
-> You allow for integer values longer than 127 bytes but don't allow for the
-> much more common likelyhood of the encoding being 'implicit'.
-
-This is the first thing I wrote in 2024 and have not touched since
-without further feedback :-)
-
-
+> On 11/25/26 02:26, Hannes Reinecke wrote:
+>> And the other problem with your approach is that DH-CHAP
+>> key don't actually have 'names'; they are just binary blobs.
+>> If we want to refer to them by name we first would need to
+>> agree on what the name actually _is_.
+>>
+>> What we could do is to store the key serial in struct
+>> nvmf_ctrl_options; that would allow keysd to provision
+>> the keys and rotate them via 'keyctl update' (or whatever
+>> it's doing internally). And would get away from the
+>> business of having to come up with a name for the key.
 > 
-> David
+> Yes, a key serial works for me. The kernel then needs no name for
+> the key. The key description stays a userspace matter:
+> 
+> - The admin names each secret in the configuration: the connection
+>    configuration of nvme-cli or nvme-discoverd refers to the secret by
+>    that name, and nvme-keysd's configuration (or the KMIP server) holds
+>    the secret under the same name.
+> - At boot, nvme-keysd adds each secret to the keyring with
+>    add_key("dhchap", <name>, ...). The name becomes the key
+>    description.
+> - At connect, libnvme takes the name from the connection
+>    configuration, looks up the serial with keyctl_search() and passes
+>    the serial to the kernel, as tls_key= does for TLS. libnvme already
+>    does this lookup today, to check that the key exists before the
+>    connect.
+> 
+> For rotation, the serial must stay the same when the secret changes,
+> so that a connected controller uses the new secret at its next
+> authentication. For this, v7 needs an .update operation in the
+> dhchap key type (user_update() should do). nvme-keysd then rotates a
+> secret with add_key() under the same description, which replaces the
+> payload of the existing key. nvme-keysd does not need to know which
+> controllers use the key, and no sysfs or configfs write is needed.
+> 
+Okay, good point. Will be doing that.
 
+> For the sysfs and configfs attributes:
+> 
+> - For a key from the keyring, a read returns the key serial, as
+>    tls_key and tls_configured_key do. The serial names the key the
+>    controller uses. The description is available with keyctl describe.
+> - A write of a serial is rejected. The serial is set at connect, and
+>    after that the keyring is the only way to change the secret. I do
+>    not want a second way to change a key: a writable serial would be
+>    one, and it would let a write point the controller at any dhchap
+>    key on the system.
+> - A write of a raw secret (DHHC-1:...) keeps the current behavior,
+>    because existing tools use it.
+> 
+> The same applies to dhchap_key and dhchap_ctrl_key in nvmet configfs.
+> 
+Okay, I see to get this included for the next round.
+I will also move keyring handling towards linking any additional keyring
+into the .nvme keyring for in-kernel usage. That will get us away from
+the problem of not being able to access users-specified keyrings, and
+also makes the internal interfaces easier.
 
-Br, Jarkko
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke                  Kernel Storage Architect
+hare@suse.de                                +49 911 74053 688
+SUSE Software Solutions GmbH, Frankenstr. 146, 90461 Nürnberg
+HRB 36809 (AG Nürnberg), GF: I. Totev, A. McDonald, W. Knoblich
