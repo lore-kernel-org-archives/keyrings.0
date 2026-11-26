@@ -1,48 +1,49 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795702417;
-	b=Y9ikkSd9xVdwOLjNEQ/oSIEGKqWd9Iax9KWfcdGG+5ZblWwdn1LQrOLP5ojliMs5/Pmm
-	 GdQgqITpyrg3W92NamsChiwOnFMjux8gXn6dADEd1uDxJxhOIhCum1MvJ9QfD5ikUL9aC
-	 yHXST6SWMDqnrlkahvLLQYfZnGFbR0TyKsPMyuf6i6B/umwHuvvaPiSCrHgx8AqTHGJlX
-	 57JujOt38wwHlcah4Lmn4AjG8/Ob/z1owFLC39OiVowuEM2YHdvY5yl0KalBf9+qN8AFM
-	 3zcIAcN4QpvRcx9NNKftL11CwCWkeJFq+heYqj5VFGW4qEumb/O6cpnJ20vmLFx8YLQ==
+	t=1795702422;
+	b=njkd/REVfN7ntpV8GM73gW4vf3D34mjpuikKFcX/8aArk6Sgi/swRl0K0ENvzD8F6NFV
+	 Givh5tAbDp0qzUd791jNFq08tCg18/zw/aYqjzhp7eCDFFPZT4gjVU+jEivtY5AE3LvHy
+	 QSK6OFAX99h+U0SevwKOC8HM1gBd139PtvCCo7oR/BkSghNJW1yKx2hj/i8xT0fqSbkto
+	 mVWegsFu1HwhS6HVDoVhAlzc9EUYX5rT9hvd/3+gVG0CNxdWqAmAW6R0lEzjBdPCjdUql
+	 X2Oe+oo64M5IXxIzS5HJ9UmkG4vk8VBk61DC/blu2Qh1SDBaBp6qpZhf3jaGrSR7pqA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795702417;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795702422;
 	h=Received:DKIM-Signature:From:Date:Subject:MIME-Version:Content-Type:
 	 Content-Transfer-Encoding:Message-Id:References:In-Reply-To:To:Cc:
 	 X-Mailer:X-Developer-Signature:X-Developer-Key;
-	bh=JG+kuEjcv6u1ZXCYQ+JGg8fsKvj6GKKAeXCTG9/natk=;
-	b=jZTfwqUJB6ujUOF/9yrA8gUA3lswUkywqzu9tJZHollXg7Seh/R0NyJX4+/IM4CzrqAs
-	 XMiKJGv+ZZO28W303pUfU2+CseZ+5UlUN/wTs6tmDz9815g2386tEmR3Zuahkmhjc3ujV
-	 oToM7mX0cgHVoA6g7ZKavohm52rfhSRQjvRnHjx6P9S7T4hunaSbifj07SQsapmBB92xY
-	 woAmN34g+A0G2AS8Vk+BvKXv/f110mDGoJoUfg7Vb8pWqVzV/alpYxlJboHDzHPYaWS8L
-	 fsAPe9W4fwzvk2vuhKYsZB+gAB5zsLxwDcr6kgxn9IqW0htQ2HayaOC85Oq/4JnRG9w==
+	bh=kpbtvaB7rNc831AdB8kZYufsKmb653WR+Us6fw/+9uI=;
+	b=xHNezrMx4TyoUW1b8LFuIVTsm3d2kNc63qZqCX2x9Iqft7CiTrkkXAG017/K147HGWGG
+	 4lLT/Pz1lAEPHDZdR5biKTcKkIH57X2MZTjSkrM94fROOdH9YWhMcQFlWN9Jz/Q65RtXn
+	 e87MDTfwUyuhqLx3/9RXHn0WFqzKwsamzs7N/E17tviXg+xOhG4gQJGOnbMo/ikT3DZ5r
+	 A1sjesKIBWjOxetff4gnh+JG0FDkQvm8Jl3JzD5heQc9iXQ/INXqusgYJ/6Pzc/aostmQ
+	 bovBrleloZZjDEtWDIXpeNJ38pftkhcw/0GzOMK7GEhrPWHJ1iZsHAbqG8nQyO4jWOA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TyjOilO4;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=MMxmOdxB;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id ADA7C606A323;
-	Thu, 26 Nov 2026 14:13:37 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 60047606A330;
+	Thu, 26 Nov 2026 14:13:42 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=TyjOilO4
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id BBBF81F0156C;
-	Thu, 26 Nov 2026 14:13:32 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=MMxmOdxB
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id BF6C61F00A00;
+	Thu, 26 Nov 2026 14:13:37 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795702416;
-	bh=JG+kuEjcv6u1ZXCYQ+JGg8fsKvj6GKKAeXCTG9/natk=;
+	s=k20260515; t=1795702421;
+	bh=kpbtvaB7rNc831AdB8kZYufsKmb653WR+Us6fw/+9uI=;
 	h=From:Date:Subject:References:In-Reply-To:To:Cc;
-	b=TyjOilO4FgnptwNj0F54HiDuvqCwbQkaPv5veE9FNYENEXipmL3XsMV4MT8xySHa/
-	 Xkd+3AIlTCy/gbO/YjYmkzcfuVeDA3yrY9fpVi7VwkCKrj4tNiyolJuLkjkr2xkgRc
-	 8UPchu1LDl5mm5BGsu0yy/SPqHcL6eHkR6vlttm2nswRTgCpC1oj3UMX2D1/FyHjmy
-	 cZepVTDtX+un66AI37RswkPW4IgLgJSXwqAqOrDw3XqnR76yeOtSXNlFEVaIafRdwb
-	 zgQT2CYuXdMlDVmA7OHjp0jlbv4b9Uzolu4YrGW3BZiCQXaHa+Kmtkap1stasjGgmz
-	 Tww2Er4QQhy6Q==
+	b=MMxmOdxBybnpInwt7Y6I37NxFkooNloQKnjqtU00PD57zASzSpnTcD2kEuR+wZeMZ
+	 +epb6TmP7lTHAPJXiZiCvDYPqw2D2g0QiYRJGK1rLo8m005lH02fD/Z5o8H9k8J1sH
+	 MpxM3lD4z76146bzyaRrnfG2Lm3s6Cne9Ysq7FyKdpwC08n91kaqof2V4a5sBM/rDJ
+	 Mm2GOW78J7w6FI/emrcb07p/wUZ/dnmqlk2T+SMGuhSk52AUScg1gNFykJvFs1XVUG
+	 ofYdP71E03K0V10U3K9J58kq09eOdtKryN7CVtz+SfLegFjm/pf3A1gNXH3Pf8T5L5
+	 TBwvWTw2ls6+A==
 From: Hannes Reinecke <hare@kernel.org>
-Date: Thu, 26 Nov 2026 15:12:30 +0100
-Subject: [PATCH v7 12/14] nvme-fabrics: allow to pass in keyring by name
+Date: Thu, 26 Nov 2026 15:12:31 +0100
+Subject: [PATCH v7 13/14] nvme-auth: link pre-provisioned keys into .nvme
+ keyring
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -54,7 +55,7 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <20261126-dhchap-keyring-v4-v7-12-ee438ffea527@kernel.org>
+Message-Id: <20261126-dhchap-keyring-v4-v7-13-ee438ffea527@kernel.org>
 References: <20261126-dhchap-keyring-v4-v7-0-ee438ffea527@kernel.org>
 In-Reply-To: <20261126-dhchap-keyring-v4-v7-0-ee438ffea527@kernel.org>
 To: Keith Busch <kbusch@kernel.org>, Jens Axboe <axboe@kernel.dk>, 
@@ -69,161 +70,210 @@ Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
  keyrings@vger.kernel.org, linux-doc@vger.kernel.org, 
  linux-hardening@vger.kernel.org, Hannes Reinecke <hare@kernel.org>
 X-Mailer: b4 0.14.2
-X-Developer-Signature: v=1; a=ed25519-sha256; t=1795702352; l=5266;
+X-Developer-Signature: v=1; a=ed25519-sha256; t=1795702352; l=6313;
  i=hare@kernel.org; s=20260619; h=from:subject:message-id;
- bh=vTCtmH+06/Qwg96M3XMAMgHj7GSyiHVGOncVZ7jkUe8=;
- b=vjZ89PT7lbAUFabufIrSLb3hMj/PR96Q6wCoTKFMazVblH1qaMO+ttreWEwHdWTdMZRM9KaW7
- FeRp1Gd684eCKo8JlTYd5w6bW+21Qkt6yuERuAPA/SHrDm+OF/4wJCr
+ bh=3+ZJ/ZSIa4DS9ocE1tV9Oje8uvDyUQ0rqwrR9ddzSXw=;
+ b=DryPDsJ3DrYLFe0K/yfjWGiiDcjj+WKsTwuKaZJNzKvzt1BifD6TCE87aDuPxT1S/3iMO00qE
+ DBeg5fJFJ+hCbWjiGttHR+V48nMvZQ7ijFT/at1SBmyrLAX3hmOzTBn
 X-Developer-Key: i=hare@kernel.org; a=ed25519;
  pk=iekPF4ZZFva3sutm7d1ryPNR1G/WFfUgHaDB423JXho=
 
-The current interface of passing in keyrings by serial number is very
-impractical for configuration scripts, as the serial number is not
-persistent across reboots, and so any configuration files will need
-to be adjusted.
-This patchs allows to specify the keyring by name in addition to
-the serial number to simplify configuration file handling.
-And the keyring fabrics option is made available to all transports
-as it is no longer TCP-specific.
+Pre-provisioned keys might live in a different keyring which might
+have a different lifetime than the structures referencing the key.
+So to ensure the key remains accessible link the pre-provisioned key
+into the .nvme keyring, and unlink it once it's no longer needed.
 
 Signed-off-by: Hannes Reinecke <hare@kernel.org>
 ---
- drivers/nvme/host/fabrics.c | 31 ++++++++++++++++++++++---------
- drivers/nvme/host/sysfs.c   | 33 ++++++++++++++++++++++++++++++++-
- drivers/nvme/host/tcp.c     |  2 +-
- 3 files changed, 55 insertions(+), 11 deletions(-)
+ drivers/nvme/host/fabrics.c | 48 +++++++++++++++++++++++++++++++++------------
+ drivers/nvme/target/auth.c  | 39 +++++++++++++++++++++++++++---------
+ 2 files changed, 66 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/nvme/host/fabrics.c b/drivers/nvme/host/fabrics.c
-index bba6a4848f2271beee5a4b051419fcb1e703211f..12a30ed16f9ef32c74a51a0ae6ff8ce0ea628301 100644
+index 12a30ed16f9ef32c74a51a0ae6ff8ce0ea628301..e7f51474ab5e1f67fca21d84c4bddcbe9e557571 100644
 --- a/drivers/nvme/host/fabrics.c
 +++ b/drivers/nvme/host/fabrics.c
-@@ -663,8 +663,8 @@ static struct key *nvmf_parse_key(int key_id)
- {
+@@ -1115,7 +1115,17 @@ static int nvmf_parse_options(struct nvmf_ctrl_options *opts,
+ 			ret = PTR_ERR(key);
+ 			goto out;
+ 		}
+-		pr_debug("using dhchap host key %08x\n", key_serial(key));
++		if (!opts->dhchap_key_generated) {
++			pr_debug("linking dhchap host key %08x\n", key_serial(key));
++			ret = nvme_keyring_link(key);
++			if (ret) {
++				pr_debug("failed to link dhchap host key %08x\n",
++					 key_serial(key));
++				key_put(key);
++				goto out;
++			}
++		} else
++			pr_debug("using dhchap host key %08x\n", key_serial(key));
+ 		opts->dhchap_key = key_serial(key);
+ 		key_put(key);
+ #endif
+@@ -1133,7 +1143,17 @@ static int nvmf_parse_options(struct nvmf_ctrl_options *opts,
+ 			ret = PTR_ERR(key);
+ 			goto out;
+ 		}
+-		pr_debug("using dhchap ctrl key %08x\n", key_serial(key));
++		if (!opts->dhchap_ctrl_key_generated) {
++			pr_debug("linking dhchap ctrl key %08x\n", key_serial(key));
++			ret = nvme_keyring_link(key);
++			if (ret) {
++				pr_warn("failed to link dhchap ctrl key %08x\n",
++					key_serial(key));
++				key_put(key);
++				goto out;
++			}
++		} else
++			pr_debug("using dhchap ctrl key %08x\n", key_serial(key));
+ 		opts->dhchap_ctrl_key = key_serial(key);
+ 		key_put(key);
+ #endif
+@@ -1346,23 +1366,27 @@ void nvmf_free_options(struct nvmf_ctrl_options *opts)
  	struct key *key;
  
--	if (!IS_ENABLED(CONFIG_NVME_TCP_TLS)) {
--		pr_err("TLS is not supported\n");
-+	if (!IS_ENABLED(CONFIG_NVME_KEYRING)) {
-+		pr_err("nvme keyring is not supported\n");
- 		return ERR_PTR(-EINVAL);
+ 	nvmf_host_put(opts->host);
+-	if (opts->dhchap_key &&
+-	    opts->dhchap_key_generated) {
++	if (opts->dhchap_key) {
+ 		key = key_lookup(opts->dhchap_key);
+ 		if (!IS_ERR(key)) {
+-			pr_debug("revoke dhchap host key %08x\n",
+-				 opts->dhchap_key);
+-			key_revoke(key);
++			if (opts->dhchap_key_generated) {
++				pr_debug("revoke dhchap host key %08x\n",
++					 opts->dhchap_key);
++				key_revoke(key);
++			} else
++				nvme_keyring_unlink(key);
+ 			key_put(key);
+ 		}
  	}
+-	if (opts->dhchap_ctrl_key &&
+-	    opts->dhchap_ctrl_key_generated) {
++	if (opts->dhchap_ctrl_key) {
+ 		key = key_lookup(opts->dhchap_ctrl_key);
+ 		if (!IS_ERR(key)) {
+-			pr_debug("revoke dhchap ctrl key %08x\n",
+-				 opts->dhchap_ctrl_key);
+-			key_revoke(key);
++			if (opts->dhchap_ctrl_key_generated) {
++				pr_debug("revoke dhchap ctrl key %08x\n",
++					 opts->dhchap_ctrl_key);
++				key_revoke(key);
++			} else
++				nvme_keyring_unlink(key);
+ 			key_put(key);
+ 		}
+ 	}
+diff --git a/drivers/nvme/target/auth.c b/drivers/nvme/target/auth.c
+index 54e79c8a7cae67a509a9f6b993b7886e706af8e0..04a9177ffa1f48445b54f0b6ec3f63e7c111fe06 100644
+--- a/drivers/nvme/target/auth.c
++++ b/drivers/nvme/target/auth.c
+@@ -19,19 +19,20 @@
  
-@@ -697,8 +697,10 @@ static const match_table_t opt_tokens = {
- 	{ NVMF_OPT_NR_WRITE_QUEUES,	"nr_write_queues=%d"	},
- 	{ NVMF_OPT_NR_POLL_QUEUES,	"nr_poll_queues=%d"	},
- 	{ NVMF_OPT_TOS,			"tos=%d"		},
-+#if IS_ENABLED(CONFIG_NVME_KEYRING)
-+	{ NVMF_OPT_KEYRING,		"keyring=%s"		},
-+#endif
- #ifdef CONFIG_NVME_TCP_TLS
--	{ NVMF_OPT_KEYRING,		"keyring=%d"		},
- 	{ NVMF_OPT_TLS_KEY,		"tls_key=%d"		},
- #endif
- 	{ NVMF_OPT_FAIL_FAST_TMO,	"fast_io_fail_tmo=%d"	},
-@@ -993,14 +995,24 @@ static int nvmf_parse_options(struct nvmf_ctrl_options *opts,
- 			opts->tos = token;
- 			break;
- 		case NVMF_OPT_KEYRING:
--			if (match_int(args, &key_id) || key_id <= 0) {
--				ret = -EINVAL;
-+#if IS_ENABLED(CONFIG_NVME_KEYRING)
-+			p = match_strdup(args);
-+			if (!p) {
-+				ret = -ENOMEM;
- 				goto out;
- 			}
--			key = nvmf_parse_key(key_id);
-+			key = request_key(&key_type_keyring, p, NULL);
-+			kfree(p);
- 			if (IS_ERR(key)) {
--				ret = PTR_ERR(key);
--				goto out;
-+				if (match_int(args, &key_id) || key_id <= 0) {
-+					ret = -EINVAL;
-+					goto out;
-+				}
-+				key = nvmf_parse_key(key_id);
-+				if (IS_ERR(key)) {
-+					ret = PTR_ERR(key);
-+					goto out;
-+				}
- 			}
- 			ret = nvme_keyring_link(opts->keyring);
- 			if (ret) {
-@@ -1008,6 +1020,7 @@ static int nvmf_parse_options(struct nvmf_ctrl_options *opts,
- 				goto out;
- 			}
- 			opts->keyring = key;
-+#endif
- 			break;
- 		case NVMF_OPT_TLS_KEY:
- 			if (match_int(args, &key_id) || key_id <= 0) {
-@@ -1376,7 +1389,7 @@ EXPORT_SYMBOL_GPL(nvmf_free_options);
- 				 NVMF_OPT_HOST_ID | NVMF_OPT_DUP_CONNECT |\
- 				 NVMF_OPT_DISABLE_SQFLOW | NVMF_OPT_DISCOVERY |\
- 				 NVMF_OPT_FAIL_FAST_TMO | NVMF_OPT_DHCHAP_SECRET |\
--				 NVMF_OPT_DHCHAP_CTRL_SECRET)
-+				 NVMF_OPT_DHCHAP_CTRL_SECRET | NVMF_OPT_KEYRING)
+ #include "nvmet.h"
  
- static struct nvme_ctrl *
- nvmf_create_ctrl(struct device *dev, const char *buf)
-diff --git a/drivers/nvme/host/sysfs.c b/drivers/nvme/host/sysfs.c
-index 4ebc03a8ddcaede1344988dfe816bbaf3746bb55..0ffea12fcfb6b5e79100fca4f125a655042695ca 100644
---- a/drivers/nvme/host/sysfs.c
-+++ b/drivers/nvme/host/sysfs.c
-@@ -1212,7 +1212,38 @@ static ssize_t tls_keyring_show(struct device *dev,
- 		return sysfs_emit(buf, "%s\n", nvme_keyring_name());
- 	return sysfs_emit(buf, "%s\n", keyring->description);
- }
--static DEVICE_ATTR_RO(tls_keyring);
-+
-+static ssize_t tls_keyring_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct nvme_ctrl *ctrl = dev_get_drvdata(dev);
-+	struct key *keyring = ctrl->opts->keyring;
+-static void nvmet_auth_update_key(struct nvmet_host *host, bool set_ctrl,
++static int nvmet_auth_update_key(struct nvmet_host *host, bool set_ctrl,
+ 				  struct key *new_key, bool new_generated)
+ {
+ 	key_serial_t old_key_id = 0, new_key_id = key_serial(new_key);
+ 	struct key *key = NULL;
+ 	bool generated = false;
 +	int ret;
-+
-+	keyring = request_key(&key_type_keyring, buf, NULL);
-+	if (IS_ERR(keyring)) {
-+		unsigned long keyring_id;
-+
-+		ret = kstrtoul(buf, 0, &keyring_id);
-+		if (ret < 0)
-+			return -EINVAL;
-+		keyring = key_lookup(keyring_id);
-+		if (IS_ERR(keyring))
-+			return -EINVAL;
-+	}
-+	if (ctrl->opts->keyring) {
-+		ret = nvme_keyring_unlink(ctrl->opts->keyring);
+ 
+ 	if (set_ctrl) {
+ 		if (host->dhchap_ctrl_key) {
+ 			if (host->dhchap_ctrl_key == new_key_id) {
+ 				if (new_key && new_generated)
+ 					key_revoke(new_key);
+-				return;
++				return 0;
+ 			}
+ 			old_key_id = host->dhchap_ctrl_key;
+ 			generated = host->dhchap_ctrl_key_generated;
+@@ -44,7 +45,7 @@ static void nvmet_auth_update_key(struct nvmet_host *host, bool set_ctrl,
+ 			if (host->dhchap_key == new_key_id) {
+ 				if (new_key && new_generated)
+ 					key_revoke(new_key);
+-				return;
++				return 0;
+ 			}
+ 			old_key_id = host->dhchap_key;
+ 			generated = host->dhchap_key_generated;
+@@ -53,18 +54,37 @@ static void nvmet_auth_update_key(struct nvmet_host *host, bool set_ctrl,
+ 		host->dhchap_key = new_key_id;
+ 		host->dhchap_key_generated = new_generated;
+ 	}
++	if (new_key && !new_generated) {
++		ret = nvme_keyring_link(new_key);
 +		if (ret < 0) {
-+			pr_warn("failed to unlink '%08X' from default keyring\n",
-+				key_serial(ctrl->opts->keyring));
-+			key_put(keyring);
++			pr_warn("%s: failed to link %s key %08x\n",
++				__func__, set_ctrl ? "ctrl" : "host",
++				key_serial(new_key));
 +			return ret;
 +		}
 +	}
-+	ctrl->opts->keyring = keyring;
-+	return count;
-+}
-+static DEVICE_ATTR_ADMIN_RW(tls_keyring);
++
+ 	if (!old_key_id)
+-		return;
++		return 0;
  
- static ssize_t tls_mode_show(struct device *dev,
- 			     struct device_attribute *attr, char *buf)
-diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
-index 585aba1d544518d6e712e23c7987741b130aee4d..c3149a9151f557534a7d9cb3cbe0b3c61a037833 100644
---- a/drivers/nvme/host/tcp.c
-+++ b/drivers/nvme/host/tcp.c
-@@ -3432,7 +3432,7 @@ static struct nvmf_transport_ops nvme_tcp_transport = {
- 			  NVMF_OPT_HDR_DIGEST | NVMF_OPT_DATA_DIGEST |
- 			  NVMF_OPT_NR_WRITE_QUEUES | NVMF_OPT_NR_POLL_QUEUES |
- 			  NVMF_OPT_TOS | NVMF_OPT_HOST_IFACE | NVMF_OPT_TLS |
--			  NVMF_OPT_KEYRING | NVMF_OPT_TLS_KEY | NVMF_OPT_CONCAT,
-+			  NVMF_OPT_TLS_KEY | NVMF_OPT_CONCAT,
- 	.create_ctrl	= nvme_tcp_create_ctrl,
- };
+ 	key = key_lookup(old_key_id);
+ 	if (IS_ERR(key))
+-		return;
++		return PTR_ERR(key);
+ 	if (generated) {
+ 		pr_debug("%s: revoke %s key %08x\n", __func__,
+ 			 set_ctrl ? "ctrl" : "host", key_serial(key));
+ 		key_revoke(key);
++		ret = 0;
++	} else {
++		ret = nvme_keyring_unlink(key);
++		if (ret < 0) {
++			pr_warn("%s: failed to unlink %s key %08x\n",
++				__func__, set_ctrl ? "ctrl" : "host",
++				key_serial(new_key));
++		}
+ 	}
+ 	key_put(key);
++	return ret;
+ }
  
+ void nvmet_auth_clear_key(struct nvmet_host *host)
+@@ -79,12 +99,13 @@ int nvmet_auth_set_key(struct nvmet_host *host, const char *secret,
+ 	bool generated = false;
+ 	struct key *key;
+ 	size_t len;
++	int ret;
+ 
+ 	if (!secret || !strlen(secret)) {
+ 		down_write(&nvmet_config_sem);
+-		nvmet_auth_update_key(host, set_ctrl, NULL, false);
++		ret = nvmet_auth_update_key(host, set_ctrl, NULL, false);
+ 		up_write(&nvmet_config_sem);
+-		return 0;
++		return ret;
+ 	}
+ 	len = strcspn(secret, "\n");
+ 	key = nvme_auth_extract_key(secret, len, &generated);
+@@ -102,10 +123,10 @@ int nvmet_auth_set_key(struct nvmet_host *host, const char *secret,
+ 	}
+ 	up_read(&key->sem);
+ 	down_write(&nvmet_config_sem);
+-	nvmet_auth_update_key(host, set_ctrl, key, generated);
++	ret = nvmet_auth_update_key(host, set_ctrl, key, generated);
+ 	up_write(&nvmet_config_sem);
+ 	key_put(key);
+-	return 0;
++	return ret;
+ }
+ 
+ int nvmet_setup_dhgroup(struct nvmet_ctrl *ctrl, u8 dhgroup_id)
 
 -- 
 2.51.0
