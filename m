@@ -1,48 +1,47 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795703450;
-	b=Gb5eA+lMse/qYjn7QfIWSxYEiixRmwj3orpqhNaq9cZSmYDDZ14YGF61PqMTW4WbVEPD
-	 JBRJ5uzug0zuNUt76gM2ZuA7joajfQK1sDxFdYZ6ZzWQSSMLe6YYGhLdzb7xr85RPZrIo
-	 4q+J44gQo1Jm6MoJSfoYZNbOugndYzEC+HFprfFypSMwJL1mIhiswiBtCRmPFAyf8qNns
-	 OpjNpHK4ErKNxqpY7+hwWa32j3dtT7hBXuhffm06fWtYyBt4kjC4K/PF1jQEiV2fTNl8g
-	 VVSgyX5jb7QZHgcJspyJ0o8GQgxV/80CTa1WCgiM2ls9M9lxraulcLgzG+ZE2OU+rpw==
+	t=1795703519;
+	b=Hm/N6rAV8zVDHmX0vNH+SGetrUcrUvwVGaQfG+G8OC/3ZTvzvvn96eMCbpDQgfRzX3ud
+	 ZMP0ODtZkl+J6mOXy4lgIlk02uKQu+J7puutX8s+DNYrlqyzt3HS0PmS6mdKJbDAFP7o9
+	 6yYAWTRwN7qf1LGnVmlbUoOOsBqpyQJrxJFbzli80/TYTSq92huvlprhBABz01aTIYwQk
+	 4GMIxWzzwjaC1JmC59WJAYC2dp5B5bmsKAGY1Y0ay43n51XORP5X6g+RfuQUSd6YXKJvQ
+	 NhKDFKeJ4QHEZkDgymtC1TDxgppzCf+Hw82ZdQ1WBJBum6B9rS9KDg+cbeOyPVBo30Q==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795703450;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795703519;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=P9wshFdtYcyCOkhncepQ/tnlZC/sU0rmaigBNw3t2p4=;
-	b=SlvK70EWCXrJB243sKZcuv2pC1VrAn20mqQcYkpRuRwuQJJSXzXkKdVgq2W9Jg9F5HyB
-	 CuX/cjzNTofsQwdz4rC8ES1oSQ6CqoYXandNNEJI+GwG1fiUPaY2578vDZTZaXVmcR9v8
-	 sny4WjHoXv6shwbQSyDnE3S5vd3Lpx6/fcDKl/674wrxsVwVGVk+zYhJ+HVobzFkxbiH6
-	 NMIeKsoxkBYuybJtMZiIQG2+uVyOsIivZZBPHbFS4zxkdMxGaIsSBX60kR7N9z1icu+vk
-	 iT/47RH9grGp5HiPpDVvIeJE8ug3FyV6Zi2pREFXx7jZJeIwOTsC2nu15Mo/j7YGbrw==
+	bh=YkaimypVfCpq6j4BAH6otlWMPVoAgw31YOFb6o2TkCQ=;
+	b=v6un9pwhi4iINiBJsjfcQZoDPf7M+6cZqDjpyKsUU6MWKQog/SEwGCL2FOmx93ubvhM3
+	 TlOL1IsHccDRt/6xjpAWETr1olUCNVKngfzdBbkB8kvS5/TmqaBfBZ01Q/YRIwRzme544
+	 /rObzmtQNwRY/qdmapm1P7oCPtNiPU+3U+rLY2lKIArPsf0k9dtgLfWrPozlebu2C3SKU
+	 wL+5HUTO1VkZmC8fFWdyKxCDA61ScoiFTnJvqnQRtP+t63bCEhz4lEYgyykhsvQtmZ2S+
+	 a3wT9wlT8jjVfiOnbFcitW1iLixW9LoHSx+Q8CfUwNGgLtGTS6GWNJ85iDBsadgJAGw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ZroeW6+o;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eNTPRTKJ;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 85723606A6A6
-	for <keyrings@vger.kernel.org>; Thu, 26 Nov 2026 14:30:50 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EADB1606A68E
+	for <keyrings@vger.kernel.org>; Thu, 26 Nov 2026 14:31:58 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=ZroeW6+o
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 5507D1F000ED;
-	Thu, 26 Nov 2026 14:30:49 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=eNTPRTKJ
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 69BA31F000C4;
+	Thu, 26 Nov 2026 14:31:57 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795703450;
-	bh=P9wshFdtYcyCOkhncepQ/tnlZC/sU0rmaigBNw3t2p4=;
+	s=k20260515; t=1795703518;
+	bh=YkaimypVfCpq6j4BAH6otlWMPVoAgw31YOFb6o2TkCQ=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=ZroeW6+onBOTxwaE8tFS29BaIHC9syuHqhwFEHJC6HDxo8VE1QhnClFC3taEToUfp
-	 eiuyJCGkrofjBnMkkMMOG6grPSN0VcCE8BH4eY+kZW3Ky9jYAmfHtciPAj205oPBzY
-	 i9NPwCrMIbB6ELexL+Pr794OcJZX2xwwzgfoME729HRCGNXwXaJsDmmNq3eIfn0xbJ
-	 tQTb1kquek/D9/nUWjiy1vBrV/3f1QdNIh6VDOezwwH/v8+9AP7G3zRUutmdOxMTZv
-	 FA3PP4bSOz2SNVaFYIdK4ZrlTMkzeSfd3yw3Zvy970OI3C6wy0NpKtYPGV0nLfELMp
-	 8rpYIFGAv3mtg==
-Message-ID: <sashiko-outbox-235710@kernel.org>
+	b=eNTPRTKJzt7Ll30ThpKT+QvZ7wyZ607rXHIOZELw++8EVZJW+PMQkNVEP/PA1dTmO
+	 4+3+wGT2HjK1LqQ3FrKWaKAZMBf8v+plPSCrDjv0vviHUeK12biWz+vCEE7XNNzsKt
+	 HL5CasXRp7EQ8rvuf4VFB3eY6uDXOk/JDg70J5WrL0B785twQxbb6xUQhr1hk/hnwr
+	 TIP2Z5KM0rc9H5+z+MhsTr+hRjvTlvkn2LHhFgiN8shk6rKPnUv7HclgiRbeFJR6R+
+	 741wYHQh2CQuYrAHtc714IknNMtWY6oR/RlyJmW1xsXtcqFIa5q0QrmaGW9w4OqTRg
+	 vB094xXKsnqEg==
+Message-ID: <sashiko-outbox-235711@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v7 13/14] nvme-auth: link pre-provisioned keys into
- .nvme keyring
+Subject: Re: [PATCH v7 12/14] nvme-fabrics: allow to pass in keyring by name
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Hannes Reinecke" <hare@kernel.org>, "Keith Busch" <kbusch@kernel.org>, "Jens
  Axboe" <axboe@kernel.dk>, "Christoph Hellwig" <hch@lst.de>, "Sagi Grimberg" <sagi@grimberg.me>, "Hannes
@@ -52,12 +51,12 @@ To: "Hannes Reinecke" <hare@kernel.org>, "Keith Busch" <kbusch@kernel.org>, "Jen
  Khan" <skhan@linuxfoundation.org>, "Randy Dunlap" <rdunlap@infradead.org>, "Kees
  Cook" <kees@kernel.org>, "Gustavo A. R. Silva" <gustavoars@kernel.org>
 Cc: linux-nvme@lists.infradead.org, keyrings@vger.kernel.org
-In-Reply-To: <20261126-dhchap-keyring-v4-v7-13-ee438ffea527@kernel.org>
+In-Reply-To: <20261126-dhchap-keyring-v4-v7-12-ee438ffea527@kernel.org>
 References: <20261126-dhchap-keyring-v4-v7-0-ee438ffea527@kernel.org>
- <20261126-dhchap-keyring-v4-v7-13-ee438ffea527@kernel.org>
+ <20261126-dhchap-keyring-v4-v7-12-ee438ffea527@kernel.org>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 26 Nov 2026 14:30:48 +0000
+Date: Thu, 26 Nov 2026 14:31:56 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -67,172 +66,256 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 
-Thank you for your contribution! Sashiko AI review found 4 potential
+Thank you for your contribution! Sashiko AI review found 8 potential
 issues to consider:
-- [High] nvme-auth: nvme_keyring_unlink() removes shared or .nvme
-  pre-provisioned keys
-- [Medium] nvmet-auth: nvmet_auth_update_key() mutates host state before
-  linking key
-- [Medium] nvmet-auth: nvmet_auth_update_key() sets wrong generated flag
-  for ctrl key
-- [Low] nvmet-auth: nvmet_auth_update_key() logs new_key serial on
-  unlink failure
+- [High] nvme-fabrics: NULL dereference and key leak in
+  nvmf_parse_options()
+- [High] nvme-fabrics: missing keyring link and key leak in
+  tls_keyring_store()
+- [High] nvme-fabrics: vmlinux link failure when CONFIG_NVME_KEYRING=3Dm
+- [High] nvme-keyring: broken header stubs when CONFIG_NVME_KEYRING=3Dn
+- [Medium] nvme-fabrics: unstripped newline in tls_keyring_store()
+  breaks lookup
+- [Medium] nvme-fabrics: missing key type and state checks in keyring ID
+  fallback
+- [Medium] nvme-fabrics: unsynchronized opts->keyring access in
+  tls_keyring_store()
+- [Low] nvme-fabrics: unreachable !keyring path in
+  nvme_tls_attrs_are_visible()
 --
 
-commit 03391c2ce04bdc0cd535d7de4d681251fe291e19
+commit cea520ca62b4a11b68d9d8f8ca9eeea627f871dd
 Author: Hannes Reinecke <hare@kernel.org>
 
-nvme-auth: link pre-provisioned keys into .nvme keyring
+nvme-fabrics: allow to pass in keyring by name
 
-This commit links pre-provisioned DH-HMAC-CHAP keys into the .nvme keyring
-when parsed on the host or set on the target, and unlinks them when the
-options or host keys are cleared or replaced.
+This commit allows specifying the fabrics keyring option by name in
+addition to serial number, enables the keyring option for all fabrics
+transports, and makes the tls_keyring sysfs attribute writable.
 
 > diff --git a/drivers/nvme/host/fabrics.c b/drivers/nvme/host/fabrics.c
-> index 12a30ed16f9ef..e7f51474ab5e1 100644
+> index bba6a4848f227..12a30ed16f9ef 100644
 > --- a/drivers/nvme/host/fabrics.c
 > +++ b/drivers/nvme/host/fabrics.c
-
-[ ... ]
-
-> @@ -1346,23 +1366,27 @@ void nvmf_free_options(struct nvmf_ctrl_options *=
-opts)
+> @@ -663,8 +663,8 @@ static struct key *nvmf_parse_key(int key_id)
+>  {
 >  	struct key *key;
 > =20
->  	nvmf_host_put(opts->host);
-> -	if (opts->dhchap_key &&
-> -	    opts->dhchap_key_generated) {
-> +	if (opts->dhchap_key) {
->  		key =3D key_lookup(opts->dhchap_key);
->  		if (!IS_ERR(key)) {
-> -			pr_debug("revoke dhchap host key %08x\n",
-> -				 opts->dhchap_key);
-> -			key_revoke(key);
-> +			if (opts->dhchap_key_generated) {
-> +				pr_debug("revoke dhchap host key %08x\n",
-> +					 opts->dhchap_key);
-> +				key_revoke(key);
-> +			} else
-> +				nvme_keyring_unlink(key);
->  			key_put(key);
->  		}
+> -	if (!IS_ENABLED(CONFIG_NVME_TCP_TLS)) {
+> -		pr_err("TLS is not supported\n");
+> +	if (!IS_ENABLED(CONFIG_NVME_KEYRING)) {
+> +		pr_err("nvme keyring is not supported\n");
+>  		return ERR_PTR(-EINVAL);
 >  	}
 
 [Severity: High]
-Does nvme_keyring_unlink() remove a pre-provisioned key that originally
-lived in the .nvme keyring or is shared across multiple controllers?
+Can this fail to link vmlinux when CONFIG_NVME_KEYRING=3Dm?
 
-Keyring links are indexed by key type and description rather than
-reference-counted, so key_link() replaces an existing link in .nvme in
-place and key_unlink() deletes that sole link.  A pre-provisioned key
-placed directly in .nvme (as required when looking up keys by description
-via nvme_dhchap_psk_lookup()) is removed from .nvme as soon as the first
-controller disconnects or fails to connect, and a key from another keyring
-that is shared across controllers or target hosts is unlinked from .nvme
-while other users still depend on it.
+IS_ENABLED(CONFIG_NVME_KEYRING) is true when NVME_KEYRING is a module,
+while NVME_FABRICS in drivers/nvme/host/Kconfig only selects NVME_KEYRING
+if NVME_TCP_TLS is enabled.  If CONFIG_NVME_FABRICS=3Dy (with
+CONFIG_NVME_TCP_TLS=3Dn and CONFIG_NVME_HOST_AUTH=3Dn) and
+CONFIG_NVME_KEYRING=3Dm (for example via CONFIG_NVME_TARGET=3Dm), built-in
+fabrics.o references nvme_tls_key_lookup() and nvme_keyring_link() in
+nvme-keyring.ko.  Similarly, when CONFIG_NVME_CORE=3Dy, CONFIG_NVME_TCP=3Dm,
+and CONFIG_NVME_TCP_TLS=3Dy, NVME_FABRICS=3Dm selects CONFIG_NVME_KEYRING=
+=3Dm,
+so built-in drivers/nvme/host/sysfs.o fails to link against
+nvme_keyring_name() and nvme_keyring_unlink().
 
 [ ... ]
 
-> diff --git a/drivers/nvme/target/auth.c b/drivers/nvme/target/auth.c
-> index 54e79c8a7cae6..04a9177ffa1f4 100644
-> --- a/drivers/nvme/target/auth.c
-> +++ b/drivers/nvme/target/auth.c
-> @@ -19,19 +19,20 @@
-> =20
->  #include "nvmet.h"
-> =20
-> -static void nvmet_auth_update_key(struct nvmet_host *host, bool set_ctrl,
-> +static int nvmet_auth_update_key(struct nvmet_host *host, bool set_ctrl,
->  				  struct key *new_key, bool new_generated)
->  {
->  	key_serial_t old_key_id =3D 0, new_key_id =3D key_serial(new_key);
->  	struct key *key =3D NULL;
->  	bool generated =3D false;
-> +	int ret;
-> =20
->  	if (set_ctrl) {
->  		if (host->dhchap_ctrl_key) {
->  			if (host->dhchap_ctrl_key =3D=3D new_key_id) {
->  				if (new_key && new_generated)
->  					key_revoke(new_key);
-> -				return;
-> +				return 0;
+> @@ -993,14 +995,24 @@ static int nvmf_parse_options(struct nvmf_ctrl_opti=
+ons *opts,
+>  			opts->tos =3D token;
+>  			break;
+>  		case NVMF_OPT_KEYRING:
+> -			if (match_int(args, &key_id) || key_id <=3D 0) {
+> -				ret =3D -EINVAL;
+> +#if IS_ENABLED(CONFIG_NVME_KEYRING)
+> +			p =3D match_strdup(args);
+> +			if (!p) {
+> +				ret =3D -ENOMEM;
+>  				goto out;
 >  			}
->  			old_key_id =3D host->dhchap_ctrl_key;
->  			generated =3D host->dhchap_ctrl_key_generated;
-> @@ -44,7 +45,7 @@ static void nvmet_auth_update_key(struct nvmet_host *ho=
-st, bool set_ctrl,
+> -			key =3D nvmf_parse_key(key_id);
+> +			key =3D request_key(&key_type_keyring, p, NULL);
+> +			kfree(p);
+>  			if (IS_ERR(key)) {
+> -				ret =3D PTR_ERR(key);
+> -				goto out;
+> +				if (match_int(args, &key_id) || key_id <=3D 0) {
+> +					ret =3D -EINVAL;
+> +					goto out;
+> +				}
+> +				key =3D nvmf_parse_key(key_id);
+> +				if (IS_ERR(key)) {
+> +					ret =3D PTR_ERR(key);
+> +					goto out;
+> +				}
+>  			}
+>  			ret =3D nvme_keyring_link(opts->keyring);
+>  			if (ret) {
+> @@ -1008,6 +1020,7 @@ static int nvmf_parse_options(struct nvmf_ctrl_opti=
+ons *opts,
+>  				goto out;
+>  			}
+>  			opts->keyring =3D key;
+> +#endif
+>  			break;
+
+[Severity: High]
+Does nvme_keyring_link(opts->keyring) pass NULL instead of the newly
+looked-up key?
+
+On the first keyring=3D option, opts->keyring is NULL, so
+nvme_keyring_link(NULL) calls key_link(nvme_keyring, NULL) ->
+__key_link_lock(), triggering a NULL pointer dereference on
+index_key->type with nvme_keyring->sem held write-locked.  If keyring=3D is
+specified more than once in the option string, the previous opts->keyring
+is also overwritten without being unlinked or released with key_put().
+
+[Severity: High]
+Does guarding this block with #if IS_ENABLED(CONFIG_NVME_KEYRING) expose
+broken stubs in include/linux/nvme-keyring.h when CONFIG_NVME_KEYRING=3Dn?
+
+include/linux/nvme-keyring.h {
+    ...
+static const char *nvme_keyring_name(void)
+{
+	return NULL;
+}
+static int nvme_keyring_link(struct key *keyring)
+{
+	return 0;
+}
+int nvme_keyring_unlink(struct key *keyring)
+{
+	return 0;
+}
+    ...
+}
+
+When CONFIG_NVME_KEYRING is disabled, nvme_keyring_unlink() is defined as
+a non-static function in the header, causing multiple-definition linker
+errors across fabrics.o, sysfs.o, and tcp.o, while the non-inline static
+nvme_keyring_link() stub becomes unused in fabrics.c and triggers
+-Wunused-function.
+
+> diff --git a/drivers/nvme/host/sysfs.c b/drivers/nvme/host/sysfs.c
+> index 4ebc03a8ddcae..0ffea12fcfb6b 100644
+> --- a/drivers/nvme/host/sysfs.c
+> +++ b/drivers/nvme/host/sysfs.c
+> @@ -1212,7 +1212,38 @@ static ssize_t tls_keyring_show(struct device *dev,
+>  		return sysfs_emit(buf, "%s\n", nvme_keyring_name());
+>  	return sysfs_emit(buf, "%s\n", keyring->description);
+>  }
+> -static DEVICE_ATTR_RO(tls_keyring);
+> +
+> +static ssize_t tls_keyring_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +	struct nvme_ctrl *ctrl =3D dev_get_drvdata(dev);
+> +	struct key *keyring =3D ctrl->opts->keyring;
+> +	int ret;
+> +
+> +	keyring =3D request_key(&key_type_keyring, buf, NULL);
 
 [Severity: Medium]
-In the set_ctrl branch of nvmet_auth_update_key(), does
-"host->dhchap_key_generated =3D new_generated" right after
-"host->dhchap_ctrl_key =3D new_key_id" overwrite the host key's flag instead
-of host->dhchap_ctrl_key_generated?
+Does passing buf directly to request_key() without stripping a trailing
+newline break keyring lookup by name from sysfs?
 
-That leaves host->dhchap_ctrl_key_generated false so generated controller
-keys are unlinked instead of revoked, while clobbering
-host->dhchap_key_generated so a pre-provisioned host key can be revoked by
-key_revoke() when later replaced or cleared.
+Writes such as "echo my_keyring > tls_keyring" pass "my_keyring\n" to
+request_key(), which fails with -ENOKEY and falls through to kstrtoul(),
+returning -EINVAL.  Other sysfs handlers in this file (such as
+dhchap_secret_store()) strip the trailing newline with strcspn(buf, "\n").
 
->  			if (host->dhchap_key =3D=3D new_key_id) {
->  				if (new_key && new_generated)
->  					key_revoke(new_key);
-> -				return;
-> +				return 0;
->  			}
->  			old_key_id =3D host->dhchap_key;
->  			generated =3D host->dhchap_key_generated;
-> @@ -53,18 +54,37 @@ static void nvmet_auth_update_key(struct nvmet_host *=
-host, bool set_ctrl,
->  		host->dhchap_key =3D new_key_id;
->  		host->dhchap_key_generated =3D new_generated;
->  	}
-> +	if (new_key && !new_generated) {
-> +		ret =3D nvme_keyring_link(new_key);
-> +		if (ret < 0) {
-> +			pr_warn("%s: failed to link %s key %08x\n",
-> +				__func__, set_ctrl ? "ctrl" : "host",
-> +				key_serial(new_key));
-> +			return ret;
-> +		}
+> +	if (IS_ERR(keyring)) {
+> +		unsigned long keyring_id;
+> +
+> +		ret =3D kstrtoul(buf, 0, &keyring_id);
+> +		if (ret < 0)
+> +			return -EINVAL;
+> +		keyring =3D key_lookup(keyring_id);
+> +		if (IS_ERR(keyring))
+> +			return -EINVAL;
 > +	}
 
 [Severity: Medium]
-If nvme_keyring_link(new_key) fails here, does this early return leave
-host->dhchap_key or host->dhchap_ctrl_key updated to new_key_id while
-leaking old_key_id?
+Can the serial ID fallback in tls_keyring_store() and nvmf_parse_options()
+accept a key that is not a keyring?
 
-Because the host fields are overwritten before linking new_key, an error
-from nvme_keyring_link() skips revoking or unlinking old_key_id and leaves
-the unlinked new_key_id installed on host.
+Neither key_lookup() here nor nvmf_parse_key() in nvmf_parse_options()
+verifies that keyring->type =3D=3D &key_type_keyring.  In addition,
+tls_keyring_store() does not check that keyring_id fits in a positive
+key_serial_t or call key_validate(keyring) to reject revoked, expired, or
+invalidated keys.
 
-> +
->  	if (!old_key_id)
-> -		return;
-> +		return 0;
-> =20
->  	key =3D key_lookup(old_key_id);
->  	if (IS_ERR(key))
-> -		return;
-> +		return PTR_ERR(key);
->  	if (generated) {
->  		pr_debug("%s: revoke %s key %08x\n", __func__,
->  			 set_ctrl ? "ctrl" : "host", key_serial(key));
->  		key_revoke(key);
-> +		ret =3D 0;
-> +	} else {
-> +		ret =3D nvme_keyring_unlink(key);
+> +	if (ctrl->opts->keyring) {
+> +		ret =3D nvme_keyring_unlink(ctrl->opts->keyring);
 > +		if (ret < 0) {
-> +			pr_warn("%s: failed to unlink %s key %08x\n",
-> +				__func__, set_ctrl ? "ctrl" : "host",
-> +				key_serial(new_key));
+> +			pr_warn("failed to unlink '%08X' from default keyring\n",
+> +				key_serial(ctrl->opts->keyring));
+> +			key_put(keyring);
+> +			return ret;
 > +		}
->  	}
+> +	}
+> +	ctrl->opts->keyring =3D keyring;
+> +	return count;
+> +}
+> +static DEVICE_ATTR_ADMIN_RW(tls_keyring);
+
+[Severity: High]
+Does tls_keyring_store() leak the old ctrl->opts->keyring reference and
+leave the new keyring unlinked from the default .nvme keyring?
+
+After nvme_keyring_unlink(ctrl->opts->keyring) removes the link from
+nvme_keyring, key_put(ctrl->opts->keyring) is never called before
+ctrl->opts->keyring is overwritten.  The new keyring is also never passed
+to nvme_keyring_link(keyring), so keys in it cannot be found through
+nvme_keyring, any subsequent write to tls_keyring fails in
+nvme_keyring_unlink() with -ENOENT, and controller teardown hits
+WARN_ON(ret) in nvmf_free_options().
+
+[Severity: Medium]
+What serializes tls_keyring_store() against concurrent calls to
+tls_keyring_store(), tls_keyring_show(), or nvme_tcp_start_tls()?
+
+CPU0                              CPU1
+tls_keyring_store()               tls_keyring_show()
+                                    keyring =3D ctrl->opts->keyring
+  nvme_keyring_unlink(
+    ctrl->opts->keyring)
+  /* once key_put() is added: */
+  key_put(ctrl->opts->keyring)
+                                    sysfs_emit(...,
+                                      keyring->description)
+                                      <-- use-after-free
+
+Two concurrent writers can also unlink and replace ctrl->opts->keyring at
+the same time, while tls_keyring_show() and nvme_tcp_start_tls() read
+ctrl->opts->keyring without holding a lock or taking a key reference.
 
 [Severity: Low]
-Should this pr_warn() log key_serial(key) instead of key_serial(new_key)
-when unlinking the old key fails?
+Is tls_keyring visible in sysfs when a controller is created without an
+initial keyring=3D option?
+
+drivers/nvme/host/sysfs.c:nvme_tls_attrs_are_visible() {
+    ...
+	if (a =3D=3D &dev_attr_tls_keyring.attr &&
+	    !ctrl->opts->keyring)
+		return 0;
+    ...
+}
+
+Because nvme_tls_attrs_are_visible() hides tls_keyring whenever
+ctrl->opts->keyring is NULL, the !keyring fallback in tls_keyring_show()
+cannot be reached and a keyring cannot be configured via
+tls_keyring_store() unless one was already passed at connect time.  Also,
+making tls_keyring writable and changing it from DEVICE_ATTR_RO (0444) to
+DEVICE_ATTR_ADMIN_RW (0600) is not mentioned in the commit message or
+Documentation/ABI/stable/sysfs-nvme.
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261126-dhchap-key=
-ring-v4-v7-0-ee438ffea527@kernel.org?part=3D13
+ring-v4-v7-0-ee438ffea527@kernel.org?part=3D12
