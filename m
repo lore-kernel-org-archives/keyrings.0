@@ -1,47 +1,48 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795703371;
-	b=ogFR+Y0+jHq60tSZ/O9amZTyl/Xythc5wQX43CA68HMAVLDWKyLXDPzpNcHdH0RHk5I0
-	 ENf4J6fbamvMNqmz3lWS+AAVq1f8vYSxC7FCgukorIGAhHs2Yf8l1VHPlnw67jxMlICQR
-	 qmHxTCeAezx67V8OORXZ6qh6oKX/i5UoudbgQTYhpbMomiVfuBzP8Ra9kV3PzSYBb4JjC
-	 VFaJJ2hFoR88unGn3HRq6T18OU19qGFP5hmTssraQ2qViNTah6a6wDm9OXaR8jpyOE7Zo
-	 2Nu5CMhfmHpNPbS74GED1Q00NKCTzV6LjZSEgfKQY6rmxL2z2i2z1rO9HNLiDN9VO1g==
+	t=1795703413;
+	b=jxjNh7kJM7EyBNpdXTlQJXOw/0JNUW3ce/MywpueLroPBsH5O02DVHcYYhqMhxBknMpn
+	 Kh5NAtrhjrE0Ys69lyYYDR2MQ6DfQoqpmGeYeEo+pikjJgeufNdk09IgbYrQeWwcoOQiE
+	 yvCOuGlO1Pw6bLVKuPAU99ofrzT+B2dwbpwUlID/wUL2MdRO5oXSizVAiY6p3KOxmtqhI
+	 XkopC8pSk4IV+ug8Qha/6HTQ0OSNRy4ZyfDjCYMCcEMt9QgLEULNA5vm+SbS5cS0twmi7
+	 0HENzfNk09jzlrHV6OCT4d6lVJeQsNHw5aNQDsehtdJ+1wwC1QpJacc1+ulZCRxUjew==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795703371;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795703413;
 	h=Received:DKIM-Signature:Message-ID:From:Subject:Reply-To:To:Cc:
 	 In-Reply-To:References:Content-Type:Content-Transfer-Encoding:Date;
-	bh=lz6cIcsw2k0QrPuEE92qwSf/Xd928aDxunt/Z51hxWg=;
-	b=j4vZi/ybgn2EODljVM7rfbiVhOnqZ6N3i2trrvXpIVxAGRBTpDfo+S3OBkc0zlxSj/47
-	 BDESnIzuVDlGAeAbVMhOg3qvBVevJMTwpBJZg8cBYAaPdbREEorCgLDCERWMAFNSHbesH
-	 KT3RAAQ9VFKWkU4rb9LpSLF6vlQlMILvBI7QBcUkwIBWY5inaMJJSdopgxQlcp993aCjN
-	 QTnufF1A4uenC6YHF4ylrRPNVzsUtfdXLDLWv91Dh1tAyQXDWEfz/54tjI/w1w7Nzx6Cf
-	 cv5V2Pew4ysohQ8OrGUsH7uc5vMXMCQs9PpXCRQ+9YjFzH7hqTXyHBezorZb6YhyPiQ==
+	bh=XUgYcggpYfbzGJ6Hqiliic8gspbuU8Xf5yoxhcaS0GM=;
+	b=LxWirRiFbiVa+QHU7FmDZZAtawSRhDH5M8Op9nVlZ05qUaG2fbkbjkz56sjQlpfXuES3
+	 V8IjAz0W92iB3PTDJAAZuggF7EO90jwmAEQRJlTYZE4k/1vNp+BfrKDy+OEUHtP2Tr6oe
+	 lv+Uv0+jGJFoAmSsCjoAEI7EQdMd+XG2maHdjiy8x2Im+oX8PIMhgtJdl04TkdImB4V0o
+	 RuB9z8k+wPrPDiGeusIyPWUc9Ivt7WNh+DK8oIz/vHq38XLX7+eYAV6tCL5YErIzq8TVv
+	 mIuGJYe8gG8O3wZQMQCNCDgtiSsPN7BwgE2M4OSaOrZ3zEQcUTbxJtgTvNMZJ9oqiNQ==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Am5N+2L1;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QY7Mobx3;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5DE1D606A321
-	for <keyrings@vger.kernel.org>; Thu, 26 Nov 2026 14:29:31 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DEA1A606A6A7
+	for <keyrings@vger.kernel.org>; Thu, 26 Nov 2026 14:30:13 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=Am5N+2L1
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 672891F000C4;
-	Thu, 26 Nov 2026 14:29:30 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=QY7Mobx3
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 77F9E1F000D0;
+	Thu, 26 Nov 2026 14:30:12 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795703371;
-	bh=lz6cIcsw2k0QrPuEE92qwSf/Xd928aDxunt/Z51hxWg=;
+	s=k20260515; t=1795703413;
+	bh=XUgYcggpYfbzGJ6Hqiliic8gspbuU8Xf5yoxhcaS0GM=;
 	h=From:Subject:Reply-To:To:Cc:In-Reply-To:References:Date;
-	b=Am5N+2L1Aan2DKv4AvuJiDRfoybl9OvmQrB+dOeBDezB+uIkQ3j/uKmS2b29x1gC2
-	 mzgJ8DUr2fyeCu5sbvhLJeETyJgdtDuTObAJKJSxzOG5WTKJGzzPzcvBIal7ex7Vxs
-	 XfEeCCmhJsw+pxkdrLhaylgVpywv1SXBfXQibFUXg/l6D7WirhqNizWj6nakgYnwho
-	 JMKF6Hwyokdnl4lnScYviyR9oeVmvm4eXLXPNoVjT52cVgzX4MDWD49Ttag43L2tCF
-	 HIchI2Hfz+ibkcMdlRuJHr33J9S3ewV0DoKBv4lCD4B0UhW3k6CenZD2PEkMfZhgAn
-	 SlNmyVj59GXzQ==
-Message-ID: <sashiko-outbox-235706@kernel.org>
+	b=QY7Mobx3bsO+XGOzfAsxJoqqAdRkV6FPT9wHTpZieKlZBueq+15IJoW4WUQjQhjuy
+	 FlW7QJKylgJBNXZdGCogglDdWzejtxjDw3xoWKOwEu4qUvpU+5HsSZUnqGTmyfI0mg
+	 PpeurywTrmofSajEsxaNfzH6b3Z5Yy9u/Q0vFfEmn5htNtUezgbWGpg0dPDkWP1BzF
+	 OMj+BqwDdePibDLmmKKPGtsVHcWeJ5DEmniDDkTvREXh9ptv9IYI+24d6VfUQZJtn7
+	 8CA1DNd4jSO76YY+brECgRXTLL8wSEeP7zR9LqkArFJRywOc1Yme/M3ULyG0nAIo5E
+	 gFmSOWivnRTkg==
+Message-ID: <sashiko-outbox-235707@kernel.org>
 From: sashiko-bot@kernel.org
-Subject: Re: [PATCH v7 07/14] nvme: parse dhchap keys during option parsing
+Subject: Re: [PATCH v7 08/14] nvmet-auth: parse dhchap key from configfs
+ attribute
 Reply-To: sashiko-reviews@lists.linux.dev
 To: "Hannes Reinecke" <hare@kernel.org>, "Keith Busch" <kbusch@kernel.org>, "Jens
  Axboe" <axboe@kernel.dk>, "Christoph Hellwig" <hch@lst.de>, "Sagi Grimberg" <sagi@grimberg.me>, "Hannes
@@ -51,12 +52,12 @@ To: "Hannes Reinecke" <hare@kernel.org>, "Keith Busch" <kbusch@kernel.org>, "Jen
  Khan" <skhan@linuxfoundation.org>, "Randy Dunlap" <rdunlap@infradead.org>, "Kees
  Cook" <kees@kernel.org>, "Gustavo A. R. Silva" <gustavoars@kernel.org>
 Cc: linux-nvme@lists.infradead.org, keyrings@vger.kernel.org
-In-Reply-To: <20261126-dhchap-keyring-v4-v7-7-ee438ffea527@kernel.org>
+In-Reply-To: <20261126-dhchap-keyring-v4-v7-8-ee438ffea527@kernel.org>
 References: <20261126-dhchap-keyring-v4-v7-0-ee438ffea527@kernel.org>
- <20261126-dhchap-keyring-v4-v7-7-ee438ffea527@kernel.org>
+ <20261126-dhchap-keyring-v4-v7-8-ee438ffea527@kernel.org>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
-Date: Thu, 26 Nov 2026 14:29:29 +0000
+Date: Thu, 26 Nov 2026 14:30:12 +0000
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -68,90 +69,137 @@ Precedence: list
 
 Thank you for your contribution! Sashiko AI review found 1 potential
 issue to consider:
-- [High] nvme-auth: ERR_PTR dereference on key_lookup() in
-  nvme_auth_init_ctrl()
+- [High] nvmet-auth: ERR_PTR dereference in key_lookup() callers
 --
 
-commit 0df67db2f376340a8318c48ba959e7e18c9db8b6
+commit b41d5ff16da6a60366fa816c551dfd75334950eb
 Author: Hannes Reinecke <hare@kernel.org>
 
-nvme: parse dhchap keys during option parsing
+nvmet-auth: parse dhchap key from configfs attribute
 
-This commit creates DH-HMAC-CHAP keys during fabrics option parsing,
-stores their key serials in struct nvmf_ctrl_options, and adds
-dhchap_key and dhchap_ctrl_key sysfs attributes.
+This commit converts the nvmet DH-HMAC-CHAP configfs attributes to store
+key serial numbers in struct nvmet_host and look up the keys via
+key_lookup() when needed.
 
-> diff --git a/drivers/nvme/host/auth.c b/drivers/nvme/host/auth.c
-> index d6abdb4f1e21c..285aa1c71f102 100644
-> --- a/drivers/nvme/host/auth.c
-> +++ b/drivers/nvme/host/auth.c
+> diff --git a/drivers/nvme/target/auth.c b/drivers/nvme/target/auth.c
+> index e1d92f5455219..ff0e8569d7067 100644
+> --- a/drivers/nvme/target/auth.c
+> +++ b/drivers/nvme/target/auth.c
+
 [ ... ]
-> @@ -1028,38 +1023,100 @@ static void nvme_ctrl_auth_work(struct work_stru=
-ct *work)
-[ ... ]
->  int nvme_auth_init_ctrl(struct nvme_ctrl *ctrl)
->  {
->  	struct nvme_dhchap_queue_context *chap;
-> +	struct key *host_key, *ctrl_key =3D NULL;
->  	int i, ret;
-> =20
->  	mutex_init(&ctrl->dhchap_auth_mutex);
->  	INIT_WORK(&ctrl->dhchap_auth_work, nvme_ctrl_auth_work);
->  	if (!ctrl->opts)
->  		return 0;
-> -	ctrl->host_key =3D nvme_auth_extract_key(ctrl->opts->dhchap_secret,
-> -				strlen(ctrl->opts->dhchap_secret));
-> -	if (IS_ERR(ctrl->host_key)) {
-> -		ret =3D PTR_ERR(ctrl->host_key);
-> -		ctrl->host_key =3D NULL;
-> -		return ret;
-> +	if (!ctrl->opts->dhchap_key) {
-> +		nvme_auth_clear_host_key(ctrl);
-> +		nvme_auth_clear_ctrl_key(ctrl);
-> +		return 0;
+
+> @@ -186,22 +212,45 @@ u8 nvmet_setup_auth(struct nvmet_ctrl *ctrl, struct=
+ nvmet_sq *sq, bool reset)
+>  		goto out_unlock;
 >  	}
 > =20
-> -	ctrl->ctrl_key =3D nvme_auth_extract_key(ctrl->opts->dhchap_ctrl_secret,
-> -				strlen(ctrl->opts->dhchap_ctrl_secret));
-> -	if (IS_ERR(ctrl->ctrl_key)) {
-> -		ret =3D PTR_ERR(ctrl->ctrl_key);
-> -		ctrl->ctrl_key =3D NULL;
-> -		goto err_free_dhchap_secret;
-> +	host_key =3D key_lookup(ctrl->opts->dhchap_key);
+> -	if (!host->dhchap_secret) {
+> +	if (!host->dhchap_key) {
+>  		pr_debug("No authentication provided\n");
+>  		goto out_unlock;
+>  	}
+> =20
+> -	host_key =3D nvme_auth_extract_key(host->dhchap_secret,
+> -					 strlen(host->dhchap_secret));
+> -	if (IS_ERR(host_key)) {
+> +	host_key =3D key_lookup(host->dhchap_key);
 > +	if (!host_key) {
-> +		pr_warn("dhchap host key %08x not present\n",
-> +			ctrl->opts->dhchap_key);
-> +		return -ENOKEY;
-> +	}
+> +		pr_warn("%s: host key %08x not found\n",
+> +			__func__, host->dhchap_key);
+>  		ret =3D NVME_AUTH_DHCHAP_FAILURE_NOT_USABLE;
+>  		goto out_unlock;
+>  	}
+> -	if (host->dhchap_ctrl_secret) {
+> -		ctrl_key =3D nvme_auth_extract_key(host->dhchap_ctrl_secret,
+> -						 strlen(host->dhchap_ctrl_secret));
+> -		if (IS_ERR(ctrl_key)) {
 > +	down_read(&host_key->sem);
 > +	ret =3D key_validate(host_key);
 > +	up_read(&host_key->sem);
 > +	if (ret) {
-> +		pr_warn("dhchap host key %08x invalidated\n",
-> +			key_serial(host_key));
+> +		pr_warn("host key %08x invalidated\n",
+> +			host->dhchap_key);
 > +		key_put(host_key);
-> +		return -ENOKEY;
->  	}
-> =20
-> -	if (!ctrl->opts->dhchap_secret && !ctrl->opts->dhchap_ctrl_secret)
-> -		return 0;
-> +	if (ctrl->opts->dhchap_ctrl_key) {
-> +		ctrl_key =3D key_lookup(ctrl->opts->dhchap_ctrl_key);
+> +		ret =3D NVME_AUTH_DHCHAP_FAILURE_NOT_USABLE;
+> +		goto out_unlock;
+> +	}
+> +	if (host->dhchap_ctrl_key) {
+> +		ctrl_key =3D key_lookup(host->dhchap_ctrl_key);
 > +		if (!ctrl_key) {
-> +			pr_warn("dhchap ctrl key %08x not present\n",
-> +				ctrl->opts->dhchap_ctrl_key);
+> +			pr_warn("%s: ctrl key %08x not found\n",
+> +				__func__, host->dhchap_ctrl_key);
 > +			key_put(host_key);
-> +			return -ENOKEY;
+> +			ret =3D NVME_AUTH_DHCHAP_FAILURE_NOT_USABLE;
+> +			goto out_unlock;
 > +		}
 > +		down_read(&ctrl_key->sem);
+> =20
+> diff --git a/drivers/nvme/target/configfs.c b/drivers/nvme/target/configf=
+s.c
+> index ff3a8d74de599..f6bfda757f076 100644
+> --- a/drivers/nvme/target/configfs.c
+> +++ b/drivers/nvme/target/configfs.c
+
+[ ... ]
+
+> @@ -2234,15 +2235,29 @@ static struct config_group nvmet_ports_group;
+>  static ssize_t nvmet_host_dhchap_key_show(struct config_item *item,
+>  		char *page)
+>  {
+> -	char *dhchap_secret;
+> +	struct nvmet_host *host =3D to_host(item);
+> +	struct key *key;
+>  	ssize_t ret;
+> =20
+>  	down_read(&nvmet_config_sem);
+> -	dhchap_secret =3D to_host(item)->dhchap_secret;
+> -	if (!dhchap_secret)
+> -		ret =3D sprintf(page, "\n");
+> -	else
+> -		ret =3D sprintf(page, "%s\n", dhchap_secret);
+> +	key =3D key_lookup(host->dhchap_key);
+> +	if (!key) {
+> +		page[0] =3D '\0';
+> +		ret =3D 0;
+> +	} else {
+> +		down_read(&key->sem);
+
+[ ... ]
+
+> @@ -2267,15 +2292,29 @@ CONFIGFS_ATTR(nvmet_host_, dhchap_key);
+>  static ssize_t nvmet_host_dhchap_ctrl_key_show(struct config_item *item,
+>  		char *page)
+>  {
+> -	char *dhchap_secret =3D to_host(item)->dhchap_ctrl_secret;
+> +	struct nvmet_host *host =3D to_host(item);
+> +	struct key *key;
+>  	ssize_t ret;
+> =20
+>  	down_read(&nvmet_config_sem);
+> -	dhchap_secret =3D to_host(item)->dhchap_ctrl_secret;
+> -	if (!dhchap_secret)
+> -		ret =3D sprintf(page, "\n");
+> -	else
+> -		ret =3D sprintf(page, "%s\n", dhchap_secret);
+> +	key =3D key_lookup(host->dhchap_ctrl_key);
+> +	if (!key) {
+> +		page[0] =3D '\0';
+> +		ret =3D 0;
+> +	} else {
+> +		down_read(&key->sem);
 
 [Severity: High]
-Should host_key and ctrl_key be checked with IS_ERR() rather than for
-NULL after key_lookup()?  key_lookup() returns ERR_PTR(-ENOKEY) when a
-key serial is not found, so if either key is removed before
-nvme_auth_init_ctrl() runs, down_read() will dereference an error
-pointer.
+Should the key_lookup() checks in nvmet_setup_auth(),
+nvmet_host_dhchap_key_show(), and nvmet_host_dhchap_ctrl_key_show() use
+IS_ERR() instead of testing for NULL?
+
+key_lookup() returns ERR_PTR(-ENOKEY) when a key serial is not found
+(including when dhchap_key or dhchap_ctrl_key is 0 because no key is
+configured).  Checking !key lets ERR_PTR(-ENOKEY) through and crashes at
+down_read(&key->sem) when reading the configfs attributes on a host
+without a key configured or when a key is not found during
+authentication setup.
 
 --=20
 Sashiko AI review =C2=B7 https://sashiko.dev/#/patchset/20261126-dhchap-key=
-ring-v4-v7-0-ee438ffea527@kernel.org?part=3D7
+ring-v4-v7-0-ee438ffea527@kernel.org?part=3D8
