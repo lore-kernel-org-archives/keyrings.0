@@ -1,60 +1,80 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795804517;
-	b=X3Onmo/tTXlHr8pYRmGeY7YfzOcEwTodq1OPCwsgN6uZnmIVHGzfQ05zIhjA0zM0Xqd7
-	 IdaIO3gWey5pGyLMIhByiMhporCJxkERn+O5fXiG7XfF69o08yNmtoCtJKuRPsQcA/1LP
-	 Lt7NQi2ngJjgyh82L68oRs78y7voAQqig3aY7TCP6f36TRoUHPUCM3QTTpvZBKONfKezy
-	 LqKU+iBV9nOQbQud3dVFewOmnquvyE2l3pHIxK3bzc8/tKsQNLyI/YYnO+JgM4vQbNwk3
-	 FY/cw70vYVozGRcvODPkRhEH1rhfHEqMFCylxi1yUYAFnFvCPcKcxX6wtm+bj5JmE5g==
+	t=1795807896;
+	b=Bpo17JD+026T7U9+mUVyyUrvJN758oFtyJZV5ptnLCxPMg2V00Q8uHxWKJMwJV5cHab4
+	 7EDRl5G0aGiBsSnnhSiTi2fUnd/qPqTfBGh+SGezqK76sp9ZoWsmVVG/k0QC1DY+0mOv8
+	 qhUV1wWnmSkVB+961uBEPO8jvTQfDKXzKtKFB+nFZM8EP0Gm3YsNpRglIV1zevlSin2Lr
+	 Li6q0KMHVWuMr6LuGFlG8BXF55CYtV+LQffTD7liprRrdQsvsmVWqil/Xbf69us5HmbIc
+	 +RfSanPatndjXr6461dE+rZ8WzpdeI5U7ubeTYnHAjsSQIbikepVequZNoW5pp4C1pg==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795804517;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795807896;
 	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
 	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=VHzMiVyExLKNox+s2pz5emim2KQtzbhGBZ3vM7xAkk0=;
-	b=EjRmjoccvgRwtgnmjEwp5YFQHJ1osJp3Bs27iUCfuAjZ3cpZQYoF7wlzQ2LMhCvDT2Ox
-	 Mc/pwSssvZk1P9pXi4LVcx9i68r3VdzU9v5VpWO9j9Y30RNBaSW/gnPTJ2GX4+U3nqe/W
-	 FW0Ya2BByJTLDgAVxiLj1vtVtN1IfKETWziKgsbTQ6xlQOb7RzBi+7ehYFG8WTTxU2WsP
-	 tEFtgWy3PA9ixWOC2q+5GaRw7HxDDKg6EQe0KLu8T21q6G+1jriT4iggu6qRfJJ0vX8HX
-	 vqPFYkJUsvzkT0MqTb9hQZmjFY0Pp4JwWGXoDDULaNMqo6+ZRqppTqp4PZPT0sj6XFQ==
+	bh=FHm7smnuLcPbXOnsOL9bzFTWbe21BP4HbT3iZXqu3Z4=;
+	b=rsEPe2ebT/THFixc6vMaGT5ZNoOwwuIFZcxPVCSjRY+tw9ddwTWW7wKIO92S0CbNeyjh
+	 Tfk81YN4quBNHmQXesxoyQrbWFzDLvJWDlS6LL7aRRa8PoyOJS9ai3loYPOCTzPLsx22Q
+	 b3uHaIKc4F4b1d4gc40ES+qi8kKxYmQ+O503Gpu3yPDAxmdK+ku/onmBakWc1IGS6NFWz
+	 Yr0fHart2wAa6Byhwv+fwWVotNxhpH4pkP+OLk3GuhzhqcHpRL0auMfysqoW5WYoBl+8E
+	 hJrqxfvOgONR5xqimMqWx/eZDFoCPzriVuZWDV3LSoHLPI3FAwhV1whlmAsyL+IA6kw==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=aE0Kqgw2;
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=hmfHF8HW;
 	arc=none smtp.remote-ip=100.103.45.18
 Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 06E25606A31F;
-	Fri, 27 Nov 2026 18:35:16 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5DDFA606A31C;
+	Fri, 27 Nov 2026 19:31:36 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=aE0Kqgw2
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id E68A71F00893;
-	Fri, 27 Nov 2026 18:35:15 +0000 (UTC)
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=hmfHF8HW
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id ADF6B1F00893;
+	Fri, 27 Nov 2026 19:31:34 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795804516;
-	bh=VHzMiVyExLKNox+s2pz5emim2KQtzbhGBZ3vM7xAkk0=;
+	s=k20260515; t=1795807896;
+	bh=FHm7smnuLcPbXOnsOL9bzFTWbe21BP4HbT3iZXqu3Z4=;
 	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=aE0Kqgw2SJzqjut3kj5bht3xHrxhvGAUzV5tHRvZvlTR00qTJn38BWF4h+OoCTb9t
-	 bd9yWalblH11fl2BbrmI6fcHXUZGyoei3e+dwK+D4O1Sq1J87Z8bcJ3lr07XOXBHSG
-	 83MF4lRJEHFahf+TFYXcuT5ltwq4iTRfkCVo+gV07D9Tgpq6AydH3NqyuuQ4BUYCOT
-	 quSli1FzTOK+ybT2Ymv3ttvbbWluXForYW0+T1cO4fpZ83lCZxGCwG9dsNECIXCbc4
-	 E2kiaGoEDt6yo8yVEJV2bBksjbJ0wmWgb2RSFLWKKCFf/xSL0DOs8CShPPIwLx9GRB
-	 E7qascnNxHXtA==
-Date: Fri, 27 Nov 2026 20:35:12 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Zhenwen Liang <zhenwenliang@google.com>
-Cc: Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>,
+	b=hmfHF8HWqGe9fllK3m+JO8EXWm/LlKZRc9dNB9YqTNuggAx0G8a+Jj92V8Br5uMBM
+	 4GbLWKMkZX56Q9MNagn3luHmpx8DRomhIUaccCA5bYwVDNW7H3I0fIP3X2DiCXVke1
+	 feG0pkah19v53e+ijbWKvejGyFD7stt1D7yIlVpTqkC7iGpNLbdXVqm2PZhPFufYWI
+	 hr3LVPJhflalZ9baVdkgJ7CY0JgGdrJWiWBrTok18WJ4tTr24i9TJdLp9mcWeKNl2G
+	 +5du+ascO34JTp+ITfMPe5cpMVHQMsGSZOSfSp5DLq2b8kw3xOdAs98HkY4Jysh8zQ
+	 MLxSpvwVm0dLQ==
+Date: Fri, 27 Nov 2026 11:31:33 -0800
+From: Eric Biggers <ebiggers@kernel.org>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: keyrings@vger.kernel.org, dm-devel@lists.linux.dev,
+	linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
+	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	Ahmad Fatoum <a.fatoum@pengutronix.de>,
+	Alasdair Kergon <agk@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	David Gstir <david@sigma-star.at>,
+	David Howells <dhowells@redhat.com>,
+	David Laight <david.laight.linux@gmail.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	Ignat Korchagin <ignat@linux.win>,
 	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	Paul Moore <paul@paul-moore.com>, James Morris <jmorris@namei.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
-	linux-integrity@vger.kernel.org,
-	linux-security-module@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] KEYS: trusted: Wait for RCU callbacks before module
- unload
-Message-ID: <awnNYPFsGQazUMXu@kernel.org>
-References: <20261126200103.2806716-1-zhenwenliang@google.com>
- <20261126200103.2806716-2-zhenwenliang@google.com>
- <awiZuKwNUP6mi6Yg@kernel.org>
- <awiaH6sIiISN19Q6@kernel.org>
+	James Morris <jmorris@namei.org>,
+	James Prestwood <prestwoj@gmail.com>,
+	Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>,
+	Jonathan McDowell <noodles@meta.com>,
+	Lukas Wunner <lukas@wunner.de>,
+	Marek =?iso-8859-1?Q?Beh=FAn?= <kabel@kernel.org>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
+	Peter Huewe <peterhuewe@gmx.de>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Sumit Garg <sumit.garg@kernel.org>
+Subject: Re: [PATCH v5 00/17] KEYS: trusted: asymmetric keys
+Message-ID: <20261127193133.GE8300@quark>
+References: <20261127055602.2357884-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -66,61 +86,36 @@ Precedence: list
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <awiaH6sIiISN19Q6@kernel.org>
+In-Reply-To: <20261127055602.2357884-1-jarkko@kernel.org>
 
-On Thu, Nov 26, 2026 at 10:44:15PM +0200, Jarkko Sakkinen wrote:
-> On Thu, Nov 26, 2026 at 10:42:36PM +0200, Jarkko Sakkinen wrote:
-> > On Thu, Nov 26, 2026 at 08:01:03PM +0000, Zhenwen Liang wrote:
-> > > trusted_update() frees the old payload with call_rcu(), and the
-> > > callback, trusted_rcu_free(), is part of trusted.ko. cleanup_trusted()
-> > > calls the trust source's exit callback, which unregisters the key type,
-> > > but nothing waits for callbacks that are already queued, so the module
-> > > can be freed while a trusted_rcu_free() callback is still pending.
-> > 
-> > +1
-> > 
-> > > 
-> > > Add an rcu_barrier() after the exit callback. As for encrypted keys, no
-> > > new callback can be queued once unregister_key_type() has returned. If
-> > > no trust source was found, the key type was never registered and
-> > > trusted_key_exit is NULL; the barrier is then harmless.
-> > > 
-> > > Tested in QEMU (x86_64, TCG) without a trust source, so only the
-> > > trusted_key_exit == NULL case ran: trusted.ko loads and unloads cleanly
-> > > with this patch (5 runs). The trusted_update() path itself was not run,
-> > > because no TPM was available.
-> > > 
-> > > The problem was found, and this patch prepared, with the help of a
-> > > formal analysis tool we are developing that uses AI assistance; I have
-> > > reviewed the analysis and the patch.
-> > > 
-> > > Fixes: d00a1c72f7f4 ("keys: add new trusted key-type")
-> > > Link: https://lore.kernel.org/all/20261126023538.4160950-1-zhenwenliang@google.com/
-> > > Cc: stable@vger.kernel.org
-> > > Signed-off-by: Zhenwen Liang <zhenwenliang@google.com>
-> > > ---
-> > >  security/keys/trusted-keys/trusted_core.c | 1 +
-> > >  1 file changed, 1 insertion(+)
-> > > 
-> > > diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
-> > > index 0509d9955f2a..5efd1e6ef111 100644
-> > > --- a/security/keys/trusted-keys/trusted_core.c
-> > > +++ b/security/keys/trusted-keys/trusted_core.c
-> > > @@ -401,6 +401,7 @@ static void __exit cleanup_trusted(void)
-> > >  {
-> > >  	if (trusted_key_exit)
-> > >  		(*trusted_key_exit)();
-> > > +	rcu_barrier();
-> > >  }
-> > >  
-> > >  late_initcall(init_trusted);
-> > 
-> > Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+On Fri, Nov 27, 2026 at 07:55:45AM +0200, Jarkko Sakkinen wrote:
+> OVERVIEW
+> ========
 > 
-> Pushed (to master for the time being).
+> Extend TPM 2.0 trusted keys to load ASN.1 TPMKey [1] asymmetric keys
+> (OID_TPMLoadableKey, 2.23.133.10.1.3) and expose keyctl pkey-operations
+> directly on key_type_trusted. In addition there are some TPMKey
+> interoperability fixes.
+> 
+> I.e. this my old series with a twist: instead of introducing a separate
+> subtype for asymmetric keys, factor out pkey-operations into a separate
+> CONFIG_KEYCTL_PKEY-feature, and wire asymmetric operations to
+> key_type_trusted.
+> 
+> This work was originally derived from [3], is direct offspring of [2],
+> and folds in the prerequisite tpm2-sessions and tpm-buf cleanups from
+> [4].
+> 
+> [1] https://www.hansenpartnership.com/draft-bottomley-tpm2-keys.html
+> [2] https://lore.kernel.org/linux-integrity/20240520184727.22038-1-jarkko@kernel.org/
+> [3] https://lore.kernel.org/all/20200518172704.29608-1-prestwoj@gmail.com/
+> [4] https://lore.kernel.org/linux-integrity/20261116005105.1573016-1-jarkko@kernel.org/
 
-Pushed to for-next-keys i.e., I'll piggyback them to a PR next week.
+Could you describe the motivation for these changes here?  And also
+include more context directly, for people who aren't already familiar
+with all the earlier patches linked to above.
 
-Thank you.
+Also, this series is missing a base-commit, and I don't know how to
+apply it for review.
 
-Br, Jarkko
+- Eric
