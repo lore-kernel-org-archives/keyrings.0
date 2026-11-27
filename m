@@ -1,82 +1,75 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=170.10.129.124
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795730580;
-	b=a4RyzSy4z0GxySChewTD/Aqqtjk3iQbonHGx6WiN/nbd007Oc/WXNOsl1ODTJvp6+ytU
-	 NhnB5St+tSSet8lJduKUG9v9h4KXNfYrT+3EqNCxGl7ZBHTGyDtE6L199n8ww4qi4t2E6
-	 PaqU6HQzCmU1Wqcm/Cf+4Kne8MMkq2GzTlqJbkZ5jcuDZ9ZrK7oC4KImW/ZdxS0PRcWt2
-	 zrNX9z+W0RI8Ik6H54riP9mLG63G+K5eKW0bMHfD6aoAavFMYA+2vcA7ELEqAUrN3m3Uw
-	 rM/Rkr3IwQRN7StKncH2zEfYsONqZ6gLVvSukzRHhl/FYlPrGxucB/VboDA4dEPhWDw==
+	t=1795748383;
+	b=AIBRvt7HX75XmKTSbLVy5cres+bqCGHuQIfDmXF1Mj7nmjSQfBjClous4AKcTXPJE2CM
+	 PP0tNMw3+Kb5VLQy35uLsBX7TmkKWAAoov2sJqDhIFeLdVR28gA3kU2g2obi9Z713V1Ne
+	 eJfARRJxMeZJ1v5KvgR2zKpi6uEqU5862N3A3dCaEXSoCEGXuMXSjU9p0DaaYdWI71Gfh
+	 s1F4XLHxIlLb0el1gFzPh5uYYiNcyUG1wClHYjpMk2RjtCxuL1APj7x02ljl9SwRCEQBP
+	 xz+IIAeaU3L7NQefHvKW5MGdb0ge/pIWuOPu4Js24TYKcTjD0IDQLo/lg8hUzBABiPA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795730580;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=1GBNGDQ+Fpfo32tn2P/7vFYAKjTUM17/Hl82GZJuG7w=;
-	b=yyENHXM1Hpf+mf2AKZxhfTMKYumtfvuwv4MpTH0ou8n6otUJU88V/ewwxc8XcssBC1oV
-	 fn27kBTgzOct+F91/m+AyjInb/0TmXRve2GOHA1FCJMwQPBlPicMCBj/J3UMNqqI7i2Ln
-	 KNm6++nzORs318nNZFY3ccGYZN4rfpAooCfbOppmofIXZfVc2iI3MInGI5+jxy2Ld91Km
-	 Yw4argYlqnqnpZ3V4DbVO1cFOuiYGN2/s1BeQ4D4WW8vDX9kP66ia0TtUlfvT0HeJji7b
-	 YUqqmSK815qWVI3SwWGU3w2hL7ULTL3JjBoPWDkdHFYXS8kSck2ElKbG4vUPDKZbJNg==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795748383;
+	h=DMARC-Filter:DKIM-Signature:Received:X-MC-Unique:
+	 X-Mimecast-MFC-AGG-ID:Received:Received:From:To:Cc:Subject:Date:
+	 Message-ID:MIME-Version:Content-Transfer-Encoding:X-Scanned-By;
+	bh=PSJbpwNYscaoPtLkKBtcM2ETmUbzMd8Ge7tSBLoV3QM=;
+	b=pk9bA+jROuFyO7ucRAlUxmeCw/fAirV7UH+lGjI7gingT+MORE/sKECA/SFIv6RaDxi3
+	 7QT0LA62WB15rODBz8VbCM5oqpu1VQUWrMI4kksKyD4sIkGQ9tk2hgagPmJgfBPqHTqIz
+	 Oa85HBUpjNHV1HguEFI2yh7zsXDo32hCmpTUnN7beoCUejfFFfe42iQwtoVUmMTH72sV7
+	 phIvZkhOb0yXV5TxwAPEmQsfNM7FNi5k6aw7dGNl5Sbxd61S1AWH7EUAemPejgFU0WCrr
+	 hisTeosEz6D95b8Hzz5gzMUmOaxfMS4lbd0QpQD26g0242UGmEAAbz9ys23k3UtPtpA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b="kloLMIr/";
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=pass header.from=redhat.com;
+	spf=pass smtp.mailfrom=redhat.com;
+	dkim=pass header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=RonwJlgn;
+	arc=none smtp.remote-ip=170.10.129.124
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A1AD0606A31E;
-	Thu, 26 Nov 2026 22:03:00 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 23006606A32D
+	for <keyrings@vger.kernel.org>; Fri, 27 Nov 2026 02:59:42 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 23006606A32D
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=kloLMIr/
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 5CD7A1F00893;
-	Thu, 26 Nov 2026 22:02:59 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795730580;
-	bh=1GBNGDQ+Fpfo32tn2P/7vFYAKjTUM17/Hl82GZJuG7w=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=kloLMIr/z/Btp/nwC2OoOb1UbP0q6ypeSKRdfR3rE2MOQIwKwBZ5o/k2ebOyed+du
-	 Fkf1Bwx0tcxg47MqWNjZlglXVda8wXy6zPPSNEjpijpc6CnOMcXPG0D7RkVyvrZtrT
-	 55DUghWoZGWkrbFSq4oPr3Br9F1+gzesE3SvwQYz4Ev+FsaekI9mSMVKU07JLaHEzY
-	 N+VHwAxlEiviW2tGSPUWYjRKXy5Z6Gi0/mXaWCOWBdlRVdYFD1K1BlILlcOn3pXbY6
-	 QvibMQz58YXXeaRaUHyppP2R9VnCh0J2pJ1AYmYERWMvzEDR6IPdZMyI2QSH5s8tWl
-	 NNM3QO68EC3Rw==
-Date: Fri, 27 Nov 2026 00:02:56 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: keyrings@vger.kernel.org
-Cc: dm-devel@lists.linux.dev, linux-crypto@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-integrity@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-	Ahmad Fatoum <a.fatoum@pengutronix.de>,
-	Alasdair Kergon <agk@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	David Gstir <david@sigma-star.at>,
-	David Howells <dhowells@redhat.com>,
-	David Laight <david.laight.linux@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Eric Biggers <ebiggers@kernel.org>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Ignat Korchagin <ignat@linux.win>,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	James Morris <jmorris@namei.org>,
-	James Prestwood <prestwoj@gmail.com>,
-	Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>,
-	Lukas Wunner <lukas@wunner.de>,
-	Marek =?iso-8859-1?Q?Beh=FAn?= <kabel@kernel.org>,
-	Mike Snitzer <snitzer@kernel.org>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
-	Peter Huewe <peterhuewe@gmx.de>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Shuah Khan <skhan@linuxfoundation.org>,
-	Sumit Garg <sumit.garg@kernel.org>
-Subject: Re: [PATCH v4 11/11] KEYS: trusted: Add asymmetric key support for
- TPM2
-Message-ID: <awiskMGvLb5HINaj@kernel.org>
-References: <20261126205021.2200819-1-jarkko@kernel.org>
- <20261126205021.2200819-12-jarkko@kernel.org>
- <awipQFkjoBSEXnLh@kernel.org>
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=RonwJlgn
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1795748382;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:cc:mime-version:mime-version:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=PSJbpwNYscaoPtLkKBtcM2ETmUbzMd8Ge7tSBLoV3QM=;
+	b=RonwJlgnrAVrhaAzJWPH0ipPq3dcViCMk4EzUk6eznkPHFr2az3QnRSF3NV1JymqZGSMuY
+	YliSSTh6avyH4o51cUi/jyvWNXlF30hPf1DCvbaPI+/MDMBKhFRh3EmSWtkT77zh3SDPJd
+	FpcCxpD/J7InTRs35yM6jr5FaVTvnPg=
+Received: from mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-347-MoHBRTmeMZavqSdn_mSSEg-1; Fri,
+ 27 Nov 2026 02:59:38 +0000
+X-MC-Unique: MoHBRTmeMZavqSdn_mSSEg-1
+X-Mimecast-MFC-AGG-ID: MoHBRTmeMZavqSdn_mSSEg_1795748377
+Received: from mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.4])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id CD73C1800349;
+	Fri, 27 Nov 2026 02:59:36 +0000 (UTC)
+Received: from localhost (headnet04.pony-001.prod.iad2.dc.redhat.com [10.2.32.116])
+	by mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id C52F230000E5;
+	Fri, 27 Nov 2026 02:59:35 +0000 (UTC)
+From: Bruno Meneguele <bmeneg@redhat.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+	keyrings@vger.kernel.org,
+	zohar@linux.ibm.com,
+	roberto.sassu@huawei.com,
+	dhowells@redhat.com,
+	bauerman@linux.ibm.com,
+	Bruno Meneguele <bmeneg@redhat.com>
+Subject: [RFC PATCH 0/8] ima: measure modules with multiple appended signatures
+Date: Thu, 26 Nov 2026 23:59:03 -0300
+Message-ID: <20261127025912.1383750-1-bmeneg@redhat.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -86,38 +79,89 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <awipQFkjoBSEXnLh@kernel.org>
+Content-Transfer-Encoding: 8bit
+X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.4
 
-On Thu, Nov 26, 2026 at 11:48:52PM +0200, Jarkko Sakkinen wrote:
-> On Thu, Nov 26, 2026 at 10:50:21PM +0200, Jarkko Sakkinen wrote:
-> > Extend the TPM 2.0 trusted key backend to load OID_TPMLoadableKey
-> > (2.23.133.10.1.3) RSA (2048/3072/4096) and ECC (NIST P-256/P-384/P-521)
-> > keys and expose query, sign, verify, and RSA encrypt/decrypt operations
-> > through key_type_trusted.
-> > 
-> > The feature is controlled by CONFIG_TRUSTED_KEYS_ASYMMETRIC, which
-> > defaults to y when CONFIG_TRUSTED_KEYS_TPM is enabled.
-> > 
-> > Co-developed-by: James Prestwood <prestwoj@gmail.com>
-> > Signed-off-by: James Prestwood <prestwoj@gmail.com>
-> > Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
-> 
-> By rebasing this on top of these patches, I could drop tpm2_read*()
-> from this and use tpm_buf_read_*():
-> 
-> https://lore.kernel.org/keyrings/20261115233156.1485238-1-jarkko@kernel.org/
-> 
-> See, also:
-> 
-> https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/linux-tpmdd.git/log/?h=tpm2-asymmetric
+Hi,
 
-Also as a result of this tpm2_load_parent(), tpm2_load_blob(),
-tpm2_asym_rsa_decrypt(), and tpm2_asym_sign() resolve names via
-tpm2_read_public().
+This RFC presents the support for modules with multiple signatures, *and mixed
+algorithms*, appended. A scenario that requires it today is the PQC transition
+period where modules are signed with both, eg., ML-DSA and ECDSA.
 
-By combining these series pre-existing code is leveraged
-to its best extent.
+Appraisal already handles that: pkcs7_verify() accepts the file if a trusted
+signer verifies and no other signer fails (unknown keys is not considered
+failure). But measurement doesn't: 'd-modsig' and the binary blacklist check
+take the content digest from pkcs7_get_digest(), which fails with more than one
+signer, so the file loads unmeasured.
 
-Br, Jarkko
+Patches #1 and #2 (for stable) fix two PKCS#7 bugs found on the way: a failed
+digest left in sig->m, and pkcs7_get_digest() returning the signed attributes
+instead of the content digest. Patch #3 adds support for multiple signers on
+PKCS#7 code, but IMA 'd-modsig' can't describe it, so patches #4-#7 add a
+template (patch #5 standardizes how ima-modsig records ML-DSA in the same way
+proposed here for its v2):
+
+  ima-modsigv2 = d-ngv2 | n-ng | sig | d-modsig-list | modsig
+
+'d-modsig-list' is <u32 count> x (<u32 entry_len><entry>), one 'd-modsig' entry
+per signer in 'modsig' order, or "<sig algo>:" for direct data (eg. ML-DSA)
+signatures:
+
+  d-ngv2:        ima:sha256:a4fa30a9...48d3a449
+  n-ng:          /test/t10-ecdsa512-mldsa65-noattr.ko
+  sig:           030304...feff
+  d-modsig-list: sha512:0e750939...f8c18dcb,mldsa65:
+  modsig:        30820e1706092a864886f70d010702a0...
+
+Another example with ECDSA-SHA512+RSA-SHA256 and ML-DSA-65+ML-DSA-87:
+
+  d-modsig-list: sha512:0e750939...f8c18dcb,sha256:0ae76371...e37306f2
+  d-modsig-list: mldsa65:,mldsa87:
+
+A signer with no usable digest gets an empty entry; with none, the measurement
+list entry is dropped, as with 'd-modsig'. Patch #8 blocks a file if any
+signer's digest is blacklisted.
+
+Open questions: (1) should a dropped measurement be reported more explicitly
+than by its audit record? (2) a pure ML-DSA signer has no content digest to
+match a 'bin:' entry; how should that fit with the 'skid:' proposal [1]?
+
+I tested module loading in a QEMU/KVM x86_64 and kernel image kexec in a PPC64LE
+LPAR with RSA, ECDSA and ML-DSA-65/87, one or two signers, mixed hash algorithms
+and rejected cases (bad messageDigest, two ML-DSA signers with one bad).
+
+Claude Opus helped read the code, review the patches and write the tests (and
+this cover-letter). I reviewed and reworked every diff and I'm responsible for
+all of it.
+
+Thanks,
+Bruno
+
+[1] https://lore.kernel.org/all/20261106173149.707244-1-zohar@linux.ibm.com/
+
+
+Bruno Meneguele (8):
+  pkcs7: don't cache a failed digest in pkcs7_digest()
+  pkcs7: return the content digest from pkcs7_get_digest()
+  pkcs7: support multiple signers in pkcs7_get_digest()
+  ima: get the modsig content digest of each signer
+  ima: record data-signing algorithms by name in 'd-modsig'
+  ima: add the 'd-modsig-list' template field
+  ima: define the ima-modsigv2 template
+  ima: check the digest of every modsig signer against the blacklist
+
+ Documentation/security/IMA-templates.rst  |   8 +-
+ crypto/asymmetric_keys/pkcs7_verify.c     |  83 +++++++--
+ include/crypto/pkcs7.h                    |   7 +-
+ security/integrity/ima/ima.h              |  15 +-
+ security/integrity/ima/ima_appraise.c     |  15 +-
+ security/integrity/ima/ima_modsig.c       |  48 +++--
+ security/integrity/ima/ima_policy.c       |   3 +-
+ security/integrity/ima/ima_template.c     |   8 +-
+ security/integrity/ima/ima_template_lib.c | 208 ++++++++++++++++++----
+ security/integrity/ima/ima_template_lib.h |   4 +
+ 10 files changed, 314 insertions(+), 85 deletions(-)
+
+--
+2.55.0
+
