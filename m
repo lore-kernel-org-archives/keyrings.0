@@ -1,104 +1,63 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=195.135.223.131
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795776520;
-	b=U6T181hFFHIowrVlnOWTX0kT6XQhcvxbrU9TX8Oies60PtqbDnLczRge6TCLGhImWJ60
-	 FJBHu8pk4Yg7sfTO4V6lVC+5nzDSnYGoui3cR6MYCjzaXAqN+kiQE0thzAl1pupCg9mA4
-	 nSQBTdjpsmTYCfzM+8TBW08o3KO6JTe8CGjRSMFH55u+UqxLsjHopoxQpW3DNA3S1u8kr
-	 s1P0u5tvNTcCEmmOtJp3su2Ra74kAIJrynGVqQ4D+AyE5n5GcP4G+Ir1juTdWRGE7kBxK
-	 4N+Ohen58X9mBpD5TleaDjaXDt0GGHCcOaXPGthZ+szim6d+hm6q8An0cVrCHXu7MAA==
+	t=1795781682;
+	b=c0bLpj0kVr7isUsBxQROARehUfvB1zXh5CgOTnfed6QrecaZZ6K+khwUqzm/f42aEk8W
+	 +WJQBp0LHV/ibQAKP0qs6jo4KRZutdnuqtD980tslG+O9sw9eJLOooMVGsz+zoE6hKDYp
+	 YdmGFdo77hHw7M5VYbBm3m0i/yHDG3kI8E4ob/95PGJxnWYre4uNLGBQ21nVxSgNf79RD
+	 xvi/fZW3cD77SYY+rrw28FEm85XEZgxzG/lbta2cooCLdh+KF8GvKI9uuWvqSNgeUW03X
+	 LaUhjH6+bsKdO4vz+6OYHPZrU6tmCol60Mz9sfxj56/2GCZVLYRaMadp4SZK3xCV/7w==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795776520;
-	h=DMARC-Filter:Received:DKIM-Signature:DKIM-Signature:DKIM-Signature:
-	 DKIM-Signature:Received:Received:Message-ID:Date:MIME-Version:
-	 User-Agent:Subject:To:Cc:References:Content-Language:From:In-Reply-To:
-	 Content-Type:Content-Transfer-Encoding:X-Spamd-Result:X-Rspamd-Server:
-	 X-Rspamd-Action:X-Spam-Flag:X-Spam-Score:X-Spam-Level:
-	 X-Rspamd-Queue-Id;
-	bh=KowgHdxAv0VqgGY3kZnozXRx78oYlqyIyYJ2riEahb0=;
-	b=K1Mf2mbQ2CEiATPscZ439+6SHxZukFaqQFHa0VITATpjdrrUKs0YhkU6wIloONzYbQN8
-	 Tf8aeATQMQQlM6sQMCpHeDSL9N4/OXNJ/BD3PGRMmlvHX17OrLJOfiyV9S8fTrMu831oS
-	 X2Q5P5feNVEUt9TSKLcLC8NYFBdkMCp0tFlizQhHOlzZpfo5qLuRcsoSxdOicGVFWBYqG
-	 Vw6luY08NGTOYr5RpuLZem7Mp+c9Nmj1KFhJiyek5g1rVMPLZLKPhwsxW2vvV7nDEqXXi
-	 aoTi5FHYgrOpyPDczOOz/ogXNaNeyRBvTV7HdjNBOWTUA9oL/pvY3U62uDgT91WNIzA==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795781682;
+	h=Received:DKIM-Signature:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
+	 MIME-Version:Content-Transfer-Encoding;
+	bh=tJkp4jjw29pq/VBXLpjOqSdlrx+Ca5bWhyG9uxhkkZc=;
+	b=hp60X+w2l4cG8INnhvL2VI+DUORp5NbXkqHo9l6NeBOQWQgL3ZAfvXKdZS+Y/agdEIgT
+	 jTXpqknWKgEfSnh9LXc/icVXW9Q02fU7+hiuT1153OF/swy1l+i2+Kie0ar0RoXgsrekK
+	 Al00qRdVjUFFbAMfzLQITPBzpAGAk+hriRKev995dqMUKBrNI7lYYprUwr8jOmu+OkyLf
+	 jfM32eo4scAH0FPGSxnb5PR16B18LoK35pcvECxyRPCjuJMsc1OhGOpk2dUlXhpZBSQ3m
+	 gHO49L263HFAIE3J8dfitj9VqNDezpeBKUAKcdLoLvmfuj8VSMx9QY2ShWWEzLpXtag==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=suse.de;
-	spf=pass smtp.mailfrom=suse.de;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=EFdnpaJH;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b="bLn/7QWS";
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=EFdnpaJH;
-	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b="bLn/7QWS";
-	arc=none smtp.remote-ip=195.135.223.131
-Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.223.131])
+	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=FMWIudjD;
+	arc=none smtp.remote-ip=100.103.45.18
+Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
+	 key-exchange X25519 server-signature ECDSA (prime256v1))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4E7C4606A31F
-	for <keyrings@vger.kernel.org>; Fri, 27 Nov 2026 10:48:39 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 4E7C4606A31F
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
+	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id 55E03606A31C;
+	Fri, 27 Nov 2026 12:14:42 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=EFdnpaJH;
-	dkim=pass header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=bLn/7QWS;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.a=rsa-sha256 header.s=susede2_rsa header.b=EFdnpaJH;
-	dkim=neutral header.d=suse.de header.i=@suse.de header.a=ed25519-sha256 header.s=susede2_ed25519 header.b=bLn/7QWS
-Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [IPv6:2a07:de40:b281:104:10:150:64:97])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-out2.suse.de (Postfix) with ESMTPS id 75A991FB78;
-	Fri, 27 Nov 2026 10:48:37 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1795776517; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=KowgHdxAv0VqgGY3kZnozXRx78oYlqyIyYJ2riEahb0=;
-	b=EFdnpaJHns3RcOCCP39Hb3ZxoENu6F7wxfU3W53Y9Yi5pCyz5382Lsdt7NTNeMU+1GDYB2
-	ejoFp+M4wGZSh09b49z7YEA6m0hZfNwvRoVshxJw+BynMZo0twVcj/LuilQvXyE9zkyJZP
-	XT9EE1PJGARfKFw4m1SXLSzEVYoRg9I=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1795776517;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=KowgHdxAv0VqgGY3kZnozXRx78oYlqyIyYJ2riEahb0=;
-	b=bLn/7QWSRpc+xaOS3AdvmzG64aycNcdAUMIgbeeo7xb+JaCwzAGBNXG18ncKkA+ltzLh5K
-	eW4wuJM1v1fZnrBg==
-Authentication-Results: smtp-out2.suse.de;
-	dkim=pass header.d=suse.de header.s=susede2_rsa header.b=EFdnpaJH;
-	dkim=pass header.d=suse.de header.s=susede2_ed25519 header.b="bLn/7QWS"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1795776517; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=KowgHdxAv0VqgGY3kZnozXRx78oYlqyIyYJ2riEahb0=;
-	b=EFdnpaJHns3RcOCCP39Hb3ZxoENu6F7wxfU3W53Y9Yi5pCyz5382Lsdt7NTNeMU+1GDYB2
-	ejoFp+M4wGZSh09b49z7YEA6m0hZfNwvRoVshxJw+BynMZo0twVcj/LuilQvXyE9zkyJZP
-	XT9EE1PJGARfKFw4m1SXLSzEVYoRg9I=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1795776517;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=KowgHdxAv0VqgGY3kZnozXRx78oYlqyIyYJ2riEahb0=;
-	b=bLn/7QWSRpc+xaOS3AdvmzG64aycNcdAUMIgbeeo7xb+JaCwzAGBNXG18ncKkA+ltzLh5K
-	eW4wuJM1v1fZnrBg==
-Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id 1E852134E8;
-	Fri, 27 Nov 2026 10:48:37 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
-	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id E9WKAAVgCWvLbgAAD6G6ig
-	(envelope-from <hare@suse.de>); Fri, 27 Nov 2026 10:48:37 +0000
-Message-ID: <434003e5-9e0d-44dd-a81b-f23f93fa52cd@suse.de>
-Date: Fri, 27 Nov 2026 11:48:36 +0100
+	dkim=pass (2048-bit key, unprotected) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=FMWIudjD
+Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 2BB131F00897;
+	Fri, 27 Nov 2026 12:14:41 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1795781681;
+	bh=tJkp4jjw29pq/VBXLpjOqSdlrx+Ca5bWhyG9uxhkkZc=;
+	h=From:To:Cc:Subject:Date;
+	b=FMWIudjDWVn3Gidsk10pQzsf6soPY1SlOwITA5tQV0A7nfT9V7YS5Qw7Jx3ux+ySB
+	 /1KFcj7KVlmcHySV0I/ZYEGMA/zE9LWE9Y+qSJcfzSOkuJEjkwTcdHrDYu/skqnSr/
+	 sI2RN3DwA7N1fIS4AQnhyT5gzWVnPcf0VC5OHG407PRdieFmAlN47Lxf4BT80yb/iX
+	 WL1ZlFMgzRM00IwFZOHZ74RFGZIRIpH1nGuGweGeZTDXH/02oEuZO5ED0mxm9z9HXJ
+	 EWJ2LPZ+hKu18yxnLI6c8Qax6LrEqKEDdvmftA3ecM5mdjor6fTRMCZ8ecsPY8fAFT
+	 AwN6SBy1D8uYQ==
+From: Jarkko Sakkinen <jarkko@kernel.org>
+To: keyrings@vger.kernel.org
+Cc: Jarkko Sakkinen <jarkko@kernel.org>,
+	stable@vger.kernel.org,
+	linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-security-module@vger.kernel.org,
+	David Howells <dhowells@redhat.com>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Jann Horn <jannh@google.com>
+Subject: [PATCH v4 1/2] KEYS: Return user session keyring on lookup
+Date: Fri, 27 Nov 2026 14:14:31 +0200
+Message-ID: <20261127121433.2400766-1-jarkko@kernel.org>
+X-Mailer: git-send-email 2.47.3
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -108,156 +67,159 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v7 14/14] nvme-auth: allow to update pre-provisioned keys
-To: sashiko-reviews@lists.linux.dev, Hannes Reinecke <hare@kernel.org>,
- Keith Busch <kbusch@kernel.org>, Jens Axboe <axboe@kernel.dk>,
- Christoph Hellwig <hch@lst.de>, Sagi Grimberg <sagi@grimberg.me>,
- Chaitanya Kulkarni <kch@nvidia.com>, Eric Biggers <ebiggers@kernel.org>,
- David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko@kernel.org>,
- Jonathan Corbet <corbet@lwn.net>, Shuah Khan <skhan@linuxfoundation.org>,
- Randy Dunlap <rdunlap@infradead.org>, Kees Cook <kees@kernel.org>,
- "Gustavo A. R. Silva" <gustavoars@kernel.org>
-Cc: linux-nvme@lists.infradead.org, keyrings@vger.kernel.org,
- Martin Belanger <martin.nvme.dev@gmail.com>
-References: <20261126-dhchap-keyring-v4-v7-0-ee438ffea527@kernel.org>
- <20261126-dhchap-keyring-v4-v7-14-ee438ffea527@kernel.org>
- <sashiko-outbox-235712@kernel.org>
-Content-Language: en-US
-From: Hannes Reinecke <hare@suse.de>
-In-Reply-To: <sashiko-outbox-235712@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-Spamd-Result: default: False [-12.00 / 50.00];
-	SUSE_INTERNAL_BYPASS(-9.00)[];
-	BAYES_HAM(-3.00)[100.00%];
-	SUSPICIOUS_RECIPS(1.50)[];
-	NEURAL_HAM_LONG(-1.00)[-1.000];
-	R_DKIM_ALLOW(-0.20)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	NEURAL_HAM_SHORT(-0.20)[-1.000];
-	MIME_GOOD(-0.10)[text/plain];
-	MX_GOOD(-0.01)[];
-	XM_UA_NO_VERSION(0.01)[];
-	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	ARC_NA(0.00)[];
-	RBL_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:104:10:150:64:97:from];
-	RCPT_COUNT_TWELVE(0.00)[18];
-	MIME_TRACE(0.00)[0:+];
-	FREEMAIL_ENVRCPT(0.00)[gmail.com];
-	RCVD_TLS_ALL(0.00)[];
-	TO_DN_SOME(0.00)[];
-	RCVD_COUNT_TWO(0.00)[2];
-	FROM_EQ_ENVFROM(0.00)[];
-	FROM_HAS_DN(0.00)[];
-	FREEMAIL_CC(0.00)[lists.infradead.org,vger.kernel.org,gmail.com];
-	MID_RHS_MATCH_FROM(0.00)[];
-	TAGGED_RCPT(0.00)[];
-	RECEIVED_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:106:10:150:64:167:received];
-	DKIM_TRACE(0.00)[suse.de:+];
-	RCVD_VIA_SMTP_AUTH(0.00)[];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[suse.de:email,suse.de:dkim,imap1.dmz-prg2.suse.org:rdns,imap1.dmz-prg2.suse.org:helo]
-X-Rspamd-Server: rspamd1.dmz-prg2.suse.org
-X-Rspamd-Action: no action
-X-Spam-Flag: NO
-X-Spam-Score: -12.00
-X-Spam-Level: 
-X-Rspamd-Queue-Id: 75A991FB78
 
-On 11/26/26 3:31 PM, sashiko-bot@kernel.org wrote:
-> Thank you for your contribution! Sashiko AI review found 3 potential
-> issues to consider:
-> - [High] nvme-auth: uninitialized old_key dereference in
->    dhchap_*_secret_store()
-> - [High] nvme-keyring: .update callback added to psk instead of dhchap
->    key_type
-> - [Medium] nvme-auth: wrong pre-populated key check in
->    dhchap_*_secret_store()
-> --
-> 
-> commit 3ccb1f2ff3d815bafe5e4d68e5e266a56f5a6f51
-> Author: Hannes Reinecke <hare@kernel.org>
-> 
-> nvme-auth: allow to update pre-provisioned keys
-> 
-> This commit attempts to support rotating pre-provisioned DH-HMAC-CHAP keys
-> via keyctl update by adding a key_type .update callback and disallowing
-> sysfs key replacements for pre-populated controller keys.
-> 
->> diff --git a/drivers/nvme/common/keyring.c b/drivers/nvme/common/keyring.c
->> index bee64c592752a..ffabd37cd090d 100644
->> --- a/drivers/nvme/common/keyring.c
->> +++ b/drivers/nvme/common/keyring.c
->> @@ -100,6 +100,7 @@ static struct key_type nvme_tls_psk_key_type = {
->>   	.free_preparse  = user_free_preparse,
->>   	.match_preparse = nvme_tls_psk_match_preparse,
->>   	.instantiate    = generic_key_instantiate,
->> +	.update         = user_update,
->>   	.revoke         = user_revoke,
->>   	.destroy        = user_destroy,
->>   	.describe       = nvme_tls_psk_describe,
-> 
-> [Severity: High]
-> Was .update added to nvme_tls_psk_key_type instead of
-> nvme_dhchap_psk_key_type?  Because nvme_dhchap_psk_key_type still has no
-> .update callback, calling keyctl update on a dhchap key fails with
-> -EOPNOTSUPP.
-> 
-Fixed with the next version.
+A process without a session keyring looking up KEY_SPEC_SESSION_KEYRING
+without KEY_LOOKUP_CREATE mutates the credentials. This causes struct creds
+instances shared with other subsystems to become stale.
 
->> diff --git a/drivers/nvme/host/sysfs.c b/drivers/nvme/host/sysfs.c
->> index 0ffea12fcfb6b..0eb68b3973a1e 100644
->> --- a/drivers/nvme/host/sysfs.c
->> +++ b/drivers/nvme/host/sysfs.c
->> @@ -887,9 +887,17 @@ static ssize_t dhchap_secret_store(struct device *dev,
->>   		kfree_sensitive(dhchap_secret);
->>   		return ret;
->>   	}
->> +	if (!generated &&
->> +	    key_serial(old_key) != key_serial(key)) {
-> 
-> [Severity: Medium]
-> Should this check !ctrl->host_key_generated under ctrl->dhchap_auth_mutex
-> instead of !generated (and similarly !ctrl->ctrl_key_generated in
-> dhchap_ctrl_secret_store())?
-> 
-> nvme_auth_extract_key() sets generated based on whether the newly written
-> sysfs input is a raw DHHC-1 secret or an existing key lookup, not whether
-> the controller's current key was pre-populated.  Writing a raw DHHC-1
-> secret sets generated = true, bypassing this check and overwriting a
-> pre-populated ctrl->host_key with a newly generated key, while writing a
-> pre-populated key identifier to a controller that currently uses a
-> generated key is rejected with -EPERM.
-> 
-Fixed up in the next version.
+Address this by returning the resolved user session keyring directly
+without installing it into credentials.
 
->> +		dev_warn(ctrl->device, "cannot change pre-populated key %08x\n",
->> +			 key_serial(old_key));
->> +		key_put(key);
->> +		kfree_sensitive(dhchap_secret);
->> +		return -EPERM;
->> +	}
->>   	mutex_lock(&ctrl->dhchap_auth_mutex);
->>   	old_key = ctrl->host_key;
-> 
-> [Severity: High]
-> Does key_serial(old_key) dereference an uninitialized old_key pointer in
-> both dhchap_secret_store() and dhchap_ctrl_secret_store()?
-> 
-> old_key is declared on the stack without an initializer and is only
-> assigned from ctrl->host_key (or ctrl->ctrl_key) after acquiring
-> ctrl->dhchap_auth_mutex below.  When writing a pre-populated key to sysfs
-> (generated == false), key_serial(old_key) reads old_key->serial from the
-> uninitialized pointer, or returns 0 when CONFIG_INIT_STACK_ALL_ZERO=y and
-> causes every re-authentication write to fail with -EPERM.
-> 
-Fixed with the next version.
+Cc: stable@vger.kernel.org # v5.10+
+Cc: keyrings@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Shuah Khan <skhan@linuxfoundation.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Fixes: d84f4f992cbd ("CRED: Inaugurate COW credentials")
+Suggested-by: Jann Horn <jannh@google.com>
+Closes: https://lore.kernel.org/keyrings/CAG48ez0XjVSR=M--UBauTm8sJuc+ZbhKzaPa3a6wrSVHyoKevw@mail.gmail.com/
+Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
+---
+v4:
+- No changes, resend.
+v3:
+- In keyctl_session_to_parent(), check the resolved
+  cred->session_keyring instead of mycred->session_keyring.
+v2:
+- Added mandatory tags.
+- No code changes.
+- Link: https://lore.kernel.org/keyrings/20261019145624.309790-1-jarkko@kernel.org/
+ Documentation/security/keys/core.rst |  6 ++--
+ security/keys/keyctl.c               |  5 ++--
+ security/keys/process_keys.c         | 44 +++++++---------------------
+ 3 files changed, 16 insertions(+), 39 deletions(-)
+---
+ Documentation/security/keys/core.rst |  6 ++--
+ security/keys/keyctl.c               |  5 ++--
+ security/keys/process_keys.c         | 44 +++++++---------------------
+ 3 files changed, 16 insertions(+), 39 deletions(-)
 
-Cheers,
-
-Hannes
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 37ed42382f16..e3a215e55f81 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -165,8 +165,10 @@ The key service provides a number of features besides keys:
+      When a process changes its real UID, if it used to have no session key, it
+      will be subscribed to the default session key for the new UID.
+ 
+-     If a process attempts to access its session key when it doesn't have one,
+-     it will be subscribed to the default for its current UID.
++     If a process attempts to access its session keyring when it doesn't have
++     one, the default user session keyring for its current UID is returned
++     without being installed into its credentials.  If creation is requested,
++     an anonymous session keyring is installed.
+ 
+   *  Each user has two quotas against which the keys they own are tracked. One
+      limits the total number of keys and keyrings, the other limits the total
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index d6b10fd67627..b11716f88ded 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1682,8 +1682,7 @@ long keyctl_session_to_parent(void)
+ 	 * there's no point */
+ 	mycred = current_cred();
+ 	pcred = __task_cred(parent);
+-	if (mycred == pcred ||
+-	    mycred->session_keyring == pcred->session_keyring) {
++	if (cred->session_keyring == pcred->session_keyring) {
+ 		ret = 0;
+ 		goto unlock;
+ 	}
+@@ -1701,7 +1700,7 @@ long keyctl_session_to_parent(void)
+ 	/* the keyrings must have the same UID */
+ 	if ((pcred->session_keyring &&
+ 	     !uid_eq(pcred->session_keyring->uid, mycred->euid)) ||
+-	    !uid_eq(mycred->session_keyring->uid, mycred->euid))
++	    !uid_eq(cred->session_keyring->uid, mycred->euid))
+ 		goto unlock;
+ 
+ 	/* cancel an already pending keyring replacement */
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 3af71c6322af..cdf03b8124d0 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -356,31 +356,6 @@ int install_session_keyring_to_cred(struct cred *cred, struct key *keyring)
+ 	return 0;
+ }
+ 
+-/*
+- * Install the given keyring as the session keyring of the current task,
+- * replacing the existing one if any.  If the given keyring is NULL, then
+- * install a new anonymous session keyring.
+- *
+- * Return: 0 on success; -errno on failure.
+- */
+-static int install_session_keyring(struct key *keyring)
+-{
+-	struct cred *new;
+-	int ret;
+-
+-	new = prepare_creds();
+-	if (!new)
+-		return -ENOMEM;
+-
+-	ret = install_session_keyring_to_cred(new, keyring);
+-	if (ret < 0) {
+-		abort_creds(new);
+-		return ret;
+-	}
+-
+-	return commit_creds(new);
+-}
+-
+ /*
+  * Handle the fsuid changing.
+  */
+@@ -720,20 +695,21 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+ 
+ 	case KEY_SPEC_SESSION_KEYRING:
+ 		if (!ctx.cred->session_keyring) {
+-			/* always install a session keyring upon access if one
+-			 * doesn't exist yet */
+ 			ret = look_up_user_keyrings(NULL, &user_session);
+ 			if (ret < 0)
+ 				goto error;
+-			if (lflags & KEY_LOOKUP_CREATE)
++
++			if (lflags & KEY_LOOKUP_CREATE) {
++				key_put(user_session);
+ 				ret = join_session_keyring(NULL);
+-			else
+-				ret = install_session_keyring(user_session);
++				if (ret < 0)
++					goto error;
++				goto reget_creds;
++			}
+ 
+-			key_put(user_session);
+-			if (ret < 0)
+-				goto error;
+-			goto reget_creds;
++			key = user_session;
++			key_ref = make_key_ref(key, 1);
++			break;
+ 		} else if (test_bit(KEY_FLAG_UID_KEYRING,
+ 				    &ctx.cred->session_keyring->flags) &&
+ 			   lflags & KEY_LOOKUP_CREATE) {
 -- 
-Dr. Hannes Reinecke                  Kernel Storage Architect
-hare@suse.de                                +49 911 74053 688
-SUSE Software Solutions GmbH, Frankenstr. 146, 90461 Nürnberg
-HRB 36809 (AG Nürnberg), GF: I. Totev, A. McDonald, W. Knoblich
+2.47.3
+
