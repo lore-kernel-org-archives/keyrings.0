@@ -1,63 +1,65 @@
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=170.10.129.124
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795748383;
-	b=AIBRvt7HX75XmKTSbLVy5cres+bqCGHuQIfDmXF1Mj7nmjSQfBjClous4AKcTXPJE2CM
-	 PP0tNMw3+Kb5VLQy35uLsBX7TmkKWAAoov2sJqDhIFeLdVR28gA3kU2g2obi9Z713V1Ne
-	 eJfARRJxMeZJ1v5KvgR2zKpi6uEqU5862N3A3dCaEXSoCEGXuMXSjU9p0DaaYdWI71Gfh
-	 s1F4XLHxIlLb0el1gFzPh5uYYiNcyUG1wClHYjpMk2RjtCxuL1APj7x02ljl9SwRCEQBP
-	 xz+IIAeaU3L7NQefHvKW5MGdb0ge/pIWuOPu4Js24TYKcTjD0IDQLo/lg8hUzBABiPA==
+	t=1795748390;
+	b=WM2wmmamhDtYriL6TODayDyEX7vUAgazjsN5AD/ywufCTIhPkvI2x5Jig1nw/82dd/Ha
+	 aBgHswxGz6wcY2reS4ksqNtI7u1uABdrZtj5QU/R8xjVsVifd9Gr6JBQpOES386pGyUVG
+	 ah4H0F2DtP1bwkFpWgsGR/J0Y6lrYEkxWGatgsWIqlbJkqhd03hoUApJlTzn+jCDvu98r
+	 fNFNzASX4JPL6rW4OWh1q7RUNdAvoRtbgul5RWuD+pU244xTZTTdYiVFHraQgrccNX4Go
+	 PO58bzGSkk8Z2iRpQBSG2hJAMXwy+hRnib740OQSX2QjM0zYwE0H9Gnu+ULRr/vU/7Q==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795748383;
+	a=rsa-sha256; c=relaxed/relaxed; t=1795748390;
 	h=DMARC-Filter:DKIM-Signature:Received:X-MC-Unique:
 	 X-Mimecast-MFC-AGG-ID:Received:Received:From:To:Cc:Subject:Date:
-	 Message-ID:MIME-Version:Content-Transfer-Encoding:X-Scanned-By;
-	bh=PSJbpwNYscaoPtLkKBtcM2ETmUbzMd8Ge7tSBLoV3QM=;
-	b=pk9bA+jROuFyO7ucRAlUxmeCw/fAirV7UH+lGjI7gingT+MORE/sKECA/SFIv6RaDxi3
-	 7QT0LA62WB15rODBz8VbCM5oqpu1VQUWrMI4kksKyD4sIkGQ9tk2hgagPmJgfBPqHTqIz
-	 Oa85HBUpjNHV1HguEFI2yh7zsXDo32hCmpTUnN7beoCUejfFFfe42iQwtoVUmMTH72sV7
-	 phIvZkhOb0yXV5TxwAPEmQsfNM7FNi5k6aw7dGNl5Sbxd61S1AWH7EUAemPejgFU0WCrr
-	 hisTeosEz6D95b8Hzz5gzMUmOaxfMS4lbd0QpQD26g0242UGmEAAbz9ys23k3UtPtpA==
+	 Message-ID:In-Reply-To:References:MIME-Version:
+	 Content-Transfer-Encoding:X-Scanned-By;
+	bh=NY0HV6PndfJnusJZI52dSV3HDQ5Ck0Pg/NUa29Q8I50=;
+	b=SDlvr74aAlMDLhfZYFmt/nCeUz/NqPvrYYtbGCJIG5IONlKPaq2/2Rgd6vagiKCR3m2y
+	 iAXu8An+cd0xzdocjZcDrRfpnWB8VPjUKwXpZdHzku9bIS7WGI6E23YhcLCQ6eP+gihwN
+	 16F1adguhvkII1REZ/EY6gXRaPi6Q4/V4fwJYQ5Q9PFeUNaUSkv3sAcHypIX12bzsKk7u
+	 NowSCkEuGP1bqChsh2x+ZnfhyV5e8us+pgS6ZK5Pb1gQDX3GA3xu9vqq/WW5kAFHT8rUm
+	 BOU1o8eo5rdO4p3P3ygOE5isXOT+43eXUByP8tgG7ncAh6uElgdKLYosiCGwtGRggvg==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=redhat.com;
 	spf=pass smtp.mailfrom=redhat.com;
-	dkim=pass header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=RonwJlgn;
+	dkim=pass header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=Mrposg2U;
 	arc=none smtp.remote-ip=170.10.129.124
 Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 23006606A32D
-	for <keyrings@vger.kernel.org>; Fri, 27 Nov 2026 02:59:42 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 23006606A32D
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5E21C606A326
+	for <keyrings@vger.kernel.org>; Fri, 27 Nov 2026 02:59:50 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 5E21C606A326
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=redhat.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=RonwJlgn
+	dkim=pass (1024-bit key) header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=Mrposg2U
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-	s=mimecast20190719; t=1795748382;
+	s=mimecast20190719; t=1795748389;
 	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
 	 to:to:cc:cc:mime-version:mime-version:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=PSJbpwNYscaoPtLkKBtcM2ETmUbzMd8Ge7tSBLoV3QM=;
-	b=RonwJlgnrAVrhaAzJWPH0ipPq3dcViCMk4EzUk6eznkPHFr2az3QnRSF3NV1JymqZGSMuY
-	YliSSTh6avyH4o51cUi/jyvWNXlF30hPf1DCvbaPI+/MDMBKhFRh3EmSWtkT77zh3SDPJd
-	FpcCxpD/J7InTRs35yM6jr5FaVTvnPg=
-Received: from mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com
- (ec2-35-165-154-97.us-west-2.compute.amazonaws.com [35.165.154.97]) by
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=NY0HV6PndfJnusJZI52dSV3HDQ5Ck0Pg/NUa29Q8I50=;
+	b=Mrposg2UnLBKy7VBM9scz9nLPmjaFGvgE61U+6GuDJY0bt392y3p8URxF5TSnJlyG9zMFC
+	zghUZ8G8gMxPZEfj4AwTA06E8auO4WL2vvIMSYiGwzOO3s/lLirOxFLs9mW1HQwcUGLT+z
+	4WoN28j65f+g0Y279HcXgBi2/DdEwlQ=
+Received: from mx-prod-mc-01.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
  relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
- cipher=TLS_AES_256_GCM_SHA384) id us-mta-347-MoHBRTmeMZavqSdn_mSSEg-1; Fri,
- 27 Nov 2026 02:59:38 +0000
-X-MC-Unique: MoHBRTmeMZavqSdn_mSSEg-1
-X-Mimecast-MFC-AGG-ID: MoHBRTmeMZavqSdn_mSSEg_1795748377
-Received: from mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.4])
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-591-jVMy_SlBO-29wTIFDjaXKQ-1; Fri,
+ 27 Nov 2026 02:59:44 +0000
+X-MC-Unique: jVMy_SlBO-29wTIFDjaXKQ-1
+X-Mimecast-MFC-AGG-ID: jVMy_SlBO-29wTIFDjaXKQ_1795748383
+Received: from mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.12])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
 	(No client certificate requested)
-	by mx-prod-mc-06.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id CD73C1800349;
-	Fri, 27 Nov 2026 02:59:36 +0000 (UTC)
+	by mx-prod-mc-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id E920519560AE;
+	Fri, 27 Nov 2026 02:59:42 +0000 (UTC)
 Received: from localhost (headnet04.pony-001.prod.iad2.dc.redhat.com [10.2.32.116])
-	by mx-prod-int-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id C52F230000E5;
-	Fri, 27 Nov 2026 02:59:35 +0000 (UTC)
+	by mx-prod-int-03.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTP id 3904D1956049;
+	Fri, 27 Nov 2026 02:59:41 +0000 (UTC)
 From: Bruno Meneguele <bmeneg@redhat.com>
 To: linux-integrity@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
@@ -66,10 +68,13 @@ Cc: linux-kernel@vger.kernel.org,
 	roberto.sassu@huawei.com,
 	dhowells@redhat.com,
 	bauerman@linux.ibm.com,
-	Bruno Meneguele <bmeneg@redhat.com>
-Subject: [RFC PATCH 0/8] ima: measure modules with multiple appended signatures
-Date: Thu, 26 Nov 2026 23:59:03 -0300
-Message-ID: <20261127025912.1383750-1-bmeneg@redhat.com>
+	Bruno Meneguele <bmeneg@redhat.com>,
+	stable@vger.kernel.org
+Subject: [RFC PATCH 1/8] pkcs7: don't cache a failed digest in pkcs7_digest()
+Date: Thu, 26 Nov 2026 23:59:04 -0300
+Message-ID: <20261127025912.1383750-2-bmeneg@redhat.com>
+In-Reply-To: <20261127025912.1383750-1-bmeneg@redhat.com>
+References: <20261127025912.1383750-1-bmeneg@redhat.com>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -80,88 +85,41 @@ List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-Scanned-By: MIMEDefang 3.4.1 on 10.30.177.4
+X-Scanned-By: MIMEDefang 3.0 on 10.30.177.12
 
-Hi,
+The pkcs7_digest() function error path leaves sig->m allocated when
+messageDigest attribute doesn't match the content or the digest calculation
+fails. Considering it can be called more than once for the same signer, a
+second call after the first failed would have sig->m incorrectly set and
+would skip any further check as a successful calculation.
 
-This RFC presents the support for modules with multiple signatures, *and mixed
-algorithms*, appended. A scenario that requires it today is the PQC transition
-period where modules are signed with both, eg., ML-DSA and ECDSA.
+One example of user is IMA, which hits it when measuring first and then
+appraising a file module signature. With that, free and clear sig->m on
+failure, so every call repeats the checks.
 
-Appraisal already handles that: pkcs7_verify() accepts the file if a trusted
-signer verifies and no other signer fails (unknown keys is not considered
-failure). But measurement doesn't: 'd-modsig' and the binary blacklist check
-take the content digest from pkcs7_get_digest(), which fails with more than one
-signer, so the file loads unmeasured.
+Fixes: e201af16d1ec ("PKCS#7: Introduce pkcs7_get_digest()")
+Cc: stable@vger.kernel.org
+Signed-off-by: Bruno Meneguele <bmeneg@redhat.com>
+---
+ crypto/asymmetric_keys/pkcs7_verify.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Patches #1 and #2 (for stable) fix two PKCS#7 bugs found on the way: a failed
-digest left in sig->m, and pkcs7_get_digest() returning the signed attributes
-instead of the content digest. Patch #3 adds support for multiple signers on
-PKCS#7 code, but IMA 'd-modsig' can't describe it, so patches #4-#7 add a
-template (patch #5 standardizes how ima-modsig records ML-DSA in the same way
-proposed here for its v2):
-
-  ima-modsigv2 = d-ngv2 | n-ng | sig | d-modsig-list | modsig
-
-'d-modsig-list' is <u32 count> x (<u32 entry_len><entry>), one 'd-modsig' entry
-per signer in 'modsig' order, or "<sig algo>:" for direct data (eg. ML-DSA)
-signatures:
-
-  d-ngv2:        ima:sha256:a4fa30a9...48d3a449
-  n-ng:          /test/t10-ecdsa512-mldsa65-noattr.ko
-  sig:           030304...feff
-  d-modsig-list: sha512:0e750939...f8c18dcb,mldsa65:
-  modsig:        30820e1706092a864886f70d010702a0...
-
-Another example with ECDSA-SHA512+RSA-SHA256 and ML-DSA-65+ML-DSA-87:
-
-  d-modsig-list: sha512:0e750939...f8c18dcb,sha256:0ae76371...e37306f2
-  d-modsig-list: mldsa65:,mldsa87:
-
-A signer with no usable digest gets an empty entry; with none, the measurement
-list entry is dropped, as with 'd-modsig'. Patch #8 blocks a file if any
-signer's digest is blacklisted.
-
-Open questions: (1) should a dropped measurement be reported more explicitly
-than by its audit record? (2) a pure ML-DSA signer has no content digest to
-match a 'bin:' entry; how should that fit with the 'skid:' proposal [1]?
-
-I tested module loading in a QEMU/KVM x86_64 and kernel image kexec in a PPC64LE
-LPAR with RSA, ECDSA and ML-DSA-65/87, one or two signers, mixed hash algorithms
-and rejected cases (bad messageDigest, two ML-DSA signers with one bad).
-
-Claude Opus helped read the code, review the patches and write the tests (and
-this cover-letter). I reviewed and reworked every diff and I'm responsible for
-all of it.
-
-Thanks,
-Bruno
-
-[1] https://lore.kernel.org/all/20261106173149.707244-1-zohar@linux.ibm.com/
-
-
-Bruno Meneguele (8):
-  pkcs7: don't cache a failed digest in pkcs7_digest()
-  pkcs7: return the content digest from pkcs7_get_digest()
-  pkcs7: support multiple signers in pkcs7_get_digest()
-  ima: get the modsig content digest of each signer
-  ima: record data-signing algorithms by name in 'd-modsig'
-  ima: add the 'd-modsig-list' template field
-  ima: define the ima-modsigv2 template
-  ima: check the digest of every modsig signer against the blacklist
-
- Documentation/security/IMA-templates.rst  |   8 +-
- crypto/asymmetric_keys/pkcs7_verify.c     |  83 +++++++--
- include/crypto/pkcs7.h                    |   7 +-
- security/integrity/ima/ima.h              |  15 +-
- security/integrity/ima/ima_appraise.c     |  15 +-
- security/integrity/ima/ima_modsig.c       |  48 +++--
- security/integrity/ima/ima_policy.c       |   3 +-
- security/integrity/ima/ima_template.c     |   8 +-
- security/integrity/ima/ima_template_lib.c | 208 ++++++++++++++++++----
- security/integrity/ima/ima_template_lib.h |   4 +
- 10 files changed, 314 insertions(+), 85 deletions(-)
-
---
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 474e2c1ae21b..356570b6d6aa 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -131,6 +131,11 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+ 	kfree(desc);
+ error_no_desc:
+ 	crypto_free_shash(tfm);
++	if (ret && sig->m_free) {
++		kfree(sig->m);
++		sig->m = NULL;
++		sig->m_free = false;
++	}
+ 	kleave(" = %d", ret);
+ 	return ret;
+ }
+-- 
 2.55.0
 
