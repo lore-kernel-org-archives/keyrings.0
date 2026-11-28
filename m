@@ -1,84 +1,89 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=100.103.45.18
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=124.126.103.232
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1795826600;
-	b=PJbPK+4Bd460fBnApRsbfYGAJQbFjb030bn8b8gPrL2jMAB7W5IuwMikL/tPqn1u1OPk
-	 Exe8hl2Pf5TSBeuiLpjFgGrfoM2B0NrVz7VzYxeCwralp9SOCVI5c8ob9wwS2wrNxgANV
-	 7xJ/PcKGXje+qQr9O7jGoyeFm2bd8PtmWP4Xr/yuz7Me+8EZKpUQXgva/UpYu0lznmZRN
-	 GTKYXKmUKx36TmdMDkk/ZzBaLZL6aWrLcNqZx2fxueqzL9as0eNlWQB/iXmdSzCh3BWaa
-	 tIPYkGW2zKULT4qX57UIpXwI50DQroU14ydAftfRNUkguhSFUL9P4+GjqxnVm56NNCA==
+	t=1795831879;
+	b=EXpvRTjOyF5DYmnPOCGM+YqCSKdmsgz2oPI3/G1AuAZXAcaX3FQiZI0d/5dvueIEBLdp
+	 sX8bv9g6dtJWCHEHHKr5S0sC2pe4rmCXh3+Oq9ZI9MsN9oErDtwaxfcQHmLZjQctH+zDc
+	 Laxh9ySse+xuAiR/pYPYiPdogXsipp82VJRs/p2YgGbcH2k7dObx/LaRF05OMhgyjBEh6
+	 QbigGyKXTW/Cnr8oxAR4wTf+/n0iNsjmZ34fux1thazQG2XS3eDTSg9495PJ7cmc/XMk4
+	 RVOaj/nuV/oAPiFRtJtkuSSjHdKWS5g+ltQB7B9SOhFZYxhwlZsvLec72caxZA5zHYQ==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1795826600;
-	h=Received:DKIM-Signature:Date:From:To:Cc:Subject:Message-ID:
-	 References:MIME-Version:Content-Type:Content-Disposition:In-Reply-To;
-	bh=GFNyH0Ir4kVCvrZZWUN3b3y+Hhr3cHiie3fTLT72VVg=;
-	b=5A+AMNKB4mYVm+TVOacoYCe7ON79ktaDa8GKovmYr3POtTSueUbV5jydQqltvigAGJQ+
-	 qDI97mlURPjwRrjnkRszk/Q29l5xXlBJQmZKQx60gGMZF0h+ee3zi9FodljhqM7wj3P5f
-	 yAxRzJNjiAJqqC/Y+K0PX17MSKjiZvcGWOGEUqMrsNltP4O6tt2kXiNnSKm9clKx2dRGf
-	 JSnErV521l4wlNyFMiKLBY5OJAEobDEzPx0kPn3EHdGwFR0LeTRpTXzXoQA7jq15PnKzv
-	 kdrIYS8JTz8PkSJXa/10bIcXAHB+zxEeZ8bGhea22ApsCXW+TwsFNyGZw5UrJUhBCOg==
+	a=rsa-sha256; c=relaxed/relaxed; t=1795831879;
+	h=DMARC-Filter:X-UUID:X-CTIC-Tags:X-CID-P-RULE:X-CID-O-INFO:X-CID-INFO:
+	 X-CID-META:X-CID-BVR:X-CID-BAS:X-CID-FACTOR:X-CID-RHF:X-UUID:X-User:
+	 Received:From:To:Cc:Subject:Date:Message-ID:X-Mailer:In-Reply-To:
+	 References:MIME-Version:Content-Transfer-Encoding;
+	bh=YbVGmp557UNHjjARzihyOmQ40F+0wbrVNQb6Jam4lJY=;
+	b=hB12f6vCbVD/LC68VeMG9g+5i8r/lD2sg2XcswY8p2Y6r2dEJtZ9RKDv5cl+3hZMmM4t
+	 HymPvlK7yKmURU4LUJTBodxioysG31vOqx+D501kXAtcbIXK8CBKGrNsdL6SoYKmBgrh6
+	 FXwDQqh9Jqx3V1eloJVVDkjXdmJKnHsM0y/BSBbnm8No2cXquaVAs1TTpeFO5ekhlQP/q
+	 EaoiKDx+mwhqlcOENwh4dtW2YmmV6+Ccdl2AL+b6le350SvnnLQijnnAsEy71yNq0oNA+
+	 dHFaurOh2MKxybuiVy2XlEduERRAUhn+SSQo0P4B0cDZLKKFoDvjxl0v0sphkz7A98Q==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dkim=pass header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=VyEGnqmY;
-	arc=none smtp.remote-ip=100.103.45.18
-Received: from smtp.kernel.org (quasi.space.kernel.org [100.103.45.18])
+	dmarc=none header.from=kylinos.cn;
+	spf=pass smtp.mailfrom=kylinos.cn;
+	arc=none smtp.remote-ip=124.126.103.232
+Received: from mailgw.kylinos.cn (mailgw.kylinos.cn [124.126.103.232])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1))
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with UTF8SMTPS id A0011606A31C;
-	Sat, 28 Nov 2026 00:43:20 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.a=rsa-sha256 header.s=k20260515 header.b=VyEGnqmY
-Received: by smtp.kernel.org (Postfix) with UTF8SMTPSA id 84F131F00893;
-	Sat, 28 Nov 2026 00:43:19 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1795826600;
-	bh=GFNyH0Ir4kVCvrZZWUN3b3y+Hhr3cHiie3fTLT72VVg=;
-	h=Date:From:To:Cc:Subject:References:In-Reply-To;
-	b=VyEGnqmYPetw/50oz5XSjsTb4xi26lMs43Venrqj/HUi95seUUqVD0uzK9hWHnikT
-	 wM2+usQQChXcmo2je9Dk+oIU/OHuQHymSsx9MS6vyNbyCmGwqFAeflmPnuUj4fnwSU
-	 AE+hNJb5JLlh+foTdAxRPHTxwNAXU+8UDdfpTKCd+QQsQeJuxftROt5GlZnClHsY+W
-	 NqS0RyUehuYWXz/roswvNCvYvIov7uvf+KEKMRHVGN6ASi1SD1h8OlwkQSg0Gy97h5
-	 IHOlZcwkv2mVhwd8faWKe9QAauXdix2kby+VdUvM+hDAdTneFfoe1KzwqBQxK4lYA1
-	 kY0RDpASwkwwg==
-Date: Sat, 28 Nov 2026 02:43:16 +0200
-From: Jarkko Sakkinen <jarkko@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: keyrings@vger.kernel.org, dm-devel@lists.linux.dev,
-	linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 13080606A31C;
+	Sat, 28 Nov 2026 02:11:16 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 13080606A31C
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.cn
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinos.cn
+X-UUID: f987288eead011f19a56ed5b684f684d-20261128
+X-CTIC-Tags:
+	HR_CC_COUNT, HR_CC_DOMAIN_COUNT, HR_CC_NAME, HR_CC_NO_NAME, HR_CTE_8B
+	HR_CTT_MISS, HR_DATE_H, HR_DATE_WKD, HR_DATE_ZONE, HR_FROM_NAME
+	HR_SJ_DIGIT_LEN, HR_SJ_LANG, HR_SJ_LEN, HR_SJ_LETTER, HR_SJ_NOR_SYM
+	HR_SJ_PHRASE, HR_SJ_PHRASE_LEN, HR_SJ_PRE_RE, HR_SJ_WS, HR_TO_COUNT
+	HR_TO_DOMAIN_COUNT, HR_TO_NAME, SA_TRUSTED, SA_EXISTED, SN_TRUSTED
+	SN_EXISTED, SPF_NOPASS, DKIM_NOPASS, DMARC_NOPASS, CIE_BAD
+	CIE_GOOD, CIE_GOOD_SPF, GTI_FG_BS, GTI_RG_INFO, GTI_C_BU
+	AMN_GOOD, ABX_MISS_RDNS
+X-CID-P-RULE: Release_Ham
+X-CID-O-INFO: VERSION:1.3.19,REQID:078371f8-e486-4943-9d4a-e6bd0e2299d5,IP:10,
+	URL:0,TC:0,Content:0,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION
+	:release,TS:10
+X-CID-INFO: VERSION:1.3.19,REQID:078371f8-e486-4943-9d4a-e6bd0e2299d5,IP:10,UR
+	L:0,TC:0,Content:0,EDM:0,RT:0,SF:0,FILE:0,BULK:0,RULE:Release_Ham,ACTION:r
+	elease,TS:10
+X-CID-META: VersionHash:7db8b62,CLOUDID:7535750d372640e213a5a6b8012b147c,BulkI
+	D:26112810111238VU2TPO,BulkQuantity:0,SF:17|19|64|66|78|80|81|82|83|102|12
+	7|153|841|850|865|898|915,TC:nil,Content:0|15|50|99,EDM:-3,IP:-2,URL:0,Fil
+	e:nil,RT:nil,Bulk:nil,QS:nil,BEC:nil,COL:0,OSI:0,OSA:0,AV:0,LES:1,SPR:NO,D
+	KR:0,DKP:0,BRR:0,BRE:0,ARC:0
+X-CID-BVR: 2,SSN|SDN
+X-CID-BAS: 2,SSN|SDN,0,_
+X-CID-FACTOR: TF_CID_SPAM_FAS,TF_CID_SPAM_FSD,TF_CID_SPAM_SNR
+X-CID-RHF: D41D8CD98F00B204E9800998ECF8427E
+X-UUID: f987288eead011f19a56ed5b684f684d-20261128
+X-User: maguicai@kylinos.cn
+Received: from localhost.localdomain [(36.106.123.207)] by mailgw.kylinos.cn
+	(envelope-from <maguicai@kylinos.cn>)
+	(Generic MTA with TLSv1.3 TLS_AES_256_GCM_SHA384 256/256)
+	with ESMTP id 429364367; Sat, 28 Nov 2026 10:11:08 +0800
+From: Guicai Ma <maguicai@kylinos.cn>
+To: Jarkko Sakkinen <jarkko@kernel.org>
+Cc: Guicai Ma <maguicai@kylinos.cn>,
+	keyrings@vger.kernel.org,
+	linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
 	linux-security-module@vger.kernel.org,
-	Ahmad Fatoum <a.fatoum@pengutronix.de>,
-	Alasdair Kergon <agk@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	David Gstir <david@sigma-star.at>,
 	David Howells <dhowells@redhat.com>,
-	David Laight <david.laight.linux@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Ignat Korchagin <ignat@linux.win>,
-	James Bottomley <James.Bottomley@hansenpartnership.com>,
-	James Morris <jmorris@namei.org>,
-	James Prestwood <prestwoj@gmail.com>,
-	Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>,
-	Jonathan McDowell <noodles@meta.com>,
-	Lukas Wunner <lukas@wunner.de>,
-	Marek =?iso-8859-1?Q?Beh=FAn?= <kabel@kernel.org>,
-	Mike Snitzer <snitzer@kernel.org>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Mimi Zohar <zohar@linux.ibm.com>, Paul Moore <paul@paul-moore.com>,
-	Peter Huewe <peterhuewe@gmx.de>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
+	Jonathan Corbet <corbet@lwn.net>,
 	Shuah Khan <skhan@linuxfoundation.org>,
-	Sumit Garg <sumit.garg@kernel.org>
-Subject: Re: [PATCH v5 00/17] KEYS: trusted: asymmetric keys
-Message-ID: <awojpAZ81dakxfQY@kernel.org>
-References: <20261127055602.2357884-1-jarkko@kernel.org>
- <20261127193133.GE8300@quark>
- <awnrj-s1qL0Bw0nI@kernel.org>
- <awnugO__1DBkLlFe@kernel.org>
- <awn3tIYuqM-J1tXz@kernel.org>
+	Randy Dunlap <rdunlap@infradead.org>,
+	Paul Moore <paul@paul-moore.com>,
+	James Morris <jmorris@namei.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Jann Horn <jannh@google.com>
+Subject: Re: [PATCH v4 1/2] KEYS: Return user session keyring on lookup
+Date: Fri, 27 Nov 2026 21:11:05 -0500
+Message-ID: <20261128021105.3171306-1-maguicai@kylinos.cn>
+X-Mailer: git-send-email 2.47.3
+In-Reply-To: <20261127121433.2400766-1-jarkko@kernel.org>
+References: <20261127121433.2400766-1-jarkko@kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 List-Id: <keyrings.vger.kernel.org>
 List-Post: <mailto:keyrings@vger.kernel.org>
@@ -88,178 +93,26 @@ List-Unsubscribe: <mailto:keyrings+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:keyrings+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <awn3tIYuqM-J1tXz@kernel.org>
+Content-Transfer-Encoding: 8bit
 
-On Fri, Nov 27, 2026 at 11:35:53PM +0200, Jarkko Sakkinen wrote:
-> On Fri, Nov 27, 2026 at 10:56:37PM +0200, Jarkko Sakkinen wrote:
-> > On Fri, Nov 27, 2026 at 10:44:03PM +0200, Jarkko Sakkinen wrote:
-> > > On Fri, Nov 27, 2026 at 11:31:33AM -0800, Eric Biggers wrote:
-> > > > On Fri, Nov 27, 2026 at 07:55:45AM +0200, Jarkko Sakkinen wrote:
-> > > > > OVERVIEW
-> > > > > ========
-> > > > > 
-> > > > > Extend TPM 2.0 trusted keys to load ASN.1 TPMKey [1] asymmetric keys
-> > > > > (OID_TPMLoadableKey, 2.23.133.10.1.3) and expose keyctl pkey-operations
-> > > > > directly on key_type_trusted. In addition there are some TPMKey
-> > > > > interoperability fixes.
-> > > > > 
-> > > > > I.e. this my old series with a twist: instead of introducing a separate
-> > > > > subtype for asymmetric keys, factor out pkey-operations into a separate
-> > > > > CONFIG_KEYCTL_PKEY-feature, and wire asymmetric operations to
-> > > > > key_type_trusted.
-> > > > > 
-> > > > > This work was originally derived from [3], is direct offspring of [2],
-> > > > > and folds in the prerequisite tpm2-sessions and tpm-buf cleanups from
-> > > > > [4].
-> > > > > 
-> > > > > [1] https://www.hansenpartnership.com/draft-bottomley-tpm2-keys.html
-> > > > > [2] https://lore.kernel.org/linux-integrity/20240520184727.22038-1-jarkko@kernel.org/
-> > > > > [3] https://lore.kernel.org/all/20200518172704.29608-1-prestwoj@gmail.com/
-> > > > > [4] https://lore.kernel.org/linux-integrity/20261116005105.1573016-1-jarkko@kernel.org/
-> > > > 
-> > > > Could you describe the motivation for these changes here?  And also
-> > > > include more context directly, for people who aren't already familiar
-> > > > with all the earlier patches linked to above.
-> > > > 
-> > > > Also, this series is missing a base-commit, and I don't know how to
-> > > > apply it for review.
-> > > 
-> > > Sure, I'll do that if this moves forward.
-> > > 
-> > > The feature allows to provision an external key so that private portion
-> > > is secured by TPM, and used for e.g., signing and authentication. One
-> > > example of a program that might use this is iwd.
-> > > 
-> > > First, a parent is needed.
-> > > 
-> > > 0x40000001 (Owner) primary following TCG H-2 ECC P-256 template:
-> > > 
-> > > 	tpm2_createprimary -C o -g sha256 -G ecc256:null:aes128cfb \
-> > >       		-a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|restricted|decrypt" \
-> > >       		-c primary.ctx
-> > > 
-> > >     	tpm2_import -C primary.ctx -G ecc -i key.pem -u key.pub -r key.priv
-> > >     	tpm2_encodeobject -C primary.ctx -u key.pub -r key.priv -o key.tpm.pem
-> > >     	tpm2_flushcontext primary.ctx
-> > > 	
-> > > Alternatively, a persistent handle can be used. This follows TPMKey
-> > > specification recommendations.
-> > > 
-> > > Then external key can be imported an used as follows:
-> > > 
-> > > 	openssl ecparam -name prime256v1 -genkey -noout -out key.pem
-> > >     	openssl pkey -in key.pem -pubout -out pub.pem
-> > >  	openssl asn1parse -in key.tpm.pem -out key.tpm.der -noout
-> > >     	HEX=$(xxd -p -c 0 key.tpm.der)
-> > >     	TPM_KEY=$(keyctl add trusted tpm-key "load $HEX" @u)
-> > >     	keyctl pkey_query "$TPM_KEY" 0 enc=x962 hash=sha256
-> > > 
-> > > 	echo "secret sauce" > plain.txt
-> > > 	openssl dgst -sha256 -binary -out plain.sha256 plain.txt
-> > > 	keyctl pkey_sign "$TPM_KEY" 0 plain.sha256 enc=x962 hash=sha256 > plain.sig
-> > > 
-> > > > 
-> > > > - Eric
-> > > 
-> > > Another document that is source for what should be supported is:
-> > > 
-> > > https://datatracker.ietf.org/doc/draft-woodhouse-cert-best-practice/
-> > > 
-> > > Althought, I'm not sure how relevant this is anymore.
-> > 
-> > One other thing in addition to decoupling pkey operations that could be
-> > done as part of this would be to modularize the documentation, and use
-> > rst file at Documentation/ to include the snippets.
-> > 
-> > I left documentation part a bit stub as I started considering whether
-> > to do this or not. I.e., do it like some of the GPU drivers manage
-> > documentation.
-> > 
-> > With all these backends it's getting messy.
+On Fri, Nov 27, 2026 at 02:14:31PM +0200, Jarkko Sakkinen wrote:
+> A process without a session keyring looking up KEY_SPEC_SESSION_KEYRING
+> without KEY_LOOKUP_CREATE mutates the credentials. This causes struct creds
+> instances shared with other subsystems to become stale.
 > 
-> For tying in PCRs or system state in general it would be best to
-> implement policy command intepreter, which is a blob than can be
-> supplied with TPMKey. It's not a big leap from this.
-> 
-> It could be also used for regular trusted keys and benefit over
-> special parameters would be that it keeps the keyctl interface
-> backend agnostic (as e.g., PCRs bindings come with the data).
+> Address this by returning the resolved user session keyring directly
+> without installing it into credentials.
 
-Not the prettiest script but this is current version of the smoke
-test that I've used to test this:
+Tested on jarkko/for-next-keys (aa9e16503df9) in an arm64/KVM guest with
+KASAN and lockdep. With a small module calling
+lookup_user_key(KEY_SPEC_SESSION_KEYRING, 0, KEY_NEED_SEARCH) under
+override_creds(), the unpatched kernel hits the BUG at kernel/cred.c:376
+and the patched one returns the user session keyring without setting
+cred->session_keyring.
 
-#!/bin/sh
-# SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2024-2026 Jarkko Sakkinen <jarkko@kernel.org>
-#
-# Cross-verification test for TPM2 asymmetric trusted keys.
+Userspace checks for KEYCTL_GET_KEYRING_ID (create=0 and 1) and
+KEYCTL_SESSION_TO_PARENT (shared NULL and non-NULL session keyrings)
+also pass cleanly.
 
-set -e
-
-WORK=$(mktemp -d)
-persistent_handle=
-TPM2_KEY=
-X509_KEY=
-cleanup()
-{
-  rc=$?
-  if [ -n "$TPM2_KEY" ]; then
-    keyctl unlink "$TPM2_KEY" @s >/dev/null 2>&1 || true
-  fi
-  if [ -n "$X509_KEY" ]; then
-    keyctl unlink "$X509_KEY" @s >/dev/null 2>&1 || true
-  fi
-  rm -rf "$WORK"
-  if [ -n "$persistent_handle" ]; then
-    tpm2sh delete "$persistent_handle" || true
-  fi
-  exit "$rc"
-}
-trap cleanup EXIT
-
-openssl ecparam -genkey -name prime256v1 -noout -out "$WORK/ec_key.pem"
-
-handle=$(tpm2sh create-primary ecc-nist-p256:sha256)
-tpm2sh evict "$handle" 81000001
-persistent_handle=81000001
-
-tpm2sh import --loadable 81000001 \
-  -I "$WORK/ec_key.pem" \
-  -O "$WORK/tpm2_key.pem"
-openssl asn1parse -inform pem -in "$WORK/tpm2_key.pem" \
-  -noout -out "$WORK/tpm2_key.der"
-TPM2_HEX=$(od -An -tx1 "$WORK/tpm2_key.der" | tr -d ' \n')
-
-openssl req -new -x509 -key "$WORK/ec_key.pem" \
-  -out "$WORK/cert.pem" -days 1 \
-  -subj "/CN=tpm2_asymmetric_test" -sha256
-openssl x509 -in "$WORK/cert.pem" -outform der -out "$WORK/cert.der"
-
-TPM2_KEY=$(keyctl add trusted "tpm2_asymmetric" "load $TPM2_HEX" @s)
-X509_KEY=$(keyctl padd asymmetric "x509_ecdsa" @s < "$WORK/cert.der")
-
-keyctl pkey_query "$TPM2_KEY" 0 enc=x962 hash=sha256 >/dev/null
-
-printf "tpm2 asymmetric cross-verification test data" > "$WORK/testdata"
-openssl dgst -sha256 -binary "$WORK/testdata" > "$WORK/hash.bin"
-
-keyctl pkey_sign "$TPM2_KEY" 0 "$WORK/hash.bin" enc=x962 hash=sha256 \
-  > "$WORK/sig_tpm.der"
-keyctl pkey_verify "$X509_KEY" 0 "$WORK/hash.bin" "$WORK/sig_tpm.der" \
-  enc=x962 hash=sha256
-echo "PASS: TPM2 key signed, X.509 key verified"
-
-openssl dgst -sha256 -sign "$WORK/ec_key.pem" \
-  -out "$WORK/sig_sw.der" "$WORK/testdata"
-keyctl pkey_verify "$TPM2_KEY" 0 "$WORK/hash.bin" "$WORK/sig_sw.der" \
-  enc=x962 hash=sha256
-echo "PASS: OpenSSL signed, TPM2 key verified"
-
-I should add RSA signing/encryption test to this tho (which is working but
-test cases are missing).
-
-Perhaps this could be used to derive a kselftest.
-
-Br, Jarkko
+Reviewed-by: Guicai Ma <maguicai@kylinos.cn>
+Tested-by: Guicai Ma <maguicai@kylinos.cn>
